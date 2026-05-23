@@ -4,8 +4,10 @@ title: 'Step infrastructure: stdout JSON/EDN contains assertions'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T04:53:22Z
-updated_at: 2026-05-23T05:10:49Z
+updated_at: 2026-05-23T05:17:06Z
 ---
 
 ## Motivation

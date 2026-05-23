@@ -1,7 +1,25 @@
 (ns isaac.cli.common
   "Shared helpers for CLI command namespaces."
   (:require
+    [cheshire.core :as json]
+    [clojure.walk :as walk]
     [isaac.cli :as registry]))
+
+(defn- json-ready [value]
+  (walk/postwalk
+    (fn [node]
+      (if (set? node)
+        (->> node
+             (sort-by str)
+             vec)
+        node))
+    value))
+
+(defn render-json [value]
+  (json/generate-string (json-ready value)))
+
+(defn print-json! [value]
+  (println (render-json value)))
 
 (defn standard-run-fn
   "Standard help/errors/run dispatch for CLI commands.

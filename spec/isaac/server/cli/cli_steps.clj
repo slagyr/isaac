@@ -1,5 +1,7 @@
 (ns isaac.server.cli.cli-steps
   (:require
+    [cheshire.core :as json]
+    [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
@@ -63,6 +65,78 @@
   (if-let [writer (g/get :live-error-writer)]
     (str writer)
     (g/get :stderr)))
+
+(defn- parse-path-segments [path]
+  (mapv (fn [segment]
+          (if (re-matches #"\d+" segment)
+            (parse-long segment)
+            segment))
+        (str/split path #"\.")))
+
+(defn- map-value [value segment]
+  (let [keyword-segment (keyword segment)]
+    (cond
+      (contains? value segment)         (get value segment)
+      (contains? value keyword-segment) (get value keyword-segment)
+      :else                             ::missing)))
+
+(defn- value-at-path [value path]
+  (reduce (fn [current segment]
+            (cond
+              (= ::missing current)
+              ::missing
+
+              (integer? segment)
+              (if (and (sequential? current) (<= 0 segment) (< segment (count current)))
+                (nth current segment)
+                ::missing)
+
+              (map? current)
+              (map-value current segment)
+
+              :else
+              ::missing))
+          value
+          (parse-path-segments path)))
+
+(defn- parse-json-text [text]
+  (try
+    (json/parse-string text)
+    (catch Exception e
+      (throw (ex-info (str "stdout was not valid JSON: " (.getMessage e)) {})))))
+
+(defn- parse-edn-text [text]
+  (try
+    (edn/read-string text)
+    (catch Exception e
+      (throw (ex-info (str "stdout was not valid EDN: " (.getMessage e)) {})))))
+
+(defn- parse-json-literal [text]
+  (try
+    (json/parse-string text)
+    (catch Exception e
+      (throw (ex-info (str "invalid JSON literal in step table: " text " - " (.getMessage e)) {})))))
+
+(defn- parse-edn-literal [text]
+  (try
+    (edn/read-string text)
+    (catch Exception e
+      (throw (ex-info (str "invalid EDN literal in step table: " text " - " (.getMessage e)) {})))))
+
+(defn- assert-stdout-contains [format-name parse-output parse-literal table]
+  (let [stdout (or (current-output) "")
+        value  (parse-output stdout)]
+    (doseq [row (:rows table)]
+      (let [[path expected-text] row
+            expected             (parse-literal expected-text)
+            actual               (value-at-path value path)]
+        (when (= ::missing actual)
+          (throw (ex-info (str "stdout " format-name " missing path: " path) {})))
+        (when-not (= expected actual)
+          (throw (ex-info (str "stdout " format-name " path " path
+                               " expected " (pr-str expected)
+                               " but was " (pr-str actual))
+                          {})))))))
 
 (defn- await-exit-code []
   (helper/await-condition #(some? (g/get :exit-code)))
@@ -306,6 +380,14 @@
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) output)))))
 
+(defn stdout-json-contains [table]
+  (assert-stdout-contains "JSON" parse-json-text parse-json-literal table)
+  (g/should true))
+
+(defn stdout-edn-contains [table]
+  (assert-stdout-contains "EDN" parse-edn-text parse-edn-literal table)
+  (g/should true))
+
 (defn reply-matches [table]
   (let [output   (or (current-reply) "")
         patterns (extract-patterns table)]
@@ -434,6 +516,10 @@
    stdout. All rows must match somewhere (order not enforced). Since
    re-find succeeds on any match, multi-line shape isn't verified —
    pair with 'the stdout has at least N lines' when structure matters.")
+
+(defthen "the stdout JSON contains:" isaac.server.cli.cli-steps/stdout-json-contains)
+
+(defthen "the stdout EDN contains:" isaac.server.cli.cli-steps/stdout-edn-contains)
 
 (defthen "the reply matches:" isaac.server.cli.cli-steps/reply-matches
   "Comm-neutral regex match, same semantics as 'the stdout matches:'.")
