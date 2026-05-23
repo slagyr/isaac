@@ -1,10 +1,11 @@
 ---
 # isaac-7v5h
 title: 'Hail fan-out worker: resolve pending hails into per-session deliveries'
-status: todo
+status: draft
 type: feature
+priority: normal
 created_at: 2026-05-23T21:55:37Z
-updated_at: 2026-05-23T21:55:37Z
+updated_at: 2026-05-23T22:05:40Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-i4ly

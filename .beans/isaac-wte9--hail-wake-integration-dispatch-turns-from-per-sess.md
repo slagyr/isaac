@@ -1,10 +1,11 @@
 ---
 # isaac-wte9
 title: 'Hail wake integration: dispatch turns from per-session inboxes'
-status: todo
+status: draft
 type: feature
+priority: normal
 created_at: 2026-05-23T21:56:51Z
-updated_at: 2026-05-23T21:56:51Z
+updated_at: 2026-05-23T22:05:40Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
