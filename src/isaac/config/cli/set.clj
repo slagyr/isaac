@@ -20,9 +20,7 @@
 
 (defn run [opts arguments _options]
   (if-let [{:keys [home path-str]} (mutate-common/target-home+path! opts (first arguments))]
-    (if (nil? (second arguments))
-      (common/print-cli-error! "missing value")
-      (mutate-common/set-config! home path-str (second arguments)))
+    (mutate-common/set-config! home path-str (second arguments))
     1))
 
 (def subcommand

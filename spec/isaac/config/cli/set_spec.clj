@@ -33,7 +33,7 @@
 
   (it "treats a hyphen-prefixed token as the set value after the path"
     (let [captured (atom nil)]
-      (with-redefs [mutate/set-config (fn [_home path value]
+      (with-redefs [mutate/set-config (fn [_home path value & _]
                                         (reset! captured [path value])
                                         {:status :ok :warnings [] :file "isaac.edn"})]
         (should= 0 (sut/run {:home test-home} ["set" (str "crew." marigold/first-mate ".soul") "--raw"])))

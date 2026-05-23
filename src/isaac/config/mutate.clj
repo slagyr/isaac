@@ -270,6 +270,12 @@
     [(remove (fn [e] (contains? pre-set (error-signature e))) post-errors)
      (filter (fn [e] (contains? pre-set (error-signature e))) post-errors)]))
 
+(defn- reference-error?
+  "True for errors produced by existence-ref validators (model-exists?,
+   crew-exists?, etc.). These carry :bad-value; type errors do not."
+  [e]
+  (contains? e :bad-value))
+
 
 (defn- pre-existing->warnings
   "Format pre-existing errors as warnings so the user sees them without
@@ -283,8 +289,13 @@
 
    Pre-existing config errors do not block the mutation — they're
    surfaced as warnings and the change still applies, as long as the
-   change itself doesn't introduce *new* validation errors."
-  [home path value]
+   change itself doesn't introduce *new* validation errors.
+
+   When `skip-ref-validation?` is true, reference errors (model-exists?,
+   crew-exists?, etc.) are never treated as new errors — only type errors
+   can block the mutation. Use this from the CLI so operators can wire up
+   values that reference entities not yet defined."
+  [home path value & {:keys [skip-ref-validation?] :or {skip-ref-validation? false}}]
   (let [parsed (parse-config-path path)]
     (cond
       (:status parsed)
@@ -300,6 +311,9 @@
              plan           (set-plan parsed state value)
              result         (validate-plan home plan)
              [new-errors carried-errors] (partition-errors pre-errors (:errors result))
+             new-errors     (if skip-ref-validation?
+                              (remove reference-error? new-errors)
+                              new-errors)
              warnings       (concat (:warnings result)
                                     (pre-existing->warnings carried-errors))]
          (if (seq new-errors)

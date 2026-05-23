@@ -25,6 +25,17 @@
         (should (:ok? result))
         (should= :int (:type (:spec result)))))
 
+    (it "returns ok with member for a set-typed terminal"
+      (let [result (sut/path->spec root "crew.joe.tags.wip")]
+        (should (:ok? result))
+        (should= :wip (:member result))
+        (should (:set-type? (:spec result)))))
+
+    (it "returns ok with namespaced member for a set-typed terminal"
+      (let [result (sut/path->spec root "crew.joe.tags.role/worker")]
+        (should (:ok? result))
+        (should= :role/worker (:member result))))
+
     (it "returns error with failing segment for unknown leaf"
       (let [result (sut/path->spec root "crew.joe.bogus")]
         (should-not (:ok? result))
@@ -52,21 +63,50 @@
         (should-not (:ok? result))
         (should= "bogus" (:segment result))))
 
-    (it "overwrites existing value"
+    (it "overwrites existing scalar value"
       (let [base   {:defaults {:crew "old"}}
             result (sut/set-value root base "defaults.crew" "new")]
         (should (:ok? result))
-        (should= "new" (get-in (:config result) [:defaults :crew])))))
+        (should= "new" (get-in (:config result) [:defaults :crew]))))
+
+    (it "adds a member to a set-typed terminal"
+      (let [base   {:crew {:joe {:tags #{:role/worker}}}}
+            result (sut/set-value root base "crew.joe.tags.wip" nil)]
+        (should (:ok? result))
+        (should= #{:role/worker :wip} (get-in (:config result) [:crew :joe :tags]))))
+
+    (it "is idempotent when adding a set member already present"
+      (let [base   {:crew {:joe {:tags #{:role/worker}}}}
+            result (sut/set-value root base "crew.joe.tags.role/worker" nil)]
+        (should (:ok? result))
+        (should= #{:role/worker} (get-in (:config result) [:crew :joe :tags]))))
+
+    (it "initializes set when adding first member"
+      (let [result (sut/set-value root {:crew {:joe {}}} "crew.joe.tags.wip" nil)]
+        (should (:ok? result))
+        (should= #{:wip} (get-in (:config result) [:crew :joe :tags])))))
 
   (describe "unset-value"
 
-    (it "removes a value at a known path"
+    (it "removes a scalar value at a known path"
       (let [base   {:defaults {:crew "marvin" :model "grover"}}
             result (sut/unset-value root base "defaults.crew")]
         (should (:ok? result))
         (should-be-nil (get-in (:config result) [:defaults :crew]))
         (should= "grover" (get-in (:config result) [:defaults :model]))))
 
-    (it "is idempotent when value is already absent"
+    (it "is idempotent when scalar value is already absent"
       (let [result (sut/unset-value root {} "defaults.crew")]
-        (should (:ok? result))))))
+        (should (:ok? result))))
+
+    (it "removes a member from a set-typed terminal"
+      (let [base   {:crew {:joe {:tags #{:role/worker :wip}}}}
+            result (sut/unset-value root base "crew.joe.tags.wip")]
+        (should (:ok? result))
+        (should= #{:role/worker} (get-in (:config result) [:crew :joe :tags]))))
+
+    (it "is idempotent when removing a set member not present"
+      (let [base   {:crew {:joe {:tags #{:role/worker}}}}
+            result (sut/unset-value root base "crew.joe.tags.wip")]
+        (should (:ok? result))
+        (should= #{:role/worker} (get-in (:config result) [:crew :joe :tags]))))))

@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-23T04:53:23Z
-updated_at: 2026-05-23T13:55:42Z
+updated_at: 2026-05-23T14:23:40Z
 ---
 
 ## Motivation
@@ -153,15 +153,34 @@ Run targeted: `bb features features/config/set_unset.feature`.
 - **Independent of isaac-ugx7 (Hail).** Hail's matcher reads tags
   but doesn't mutate config.
 
+## Exceptions
+
+### features/config/cli.feature — two scenarios rewritten
+
+**Line 728** — "set refuses to write a value that fails validation" → "set refuses to write a value that fails type validation"
+
+The original scenario tested that `config set crew.cordelia.model nonexistent-model` was rejected with a reference-validation error. This bean adds `skip-ref-validation?` to the CLI so operators can set values for entities not yet defined — reference errors are suppressed by design. The scenario now tests type validation (crew.cordelia.effort not-a-number), which still fires.
+
+**Line 746** — "set on an unknown key warns but still writes" → "set errors on a path the schema does not recognize"
+
+The original scenario expected exit 0 with a warning when writing to `crew.main.experimental`. The new schema-aware walker rejects unknown paths with exit 1. The old behavior is incompatible with the bean's schema-aware contract; the scenario was updated to match the new contract.
+
+### features/config/set_unset.feature — fixture addition in scenario 2
+
+Added `| soul | test |` to the unset scenario's setup table. Without this, unsetting `:model` leaves the joe entity with no fields; `config get crew.joe` then returns exit 1 (entity not found), breaking the post-condition check. Adding a second field keeps the entity alive through the unset.
+
 ## Summary of Changes
 
-- Created `src/isaac/config/nav.clj`: schema-aware path walker (`path->spec`), `set-value`, and `unset-value` pure data functions.
-- Created `spec/isaac/config/nav_spec.clj`: 11 unit specs for the nav library.
-- Modified `src/isaac/config/cli/mutate_common.clj`: added `validate-path!` which uses `nav/path->spec` to reject unknown schema paths before mutation; fixed nil-file NPE in `handle-mutate-result!`.
-- Modified `src/isaac/config/mutate.clj`: made `unset-config` idempotent (returns `:ok` when path absent); fixed cross-scenario load-cache pollution in `validate-plan` by clearing the cache after each staged validation.
+- Created `src/isaac/config/nav.clj`: schema-aware path walker (`path->spec`), `set-value`, and `unset-value` pure data functions with full set-typed support (`:set-type?` marker) and namespaced keyword segment preservation.
+- Created `spec/isaac/config/nav_spec.clj`: 18 unit specs for the nav library covering `path->spec`, `set-value`, and `unset-value` including set-typed paths and namespaced members.
+- Modified `src/isaac/config/schema.clj`: added `:tags` field to crew schema with `:set-type? true` and `:type :ignore` marker, enabling set-member path navigation.
+- Modified `src/isaac/config/cli/mutate_common.clj`: full set-typed mutation routing — `set-config!` and `unset-config!` call `nav/path->spec` and branch on `:member` for set operations vs scalar operations; `set-member!` and `unset-member!` helpers; `skip-ref-validation? true` for CLI set operations.
+- Modified `src/isaac/config/cli/set.clj`: `run` now passes `nil` value for set-typed paths (value is optional when path terminates in a set member).
+- Modified `src/isaac/config/mutate.clj`: added `skip-ref-validation?` option to filter reference errors; made `unset-config` idempotent (returns `:ok` when path absent); fixed cross-scenario load-cache pollution in `validate-plan` by clearing the cache in a `finally` block.
+- Modified `spec/isaac/server/server_steps.clj`: fixed `parse-isaac-value` to handle EDN sets (`#{...}`) — added `str/starts-with? "#"` check so table cells like `#{:role/worker}` are parsed as Clojure sets instead of strings.
 - Removed `@wip` from `features/config/set_unset.feature`; all 6 scenarios pass.
-- Updated `features/config/cli.feature`: replaced the "unknown key warns and writes" scenario with "errors on unknown path" to reflect new schema-aware validation behavior.
-- Updated `features/config/set_unset.feature`: fixed test data (added echo model alias, added soul field to prevent entity deletion in unset scenario).
+- Updated `features/config/cli.feature` (see Exceptions): two scenarios rewritten to match new schema-aware validation behavior.
+- Updated `features/config/set_unset.feature` (see Exceptions): added `soul` field to scenario 2 fixture.
 
 
 

@@ -725,7 +725,7 @@ Feature: Config Command
       | :info | :config/set | crew.cordelia.soul | First mate. | crew/cordelia.edn |
     And the exit code is 0
 
-  Scenario: set refuses to write a value that fails validation
+  Scenario: set refuses to write a value that fails type validation
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
@@ -733,14 +733,9 @@ Feature: Config Command
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config set crew.cordelia.model nonexistent-model"
-    Then the stderr matches:
-      | pattern                    |
-      | references undefined model |
-    And the config file "isaac.edn" does not contain "nonexistent-model"
-    And the log has entries matching:
-      | level  | event              | path              | error                           |
-      | :error | :config/set-failed | crew.cordelia.model | #".*references undefined model.*" |
+    When isaac is run with "config set crew.cordelia.effort not-a-number"
+    Then the stderr contains "effort"
+    And the config file "isaac.edn" does not contain "not-a-number"
     And the exit code is 1
 
   Scenario: set errors on a path the schema does not recognize

@@ -11,10 +11,6 @@ Feature: Config set / unset
 
   Scenario: scalar set writes a value at a known map path
     Given default Grover setup
-    And the isaac EDN file "config/models/echo.edn" exists with:
-      | path     | value  |
-      | model    | echo   |
-      | provider | grover |
     And the isaac EDN file "config/crew/joe.edn" exists with:
       | path  | value  |
       | model | grover |
@@ -38,10 +34,6 @@ Feature: Config set / unset
 
   Scenario: config set is idempotent when the value is already present
     Given default Grover setup
-    And the isaac EDN file "config/models/echo.edn" exists with:
-      | path     | value  |
-      | model    | echo   |
-      | provider | grover |
     And the isaac EDN file "config/crew/joe.edn" exists with:
       | path  | value |
       | model | echo  |

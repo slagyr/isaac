@@ -1,9 +1,11 @@
 (ns isaac.config.cli.mutate-common
   "Shared helpers for 'config set' and 'config unset'."
   (:require
+    [c3kit.apron.schema.path :as path]
     [clojure.edn :as edn]
     [clojure.string :as str]
     [isaac.config.cli.common :as common]
+    [isaac.config.loader :as loader]
     [isaac.config.mutate :as mutate]
     [isaac.config.nav :as nav]
     [isaac.config.schema :as config-schema]
@@ -85,28 +87,61 @@
       (print-status-error! (:status result) path-str)
       1)))
 
-(defn- validate-path! [path-str]
-  (let [result (nav/path->spec config-schema/root path-str)]
-    (when-not (:ok? result)
-      (binding [*out* *err*]
-        (println (:error result)))
-      (log-mutation! :error :config/set-failed "config" path-str :error (:error result))
-      1)))
+;; region ----- Set-typed helpers -----
+
+(defn- parent-path [path-str]
+  (str/join "." (butlast (str/split path-str #"\."))))
+
+(defn- current-config-value [home path-str]
+  (let [result (loader/load-config-result {:home home})
+        config (common/queryable-config (:config result))]
+    (path/data-at config path-str)))
+
+(defn- set-member! [home path-str member]
+  (let [pp          (parent-path path-str)
+        current-set (or (current-config-value home pp) #{})
+        new-set     (conj current-set member)
+        result      (mutate/set-config home pp new-set :skip-ref-validation? true)]
+    (handle-mutate-result! :set path-str result member)))
+
+(defn- unset-member! [home path-str member]
+  (let [pp          (parent-path path-str)
+        current-set (or (current-config-value home pp) #{})
+        new-set     (disj current-set member)
+        result      (if (empty? new-set)
+                      (mutate/unset-config home pp)
+                      (mutate/set-config home pp new-set :skip-ref-validation? true))]
+    (handle-mutate-result! :unset path-str result nil)))
+
+;; endregion ^^^^^ Set-typed helpers ^^^^^
 
 (defn set-config! [home path-str raw-value]
-  (or (validate-path! path-str)
-      (let [value-result (if (= "-" raw-value)
-                           (read-stdin-value)
-                           {:value (parse-set-value (target-spec-for path-str) raw-value)})]
-        (if (:error value-result)
-          (do
-            (binding [*out* *err*]
-              (println (:error value-result)))
-            (log-mutation! :error :config/set-failed "config" path-str :error (:error value-result))
-            1)
-          (let [value  (:value value-result)
-                result (mutate/set-config home path-str value)]
-            (handle-mutate-result! :set path-str result value))))))
+  (let [path-result (nav/path->spec config-schema/root path-str)]
+    (if-not (:ok? path-result)
+      (do
+        (binding [*out* *err*]
+          (println (:error path-result)))
+        (log-mutation! :error :config/set-failed "config" path-str :error (:error path-result))
+        1)
+      (if-let [member (:member path-result)]
+        (set-member! home path-str member)
+        (if (nil? raw-value)
+          (common/print-cli-error! "missing value")
+          (let [value-result (if (= "-" raw-value)
+                               (read-stdin-value)
+                               {:value (parse-set-value (target-spec-for path-str) raw-value)})]
+            (if (:error value-result)
+              (do
+                (binding [*out* *err*]
+                  (println (:error value-result)))
+                (log-mutation! :error :config/set-failed "config" path-str :error (:error value-result))
+                1)
+              (let [value  (:value value-result)
+                    result (mutate/set-config home path-str value :skip-ref-validation? true)]
+                (handle-mutate-result! :set path-str result value)))))))))
 
 (defn unset-config! [home path-str]
-  (handle-mutate-result! :unset path-str (mutate/unset-config home path-str) nil))
+  (let [path-result (nav/path->spec config-schema/root path-str)]
+    (if-let [member (:member path-result)]
+      (unset-member! home path-str member)
+      (handle-mutate-result! :unset path-str (mutate/unset-config home path-str) nil))))

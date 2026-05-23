@@ -106,7 +106,12 @@
                           :message     "must be an absolute path"
                           :description "Default workdir for new sessions on this crew"}
             :tools      tools
-            :compaction {:type :map :schema compaction-schema/config-schema}}})
+            :compaction {:type :map :schema compaction-schema/config-schema}
+            :tags       {:type        :ignore
+                         :set-type?   true
+                         :validate    #(or (nil? %) (and (set? %) (every? keyword? %)))
+                         :message     "must be a set of keywords"
+                         :description "Flat set of keyword tags for discovery and routing"}}})
 
 (def model
   {:name   :model

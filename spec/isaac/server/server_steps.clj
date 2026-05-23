@@ -139,7 +139,8 @@
     (or (str/starts-with? value "[")
         (str/starts-with? value "{")
         (str/starts-with? value ":")
-        (str/starts-with? value "\""))
+        (str/starts-with? value "\"")
+        (str/starts-with? value "#"))
     (edn/read-string value)
 
     (or (contains? #{"defaults.crew" "defaults.model"} path)
