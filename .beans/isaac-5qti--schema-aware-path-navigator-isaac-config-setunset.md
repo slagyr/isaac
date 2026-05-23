@@ -4,10 +4,8 @@ title: 'Schema-aware path navigator: isaac config set/unset with apron.schema aw
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T04:53:23Z
-updated_at: 2026-05-23T06:02:51Z
+updated_at: 2026-05-23T13:55:42Z
 ---
 
 ## Motivation
@@ -164,3 +162,16 @@ Run targeted: `bb features features/config/set_unset.feature`.
 - Removed `@wip` from `features/config/set_unset.feature`; all 6 scenarios pass.
 - Updated `features/config/cli.feature`: replaced the "unknown key warns and writes" scenario with "errors on unknown path" to reflect new schema-aware validation behavior.
 - Updated `features/config/set_unset.feature`: fixed test data (added echo model alias, added soul field to prevent entity deletion in unset scenario).
+
+
+
+## Verification failed
+
+HEAD: 90c229c2a8cccc156fe63f86b33b81fa9c148a38
+Working tree: clean
+
+`bb spec` passed on an unrestricted run, `bb spec spec/isaac/config/nav_spec.clj` passed, and `bb features-all features/config/set_unset.feature features/config/cli.feature:746` passed.
+
+But the bean still fails its own set-typed acceptance. `bb features-all features/config/set_unset.feature features/tagging/crew_tags.feature` fails 16 scenarios, including the claimed coverage for `config set/unset crew.<name>.tags.<keyword>`. The core bug is in the implementation: `src/isaac/config/nav.clj` only walks static/dynamic maps and its `set-value`/`unset-value` are plain `assoc-in`/`dissoc` helpers, so there is no set-member or namespaced-keyword path handling for `tags.wip` / `tags.role/worker`. On top of that, the new navigator is only used by `validate-path!`; actual mutation still goes through the old map-only `assoc-path` / `dissoc-path` code in `src/isaac/config/mutate.clj`.
+
+There is also no `## Exceptions` section in the bean, but the commit edits feature files beyond plain `@wip` removal: `features/config/set_unset.feature` changes fixtures, and `features/config/cli.feature` rewrites an existing scenario's expected behavior. That makes the feature edits non-auditable under the verify gate.
