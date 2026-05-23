@@ -7,7 +7,6 @@
     [isaac.logger :as log]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.store :as store]
-    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.nexus :as nexus]))
 
 (def default-context-mode :full)
@@ -30,14 +29,13 @@
 
 (defn default-head [_window] 0.3)
 
-(defn- session-store [state-dir explicit-store fs*]
+(defn- session-store [explicit-store]
   (or explicit-store
-      (nexus/get-in [:sessions :store])
-      (some-> state-dir (sidecar-store/create-store fs*))))
+      (nexus/get-in [:sessions :store])))
 
-(defn- require-session-store [state-dir explicit-store fs*]
-  (or (session-store state-dir explicit-store fs*)
-      (throw (ex-info "session context requires :state-dir or :session-store" {}))))
+(defn- require-session-store [explicit-store]
+  (or (session-store explicit-store)
+      (throw (ex-info "session context requires :session-store" {}))))
 
 (defn- runtime-state-dir [opts]
   (or (:state-dir opts)
@@ -124,7 +122,7 @@
   ([session-key overrides]
    (let [fs*            (runtime-fs! overrides)
          state-dir      (runtime-state-dir overrides)
-         session-store* (session-store state-dir (:session-store overrides) fs*)
+         session-store* (session-store (:session-store overrides))
          cfg            (config/normalize-config (or (:cfg overrides)
                                                      (effective-config state-dir fs*)))
          session-entry  (or (some-> session-store* (store/get-session session-key)) {})
@@ -145,7 +143,7 @@
         cfg       (config/normalize-config (or (:cfg opts)
                                                (effective-config state-dir fs*)))
         behavior  (resolve-behavior* cfg state-dir {} opts)
-        store     (require-session-store state-dir (:session-store opts) fs*)
+        store     (require-session-store (:session-store opts))
         entry     (store/open-session! store session-key {:channel           (:channel opts)
                                                            :chat-type         (or (:chat-type opts) (:chatType opts))
                                                            :crew              (:crew behavior)
