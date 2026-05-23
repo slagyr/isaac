@@ -103,7 +103,7 @@
 
    The returned scheduler is explicit state passed to `schedule!`, `tick!`,
    `start!`, `stop!`, and `shutdown!`. Integration layers may also register
-   it in `isaac.system` as the process-wide shared scheduler.
+   it in `isaac.nexus` as the process-wide shared scheduler.
 
    Backed by a single `ScheduledExecutorService` that carries handler runs,
    timeout watchers, and the tick loop. Default pool size is

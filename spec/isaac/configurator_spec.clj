@@ -10,7 +10,7 @@
     [isaac.marigold :as marigold]
     [isaac.module.loader :as module-loader]
     [isaac.server.app :as app]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "configurator"
@@ -23,7 +23,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (system/with-nested-system {:fs (fs/mem-fs)}
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
       (binding [comm-registry/*registry* (atom (comm-registry/fresh-registry))]
         (module-loader/clear-activations!)
         (reset! c3env/-overrides {})

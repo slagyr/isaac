@@ -13,7 +13,7 @@
     [isaac.llm.http :as llm-http]
     [isaac.main :as main]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
 
 (helper! isaac.server.cli.cli-steps)
@@ -164,7 +164,7 @@
     (str (System/getProperty "user.dir") "/" path)))
 
 (defn- delete-tree! [path]
-  (let [fs* (or (system/get :fs) (fs/real-fs))]
+  (let [fs* (or (nexus/get :fs) (fs/real-fs))]
     (doseq [child (or (fs/children fs* path) [])]
       (delete-tree! (str path "/" child)))
     (when (fs/exists? fs* path)
@@ -255,7 +255,7 @@
                                                (run-with-stubs))
                                              (run-with-stubs))))]
                              (if-let [mem-fs (g/get :mem-fs)]
-                               (system/with-nested-system {:fs mem-fs}
+                               (nexus/-with-nested-nexus {:fs mem-fs}
                                  (run* (assoc extra-opts :fs mem-fs)))
                                (run* extra-opts))))
          run-with-stdin   (fn []
@@ -313,7 +313,7 @@
                                   (main/run argv))]
                        (g/assoc! :exit-code code))))]
         (if mem-fs
-          (system/with-nested-system {:fs mem-fs}
+          (nexus/-with-nested-nexus {:fs mem-fs}
             (run! (assoc extra-opts :fs mem-fs)))
           (run! extra-opts))))))
 
@@ -439,7 +439,7 @@
         config-file (str config-dir "/isaac.edn")
         mem-fs     (g/get :mem-fs)]
     (if mem-fs
-      (system/with-nested-system {:fs mem-fs}
+      (nexus/-with-nested-nexus {:fs mem-fs}
         (fs/mkdirs mem-fs config-dir)
         (fs/spit   mem-fs config-file (str/trim doc-string)))
       (do (.mkdirs (io/file config-dir))
@@ -453,7 +453,7 @@
   (let [home      (absolute-path path)
         state-dir (str home "/.isaac")]
     (if-let [mem-fs (g/get :mem-fs)]
-      (system/with-nested-system {:fs mem-fs}
+      (nexus/-with-nested-nexus {:fs mem-fs}
         (delete-tree! home)
         (fs/mkdirs mem-fs state-dir))
       (do
@@ -468,7 +468,7 @@
                     (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path))
         expected  (str/trim content)]
     (if-let [mem-fs (g/get :mem-fs)]
-      (system/with-nested-system {:fs mem-fs}
+      (nexus/-with-nested-nexus {:fs mem-fs}
         (g/should= expected (fs/slurp mem-fs full-path)))
       (g/should= expected (slurp full-path)))))
 

@@ -3,14 +3,14 @@
     [isaac.comm.delivery.queue :as sut]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "comm.delivery.queue"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (system/with-system {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
       (example)))
 
   (it "stores a queued delivery under comm/delivery/pending"
@@ -27,7 +27,7 @@
 
   (it "stores the pending file at comm/delivery/pending/<id>.edn"
     (sut/enqueue! {:id "7f3a" :comm (keyword marigold/longwave) :target "C999" :content "Hi"})
-    (should (fs/exists? (system/get :fs) "/test/isaac/comm/delivery/pending/7f3a.edn")))
+    (should (fs/exists? (nexus/get :fs) "/test/isaac/comm/delivery/pending/7f3a.edn")))
 
   (it "moves a pending delivery to comm/delivery/failed"
     (sut/enqueue! {:id      "7f3a"

@@ -1,16 +1,16 @@
-(ns isaac.system
+(ns isaac.nexus
   (:refer-clojure :exclude [get reset!])
   (:require
     [isaac.logger :as log]))
 
-;; ctx is per-turn; system is the process-wide runtime registry.
+;; ctx is per-turn; nexus is the process-wide runtime registry.
 ;; Runtime code reads the installed root runtime; tests can temporarily install an
 ;; isolated runtime around an example.
 
 (def schema
-  "c3kit schema documenting reserved system keys.
+  "c3kit schema documenting reserved nexus keys.
    Modules may register additional state under namespaced keywords (e.g. :my-module/state)."
-  {:name        :system
+  {:name        :nexus
    :type        :map
    :description "Isaac global runtime context"
    :schema      {:state-dir         {:type :string :description "Isaac state directory path"}
@@ -36,51 +36,51 @@
   {:config        (atom nil)
    :tool-registry (atom {})})
 
-(defn current
-  "Returns the currently installed root runtime map."
+(defn necho
+  "Returns the currently installed nexus snapshot."
   []
   @root-runtime)
 
 (defn install!
-  "Installs runtime as the current root runtime, replacing the previous map."
+  "Installs runtime as the current root nexus, replacing the previous map."
   [runtime]
   (clojure.core/reset! root-runtime runtime))
 
 (defn get
   "Returns the value registered under k, or nil."
   [k]
-  (clojure.core/get (current) k))
+  (clojure.core/get (necho) k))
 
 (defn register!
-  "Registers value v under key k in the current system.
-   Logs a :warn :system/unknown-key when k is not a known schema key and not a namespaced keyword."
+  "Registers value v under key k in the current nexus.
+   Logs a :warn :nexus/unknown-key when k is not a known schema key and not a namespaced keyword."
   [k v]
   (when (and (not (contains? known-keys k))
              (not (namespace k)))
-    (log/warn :system/unknown-key :key k))
+    (log/warn :nexus/unknown-key :key k))
   (swap! root-runtime assoc k v))
 
 (defn registered?
-  "Returns true if k has been registered in the current system."
+  "Returns true if k has been registered in the current nexus."
   [k]
-  (contains? (current) k))
+  (contains? (necho) k))
 
 (defn init!
-  "Registers the default runtime atoms for the current system.
+  "Registers the default runtime atoms for the current nexus.
     Optional overrides replace the defaults for matching keys."
   ([] (init! {}))
   ([overrides]
-   (install! (merge (current) default-slots overrides))))
+   (install! (merge (necho) default-slots overrides))))
 
 (defn reset!
-  "Clears every key from the current system. Test fixtures call this between
+  "Clears every key from the current nexus. Test fixtures call this between
     scenarios so registered values (e.g. :sessions) don't leak across
     examples sharing the process root runtime."
   []
   (install! {}))
 
 (defn with-installed* [runtime f]
-  (let [previous (current)]
+  (let [previous (necho)]
     (try
       (install! runtime)
       (f)
@@ -88,25 +88,25 @@
         (install! previous)))))
 
 (defn bound-runtime-fn
-  "Captures the current root runtime and returns a function that reinstalls it
+  "Captures the current nexus and returns a function that reinstalls it
    when invoked later, including on a different thread."
   [f]
-  (let [runtime (current)]
+  (let [runtime (necho)]
     (fn [& args]
       (with-installed* runtime #(apply f args)))))
 
-(defmacro with-system
-  "Temporarily installs m as the root runtime for the duration of body.
-   Provides test isolation: mutations inside do not affect the outer runtime."
+(defmacro -with-nexus
+  "Temporarily installs m as the root nexus for the duration of body.
+   Provides test isolation: mutations inside do not affect the outer nexus. Test-only."
   [m & body]
   `(with-installed* ~m (fn [] ~@body)))
 
-(defmacro with-nested-system
-  "Temporarily installs a runtime that merges m over the current root runtime.
-   Unlike with-system, existing slots (:config, :tool-registry, etc.) are
+(defmacro -with-nested-nexus
+  "Temporarily installs a nexus that merges m over the current root nexus.
+   Unlike -with-nexus, existing slots (:config, :tool-registry, etc.) are
    preserved; only keys in m are overridden. Mutations to top-level keys in the
-   nested scope do not bleed back to the outer runtime. Inner atoms stored as
+   nested scope do not bleed back to the outer nexus. Inner atoms stored as
    values (like the :config atom) are shared, so both layers see the same runtime
    state through them."
   [m & body]
-  `(with-installed* (merge (current) ~m) (fn [] ~@body)))
+  `(with-installed* (merge (necho) ~m) (fn [] ~@body)))

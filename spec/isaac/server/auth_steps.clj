@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen helper!]]
     [isaac.fs :as fs]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (helper! isaac.server.auth-steps)
 
@@ -21,9 +21,9 @@
                                                  (assoc-in auth-data [:providers (keyword provider)]
                                                            {:type "api-key" :apiKey "sk-test-key"})))))]
     (if mem-fs
-      (system/with-nested-system {:fs mem-fs}
+      (nexus/-with-nested-nexus {:fs mem-fs}
         (write-fn mem-fs))
-      (write-fn (or (system/get :fs) (fs/real-fs))))))
+      (write-fn (or (nexus/get :fs) (fs/real-fs))))))
 
 (defn output-prompts-for-key []
   (let [output (g/get :output)]

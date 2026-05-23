@@ -3,16 +3,16 @@
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.fs-bounds :as fs-bounds]
     [isaac.tool.output-cap :as output-cap]))
 
 ;; region ----- State -----
 
 (defn- registry-atom []
-  (or (system/get :tool-registry)
+  (or (nexus/get :tool-registry)
       (let [registry* (atom {})]
-        (system/register! :tool-registry registry*)
+        (nexus/register! :tool-registry registry*)
         registry*)))
 
 (defn- normalize-allowed-tools [allowed-tools]

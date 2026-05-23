@@ -8,7 +8,7 @@
     [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (def ^:private default-limit 20)
 
@@ -40,7 +40,7 @@
 
 (defn run [{:keys [file follow limit no-color zebra plain state-dir home]}]
   (let [log-path (or (resolve-path file state-dir)
-                     (resolve-path (config-log-path home (system/get :fs)) state-dir)
+                     (resolve-path (config-log-path home (nexus/get :fs)) state-dir)
                      (log/log-file))]
     (viewer/tail! log-path
                   {:color?  (not no-color)

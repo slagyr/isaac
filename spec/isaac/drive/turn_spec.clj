@@ -17,7 +17,7 @@
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
@@ -94,7 +94,7 @@
   (describe "process-response!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -251,7 +251,7 @@
   (describe "perform-compaction!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -356,7 +356,7 @@
   (describe "build-turn"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -388,7 +388,7 @@
   (describe "context-mode"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -443,7 +443,7 @@
   (describe "1-arg run-turn! (charge arity)"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -477,7 +477,7 @@
   (describe "logging"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 

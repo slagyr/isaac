@@ -17,13 +17,13 @@
      [isaac.config.paths :as paths]
      [isaac.config.schema :as config-schema]
      [isaac.fs :as fs]
-     [isaac.system :as system]))
+     [isaac.nexus :as nexus]))
 
 (def ^:private entity-sections #{:crew :models :providers})
 (def ^:private soul-inline-limit 64)
 
 (defn- runtime-fs []
-  (or (:fs (system/current))
+  (or (:fs (nexus/necho))
       (throw (ex-info "config.mutate requires :fs in system" {}))))
 
 (defn- read-edn-path [path]
@@ -242,13 +242,13 @@
         (fs/spit fs* path content)))))
 
 (defn- validate-plan [home plan]
-  (let [source-fs (or (:fs (system/current))
+  (let [source-fs (or (:fs (nexus/necho))
                       (fs/mem-fs))
         stage-fs  (fs/mem-fs)
         root      (paths/config-root home)]
     (fs/copy-tree! source-fs stage-fs root)
     (try
-      (system/with-nested-system {:fs stage-fs}
+      (nexus/-with-nested-nexus {:fs stage-fs}
         (apply-plan! home plan)
         (loader/load-config-result {:home home :fs stage-fs}))
       (finally

@@ -2,14 +2,14 @@
   (:require
     [isaac.cron.state :as sut]
     [isaac.fs :as fs]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "cron state"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (system/with-system {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
       (example)))
 
   (it "returns an empty state map when the file does not exist"
@@ -40,7 +40,7 @@
 
   (it "uses the installed runtime fs without binding fs/*fs*"
     (let [mem (fs/mem-fs)]
-      (system/with-system {:state-dir "/test/isaac" :fs mem}
+      (nexus/-with-nexus {:state-dir "/test/isaac" :fs mem}
         (sut/write-job-state! "health-check" {:last-status :succeeded})
         (should= {"health-check" {:last-status :succeeded}}
                  (sut/read-state))))))

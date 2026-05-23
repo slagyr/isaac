@@ -11,7 +11,7 @@
      [isaac.module.loader :as module-loader]
      [isaac.scheduler :as scheduler-core]
      [isaac.server.app :as sut]
-     [isaac.system :as system]
+     [isaac.nexus :as nexus]
      [isaac.spec-helper :as helper]
      [org.httpkit.server :as httpkit]
      [speclj.core :refer :all]))
@@ -155,7 +155,7 @@
         (sut/stop!))
       (should= {} @started)))
 
-  (it "registers the shared scheduler in isaac.system when the server has a state dir"
+  (it "registers the shared scheduler in isaac.nexus when the server has a state dir"
     (with-redefs [httpkit/run-server       (fn [_ _] (fn [] nil))
                   httpkit/server-port      (fn [_] 7001)
                   httpkit/server-stop!     (fn [_] nil)
@@ -167,7 +167,7 @@
                    :port      0
                    :state-dir "/tmp/isaac"
                    :cfg       {}})
-      (should= ::scheduler (system/get :scheduler))
+      (should= ::scheduler (nexus/get :scheduler))
       (sut/stop!)))
 
   (it "passes the configured state dir to the lifecycle reconciler"
@@ -315,7 +315,7 @@
     (let [source (change-source/memory-source marigold/home)
           helm   (keyword marigold/helm-systems)
           crew   marigold/captain]
-      (system/with-nested-system {:fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
         (marigold/write-crew! crew {:model :grover :soul "old"})
         (marigold/write-model! :grover (marigold/model-cfg helm "echo" :context-window 32768))
         (marigold/write-provider! helm {:api marigold/helm-api})
@@ -340,7 +340,7 @@
           orig-poll  change-source/poll!
           poll-count (atom 0)
           poll-ready (promise)]
-      (system/with-nested-system {:fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
         (marigold/write-model! :grover (marigold/model-cfg marigold/grover-api "echo" :context-window 32768))
         (marigold/write-provider! :grover {:api marigold/grover-api})
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))

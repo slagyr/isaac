@@ -6,7 +6,7 @@
      [isaac.config.cli.spec-support :as support]
      [isaac.fs :as fs]
      [isaac.marigold :as marigold]
-     [isaac.system :as system]
+     [isaac.nexus :as nexus]
      [speclj.core :refer :all])
   (:import (java.io BufferedReader StringReader)))
 
@@ -16,7 +16,7 @@
 (def ^:private test-crew (keyword marigold/first-mate))
 
 (defn- write-config! [path data]
-  (let [fs* (system/get :fs)]
+  (let [fs* (nexus/get :fs)]
     (fs/mkdirs fs* (fs/parent path))
     (fs/spit   fs* path (pr-str data))))
 

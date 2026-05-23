@@ -7,7 +7,7 @@
     [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
     [isaac.session.context :as sut]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer [around describe it should should-be-nil should=]]))
 
 (def test-root "/test/session-context")
@@ -18,11 +18,11 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (system/with-system {:fs (fs/mem-fs)}
+    (nexus/-with-nexus {:fs (fs/mem-fs)}
       (example)))
 
   (it "reads AGENTS.md from the cwd"
-    (fs/spit (system/get :fs) (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
+    (fs/spit (nexus/get :fs) (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
     (let [boot-files (sut/read-boot-files (str test-root "/project"))]
       (should (.contains boot-files "House Rules"))))
 
@@ -32,7 +32,7 @@
   (it "reads AGENTS.md from the installed runtime fs without binding fs/*fs*"
     (let [mem (fs/mem-fs)]
       (fs/spit mem (str test-root "/project-runtime/AGENTS.md") "## Runtime Rules\nNo globals.")
-      (system/with-system {:fs mem}
+      (nexus/-with-nexus {:fs mem}
         (let [boot-files (sut/read-boot-files (str test-root "/project-runtime"))]
           (should (.contains boot-files "Runtime Rules"))))))
 
@@ -41,7 +41,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (system/with-nested-system {:state-dir test-root :fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:state-dir test-root :fs (fs/mem-fs)}
         (example))))
 
   (it "resolves locked and cascade fields for an existing session"

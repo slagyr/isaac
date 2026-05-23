@@ -9,7 +9,7 @@
     [isaac.logger :as log]
     [isaac.scheduler :as scheduler]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all])
   (:import
     (java.time Instant)))
@@ -34,7 +34,7 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (system/with-system {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
       (binding [home/*state-dir*         "/test/isaac"
                 comm-registry/*registry* (atom (comm-registry/fresh-registry))]
         (it))))
@@ -96,10 +96,10 @@
              (select-keys (last @log/captured-logs) [:event :id :reason]))))
 
   (it "registers its tick with the shared scheduler"
-    (system/with-system {}
+    (nexus/-with-nexus {}
       (let [scheduler (-> (scheduler/create {:clock (fn [] (Instant/parse "2026-04-21T10:00:00Z"))})
                           scheduler/start!)]
-        (system/register! :scheduler scheduler)
+        (nexus/register! :scheduler scheduler)
         (sut/start! {:tick-ms 10000})
         (should= [{:id :delivery/tick :trigger {:kind :interval :ms 10000}}]
                  (mapv #(select-keys % [:id :trigger]) (scheduler/list-tasks scheduler)))

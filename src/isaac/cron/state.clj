@@ -3,7 +3,7 @@
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
     [isaac.fs :as fs]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (defn- cron-state-path [state-dir]
   (str state-dir "/cron.edn"))
@@ -13,11 +13,11 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-state-dir []
-  (or (:state-dir (system/current))
+  (or (:state-dir (nexus/necho))
       (throw (ex-info "cron state requires :state-dir" {}))))
 
 (defn- runtime-fs! []
-  (or (:fs (system/current))
+  (or (:fs (nexus/necho))
       (throw (ex-info "cron state requires :fs in system" {}))))
 
 (defn read-state

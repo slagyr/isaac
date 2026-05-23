@@ -4,7 +4,7 @@
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.session.store.memory :as memory]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "isaac.session.store"
@@ -29,7 +29,7 @@
 
     (it "returns only the runtime session store context"
       (let [session-store (memory/create-store)]
-        (system/with-system {:state-dir "target/test-state/runtime-ctx"
+        (nexus/-with-nexus {:state-dir "target/test-state/runtime-ctx"
                              :sessions  {:store session-store}
                              :extra     "ignored"}
           (should= {:state-dir "target/test-state/runtime-ctx"
@@ -129,7 +129,7 @@
 
     (it "tracks in-flight counts by crew across store implementations"
       (doseq [impl [:memory :jsonl-edn-sidecar :jsonl-edn-index]]
-        (system/with-system {:fs (fs/mem-fs)}
+        (nexus/-with-nexus {:fs (fs/mem-fs)}
           (let [state-dir (str (System/getProperty "user.dir") "/target/test-state/store-spec-" (name impl))
                 s         (store/create state-dir impl)]
             (store/open-session! s "k1" {:crew "main"})
@@ -151,7 +151,7 @@
       (let [s (memory/create-store)]
         (store/open-session! s "k1" {:crew "main"})
         (store/open-session! s "k2" {:crew "main"})
-        (system/with-system {:config (atom {:crew {"main" {:max-in-flight 2}}})}
+        (nexus/-with-nexus {:config (atom {:crew {"main" {:max-in-flight 2}}})}
           (should= true (store/mark-in-flight! s "k1"))
           (should= true (store/can-dispatch? s "main"))
           (should= true (store/mark-in-flight! s "k2"))

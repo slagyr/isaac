@@ -8,13 +8,13 @@
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (def default-context-mode :full)
 
 (defn- runtime-fs! [opts]
   (or (:fs opts)
-      (:fs (system/current))
+      (:fs (nexus/necho))
       (throw (ex-info "session.context requires :fs" {}))))
 
 (defn read-boot-files
@@ -31,7 +31,7 @@
 (defn default-head [_window] 0.3)
 
 (defn- runtime-opts []
-  (-> (select-keys (system/current) [:state-dir :fs])
+  (-> (select-keys (nexus/necho) [:state-dir :fs])
       (assoc :session-store (store/registered-store))))
 
 (defn- session-store [state-dir explicit-store fs*]

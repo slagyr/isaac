@@ -1,16 +1,16 @@
-(ns isaac.system-spec
+(ns isaac.nexus-spec
   (:require
     [isaac.logger :as log]
-    [isaac.system :as sut]
+    [isaac.nexus :as sut]
     [speclj.core :refer :all]))
 
 (defn- with-fresh-system [f]
-  (sut/with-system {}
+  (sut/-with-nexus {}
     (log/set-output! :memory)
     (log/clear-entries!)
     (f)))
 
-(describe "isaac.system"
+(describe "isaac.nexus"
 
   (around [it]
     (with-fresh-system it))
@@ -23,7 +23,7 @@
       (let [runtime {:state-dir "/tmp/test"
                      :config    (atom {:crew {}})}]
         (sut/install! runtime)
-        (should= runtime (sut/current))
+        (should= runtime (sut/necho))
         (should= "/tmp/test" (sut/get :state-dir)))))
 
   (describe "register! and get"
@@ -64,46 +64,46 @@
 
   ;; endregion ^^^^^ registered? ^^^^^
 
-  ;; region ----- with-system isolation -----
+  ;; region ----- -with-nexus isolation -----
 
-  (describe "with-system"
+  (describe "-with-nexus"
 
     (it "provides an empty system when initialized with {}"
-      (sut/with-system {}
+      (sut/-with-nexus {}
         (should-be-nil (sut/get :state-dir))))
 
     (it "provides an pre-populated system"
-      (sut/with-system {:state-dir "/preset"}
+      (sut/-with-nexus {:state-dir "/preset"}
         (should= "/preset" (sut/get :state-dir))))
 
     (it "isolates mutations from the outer scope"
       (sut/register! :state-dir "/outer")
-      (sut/with-system {}
+      (sut/-with-nexus {}
         (sut/register! :state-dir "/inner"))
       (should= "/outer" (sut/get :state-dir)))
 
     (it "inner scope does not see outer registrations"
       (sut/register! :state-dir "/outer")
-      (sut/with-system {}
+      (sut/-with-nexus {}
         (should-be-nil (sut/get :state-dir))))
 
     (it "is visible to new threads created inside the scope"
       (let [seen (promise)]
-        (sut/with-system {:state-dir "/thread-visible"}
+        (sut/-with-nexus {:state-dir "/thread-visible"}
           (.start (Thread. #(deliver seen (sut/get :state-dir))))
           (should= "/thread-visible" (deref seen 1000 ::timeout))))))
 
   (describe "bound-runtime-fn"
 
     (it "captures the current runtime for later thread execution"
-      (let [captured (sut/with-system {:state-dir "/captured"}
+      (let [captured (sut/-with-nexus {:state-dir "/captured"}
                        (sut/bound-runtime-fn (fn [] (sut/get :state-dir))))
             seen     (promise)]
         (sut/reset!)
         (.start (Thread. #(deliver seen (captured))))
         (should= "/captured" (deref seen 1000 ::timeout)))))
 
-  ;; endregion ^^^^^ with-system isolation ^^^^^
+  ;; endregion ^^^^^ -with-nexus isolation ^^^^^
 
   ;; region ----- init! -----
 
@@ -129,24 +129,24 @@
 
     (it "does not warn for a known schema key"
       (sut/register! :state-dir "/tmp/test")
-      (should= [] (filter #(= :system/unknown-key (:event %)) (log/get-entries))))
+      (should= [] (filter #(= :nexus/unknown-key (:event %)) (log/get-entries))))
 
     (it "does not warn for any of the known schema keys"
       (doseq [k [:server :sessions :config :tool-registry
                  :slash-registry :comm-registry :provider-registry
                  :module-index]]
         (sut/register! k :anything))
-      (should= [] (filter #(= :system/unknown-key (:event %)) (log/get-entries))))
+      (should= [] (filter #(= :nexus/unknown-key (:event %)) (log/get-entries))))
 
     (it "logs a warning for an unknown unnamespaced key"
       (sut/register! :mystery-slot 42)
-      (let [warnings (filter #(= :system/unknown-key (:event %)) (log/get-entries))]
+      (let [warnings (filter #(= :nexus/unknown-key (:event %)) (log/get-entries))]
         (should= 1 (count warnings))
         (should= :mystery-slot (:key (first warnings)))))
 
     (it "does not warn for a namespaced key (module extension point)"
       (sut/register! :my-module/state {:active true})
-      (should= [] (filter #(= :system/unknown-key (:event %)) (log/get-entries)))))
+      (should= [] (filter #(= :nexus/unknown-key (:event %)) (log/get-entries)))))
 
   ;; endregion ^^^^^ schema / unknown-key warnings ^^^^^
 
@@ -154,8 +154,8 @@
 
   (describe "schema"
 
-    (it "is a map with :name :system"
-      (should= :system (:name sut/schema)))
+    (it "is a map with :name :nexus"
+      (should= :nexus (:name sut/schema)))
 
     (it "declares all expected keys"
       (let [ks (set (keys (:schema sut/schema)))]

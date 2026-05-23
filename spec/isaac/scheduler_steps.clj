@@ -8,7 +8,7 @@
     [isaac.server.server-steps :as server-steps]
     [isaac.spec-helper :as helper]
     [isaac.step-tables :as match]
-    [isaac.system :as system])
+    [isaac.nexus :as nexus])
   (:import
     (java.time Instant OffsetDateTime)))
 
@@ -65,7 +65,7 @@
 
 (defn- current-scheduler []
   (or (g/get :scheduler)
-      (system/get :scheduler)))
+      (nexus/get :scheduler)))
 
 (defn- scheduler-idle? [instance]
   (every? (fn [task]
@@ -106,15 +106,15 @@
     (log/clear-entries!)
     (g/assoc! :scheduler-clock* clock*)
     (g/assoc! :scheduler instance)
-    (system/reset!)
-    (system/init!)
-    (system/register! :scheduler instance)))
+    (nexus/reset!)
+    (nexus/init!)
+    (nexus/register! :scheduler instance)))
 
 (defn- stop-scheduler! []
   (when-let [instance (current-scheduler)]
     (scheduler/stop! instance))
   (app/stop!)
-  (system/reset!)
+  (nexus/reset!)
   (log/clear-entries!))
 
 (g/after-scenario stop-scheduler!)

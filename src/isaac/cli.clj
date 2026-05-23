@@ -6,7 +6,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.config.paths :as paths]
     [isaac.fs :as fs]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 ;; region ----- Command Registry -----
 
@@ -64,7 +64,7 @@
 
 (defn- runtime-fs [opts]
   (or (:fs opts)
-      (system/get :fs)))
+      (nexus/get :fs)))
 
 (defn- write-edn! [fs* path value]
   (fs/mkdirs fs* (fs/parent path))

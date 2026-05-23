@@ -27,7 +27,7 @@
     [isaac.llm.api.grover]
     [isaac.module.loader :as module-loader]
     [isaac.slash.registry :as slash-registry]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :as speclj]))
 
@@ -312,7 +312,7 @@
   []
   (speclj/around [example]
     (let [mem (fs/mem-fs)]
-      (system/with-nested-system {:fs mem}
+      (nexus/-with-nested-nexus {:fs mem}
         (binding [module-loader/*core-index-override* baseline-core-index]
           (reset! c3env/-overrides {})
           (config-loader/clear-env-overrides!)
@@ -321,7 +321,7 @@
 
 (defn- local-module-manifest-path [id]
   (let [root (str home "/.isaac/modules/" (name id))]
-    (some #(when (fs/exists? (system/get :fs) %) %)
+    (some #(when (fs/exists? (nexus/get :fs) %) %)
           [(str root "/resources/isaac-manifest.edn")
            (str root "/src/isaac-manifest.edn")])))
 
@@ -339,7 +339,7 @@
 (defn write-config!
   "Write isaac.edn at the Marigold home, replacing any prior contents."
   [data]
-  (fs/spit (system/get :fs) (config-path "isaac.edn") (pr-str data)))
+  (fs/spit (nexus/get :fs) (config-path "isaac.edn") (pr-str data)))
 
 (defn write-baseline!
   "Write the baseline-config as isaac.edn — Marigold's standard wiring,
@@ -352,59 +352,59 @@
    string. `cfg` is the provider config map (use provider-cfg + a
    marigold provider template to build it)."
   [provider-id cfg]
-  (fs/spit (system/get :fs) (config-path (str "providers/" (name provider-id) ".edn"))
+  (fs/spit (nexus/get :fs) (config-path (str "providers/" (name provider-id) ".edn"))
            (pr-str cfg)))
 
 (defn write-crew!
   "Write a per-crew entity file. Pass :soul to also write the companion
    markdown soul file."
   [crew-id cfg & {:keys [soul]}]
-  (fs/spit (system/get :fs) (config-path (str "crew/" (name crew-id) ".edn")) (pr-str cfg))
+  (fs/spit (nexus/get :fs) (config-path (str "crew/" (name crew-id) ".edn")) (pr-str cfg))
   (when soul
-    (fs/spit (system/get :fs) (config-path (str "crew/" (name crew-id) ".md")) soul)))
+    (fs/spit (nexus/get :fs) (config-path (str "crew/" (name crew-id) ".md")) soul)))
 
 (defn write-crew-md!
   "Write a single-file crew markdown (frontmatter + soul body) or a
    companion-only markdown for a crew id."
   [crew-id body]
-  (fs/spit (system/get :fs) (config-path (str "crew/" (name crew-id) ".md")) body))
+  (fs/spit (nexus/get :fs) (config-path (str "crew/" (name crew-id) ".md")) body))
 
 (defn write-model!
   "Write a per-model entity file."
   [model-id cfg]
-  (fs/spit (system/get :fs) (config-path (str "models/" (name model-id) ".edn")) (pr-str cfg)))
+  (fs/spit (nexus/get :fs) (config-path (str "models/" (name model-id) ".edn")) (pr-str cfg)))
 
 (defn write-cron!
   "Write a per-cron entity file. Pass :prompt to also write the
    companion markdown prompt file."
   [cron-id cfg & {:keys [prompt]}]
-  (fs/spit (system/get :fs) (config-path (str "cron/" (name cron-id) ".edn")) (pr-str cfg))
+  (fs/spit (nexus/get :fs) (config-path (str "cron/" (name cron-id) ".edn")) (pr-str cfg))
   (when prompt
-    (fs/spit (system/get :fs) (config-path (str "cron/" (name cron-id) ".md")) prompt)))
+    (fs/spit (nexus/get :fs) (config-path (str "cron/" (name cron-id) ".md")) prompt)))
 
 (defn write-cron-md!
   "Write a single-file cron markdown (or companion-only markdown)."
   [cron-id body]
-  (fs/spit (system/get :fs) (config-path (str "cron/" (name cron-id) ".md")) body))
+  (fs/spit (nexus/get :fs) (config-path (str "cron/" (name cron-id) ".md")) body))
 
 (defn write-hook!
   "Write a per-hook entity file."
   [hook-id cfg]
-  (fs/spit (system/get :fs) (config-path (str "hooks/" (name hook-id) ".edn")) (pr-str cfg)))
+  (fs/spit (nexus/get :fs) (config-path (str "hooks/" (name hook-id) ".edn")) (pr-str cfg)))
 
 (defn write-hook-md!
   "Write a single-file hook markdown (frontmatter + template body)."
   [hook-id body]
-  (fs/spit (system/get :fs) (config-path (str "hooks/" (name hook-id) ".md")) body))
+  (fs/spit (nexus/get :fs) (config-path (str "hooks/" (name hook-id) ".md")) body))
 
 (defn write-env-file!
   "Write the .isaac/.env file at the Marigold home."
   [content]
-  (fs/spit (system/get :fs) (str home "/.isaac/.env") content))
+  (fs/spit (nexus/get :fs) (str home "/.isaac/.env") content))
 
 (defn write-raw!
   "Write arbitrary text at a path relative to .isaac/config/. Used by
    low-level tests that need to scribble malformed bytes (EDN syntax
    errors, etc.)."
   [relative content]
-  (fs/spit (system/get :fs) (config-path relative) content))
+  (fs/spit (nexus/get :fs) (config-path relative) content))

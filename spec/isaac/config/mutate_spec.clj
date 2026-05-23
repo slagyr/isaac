@@ -4,7 +4,7 @@
     [isaac.config.mutate :as sut]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (def ^:private config-root (str marigold/home "/.isaac/config"))
@@ -13,15 +13,15 @@
 
 
 (defn- read-edn [relative]
-  (let [fs* (system/get :fs)]
+  (let [fs* (nexus/get :fs)]
     (when (fs/exists? fs* (str config-root "/" relative))
       (edn/read-string (fs/slurp fs* (str config-root "/" relative))))))
 
 (defn- slurp-file [relative]
-  (fs/slurp (system/get :fs) (str config-root "/" relative)))
+  (fs/slurp (nexus/get :fs) (str config-root "/" relative)))
 
 (defn- file-exists? [relative]
-  (fs/exists? (system/get :fs) (str config-root "/" relative)))
+  (fs/exists? (nexus/get :fs) (str config-root "/" relative)))
 
 (def ^:private telly-module-root
   (str (System/getProperty "user.dir") "/modules/isaac.comm.telly"))
@@ -99,7 +99,7 @@
 
     (it "validates staged changes against the installed runtime fs"
       (marigold/write-baseline!)
-      (let [result (system/with-nested-system {:fs (system/get :fs)}
+      (let [result (nexus/-with-nested-nexus {:fs (nexus/get :fs)}
                      (sut/set-config marigold/home (str "crew." test-crew-path ".model") :nonexistent))]
         (should= :invalid (:status result))
         (should (seq (:errors result)))

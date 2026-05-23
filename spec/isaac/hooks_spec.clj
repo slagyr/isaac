@@ -10,7 +10,7 @@
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (defn- post-request [path body headers]
@@ -89,28 +89,28 @@
 
   (describe "unauthenticated handler"
     (it "checks the path before unknown-hook requests fail"
-      (system/with-system {:state-dir "/test"}
+      (nexus/-with-nexus {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
         (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {}))]
           (should= 404 (:status resp))))))
 
   (describe "method check"
     (it "returns 405 for GET requests"
-      (system/with-system {:state-dir "/test"}
+      (nexus/-with-nexus {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
         (let [resp (sut/handler (get-request (str "/hooks/" marigold/lettuce-hook) {}))]
           (should= 405 (:status resp))))))
 
   (describe "path lookup"
     (it "returns 404 for unknown hook name"
-      (system/with-system {:state-dir "/test"}
+      (nexus/-with-nexus {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
         (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {}))]
           (should= 404 (:status resp))))))
 
   (describe "content-type check"
     (it "returns 415 for non-JSON content-type"
-      (system/with-system {:state-dir "/test"}
+      (nexus/-with-nexus {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
         (let [resp (sut/handler {:request-method :post
                                  :uri            (str "/hooks/" marigold/lettuce-hook)
@@ -120,7 +120,7 @@
 
   (describe "body parse"
     (it "returns 400 for malformed JSON"
-      (system/with-system {:state-dir "/test"}
+      (nexus/-with-nexus {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
         (let [resp (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook) "not-json" {}))]
           (should= 400 (:status resp))))))
@@ -143,7 +143,7 @@
                                                   (reset! captured-home (:home input))
                                                   {:charge/type :charge})
                       isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
             (config/set-snapshot! test-cfg)
@@ -170,7 +170,7 @@
                                                   (reset! captured input)
                                                   {:charge/type :charge})
                        isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
             (config/set-snapshot! hook-cfg)
@@ -196,7 +196,7 @@
                                                   (reset! captured input)
                                                   {:charge/type :charge})
                       isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}
             (config/set-snapshot! hook-cfg)
@@ -220,7 +220,7 @@
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
             (config/set-snapshot! hook-cfg)
@@ -241,7 +241,7 @@
       (let [mem       (fs/mem-fs)
             mem-store (store/create nil :memory)]
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}
             (config/set-snapshot! test-cfg)

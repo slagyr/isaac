@@ -5,14 +5,14 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.web-search :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
 
 (describe "Web search tool"
   (around [it]
-    (system/with-system {:state-dir support/test-dir :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:state-dir support/test-dir :fs (fs/mem-fs)}
       (it)))
 
   (it "returns ranked result entries"

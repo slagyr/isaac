@@ -12,7 +12,7 @@
      [isaac.scheduler :as scheduler]
      [isaac.session.context :as session-ctx]
      [isaac.session.store :as store]
-     [isaac.system :as system]
+     [isaac.nexus :as nexus]
      [isaac.tool.memory :as memory])
   (:import
     (java.time ZoneId ZonedDateTime)))
@@ -129,8 +129,8 @@
 (defn start! [{:keys [cfg state-dir session-store tick-ms]
                  :or   {tick-ms default-tick-ms}}]
   (let [{:keys [state-dir session-store]} (effective-runtime-ctx {:state-dir state-dir :session-store session-store})
-        shared-scheduler (or (system/get :scheduler)
-                             (throw (ex-info "cron scheduler requires :scheduler in isaac.system" {})))
+        shared-scheduler (or (nexus/get :scheduler)
+                             (throw (ex-info "cron scheduler requires :scheduler in isaac.nexus" {})))
         runtime-ctx      {:state-dir state-dir :session-store session-store}
         zone             (str (zone-id cfg))
         task-ids         (reduce (fn [ids [job-name job]]

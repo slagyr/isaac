@@ -6,13 +6,13 @@
     [isaac.llm.auth.cli :as sut]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "CLI Auth"
 
   (around [it]
-    (system/with-nested-system {:fs (fs/mem-fs)}
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
       (binding [*out* (java.io.StringWriter.)]
         (it))))
 

@@ -9,7 +9,7 @@
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
-    [isaac.system :as system])
+    [isaac.nexus :as nexus])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time ZoneOffset)))
@@ -168,7 +168,7 @@
     (println "  (no sessions)")
     (let [cw            (resolve-context-window cfg crew-id)
           session-store (or (store/registered-store)
-                            (store/resolve-store {:state-dir (system/get :state-dir)} "sessions cli render"))
+                            (store/resolve-store {:state-dir (nexus/get :state-dir)} "sessions cli render"))
           rows          (mapv #(session->row % cw session-store) sessions)
           columns       (if (some (comp seq :tags) sessions) tagged-session-columns session-columns)]
       (println (table/render {:columns  columns
@@ -194,7 +194,7 @@
     (do (println "Usage: isaac sessions show <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir   (resolve-state-dir opts loaded-cfg)
-          _           (system/register! :state-dir state-dir)
+          _           (nexus/register! :state-dir state-dir)
           session-store (resolve-session-store loaded-cfg state-dir)
           session     (store/get-session session-store session-id)]
       (if (nil? session)
@@ -222,7 +222,7 @@
     (do (println "Usage: isaac sessions delete <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
-          _          (system/register! :state-dir state-dir)
+          _          (nexus/register! :state-dir state-dir)
           session-store (resolve-session-store loaded-cfg state-dir)]
       (if (store/delete-session! session-store session-id)
         (do (println (str "deleted: " session-id)) 0)
@@ -237,7 +237,7 @@
         state-dir     (or (:state-dir opts)
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
-        _             (system/register! :state-dir state-dir)
+        _             (nexus/register! :state-dir state-dir)
         session-store (resolve-session-store loaded-cfg state-dir)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)

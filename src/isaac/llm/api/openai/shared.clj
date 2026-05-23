@@ -7,7 +7,7 @@
     [isaac.config.loader :as config]
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.followup :as followup]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 ;; region ----- Auth -----
 
@@ -37,7 +37,7 @@
 (defn resolve-oauth-tokens [provider-name {:keys [auth] :as config}]
   (when (= "oauth-device" auth)
     (when-let [state-dir (or (:auth-dir config) (:state-dir config))]
-      (let [tokens (auth-store/load-tokens state-dir provider-name (system/get :fs))]
+      (let [tokens (auth-store/load-tokens state-dir provider-name (nexus/get :fs))]
         (when (and tokens (not (auth-store/token-expired? tokens)))
           tokens)))))
 

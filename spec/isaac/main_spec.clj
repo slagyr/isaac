@@ -7,7 +7,7 @@
     [isaac.module.loader :as module-loader]
     [isaac.main :as sut]
     [isaac.session.store :as store]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (defn make-greet-command []
@@ -190,7 +190,7 @@
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-nested-system {:fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
         (registry/clear-module-commands!)
         (example)
         (registry/clear-module-commands!)))
@@ -225,10 +225,10 @@
                              :usage       "fs-init"
                              :option-spec []
                              :run-fn      (fn [_] 0)})
-        (with-redefs [system/init!       (fn
+        (with-redefs [nexus/init!       (fn
                                            ([] (reset! init-opts {}))
                                            ([opts] (reset! init-opts opts)))
-                      system/register!   (fn [& _])
+                      nexus/register!   (fn [& _])
                       store/register!    (fn [& _])
                       home/resolve-home  (fn [_ _ _] "/tmp/home")]
           (binding [sut/*extra-opts* {:fs mem}]

@@ -12,7 +12,7 @@
     [isaac.session.store.sidecar :as sut]
     [isaac.session.store.impl-common :as c]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (def test-dir "/test/storage")
@@ -31,13 +31,13 @@
   (str test-dir "/sessions/" id ".edn"))
 
 (defn- read-sidecar [id]
-  (edn/read-string (fs/slurp (system/get :fs) (sidecar-path id))))
+  (edn/read-string (fs/slurp (nexus/get :fs) (sidecar-path id))))
 
 (defn- seed-transcript! [opts messages]
   (let [session      (sut/create-session! test-dir test-key opts)
         session-id   (:sessionId session)
         session-file (:session-file session)
-        fs*          (system/get :fs)
+        fs*          (nexus/get :fs)
         header       {:type      "session"
                       :id        session-id
                       :timestamp "2026-05-20T10:00:00"
@@ -59,7 +59,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (system/with-system {:fs (fs/mem-fs)}
+    (nexus/-with-nexus {:fs (fs/mem-fs)}
       (example)))
 
   (describe "normalize-index-store"
@@ -159,7 +159,7 @@
 
     (it "creates a fresh session when the sidecar exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
-             _      (fs/delete (system/get :fs) (str test-dir "/sessions/" (:session-file first)))
+             _      (fs/delete (nexus/get :fs) (str test-dir "/sessions/" (:session-file first)))
              second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
         (should= 1 (count (store/list-sessions-by-agent (s) "main")))))
@@ -174,10 +174,10 @@
     (it "persists the sequential counter across unnamed creates"
       (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
         (sut/create-session! test-dir nil)
-        (should= "1" (str/trim (fs/slurp (system/get :fs) (str test-dir "/sessions/.counter"))))
+        (should= "1" (str/trim (fs/slurp (nexus/get :fs) (str test-dir "/sessions/.counter"))))
         (let [entry (sut/create-session! test-dir nil)]
           (should= "session-2" (:name entry))
-          (should= "2" (str/trim (fs/slurp (system/get :fs) (str test-dir "/sessions/.counter")))))))
+          (should= "2" (str/trim (fs/slurp (nexus/get :fs) (str test-dir "/sessions/.counter")))))))
 
     (it "prefers an explicit name over the configured sequential strategy"
       (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
@@ -208,15 +208,15 @@
     (it "migrates a legacy index entry into a sidecar on read"
       (let [session-file "legacy.jsonl"
             index-path    (str test-dir "/sessions/index.edn")]
-        (fs/mkdirs (system/get :fs) (str test-dir "/sessions"))
-        (fs/spit (system/get :fs) index-path (pr-str {"legacy" {:id           "legacy"
+        (fs/mkdirs (nexus/get :fs) (str test-dir "/sessions"))
+        (fs/spit (nexus/get :fs) index-path (pr-str {"legacy" {:id           "legacy"
                                                 :key          "legacy"
                                                 :name         "Legacy"
                                                 :session-file session-file
                                                 :createdAt    "2026-05-08T10:00:00"
                                                 :updated-at   "2026-05-08T10:00:00"
                                                 :chatType     "direct"}}))
-        (fs/spit (system/get :fs) (str test-dir "/sessions/" session-file)
+        (fs/spit (nexus/get :fs) (str test-dir "/sessions/" session-file)
                  (str (json/generate-string {:type "session"
                                              :id "header1"
                                              :timestamp "2026-05-08T10:00:00"
@@ -225,7 +225,7 @@
         (let [entry (store/get-session (s) "legacy")]
           (should= "2026-05-08T10:00:00" (:created-at entry))
           (should= "direct" (:chat-type entry))
-          (should (fs/exists? (system/get :fs) (sidecar-path "legacy")))
+          (should (fs/exists? (nexus/get :fs) (sidecar-path "legacy")))
           (should-not (contains? entry :createdAt))
           (should-not (contains? entry :chatType))))))
 
@@ -453,7 +453,7 @@
         (let [sessions-dir (str test-dir "/sessions")
               session-file (:session-file (store/get-session (s) test-key))
               session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
-              backups      (->> (fs/children (system/get :fs) sessions-dir)
+              backups      (->> (fs/children (nexus/get :fs) sessions-dir)
                                 (filter #(and (str/starts-with? % session-base)
                                               (str/ends-with? % ".bak.jsonl"))))]
           (should= 1 (count backups)))))
@@ -471,11 +471,11 @@
         (let [sessions-dir (str test-dir "/sessions")
               session-file (:session-file (store/get-session (s) test-key))
               session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
-              bak-name     (->> (fs/children (system/get :fs) sessions-dir)
+              bak-name     (->> (fs/children (nexus/get :fs) sessions-dir)
                                 (filter #(and (str/starts-with? % session-base)
                                               (str/ends-with? % ".bak.jsonl")))
                                 first)
-              bak-content  (->> (str/split-lines (fs/slurp (system/get :fs) (str sessions-dir "/" bak-name)))
+              bak-content  (->> (str/split-lines (fs/slurp (nexus/get :fs) (str sessions-dir "/" bak-name)))
                                   (remove str/blank?)
                                   (mapv #(json/parse-string % true)))]
           (should= (count pre-splice) (count bak-content))
@@ -556,7 +556,7 @@
                                          :firstKeptEntryId  nil
                                          :tokensBefore      10
                                          :compactedEntryIds [(:id msg)]})))
-          (let [backups (->> (fs/children (system/get :fs) sessions-dir)
+          (let [backups (->> (fs/children (nexus/get :fs) sessions-dir)
                              (filter #(and (str/starts-with? % session-base)
                                            (str/ends-with? % ".bak.jsonl"))))]
             (should= 2 (count backups)))))))

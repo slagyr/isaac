@@ -16,7 +16,7 @@
     [isaac.llm.providers :as llm-providers]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 ;; region ----- Helpers -----
 
@@ -26,7 +26,7 @@
 
 (defn- runtime-fs
   ([]
-   (or (:fs (system/current))
+   (or (:fs (nexus/necho))
        (throw (ex-info "config.loader requires :fs in system" {}))))
   ([opts]
    (or (:fs opts)
@@ -1048,7 +1048,7 @@
     (if-let [cached (and cache-key (get @load-cache* cache-key))]
       cached
       (let [result
-            (system/with-nested-system {:fs fs*}
+            (nexus/-with-nested-nexus {:fs fs*}
               (binding [*isaac-home* home]
                 (let [root (paths/config-root home)]
                 (if-not (config-files-present? root opts)
@@ -1120,9 +1120,9 @@
 ;; region ----- Ambient Config Snapshot -----
 
 (defn- config-atom []
-  (or (system/get :config)
+  (or (nexus/get :config)
       (let [cfg* (atom nil)]
-        (system/register! :config cfg*)
+        (nexus/register! :config cfg*)
         cfg*)))
 
 (defn snapshot
@@ -1147,7 +1147,7 @@
         crew-dir  (str home "/.isaac/crew/" crew-id)
         oc-dir    (str home "/.openclaw/workspace-" crew-id)
         isaac-dir (str home "/.isaac/workspace-" crew-id)]
-    (system/with-nested-system {:fs fs*}
+    (nexus/-with-nested-nexus {:fs fs*}
       (cond
         (some? (children* crew-dir)) crew-dir
         (some? (children* oc-dir)) oc-dir
@@ -1157,7 +1157,7 @@
 (defn read-workspace-file
   [crew-id filename & [{:as opts}]]
   (let [fs* (runtime-fs opts)]
-    (system/with-nested-system {:fs fs*}
+    (nexus/-with-nested-nexus {:fs fs*}
       (when-let [ws-dir (resolve-workspace crew-id opts)]
         (let [path (str ws-dir "/" filename)]
           (when (exists?* path)

@@ -8,7 +8,7 @@
      [isaac.logger :as log]
      [isaac.module.loader :as module-loader]
      [isaac.session.store :as store]
-     [isaac.system :as system]))
+     [isaac.nexus :as nexus]))
 
 (defn parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)
@@ -87,7 +87,7 @@
          :command :cwd
          :message (str "current directory: " (or cwd "(not set)"))})
       (let [resolved (resolve-cwd-path ctx args)]
-        (if (fs/dir? (system/get :fs) resolved)
+        (if (fs/dir? (nexus/get :fs) resolved)
           (do
             (store/update-session! (store/resolve-store ctx "slash command context") session-key {:cwd resolved})
             {:type    :command

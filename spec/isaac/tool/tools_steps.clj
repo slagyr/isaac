@@ -10,7 +10,7 @@
     [isaac.step-tables :as match]
     [isaac.fs :as isaac-fs]
     [isaac.session.store :as session-store-proto]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.file :as file]
     [isaac.tool.glob :as glob]
@@ -28,17 +28,17 @@
 
 (defn- feature-fs []
   (or (g/get :mem-fs)
-      (system/get :fs)
+      (nexus/get :fs)
       (isaac-fs/real-fs)))
 
 (defn- ensure-feature-fs! []
   (let [fs* (feature-fs)]
-    (system/register! :fs fs*)
+    (nexus/register! :fs fs*)
     fs*))
 
 (defn- with-feature-fs [f]
   (let [fs* (ensure-feature-fs!)]
-    (system/with-nested-system {:fs fs*}
+    (nexus/-with-nested-nexus {:fs fs*}
       (f))))
 
 (defn- resolve-path [p]
@@ -159,7 +159,7 @@
   (when-let [dir (state-dir)]
     (let [cfg-path (str dir "/.isaac/config/isaac.edn")]
       (with-feature-fs
-        #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
+        #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
            (try
              (when (isaac-fs/exists? fs* cfg-path)
                (edn/read-string (isaac-fs/slurp fs* cfg-path)))
@@ -217,8 +217,8 @@
       (doseq [file (reverse (file-seq f))]
         (.delete file)))
     (.mkdirs f)
-    (system/register! :fs fs*)
-    (system/register! :state-dir abs-dir)
+    (nexus/register! :fs fs*)
+    (nexus/register! :state-dir abs-dir)
     (g/assoc! :state-dir abs-dir)))
 
 (defn- unescape-content [s]
@@ -228,7 +228,7 @@
   (let [path   (resolve-path name)
         actual (unescape-content content)]
     (with-feature-fs
-      #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
+      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
          (isaac-fs/mkdirs fs* (isaac-fs/parent path))
          (isaac-fs/spit   fs* path actual)))))
 
@@ -236,14 +236,14 @@
   (let [path   (resolve-path name)
         actual (unescape-content content)]
     (with-feature-fs
-      #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
+      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
          (isaac-fs/spit fs* path (str actual "\n") :append true)))))
 
 (defn file-with-docstring-content [name doc-string]
   (let [path   (resolve-path name)
         actual (str/trim doc-string)]
     (with-feature-fs
-      #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
+      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
          (isaac-fs/mkdirs fs* (isaac-fs/parent path))
          (isaac-fs/spit   fs* path actual)))))
 
@@ -251,7 +251,7 @@
   (let [path  (resolve-path name)
         lines (str/join "\n" (map #(str "line " %) (range 1 (inc (parse-long n)))))]
     (with-feature-fs
-      #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
+      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
          (isaac-fs/mkdirs fs* (isaac-fs/parent path))
          (isaac-fs/spit   fs* path lines)))))
 
@@ -263,7 +263,7 @@
                                  (quot % 60) (mod % 60) %))
                    (str/join "\n"))]
     (with-feature-fs
-      #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
+      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
          (isaac-fs/mkdirs fs* (isaac-fs/parent path))
          (isaac-fs/spit   fs* path lines)))))
 
@@ -271,7 +271,7 @@
   (doseq [row (table-rows table)]
     (let [path (resolve-path (get row "name"))]
       (with-feature-fs
-        #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
+        #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
            (isaac-fs/mkdirs fs* (isaac-fs/parent path))
            (isaac-fs/spit   fs* path (generated-content row))))
       (when (and (nil? (g/get :mem-fs)) (get row "mtime"))
@@ -477,14 +477,14 @@
 
 (defn file-has-content [name content]
   (let [path   (resolve-path name)
-        actual (with-feature-fs #(isaac-fs/slurp (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs)) path))
+        actual (with-feature-fs #(isaac-fs/slurp (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs)) path))
         expect (str/replace content "\\n" "\n")]
     (g/should= expect actual)))
 
 (defn file-matches [name table]
   (let [path    (resolve-path name)
         needles (mapv #(or (get % "text") (first (vals %))) (table-rows table))
-        lines   (vec (str/split-lines (or (with-feature-fs #(isaac-fs/slurp (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs)) path)) "")))]
+        lines   (vec (str/split-lines (or (with-feature-fs #(isaac-fs/slurp (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs)) path)) "")))]
     (loop [needles needles
            from    0]
       (when-let [needle (first needles)]

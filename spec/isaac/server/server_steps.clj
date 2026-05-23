@@ -18,7 +18,7 @@
     [isaac.home :as home]
     [isaac.scheduler :as scheduler-core]
     [isaac.slash.registry :as slash-registry]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -88,7 +88,7 @@
 
 (defn- with-server-fs [f]
   (let [fs* (server-fs)]
-    (system/with-nested-system {:fs fs*}
+    (nexus/-with-nested-nexus {:fs fs*}
       (f))))
 
 (defn- notify-config-change! [path]
@@ -342,8 +342,8 @@
         virtual-home   (or explicit-home?
                            (default-server-home))
         mem            (g/get :mem-fs)
-        ;; All server reads/writes flow through (system/get :fs). When the test
-        ;; uses a mem-fs, app/start! installs it in the global system runtime so
+        ;; All server reads/writes flow through (nexus/get :fs). When the test
+        ;; uses a mem-fs, app/start! installs it in the global nexus runtime so
         ;; HTTP handler threads see the same fs.
         home           (if mem
                          (do (g/assoc! :state-dir virtual-home) virtual-home)
@@ -359,7 +359,7 @@
                                                  (merge (or (g/get :server-config) {})
                                                         (when-let [providers (g/get :provider-configs)]
                                                           {:providers providers})))
-                             disc    (system/with-nested-system {:fs fs*}
+                             disc    (nexus/-with-nested-nexus {:fs fs*}
                                        (module-loader/discover! merged {:state-dir runtime-state
                                                                         :cwd       (System/getProperty "user.dir")}))]
                                (assoc merged :module-index (:index disc)))
@@ -544,7 +544,7 @@
             now        (ZonedDateTime/parse iso offset-formatter)
             scheduler  (scheduler-core/create {:clock (fn [] (.toInstant now))})]
         (try
-          (system/with-system {:scheduler scheduler
+          (nexus/-with-nexus {:scheduler scheduler
                                :state-dir (runtime-state-dir)
                                :fs        fs*
                                :sessions  {:store (store/create (runtime-state-dir))}}
@@ -586,7 +586,7 @@
     (fn []
       (with-stub-comm (runtime-state-dir)
         (fn []
-          (system/with-system {:state-dir (runtime-state-dir) :fs (server-fs)}
+          (nexus/-with-nexus {:state-dir (runtime-state-dir) :fs (server-fs)}
             (worker/tick! {})))))))
 
 (defn delivery-worker-ticks-at [iso]
@@ -596,7 +596,7 @@
     (fn []
       (with-stub-comm (runtime-state-dir)
         (fn []
-          (system/with-system {:state-dir (runtime-state-dir) :fs (server-fs)}
+          (nexus/-with-nexus {:state-dir (runtime-state-dir) :fs (server-fs)}
             (worker/tick! {:now (java.time.Instant/parse iso)})))))))
 
 (defn comm-stub-returns [_comm-name table]

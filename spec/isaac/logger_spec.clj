@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.logger :as sut]
     [isaac.fs :as fs]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (def test-log "/tmp/isaac-test.log")
@@ -20,7 +20,7 @@
 
   (around [it]
     (let [mem (fs/mem-fs)]
-      (system/with-nested-system {:fs mem}
+      (nexus/-with-nested-nexus {:fs mem}
         (binding [*fs* mem]
           (it)))))
 

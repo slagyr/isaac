@@ -7,7 +7,7 @@
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
-    [isaac.system :as system])
+    [isaac.nexus :as nexus])
   (:import
     [java.io File]))
 
@@ -36,7 +36,7 @@
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
 
 (defn- runtime-ctx []
-  (-> (select-keys (system/current) [:state-dir :fs])
+  (-> (select-keys (nexus/necho) [:state-dir :fs])
       (assoc :session-store (store/registered-store))))
 
 (defn filesystem [args]

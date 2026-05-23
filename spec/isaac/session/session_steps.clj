@@ -32,7 +32,7 @@
     [isaac.session.store.memory :as memory-store]
     [isaac.module.loader :as module-loader]
     [isaac.config.schema :as schema]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory]
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]))
@@ -84,10 +84,10 @@
       (some-> (g/get :runtime-state-dir) fs/parent)))
 
 (defn- mem-fs []
-  (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)))
+  (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs)))
 
 (defn- with-feature-fs [f]
-  (system/with-nested-system {:fs (mem-fs)}
+  (nexus/-with-nested-nexus {:fs (mem-fs)}
     (f)))
 
 (defn- notify-config-change! [path]
@@ -438,7 +438,7 @@
     (grover/reset-queue!)
     (reset! c3env/-overrides {})
     (config/clear-env-overrides!)
-    (system/reset!)
+    (nexus/reset!)
     (drive-dispatch/clear-last-request!)
     (bridge-cancel/clear!)
     (module-loader/clear-activations!)
@@ -459,8 +459,8 @@
         (clean-dir! abs-dir)
         (g/dissoc! :mem-fs)))
     (let [mem-store (memory-store/create-store abs-dir)]
-      (system/register! :fs (or mem (fs/real-fs)))
-      (system/register! :state-dir abs-dir)
+      (nexus/register! :fs (or mem (fs/real-fs)))
+      (nexus/register! :state-dir abs-dir)
       (store/register-store! mem-store)
       ;; Stub must accept all real arities — session/context calls with
        ;; (state-dir nil fs*) (3 args), other callers with 1 or 2.

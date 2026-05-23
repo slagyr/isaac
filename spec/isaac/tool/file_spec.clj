@@ -6,7 +6,7 @@
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.file :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
@@ -21,7 +21,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (system/with-nested-system {:state-dir support/test-dir :fs (fs/real-fs)}
+      (nexus/-with-nested-nexus {:state-dir support/test-dir :fs (fs/real-fs)}
         (example))))
 
   (describe "read"
@@ -47,7 +47,7 @@
       (let [mem  (fs/mem-fs)
             path (str support/test-dir "/runtime-fs.txt")]
         (fs/spit mem path "runtime fs")
-        (system/with-system {:state-dir support/test-dir :fs mem}
+        (nexus/-with-nexus {:state-dir support/test-dir :fs mem}
           (let [result (sut/read-tool {"file_path" path})]
             (should= "1: runtime fs" (:result result))))))
 

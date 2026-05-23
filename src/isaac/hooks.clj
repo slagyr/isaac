@@ -13,7 +13,7 @@
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 ;; Holds the future for the most recently dispatched hook turn so test
 ;; harnesses can await completion via (deref (last-turn-future)).
@@ -137,12 +137,12 @@
     fut))
 
 (defn- runtime-ctx []
-  (-> (select-keys (system/current) [:state-dir :fs])
+  (-> (select-keys (nexus/necho) [:state-dir :fs])
       (assoc :session-store (store/registered-store))))
 
 (defn- runtime-fs! [runtime]
   (or (:fs runtime)
-      (:fs (system/current))
+      (:fs (nexus/necho))
       (throw (ex-info "hooks require :fs in system" {}))))
 
 (defn handler

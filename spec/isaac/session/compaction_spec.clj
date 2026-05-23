@@ -12,7 +12,7 @@
      [isaac.session.compaction :as sut]
      [isaac.session.store :as store]
      [isaac.spec-helper :as storage]
-     [isaac.system :as system]
+     [isaac.nexus :as nexus]
      [isaac.tool.registry :as tool-registry]
      [speclj.core :refer :all]))
 
@@ -116,7 +116,7 @@
     (before-all (clean-dir! test-root))
     (after (clean-dir! test-root))
     #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example] (storage/with-memory-store (system/with-nested-system {:state-dir test-root :fs (fs/mem-fs)} (example))))
+    (around [example] (storage/with-memory-store (nexus/-with-nested-nexus {:state-dir test-root :fs (fs/mem-fs)} (example))))
 
     (it "calls chat-fn with summary prompt and appends compaction"
       (let [key-str  "isaac:main:cli:chat:abc123"

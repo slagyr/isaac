@@ -16,7 +16,7 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.scheduler :as scheduler-core]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.server.http :as http]
     [isaac.server.routes :as routes]
     [org.httpkit.server :as httpkit]))
@@ -117,7 +117,7 @@
         (log/info :config/reloaded :path path)))))
 
 (defn- start-config-reloader! [source config-home cfg* tree* host comm-registry registries]
-  (let [reload! (system/bound-runtime-fn
+  (let [reload! (nexus/bound-runtime-fn
                   (bound-fn [path]
                     (reload-config! config-home cfg* tree* host comm-registry registries path)))]
     (future
@@ -201,13 +201,13 @@
                      :host host
                      :message "missing :server :auth :token for non-loopback bind"))
         (when-not (auth-required? cfg host start-http-server?)
-          (let [_                       (system/init! {:config (atom cfg)
+          (let [_                       (nexus/init! {:config (atom cfg)
                                                       :fs     (or (:fs opts)
-                                                                  (system/get :fs)
+                                                                  (nexus/get :fs)
                                                                   (fs/real-fs))})
                 _                       (when state-dir
                                           (home/init-state-dir! state-dir)
-                                          (system/register! :state-dir state-dir)
+                                          (nexus/register! :state-dir state-dir)
                                           (store/register! cfg state-dir))
                 _                       (config/set-snapshot! cfg)
                 cfg*                    (atom cfg)
@@ -216,7 +216,7 @@
                                           (-> (scheduler-core/create {})
                                               scheduler-core/start!))
                 _                       (when scheduler
-                                          (system/register! :scheduler scheduler))
+                                          (nexus/register! :scheduler scheduler))
                 host-ctx                (host-context cfg state-dir connect-ws!)
                 _                       (configurator/reconcile! tree* host-ctx nil cfg registries)
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))

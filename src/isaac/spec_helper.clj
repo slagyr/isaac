@@ -4,7 +4,7 @@
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (defmacro with-captured-logs []
   '(speclj.core/around [it] (isaac.logger/capture-logs (it))))
@@ -16,8 +16,8 @@
       (sidecar-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
-  `(let [mem-store# (memory/create-store (system/get :state-dir))]
-     (system/with-nested-system {:fs       (or (system/get :fs) (fs/mem-fs))
+  `(let [mem-store# (memory/create-store (nexus/get :state-dir))]
+     (nexus/-with-nested-nexus {:fs       (or (nexus/get :fs) (fs/mem-fs))
                                  :sessions {:store mem-store#}}
        (binding [*session-store* (store/registered-store)]
          (with-redefs [sidecar-store/create-store (fn [& _#] *session-store*)]

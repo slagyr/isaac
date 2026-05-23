@@ -3,7 +3,7 @@
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.index :as sut]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer [describe it should should=]]))
 
 (def test-dir "/test/index-store")
@@ -12,7 +12,7 @@
 
   (it "uses the installed runtime fs without binding fs/*fs*"
     (let [mem      (fs/mem-fs)
-          fs-store (system/with-system {:fs mem}
+          fs-store (nexus/-with-nexus {:fs mem}
                      (sut/create-store test-dir))]
       (store/open-session! fs-store "friday-debug" {:crew "main"})
       (should= "friday-debug" (:id (store/get-session fs-store "friday-debug")))

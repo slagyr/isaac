@@ -7,7 +7,7 @@
     [isaac.fs :as fs]
     [isaac.module.loader :as module-loader]
     [isaac.server.app :as app]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (helper! isaac.config.config-steps)
 
@@ -27,12 +27,12 @@
 
 (defn- with-config-fs [f]
   (let [fs* (mem-fs)]
-    (system/with-nested-system {:fs fs*}
+    (nexus/-with-nested-nexus {:fs fs*}
       (f))))
 
 (defn- path-exists? [path]
   #_{:clj-kondo/ignore [:invalid-arity]}
-  (or (fs/exists? (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)) path)
+  (or (fs/exists? (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs)) path)
       (.exists (java.io.File. path))))
 
 (defn- module-manifest-path [id]
@@ -51,7 +51,7 @@
                                    (if (str/starts-with? override "/")
                                      override
                                      (str base-cwd "/" override)))
-         fs*                    (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))]
+         fs*                    (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))]
     (try
       (when effective-cwd
         (System/setProperty "user.dir" effective-cwd))
@@ -66,7 +66,7 @@
 (defn- load-result []
   (or (g/get :loaded-config-result)
       (if-let [mem (g/get :mem-fs)]
-        (system/with-nested-system {:fs mem}
+        (nexus/-with-nested-nexus {:fs mem}
           (load-config-result))
         (load-config-result))))
 
@@ -120,7 +120,7 @@
   (with-config-fs
     (fn []
       (let [full-path (str (config-root) "/" path)
-            fs*       (system/get :fs)]
+            fs*       (nexus/get :fs)]
         #_{:clj-kondo/ignore [:invalid-arity]}
         (fs/mkdirs fs* (or (fs/parent full-path) (config-root)))
         (fs/spit   fs* full-path (str/trim content))))))
@@ -133,7 +133,7 @@
   (with-config-fs
     (fn []
       (let [path (isaac-env-path)
-            fs*  (system/get :fs)]
+            fs*  (nexus/get :fs)]
         #_{:clj-kondo/ignore [:invalid-arity]}
         (fs/mkdirs fs* (fs/parent path))
         (fs/spit fs* path (str/trim content))))))
@@ -176,21 +176,21 @@
 (defn config-file-matches [path table]
   (with-config-fs
     (fn []
-      (let [content (or (fs/slurp (system/get :fs) (config-file-path path)) "")]
+      (let [content (or (fs/slurp (nexus/get :fs) (config-file-path path)) "")]
         (doseq [row (:rows table)]
           (g/should (re-find (re-pattern (str/trim (first row))) content)))))))
 
 (defn config-file-does-not-contain [path expected]
   (with-config-fs
     (fn []
-      (let [content (or (fs/slurp (system/get :fs) (config-file-path path)) "")]
+      (let [content (or (fs/slurp (nexus/get :fs) (config-file-path path)) "")]
         (g/should-not (str/includes? content expected))))))
 
 (defn config-file-does-not-exist [path]
   (with-config-fs
     (fn []
       #_{:clj-kondo/ignore [:invalid-arity]}
-      (g/should-not (fs/exists? (system/get :fs) (config-file-path path))))))
+      (g/should-not (fs/exists? (nexus/get :fs) (config-file-path path))))))
 
 (defn config-has-no-validation-errors []
   (g/should= [] (:errors (load-result))))

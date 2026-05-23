@@ -6,7 +6,7 @@
     [gherclj.core :as g :refer [defgiven defthen helper!]]
     [isaac.fs :as fs]
     [isaac.home :as home]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
 
 (helper! isaac.service.service-steps)
@@ -24,7 +24,7 @@
 
 (defn- check-file-exists [path]
   (let [expanded (expand-path path)
-        fs*      (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))]
+        fs*      (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))]
     (fs/exists? fs* expanded)))
 
 ;; region ----- Plist parsing -----

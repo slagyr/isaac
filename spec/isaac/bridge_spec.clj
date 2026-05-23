@@ -13,7 +13,7 @@
     [isaac.server.routes]
     [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
@@ -113,7 +113,7 @@
         (should= "/tmp/isaac-cwd-fixture" (:cwd data))))
 
     (it "includes tool-count from registry"
-      (system/with-system {:state-dir *state-dir*}
+      (nexus/-with-nexus {:state-dir *state-dir*}
         (helper/with-memory-store
           (tool-registry/clear!)
           (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
@@ -341,7 +341,7 @@
       (helper/with-memory-store
         (let [dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-bang-" (random-uuid))]
           (delete-dir! dir)
-          (system/with-nested-system {:state-dir dir :fs (fs/mem-fs)}
+          (nexus/-with-nested-nexus {:state-dir dir :fs (fs/mem-fs)}
             (example)))))
 
     (it "uses the stored session crew when no override is provided"
@@ -353,11 +353,11 @@
                                   "smart" {:model "anvil-x"      :provider marigold/quantum-anvil :context-window 128000}}
                       :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
-        (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
+        (helper/create-session! (nexus/get :state-dir) "pinky-session" {:crew "pinky"})
         (with-redefs [single-turn/run-turn! (fn [charge]
                                               (reset! captured charge)
                                               {:message {:role "assistant" :content "ok"}})]
-          (bridge/dispatch! (charge/build {:session-key "pinky-session" :input "hello" :state-dir (system/get :state-dir)})))
+          (bridge/dispatch! (charge/build {:session-key "pinky-session" :input "hello" :state-dir (nexus/get :state-dir)})))
         (should= "anvil-x" (:model @captured))
         (should= "Pinky soul" (:soul @captured))))
 
@@ -370,11 +370,11 @@
                                   "smart" {:model "anvil-x"      :provider marigold/quantum-anvil :context-window 128000}}
                       :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
-        (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
+        (helper/create-session! (nexus/get :state-dir) "pinky-session" {:crew "pinky"})
         (with-redefs [single-turn/run-turn! (fn [charge]
                                               (reset! captured charge)
                                               {:message {:role "assistant" :content "ok"}})]
-          (bridge/dispatch! (charge/build {:session-key "pinky-session" :input "hello" :crew "main" :state-dir (system/get :state-dir)})))
+          (bridge/dispatch! (charge/build {:session-key "pinky-session" :input "hello" :crew "main" :state-dir (nexus/get :state-dir)})))
         (should= "anvil-x-mini" (:model @captured))
         (should= "Main soul" (:soul @captured))))
 
@@ -384,11 +384,11 @@
                  :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
                  :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
-        (helper/create-session! (system/get :state-dir) "cli-origin-unknown-crew" {:crew "ghost"})
+        (helper/create-session! (nexus/get :state-dir) "cli-origin-unknown-crew" {:crew "ghost"})
         (let [result (bridge/dispatch! (charge/build {:session-key "cli-origin-unknown-crew"
                                                       :input       "hello"
                                                       :origin      {:kind :cli}
-                                                      :state-dir   (system/get :state-dir)}))]
+                                                      :state-dir   (nexus/get :state-dir)}))]
           (should= :unknown-crew (:error result))
           (should (re-find #"pass --crew to override" (:message result))))))
 
@@ -398,10 +398,10 @@
                  :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
                  :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
-        (helper/create-session! (system/get :state-dir) "webhook-unknown-crew" {:crew "ghost"})
+        (helper/create-session! (nexus/get :state-dir) "webhook-unknown-crew" {:crew "ghost"})
         (let [result (bridge/dispatch! (charge/build {:session-key "webhook-unknown-crew"
                                                       :input       "hello"
-                                                      :state-dir   (system/get :state-dir)
+                                                      :state-dir   (nexus/get :state-dir)
                                                       :origin      {:kind :webhook}}))]
           (should= :unknown-crew (:error result))
           (should-not (re-find #"pass --crew to override" (:message result)))

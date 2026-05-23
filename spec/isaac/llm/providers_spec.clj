@@ -3,7 +3,7 @@
     [isaac.fs :as fs]
     [isaac.llm.providers :as sut]
     [isaac.marigold :as marigold]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer [after around describe it should-be-nil should-contain should=]]))
 
 (describe "isaac.llm.providers"
@@ -12,7 +12,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (system/with-nested-system {:fs (fs/mem-fs)}
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
       (example)))
 
   (describe "template"

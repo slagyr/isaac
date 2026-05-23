@@ -5,7 +5,7 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.registry :as sut]
     [speclj.core :refer :all]))
 
@@ -15,7 +15,7 @@
    :handler     (fn [_] {:result (str "api-key=" (:api-key cfg))})})
 
 (defn- with-tool-registry [f]
-  (system/with-system {:tool-registry (atom {})}
+  (nexus/-with-nexus {:tool-registry (atom {})}
     (f)))
 
 (describe "Tool Registry"
@@ -36,7 +36,7 @@
 
     (it "stores tools in the system tool-registry atom"
       (let [registry* (atom {})]
-        (system/with-system {:tool-registry registry*}
+        (nexus/-with-nexus {:tool-registry registry*}
           (sut/register! {:name "read" :description "Read a file" :handler identity})
           (should-not-be-nil (get @registry* "read")))))
 
@@ -146,7 +146,7 @@
       (module-loader/clear-activations!)
       (let [module-index {:isaac.tool.doodad {:manifest {:tools {:doodad {:factory 'isaac.tool.registry-spec/doodad-tool
                                                                           :schema  {:api-key {:type :string}}}}}}}]
-        (system/with-system {:tool-registry (atom {})
+        (nexus/-with-nexus {:tool-registry (atom {})
                              :config        (atom {:tools {:doodad {:api-key "shazam"}}})}
           (let [result (sut/execute "doodad" {} #{"doodad"} module-index)]
             (should= "api-key=shazam" (:result result))
@@ -289,7 +289,7 @@
       (it "includes :cwd on :tool/start when session_key is present"
         (let [state-dir "/test/registry-cwd"
               _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
-          (system/with-nested-system {:state-dir state-dir}
+          (nexus/-with-nested-nexus {:state-dir state-dir}
             (sut/register! {:name "echo" :handler (fn [_] "ok")})
             (sut/execute "echo" {"session_key" "s1"})
             (let [start (first (filter #(= :tool/start (:event %)) @log/captured-logs))]
@@ -298,7 +298,7 @@
       (it "includes :cwd on :tool/result when session_key is present"
         (let [state-dir "/test/registry-cwd-result"
               _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
-          (system/with-nested-system {:state-dir state-dir}
+          (nexus/-with-nested-nexus {:state-dir state-dir}
             (sut/register! {:name "echo" :handler (fn [_] "ok")})
             (sut/execute "echo" {"session_key" "s1"})
             (let [result (first (filter #(= :tool/result (:event %)) @log/captured-logs))]
@@ -307,7 +307,7 @@
       (it "includes :cwd on :tool/execute-failed when session_key is present"
         (let [state-dir "/test/registry-cwd-fail"
               _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
-          (system/with-nested-system {:state-dir state-dir}
+          (nexus/-with-nested-nexus {:state-dir state-dir}
             (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "oops")))})
             (sut/execute "boom" {"session_key" "s1"})
             (let [err (first (filter #(= :tool/execute-failed (:event %)) @log/captured-logs))]

@@ -8,7 +8,7 @@
     [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.module.manifest :as manifest]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (defonce ^:private activated-modules* (atom #{}))
 (defonce ^:private loaded-module-coords* (atom #{}))
@@ -45,7 +45,7 @@
 (def ^:private core-module-id :isaac.core)
 
 (defn- runtime-fs []
-  (or (:fs (system/current))
+  (or (:fs (nexus/necho))
       (throw (ex-info "module.loader requires :fs in system" {}))))
 
 (declare activate!)

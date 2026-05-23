@@ -4,7 +4,7 @@
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]
-    [isaac.system :as system])
+    [isaac.nexus :as nexus])
   (:import
     (java.time Instant ZoneOffset)
     (java.time.format DateTimeFormatter)))
@@ -23,7 +23,7 @@
 (defn- normalize-timestamp [ts] (c/normalize-timestamp ms->iso ts))
 
 (defn- runtime-fs! []
-  (or (:fs (system/current))
+  (or (:fs (nexus/necho))
       (throw (ex-info "index session store requires explicit fs or installed runtime :fs" {}))))
 
 ;; endregion ^^^^^ Impl-specific ^^^^^

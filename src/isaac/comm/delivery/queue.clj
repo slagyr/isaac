@@ -4,7 +4,7 @@
     [clojure.pprint :as pprint]
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory])
   (:import
     (java.util UUID)))
@@ -14,11 +14,11 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-state-dir []
-  (or (:state-dir (system/current))
+  (or (:state-dir (nexus/necho))
       (throw (ex-info "delivery queue requires :state-dir" {}))))
 
 (defn- filesystem []
-  (or (:fs (system/current))
+  (or (:fs (nexus/necho))
       (throw (ex-info "comm.delivery.queue requires :fs in system" {}))))
 
 (defn- delivery-dir []

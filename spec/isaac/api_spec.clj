@@ -9,7 +9,7 @@
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer [around describe it should should-not should=]]))
 
 (describe "isaac.api"
@@ -80,13 +80,13 @@
 
   (it "create-session! uses the installed runtime session store"
     (let [session-store (memory/create-store "/tmp/api-spec")]
-      (system/with-system {:state-dir "/tmp/api-spec" :sessions {:store session-store} :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir "/tmp/api-spec" :sessions {:store session-store} :fs (fs/mem-fs)}
         (sut/create-session! "api-session" {:crew "main"})
         (should= "main" (:crew (store/get-session session-store "api-session"))))))
 
   (it "dispatch! forwards the installed runtime to bridge dispatch"
     (let [captured (atom nil)]
-      (system/with-system {:state-dir "/tmp/api-spec" :sessions {:store :runtime-store} :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:state-dir "/tmp/api-spec" :sessions {:store :runtime-store} :fs (fs/mem-fs)}
         (with-redefs [isaac.bridge.core/dispatch! (fn [request]
                                                     (reset! captured request)
                                                     {:ok true})]

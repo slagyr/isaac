@@ -10,21 +10,21 @@
     [isaac.module.manifest]
     [isaac.module.loader :as sut]
     [isaac.server.routes]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (def ctx {:state-dir "/state/.isaac" :cwd "/workspace"})
 
 (defn- mod-dir! [path]
-  (fs/mkdirs (system/get :fs) path))
+  (fs/mkdirs (nexus/get :fs) path))
 
 (defn- mod-manifest! [path content]
-  (let [fs* (system/get :fs)]
+  (let [fs* (nexus/get :fs)]
     (fs/mkdirs fs* (fs/parent path))
     (fs/spit   fs* path content)))
 
 (defn- mod-deps! [path]
-  (let [fs* (system/get :fs)]
+  (let [fs* (nexus/get :fs)]
     (fs/mkdirs fs* (fs/parent path))
     (fs/spit   fs* path "{:paths [\"src\" \"resources\"]}")))
 
@@ -45,8 +45,8 @@
         resources-path (str root "/resources/isaac-manifest.edn")
         src-path       (str root "/src/isaac-manifest.edn")]
     (cond
-      (fs/exists? (system/get :fs) resources-path) resources-path
-      (fs/exists? (system/get :fs) src-path) src-path
+      (fs/exists? (nexus/get :fs) resources-path) resources-path
+      (fs/exists? (nexus/get :fs) src-path) src-path
       :else nil)))
 
 (defn- discover-local! [ids]
@@ -78,7 +78,7 @@
   (describe "core-index"
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example] (system/with-nested-system {:fs (fs/mem-fs)} (example)))
+    (around [example] (nexus/-with-nested-nexus {:fs (fs/mem-fs)} (example)))
 
     (before
       (sut/clear-caches!))
@@ -108,7 +108,7 @@
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-nested-system {:fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (example)
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})))
@@ -166,7 +166,7 @@
         (fs/mkdirs mem root)
         (fs/mkdirs mem (str root "/resources"))
         (fs/spit mem (str root "/resources/isaac-manifest.edn") (pr-str {:id :isaac.comm.runtime :version "0.1.0"}))
-        (system/with-system {:fs mem}
+        (nexus/-with-nexus {:fs mem}
           (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.runtime {:local/root root}}} ctx)]
             (should= [] errors)
             (should= :isaac.comm.runtime (get-in index [:isaac.comm.runtime :manifest :id]))))))
@@ -205,7 +205,7 @@
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (system/with-nested-system {:fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset-comm-registry!)
         (reset-cli-registry!)

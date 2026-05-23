@@ -10,7 +10,7 @@
     [isaac.hooks :as hooks]
     [isaac.server.app :as app]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (helper! isaac.configurator-steps)
 
@@ -188,11 +188,11 @@
 
 (defn- with-server-fs [f]
   (if-let [mem (g/get :mem-fs)]
-    (system/with-nested-system {:fs mem} (f))
+    (nexus/-with-nested-nexus {:fs mem} (f))
     (f)))
 
 (defn- server-fs []
-  (or (g/get :mem-fs) (system/get :fs)))
+  (or (g/get :mem-fs) (nexus/get :fs)))
 
 (defn- notify-change! [path]
   (when-let [source (g/get :config-change-source)]

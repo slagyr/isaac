@@ -6,7 +6,7 @@
     [isaac.fs :as fs]
     [isaac.scheduler :as scheduler-core]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "cron scheduler"
@@ -15,7 +15,7 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (system/with-system {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
       (it)))
 
   (describe "CronModule lifecycle"
@@ -79,7 +79,7 @@
           cfg {:tz "America/Chicago"
                :cron {"nightly-cleanup" {:expr "0 3 * * *" :crew "main" :prompt "tidy up"}
                       "heartbeat"       {:expr "*/5 * * * *" :crew "main" :prompt "ping"}}}]
-      (system/register! :scheduler fake-scheduler)
+      (nexus/register! :scheduler fake-scheduler)
       (with-redefs [scheduler-core/schedule! (fn [scheduler task]
                                                (swap! scheduled conj [scheduler (select-keys task [:id :trigger])])
                                                task)]

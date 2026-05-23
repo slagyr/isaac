@@ -10,7 +10,7 @@
     [isaac.home :as home]
     [isaac.module.loader :as module-loader]
     [isaac.session.store :as store]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.version :as version]
     isaac.llm.auth.cli
     isaac.config.cli.command
@@ -25,7 +25,7 @@
 
 (defn- startup-fs [extra-opts]
   (or (:fs extra-opts)
-      (:fs (system/current))
+      (:fs (nexus/necho))
       (fs/real-fs)))
 
 (defn- substitute-env [x]
@@ -42,7 +42,7 @@
     (let [config-file (paths/root-config-file home)]
       (when (fs/exists? fs* config-file)
         (try
-          (system/with-nested-system {:fs fs*}
+          (nexus/-with-nested-nexus {:fs fs*}
             (let [config  (substitute-env (edn/read-string (fs/slurp fs* config-file)))
                   context {:cwd (System/getProperty "user.dir")}
                   {:keys [index]} (module-loader/discover! config context)]
@@ -108,10 +108,10 @@
        (if-let [command (registry/get-command cmd)]
          (binding [home/*resolved-home* resolved-home
                    home/*state-dir*     (str resolved-home "/.isaac")]
-            (system/with-nested-system {:fs fs*}
-              (system/init! {:fs fs*})
+            (nexus/-with-nested-nexus {:fs fs*}
+              (nexus/init! {:fs fs*})
               (let [state-dir (str resolved-home "/.isaac")]
-                (system/register! :state-dir state-dir)
+                (nexus/register! :state-dir state-dir)
                 (store/register! (or (config/snapshot) {}) state-dir))
               (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
                                                         :home         resolved-home

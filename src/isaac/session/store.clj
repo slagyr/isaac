@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.naming :as naming]
-    [isaac.system :as system]))
+    [isaac.nexus :as nexus]))
 
 (defprotocol SessionStore
   (open-session! [this name opts])
@@ -133,28 +133,28 @@
 (defn registered-store
   "Returns the session store registered in the system, or nil."
   []
-  (get-in (system/current) [:sessions :store]))
+  (get-in (nexus/necho) [:sessions :store]))
 
 (defn ensure-naming-strategy!
   "Returns the registered naming strategy, building and caching it from config if not yet present."
   [state-dir fs*]
-  (or (get-in (system/current) [:sessions :naming-strategy])
+  (or (get-in (nexus/necho) [:sessions :naming-strategy])
       (let [cfg   (or (config/snapshot)
                       (when state-dir (config/load-config {:home state-dir :fs fs*}))
                       {})
             strat (make-naming-strategy cfg state-dir (registered-store) fs*)]
-        (system/register! :sessions (assoc (or (system/get :sessions) {}) :naming-strategy strat))
+        (nexus/register! :sessions (assoc (or (nexus/get :sessions) {}) :naming-strategy strat))
         strat)))
 
 (defn register-store!
   "Registers store in the system under [:sessions :store], preserving other :sessions values."
   [store]
-  (system/register! :sessions (assoc (or (system/get :sessions) {}) :store store)))
+  (nexus/register! :sessions (assoc (or (nexus/get :sessions) {}) :store store)))
 
 (defn runtime-ctx
   "Return the runtime state-dir/session-store pair from the installed system."
   []
-  {:state-dir     (system/get :state-dir)
+  {:state-dir     (nexus/get :state-dir)
    :session-store (registered-store)})
 
 (defn resolve-store
@@ -170,8 +170,8 @@
    Reads :sessions :store and :sessions :naming-strategy from cfg."
   [cfg state-dir]
   (let [impl     (get-in cfg [:sessions :store] :jsonl-edn-sidecar)
-        fs*      (system/get :fs)
+        fs*      (nexus/get :fs)
         store    (create state-dir impl)
         strategy (make-naming-strategy cfg state-dir store fs*)]
-    (system/register! :sessions {:store store :naming-strategy strategy})
+    (nexus/register! :sessions {:store store :naming-strategy strategy})
     store))

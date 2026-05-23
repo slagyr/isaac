@@ -4,7 +4,7 @@
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.service.macos :as sut]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]
     [speclj.core :refer :all]))
 
@@ -20,7 +20,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (let [mem (fs/mem-fs)]
-      (system/with-nested-system {:fs mem}
+      (nexus/-with-nested-nexus {:fs mem}
         (binding [*fs*             mem
                   home/*user-home* "/test/home"]
           (example)))))

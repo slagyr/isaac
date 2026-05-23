@@ -4,7 +4,7 @@
     [isaac.config.loader :as config]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.glob :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
@@ -18,7 +18,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (system/with-nested-system {:state-dir support/test-dir}
+      (nexus/-with-nested-nexus {:state-dir support/test-dir}
         (example))))
 
   (it "returns matching file paths"

@@ -4,7 +4,7 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.slash.registry :as sut]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (defn echo-command [cfg]
@@ -67,7 +67,7 @@
   (it "registers the factory-returned command-name from user-config"
     (let [module-index {:isaac.slash.echo {:manifest {:slash-commands {:echo {:factory 'isaac.slash.registry-spec/echo-command
                                                                                :schema  {:command-name {:type :string}}}}}}}]
-      (system/with-system {:config (atom {:slash-commands {:echo {:command-name "beep"}}})
+      (nexus/-with-nexus {:config (atom {:slash-commands {:echo {:command-name "beep"}}})
                            :fs (fs/mem-fs)}
         (module-loader/clear-activations!)
         (should= "beep" (:name (sut/lookup "beep" module-index)))))))

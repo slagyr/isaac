@@ -5,7 +5,7 @@
     [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
     [isaac.scheduler :as scheduler]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory])
   (:import
     (java.time Instant)))
@@ -72,8 +72,8 @@
 (defn start!
   [{:keys [tick-ms]
     :or   {tick-ms default-tick-ms}}]
-  (let [shared-scheduler (or (system/get :scheduler)
-                             (throw (ex-info "delivery worker requires :scheduler in isaac.system" {})))]
+  (let [shared-scheduler (or (nexus/get :scheduler)
+                             (throw (ex-info "delivery worker requires :scheduler in isaac.nexus" {})))]
     (scheduler/schedule! shared-scheduler
                          {:id      :delivery/tick
                           :trigger {:kind :interval :ms tick-ms}

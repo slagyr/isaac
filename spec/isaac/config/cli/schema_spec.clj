@@ -4,7 +4,7 @@
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
     [isaac.marigold :as marigold]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
@@ -12,7 +12,7 @@
 (def ^:private workspace-root (System/getProperty "user.dir"))
 
 (defn- write-config! [config]
-  (let [fs* (system/get :fs)]
+  (let [fs* (nexus/get :fs)]
     (fs/mkdirs fs* (str test-home "/.isaac/config"))
     (fs/spit   fs* (str test-home "/.isaac/config/isaac.edn") (pr-str config))))
 

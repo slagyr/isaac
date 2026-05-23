@@ -7,7 +7,7 @@
     [isaac.session.schema :as session-schema]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]
-    [isaac.system :as system])
+    [isaac.nexus :as nexus])
   (:import
     (java.time Instant ZoneOffset)
     (java.time.format DateTimeFormatter)))
@@ -51,7 +51,7 @@
                                                       (:history-retention opts))
           name      (or name
                         (when state-dir
-                          (naming/generate (store/ensure-naming-strategy! state-dir (system/get :fs)))))
+                          (naming/generate (store/ensure-naming-strategy! state-dir (nexus/get :fs)))))
           id        (c/session-id (or name "session"))
           existing  (get-in @state [:sessions id])]
       (cond

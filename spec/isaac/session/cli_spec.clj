@@ -4,14 +4,14 @@
     [isaac.session.cli :as sut]
     [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
-    [isaac.system :as system]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "session cli"
 
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
   (around [it]
-    (system/with-nested-system {:state-dir "/test/sessions"}
+    (nexus/-with-nested-nexus {:state-dir "/test/sessions"}
       (helper/with-memory-store
         (it))))
 
