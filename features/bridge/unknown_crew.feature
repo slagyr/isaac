@@ -13,28 +13,28 @@ Feature: Unknown crew rejects the turn
     Given default Grover setup
     And the following sessions exist:
       | name  | crew   |
-      | stale | marvin |
+      | stale | wormwood |
 
   Scenario: a turn on a session whose crew is unknown is rejected with guidance
     When the user sends "hello" on session "stale"
-    Then the reply contains "unknown crew on session stale: marvin"
+    Then the reply contains "unknown crew on session stale: wormwood"
     And the reply contains "pass --crew to override"
     And the log has entries matching:
       | level | event          | session | crew   | reason        |
-      | :warn | :drive/turn-rejected | stale   | marvin | :unknown-crew |
+      | :warn | :drive/turn-rejected | stale   | wormwood | :unknown-crew |
 
   Scenario: switching the rejected session to a known crew restores normal turns
     When the user sends "hello" on session "stale"
-    Then the reply contains "unknown crew on session stale: marvin"
+    Then the reply contains "unknown crew on session stale: wormwood"
     And the log has entries matching:
       | level | event          | session | crew   | reason        |
-      | :warn | :drive/turn-rejected | stale   | marvin | :unknown-crew |
+      | :warn | :drive/turn-rejected | stale   | wormwood | :unknown-crew |
 
     When the user sends "/crew main" on session "stale"
     Then the reply contains "switched crew to main"
     And the log has entries matching:
       | level | event                 | session | from   | to   |
-      | :info | :session/crew-changed | stale   | marvin | main |
+      | :info | :session/crew-changed | stale   | wormwood | main |
 
     When the user sends "try again" on session "stale"
     Then the system prompt contains "You are Atticus."

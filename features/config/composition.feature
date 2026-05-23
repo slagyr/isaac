@@ -20,14 +20,14 @@ Feature: Config Composition
       | crew.main.soul | You are Atticus. |
 
   Scenario: loads a crew member from crew/<id>.edn
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
-      {:model :llama :soul "You are Marvin."}
+      {:model :llama :soul "You are Cordelia."}
       """
     Then the loaded config has:
       | key               | value           |
-      | crew.marvin.model | llama           |
-      | crew.marvin.soul  | You are Marvin. |
+      | crew.cordelia.model | llama           |
+      | crew.cordelia.soul  | You are Cordelia. |
 
   Scenario: loads a crew member from crew/<id>.md frontmatter
     Given config file "isaac.edn" containing:
@@ -35,46 +35,46 @@ Feature: Config Composition
       {:models    {:llama {:model "llama3.2" :provider :ollama}}
        :providers {:ollama {:api "ollama"}}}
       """
-    And config file "crew/marvin.md" containing:
+    And config file "crew/cordelia.md" containing:
       """
       ---
       {:model :llama}
       ---
 
-      You are Marvin.
+      You are Cordelia.
       """
     Then the loaded config has:
       | key               | value           |
-      | crew.marvin.model | llama           |
-      | crew.marvin.soul  | You are Marvin. |
+      | crew.cordelia.model | llama           |
+      | crew.cordelia.soul  | You are Cordelia. |
 
   # ----- Soul -----
 
   Scenario: soul loads from a companion .md file when :soul is absent
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:model :llama}
       """
-    And config file "crew/marvin.md" containing:
+    And config file "crew/cordelia.md" containing:
       """
-      You are Marvin, paranoid android.
+      You are Cordelia, first mate.
       """
     Then the loaded config has:
       | key              | value                             |
-      | crew.marvin.soul | You are Marvin, paranoid android. |
+      | crew.cordelia.soul | You are Cordelia, first mate. |
 
   Scenario: defining soul in both :soul and <id>.md is an error
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:soul "Inline soul."}
       """
-    And config file "crew/marvin.md" containing:
+    And config file "crew/cordelia.md" containing:
       """
       File soul.
       """
     Then the config has validation errors matching:
       | key              | value                      |
-      | crew.marvin.soul | must be set in .edn OR .md |
+      | crew.cordelia.soul | must be set in .edn OR .md |
 
   # ----- Filename / id -----
 
@@ -88,24 +88,24 @@ Feature: Config Composition
       | crew.ketch.model | llama |
 
   Scenario: explicit :id must match filename
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:id "ketch" :model :llama}
       """
     Then the config has validation errors matching:
       | key            | value                               |
-      | crew.marvin.id | must match filename \(got "ketch"\) |
+      | crew.cordelia.id | must match filename \(got "ketch"\) |
 
   # ----- Unknown keys warn but do not fail -----
 
   Scenario: unknown keys in entity files produce warnings but still load
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
-      {:crew {:marvin {:model :llama}}}
+      {:crew {:cordelia {:model :llama}}}
       """
     Then the config has validation warnings matching:
       | key              | value       |
-      | crew.marvin.crew | unknown key |
+      | crew.cordelia.crew | unknown key |
 
   # ----- Composition (additive) -----
 
@@ -114,15 +114,15 @@ Feature: Config Composition
       """
       {:crew {:main {:soul "Atticus"}}}
       """
-    And config file "crew/marvin.edn" containing:
+    And config file "crew/cordelia.edn" containing:
       """
-      {:model :llama :soul "Marvin"}
+      {:model :llama :soul "Cordelia"}
       """
     Then the loaded config has:
       | key               | value  |
       | crew.main.soul    | Atticus  |
-      | crew.marvin.soul  | Marvin |
-      | crew.marvin.model | llama  |
+      | crew.cordelia.soul  | Cordelia |
+      | crew.cordelia.model | llama  |
 
   Scenario: composes models from isaac.edn and models/*.edn additively
     Given config file "isaac.edn" containing:
@@ -161,15 +161,15 @@ Feature: Config Composition
   Scenario: duplicate crew id across isaac.edn and crew/*.edn is a hard error
     Given config file "isaac.edn" containing:
       """
-      {:crew {:marvin {:soul "First"}}}
+      {:crew {:cordelia {:soul "First"}}}
       """
-    And config file "crew/marvin.edn" containing:
+    And config file "crew/cordelia.edn" containing:
       """
       {:soul "Second"}
       """
     Then the config has validation errors matching:
       | key         | value                                           |
-      | crew.marvin | defined in both isaac\.edn and crew/marvin\.edn |
+      | crew.cordelia | defined in both isaac\.edn and crew/cordelia\.edn |
 
   Scenario: duplicate model id across isaac.edn and models/*.edn is a hard error
     Given config file "isaac.edn" containing:
@@ -209,11 +209,11 @@ Feature: Config Composition
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:marvin {:model :gpt}}}
+       :crew     {:cordelia {:model :gpt}}}
       """
     Then the config has validation errors matching:
       | key               | value                      |
-      | crew.marvin.model | references undefined model |
+      | crew.cordelia.model | references undefined model |
 
   Scenario: model.provider must reference an existing provider
     Given config file "isaac.edn" containing:
@@ -232,7 +232,7 @@ Feature: Config Composition
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:marvin {:model :grover}}}
+       :crew     {:cordelia {:model :grover}}}
       """
     And config file "models/grover.edn" containing:
       """
@@ -240,7 +240,7 @@ Feature: Config Composition
       """
     Then the loaded config has:
       | key                    | value           |
-      | crew.marvin.model      | grover          |
+      | crew.cordelia.model    | grover          |
       | models.grover.model    | claude-opus-4-7 |
       | models.grover.provider | grover          |
 
@@ -257,13 +257,13 @@ Feature: Config Composition
   # ----- Syntax -----
 
   Scenario: malformed EDN in a config file is reported with the file path
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:model :llama
       """
     Then the config has validation errors matching:
       | key             | value            |
-      | crew/marvin.edn | EDN syntax error |
+      | crew/cordelia.edn | EDN syntax error |
 
   # ----- Env substitution -----
 
