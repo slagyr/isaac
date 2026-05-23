@@ -1,11 +1,11 @@
 ---
 # isaac-i4ly
 title: 'Hail bands: declared named frequencies with routing rules'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-23T21:08:27Z
-updated_at: 2026-05-23T22:05:40Z
+updated_at: 2026-05-23T22:12:50Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-wr7d
@@ -109,18 +109,26 @@ file-walker from `~/.isaac/config/hail/*.edn`).
 - Existing `isaac config validate` accepts band files (extends
   config schema).
 
+## Feature files
+
+- `features/hail/bands.feature` — 2 `@wip` scenarios exercising
+  the schema integration end-to-end via `isaac config validate`:
+  - Positive: a valid band declaration validates.
+  - Negative: invalid `:reach` value is rejected with a clear
+    error.
+
+Run targeted: `bb features features/hail/bands.feature`.
+
 ## Verification
 
 **Speclj-primary**, like isaac-pctr. The library code (registry,
 schema, Reconfigurable lifecycle) gets unit specs at
-`spec/isaac/hail/bands_spec.clj`. One Gherkin scenario added to
-`features/config/cli.feature` (or new file) covers "config validate
-accepts a band declaration" — exercises the schema integration
-end-to-end via the CLI.
+`spec/isaac/hail/bands_spec.clj`. The Gherkin scenarios in
+`features/hail/bands.feature` cover the config-validate
+integration end-to-end.
 
-**Definition of done:** new Speclj specs green, the new
-config-validate scenario green (with `@wip` lifted), and
-`bb ci` green.
+**Definition of done:** new Speclj specs green, `features/hail/bands.feature`
+green (with `@wip` lifted), and `bb ci` green.
 
 ## Relationship to other beans
 
