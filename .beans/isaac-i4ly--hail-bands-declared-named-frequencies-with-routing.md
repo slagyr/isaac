@@ -4,10 +4,8 @@ title: 'Hail bands: declared named frequencies with routing rules'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:08:27Z
-updated_at: 2026-05-23T23:26:42Z
+updated_at: 2026-05-23T23:30:45Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-wr7d
@@ -159,3 +157,19 @@ Checks run:
 - Direct loader reproduction for empty band showed the acceptance gap above.
 
 The feature/spec coverage is too weak here: it only checks valid declarations and invalid `:reach`, not the required-addressing invariant.
+
+
+
+## Verification failed
+
+HEAD: 1604029a8ef285287d5bc9a91d1ffa6bb76c2d07
+Working tree: clean
+
+The acceptance bug from the prior review is fixed: an empty band declaration now fails validation with `hail.empty.addressing` and does not materialize into config. But verification still fails because `features/hail/bands.feature` was substantively edited without bean authorization. This bean has no `## Exceptions` section, and the verify gate only permits `@wip` removal absent explicit exceptions. Commit `1604029a` adds a third scenario (`config validate rejects a band without addressing fields`) to [features/hail/bands.feature], which is a real feature-file change rather than a tag removal.
+
+Checks run:
+- `bb spec spec/isaac/hail/bands_spec.clj spec/isaac/config/hail_loader_spec.clj` passed.
+- `bb features-all features/hail/bands.feature` passed.
+- Direct loader reproduction for `config/hail/empty.edn` containing `{}` now returns `[{:key "hail.empty.addressing", :value "must include at least one of :crew, :crew-tags, :session, :session-tags"}]` and no loaded band.
+
+No blocking product defect remains in the addressed invariant, but the feature-file edit needs to be authorized in the bean (or moved out) before this can pass verify.
