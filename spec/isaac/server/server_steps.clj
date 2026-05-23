@@ -544,7 +544,8 @@
             now        (ZonedDateTime/parse iso offset-formatter)
             scheduler  (scheduler-core/create {:clock (fn [] (.toInstant now))})]
         (try
-          (nexus/-with-nexus {:scheduler scheduler
+          (nexus/-with-nexus {:config    (atom cfg)
+                               :scheduler scheduler
                                :state-dir (runtime-state-dir)
                                :fs        fs*
                                :sessions  {:store (store/create (runtime-state-dir))}}
