@@ -52,7 +52,7 @@
       (store/resolve-store ctx-or-state-dir "status")
 
       :else
-      (store/resolve-store {:state-dir ctx-or-state-dir} "status"))))
+      (store/create ctx-or-state-dir))))
 
 (defn- status-data* [session-store session-key ctx]
   (let [entry          (store/get-session session-store session-key)

@@ -271,7 +271,7 @@
     (it "records failures and disables compaction after too many consecutive errors"
       (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
             session-key   "compact-fail"
-            session-store (system/get :session-store)
+            session-store (store/registered-store)
             events        (atom [])]
         (helper/create-session! test-dir session-key)
         (helper/update-session! test-dir session-key {:compaction {:consecutive-failures 4}})
@@ -300,7 +300,7 @@
     (it "resets failure state and rechecks compaction after successful progress"
       (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
             session-key   "compact-success"
-            session-store (system/get :session-store)
+            session-store (store/registered-store)
             events        (atom [])
             follow-up     (atom nil)]
         (helper/create-session! test-dir session-key)
@@ -334,7 +334,7 @@
     (it "stops when compaction makes no token progress"
       (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
             session-key   "compact-stuck"
-            session-store (system/get :session-store)
+            session-store (store/registered-store)
             events        (atom [])]
         (helper/create-session! test-dir session-key)
         (helper/update-session! test-dir session-key {:last-input-tokens 800})
@@ -357,7 +357,8 @@
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
       (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
-        (example)))
+        (helper/with-memory-store
+          (example))))
 
     (it "wraps the charge and exposes per-turn derived fields"
       (helper/create-session! test-dir "wrap-test")
@@ -368,6 +369,7 @@
                       :input          "hi"
                       :comm           :test-comm
                       :state-dir      test-dir
+                      :session-store  (store/registered-store)
                       :crew           "main"
                       :crew-members   {"main" {:model "spark" :tools {:allow [:spyglass]}}}
                       :context-window 32768
@@ -387,7 +389,8 @@
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
       (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
-        (example)))
+        (helper/with-memory-store
+          (example))))
 
     (it "replays prior transcript entries by default"
       (helper/create-session! test-dir "full-history" {:crew "main"})
@@ -441,7 +444,8 @@
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
       (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
-        (example)))
+        (helper/with-memory-store
+          (example))))
 
     (it "delegates via session-key and input extracted from the charge"
       (helper/create-session! test-dir "charge-arity" {:crew "main"})
@@ -451,6 +455,7 @@
                       :session-key    "charge-arity"
                       :input          "engage"
                       :state-dir      test-dir
+                      :session-store  (store/registered-store)
                       :comm           null-comm/channel
                       :crew           "main"
                       :model          "test-model"
@@ -473,7 +478,8 @@
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
       (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
-        (example)))
+        (helper/with-memory-store
+          (example))))
 
     (it "logs the resolved turn context"
       (helper/create-session! test-dir "context-log")
@@ -484,6 +490,7 @@
                       :input          "go"
                       :comm           :test-comm
                       :state-dir      test-dir
+                      :session-store  (store/registered-store)
                       :crew           "main"
                       :crew-members   {"main" {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}}
                       :crew-cfg       {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}
@@ -531,6 +538,7 @@
                             :session-key    "log-turn"
                             :input          "hi"
                             :state-dir      test-dir
+                            :session-store  (store/registered-store)
                             :comm           null-comm/channel
                             :crew           "main"
                             :crew-members   {"main" {:tools {:allow [:logbook-entry]}}}

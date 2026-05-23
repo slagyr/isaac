@@ -21,7 +21,8 @@
   "Builds a prebuilt charge for slash-command tests — sidesteps charge/build
    resolution so tests can pass arbitrary slash-handler ctx fields directly."
   [state-dir session-key input ctx]
-  (assoc ctx :charge/type :charge :session-key session-key :input input :state-dir state-dir))
+  (assoc ctx :charge/type :charge :session-key session-key :input input :state-dir state-dir
+             :session-store (store/registered-store)))
 
 (defn- delete-dir! [path]
   (let [f (io/file path)]
@@ -113,11 +114,12 @@
 
     (it "includes tool-count from registry"
       (system/with-system {:state-dir *state-dir*}
-        (tool-registry/clear!)
-        (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
-        (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-              data (bridge-status/status-data "testuser" ctx)]
-          (should= 1 (:tool-count data)))))
+        (helper/with-memory-store
+          (tool-registry/clear!)
+          (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
+          (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+                data (bridge-status/status-data "testuser" ctx)]
+            (should= 1 (:tool-count data))))))
     )
 
   (context "format-status"
@@ -339,7 +341,7 @@
       (helper/with-memory-store
         (let [dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-bang-" (random-uuid))]
           (delete-dir! dir)
-          (system/with-system {:state-dir dir :fs (fs/mem-fs)}
+          (system/with-nested-system {:state-dir dir :fs (fs/mem-fs)}
             (example)))))
 
     (it "uses the stored session crew when no override is provided"

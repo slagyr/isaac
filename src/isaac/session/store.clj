@@ -158,12 +158,11 @@
    :session-store (registered-store)})
 
 (defn resolve-store
-  "Resolve a session store from an explicit :session-store or create one from
-   :state-dir. caller is used only to make missing-context errors specific."
+  "Returns the session store from ctx, or throws. caller names the call site in the error.
+   The store must be boot-initialized and present under :session-store — ad-hoc creation is not supported."
   [ctx caller]
   (or (:session-store ctx)
-      (some-> (:state-dir ctx) create)
-      (throw (ex-info (str caller " requires :state-dir or :session-store")
+      (throw (ex-info (str caller " requires :session-store")
                       {:ctx-keys (-> ctx keys sort vec)}))))
 
 (defn register!

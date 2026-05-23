@@ -10,6 +10,7 @@
     [isaac.scheduler.cron :as cron]
     [isaac.module.loader :as module-loader]
     [isaac.cron.service :as cron-service]
+    [isaac.session.store :as store]
     [isaac.comm :as comm]
     [isaac.comm.delivery.worker :as worker]
     [isaac.comm.registry :as comm-registry]
@@ -545,7 +546,8 @@
         (try
           (system/with-system {:scheduler scheduler
                                :state-dir (runtime-state-dir)
-                               :fs        fs*}
+                               :fs        fs*
+                               :sessions  {:store (store/create (runtime-state-dir))}}
             (let [runner (cron-service/start! {:cfg cfg :state-dir (runtime-state-dir)})]
               (try
                 (invoke-scheduled-cron-tasks! scheduler now)

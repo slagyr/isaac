@@ -7,7 +7,7 @@
     [isaac.llm.provider :as llm-provider]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
-    [isaac.session.store.sidecar :as sidecar-store]))
+))
 
 (def charge-schema
   {:name   :charge
@@ -110,7 +110,7 @@
            provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
   (let [cfg*          (or cfg (config/snapshot) {})
         home*         (or home state-dir)
-        ss*           (or session-store (some-> state-dir sidecar-store/create-store))
+        ss*           (or session-store (store/registered-store))
         session-entry (when (and ss* session-key (satisfies? store/SessionStore ss*))
                         (store/get-session ss* session-key))
         crew-id       (or crew (:crew session-entry) (get-in cfg* [:defaults :crew]) "main")
@@ -130,7 +130,7 @@
                        :input         input
                        :comm          comm
                        :state-dir     state-dir
-                       :session-store session-store
+                       :session-store ss*
                        :crew          crew-id
                        :crew-members  known-crews
                        :models        (:models cfg*)

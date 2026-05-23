@@ -41,30 +41,28 @@
   [api-key factory]
   (api-impl/register! api-key factory))
 
-(defn- store-for [{:keys [state-dir session-store]}]
-  (session-store/resolve-store {:state-dir state-dir :session-store session-store} "api"))
-
 (defn create-session!
   "Create (or reopen) a session record.
    identifier may be a session name string or an existing session map.
    opts may include :crew, :origin, :chatType, :channel, :cwd.
    Returns the session map."
   ([identifier]
-   (session-store/open-session! (store-for (session-store/runtime-ctx)) identifier {}))
+   (session-store/open-session! (session-store/registered-store) identifier {}))
   ([identifier opts]
    (let [runtime      (merge (session-store/runtime-ctx) (select-keys opts [:state-dir :session-store]))
-          session-opts (dissoc opts :state-dir :session-store)]
-     (session-store/open-session! (store-for runtime) identifier session-opts)))
+         store        (session-store/resolve-store runtime "create-session!")
+         session-opts (dissoc opts :state-dir :session-store)]
+     (session-store/open-session! store identifier session-opts)))
   ([state-dir identifier opts]
-   (session-store/open-session! (store-for {:state-dir state-dir}) identifier opts)))
+   (session-store/open-session! (session-store/create state-dir) identifier opts)))
 
 (defn get-session
   "Return the session map for identifier, or nil if not found.
    identifier may be a session name string, key string, or session map."
   ([identifier]
-   (session-store/get-session (store-for (session-store/runtime-ctx)) identifier))
+   (session-store/get-session (session-store/registered-store) identifier))
   ([state-dir identifier]
-   (session-store/get-session (store-for {:state-dir state-dir}) identifier)))
+   (session-store/get-session (session-store/create state-dir) identifier)))
 
 (defn dispatch!
   "Comm-facing entry point for inbound messages. Triage slash commands,

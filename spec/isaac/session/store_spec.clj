@@ -18,16 +18,11 @@
       (let [s (memory/create-store)]
         (should= s (store/resolve-store {:session-store s} "test caller"))))
 
-    (it "creates a file-backed store from state-dir when needed"
-      (system/with-system {:fs (fs/mem-fs)}
-        (let [s (store/resolve-store {:state-dir "target/test-state/store-spec"} "test caller")]
-          (should (satisfies? store/SessionStore s)))))
-
-    (it "throws when neither session-store nor state-dir is available"
+    (it "throws when :session-store is absent"
       (let [error (try
                     (store/resolve-store {} "test caller")
                     (catch clojure.lang.ExceptionInfo e e))]
-        (should-contain "test caller requires :state-dir or :session-store" (.getMessage error))
+        (should-contain "test caller requires :session-store" (.getMessage error))
         (should= [] (:ctx-keys (ex-data error))))))
 
   (describe "runtime-ctx"
