@@ -106,11 +106,11 @@
 (defn- dispatch-charge! [c]
   (if (or (charge/slash? c) (charge/unresolved? c) (nil? (:session-key c)))
     (route-charge! c)
-    (let [session-store* (:session-store c)
+    (let [session-store* (nexus/get-in [:sessions :store])
           session-key    (:session-key c)]
       (if (store/mark-in-flight! session-store* session-key)
         (try
-          (route-charge! (assoc c :session-store session-store*))
+          (route-charge! c)
           (finally
             (store/clear-in-flight! session-store* session-key)))
         (refuse-dispatch session-key)))))

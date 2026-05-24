@@ -5,9 +5,9 @@
     [isaac.bridge.cancellation :as cancellation]
     [isaac.config.loader :as config]
     [isaac.llm.provider :as llm-provider]
+    [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
-    ))
+    [isaac.session.store :as store]))
 
 (def charge-schema
   {:name   :charge
@@ -17,7 +17,6 @@
             :comm              {:type :ignore :description "Communication channel"}
             :config            {:type :ignore :description "Config snapshot for this charge"}
             :state-dir         {:type :string :description "Resolved Isaac state directory"}
-            :session-store     {:type :ignore :description "Session store instance for this charge"}
             :crew              {:type :string :description "Resolved crew/agent id"}
             :crew-members      {:type :ignore :description "Full crew config map (all members)"}
             :models            {:type :ignore :description "All configured models map"}
@@ -76,7 +75,7 @@
 (defn transcript
   "Returns the active session transcript from the session store."
   [charge]
-  (when-let [ss (:session-store charge)]
+  (when-let [ss (nexus/get-in [:sessions :store])]
     (store/active-transcript ss (:session-key charge))))
 
 ;; endregion ^^^^^ Accessors ^^^^^
@@ -107,10 +106,10 @@
    context-mode, effort). On resolution failure (unknown crew error or no
    model) returns a charge marked :charge/unresolved with a :charge/reason
    keyword."
-  [{:keys [session-key input comm crew config state-dir session-store model model-ref model-override model-cfg
+  [{:keys [session-key input comm crew config state-dir model model-ref model-override model-cfg
            provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
   (let [config*         (or (when (map? config) config) (config/snapshot) {})
-        ss*             (or session-store (store/registered-store))
+        ss*             (store/registered-store)
         session-entry   (when (and ss* session-key (satisfies? store/SessionStore ss*))
                           (store/get-session ss* session-key))
         crew-id         (or crew (:crew session-entry) (get-in config* [:defaults :crew]) "main")
@@ -128,7 +127,6 @@
                          :comm          comm
                          :config        config*
                          :state-dir     state-dir
-                         :session-store ss*
                          :crew          crew-id
                          :crew-members  known-crews
                          :models        (:models config*)

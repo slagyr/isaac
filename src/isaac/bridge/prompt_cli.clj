@@ -132,7 +132,6 @@
                                       :input          (:message opts)
                                       :config         cfg
                                       :state-dir      state-dir
-                                      :session-store  session-store
                                       :home           home
                                       :crew           (or crew-override session-crew)
                                       :model-override (:model opts)

@@ -3,6 +3,7 @@
     [isaac.charge :as sut]
     [isaac.config.loader :as config]
     [isaac.marigold :as marigold]
+    [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [speclj.core :refer :all]))
@@ -84,16 +85,16 @@
 
   (describe "transcript"
 
-    (it "calls active-transcript on the session store"
+    (it "calls active-transcript on the session store from nexus"
       (let [messages [{:role "user" :content "hi"}]
             store    (reify store/SessionStore
                        (active-transcript [_ _] messages))]
-        (should= messages (sut/transcript {:charge/type  :charge
-                                           :session-key  "s1"
-                                           :session-store store}))))
+        (with-redefs [nexus/get-in (fn [path] (when (= [:sessions :store] path) store))]
+          (should= messages (sut/transcript {:charge/type :charge :session-key "s1"})))))
 
-    (it "returns nil when no session-store is set"
-      (should-be-nil (sut/transcript {:charge/type :charge :session-key "s1"}))))
+    (it "returns nil when no session store is registered"
+      (with-redefs [nexus/get-in (fn [_] nil)]
+        (should-be-nil (sut/transcript {:charge/type :charge :session-key "s1"})))))
 
   (describe "build"
 
@@ -139,19 +140,16 @@
           (should= "Base.\n\nAddendum." (:soul charge)))))
 
     (it "forwards crew and model overrides to resolve-behavior"
-      (let [seen  (atom nil)
-            store stub-comm]
+      (let [seen (atom nil)]
         (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}
                                                          :crew     {"main" (crew-cfg marigold/captain test-model-id "Base.")}
                                                          :models   {test-model-id (model-cfg test-model-id 4096)}})
                       session-ctx/resolve-behavior (fn [_ opts]
                                                      (reset! seen opts)
                                                      (stub-behavior "main" "Base." test-model-id 4096))]
-          (let [charge (sut/build {:session-key   "s1"
-                                   :input         "hi"
-                                   :state-dir     "/tmp/isaac/.isaac"
-                                   :session-store store})]
-            (should= store (:session-store charge))
+          (let [charge (sut/build {:session-key "s1"
+                                   :input       "hi"
+                                   :state-dir   "/tmp/isaac/.isaac"})]
             (should= "/tmp/isaac/.isaac" (:state-dir charge))
             (should= {:crew "main" :model nil} @seen)))))
 

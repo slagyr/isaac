@@ -188,7 +188,6 @@
                                                      :comm           null-comm/channel
                                                      :config         cfg
                                                      :state-dir      state-dir
-                                                     :session-store  session-store
                                                      :home           home
                                                      :crew           (:crew hook)
                                                      :model-override (:model hook)
