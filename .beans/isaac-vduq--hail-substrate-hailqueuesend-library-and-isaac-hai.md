@@ -4,10 +4,8 @@ title: 'Hail substrate: hail.queue/send! library and isaac hail send CLI'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T16:18:16Z
-updated_at: 2026-05-24T00:30:02Z
+updated_at: 2026-05-24T00:34:57Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-pctr
@@ -145,3 +143,27 @@ other consumer pending. Future tests can reuse it.
   `pending/` records this bean produces; subscription matcher
   (slice 2) doesn't strictly depend on substrate but is meaningless
   without something producing hails.
+
+
+
+## Verification failed
+
+HEAD: f84373127c8a147d4c58f4dad658bf411e0957b5
+Working tree: clean
+
+The new hail substrate still does not meet two required persistence guarantees from the bean.
+
+1. `hail.queue/send!` does not write atomically. The bean explicitly requires a temp-file + rename write at `<state-dir>/hail/pending/<id>.edn`, but the implementation writes the final path directly with `fs/spit` in `src/isaac/hail/queue.clj`. That means readers can observe a partially-written pending hail.
+
+2. The producer can spoof `:id` and `:sent-at`, which violates the bean's contract that ids come from `SequentialStrategy` and timestamps come from the project time abstraction. `normalize-record` only fills those fields when they are nil (`src/isaac/hail/queue.clj`), and the whole-hail stdin path passes caller-supplied fields straight through (`src/isaac/hail/cli.clj`). Direct repro:
+
+• `(queue/send! {:id "spoofed" :sent-at "1999-01-01T00:00:00Z" :frequency {:band "bean-pickup"} :from :cli})` returned and persisted that spoofed id/timestamp.
+• `isaac hail send -` with stdin `{:id "stdin-id" :sent-at "2000-01-01T00:00:00Z" :frequency {:band "bean-pickup"}}` printed `stdin-id` and persisted that supplied timestamp.
+
+Checks run:
+
+• `bb spec spec/isaac/hail/queue_spec.clj spec/isaac/hail/cli_spec.clj spec/isaac/server/cli/cli_steps_spec.clj` passed.
+• `bb features-all features/hail/send.feature` passed.
+• `bb ci` passed.
+
+So the scenarios are green, but coverage is missing the bean's persistence invariants.
