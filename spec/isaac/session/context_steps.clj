@@ -44,32 +44,22 @@
          (= home (subs (g/get :state-dir) 1))) (g/get :state-dir)
     :else (str (System/getProperty "user.dir") "/" home)))
 
-(defn -resolve-turn-context [{:keys [agents crew models workspace-home state-dir]} crew-id]
+(defn -resolve-turn-context [{:keys [agents crew models state-dir]} crew-id]
   (with-feature-fs
-    #(let [agents (or (not-empty crew) (not-empty agents))
-            home   (or state-dir workspace-home)
-            cfg    (if agents
-                      (build-synthetic-cfg agents models)
-                      (config/load-config {:home home :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))}))
-            ctx    (config/resolve-crew-context cfg crew-id {:home home})]
-       (assoc ctx :boot-files (session-ctx/read-boot-files nil)))))
-
-(defn workspace-soul-md [agent home doc-string]
-  (let [abs-home  (resolve-home-path home)
-          ws-dir   (str abs-home "/.isaac/workspace-" agent)
-          soul-path (str ws-dir "/SOUL.md")]
-    (with-feature-fs #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))]
-                        (fs/mkdirs fs* ws-dir)
-                        (fs/spit   fs* soul-path (str/trim doc-string)))))
-  (g/assoc! :workspace-home (resolve-home-path home)))
+    #(nexus/-with-nested-nexus (cond-> {} state-dir (assoc :state-dir state-dir))
+       (let [agents (or (not-empty crew) (not-empty agents))
+             cfg    (if agents
+                       (build-synthetic-cfg agents models)
+                       (config/load-config {:home state-dir :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))}))
+             ctx    (config/resolve-crew-context cfg crew-id)]
+         (assoc ctx :boot-files (session-ctx/read-boot-files nil))))))
 
 (defn turn-context-resolved [agent]
   (g/assoc! :resolved-ctx
-            (-resolve-turn-context {:models         (g/get :models)
-                                    :agents         (g/get :agents)
-                                    :crew           (g/get :crew)
-                                    :workspace-home (g/get :workspace-home)
-                                    :state-dir      (g/get :state-dir)}
+            (-resolve-turn-context {:models    (g/get :models)
+                                    :agents    (g/get :agents)
+                                    :crew      (g/get :crew)
+                                    :state-dir (g/get :state-dir)}
                                    agent)))
 
 (defn resolved-soul-contains [expected]
@@ -84,11 +74,6 @@
 
 (defn resolved-provider-not-nil []
   (g/should-not-be-nil (:provider (g/get :resolved-ctx))))
-
-(defgiven "workspace {agent:string} in {home:string} has SOUL.md:" isaac.session.context-steps/workspace-soul-md
-  "Writes SOUL.md to <home>/.isaac/workspace-<agent>/SOUL.md and binds
-   :workspace-home. The workspace subdirectory pattern is how per-crew
-   workspace souls are resolved at turn time.")
 
 (defwhen "turn context is resolved for crew {crew:string}" isaac.session.context-steps/turn-context-resolved
   "Resolves the turn context (soul, model, provider, provider-config)

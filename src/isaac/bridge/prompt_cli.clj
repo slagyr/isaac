@@ -48,7 +48,7 @@
       (some-> (:error payload) str)
       "unknown error"))
 
-(deftype CollectorChannel [text-atom]
+(deftype PromptComm [text-atom]
   comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ _ text] (swap! text-atom str text))
@@ -69,9 +69,9 @@
     (stderr-line! (str "🪦 compaction disabled: " (name (:reason payload)))))
   (on-turn-end [_ _ _] nil))
 
-(defn- make-collector []
+(defn- make-prompt-comm []
   (let [text (atom "")]
-    {:comm (->CollectorChannel text)
+    {:comm (->PromptComm text)
      :text text}))
 
 (defn- home-dir [{:keys [home state-dir]}]
@@ -125,12 +125,12 @@
                                             :cwd           (System/getProperty "user.dir")
                                             :origin        {:kind :cli}
                                             :session-store session-store}))
-            {:keys [comm text]} (make-collector)]
+            {:keys [comm text]} (make-prompt-comm)]
         (builtin/register-all!)
         (let [result (bridge/dispatch!
                        (charge/build {:session-key    session-key
                                       :input          (:message opts)
-                                      :cfg            cfg
+                                      :config         cfg
                                       :state-dir      state-dir
                                       :session-store  session-store
                                       :home           home

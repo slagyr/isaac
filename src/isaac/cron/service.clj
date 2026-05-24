@@ -89,7 +89,7 @@
                          (bridge/dispatch!
                            (charge/build {:session-key   (:id session)
                                           :input         prompt
-                                          :cfg           cfg
+                                          :config        cfg
                                           :state-dir     state-dir
                                           :session-store session-store*
                                           :home          state-dir

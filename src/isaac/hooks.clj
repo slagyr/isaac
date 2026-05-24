@@ -186,7 +186,7 @@
                      charge*          (charge/build {:session-key    session-key
                                                      :input          message
                                                      :comm           null-comm/channel
-                                                     :cfg            cfg
+                                                     :config         cfg
                                                      :state-dir      state-dir
                                                      :session-store  session-store
                                                      :home           home

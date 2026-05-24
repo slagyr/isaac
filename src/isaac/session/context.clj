@@ -43,14 +43,13 @@
   (let [root (if (.endsWith state-dir "/.isaac") state-dir (str state-dir "/.isaac"))]
     (str root "/crew/" crew-id)))
 
-(defn- merged-session [session overrides]
-  (merge session (select-keys overrides [:compaction :context-mode :crew :cwd :effort :history-retention :model :provider])))
-
 (declare resolve-compaction-config)
 
-(defn- resolve-behavior* [cfg state-dir session-entry overrides]
-  (let [session-entry  (merged-session session-entry overrides)
-        crew-id        (or (:crew session-entry)
+(def ^:private behavioral-keys
+  [:compaction :context-mode :context-window :crew :cwd :effort :history-retention :model :provider])
+
+(defn- resolve-behavior* [cfg state-dir session-entry]
+  (let [crew-id        (or (:crew session-entry)
                            (get-in cfg [:defaults :crew])
                            "main")
         model-override (:model session-entry)
@@ -61,7 +60,7 @@
         model-ref      (or model-override
                            (:model crew-cfg)
                            (get-in cfg [:defaults :model]))
-        context-window (or (:context-window overrides)
+        context-window (or (:context-window session-entry)
                            (:context-window ctx)
                            32768)]
     {:compaction        (resolve-compaction-config cfg session-entry ctx context-window)
@@ -113,8 +112,9 @@
    (let [state-dir      (nexus/state-dir)
          session-store* (session-store (:session-store overrides))
          cfg            (config/normalize-config (effective-config state-dir (fs/instance)))
-         session-entry  (or (some-> session-store* (store/get-session session-key)) {})
-            behavior       (resolve-behavior* cfg state-dir session-entry overrides)]
+         session-entry  (merge (or (some-> session-store* (store/get-session session-key)) {})
+                               (select-keys overrides behavioral-keys))
+         behavior       (resolve-behavior* cfg state-dir session-entry)]
        (log/debug :session/behavior-resolved
                   :session session-key
                 :crew (:crew behavior)
@@ -128,7 +128,7 @@
   [session-key opts]
   (let [state-dir (nexus/state-dir)
         cfg       (config/normalize-config (effective-config state-dir (fs/instance)))
-        behavior  (resolve-behavior* cfg state-dir {} opts)
+        behavior  (resolve-behavior* cfg state-dir (select-keys opts behavioral-keys))
         store     (require-session-store (:session-store opts))
         entry     (store/open-session! store session-key {:channel           (:channel opts)
                                                            :chat-type         (or (:chat-type opts) (:chatType opts))

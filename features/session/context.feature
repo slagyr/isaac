@@ -11,24 +11,12 @@ Feature: Turn context resolution
       | provider | grover |
       | context-window | 32768 |
 
-  Scenario: soul resolved from workspace SOUL.md
-    Given workspace "main" in "target/test-state" has SOUL.md:
-      """
-      You are Dr. Prattlesworth, a Victorian recluse.
-      """
-    When turn context is resolved for crew "main"
-    Then the resolved soul contains "Prattlesworth"
-
-  Scenario: soul falls back to default when no SOUL.md exists
+  Scenario: soul falls back to default when none is configured
     When turn context is resolved for crew "main"
     Then the resolved soul is "You are Isaac, a helpful AI assistant."
 
-  Scenario: soul from crew config takes precedence over SOUL.md
-    Given workspace "main" in "target/test-state" has SOUL.md:
-      """
-      You are Dr. Prattlesworth, a Victorian recluse.
-      """
-    And the isaac EDN file "config/crew/main.edn" exists with:
+  Scenario: soul from crew config is used when present
+    Given the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | grover |
       | soul | Custom soul text |

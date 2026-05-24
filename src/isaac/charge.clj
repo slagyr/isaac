@@ -7,7 +7,7 @@
     [isaac.llm.provider :as llm-provider]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
-))
+    ))
 
 (def charge-schema
   {:name   :charge
@@ -15,6 +15,7 @@
    :schema {:session-key       {:type :string :description "Session identifier"}
             :input             {:type :string :description "User input string"}
             :comm              {:type :ignore :description "Communication channel"}
+            :config            {:type :ignore :description "Config snapshot for this charge"}
             :state-dir         {:type :string :description "Resolved Isaac state directory"}
             :session-store     {:type :ignore :description "Session store instance for this charge"}
             :crew              {:type :string :description "Resolved crew/agent id"}
@@ -106,49 +107,48 @@
    context-mode, effort). On resolution failure (unknown crew error or no
    model) returns a charge marked :charge/unresolved with a :charge/reason
    keyword."
-  [{:keys [session-key input comm crew cfg state-dir session-store model model-ref model-override model-cfg
+  [{:keys [session-key input comm crew config state-dir session-store model model-ref model-override model-cfg
            provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
-  (let [cfg*          (or cfg (config/snapshot) {})
-        ss*           (or session-store (store/registered-store))
-        session-entry (when (and ss* session-key (satisfies? store/SessionStore ss*))
-                        (store/get-session ss* session-key))
-        crew-id       (or crew (:crew session-entry) (get-in cfg* [:defaults :crew]) "main")
-        model-ref*    (or model-override model-ref model (:model session-entry))
-        known-crews   (or (:crew cfg*) {})
-        default-crew  (get-in cfg* [:defaults :crew])
-        unknown?      (and (seq known-crews)
-                           (not (or (= crew-id "main")
-                                    (contains? known-crews crew-id)
-                                    (= crew-id default-crew))))
-        ctx           (delay (session-ctx/resolve-behavior
-                               session-key
-                               {:crew crew-id :model model-ref*}))
-        model*        (delay (or model (get-in @ctx [:model-cfg :model]) (:model @ctx)))
-        base          {:session-key   session-key
-                       :input         input
-                       :comm          comm
-                       :state-dir     state-dir
-                       :session-store ss*
-                       :crew          crew-id
-                       :crew-members  known-crews
-                       :models        (:models cfg*)
-                       :module-index  (:module-index cfg*)
-                       :origin        origin}]
+  (let [config*         (or (when (map? config) config) (config/snapshot) {})
+        ss*             (or session-store (store/registered-store))
+        session-entry   (when (and ss* session-key (satisfies? store/SessionStore ss*))
+                          (store/get-session ss* session-key))
+        crew-id         (or crew (:crew session-entry) (get-in config* [:defaults :crew]) "main")
+        model-ref*      (or model-override model-ref model (:model session-entry))
+        known-crews     (or (:crew config*) {})
+        default-crew    (get-in config* [:defaults :crew])
+        unknown?        (and (seq known-crews)
+                             (not (or (= crew-id "main")
+                                      (contains? known-crews crew-id)
+                                      (= crew-id default-crew))))
+        session-context (delay (session-ctx/resolve-behavior session-key {:crew crew-id :model model-ref*}))
+        model*          (delay (or model (get-in @session-context [:model-cfg :model]) (:model @session-context)))
+        base            {:session-key   session-key
+                         :input         input
+                         :comm          comm
+                         :config        config*
+                         :state-dir     state-dir
+                         :session-store ss*
+                         :crew          crew-id
+                         :crew-members  known-crews
+                         :models        (:models config*)
+                         :module-index  (:module-index config*)
+                         :origin        origin}]
     (cond (:error dispatch-error) (unresolved-charge base (:error dispatch-error))
           unknown? (unresolved-charge base :unknown-crew)
           (nil? @model*) (unresolved-charge base :no-model)
           :else (merge base {:charge/type    :charge
-                             :crew-cfg       (:crew-cfg @ctx)
-                             :context-window (or context-window (:context-window @ctx))
-                             :context-mode   (:context-mode @ctx)
-                             :compaction     (:compaction @ctx)
-                             :effort         (:effort @ctx)
-                             :cwd            (:cwd @ctx)
+                             :crew-cfg       (:crew-cfg @session-context)
+                             :context-window (or context-window (:context-window @session-context))
+                             :context-mode   (:context-mode @session-context)
+                             :compaction     (:compaction @session-context)
+                             :effort         (:effort @session-context)
+                             :cwd            (:cwd @session-context)
                              :model          @model*
-                             :model-cfg      (or model-cfg (:model-cfg @ctx))
-                             :provider       (ensure-provider (or provider (:provider @ctx)) cfg*)
-                             :provider-cfg   (or provider-cfg (:provider-cfg @ctx))
-                             :soul           (or soul (cond-> (:soul @ctx)
+                             :model-cfg      (or model-cfg (:model-cfg @session-context))
+                             :provider       (ensure-provider (or provider (:provider @session-context)) config*)
+                             :provider-cfg   (or provider-cfg (:provider-cfg @session-context))
+                             :soul           (or soul (cond-> (:soul @session-context)
                                                               soul-prepend (str "\n\n" soul-prepend)))}))))
 
 ;; endregion ^^^^^ Construction ^^^^^

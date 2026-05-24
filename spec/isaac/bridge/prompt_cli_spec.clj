@@ -28,10 +28,10 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example] (helper/with-memory-store (example)))
 
-  (describe "CollectorChannel"
+  (describe "PromptComm"
 
     (it "renders compaction lifecycle and tool events to stderr while keeping response text separate"
-      (let [collector   (#'sut/make-collector)
+      (let [collector   (#'sut/make-prompt-comm)
             channel     (:comm collector)
             err-writer  (java.io.StringWriter.)]
         (binding [*err* err-writer]
