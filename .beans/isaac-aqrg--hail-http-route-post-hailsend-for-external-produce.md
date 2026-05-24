@@ -1,11 +1,11 @@
 ---
 # isaac-aqrg
 title: 'Hail HTTP route: POST /hail/send for external producers'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-23T21:57:57Z
-updated_at: 2026-05-23T22:05:40Z
+updated_at: 2026-05-24T00:49:12Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
@@ -29,9 +29,9 @@ Content-Type: application/json     ;; or application/edn
 Body: { ...hail record... }
 ```
 
-The body is a serialized hail with addressing (per the locked
-shape: `:frequency {...}`), optional payload, optional prompt
-(required for non-band addressing).
+The body is a serialized hail with `:frequency` (per the locked
+shape), optional `:payload`, optional `:prompt` (required for
+non-band frequencies).
 
 JSON body example:
 
@@ -49,6 +49,16 @@ EDN body example:
  :payload   {:bean-id "isaac-abc"}}
 ```
 
+### Route registration
+
+In v1 (pre-berths Isaac), the handler is registered statically at
+server boot — alongside `/status`, `/hooks/*`, and other static
+routes. `default Grover setup` brings the server up with the route
+available; no extra config or manifest setup needed in tests.
+
+Post-berths refactor will move this to a `:isaac.server/route`
+berth declaration; not in scope for v1.
+
 ### Response
 
 ```json
@@ -61,13 +71,14 @@ Body: { "id": "hail-42", ...full record... }
 On validation error:
 ```json
 HTTP 400 Bad Request
-{ "error": "missing addressing", "hint": "include :frequency with at least one address field" }
+{ "error": "missing frequency", "hint": "include :frequency with at least one field" }
 ```
 
 ### Authentication
 
-Reuses the existing server-wide auth token (per isaac-g69y).
-Requests without the token return 401.
+Server-wide auth (per isaac-g69y) protects this route via existing
+middleware — no Hail-specific auth handling. Auth-related test
+coverage lives with the server's auth feature, not duplicated here.
 
 ### `:from` identity
 
@@ -84,24 +95,31 @@ Requests without the token return 401.
 ## Acceptance
 
 - `POST /hail/send` accepts JSON and EDN content types.
-- Body is parsed and validated (addressing required; matches
+- Body is parsed and validated (`:frequency` required; matches the
   locked hail schema).
 - Calls `isaac.hail.queue/send!`; persists the hail.
 - Returns 201 with the full record (in matching content-type) and
   `Location` header pointing at the new hail id.
-- Returns 400 with a clear message on validation failure.
-- Returns 401 without valid auth token.
+- Returns 400 with a structured `error` key on validation failure
+  or unparseable body.
+- Sets `:from :http` on the persisted record.
 
-## Feature scenarios
+## Feature files
 
-`features/hail/http.feature` or extend `features/server/*`, `@wip`.
-To draft later:
+- `features/hail/http.feature` — 4 `@wip` scenarios:
+  - POST JSON + valid auth → 201, hail persisted with `:from :http`.
+  - POST EDN + valid auth → 201, hail persisted with `:from :http`.
+  - POST with missing `:frequency` → 400 + structured error.
+  - POST with malformed JSON body → 400 + structured error.
 
-- POST with JSON body and valid auth → 201 + hail persisted.
-- POST with EDN body and valid auth → 201 + hail persisted.
-- POST with missing addressing → 400 with hint.
-- POST without auth token → 401.
-- Returned record's `:from` is `:http`.
+Auth tests (missing/wrong token) live with the server auth feature
+(per isaac-g69y), not duplicated here.
+
+Run targeted: `bb features features/hail/http.feature`.
+
+**Definition of done:** remove `@wip` from
+`features/hail/http.feature` and
+`bb features features/hail/http.feature` is green.
 
 ## Relationship to other beans
 
