@@ -1,15 +1,20 @@
 (ns isaac.session.cli
   (:require
+    [c3kit.apron.schema :as schema]
+    [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
     [isaac.cli.table :as table]
+    [isaac.config.nav :as nav]
     [isaac.config.loader :as config]
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
+    [isaac.session.schema :as session-schema]
     [isaac.session.store :as store]
-    [isaac.nexus :as nexus])
+    [isaac.nexus :as nexus]
+    [isaac.tool.memory :as memory])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time ZoneOffset)))
@@ -223,6 +228,95 @@
         (do (println (str "deleted: " session-id)) 0)
         (do (println (str "session not found: " session-id)) 1)))))
 
+(defn- print-mutation-error! [message]
+  (binding [*out* *err*]
+    (println message))
+  1)
+
+(defn- parse-mutation-target [raw-path]
+  (if-let [dot-index (str/index-of raw-path ".")]
+    {:session-id (subs raw-path 0 dot-index)
+     :path-str   (subs raw-path (inc dot-index))}
+    {:error (str "invalid path: " raw-path)}))
+
+(defn- parse-set-value [_spec raw-value]
+  (cond
+    (re-matches #"-?\d+" raw-value) (parse-long raw-value)
+    (contains? #{"false" "nil" "true"} raw-value) (edn/read-string raw-value)
+    (or (str/starts-with? raw-value "[")
+        (str/starts-with? raw-value "{")
+        (str/starts-with? raw-value ":")
+        (str/starts-with? raw-value "\"")) (edn/read-string raw-value)
+    :else raw-value))
+
+(defn- mutable-error [path-str spec]
+  (cond
+    (:system-managed? spec) (str "system-managed field: " path-str)
+    :else                   (str "immutable field: " path-str)))
+
+(defn- path-message [path-str result value]
+  (let [segments (mapv keyword (str/split path-str #"\."))
+        top-key  (first segments)
+        message  (or (get-in (schema/message-map result) segments)
+                     (get-in (schema/message-map result) [top-key]))]
+    (or (when (and (= :crew top-key) message)
+          (str message ": " value))
+        message
+        (first (schema/message-seq result))
+        (str "invalid value for " path-str))))
+
+(defn- run-mutation [opts operation raw-path raw-value]
+  (let [loaded-cfg     (config/normalize-config (config/load-config {:home (:home opts)}))
+        state-dir      (resolve-state-dir opts loaded-cfg)
+        _              (nexus/register! [:state-dir] state-dir)
+        session-store  (resolve-session-store loaded-cfg state-dir)
+        target         (parse-mutation-target raw-path)]
+    (if-let [error (:error target)]
+      (print-mutation-error! error)
+      (let [{:keys [session-id path-str]} target
+            session (store/get-session session-store session-id)]
+        (cond
+          (nil? session)
+          (print-mutation-error! (str "session not found: " session-id))
+
+          :else
+          (let [path-result (nav/path->spec session-schema/Session path-str)]
+            (cond
+              (not (:ok? path-result))
+              (print-mutation-error! (:error path-result))
+
+              (not (:mutable? (:spec path-result)))
+              (print-mutation-error! (mutable-error path-str (:spec path-result)))
+
+              (and (= :set operation) (nil? (:member path-result)) (nil? raw-value))
+              (print-mutation-error! "missing value")
+
+              :else
+              (do
+                (config/set-snapshot! loaded-cfg)
+                (try
+                  (let [nav-result (case operation
+                                     :set   (nav/set-value session-schema/Session session path-str
+                                                           (when-not (:member path-result)
+                                                             (parse-set-value (:spec path-result) raw-value)))
+                                     :unset (nav/unset-value session-schema/Session session path-str))]
+                    (if-not (:ok? nav-result)
+                      (print-mutation-error! (:error nav-result))
+                      (let [top-key       (keyword (first (str/split path-str #"\.")))
+                            updated-value (get-in (:config nav-result) [top-key])
+                            current-value (get-in session [top-key])]
+                        (if (= current-value updated-value)
+                          0
+                          (let [conformed (session-schema/conform-read (:config nav-result))]
+                            (if (schema/error? conformed)
+                              (print-mutation-error! (path-message path-str conformed updated-value))
+                              (do
+                                (store/update-session! session-store session-id {top-key       updated-value
+                                                                                 :updated-at (str (memory/now))})
+                                0)))))))
+                  (finally
+                    (config/set-snapshot! nil)))))))))))
+
 ;; region ----- Command -----
 
 (defn run [opts]
@@ -292,6 +386,12 @@
 
       (= "delete" subcmd)
       (run-delete opts (second _raw-args))
+
+      (= "set" subcmd)
+      (run-mutation opts :set (second _raw-args) (nth _raw-args 2 nil))
+
+      (= "unset" subcmd)
+      (run-mutation opts :unset (second _raw-args) nil)
 
       :else
       (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]

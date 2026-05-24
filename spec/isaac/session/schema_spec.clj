@@ -62,4 +62,9 @@
   (it "returns readable schema errors for invalid read data"
     (let [result (sut/conform-read {:id "alpha" :name nil})]
       (should (schema/error? result))
-      (should= "must be present" (get-in (schema/message-map result) [:name])))))
+      (should= "must be present" (get-in (schema/message-map result) [:name]))))
+
+  (it "marks mutable immutable and system-managed fields"
+    (should (:mutable? (get-in sut/Session [:schema :crew])))
+    (should-not (:mutable? (get-in sut/Session [:schema :id])))
+    (should (:system-managed? (get-in sut/Session [:schema :input-tokens])))))

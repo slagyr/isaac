@@ -1,4 +1,3 @@
-@wip
 Feature: Session mutation
   `isaac sessions set <id>.<key> [<value>]` and `isaac sessions
   unset <id>.<key>` mutate session records via a schema-aware

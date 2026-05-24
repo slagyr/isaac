@@ -1,6 +1,23 @@
 (ns isaac.session.schema
   (:require
-    [c3kit.apron.schema :as schema]))
+    [c3kit.apron.schema :as schema]
+    [isaac.config.loader :as config]))
+
+(defn- mutable [spec]
+  (assoc spec :mutable? true :system-managed? false))
+
+(defn- immutable [spec]
+  (assoc spec :mutable? false :system-managed? false))
+
+(defn- system-managed [spec]
+  (assoc spec :mutable? false :system-managed? true))
+
+(defn- known-crew? [crew]
+  (let [crews (:crew (config/snapshot))]
+    (or (nil? crew)
+        (nil? crews)
+        (empty? crews)
+        (contains? crews crew))))
 
 (defn kebabize-legacy-keys [entry]
   (cond-> entry
@@ -9,57 +26,59 @@
 
 (def Origin
   {:name   :session-origin
-  :type   :map
-  :schema {:kind {:type :keyword}
-            :channel-id {:type :string}
-            :guild-id {:type :string}
-            :name {:type :string}}})
+   :type   :map
+   :schema {:kind       (immutable {:type :keyword})
+            :channel-id (immutable {:type :string})
+            :guild-id   (immutable {:type :string})
+            :name       (immutable {:type :string})}})
 
 (def CompactionState
   {:name   :session-compaction-state
   :type   :map
-  :schema {:async?               {:type :boolean}
-           :consecutive-failures {:type :int}
-           :strategy             {:type :keyword}
-           :head                 {:type :double}
-           :threshold            {:type :double}}})
+   :schema {:async?               (mutable {:type :boolean})
+            :consecutive-failures (system-managed {:type :int})
+            :strategy             (mutable {:type :keyword})
+            :head                 (mutable {:type :double})
+            :threshold            (mutable {:type :double})}})
 
 (def Session
   {:name   :session
    :type   :map
-   :schema {:id                  {:type :string :required? true :validate schema/present? :message "must be present"}
-            :key                 {:type :string}
-            :name                {:type :string :required? true :validate schema/present? :message "must be present"}
-            :sessionId           {:type :string}
-            :session-file        {:type :string}
-            :origin              {:type :map :schema (:schema Origin)}
-            :crew                {:type :string}
-            :model               {:type :string}
-            :provider            {:type :string}
-            :tags                {:type :ignore
-                                  :set-type? true
-                                  :validate #(or (nil? %) (and (set? %) (every? keyword? %)))
-                                  :message "must be a set of keywords"}
-            :effort              {:type :int}
-            :context-mode        {:type :keyword}
-            :channel             {:type :string}
-            :chat-type           {:type :string}
-            :cwd                 {:type :string}
-            :created-at          {:type :string}
-            :updated-at          {:type :string}
-            :last-channel        {:type :string}
-            :last-to             {:type :string}
-            :compaction-count    {:type :int}
-            :compaction-disabled {:type :boolean}
-            :compaction          {:type :map :schema (:schema CompactionState)}
-            :history-retention   {:type :keyword}
-            :effective-history-offset {:type :long}
-            :input-tokens        {:type :int}
-            :output-tokens       {:type :int}
-            :total-tokens        {:type :int}
-            :last-input-tokens   {:type :int}
-            :cache-read          {:type :int}
-            :cache-write         {:type :int}}})
+   :schema {:id                  (immutable {:type :string :required? true :validate schema/present? :message "must be present"})
+            :key                 (immutable {:type :string})
+            :name                (mutable {:type :string :required? true :validate schema/present? :message "must be present"})
+            :sessionId           (immutable {:type :string})
+            :session-file        (immutable {:type :string})
+            :origin              (immutable {:type :map :schema (:schema Origin)})
+            :crew                (mutable {:type :string
+                                           :validate known-crew?
+                                           :message "crew does not exist"})
+            :model               (mutable {:type :string})
+            :provider            (mutable {:type :string})
+            :tags                (mutable {:type :ignore
+                                           :set-type? true
+                                           :validate #(or (nil? %) (and (set? %) (every? keyword? %)))
+                                           :message "must be a set of keywords"})
+            :effort              (mutable {:type :int})
+            :context-mode        (mutable {:type :keyword})
+            :channel             (mutable {:type :string})
+            :chat-type           (mutable {:type :string})
+            :cwd                 (mutable {:type :string})
+            :created-at          (immutable {:type :string})
+            :updated-at          (system-managed {:type :string})
+            :last-channel        (system-managed {:type :string})
+            :last-to             (system-managed {:type :string})
+            :compaction-count    (system-managed {:type :int})
+            :compaction-disabled (mutable {:type :boolean})
+            :compaction          (mutable {:type :map :schema (:schema CompactionState)})
+            :history-retention   (mutable {:type :keyword})
+            :effective-history-offset (system-managed {:type :long})
+            :input-tokens        (system-managed {:type :int})
+            :output-tokens       (system-managed {:type :int})
+            :total-tokens        (system-managed {:type :int})
+            :last-input-tokens   (system-managed {:type :int})
+            :cache-read          (system-managed {:type :int})
+            :cache-write         (system-managed {:type :int})}})
 
 (defn conform-read [entry]
   (let [result (schema/conform Session (kebabize-legacy-keys entry))]

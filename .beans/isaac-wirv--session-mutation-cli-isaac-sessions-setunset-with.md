@@ -1,11 +1,13 @@
 ---
 # isaac-wirv
 title: 'Session mutation CLI: isaac sessions set/unset with schema validation'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T03:03:06Z
-updated_at: 2026-05-23T05:17:14Z
+updated_at: 2026-05-24T03:24:28Z
 blocked_by:
     - isaac-wr7d
     - isaac-x0b5
