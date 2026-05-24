@@ -1,7 +1,6 @@
 (ns isaac.module.manifest-spec
   (:require
     [c3kit.apron.schema :as schema]
-    [c3kit.apron.schema.refs :as refs]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.module.manifest :as sut]
@@ -187,22 +186,21 @@
         (should-not (contains? result :unknown-field))
         (should (some #(= :manifest/unknown-key (:event %)) @log/captured-logs)))))
 
-  (describe "verify-schema-refs on :comm :schema fragments"
+  (describe "verify-schema-lexes on :comm :schema fragments"
 
     #_{:clj-kondo/ignore [:invalid-arity]}
-    (around [it]
-      (binding [schema/*ref-registry* (atom {})]
-        (refs/install!)
-        (it)))
+    (around [example]
+      (binding [schema/*lexicon* schema/default-lexicon]
+        (example)))
 
     (it ":validations [:present?] roundtrips"
       (let [frag {:loft {:type :string :validations [:present?]}}]
-        (should= true (schema/verify-schema-refs frag))))
+        (should= true (schema/verify-schema-lexes frag))))
 
     (it "factory ref [[:> 5]] roundtrips"
       (let [frag {:score {:type :int :validations [[:> 5]]}}]
-        (should= true (schema/verify-schema-refs frag))))
+        (should= true (schema/verify-schema-lexes frag))))
 
-    (it "unregistered ref fails verify-schema-refs"
+    (it "unregistered ref fails verify-schema-lexes"
       (let [frag {:foo {:type :string :validations [:does-not-exist?]}}]
-        (should-throw Exception (schema/verify-schema-refs frag))))))
+        (should-throw Exception (schema/verify-schema-lexes frag))))))

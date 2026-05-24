@@ -158,7 +158,7 @@
                      [:trigger :message])))
 
   (it "validates handler type before scheduling"
-    (should= "is invalid"
+    (should= "must be a function"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :interval :ms 100}
                                            :handler 42})

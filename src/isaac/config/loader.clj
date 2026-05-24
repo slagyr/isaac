@@ -4,7 +4,6 @@
     [c3kit.apron.corec :as ccc]
     [c3kit.apron.env :as c3env]
     [c3kit.apron.schema :as cs]
-    [c3kit.apron.schema.refs :as refs]
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
@@ -643,13 +642,13 @@
    :message  (str "is required when " (name other-key) " is " (->id expected))})
 
 (defonce ^:private _refs-registered
-          (binding [cs/*warn-fn* ccc/noop]
-            (refs/install!)
-            (when-let [one-of-ref (try (cs/get-ref! :one-of) (catch Throwable _ nil))]
-              (cs/register-ref! :one-of? one-of-ref))
-            (doseq [[k v] existence-refs] (cs/register-ref! k v))
-            (cs/register-ref! :present-when? present-when-ref)
-            true))
+  (do
+    (when-let [one-of-ref (try (cs/lex! :validations :one-of) (catch Throwable _ nil))]
+      (cs/update-lexicon! :validations assoc :one-of? one-of-ref))
+    (doseq [[k v] existence-refs]
+      (cs/update-lexicon! :validations assoc k v))
+    (cs/update-lexicon! :validations assoc :present-when? present-when-ref)
+    true))
 
 (defn- validation-context [config]
   (let [known-values {:llm-api-exists?           (known-llm-api-ids config)
@@ -684,7 +683,7 @@
 
 (defn- resolve-ref-def [validation]
   (let [[ref-key & args] (if (vector? validation) validation [validation])
-        ref-def          (try (cs/get-ref! ref-key) (catch Throwable _ nil))]
+        ref-def          (try (cs/lex! :validations ref-key) (catch Throwable _ nil))]
     (cond
       (and (fn? ref-def) (seq args)) (apply ref-def args)
       :else                          ref-def)))
@@ -790,13 +789,14 @@
 
 (defn- verify-manifest-schema-fragment [module-id field-schema]
   (try
-    (cs/verify-schema-refs field-schema)
+    (cs/verify-schema-lexes field-schema)
     []
     (catch Throwable t
       [{:key   (str "modules." (->id module-id))
-        :value (if-let [ref (:ref (ex-data t))]
+        :value (if-let [ref (or (:ref (ex-data t))
+                                (:lex (ex-data t)))]
                  (str "unregistered ref " ref)
-                 (.getMessage t))}])))
+                  (.getMessage t))}])))
 
 (defn- manifest-ref-errors [module-index]
   (mapcat (fn [[module-id entry]]

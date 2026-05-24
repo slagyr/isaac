@@ -1,7 +1,6 @@
 (ns isaac.scheduler
   (:require
     [c3kit.apron.schema :as schema]
-    [c3kit.apron.schema.refs :as refs]
     [isaac.scheduler.cron :as cron]
     [isaac.logger :as log])
   (:import
@@ -10,8 +9,6 @@
     (java.util.concurrent Executors Future ScheduledExecutorService
                           ScheduledFuture ThreadFactory TimeUnit)
     (java.util.concurrent.atomic AtomicLong)))
-
-(refs/ensure-installed!)
 
 (def ^:private default-tick-ms 50)
 
