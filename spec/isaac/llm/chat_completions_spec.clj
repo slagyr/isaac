@@ -19,7 +19,7 @@
                   :model   model
                   :usage   {:prompt_tokens prompt-tokens :completion_tokens completion-tokens}}))
 
-(def test-config {:apiKey "sk-test" :baseUrl "https://api.example.com/v1"})
+(def test-config {:api-key "sk-test" :base-url "https://api.example.com/v1"})
 
 (describe "OpenAI Completions Provider"
 
@@ -27,13 +27,13 @@
 
     (it "parses a text response from choices array"
       (with-redefs [http/post (fn [_ _] (chat-response "Hello!"))]
-        (let [result (sut/chat {:model "gpt-5" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "gpt-5" :messages []} "openai" test-config)]
           (should= "Hello!" (get-in result [:message :content]))
           (should= "gpt-5" (:model result)))))
 
     (it "parses token usage"
       (with-redefs [http/post (fn [_ _] (chat-response "Hi" :prompt-tokens 42 :completion-tokens 18))]
-        (let [result (sut/chat {:model "gpt-5" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "gpt-5" :messages []} "openai" test-config)]
           (should= 42 (:input-tokens (:usage result)))
           (should= 18 (:output-tokens (:usage result))))))
 
@@ -42,7 +42,7 @@
                                            :tool-calls [{:id "tc1"
                                                          :function {:name      "read_file"
                                                                     :arguments "{\"path\":\"README\"}"}}]))]
-        (let [result (sut/chat {:model "gpt-5" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "gpt-5" :messages []} "openai" test-config)]
           (should= 1 (count (:tool-calls result)))
           (should= "read_file" (:name (first (:tool-calls result))))
           (should= {:path "README"} (:arguments (first (:tool-calls result)))))))
@@ -52,19 +52,19 @@
                                            :tool-calls [{:id "tc1"
                                                          :function {:name      "read_file"
                                                                     :arguments {:path "README"}}}]))]
-        (let [result (sut/chat {:model "gpt-5" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "gpt-5" :messages []} "openai" test-config)]
           (should= {:path "README"} (:arguments (first (:tool-calls result)))))))
 
     (it "sets Authorization Bearer header"
       (let [captured-headers (atom nil)]
         (with-redefs [http/post (fn [_ opts] (reset! captured-headers (:headers opts)) (chat-response ""))]
-          (sut/chat {:model "test" :messages []} {:provider-config test-config})
+          (sut/chat {:model "test" :messages []} "openai" test-config)
           (should= "Bearer sk-test" (get @captured-headers "Authorization")))))
 
     (it "constructs correct URL from baseUrl"
       (let [captured-url (atom nil)]
         (with-redefs [http/post (fn [url _] (reset! captured-url url) (chat-response ""))]
-          (sut/chat {:model "test" :messages []} {:provider-config test-config})
+          (sut/chat {:model "test" :messages []} "openai" test-config)
           (should= "https://api.example.com/v1/chat/completions" @captured-url))))
 
     (it "maps :effort 7 to reasoning_effort high"
@@ -75,7 +75,7 @@
                                              :model   "gpt-5"
                                              :usage   {:prompt_tokens 10 :completion_tokens 5}})]
           (sut/chat {:model "gpt-5" :effort 7 :messages [{:role "user" :content "hi"}]}
-                    {:provider-config test-config})
+                    "openai" test-config)
           (should= "high" (:reasoning_effort @captured-body)))))
 
     (it "omits reasoning_effort when :effort is absent"
@@ -86,33 +86,33 @@
                                              :model   "cookie"
                                              :usage   {:prompt_tokens 10 :completion_tokens 5}})]
           (sut/chat {:model "cookie" :messages [{:role "user" :content "hi"}]}
-                    {:provider-config test-config})
+                    "openai" test-config)
           (should-not (contains? @captured-body :reasoning_effort)))))
 
     (it "returns auth-failed on 401"
       (with-redefs [http/post (fn [_ _] {:status 401 :body (json/generate-string {:error {:message "invalid"}})})]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "test" :messages []} "openai" test-config)]
           (should= :auth-failed (:error result)))))
 
     (it "returns auth-missing when openai api key is blank and OPENAI_API_KEY is unset"
       (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
         (let [result (sut/chat {:model "test" :messages []}
-                               {:provider-name   "openai"
-                                :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+                               "openai"
+                               {:api-key "" :base-url "https://api.openai.com/v1"})]
           (should= :auth-missing (:error result))
           (should-contain "OPENAI_API_KEY" (:message result)))))
 
     (it "returns auth-missing when grok api key is blank and GROK_API_KEY is unset"
       (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
         (let [result (sut/chat {:model "test" :messages []}
-                               {:provider-name   "grok"
-                                :provider-config {:apiKey "" :baseUrl "https://api.x.ai/v1"}})]
+                               "grok"
+                               {:api-key "" :base-url "https://api.x.ai/v1"})]
           (should= :auth-missing (:error result))
           (should-contain "GROK_API_KEY" (:message result)))))
 
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "test" :messages []} "openai" test-config)]
           (should= :connection-refused (:error result))))))
 
   (describe "shared helpers"
@@ -124,17 +124,17 @@
       (should-be-nil                   (shared/provider-env-var nil))
       (should-be-nil                   (shared/provider-env-var "")))
 
-    (it "resolve-api-key returns the explicit :apiKey when present"
-      (should= "explicit" (shared/resolve-api-key "xai" {:apiKey "explicit"})))
+    (it "resolve-api-key returns the explicit :api-key when present"
+      (should= "explicit" (shared/resolve-api-key "xai" {:api-key "explicit"})))
 
-    (it "resolve-api-key falls back to the <PROVIDER>_API_KEY env when :apiKey is blank"
+    (it "resolve-api-key falls back to the <PROVIDER>_API_KEY env when :api-key is blank"
       (isaac.config.loader/set-env-override! "XAI_API_KEY" "env-supplied")
       (try
-        (should= "env-supplied" (shared/resolve-api-key "xai" {:apiKey ""}))
+        (should= "env-supplied" (shared/resolve-api-key "xai" {:api-key ""}))
         (should= "env-supplied" (shared/resolve-api-key "xai" {}))
         (finally (isaac.config.loader/clear-env-overrides!))))
 
-    (it "resolve-api-key returns nil when neither :apiKey nor env are set"
+    (it "resolve-api-key returns nil when neither :api-key nor env are set"
       (isaac.config.loader/clear-env-overrides!)
       (should-be-nil (shared/resolve-api-key "definitely-not-a-real-provider-xyz" {})))
 
@@ -202,7 +202,7 @@
                                                       initial events)))]
           (let [result (sut/chat-stream {:model "gpt-5" :messages []}
                                         (fn [c] (swap! chunks conj c))
-                                        {:provider-config test-config})]
+                                        "openai" test-config)]
             (should= true (:stream @captured-body))
             (should= "Hello world" (get-in result [:message :content]))
             (should= "gpt-5" (:model result))
@@ -211,15 +211,15 @@
 
     (it "returns error on failure"
       (with-redefs [llm-http/post-sse! (fn [& _] {:error :connection-refused})]
-        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config test-config})]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity "openai" test-config)]
           (should= :connection-refused (:error result)))))
 
     (it "returns auth-missing when streaming without openai api key"
       (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
         (let [result (sut/chat-stream {:model "test" :messages []}
                                       identity
-                                      {:provider-name   "openai"
-                                       :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+                                      "openai"
+                                      {:api-key "" :base-url "https://api.openai.com/v1"})]
           (should= :auth-missing (:error result))
           (should-contain "OPENAI_API_KEY" (:message result))))))
 
@@ -227,7 +227,7 @@
 
     (it "chat returns a value conforming to api/response"
       (with-redefs [http/post (fn [_ _] (chat-response "Hello!"))]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "test" :messages []} "openai" test-config)]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
@@ -235,7 +235,7 @@
       (with-redefs [http/post (fn [_ _] (chat-response "" :tool-calls [{:id "tc1"
                                                                          :function {:name "read"
                                                                                     :arguments "{\"path\":\"x\"}"}}]))]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
+        (let [result (sut/chat {:model "test" :messages []} "openai" test-config)]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
@@ -244,14 +244,14 @@
                                          (reduce (fn [acc evt] (process-event evt acc))
                                                  initial
                                                  [{:choices [{:delta {:content "hi"}}]}]))]
-        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config test-config})]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity "openai" test-config)]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
     (it "auth-missing errors conform to api/error-response"
       (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
         (let [result (sut/chat {:model "test" :messages []}
-                               {:provider-name   "openai"
-                                :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+                               "openai"
+                               {:api-key "" :base-url "https://api.openai.com/v1"})]
           (should (api/error? result))
           (should-not-throw (schema/conform! api/error-response result)))))))

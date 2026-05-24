@@ -17,31 +17,35 @@
 
     (it "echoes the last user message"
       (let [resp (sut/chat {:model    "echo"
-                            :messages [{:role "user" :content "Hello Grover"}]})]
+                            :messages [{:role "user" :content "Hello Grover"}]}
+                           "grover" {})]
         (should= "Hello Grover" (get-in resp [:message :content]))))
 
     (it "echoes the last user message when multiple"
       (let [resp (sut/chat {:model    "echo"
                             :messages [{:role "user" :content "First"}
                                        {:role "assistant" :content "Reply"}
-                                       {:role "user" :content "Second"}]})]
+                                       {:role "user" :content "Second"}]}
+                           "grover" {})]
         (should= "Second" (get-in resp [:message :content]))))
 
     (it "returns '...' when no user messages"
       (let [resp (sut/chat {:model    "echo"
-                            :messages [{:role "system" :content "You are helpful"}]})]
+                            :messages [{:role "system" :content "You are helpful"}]}
+                           "grover" {})]
         (should= "..." (get-in resp [:message :content]))))
 
     (it "returns the model from the request"
       (let [resp (sut/chat {:model    "test-model"
-                            :messages [{:role "user" :content "Hi"}]})]
+                            :messages [{:role "user" :content "Hi"}]}
+                           "grover" {})]
         (should= "test-model" (:model resp))))
 
     (it "returns a context length error when the prompt exceeds the configured context window"
       (let [resp (sut/chat {:model    "echo"
                             :messages [{:role "user" :content (apply str (repeat 240 "x"))}]}
-                           {:provider-config {:context-window 20
-                                              :enforce-context-window true}})]
+                           "grover"
+                           {:context-window 20 :enforce-context-window true})]
         (should= :llm-error (:error resp))
         (should= "context length exceeded" (:message resp))))
 
@@ -50,7 +54,8 @@
              _      (sut/enable-delay!)
              result (future (sut/chat {:model    "echo"
                                       :messages [{:role "user" :content "Hi"}]}
-                                     {:provider-config {:session-key "grover-cancel"}}))]
+                                     "grover"
+                                     {:session-key "grover-cancel"}))]
         (sut/await-delay-start)
         (bridge/cancel! "grover-cancel")
         (sut/release-delay!)
@@ -59,13 +64,15 @@
 
     (it "includes token counts"
       (let [resp (sut/chat {:model    "echo"
-                            :messages [{:role "user" :content "Hi"}]})]
+                            :messages [{:role "user" :content "Hi"}]}
+                           "grover" {})]
         (should= 25 (:prompt_eval_count resp))
         (should= 12 (:eval_count resp))))
 
     (it "marks response as done"
       (let [resp (sut/chat {:model    "echo"
-                            :messages [{:role "user" :content "Hi"}]})]
+                            :messages [{:role "user" :content "Hi"}]}
+                           "grover" {})]
         (should (:done resp))
         (should= "stop" (:done_reason resp)))))
 
@@ -78,29 +85,31 @@
     (it "returns queued content response"
       (sut/enqueue! [{:content "Scripted answer"}])
       (let [resp (sut/chat {:model    "echo"
-                            :messages [{:role "user" :content "Ignored"}]})]
+                            :messages [{:role "user" :content "Ignored"}]}
+                           "grover" {})]
         (should= "Scripted answer" (get-in resp [:message :content]))))
 
     (it "consumes queue in order"
       (sut/enqueue! [{:content "First"} {:content "Second"}])
-      (should= "First" (get-in (sut/chat {:model "echo" :messages []}) [:message :content]))
-      (should= "Second" (get-in (sut/chat {:model "echo" :messages []}) [:message :content])))
+      (should= "First" (get-in (sut/chat {:model "echo" :messages []} "grover" {}) [:message :content]))
+      (should= "Second" (get-in (sut/chat {:model "echo" :messages []} "grover" {}) [:message :content])))
 
     (it "falls back to echo when queue is empty"
       (sut/enqueue! [{:content "Only one"}])
-      (sut/chat {:model "echo" :messages []})
+      (sut/chat {:model "echo" :messages []} "grover" {})
       (let [resp (sut/chat {:model    "echo"
-                            :messages [{:role "user" :content "Echo me"}]})]
+                            :messages [{:role "user" :content "Echo me"}]}
+                           "grover" {})]
         (should= "Echo me" (get-in resp [:message :content]))))
 
     (it "throws exception for exception type"
       (sut/enqueue! [{:type "exception" :content "something broke"}])
       (should-throw Exception "something broke"
-        (sut/chat {:model "echo" :messages [{:role "user" :content "boom"}]})))
+        (sut/chat {:model "echo" :messages [{:role "user" :content "boom"}]} "grover" {})))
 
     (it "returns scripted tool call"
       (sut/enqueue! [{:tool_call "read_file" :arguments {:path "README"}}])
-      (let [resp (sut/chat {:model "echo" :messages [{:role "user" :content "Read it"}]})]
+      (let [resp (sut/chat {:model "echo" :messages [{:role "user" :content "Read it"}]} "grover" {})]
         (should= "read_file" (get-in resp [:message :tool_calls 0 :function :name]))
         (should= {:path "README"} (get-in resp [:message :tool_calls 0 :function :arguments]))
         (should= "" (get-in resp [:message :content]))))
@@ -108,7 +117,8 @@
     (it "waits for release when a scripted response is marked wait"
       (sut/enqueue! [{:type "text" :content "Scripted answer" :wait true}])
       (let [response (future (sut/chat {:model "echo" :messages [{:role "user" :content "Ignored"}]}
-                                       {:provider-config {:session-key "wait-session"}}))]
+                                       "grover"
+                                       {:session-key "wait-session"}))]
         (helper/await-condition #(sut/waiting? "wait-session"))
         (sut/release-wait! "wait-session")
         (should= "Scripted answer" (get-in @response [:message :content])))))
@@ -123,7 +133,8 @@
       (let [chunks (atom [])
             resp   (sut/chat-stream
                      {:model "echo" :messages [{:role "user" :content "Hello world"}]}
-                     (fn [c] (swap! chunks conj c)))]
+                     (fn [c] (swap! chunks conj c))
+                     "grover" {})]
         (should (> (count @chunks) 1))
         (should= "Hello world" (get-in resp [:message :content]))))
 
@@ -131,7 +142,8 @@
       (let [chunks (atom [])
             _      (sut/chat-stream
                      {:model "echo" :messages [{:role "user" :content "Hi"}]}
-                     (fn [c] (swap! chunks conj c)))]
+                     (fn [c] (swap! chunks conj c))
+                     "grover" {})]
         (should (:done (last @chunks)))))
 
     (it "streams scripted chunk vectors and returns concatenated final content"
@@ -139,7 +151,8 @@
       (let [chunks      (atom [])
             resp        (sut/chat-stream
                          {:model "echo" :messages [{:role "user" :content "Ignored"}]}
-                         (fn [c] (swap! chunks conj c)))
+                         (fn [c] (swap! chunks conj c))
+                         "grover" {})
             chunk-texts (mapv #(get-in % [:message :content]) (butlast @chunks))]
         (should= ["Once " "upon " "a " "time..."] chunk-texts)
         (should= "Once upon a time..." (get-in resp [:message :content]))
@@ -151,16 +164,18 @@
             resp   (sut/chat-stream
                     {:model "echo" :messages [{:role "user" :content "Run echo hi"}]}
                     (fn [c] (swap! chunks conj c))
-                    {:provider-config {:streamSupportsToolCalls false}})]
+                    "grover"
+                    {:stream-supports-tool-calls false})]
         (should-be-nil (get-in resp [:message :tool_calls]))
         (should-be-nil (get-in (last @chunks) [:message :tool_calls]))))
 
-    (it "accepts string false for streamSupportsToolCalls"
+    (it "accepts string false for stream-supports-tool-calls"
       (sut/enqueue! [{:tool_call "exec" :arguments {:command "echo hi"}}])
       (let [resp (sut/chat-stream
                    {:model "echo" :messages [{:role "user" :content "Run echo hi"}]}
                    (fn [_] nil)
-                   {:provider-config {:streamSupportsToolCalls "false"}})]
+                   "grover"
+                   {:stream-supports-tool-calls "false"})]
         (should-be-nil (get-in resp [:message :tool_calls]))))
 
   ;; endregion ^^^^^ Streaming ^^^^^
@@ -187,25 +202,25 @@
   (describe "schema conformance"
 
     (it "echo chat returns a value conforming to provider/response"
-      (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hello"}]})]
+      (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hello"}]} "grover" {})]
         (should-not (api/error? result))
         (should-not-throw (api/validate-response result))))
 
     (it "scripted chat returns a value conforming to provider/response"
       (sut/enqueue! [{:type "text" :content "Done" :model "echo"}])
-      (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hi"}]})]
+      (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hi"}]} "grover" {})]
         (should-not (api/error? result))
         (should-not-throw (api/validate-response result))))
 
     (it "scripted error chat returns a value conforming to provider/error-response"
       (sut/enqueue! [{:type "error" :content "boom"}])
-      (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hi"}]})]
+      (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hi"}]} "grover" {})]
         (should (api/error? result))
         (should-not-throw (schema/conform! api/error-response result))))
 
     (it "chat-stream returns a value conforming to provider/response"
       (sut/enqueue! [{:type "text" :content "Hello world" :model "echo"}])
-      (let [result (sut/chat-stream {:model "echo" :messages []} identity)]
+      (let [result (sut/chat-stream {:model "echo" :messages []} identity "grover" {})]
         (should-not (api/error? result))
         (should-not-throw (api/validate-response result)))))
 

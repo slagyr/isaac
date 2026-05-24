@@ -5,7 +5,7 @@
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.prompt.anthropic :as anthropic-prompt]))
+    [isaac.llm.prompt.builder :as builder]))
 
 ;; region ----- Auth -----
 
@@ -25,6 +25,68 @@
    "content-type"      "application/json"})
 
 ;; endregion ^^^^^ Auth ^^^^^
+
+;; region ----- Prompt Building -----
+
+(defn- build-system [system-text]
+  [{:type          "text"
+    :text          system-text
+    :cache_control {:type "ephemeral"}}])
+
+(defn- extract-messages [transcript]
+  (->> (builder/build-transcript-messages transcript nil nil)
+       (mapv #(select-keys % [:role :content]))))
+
+(defn- penultimate-user-index [messages]
+  (let [user-indices (->> messages
+                          (map-indexed vector)
+                          (filter #(= "user" (:role (second %))))
+                          (map first))]
+    (when (>= (count user-indices) 2)
+      (nth user-indices (- (count user-indices) 2)))))
+
+(defn- apply-cache-breakpoints [messages]
+  (if-let [idx (penultimate-user-index messages)]
+    (update messages idx
+            (fn [msg]
+              (let [content (:content msg)]
+                (if (string? content)
+                  (assoc msg :content [{:type          "text"
+                                        :text          content
+                                        :cache_control {:type "ephemeral"}}])
+                  (let [last-idx (dec (count content))]
+                    (assoc msg :content
+                           (update content last-idx
+                                   #(assoc % :cache_control {:type "ephemeral"}))))))))
+    messages))
+
+(defn build-tools
+  "Format tool definitions into Anthropic Messages-API shape."
+  [tools]
+  (when (seq tools)
+    (mapv (fn [tool]
+            {:name         (:name tool)
+             :description  (:description tool)
+             :input_schema (:parameters tool)})
+          tools)))
+
+(defn build
+  "Build an Anthropic Messages API request body."
+  [{:keys [boot-files model soul transcript tools max-tokens]
+     :or   {max-tokens 4096}}]
+  (let [system-text (if boot-files
+                      (str soul "\n\n" boot-files)
+                      soul)
+        messages    (-> (extract-messages transcript)
+                      vec
+                      apply-cache-breakpoints)]
+    (cond-> {:model      model
+              :max_tokens max-tokens
+              :system     (build-system system-text)
+              :messages   messages}
+      (seq tools) (assoc :tools (build-tools tools)))))
+
+;; endregion ^^^^^ Prompt Building ^^^^^
 
 ;; region ----- SSE Event Processing -----
 
@@ -91,17 +153,16 @@
 
 (defn chat
   "Send a non-streaming Messages API request."
-  [request & [{:keys [provider-name provider-config]}]]
-  (let [config   (or provider-config {})
-        url      (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
-        auth-err (missing-auth-error provider-name config)]
+  [request provider-name cfg]
+  (let [url      (str (or (:base-url cfg) "https://api.anthropic.com") "/v1/messages")
+        auth-err (missing-auth-error provider-name cfg)]
     (if auth-err
       auth-err
-      (let [headers  (auth-headers provider-name config)
-            thinking (effort->thinking (:effort request) (:thinking-budget-max config))
+      (let [headers  (auth-headers provider-name cfg)
+            thinking (effort->thinking (:effort request) (:thinking-budget-max cfg))
             body     (cond-> (dissoc request :effort)
                        thinking (assoc :thinking thinking))
-            resp     (llm-http/post-json! url headers body (http-opts config))]
+            resp     (llm-http/post-json! url headers body (http-opts cfg))]
         (if (:error resp)
           resp
           (let [content (:content resp)
@@ -121,18 +182,17 @@
 
 (defn chat-stream
   "Send a streaming Messages API request via SSE."
-  [request on-chunk & [{:keys [provider-name provider-config]}]]
-  (let [config   (or provider-config {})
-        url      (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
-        auth-err (missing-auth-error provider-name config)]
+  [request on-chunk provider-name cfg]
+  (let [url      (str (or (:base-url cfg) "https://api.anthropic.com") "/v1/messages")
+        auth-err (missing-auth-error provider-name cfg)]
     (if auth-err
       auth-err
-      (let [headers  (auth-headers provider-name config)
-            thinking (effort->thinking (:effort request) (:thinking-budget-max config))
+      (let [headers  (auth-headers provider-name cfg)
+            thinking (effort->thinking (:effort request) (:thinking-budget-max cfg))
             body     (cond-> (-> request (dissoc :effort) (assoc :stream true))
                        thinking (assoc :thinking thinking))
             initial  {:role "assistant" :content "" :usage {}}
-            result   (llm-http/post-sse! url headers body on-chunk process-sse-event initial (http-opts config))]
+            result   (llm-http/post-sse! url headers body on-chunk process-sse-event initial (http-opts cfg))]
         (if (:error result)
           result
           (let [usage (parse-usage (:usage result))]
@@ -161,17 +221,17 @@
                                                               :content     result}))}]
     (followup/append-followup-messages request assistant-msg [tool-result])))
 
-(deftype MessagesAPI [provider-name opts cfg]
+(deftype MessagesAPI [provider-name cfg]
   api/Api
-  (chat [_ req] (#'chat req opts))
-  (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
-  (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
+  (chat [_ req] (chat req provider-name cfg))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk provider-name cfg))
+  (followup-messages [_ req resp tcs trs] (followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name)
-  (format-tools [_ tools] (anthropic-prompt/build-tools tools))
-  (build-prompt [_ opts] (anthropic-prompt/build opts)))
+  (format-tools [_ tools] (build-tools tools))
+  (build-prompt [_ opts] (build opts)))
 
 (defn make [name cfg]
-  (->MessagesAPI name (api/wire-opts name cfg) cfg))
+  (->MessagesAPI name cfg))
 
 ;; endregion ^^^^^ Public API ^^^^^

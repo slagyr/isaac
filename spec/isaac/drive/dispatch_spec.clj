@@ -78,9 +78,9 @@
     (it "merges oauth defaults for real chatgpt provider"
       (let [captured     (atom nil)
             provider-cfg (providers/lookup {:providers {:chatgpt {}}} nil "chatgpt")]
-        (with-redefs [responses/chat (fn [_req opts]
-                                            (reset! captured (:provider-config opts))
-                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
+        (with-redefs [responses/chat (fn [_req _provider-name cfg]
+                                       (reset! captured cfg)
+                                       {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
           (sut/dispatch-chat (llm-provider/make-provider "chatgpt" provider-cfg)
                              {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}))
         (should= "oauth-device" (:auth @captured))
@@ -89,9 +89,9 @@
     (it "allows user config to override defaults for chatgpt"
       (let [captured     (atom nil)
             provider-cfg (providers/lookup {:providers {:chatgpt {:name "custom-name"}}} nil "chatgpt")]
-        (with-redefs [responses/chat (fn [_req opts]
-                                            (reset! captured (:provider-config opts))
-                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
+        (with-redefs [responses/chat (fn [_req _provider-name cfg]
+                                       (reset! captured cfg)
+                                       {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
           (sut/dispatch-chat (llm-provider/make-provider "chatgpt" provider-cfg)
                              {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}))
         (should= "custom-name" (:name @captured))))))

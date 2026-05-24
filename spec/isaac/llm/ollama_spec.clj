@@ -21,25 +21,25 @@
                                                          :done    true
                                                          :prompt_eval_count 10
                                                          :eval_count 5}))]
-        (let [result (sut/chat {:model "qwen3-coder:30b" :messages [{:role "user" :content "Hi"}]})]
+        (let [result (sut/chat {:model "qwen3-coder:30b" :messages [{:role "user" :content "Hi"}]} "ollama" {})]
           (should= "Hello!" (get-in result [:message :content]))
           (should= "qwen3-coder:30b" (:model result)))))
 
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
-        (let [result (sut/chat {:model "test" :messages []})]
+        (let [result (sut/chat {:model "test" :messages []} "ollama" {})]
           (should= :connection-refused (:error result)))))
 
     (it "constructs correct URL with base-url"
       (let [captured-url (atom nil)]
         (with-redefs [http/post (fn [url _] (reset! captured-url url) (mock-response {:message {:role "assistant" :content ""}}))]
-          (sut/chat {:model "test" :messages []} {:base-url "http://myhost:1234"})
+          (sut/chat {:model "test" :messages []} "ollama" {:base-url "http://myhost:1234"})
           (should= "http://myhost:1234/api/chat" @captured-url))))
 
     (it "sets stream to false"
       (let [captured-body (atom nil)]
         (with-redefs [http/post (fn [_ opts] (reset! captured-body (json/parse-string (:body opts) true)) (mock-response {:message {:role "assistant" :content ""}}))]
-          (sut/chat {:model "test" :messages []})
+          (sut/chat {:model "test" :messages []} "ollama" {})
           (should= false (:stream @captured-body))))))
 
   (describe "followup-messages"
@@ -84,13 +84,14 @@
                                                        (doseq [e events] (on-chunk e))
                                                        (last events)))]
           (let [result (sut/chat-stream {:model "test" :messages []}
-                         (fn [c] (swap! chunks conj c)))]
+                         (fn [c] (swap! chunks conj c))
+                         "ollama" {})]
             (should= true (:done result))
             (should= 2 (count @chunks))))))
 
     (it "returns error on connection failure"
       (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ _ & _] {:error :connection-refused})]
-        (let [result (sut/chat-stream {:model "test" :messages []} identity)]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity "ollama" {})]
           (should= :connection-refused (:error result))))))
 
   (describe "schema conformance"
@@ -101,7 +102,7 @@
                                                          :done    true
                                                          :prompt_eval_count 10
                                                          :eval_count 5}))]
-        (let [result (sut/chat {:model "test" :messages []})]
+        (let [result (sut/chat {:model "test" :messages []} "ollama" {})]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
@@ -112,13 +113,13 @@
                                                                    :tool_calls [{:function {:name "read" :arguments {:path "x"}}}]}
                                                          :prompt_eval_count 10
                                                          :eval_count 5}))]
-        (let [result (sut/chat {:model "test" :messages []})]
+        (let [result (sut/chat {:model "test" :messages []} "ollama" {})]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
     (it "connection-refused errors conform to provider/error-response"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
-        (let [result (sut/chat {:model "test" :messages []})]
+        (let [result (sut/chat {:model "test" :messages []} "ollama" {})]
           (should (api/error? result))
           (should-not-throw (schema/conform! api/error-response result))))))
 
@@ -129,19 +130,19 @@
       (it "effort 0 sends think:false"
         (let [captured (atom nil)]
           (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-            (sut/chat {:model "test" :effort 0 :messages []} {}))
+            (sut/chat {:model "test" :effort 0 :messages []} "ollama" {}))
           (should= false (:think @captured))))
 
       (it "effort 1 sends think:true"
         (let [captured (atom nil)]
           (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-            (sut/chat {:model "test" :effort 1 :messages []} {}))
+            (sut/chat {:model "test" :effort 1 :messages []} "ollama" {}))
           (should= true (:think @captured))))
 
       (it "effort 7 sends think:true"
         (let [captured (atom nil)]
           (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-            (sut/chat {:model "test" :effort 7 :messages []} {}))
+            (sut/chat {:model "test" :effort 7 :messages []} "ollama" {}))
           (should= true (:think @captured)))))
 
     (describe ":levels mode"
@@ -149,35 +150,35 @@
       (it "effort 0 omits think field"
         (let [captured (atom nil)]
           (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-            (sut/chat {:model "test" :effort 0 :messages []} {:think-mode :levels}))
+            (sut/chat {:model "test" :effort 0 :messages []} "ollama" {:think-mode :levels}))
           (should-not (contains? @captured :think))))
 
       (it "effort 2 sends think:low"
         (let [captured (atom nil)]
           (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-            (sut/chat {:model "test" :effort 2 :messages []} {:think-mode :levels}))
+            (sut/chat {:model "test" :effort 2 :messages []} "ollama" {:think-mode :levels}))
           (should= "low" (:think @captured))))
 
       (it "effort 5 sends think:medium"
         (let [captured (atom nil)]
           (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-            (sut/chat {:model "test" :effort 5 :messages []} {:think-mode :levels}))
+            (sut/chat {:model "test" :effort 5 :messages []} "ollama" {:think-mode :levels}))
           (should= "medium" (:think @captured))))
 
       (it "effort 9 sends think:high"
         (let [captured (atom nil)]
           (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-            (sut/chat {:model "test" :effort 9 :messages []} {:think-mode :levels}))
+            (sut/chat {:model "test" :effort 9 :messages []} "ollama" {:think-mode :levels}))
           (should= "high" (:think @captured)))))
 
     (it "strips :effort from the outbound body"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "test" :effort 5 :messages []} {}))
+          (sut/chat {:model "test" :effort 5 :messages []} "ollama" {}))
         (should-not (contains? @captured :effort))))
 
     (it "omits think field when :effort absent"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "test" :messages []} {}))
+          (sut/chat {:model "test" :messages []} "ollama" {}))
         (should-not (contains? @captured :think))))))

@@ -1,6 +1,6 @@
 (ns isaac.llm.prompt.anthropic-spec
   (:require
-    [isaac.llm.prompt.anthropic :as sut]
+    [isaac.llm.api.messages :as sut]
     [speclj.core :refer :all]))
 
 (def sample-transcript

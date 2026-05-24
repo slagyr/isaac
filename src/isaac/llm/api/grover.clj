@@ -176,11 +176,9 @@
                token-counts
                token-overrides))))
 
-(defn- context-window-error [request provider-config]
-  (let [enforce?       (or (:enforce-context-window provider-config)
-                           (:enforceContextWindow provider-config))
-        context-window (or (:context-window provider-config)
-                           (:contextWindow provider-config))]
+(defn- context-window-error [request cfg]
+  (let [enforce?       (:enforce-context-window cfg)
+        context-window (:context-window cfg)]
     (when (and enforce? context-window (> (api/estimate-tokens request) context-window))
       {:error :llm-error :message "context length exceeded" :model (:model request)})))
 
@@ -301,24 +299,21 @@
     (string? value)  (not (#{"false" "0" "no" "off"} (str/lower-case value)))
     :else            (boolean value)))
 
-(defn- stream-supports-tool-calls? [opts]
-  (let [raw-value (or (:streamSupportsToolCalls opts)
-                      (get-in opts [:provider-config :streamSupportsToolCalls]))]
-    (boolean-option raw-value true)))
+(defn- stream-supports-tool-calls? [cfg]
+  (boolean-option (:stream-supports-tool-calls cfg) true))
 
 (defn chat
   "Synchronous chat. Returns a response map instantly."
-  [request & [opts]]
+  [request provider-name cfg]
   (reset! last-request* request)
-  (let [session-key (get-in opts [:provider-config :session-key])
-         delayed?    @delay-enabled*
-         delay-error (when delayed?
-                       (maybe-delay! session-key))
-         window-error (context-window-error request (:provider-config opts))]
+  (let [session-key  (:session-key cfg)
+        delayed?     @delay-enabled*
+        delay-error  (when delayed? (maybe-delay! session-key))
+        window-error (context-window-error request cfg)]
     (or delay-error
         window-error
         (let [model    (:model request)
-               scripted (dequeue!)]
+              scripted (dequeue!)]
           (if scripted
             (or (when (:wait scripted)
                   (maybe-wait! session-key))
@@ -327,11 +322,11 @@
 
 (defn chat-stream
   "Streaming chat. Calls on-chunk with synthetic chunks, returns final."
-  [request on-chunk & [opts]]
-  (let [response (chat request opts)]
+  [request on-chunk provider-name cfg]
+  (let [response (chat request provider-name cfg)]
     (if (:error response)
       response
-      (let [supports-tool-calls? (stream-supports-tool-calls? opts)
+      (let [supports-tool-calls? (stream-supports-tool-calls? cfg)
             content              (get-in response [:message :content])
             words                (cond
                                    (vector? content) content
@@ -361,7 +356,17 @@
     tool-calls
     tool-results))
 
+(deftype GroverAPI [provider-name cfg]
+  api/Api
+  (chat [_ req] (chat req provider-name cfg))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk provider-name cfg))
+  (followup-messages [_ req resp tcs trs] (followup-messages req resp tcs trs))
+  (config [_] cfg)
+  (display-name [_] provider-name)
+  (format-tools [_ tools] (when (seq tools) (mapv api/wrapped-function-tool tools)))
+  (build-prompt [_ opts] (prompt/build opts)))
+
 (defn make [name cfg]
-  (api/->GenericLLMAPI name (api/wire-opts name cfg) cfg #'chat #'chat-stream #'followup-messages prompt/build))
+  (->GroverAPI name cfg))
 
 ;; endregion ^^^^^ Public API ^^^^^

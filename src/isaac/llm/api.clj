@@ -139,18 +139,6 @@
   [value]
   (schema/conform! response value))
 
-;; --- Construction ---
-
-(defn- provider-config->wire-config [provider-config]
-  (cond-> provider-config
-    (:api-key provider-config)                               (assoc :apiKey (:api-key provider-config))
-    (:auth-key provider-config)                              (assoc :authKey (:auth-key provider-config))
-    (:assistant-base-url provider-config)                    (assoc :assistantBaseUrl (:assistant-base-url provider-config))
-    (:base-url provider-config)                              (assoc :baseUrl (:base-url provider-config))
-    (:response-format provider-config)                       (assoc :responseFormat (:response-format provider-config))
-    (contains? provider-config :stream-supports-tool-calls)  (assoc :streamSupportsToolCalls (:stream-supports-tool-calls provider-config))
-    (contains? provider-config :supports-system-role)        (assoc :supportsSystemRole (:supports-system-role provider-config))))
-
 (declare ->api)
 
 (defn resolve-api
@@ -165,19 +153,6 @@
                 (= provider "ollama")                            "ollama"
                 :else                                            nil))
           ->api))
-
-(defn ollama-opts [provider-config]
-  (cond-> {:base-url (or (:base-url provider-config) "http://localhost:11434")}
-    (:session-key provider-config)       (assoc :session-key (:session-key provider-config))
-    (:simulate-provider provider-config) (assoc :simulate-provider (:simulate-provider provider-config))
-    (:think-mode provider-config)        (assoc :think-mode (:think-mode provider-config))))
-
-(defn wire-opts
-  "Wire-config map suitable for impl chat fns — i.e.
-   {:provider-name name :provider-config wire-config}."
-  [provider-name provider-config]
-  {:provider-name   provider-name
-   :provider-config (provider-config->wire-config provider-config)})
 
 ;; --- Registry ---
 ;;
@@ -254,18 +229,6 @@
    :name        (:name tool)
    :description (:description tool)
    :parameters  (:parameters tool)})
-
-;; --- Generic Implementation ---
-
-(deftype GenericLLMAPI [provider-name opts cfg chat-var chat-stream-var followup-var build-prompt-fn]
-  Api
-  (chat [_ req] (chat-var req opts))
-  (chat-stream [_ req on-chunk] (chat-stream-var req on-chunk opts))
-  (followup-messages [_ req resp tcs trs] (followup-var req resp tcs trs))
-  (config [_] cfg)
-  (display-name [_] provider-name)
-  (format-tools [_ tools] (when (seq tools) (mapv wrapped-function-tool tools)))
-  (build-prompt [_ opts] (build-prompt-fn opts)))
 
 ;; --- Compaction Utilities ---
 

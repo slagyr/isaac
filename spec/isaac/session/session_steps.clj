@@ -16,7 +16,7 @@
     [isaac.llm.provider :as llm-provider]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http]
-    [isaac.llm.prompt.anthropic :as anthropic-prompt]
+    [isaac.llm.api.messages :as messages-api]
     [isaac.llm.prompt.builder :as prompt]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.session.compaction :as session-compaction]
@@ -931,7 +931,7 @@
             agent-id   (or (:crew session) (:agent session) "main")
             cfg        (loaded-config)
             model-cfg  (current-model-config)
-            ctx        (assoc (config/resolve-crew-context cfg agent-id {:home (home-dir)})
+            ctx        (assoc (config/resolve-crew-context cfg agent-id)
                               :boot-files (session-ctx/read-boot-files (:cwd session)))
             soul       (if-let [boot-files (:boot-files ctx)]
                          (str (:soul ctx) "\n\n" boot-files)
@@ -939,7 +939,7 @@
             provider'  (unquote-string provider)
             openai?    (or (str/starts-with? provider' "openai") (str/starts-with? provider' "grok"))
             builder    (if (str/starts-with? provider' "anthropic")
-                         anthropic-prompt/build
+                         messages-api/build
                          prompt/build)
             prompt-msg (builder {:model      (:model model-cfg)
                                  :soul       soul
@@ -1186,9 +1186,9 @@
             provider'  (name (or (:provider model-cfg) ""))
             openai?    (or (str/starts-with? provider' "openai") (str/starts-with? provider' "grok"))
             builder    (if (str/starts-with? provider' "anthropic")
-                         anthropic-prompt/build
+                         messages-api/build
                          prompt/build)
-            ctx        (assoc (config/resolve-crew-context cfg agent-id {:home (home-dir)})
+            ctx        (assoc (config/resolve-crew-context cfg agent-id)
                               :boot-files (session-ctx/read-boot-files (:cwd session)))
             soul       (if-let [boot-files (:boot-files ctx)]
                          (str (:soul ctx) "\n\n" boot-files)
@@ -1296,7 +1296,7 @@
             agent-id      (or (:crew session) (:agent session) "main")
             cfg           (loaded-config)
             model-cfg     (current-model-config)
-            ctx           (assoc (config/resolve-crew-context cfg agent-id {:home (home-dir)})
+            ctx           (assoc (config/resolve-crew-context cfg agent-id)
                                  :boot-files (session-ctx/read-boot-files (:cwd session)))
             provider-name (or (some (fn [[name cfg]]
                                       (when (contains? #{"chat-completions" "responses"} (:api cfg))

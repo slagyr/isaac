@@ -13,7 +13,7 @@
   {:status 200 :body (json/generate-string body)})
 
 (defn- api-key-config []
-  {:auth "api-key" :apiKey "sk-test" :baseUrl "https://api.anthropic.com"})
+  {:auth "api-key" :api-key "sk-test" :base-url "https://api.anthropic.com"})
 
 (describe "Anthropic Client"
 
@@ -24,7 +24,7 @@
                                                          :model      "claude-sonnet-4-6"
                                                          :stop_reason "end_turn"
                                                          :usage      {:input_tokens 10 :output_tokens 5}}))]
-        (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []} "anthropic" (api-key-config))]
           (should= "Hello!" (get-in result [:message :content]))
           (should= "claude-sonnet-4-6" (:model result))
           (should= 10 (:input-tokens (:usage result)))
@@ -36,7 +36,7 @@
                                                          :model      "claude-sonnet-4-6"
                                                          :stop_reason "tool_use"
                                                          :usage      {:input_tokens 10 :output_tokens 5}}))]
-        (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []} "anthropic" (api-key-config))]
           (should= 1 (count (:tool-calls result)))
           (should= "read_file" (:name (first (:tool-calls result))))
           (should= {:path "README"} (:arguments (first (:tool-calls result)))))))
@@ -44,7 +44,7 @@
     (it "sets x-api-key header for api-key auth"
       (let [captured-headers (atom nil)]
         (with-redefs [http/post (fn [_ opts] (reset! captured-headers (:headers opts)) (mock-response {:content [] :usage {}}))]
-          (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})
+          (sut/chat {:model "test" :messages []} "anthropic" (api-key-config))
           (should= "sk-test" (get @captured-headers "x-api-key"))
           (should= "2023-06-01" (get @captured-headers "anthropic-version")))))
 
@@ -54,26 +54,26 @@
                                                          :usage   {:input_tokens 10 :output_tokens 5
                                                                    :cache_read_input_tokens 3
                                                                    :cache_creation_input_tokens 2}}))]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "test" :messages []} "anthropic" (api-key-config))]
           (should= 3 (:cache-read (:usage result)))
           (should= 2 (:cache-write (:usage result))))))
 
     (it "returns auth-failed on 401"
       (with-redefs [http/post (fn [_ _] {:status 401 :body (json/generate-string {:error {:message "invalid"}})})]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "test" :messages []} "anthropic" (api-key-config))]
           (should= :auth-failed (:error result)))))
 
     (it "returns auth-missing when api key is blank and ANTHROPIC_API_KEY is unset"
       (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
         (let [result (sut/chat {:model "test" :messages []}
-                               {:provider-name   "anthropic"
-                                :provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+                               "anthropic"
+                               {:auth "api-key" :api-key "" :base-url "https://api.anthropic.com"})]
           (should= :auth-missing (:error result))
           (should-contain "ANTHROPIC_API_KEY" (:message result)))))
 
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "test" :messages []} "anthropic" (api-key-config))]
           (should= :connection-refused (:error result))))))
 
   (describe "followup-messages"
@@ -145,22 +145,22 @@
                                                      initial events)))]
           (let [result (sut/chat-stream {:model "claude-sonnet-4-6" :messages []}
                          (fn [c] (swap! chunks conj c))
-                         {:provider-config (api-key-config)})]
+                         "anthropic" (api-key-config))]
             (should= "Hello world" (get-in result [:message :content]))
             (should= "claude-sonnet-4-6" (:model result))
             (should= 4 (count @chunks))))))
 
     (it "returns error on auth failure"
       (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _ & _] {:error :auth-failed :status 401})]
-        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config (api-key-config)})]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity "anthropic" (api-key-config))]
           (should= :auth-failed (:error result)))))
 
     (it "returns auth-missing when streaming without api key and ANTHROPIC_API_KEY is unset"
       (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
         (let [result (sut/chat-stream {:model "test" :messages []}
                                       identity
-                                      {:provider-name   "anthropic"
-                                       :provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+                                      "anthropic"
+                                      {:auth "api-key" :api-key "" :base-url "https://api.anthropic.com"})]
           (should= :auth-missing (:error result))
           (should-contain "ANTHROPIC_API_KEY" (:message result))))))
 
@@ -171,7 +171,7 @@
                                                          :model      "claude-sonnet-4-6"
                                                          :stop_reason "end_turn"
                                                          :usage      {:input_tokens 10 :output_tokens 5}}))]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "test" :messages []} "anthropic" (api-key-config))]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
@@ -180,7 +180,7 @@
                                                          :model      "claude-sonnet-4-6"
                                                          :stop_reason "tool_use"
                                                          :usage      {:input_tokens 10 :output_tokens 5}}))]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "test" :messages []} "anthropic" (api-key-config))]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
@@ -191,19 +191,20 @@
                                                  [{:type "message_start" :message {:model "claude-sonnet-4-6" :usage {:input_tokens 10}}}
                                                   {:type "content_block_delta" :delta {:text "Hi!"}}
                                                   {:type "message_delta" :usage {:output_tokens 5}}]))]
-        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config (api-key-config)})]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity "anthropic" (api-key-config))]
           (should-not (api/error? result))
           (should-not-throw (api/validate-response result)))))
 
     (it "auth errors conform to provider/error-response"
       (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+                             "anthropic"
+                             {:auth "api-key" :api-key "" :base-url "https://api.anthropic.com"})]
         (should (api/error? result))
         (should-not-throw (schema/conform! api/error-response result))))
 
     (it "401 responses conform to provider/error-response"
       (with-redefs [http/post (fn [_ _] {:status 401 :body (json/generate-string {:error {:message "invalid"}})})]
-        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+        (let [result (sut/chat {:model "test" :messages []} "anthropic" (api-key-config))]
           (should (api/error? result))
           (should-not-throw (schema/conform! api/error-response result))))))
 
@@ -212,42 +213,42 @@
     (it "maps effort 10 to 100% of default budget-max (32000)"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "claude" :effort 10 :messages []} {:provider-config (api-key-config)}))
+          (sut/chat {:model "claude" :effort 10 :messages []} "anthropic" (api-key-config)))
         (should= {:type "enabled" :budget_tokens 32000} (:thinking @captured))))
 
     (it "maps effort 5 to 50% of default budget-max (16000)"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "claude" :effort 5 :messages []} {:provider-config (api-key-config)}))
+          (sut/chat {:model "claude" :effort 5 :messages []} "anthropic" (api-key-config)))
         (should= {:type "enabled" :budget_tokens 16000} (:thinking @captured))))
 
     (it "maps effort 1 to 10% of default budget-max (3200)"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "claude" :effort 1 :messages []} {:provider-config (api-key-config)}))
+          (sut/chat {:model "claude" :effort 1 :messages []} "anthropic" (api-key-config)))
         (should= {:type "enabled" :budget_tokens 3200} (:thinking @captured))))
 
     (it "maps effort 0 to nil (omits thinking block)"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "claude" :effort 0 :messages []} {:provider-config (api-key-config)}))
+          (sut/chat {:model "claude" :effort 0 :messages []} "anthropic" (api-key-config)))
         (should-be-nil (:thinking @captured))))
 
     (it "omits thinking block when :effort absent"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "claude" :messages []} {:provider-config (api-key-config)}))
+          (sut/chat {:model "claude" :messages []} "anthropic" (api-key-config)))
         (should-be-nil (:thinking @captured))))
 
     (it "scales budget with thinking-budget-max from config"
       (let [captured (atom nil)
             config   (assoc (api-key-config) :thinking-budget-max 64000)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "claude" :effort 5 :messages []} {:provider-config config}))
+          (sut/chat {:model "claude" :effort 5 :messages []} "anthropic" config))
         (should= {:type "enabled" :budget_tokens 32000} (:thinking @captured))))
 
     (it "strips :effort from the outbound request body"
       (let [captured (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
-          (sut/chat {:model "claude" :effort 7 :messages []} {:provider-config (api-key-config)}))
+          (sut/chat {:model "claude" :effort 7 :messages []} "anthropic" (api-key-config)))
         (should-not (contains? @captured :effort))))))

@@ -70,30 +70,36 @@
 
 (defn chat
   "Send a non-streaming Chat Completions request."
-  [request & [{:keys [provider-name provider-config]}]]
-  (let [config   (or provider-config {})
-        base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error provider-name config)]
+  [request provider-name cfg]
+  (let [base-url (shared/provider-base-url cfg)
+        auth-err (shared/missing-auth-error provider-name cfg)]
     (if auth-err
       auth-err
-      (chat-with-completions-api config base-url (shared/auth-headers provider-name config) request))))
+      (chat-with-completions-api cfg base-url (shared/auth-headers provider-name cfg) request))))
 
 (defn chat-stream
   "Send a streaming Chat Completions request via SSE."
-  [request on-chunk & [{:keys [provider-name provider-config]}]]
-  (let [config   (or provider-config {})
-        base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error provider-name config)]
+  [request on-chunk provider-name cfg]
+  (let [base-url (shared/provider-base-url cfg)
+        auth-err (shared/missing-auth-error provider-name cfg)]
     (if auth-err
       auth-err
-      (chat-stream-with-completions-api config base-url (shared/auth-headers provider-name config) request on-chunk))))
+      (chat-stream-with-completions-api cfg base-url (shared/auth-headers provider-name cfg) request on-chunk))))
 
 (defn followup-messages
   "Build the next iteration's :messages vector for Chat Completions."
   [request response tool-calls tool-results]
   (shared/followup-messages request response tool-calls tool-results))
 
-(defn make [name cfg]
-  (api/->GenericLLMAPI name (api/wire-opts name cfg) cfg
-                       #'chat #'chat-stream #'followup-messages
-                       #(prompt/build (assoc % :filter-fn prompt/filter-messages-openai))))
+(deftype ChatCompletionsAPI [provider-name cfg]
+  api/Api
+  (chat [_ req] (chat req provider-name cfg))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk provider-name cfg))
+  (followup-messages [_ req resp tcs trs] (followup-messages req resp tcs trs))
+  (config [_] cfg)
+  (display-name [_] provider-name)
+  (format-tools [_ tools] (when (seq tools) (mapv api/wrapped-function-tool tools)))
+  (build-prompt [_ opts] (prompt/build (assoc opts :filter-fn prompt/filter-messages-openai))))
+
+(defn make [name config]
+  (->ChatCompletionsAPI name config))

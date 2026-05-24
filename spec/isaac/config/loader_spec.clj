@@ -105,12 +105,13 @@
                                              "main"
                                              nil))))
 
-  (describe "apply-model-override"
+  (describe "resolve-crew-context model override"
 
-    (it "uses a named model override and passes model provider options to the provider"
+    (it "uses a named model override passed in the crew config"
       (with-redefs [llm-provider/make-provider (fn [provider-id provider-cfg]
                                                  {:id provider-id :cfg provider-cfg})]
         (let [cfg {:module-index {:source :spec}
+                   :crew         {"main" {:model "grover"}}
                    :models       {"grover" {:model                  "helm-mk-3-1.0"
                                              :provider               marigold/helm-systems
                                              :context-window         200000
@@ -119,7 +120,7 @@
                                              :think-mode             :deep}}
                    :providers    {marigold/helm-systems {:api marigold/helm-api
                                                          :base-url (:base-url marigold/helm-provider)}}}
-              ctx (#'sut/apply-model-override cfg {:context-window 4096} "grover")]
+              ctx (sut/resolve-crew-context cfg "main")]
           (should= "helm-mk-3-1.0" (:model ctx))
           (should= {:model "helm-mk-3-1.0"
                     :provider marigold/helm-systems
@@ -140,14 +141,14 @@
                    (select-keys (get-in ctx [:provider :cfg]) [:api :base-url :module-index :thinking-budget-max :think-mode]))
           (should= 200000 (:context-window ctx)))))
 
-    (it "accepts provider slash model overrides"
+    (it "accepts provider slash model refs in the crew config"
       (with-redefs [llm-provider/make-provider (fn [provider-id provider-cfg]
                                                  {:id provider-id :cfg provider-cfg})]
         (let [cfg {:module-index {:source :spec}
+                   :crew         {"main" {:model (str marigold/helm-systems "/helm-mk-3-1.0")}}
                    :providers    {marigold/helm-systems {:api marigold/helm-api
                                                          :context-window 64000}}}
-              ctx (#'sut/apply-model-override cfg {:context-window 4096}
-                                               (str marigold/helm-systems "/helm-mk-3-1.0"))]
+              ctx (sut/resolve-crew-context cfg "main")]
           (should= "helm-mk-3-1.0" (:model ctx))
           (should= {:provider marigold/helm-systems
                     :model "helm-mk-3-1.0"}
@@ -161,13 +162,7 @@
                     :context-window 64000
                     :module-index {:source :spec}}
                    (select-keys (get-in ctx [:provider :cfg]) [:api :context-window :module-index]))
-          (should= 64000 (:context-window ctx)))))
-
-    (it "leaves the existing context unchanged when the override is unknown"
-      (let [ctx {:model "llama3.2" :context-window 4096 :provider :existing}]
-        (should= ctx (#'sut/apply-model-override {:models {"grover" {:model "helm-mk-3-1.0"}}}
-                                                 ctx
-                                                 "ghost")))))
+          (should= 64000 (:context-window ctx))))))
 
   (describe "load-root-config"
 
@@ -314,14 +309,7 @@
           (should= [] (:errors result))
           (should= "atticus" (get-in result [:config :defaults :crew])))))
 
-    (it "reads workspace files from an explicit fs option"
-      (let [mem  (fs/mem-fs)
-            path (str marigold/home "/.isaac/crew/atticus/SOUL.md")]
-        (fs/mkdirs mem (fs/parent path))
-        (fs/spit mem path "You are the captain.")
-        (nexus/reset!)
-        (should= "You are the captain."
-                 (sut/read-workspace-file "atticus" "SOUL.md" {:home marigold/home :fs mem})))))
+    )
 
   (describe "semantic-errors"
 
@@ -915,7 +903,7 @@
                    :crew      {"main" {:model "grover" :soul "You are Isaac."}}
                    :models    {"grover" {:model "helm-mk-3-1.0" :provider marigold/helm-systems :context-window 200000}}
                    :providers {marigold/helm-systems {:api marigold/helm-api :base-url (:base-url marigold/helm-provider)}}}
-              ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
+              ctx (sut/resolve-crew-context cfg "main")]
           (should= "You are Isaac." (:soul ctx))
           (should= "helm-mk-3-1.0" (:model ctx))
           (should= marigold/helm-systems (:id (:provider ctx)))
@@ -929,7 +917,7 @@
                    :crew      {"main" {:model "snuffy" :effort 9}}
                    :models    {"snuffy" {:model "snuffy-codex" :provider "grover" :effort 5}}
                    :providers {"grover" {:api "responses" :effort 3}}}
-              ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
+              ctx (sut/resolve-crew-context cfg "main")]
           (should= 9 (get-in ctx [:crew-cfg :effort]))
           (should= 5 (get-in ctx [:model-cfg :effort]))))))
 

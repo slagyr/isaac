@@ -1274,7 +1274,8 @@
         model-id     (or (:model crew-cfg) (get-in cfg [:defaults :model]))
         model-cfg    (or (get-in cfg [:models model-id])
                          (when-let [provider-id (:provider crew-cfg)]
-                           {:model model-id :provider provider-id}))
+                           {:model model-id :provider provider-id})
+                         (when model-id (parse-model-ref model-id)))
         provider-id  (:provider model-cfg)
         provider-cfg (merge (or (resolve-provider cfg provider-id) {})
                             (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode])

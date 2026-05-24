@@ -27,12 +27,11 @@
     {:options (->> options (remove (comp nil? val)) (into {}))
      :errors  errors}))
 
-(defn- soul-source [crew-cfg crew-id home]
-  (if-let [s (:soul crew-cfg)]
+(defn- soul-source [crew-cfg]
+  (when-let [s (:soul crew-cfg)]
     (if (> (count s) 40)
       (str (subs s 0 37) "...")
-      s)
-    (str home "/.isaac/crew/" crew-id "/SOUL.md")))
+      s)))
 
 (defn- derive-home [opts]
   (if-let [sd (:state-dir opts)]
@@ -59,7 +58,7 @@
                :model       model-name
                :provider    provider
                :tags        (or (:tags crew-member) #{})
-               :soul-source (soul-source crew-member crew-id home)}))
+               :soul-source (soul-source crew-member)}))
           crew-map)))
 
 (defn- resolve-crew-by-name [opts crew-id]

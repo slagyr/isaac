@@ -50,11 +50,11 @@
     (str (-> provider-name str/upper-case (str/replace "-" "_")) "_API_KEY")))
 
 (defn resolve-api-key
-  "Returns the API key for `provider-name`: the explicit :apiKey from config
+  "Returns the API key for `provider-name`: the explicit :api-key from config
    when present, falling back to the <PROVIDER>_API_KEY env var when blank.
    Returns nil when neither is set."
   [provider-name config]
-  (let [explicit (:apiKey config)]
+  (let [explicit (:api-key config)]
     (if-not (str/blank? explicit)
       explicit
       (when-let [env-var (provider-env-var provider-name)]
@@ -79,8 +79,8 @@
                      (when provider-name (str " or :api-key in providers/" provider-name ".edn"))
                      ".")})))
 
-(defn provider-base-url [{:keys [baseUrl]}]
-  (or baseUrl "http://localhost:11434/v1"))
+(defn provider-base-url [config]
+  (or (:base-url config) "http://localhost:11434/v1"))
 
 (defn llm-http-opts [config]
   (cond-> {}

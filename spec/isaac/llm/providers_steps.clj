@@ -8,7 +8,6 @@
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.prompt.anthropic :as anthropic]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.nexus :as nexus]))

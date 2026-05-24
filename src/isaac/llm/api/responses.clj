@@ -152,28 +152,26 @@
 
 (defn chat
   "Send a Responses API request (streams internally; returns accumulated response)."
-  [request & [{:keys [provider-name provider-config]}]]
-  (let [config   (or provider-config {})
-        base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error provider-name config)]
+  [request provider-name cfg]
+  (let [base-url (shared/provider-base-url cfg)
+        auth-err (shared/missing-auth-error provider-name cfg)]
     (if auth-err
       auth-err
-      (chat-stream-with-responses-api config base-url (shared/auth-headers provider-name config) request (fn [_] nil)))))
+      (chat-stream-with-responses-api cfg base-url (shared/auth-headers provider-name cfg) request (fn [_] nil)))))
 
 (defn chat-stream
   "Send a streaming Responses API request via SSE."
-  [request on-chunk & [{:keys [provider-name provider-config]}]]
-  (let [config   (or provider-config {})
-        base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error provider-name config)]
+  [request on-chunk provider-name cfg]
+  (let [base-url (shared/provider-base-url cfg)
+        auth-err (shared/missing-auth-error provider-name cfg)]
     (if auth-err
       auth-err
-      (chat-stream-with-responses-api config base-url (shared/auth-headers provider-name config) request on-chunk))))
+      (chat-stream-with-responses-api cfg base-url (shared/auth-headers provider-name cfg) request on-chunk))))
 
-(deftype ResponsesAPI [provider-name opts cfg]
+(deftype ResponsesAPI [provider-name cfg]
   api/Api
-  (chat [_ req] (#'chat req opts))
-  (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
+  (chat [_ req] (chat req provider-name cfg))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk provider-name cfg))
   (followup-messages [_ req resp tcs trs] (shared/followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name)
@@ -187,4 +185,4 @@
         (seq raw-tools) (assoc :tools (api/format-tools this raw-tools))))))
 
 (defn make [name cfg]
-  (->ResponsesAPI name (api/wire-opts name cfg) cfg))
+  (->ResponsesAPI name cfg))
