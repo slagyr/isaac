@@ -4,10 +4,8 @@ title: 'Session mutation CLI: isaac sessions set/unset with schema validation'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T03:03:06Z
-updated_at: 2026-05-24T03:24:28Z
+updated_at: 2026-05-24T05:35:32Z
 blocked_by:
     - isaac-wr7d
     - isaac-x0b5
@@ -174,3 +172,30 @@ Run targeted: `bb features features/session/mutation.feature`.
 - **Companion to isaac-a1nu (Crew concurrency).** Sessions CLI
   surface grows here; doesn't conflict with the listing/show
   surface a1nu touches.
+
+
+
+## Verification failed
+
+HEAD: 44675f9584d86352e905d7417974e2aa57acba96
+Working tree: clean
+
+The bean still misses one explicit acceptance criterion: unknown-field mutations do not error with "no such field." The current implementation forwards `nav/path->spec` errors directly in `src/isaac/session/cli.clj`, so `isaac sessions set joe.unknown-key v` prints `unknown path: unknown-key (unrecognized segment: unknown-key)` instead of the required wording.
+
+Direct repro:
+
+• `sessions set joe.unknown-key v` -> `unknown path: unknown-key (unrecognized segment: unknown-key)`
+• `sessions set joe.created-at 2026-05-23T12:00:00Z` -> `immutable field: created-at` (this one is correct)
+• `sessions set joe.tags.role/worker` stores `#{:role/worker}` (this one is correct)
+
+The feature file is too weak to catch the miss: `features/session/mutation.feature` only asserts that stderr contains `bogus`, not that it contains `no such field`.
+
+Checks run:
+
+• Feature tampering check passed: `features/session/mutation.feature` only removed `@wip`.
+• `bb spec` passed: `1700 examples, 0 failures, 3234 assertions`.
+• `bb spec spec/isaac/session/cli_spec.clj spec/isaac/session/schema_spec.clj` passed: `20 examples, 0 failures, 42 assertions`.
+• `bb features-all features/session/mutation.feature` passed: `10 examples, 0 failures, 27 assertions`.
+• Direct acceptance repros confirmed the wording gap above.
+
+So the mutation surface mostly works, but the unknown-field diagnostic does not yet meet the bean contract.
