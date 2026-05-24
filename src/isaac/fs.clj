@@ -29,7 +29,8 @@
   (-children     [fs path])
   (-cache-token  [fs])
   (-mkdirs       [fs path])
-  (-delete       [fs path]))
+  (-delete       [fs path])
+  (-move         [fs source destination]))
 
 ;; region ----- RealFs -----
 
@@ -56,7 +57,14 @@
                  vec))))
   (-cache-token  [_] nil)
   (-mkdirs       [_ path]         (.mkdirs (io/file path)))
-  (-delete       [_ path]         (.delete (io/file path))))
+  (-delete       [_ path]         (.delete (io/file path)))
+  (-move         [_ source destination]
+    (some-> destination parent-path io/file .mkdirs)
+    (let [source-file      (io/file source)
+          destination-file (io/file destination)]
+      (when (.exists destination-file)
+        (.delete destination-file))
+      (.renameTo source-file destination-file))))
 
 ;; endregion
 
@@ -104,7 +112,14 @@
   (-delete       [_ path]
     (swap! store dissoc path)
     (swap! revision inc)
-    nil))
+    nil)
+  (-move         [_ source destination]
+    (let [value (get @store source)]
+      (swap! store #(cond-> (dissoc % source)
+                      (some? value)               (assoc destination value)
+                      (parent-path destination)   (assoc [::dir (parent-path destination)] true)))
+      (swap! revision inc)
+      nil)))
 
 ;; endregion
 
@@ -185,6 +200,13 @@
 (defn delete
   "Deletes the path from the given filesystem."
   [fs path] (assert-absolute! path) (-delete fs path))
+
+(defn move
+  "Moves a path to a new absolute destination in the given filesystem."
+  [fs source destination]
+  (assert-absolute! source)
+  (assert-absolute! destination)
+  (-move fs source destination))
 
 (defn copy-tree!
   "Recursively copies `path` from `source-fs` to `target-fs`. Useful

@@ -23,16 +23,19 @@
 (defn- pending-path [id]
   (str (pending-dir) "/" id ".edn"))
 
+(defn- temp-path [id]
+  (str (pending-dir) "/" id ".tmp"))
+
 (defn- naming-strategy [state-dir fs*]
   (naming/->SequentialStrategy state-dir "hail" "hail-" fs*))
 
 (defn- next-id [state-dir fs*]
   (naming/generate (naming-strategy state-dir fs*)))
 
-(defn- normalize-record [record]
-  (cond-> record
-    (nil? (:id record))      (assoc :id (next-id (runtime-state-dir) (filesystem)))
-    (nil? (:sent-at record)) (assoc :sent-at (str (memory/now)))))
+(defn- normalize-record [record state-dir fs*]
+  (-> record
+      (assoc :id (next-id state-dir fs*))
+      (assoc :sent-at (str (memory/now)))))
 
 (defn- read-record [path]
   (let [fs* (filesystem)]
@@ -44,10 +47,13 @@
 
 (defn send! [record]
   (let [fs*    (filesystem)
-        record (normalize-record record)
-        path   (pending-path (:id record))]
+        state-dir (runtime-state-dir)
+        record (normalize-record record state-dir fs*)
+        path   (pending-path (:id record))
+        temp   (temp-path (:id record))]
     (fs/mkdirs fs* (fs/parent path))
-    (fs/spit fs* path (write-edn record))
+    (fs/spit fs* temp (write-edn record))
+    (fs/move fs* temp path)
     record))
 
 (defn read-pending [id]

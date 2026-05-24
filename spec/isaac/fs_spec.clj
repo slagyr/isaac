@@ -39,6 +39,10 @@
     (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
       (fs/delete (fs/mem-fs) "foo.txt")))
 
+  (it "move rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
+      (fs/move (fs/mem-fs) "foo.txt" "/tmp/bar.txt")))
+
   (it "children rejects relative paths"
     (should-throw IllegalArgumentException "Relative path not allowed: dir"
       (fs/children (fs/mem-fs) "dir")))
@@ -62,7 +66,7 @@
 
 (describe "memory fs"
 
-  (around [it] (binding [*fs* (fs/mem-fs)] (it)))
+  (around [example] (binding [*fs* (fs/mem-fs)] (example)))
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? *fs* "/mem/found.txt"))
@@ -142,13 +146,19 @@
     (fs/spit *fs* "/mem/gone.txt" "bye")
     (should (fs/exists? *fs* "/mem/gone.txt"))
     (fs/delete *fs* "/mem/gone.txt")
-    (should-not (fs/exists? *fs* "/mem/gone.txt"))))
+    (should-not (fs/exists? *fs* "/mem/gone.txt")))
+
+  (it "move relocates files"
+    (fs/spit *fs* "/mem/old.txt" "bye")
+    (fs/move *fs* "/mem/old.txt" "/mem/new.txt")
+    (should-not (fs/exists? *fs* "/mem/old.txt"))
+    (should= "bye" (fs/slurp *fs* "/mem/new.txt"))))
 
 (describe "real fs"
 
   (before (delete-test-path!))
   (before (io/make-parents (test-path* "keep")))
-  (around [it] (binding [*fs* (fs/real-fs)] (it)))
+  (around [example] (binding [*fs* (fs/real-fs)] (example)))
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? *fs* (test-path* "found.txt")))
@@ -225,4 +235,10 @@
     (fs/spit *fs* (test-path* "gone.txt") "bye")
     (should (fs/exists? *fs* (test-path* "gone.txt")))
     (fs/delete *fs* (test-path* "gone.txt"))
-    (should-not (fs/exists? *fs* (test-path* "gone.txt")))))
+    (should-not (fs/exists? *fs* (test-path* "gone.txt"))))
+
+  (it "move relocates files"
+    (fs/spit *fs* (test-path* "old.txt") "bye")
+    (fs/move *fs* (test-path* "old.txt") (test-path* "new.txt"))
+    (should-not (fs/exists? *fs* (test-path* "old.txt")))
+    (should= "bye" (fs/slurp *fs* (test-path* "new.txt")))))

@@ -38,4 +38,16 @@
                      (should= 0 (sut/run-fn {:_raw-args ["send" "-"]}))))]
       (should= "hail-1\n" output)
       (should= {:band "bean-pickup"}
-               (:frequency (sut/read-pending "hail-1"))))))
+               (:frequency (sut/read-pending "hail-1")))))
+
+  (it "ignores stdin-supplied id and sent-at"
+    (binding [memory/*now* (java.time.Instant/parse "2026-05-23T12:00:00Z")]
+      (let [output (with-in-str "{:id \"stdin-id\" :sent-at \"2000-01-01T00:00:00Z\" :frequency {:band \"bean-pickup\"}}"
+                     (with-out-str
+                       (should= 0 (sut/run-fn {:_raw-args ["send" "-"]}))))]
+        (should= "hail-1\n" output)
+        (should= {:id        "hail-1"
+                  :sent-at   "2026-05-23T12:00:00Z"
+                  :frequency {:band "bean-pickup"}
+                  :from      :cli}
+                 (select-keys (sut/read-pending "hail-1") [:id :sent-at :frequency :from]))))))
