@@ -15,7 +15,7 @@
 ;; region ----- Registration -----
 
 (def ^:private ordered-built-in-tools
-  ["read" "write" "edit" "grep" "glob" "web_fetch" "web_search" "memory_write" "memory_get" "memory_search" "exec" "session_info" "session_model"])
+  ["read" "write" "edit" "grep" "glob" "web_fetch" "web_search" "memory_write" "memory_get" "memory_search" "exec" "session_info" "session_model" "hail-send"])
 
 (def ^:private built-in-tool-specs
   {"read"          {:name        "read"
@@ -115,13 +115,13 @@
                      :description "Report the current session's crew, model, provider, origin, timing, context, and compaction count"
                      :parameters  {:type "object" :properties {}}
                      :handler     #'session/session-info-tool}
-    "session_model" {:name        "session_model"
-                      :description "Switch or reset the calling session's model; returns new session state"
-                      :parameters  {:type       "object"
-                                    :properties {"model" {:type "string" :description "Model alias to switch to"}
-                                                 "reset" {:type "boolean" :description "Revert to crew's default model"}}
-                                    :required   []}
-                      :handler     #'session/session-model-tool}})
+   "session_model" {:name        "session_model"
+                    :description "Switch or reset the calling session's model; returns new session state"
+                    :parameters  {:type       "object"
+                                  :properties {"model" {:type "string" :description "Model alias to switch to"}
+                                               "reset" {:type "boolean" :description "Revert to crew's default model"}}
+                                  :required   []}
+                    :handler     #'session/session-model-tool}})
 
 (defn- spec-for [tool-name]
   (some-> (get built-in-tool-specs tool-name)

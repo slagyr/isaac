@@ -1,11 +1,13 @@
 ---
 # isaac-xzq6
 title: 'Hail crew tool: LLM-invokable hail/send from inside a turn'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T21:57:41Z
-updated_at: 2026-05-23T22:45:24Z
+updated_at: 2026-05-24T22:02:55Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq

@@ -1,4 +1,3 @@
-@wip
 Feature: Hail crew tool
   The `hail-send` tool lets an LLM in a turn dispatch hails from
   inside its reasoning loop. Crews opt in via :tools.allow. The
