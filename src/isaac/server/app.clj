@@ -203,7 +203,8 @@
                      :host host
                      :message "missing :server :auth :token for non-loopback bind"))
         (when-not (auth-required? cfg host start-http-server?)
-          (let [_                       (nexus/init! {:config (atom cfg)
+          (let [cfg                     (cond-> cfg state-dir (assoc :state-dir state-dir))
+                _                       (nexus/init! {:config (atom cfg)
                                                       :fs     (or (fs/instance opts) (fs/real-fs))})
                 _                       (when state-dir
                                           (home/init-state-dir! state-dir)

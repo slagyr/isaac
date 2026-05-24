@@ -1045,7 +1045,7 @@
                          :cron      new-cron}
                         (cond-> cfg
                                 (contains? cfg :cron) (assoc :cron new-cron))
-                        [:channels :comms :hooks :server :sessions :slash-commands :gateway :cron :tz :dev :acp :prefer-entity-files :modules :module-index :tools])))
+                        [:channels :comms :hooks :server :sessions :slash-commands :gateway :cron :tz :dev :acp :prefer-entity-files :modules :module-index :tools :state-dir])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -1152,6 +1152,14 @@
   [cfg]
   (reset! (config-atom) cfg)
   cfg)
+
+(defn state-dir
+  "Returns the resolved state directory from the current config snapshot.
+   Falls back to the nexus :state-dir slot for test fixtures that set it
+   that way; production paths put it on the snapshot."
+  []
+  (or (:state-dir (snapshot))
+      (nexus/get :state-dir)))
 
 ;; endregion ^^^^^ Ambient Config Snapshot ^^^^^
 

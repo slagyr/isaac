@@ -196,7 +196,7 @@
     (do (println "Usage: isaac sessions show <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir   (resolve-state-dir opts loaded-cfg)
-          _           (nexus/register! [:state-dir] state-dir)
+          loaded-cfg  (assoc loaded-cfg :state-dir state-dir)
           session-store (resolve-session-store loaded-cfg state-dir)
           session     (store/get-session session-store session-id)]
       (if (nil? session)
@@ -222,7 +222,8 @@
     (do (println "Usage: isaac sessions delete <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
-          _          (nexus/register! [:state-dir] state-dir)
+          loaded-cfg (assoc loaded-cfg :state-dir state-dir)
+          _          (config/set-snapshot! loaded-cfg)
           session-store (resolve-session-store loaded-cfg state-dir)]
       (if (store/delete-session! session-store session-id)
         (do (println (str "deleted: " session-id)) 0)
@@ -326,7 +327,8 @@
         state-dir     (or (:state-dir opts)
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
-        _             (nexus/register! [:state-dir] state-dir)
+        loaded-cfg    (assoc loaded-cfg :state-dir state-dir)
+        _             (config/set-snapshot! loaded-cfg)
         session-store (resolve-session-store loaded-cfg state-dir)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)

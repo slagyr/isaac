@@ -44,7 +44,7 @@
 (defn state-dir [args]
   (let [args (string-key-map args)]
     (or (get args "state_dir")
-        (nexus/state-dir))))
+        (config/state-dir))))
 
 (defn session-store [args]
   (let [args      (string-key-map args)

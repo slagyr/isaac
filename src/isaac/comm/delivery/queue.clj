@@ -3,8 +3,8 @@
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
-    [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory])
   (:import
     (java.util UUID)))
@@ -14,7 +14,7 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-state-dir []
-  (or (nexus/state-dir) (throw (ex-info "delivery queue requires :state-dir" {}))))
+  (or (config/state-dir) (throw (ex-info "delivery queue requires :state-dir" {}))))
 
 (defn- filesystem []
   (or (fs/instance) (throw (ex-info "comm.delivery.queue requires :fs in system" {}))))

@@ -89,8 +89,7 @@
                          (bridge/dispatch!
                            (charge/build {:session-key   (:id session)
                                           :input         prompt
-                                          :config        cfg
-                                          :state-dir     state-dir
+                                          :config        (assoc cfg :state-dir state-dir)
                                           :crew          crew
                                           :origin        {:kind :cron :name (str job-name)}
                                           :comm          null-comm/channel})))
@@ -120,7 +119,7 @@
 
 (defn start! [{:keys [cfg state-dir session-store tick-ms]
                  :or   {tick-ms default-tick-ms}}]
-  (let [state-dir        (or state-dir (nexus/state-dir))
+  (let [state-dir        (or state-dir (config/state-dir))
         session-store    (or session-store (nexus/get-in [:sessions :store]))
         shared-scheduler (or (nexus/get :scheduler)
                              (throw (ex-info "cron scheduler requires :scheduler in isaac.nexus" {})))

@@ -160,7 +160,6 @@
 
     (it "declares all expected keys"
       (let [ks (set (keys (:schema sut/schema)))]
-        (should (contains? ks :state-dir))
         (should (contains? ks :server))
         (should (contains? ks :sessions))
         (should (contains? ks :config))

@@ -125,7 +125,9 @@
       (let [request (merge (nexus/necho) input)]
         (ensure-session! request)
         (dispatch-charge! (charge/build request)))))
-  ([state-dir request]
-    (dispatch! (assoc request :state-dir state-dir))))
+  ([_state-dir request]
+    ;; Two-arg form is a back-compat shim — state-dir now lives on the
+    ;; config snapshot, which downstream readers consult directly.
+    (dispatch! request)))
 
 ;; endregion ^^^^^ Triage ^^^^^

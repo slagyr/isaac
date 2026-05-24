@@ -95,7 +95,8 @@
                      :state-dir "/tmp/isaac"
                      :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
         (sut/stop!))
-      (should= {:cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}
+      (should= {:cfg       {:cron      {"health-check" {:expr "0 9 * * *"}}
+                            :state-dir "/tmp/isaac"}
                 :state-dir "/tmp/isaac"}
                @started)))
 

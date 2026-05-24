@@ -109,7 +109,7 @@
   ([session-key]
    (resolve-behavior session-key {}))
   ([session-key overrides]
-   (let [state-dir      (nexus/state-dir)
+   (let [state-dir      (config/state-dir)
          session-store* (session-store (:session-store overrides))
          cfg            (config/normalize-config (effective-config state-dir (fs/instance)))
          session-entry  (merge (or (some-> session-store* (store/get-session session-key)) {})
@@ -126,7 +126,7 @@
 
 (defn create-with-resolved-behavior!
   [session-key opts]
-  (let [state-dir (nexus/state-dir)
+  (let [state-dir (config/state-dir)
         cfg       (config/normalize-config (effective-config state-dir (fs/instance)))
         behavior  (resolve-behavior* cfg state-dir (select-keys opts behavioral-keys))
         store     (require-session-store (:session-store opts))

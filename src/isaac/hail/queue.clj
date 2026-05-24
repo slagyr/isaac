@@ -2,9 +2,9 @@
   (:require
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.naming :as naming]
-    [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory]))
 
 (defn- write-edn [value]
@@ -12,7 +12,7 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-state-dir []
-  (or (nexus/state-dir) (throw (ex-info "hail queue requires :state-dir" {}))))
+  (or (config/state-dir) (throw (ex-info "hail queue requires :state-dir" {}))))
 
 (defn- filesystem []
   (or (fs/instance) (throw (ex-info "hail.queue requires :fs in system" {}))))

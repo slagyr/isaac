@@ -368,8 +368,7 @@
                       :session-key    "wrap-test"
                       :input          "hi"
                       :comm           :test-comm
-                      :state-dir      test-dir
-                      :session-store  (store/registered-store)
+                      :config         {:state-dir test-dir}
                       :crew           "main"
                       :crew-members   {"main" {:model "spark" :tools {:allow [:spyglass]}}}
                       :context-window 32768

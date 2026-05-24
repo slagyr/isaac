@@ -185,8 +185,7 @@
                      charge*          (charge/build {:session-key    session-key
                                                      :input          message
                                                      :comm           null-comm/channel
-                                                     :config         cfg
-                                                     :state-dir      state-dir
+                                                     :config         (assoc cfg :state-dir state-dir)
                                                      :crew           (:crew hook)
                                                      :model-override (:model hook)
                                                      :origin         {:kind :webhook :name name}})]

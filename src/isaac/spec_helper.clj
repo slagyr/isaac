@@ -1,5 +1,6 @@
 (ns isaac.spec-helper
   (:require
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
@@ -16,7 +17,7 @@
       (sidecar-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
-  `(let [mem-store# (memory/create-store (nexus/state-dir))]
+  `(let [mem-store# (memory/create-store (config/state-dir))]
      (nexus/-with-nested-nexus {:fs       (or (fs/instance) (fs/mem-fs))
                                  :sessions {:store mem-store#}}
        (binding [*session-store* (store/registered-store)]

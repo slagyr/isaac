@@ -134,11 +134,11 @@
                          (str/join "\n"))]
         (should-not-contain "isaac.comm.acp" ns-form)))
 
-    (it "passes the state-dir to charge/build"
+    (it "passes the state-dir on :config to charge/build"
       (let [captured-state-dir (atom nil)
             mem                (fs/mem-fs)]
         (with-redefs [charge/build              (fn [input]
-                                                  (reset! captured-state-dir (:state-dir input))
+                                                  (reset! captured-state-dir (get-in input [:config :state-dir]))
                                                   {:charge/type :charge})
                       isaac.hooks/dispatch-turn! (fn [_] nil)]
           (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"

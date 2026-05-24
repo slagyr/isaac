@@ -11,8 +11,7 @@
   {:name        :nexus
    :type        :map
    :description "Isaac global runtime context"
-   :schema      {:state-dir         {:type :string :description "Isaac state directory path"}
-                 :fs                {:type :ignore :description "Filesystem implementation (isaac.fs/Fs)"}
+   :schema      {:fs                {:type :ignore :description "Filesystem implementation (isaac.fs/Fs)"}
                  :server            {:type :ignore :description "HTTP server instance"}
                  :sessions          {:type        :map
                                     :description "Session runtime components"
@@ -63,11 +62,6 @@
   [path]
   (let [parent (clojure.core/get-in (necho) (butlast path))]
     (contains? parent (last path))))
-
-(defn state-dir
-  "Returns the state directory path. Reads from source map when provided, otherwise reads from the live nexus."
-  ([]       (get :state-dir))
-  ([source] (or (:state-dir source) (get :state-dir))))
 
 (defn init!
   "Registers the default runtime atoms for the current nexus.

@@ -625,8 +625,9 @@
    so this only computes the genuinely per-turn fields and the
    tools-augmented provider that drive needs."
   [charge]
-  (let [{:keys [session-key state-dir crew crew-members context-window
+  (let [{:keys [session-key crew crew-members context-window
                 model model-cfg provider]} charge
+        state-dir      (get-in charge [:config :state-dir])
         session-store* (nexus/get-in [:sessions :store])
         session        (store/get-session session-store* session-key)
         allowed-tools  (allowed-tool-names crew-members crew)

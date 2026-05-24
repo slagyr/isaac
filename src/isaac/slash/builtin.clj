@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.bridge.status :as status]
+    [isaac.config.loader :as config]
     [isaac.effort :as effort]
      [isaac.fs :as fs]
      [isaac.home :as home]
@@ -72,7 +73,7 @@
          :message (str "unknown crew: " args)}))))
 
 (defn- resolve-cwd-path [ctx path]
-  (let [state-dir (:state-dir ctx)]
+  (let [state-dir (or (get-in ctx [:config :state-dir]) (:state-dir ctx) (config/state-dir))]
     (cond
       (str/starts-with? path "/") path
       (str/starts-with? path "~/") (str (home/user-home) (subs path 1))

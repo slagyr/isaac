@@ -1,8 +1,10 @@
 (ns isaac.slash.builtin-spec
   (:require
+    [isaac.config.loader :as config]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.nexus :as nexus]
     [isaac.session.store :as store]
     [isaac.session.store.memory :as memory]
     [isaac.slash.builtin :as sut]
@@ -35,9 +37,11 @@
                (#'sut/resolve-cwd-path {:state-dir test-dir} "workspace")))
 
     (it "throws for relative paths without state-dir"
-      (should-throw clojure.lang.ExceptionInfo
-                    "cwd command requires :state-dir for relative paths"
-                    (#'sut/resolve-cwd-path {} "workspace"))))
+      (with-redefs [config/state-dir (fn [] nil)
+                    nexus/get        (fn [_] nil)]
+        (should-throw clojure.lang.ExceptionInfo
+                      "cwd command requires :state-dir for relative paths"
+                      (#'sut/resolve-cwd-path {} "workspace")))))
 
   (describe "handle-cwd"
 

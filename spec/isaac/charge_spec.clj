@@ -141,16 +141,16 @@
 
     (it "forwards crew and model overrides to resolve-behavior"
       (let [seen (atom nil)]
-        (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}
-                                                         :crew     {"main" (crew-cfg marigold/captain test-model-id "Base.")}
-                                                         :models   {test-model-id (model-cfg test-model-id 4096)}})
+        (with-redefs [config/snapshot             (fn [] {:defaults  {:crew "main"}
+                                                         :crew      {"main" (crew-cfg marigold/captain test-model-id "Base.")}
+                                                         :models    {test-model-id (model-cfg test-model-id 4096)}
+                                                         :state-dir "/tmp/isaac/.isaac"})
                       session-ctx/resolve-behavior (fn [_ opts]
                                                      (reset! seen opts)
                                                      (stub-behavior "main" "Base." test-model-id 4096))]
           (let [charge (sut/build {:session-key "s1"
-                                   :input       "hi"
-                                   :state-dir   "/tmp/isaac/.isaac"})]
-            (should= "/tmp/isaac/.isaac" (:state-dir charge))
+                                   :input       "hi"})]
+            (should= "/tmp/isaac/.isaac" (get-in charge [:config :state-dir]))
             (should= {:crew "main" :model nil} @seen)))))
 
     (it "returns an unresolved charge with :no-model when no model is configured"

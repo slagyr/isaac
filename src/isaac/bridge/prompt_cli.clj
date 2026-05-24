@@ -11,7 +11,6 @@
     [isaac.drive.turn :as single-turn]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
-    [isaac.nexus :as nexus]
     [isaac.tool.builtin :as builtin]))
 
 (defn- option-tags [opts]
@@ -106,10 +105,10 @@
     (if (= false (ensure-local-config! opts))
       1
       (let [cfg           (effective-cfg opts)
-            _             (config/set-snapshot! cfg)
-            state-dir     (or (:state-dir opts) (:stateDir cfg)
+            state-dir     (or (:state-dir opts) (:state-dir cfg) (:stateDir cfg)
                               (str (System/getProperty "user.home") "/.isaac"))
-            _             (nexus/register! [:state-dir] state-dir)
+            cfg           (assoc cfg :state-dir state-dir)
+            _             (config/set-snapshot! cfg)
             session-store (store/register! cfg state-dir)
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))
@@ -130,7 +129,6 @@
                        (charge/build {:session-key    session-key
                                       :input          (:message opts)
                                       :config         cfg
-                                      :state-dir      state-dir
                                       :crew           (or crew-override session-crew)
                                       :model-override (:model opts)
                                       :origin         {:kind :cli}
