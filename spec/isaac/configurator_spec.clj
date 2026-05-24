@@ -127,6 +127,18 @@
       (should= new-inst (get-in @tree* [:comms :bert]))
       (should= [[:new {:type :telly}]] @events)))
 
+  (it "does not log comm activation for non-comm components"
+    (let [instance (reify sut/Reconfigurable
+                     (on-startup! [_ _] nil)
+                     (on-config-change! [_ _ _] nil))
+          registry {:kind    :component
+                    :path    [:cron]
+                    :factory (fn [_] instance)}]
+      (log/capture-logs
+        (sut/reconcile! (atom {}) {} nil {:cron {:health-check {:expr "0 0 * * *"}}} registry)
+        (should (some #(= :lifecycle/started (:event %)) @log/captured-logs))
+        (should-not (some #(= :comm/activated (:event %)) @log/captured-logs)))))
+
   (it "does nothing for slice changes when no instance exists"
     (let [tree*    (atom {})
           registry {:path [:comms] :impls {}}

@@ -68,7 +68,4 @@
                                    "-XX:+DebugNonSafepoints"]
                      :main-opts   ["-m" "profile-runner"]}
 
-  :features         {:main-opts ["-m" "gherclj.main"
-                                 "-f" "features"
-                                 "-f" "modules/*/features"
-                                 "-s" "isaac.**-steps"]}}}
+  :features         {:main-opts ["-m" "isaac.features-main"]}}}

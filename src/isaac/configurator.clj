@@ -80,7 +80,8 @@
       (comm-registry/register-instance! impl instance))
     (swap! tree-atom assoc-tree slot-path instance)
     (log/info :lifecycle/started :path (dotted slot-path) :impl impl)
-    (log/info :comm/activated :comm instance-name :type impl)
+    (when (= [:comms] (:path (:registry host)))
+      (log/info :comm/activated :comm instance-name :type impl))
     instance))
 
 (defn- stop-instance! [tree-atom instance slot-path old-slice impl]

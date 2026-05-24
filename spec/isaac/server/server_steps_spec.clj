@@ -129,4 +129,13 @@
     (should= {"attempt" 2}
              (read-string (fs/slurp (nexus/get :fs) (str test-state-dir "/.isaac/delivery/pending/7f3a.edn")))))
 
+  (it "matches log rows as an ordered subsequence"
+    (let [table   {:headers ["level" "event" "module"]
+                   :rows    [[":info" ":module/activated" "isaac.comm.telly"]
+                             [":info" ":telly/started" "bert"]]}
+          entries [{:level :info :event :module/activated :module "isaac.comm.telly"}
+                   {:level :info :event :lifecycle/started :path "comms.bert" :impl "telly"}
+                   {:level :info :event :telly/started :module "bert"}]]
+      (should= [] (:failures (#'sut/log-match-result table entries)))))
+
 )
