@@ -1,10 +1,11 @@
 ---
 # isaac-un18
 title: Unified collision policy for module extension kinds
-status: todo
+status: draft
 type: feature
+priority: normal
 created_at: 2026-05-20T20:44:42Z
-updated_at: 2026-05-20T20:44:42Z
+updated_at: 2026-05-24T05:18:47Z
 ---
 
 ## Motivation
