@@ -179,7 +179,6 @@
                       crew-id          (or (:crew hook) "main")
                       session-key      (or (:session-key hook) (str "hook:" name))
                      existing-session (store/get-session session-store session-key)
-                     home             (some-> state-dir fs/parent)
                      quarters         (str state-dir "/crew/" crew-id)
                      template         (:template hook)
                      message          (render-template template body)
@@ -188,7 +187,6 @@
                                                      :comm           null-comm/channel
                                                      :config         cfg
                                                      :state-dir      state-dir
-                                                     :home           home
                                                      :crew           (:crew hook)
                                                      :model-override (:model hook)
                                                      :origin         {:kind :webhook :name name}})]

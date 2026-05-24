@@ -126,6 +126,6 @@
         (ensure-session! request)
         (dispatch-charge! (charge/build request)))))
   ([state-dir request]
-    (dispatch! (assoc request :state-dir state-dir :home (or (:home request) state-dir)))))
+    (dispatch! (assoc request :state-dir state-dir))))
 
 ;; endregion ^^^^^ Triage ^^^^^

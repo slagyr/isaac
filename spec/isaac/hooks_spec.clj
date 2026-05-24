@@ -134,13 +134,11 @@
                          (str/join "\n"))]
         (should-not-contain "isaac.comm.acp" ns-form)))
 
-    (it "resolves crew context from the state dir's parent home"
-      ;; Verifies that hooks passes the parent of state-dir as :home to
-      ;; charge/build — so resolve-behavior picks up the right config tree.
-      (let [captured-home (atom nil)
-            mem           (fs/mem-fs)]
+    (it "passes the state-dir to charge/build"
+      (let [captured-state-dir (atom nil)
+            mem                (fs/mem-fs)]
         (with-redefs [charge/build              (fn [input]
-                                                  (reset! captured-home (:home input))
+                                                  (reset! captured-state-dir (:state-dir input))
                                                   {:charge/type :charge})
                       isaac.hooks/dispatch-turn! (fn [_] nil)]
           (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
@@ -151,7 +149,7 @@
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
-              (should= "/tmp/hooks-home" @captured-home))))))
+              (should= "/tmp/hooks-home/.isaac" @captured-state-dir))))))
 
     (it "uses the hook model's provider when dispatching"
       (let [captured (atom nil)

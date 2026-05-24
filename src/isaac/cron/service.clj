@@ -91,7 +91,6 @@
                                           :input         prompt
                                           :config        cfg
                                           :state-dir     state-dir
-                                          :home          state-dir
                                           :crew          crew
                                           :origin        {:kind :cron :name (str job-name)}
                                           :comm          null-comm/channel})))

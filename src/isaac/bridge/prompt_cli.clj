@@ -107,7 +107,6 @@
       1
       (let [cfg           (effective-cfg opts)
             _             (config/set-snapshot! cfg)
-            home          (home-dir opts)
             state-dir     (or (:state-dir opts) (:stateDir cfg)
                               (str (System/getProperty "user.home") "/.isaac"))
             _             (nexus/register! [:state-dir] state-dir)
@@ -132,7 +131,6 @@
                                       :input          (:message opts)
                                       :config         cfg
                                       :state-dir      state-dir
-                                      :home           home
                                       :crew           (or crew-override session-crew)
                                       :model-override (:model opts)
                                       :origin         {:kind :cli}
