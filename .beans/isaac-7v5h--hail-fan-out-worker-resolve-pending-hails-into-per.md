@@ -1,11 +1,11 @@
 ---
 # isaac-7v5h
-title: 'Hail fan-out worker: resolve pending hails into per-session deliveries'
-status: draft
+title: 'Hail router: resolve pending hails into per-session deliveries'
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-23T21:55:37Z
-updated_at: 2026-05-23T22:05:40Z
+updated_at: 2026-05-24T03:16:08Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-i4ly
@@ -16,11 +16,13 @@ blocked_by:
 
 The substrate (isaac-vduq) writes pending hails to
 `<state-dir>/hail/pending/`. Without delivery they sit there
-forever. This bean adds the **fan-out worker** — the consumer that
-ticks on the shared scheduler, resolves each pending hail's address
-into a set of (crew, session) listeners, applies the reach mode,
-and writes delivery records to per-session inboxes. Pending hails
-are removed once all matching listeners are delivered.
+forever. This bean adds the **hail router** — the consumer that
+ticks on the shared scheduler, resolves each pending hail's
+`:frequency` into a set of (crew, session) listeners, applies the
+reach mode, and writes delivery records to per-session inboxes.
+After all matching listeners have been delivered, the pending file
+moves to `hail/delivered/<id>.edn` with resolution metadata for
+forensic visibility ("which crews and sessions actually got it").
 
 ## Scope
 
@@ -32,8 +34,9 @@ ticking ~1s. Same shape as `cron/service.clj` and
 
 On each tick:
 1. Enumerate `<state-dir>/hail/pending/*.edn`
-2. For each hail not yet processed, resolve and deliver
-3. Remove pending file when all matching listeners delivered
+2. For each hail, resolve and deliver
+3. After all matching listeners receive their delivery, move
+   pending → `hail/delivered/<id>.edn` with resolution metadata
 
 ### Address resolution
 
@@ -82,12 +85,36 @@ Each delivery is a file at
 Atomic write (tempfile + rename). The wake worker (slice 4) picks
 this up later.
 
+### Delivered records (forensic)
+
+After ALL matching listeners have been delivered, the pending file
+moves to `<state-dir>/hail/delivered/<hail-id>.edn`. The delivered
+record preserves the original hail and adds resolution metadata:
+
+```clojure
+{:id           "hail-7"
+ :frequency    {:band "engineering-intercom"}    ;; original
+ :payload      {:dilithium-leak true}             ;; original
+ :prompt       "..."                              ;; original or resolved
+ :from         :cli                               ;; original
+ :sent-at      "..."                              ;; original
+ :delivered-at "2026-05-23T14:00:00Z"             ;; new
+ :listeners    [{:crew :bartholomew               ;; new — who got it
+                 :session :engine-room
+                 :delivery-id "delivery-1"}]}
+```
+
+Operators can answer "where did hail-7 go?" by reading
+`hail/delivered/hail-7.edn` rather than grepping every session
+inbox. The pending file is removed after the move.
+
 ### Pending lifecycle
 
-A hail's pending record is removed once **all matching listeners
-have been delivered**. If no listeners match (empty resolution),
-the hail stays in pending for the next tick — self-healing if
-crews/sessions/bands are added later.
+A hail's pending record stays in `pending/` until **all matching
+listeners have been delivered**, at which point it moves to
+`delivered/`. If no listeners match (empty resolution, unknown
+band, etc.), the hail stays in pending for the next tick —
+self-healing when crews/sessions/bands are added later.
 
 ### Address resolution edge cases
 
@@ -109,31 +136,42 @@ crews/sessions/bands are added later.
 ## Acceptance
 
 - Worker registered on the shared scheduler with ~1s tick.
-- Reads pending hails; writes delivery records; removes pending
-  when all matching delivered.
-- Resolves all address forms: band, crew, session, crew-tags,
+- Reads pending hails; writes delivery records; moves pending →
+  `delivered/` when all matching listeners delivered.
+- Resolves all `:frequency` forms: band, crew, session, crew-tags,
   session-tags, and combinations (intersection).
 - Applies `:reach :one` with idle-first + capacity gate;
   `:reach :all` to all matching pairs.
 - Empty resolution (no listeners) leaves the hail in pending.
 - Delivery records contain: hail-id, frequency, payload, prompt
   (resolved per addressing form), from, delivered-at.
+- Delivered records include `:listeners` resolution metadata.
 
-## Feature scenarios
+## Feature files
 
-`features/hail/fanout.feature`, `@wip`. Scenarios to draft in a
-later round:
+- `features/hail/router.feature` — 8 `@wip` scenarios:
+  - Frequency-band hail → delivery to matching session.
+  - Direct `:crew` hail → delivery to crew's session.
+  - Direct `:session` hail → that exact session only (not other
+    sessions of the same crew).
+  - `:reach :one` tag-filter picks idle over in-flight.
+  - `:reach :all` delivers to every matching session.
+  - Unknown band → hail stays in pending.
+  - Empty resolution (no matching crews) → hail stays in pending.
+  - Combined band + session-tag form an intersection.
 
-- Band-addressed pending hail → delivery to matching session.
-- Direct crew-addressed hail → delivery to crew's idle session.
-- Direct session-addressed hail → delivery to that session.
-- Tag-filter address → delivery to first matching (crew, session).
-- `:reach :all` → deliveries to every matching pair.
-- Unknown band → hail stays in pending.
-- Empty resolution → hail stays in pending.
-- Combined fields (band + session-tag) → intersection delivers.
+The file uses Marigold cast (bartholomew, hieronymus, mavis,
+atticus, cordelia) for entertaining scenario themes.
 
-Mirror style from `features/comm/delivery/queue.feature`.
+**New step introduced**: `When the hail router ticks` — runs one
+iteration of the router; parallel to `the delivery worker ticks`
+in `comm/delivery/queue.feature`.
+
+Run targeted: `bb features features/hail/router.feature`.
+
+**Definition of done:** remove `@wip` from
+`features/hail/router.feature` and
+`bb features features/hail/router.feature` is green.
 
 ## Relationship to other beans
 
