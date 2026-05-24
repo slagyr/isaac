@@ -1,4 +1,3 @@
-@wip
 Feature: Hail send
   `isaac hail send [addressing flags] [--payload <edn>]` produces a
   hail by atomically writing an EDN record to <state-dir>/hail/pending/.

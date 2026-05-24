@@ -4,8 +4,10 @@ title: 'Hail substrate: hail.queue/send! library and isaac hail send CLI'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T16:18:16Z
-updated_at: 2026-05-24T00:19:49Z
+updated_at: 2026-05-24T00:30:02Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-pctr

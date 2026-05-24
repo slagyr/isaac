@@ -12,6 +12,7 @@
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
     [isaac.main :as main]
+    [isaac.tool.memory :as memory]
     [isaac.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
@@ -127,8 +128,8 @@
 (defn- parse-edn-literal [text]
   (try
     (edn/read-string text)
-    (catch Exception e
-      (throw (ex-info (str "invalid EDN literal in step table: " text " - " (.getMessage e)) {})))))
+    (catch Exception _
+      text)))
 
 (defn- assert-stdout-contains [format-name parse-output parse-literal table]
   (let [stdout (or (current-output) "")
@@ -162,6 +163,12 @@
   (if (str/starts-with? path "/")
     path
     (str (System/getProperty "user.dir") "/" path)))
+
+(defn- with-current-time [f]
+  (if-let [current-time (g/get :current-time)]
+    (binding [memory/*now* current-time]
+      (f))
+    (f)))
 
 (defn- delete-tree! [path]
   (let [fs* (or (nexus/get :fs) (fs/real-fs))]
@@ -245,19 +252,19 @@
                                    (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
                                    (g/get :main-extra-opts) (merge (g/get :main-extra-opts)))
         stdin-content    (g/get :stdin-content)
-        run-final        (fn []
-                           (let [run* (fn [run-opts]
-                                        (binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
-                                                  shell/*sh*       (or (g/get :sh-fn) shell/*sh*)
-                                                  shell/*os-name*  (or (g/get :os-name) shell/*os-name*)]
+         run-final        (fn []
+                            (let [run* (fn [run-opts]
+                                         (binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
+                                                   shell/*sh*       (or (g/get :sh-fn) shell/*sh*)
+                                                   shell/*os-name*  (or (g/get :os-name) shell/*os-name*)]
                                            (if (seq run-opts)
                                              (binding [main/*extra-opts* run-opts]
                                                (run-with-stubs))
                                              (run-with-stubs))))]
                              (if-let [mem-fs (g/get :mem-fs)]
-                               (nexus/-with-nested-nexus {:fs mem-fs}
-                                 (run* (assoc extra-opts :fs mem-fs)))
-                               (run* extra-opts))))
+                                (nexus/-with-nested-nexus {:fs mem-fs}
+                                  (with-current-time #(run* (assoc extra-opts :fs mem-fs))))
+                                (with-current-time #(run* extra-opts)))))
          run-with-stdin   (fn []
                             (if stdin-content
                               (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
@@ -303,15 +310,16 @@
     (g/assoc! :live-output-writer output-writer)
     (g/assoc! :live-error-writer error-writer)
     (future
-      (let [run! (fn [run-opts]
-                   (binding [*out* output-writer
-                             *err* error-writer
-                             home/*user-home* (or (g/get :user-home) home/*user-home*)]
-                     (let [code (if (seq run-opts)
-                                  (binding [main/*extra-opts* run-opts]
-                                    (main/run argv))
-                                  (main/run argv))]
-                       (g/assoc! :exit-code code))))]
+       (let [run! (fn [run-opts]
+                    (binding [*out* output-writer
+                              *err* error-writer
+                              home/*user-home* (or (g/get :user-home) home/*user-home*)]
+                      (let [code (with-current-time
+                                   #(if (seq run-opts)
+                                      (binding [main/*extra-opts* run-opts]
+                                        (main/run argv))
+                                      (main/run argv)))]
+                        (g/assoc! :exit-code code))))]
         (if mem-fs
           (nexus/-with-nested-nexus {:fs mem-fs}
             (run! (assoc extra-opts :fs mem-fs)))
@@ -432,6 +440,13 @@
 
 (defn stdin-is-empty []
   (g/assoc! :stdin-content ""))
+
+(defn clock-is-fixed-at [iso]
+  (let [iso (unescape-expected iso)
+        iso (if (and (str/starts-with? iso "\"") (str/ends-with? iso "\""))
+              (subs iso 1 (dec (count iso)))
+              iso)]
+    (g/assoc! :current-time (java.time.Instant/parse iso))))
 
 (defn isaac-home-contains-config [home doc-string]
   (let [abs-home   (absolute-path home)
@@ -556,6 +571,10 @@
    Without this step, *in* is closed for the run.")
 
 (defgiven "stdin is empty" isaac.server.cli.cli-steps/stdin-is-empty)
+
+(defgiven "the clock is fixed at {string}" isaac.server.cli.cli-steps/clock-is-fixed-at
+  "Pins isaac.tool.memory/*now* for the next 'isaac is run with' invocation so
+   CLI scenarios can assert deterministic timestamps.")
 
 (defgiven "isaac home {home:string} contains config:" isaac.server.cli.cli-steps/isaac-home-contains-config
   "Writes the heredoc content as <home>/.isaac/config/isaac.edn. Differs

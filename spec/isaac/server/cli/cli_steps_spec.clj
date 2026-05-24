@@ -54,6 +54,11 @@
                                 :rows    [["0.name" "\"joe\""]
                                           ["0.tags" "#{:role/worker :project/chess}"]]}))
 
+    (it "treats unparseable scalar literals as strings"
+      (g/assoc! :output "{:sent-at \"2026-05-23T12:00:00Z\"}")
+      (sut/stdout-edn-contains {:headers ["path" "value"]
+                                :rows    [["sent-at" "2026-05-23T12:00:00Z"]]}))
+
     (it "fails with a clear message for a mismatched EDN value"
       (g/assoc! :output "[{:name \"joe\"}]")
       (let [error (try

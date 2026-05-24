@@ -14,9 +14,10 @@
     [isaac.version :as version]
     isaac.llm.auth.cli
     isaac.config.cli.command
-    isaac.crew.cli
-    isaac.bridge.prompt-cli
-    isaac.logs.cli
+     isaac.crew.cli
+     isaac.hail.cli
+     isaac.bridge.prompt-cli
+     isaac.logs.cli
     isaac.server.cli
     isaac.service.cli
     isaac.session.cli))
