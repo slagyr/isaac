@@ -1,10 +1,11 @@
 ---
 # isaac-vduq
 title: 'Hail substrate: hail.queue/send! library and isaac hail send CLI'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-05-23T16:18:16Z
-updated_at: 2026-05-23T16:18:16Z
+updated_at: 2026-05-24T00:19:49Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-pctr
