@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-05-23T21:56:51Z
-updated_at: 2026-05-25T00:37:37Z
+updated_at: 2026-05-25T03:10:15Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
@@ -109,3 +109,13 @@ and `bb features features/hail/delivery.feature` is green.
 - Uses isaac-a1nu (concurrency: `in-flight?` / `can-dispatch?`). a1nu is
   complete.
 - Closes the Hail core loop.
+
+## Update: origin framing moved to isaac-uysx
+
+The origin+autonomy system preamble is NOT built by this worker. This bean
+only sets `:origin {:kind :hail :hail-id ...}` on the charge and dispatches
+the prompt. The framing (turning `:origin` into the system-prompt preamble) is
+rendered centrally by the shared comm-origin helper (isaac-uysx). So the
+delivery/spawn scenarios assert the user prompt + assistant reply + delivery
+finalization, NOT the preamble — preamble assertions live in isaac-uysx,
+checked on the composed prompt (system blocks), not the transcript.

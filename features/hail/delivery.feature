@@ -45,10 +45,12 @@ Feature: Hail delivery
     When the hail delivery worker ticks
     And the turn ends on session "engine-room"
     Then session "engine-room" has transcript matching:
-      | type    | message.role | message.content                               | #comment                         |
-      | message | system       | #"(?s).*hail-1.*dilithium-leak.*autonomous.*" | origin (id + payload) + autonomy |
-      | message | user         | Seal the leak.                                | resolved prompt                  |
-      | message | assistant    | Sealing now.                                  | grover's reply — turn completed  |
+      | type    | message.role | message.content | #comment                        |
+      | message | user         | Seal the leak.  | resolved prompt                 |
+      | message | assistant    | Sealing now.    | grover's reply — turn completed |
+    # Origin framing (the autonomy preamble in the system prompt) is asserted
+    # in features/hail/spawn.feature's parent refactor (isaac-uysx), not here —
+    # this bean only sets :origin {:kind :hail ...} and dispatches.
     And the isaac file "hail/deliveries/delivery-1.edn" does not exist
     And the EDN isaac file "hail/delivered/delivery-1.edn" contains:
       | path    | value      |

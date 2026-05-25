@@ -115,10 +115,9 @@ Feature: Hail-driven session spawning (get-or-create)
       | id        | crew        | tags                  | origin.kind |
       | session-1 | bartholomew | #{:project/warp-coil} | hail        |
     And session "session-1" has transcript matching:
-      | type    | message.role | message.content               |
-      | message | system       | #"(?s).*hail-1.*autonomous.*" |
-      | message | user         | Resonance climbing.           |
-      | message | assistant    | On the coil.                  |
+      | type    | message.role | message.content     |
+      | message | user         | Resonance climbing. |
+      | message | assistant    | On the coil.        |
     And the isaac file "hail/deliveries/delivery-1.edn" does not exist
     And the EDN isaac file "hail/delivered/delivery-1.edn" contains:
       | path    | value       |
