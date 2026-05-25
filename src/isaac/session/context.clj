@@ -7,6 +7,7 @@
     [isaac.logger :as log]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.store :as store]
+    [isaac.session.store.impl-common :as store-common]
     [isaac.nexus :as nexus]))
 
 (def default-context-mode :full)
@@ -46,7 +47,14 @@
 (declare resolve-compaction-config)
 
 (def ^:private behavioral-keys
-  [:compaction :context-mode :context-window :crew :cwd :effort :history-retention :model :provider])
+  [:compaction :context-mode :context-window :crew :cwd :effort :history-retention :model :nonce :provider])
+
+(defn- ensure-session-nonce
+  [session-entry session-store*]
+  (cond
+    (nil? session-entry) nil
+    (seq (:nonce session-entry)) session-entry
+    :else (store/update-session! session-store* (:id session-entry) {:nonce (store-common/new-nonce)})))
 
 (defn- resolve-behavior* [cfg state-dir session-entry]
   (let [crew-id        (or (:crew session-entry)
@@ -83,6 +91,7 @@
      :model             (or model-ref
                             (:model ctx))
      :model-cfg         (:model-cfg ctx)
+     :nonce             (:nonce session-entry)
      :provider          (:provider ctx)
      :provider-cfg      (or (config/resolve-provider cfg (get-in ctx [:model-cfg :provider])) {})
      :soul              (:soul ctx)}))
@@ -112,7 +121,7 @@
    (let [state-dir      (config/state-dir)
          session-store* (session-store (:session-store overrides))
          cfg            (config/normalize-config (effective-config state-dir (fs/instance)))
-         session-entry  (merge (or (some-> session-store* (store/get-session session-key)) {})
+         session-entry  (merge (or (some-> session-store* (store/get-session session-key) (ensure-session-nonce session-store*)) {})
                                (select-keys overrides behavioral-keys))
          behavior       (resolve-behavior* cfg state-dir session-entry)]
        (log/debug :session/behavior-resolved
@@ -133,6 +142,7 @@
         entry     (store/open-session! store session-key {:channel           (:channel opts)
                                                            :chat-type         (or (:chat-type opts) (:chatType opts))
                                                            :crew              (:crew behavior)
+                                                           :nonce             (or (:nonce opts) (store-common/new-nonce))
                                                            :tags              (:tags opts)
                                                            :cwd               (:cwd behavior)
                                                            :history-retention (:history-retention behavior)

@@ -49,6 +49,7 @@
             :name                (mutable {:type :string :required? true :validate schema/present? :message "must be present"})
             :sessionId           (immutable {:type :string})
             :session-file        (immutable {:type :string})
+            :nonce               (mutable {:type :string})
             :origin              (immutable {:type :map :schema (:schema Origin)})
             :crew                (mutable {:type :string
                                            :validate known-crew?

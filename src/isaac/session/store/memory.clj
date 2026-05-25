@@ -77,6 +77,7 @@
               entry        {:id                id
                             :key               id
                             :name              (or name id)
+                            :nonce             (or (:nonce opts) (c/new-nonce))
                             :session-file      session-file
                              :created-at        now
                              :updated-at        now

@@ -582,8 +582,8 @@
   (when (empty? (tool-registry/all-tools))
     (builtin/register-all!)))
 
-(defn build-chat-request [p {:keys [boot-files effort model soul transcript tools]}]
-  (let [prompt-out (api/build-prompt p {:boot-files boot-files :model model :soul soul
+(defn build-chat-request [p {:keys [boot-files effort model nonce soul transcript tools]}]
+  (let [prompt-out (api/build-prompt p {:boot-files boot-files :model model :nonce nonce :soul soul
                                         :transcript transcript :tools tools})]
     (cond-> {:model (:model prompt-out) :messages (:messages prompt-out)}
             (:system prompt-out) (assoc :system (:system prompt-out))
@@ -691,7 +691,7 @@
    final assistant response. Returns the final result map."
   [session-key input ctx]
   (let [{:keys [provider allowed-tools effort boot-files]} ctx
-        {:keys [model module-index soul context-mode comm]} (:charge ctx)
+        {:keys [model module-index nonce soul context-mode comm]} (:charge ctx)
         ch (or comm cli-comm/channel)
         p  provider]
     (append-message! ctx session-key {:role "user" :content input})
@@ -707,6 +707,7 @@
           request         (build-chat-request p {:boot-files boot-files
                                                  :effort     effort
                                                  :model      model
+                                                 :nonce      nonce
                                                  :soul       soul
                                                  :transcript transcript
                                                  :tools      tools})

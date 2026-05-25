@@ -23,6 +23,9 @@
 (defn new-id []
   (subs (str (UUID/randomUUID)) 0 8))
 
+(defn new-nonce []
+  (str "N0NCE-" (subs (str (UUID/randomUUID)) 0 12)))
+
 (defn parse-long-safe [s]
   (try
     (when (string? s) (Long/parseLong s))
@@ -311,6 +314,7 @@
                             {:id                id
                              :key               id
                              :name              name
+                             :nonce             (or (:nonce opts) (new-nonce))
                              :sessionId         transcript-id
                              :session-file      session-file
                              :origin            (:origin opts)

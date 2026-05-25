@@ -15,6 +15,7 @@
 (defn- stub-behavior [crew soul model ctx-window]
   {:crew           crew
    :soul           soul
+   :nonce          "N0NCE-stubbed"
    :model          model
    :model-cfg      {:model model}
    :context-window ctx-window
@@ -115,6 +116,7 @@
           (should= "main" (sut/agent charge))
           (should= test-model-id (:model charge))
           (should= "You are Atticus." (:soul charge))
+          (should= "N0NCE-stubbed" (:nonce charge))
           (should= 4096 (:context-window charge)))))
 
     (it "uses explicit crew override when provided"

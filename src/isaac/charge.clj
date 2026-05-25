@@ -31,6 +31,7 @@
             :effort            {:type :long :description "Resolved per-turn effort budget"}
             :cwd               {:type :string :description "Session working directory"}
             :soul              {:type :string :description "System prompt"}
+            :nonce             {:type :string :description "Session-scoped trusted-block nonce"}
             :origin            {:type :ignore :description "Inbound origin metadata"}
             :charge/type       {:type :keyword :description "Charge type marker (:charge)"}
             :charge/unresolved {:type :boolean :description "True when crew/model could not be resolved"}
@@ -142,6 +143,7 @@
                              :cwd            (:cwd @session-context)
                              :model          @model*
                              :model-cfg      (or model-cfg (:model-cfg @session-context))
+                             :nonce          (:nonce @session-context)
                              :provider       (ensure-provider (or provider (:provider @session-context)) config*)
                              :provider-cfg   (or provider-cfg (:provider-cfg @session-context))
                              :soul           (or soul (cond-> (:soul @session-context)

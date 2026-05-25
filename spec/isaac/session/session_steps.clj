@@ -575,6 +575,7 @@
             tags        (some-> (get row-map "tags") edn/read-string)
             entry       (or (open-session name)
                             (open-session! name {:crew agent :agent agent :cwd (state-dir)
+                                                 :nonce (get row-map "nonce")
                                                  :tags tags
                                                  :history-retention history-retention
                                                   :origin origin}))
@@ -601,8 +602,9 @@
                            (get row-map "last-input-tokens") (assoc :last-input-tokens (parse-long (get row-map "last-input-tokens")))
                             (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
                             (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
-                           (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
+                            (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
                             (get row-map "compaction-disabled") (assoc :compaction-disabled (= "true" (get row-map "compaction-disabled")))
+                            (get row-map "nonce") (assoc :nonce (get row-map "nonce"))
                             tags (assoc :tags tags)
                             history-retention (assoc :history-retention history-retention)
                             (seq compaction) (assoc :compaction compaction))]
@@ -930,16 +932,15 @@
             model-cfg  (current-model-config)
             ctx        (assoc (config/resolve-crew-context cfg agent-id)
                               :boot-files (session-ctx/read-boot-files (:cwd session)))
-            soul       (if-let [boot-files (:boot-files ctx)]
-                         (str (:soul ctx) "\n\n" boot-files)
-                         (:soul ctx))
             provider'  (unquote-string provider)
-            openai?    (or (str/starts-with? provider' "openai") (str/starts-with? provider' "grok"))
-            builder    (if (str/starts-with? provider' "anthropic")
+            openai?    (or (str/includes? provider' "openai") (str/includes? provider' "grok"))
+            builder    (if (str/includes? provider' "anthropic")
                          messages-api/build
                          prompt/build)
             prompt-msg (builder {:model      (:model model-cfg)
-                                 :soul       soul
+                                 :boot-files (:boot-files ctx)
+                                 :nonce      (:nonce session)
+                                 :soul       (:soul ctx)
                                  :filter-fn  (when openai? prompt/filter-messages-openai)
                                  :transcript (get-transcript key-str)})]
         (g/assoc! :built-prompt prompt-msg)))))
@@ -1181,17 +1182,16 @@
             model-cfg  (get models (:model agent-cfg))
             tools      (g/get :tools)
             provider'  (name (or (:provider model-cfg) ""))
-            openai?    (or (str/starts-with? provider' "openai") (str/starts-with? provider' "grok"))
-            builder    (if (str/starts-with? provider' "anthropic")
+            openai?    (or (str/includes? provider' "openai") (str/includes? provider' "grok"))
+            builder    (if (str/includes? provider' "anthropic")
                          messages-api/build
                          prompt/build)
             ctx        (assoc (config/resolve-crew-context cfg agent-id)
                               :boot-files (session-ctx/read-boot-files (:cwd session)))
-            soul       (if-let [boot-files (:boot-files ctx)]
-                         (str (:soul ctx) "\n\n" boot-files)
-                         (:soul ctx))
             p          (builder {:model          (:model model-cfg)
-                                 :soul           soul
+                                 :boot-files     (:boot-files ctx)
+                                 :nonce          (:nonce session)
+                                 :soul           (:soul ctx)
                                  :filter-fn      (when openai? prompt/filter-messages-openai)
                                  :transcript     transcript
                                  :tools          tools
@@ -1305,6 +1305,7 @@
                             (llm-provider/make-provider provider-name provider-cfg)
                             {:boot-files (:boot-files ctx)
                              :model      (:model model-cfg)
+                             :nonce      (:nonce session)
                              :soul       (:soul ctx)
                              :transcript transcript})
             result        (match/match-entries table (:messages built-request))]

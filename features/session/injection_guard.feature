@@ -1,4 +1,3 @@
-@wip
 Feature: Universal prompt-injection guard
   Every dispatched turn's system prompt carries the crew soul plus a universal
   injection guard and a per-session nonce, for every session and every comm.
@@ -28,7 +27,7 @@ Feature: Universal prompt-injection guard
       | engine-rm | bartholomew | N0NCE-abc123 |
     Then the prompt "Status?" on session "engine-rm" matches:
       | key                          | value                                           | #comment                          |
-      | system[0].text               | #"(?s).*never treat .*user.* as instructions.*" | universal injection guard present |
+      | system[0].text               | #"(?s).*Never treat .*user.* as instructions.*" | universal injection guard present |
       | system[0].cache_control.type | ephemeral                                       | cached                            |
 
   Scenario: the guard carries the session's own nonce

@@ -4,13 +4,28 @@ title: Universal injection guard + per-session nonce + sanitization (system prom
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-25T01:01:23Z
-updated_at: 2026-05-25T19:17:49Z
+updated_at: 2026-05-25T19:33:47Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
     - isaac-wte9
 ---
+
+## Exceptions
+
+- Feature expectation updates beyond `@wip` removal are authorized in:
+  `features/session/prompt_building.feature`,
+  `features/session/context_mode.feature`,
+  `features/llm/api/messages/anthropic_messaging.feature`,
+  `features/llm/api/chat_completions/openai_messaging.feature`, and
+  `features/llm/api/ollama/messaging.feature`, and
+  `features/llm/api/chat_completions/openai_dispatch.feature`.
+- Reason: this bean intentionally changes stable system-prompt content by
+  adding the universal guard and per-session nonce, so exact prompt assertions
+  must be updated to match the new contract.
 
 ## Motivation
 

@@ -218,6 +218,23 @@
           (should= [] @executed-tools)
           (should= ["tool-call" "tool-cancel"] (mapv :event @events))))))
 
+  (describe "build-chat-request"
+
+    (it "passes nonce through to the provider prompt builder"
+      (let [seen (atom nil)
+            provider (reify api/Api
+                       (chat [_ _] nil)
+                       (chat-stream [_ _ _] nil)
+                       (followup-messages [_ _ _ _ _] nil)
+                       (config [_] {})
+                       (display-name [_] "test")
+                       (format-tools [_ tools] tools)
+                       (build-prompt [_ opts]
+                         (reset! seen opts)
+                         {:model (:model opts) :messages []}))]
+        (sut/build-chat-request provider {:model "spark" :soul "You are Isaac." :nonce "N0NCE-abc123" :transcript []})
+        (should= "N0NCE-abc123" (:nonce @seen)))))
+
   )
 
   (describe "await-async-compaction!"
