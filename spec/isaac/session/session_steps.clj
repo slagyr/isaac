@@ -176,8 +176,8 @@
 
 (defn- loaded-config []
   (let [fs*         (mem-fs)
-        load!       #(with-feature-fs (fn [] (config/load-config {:home (home-dir) :fs fs*})))
-        entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (home-dir) "/.isaac/config/" %)))))
+        load!       #(with-feature-fs (fn [] (config/load-config {:state-dir (state-dir) :fs fs*})))
+        entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (state-dir) "/config/" %)))))
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
              (empty? (or (:crew cfg) {}))
@@ -209,12 +209,12 @@
     (get (merged-agents) agent-id)))
 
 (defn- crew-config-path [crew-id]
-  (str (home-dir) "/.isaac/config/crew/" crew-id ".edn"))
+  (str (state-dir) "/config/crew/" crew-id ".edn"))
 
 (defn- configured-crew-ids []
   (with-feature-fs
     (fn []
-      (let [dir (str (home-dir) "/.isaac/config/crew")]
+      (let [dir (str (state-dir) "/config/crew")]
         (->> (or (fs/children (mem-fs) dir) [])
              (filter #(str/ends-with? % ".edn"))
              (map #(subs % 0 (- (count %) 4)))
@@ -422,8 +422,8 @@
    :providers {"ollama" {:api      "ollama"
                           :base-url "http://localhost:11434"}}})
 
-(defn- seed-minimal-config! [path]
-  (let [config-path (str path "/.isaac/config/isaac.edn")
+(defn- seed-minimal-config! [state-dir]
+  (let [config-path (str state-dir "/config/isaac.edn")
         fs*         (mem-fs)]
     (fs/mkdirs fs* (fs/parent config-path))
     (fs/spit   fs* config-path (pr-str minimal-config))))
@@ -478,10 +478,10 @@
 
 (defn in-memory-state [path]
   (initialize-state-dir! path true)
-  (with-feature-fs #(seed-minimal-config! (home-dir))))
+  (with-feature-fs #(seed-minimal-config! (state-dir))))
 
 (defn- write-grover-defaults! []
-  (let [root (str (home-dir) "/.isaac/config")
+  (let [root (str (state-dir) "/config")
         fs*  (mem-fs)]
     (fs/mkdirs fs* root)
     (fs/spit   fs* (str root "/isaac.edn")

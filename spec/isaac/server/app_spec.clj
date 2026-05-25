@@ -264,7 +264,7 @@
         (sut/stop!))
       (should= ::scheduler @stopped)))
 
-  (it "creates and starts a config change source from the state dir's home"
+  (it "creates and starts a config change source from the state dir"
     (let [created (atom nil)
           started (atom nil)]
       (with-redefs [change-source/watch-service-source (fn [home]
@@ -279,7 +279,7 @@
                     httpkit/server-stop!               (fn [_] nil)]
         (sut/start! {:host "127.0.0.1" :port 0 :state-dir "/tmp/isaac-home/.isaac"})
         (sut/stop!))
-      (should= "/tmp/isaac-home" @created)
+      (should= "/tmp/isaac-home/.isaac" @created)
       (should= ::source @started)))
 
   (it "does not create a config change source when hot reload is disabled"
@@ -313,7 +313,7 @@
       (should= ::source @stopped)))
 
   (it "reloads the in-memory config when the config source publishes a change"
-    (let [source (change-source/memory-source marigold/home)
+    (let [source (change-source/memory-source marigold/state-dir)
           helm   (keyword marigold/helm-systems)
           crew   marigold/captain]
       (nexus/-with-nested-nexus {:fs (fs/mem-fs)}

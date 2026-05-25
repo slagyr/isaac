@@ -19,8 +19,8 @@
                        "  echo '{:soul \"paranoid\"}' | isaac config set crew.marvin -")}))
 
 (defn run [opts arguments _options]
-  (if-let [{:keys [home path-str]} (mutate-common/target-home+path! opts (first arguments))]
-    (mutate-common/set-config! home path-str (second arguments))
+  (if-let [{:keys [state-dir path-str]} (mutate-common/target-state-dir+path! opts (first arguments))]
+    (mutate-common/set-config! state-dir path-str (second arguments))
     1))
 
 (def subcommand

@@ -9,16 +9,19 @@
   (it "root-filename is the root config filename"
     (should= "isaac.edn" sut/root-filename))
 
-  (it "config-root joins home with .isaac/config"
-    (should= "/home/me/.isaac/config" (sut/config-root "/home/me")))
+  (it "default-state-dir derives <home>/.isaac"
+    (should= "/home/me/.isaac" (sut/default-state-dir "/home/me")))
 
-  (it "config-path joins home with relative path under config root"
-    (should= (str "/home/me/.isaac/config/crew/" marigold/first-mate ".edn")
-             (sut/config-path "/home/me" (str "crew/" marigold/first-mate ".edn"))))
+  (it "config-root joins the state dir with config"
+    (should= "/state/config" (sut/config-root "/state")))
+
+  (it "config-path joins the state dir with relative path under config root"
+    (should= (str "/state/config/crew/" marigold/first-mate ".edn")
+             (sut/config-path "/state" (str "crew/" marigold/first-mate ".edn"))))
 
   (it "root-config-file points to isaac.edn under config root"
-    (should= "/home/me/.isaac/config/isaac.edn"
-             (sut/root-config-file "/home/me")))
+    (should= "/state/config/isaac.edn"
+             (sut/root-config-file "/state")))
 
   (it "entity-relative builds <kind>/<id>.edn from a keyword kind"
     (should= (str "crew/" marigold/first-mate ".edn") (sut/entity-relative :crew marigold/first-mate))

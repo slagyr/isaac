@@ -20,14 +20,8 @@
     (or (= parent child)
         (str/starts-with? child (str parent File/separator)))))
 
-(defn state-dir->home [state-dir]
-  (if (= ".isaac" (.getName (io/file state-dir)))
-    (.getParent (io/file state-dir))
-    state-dir))
-
 (defn config-directories [state-dir]
-  (set [(str state-dir "/config")
-        (str state-dir "/.isaac/config")]))
+  #{(str state-dir "/config")})
 
 (defn crew-quarters [state-dir crew-id]
   (str state-dir "/crew/" crew-id))
@@ -108,7 +102,7 @@
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters state-dir crew-id)
               _           (fs/mkdirs fs* quarters)
-              cfg         (config/load-config {:home (state-dir->home state-dir) :fs fs*})
+              cfg         (config/load-config {:state-dir state-dir :fs fs*})
               directories (or (get-in cfg [:crew crew-id :tools :directories]) [])]
           (vec (concat [quarters]
                        (keep (fn [directory]

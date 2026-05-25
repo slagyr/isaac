@@ -14,8 +14,8 @@
      :examples    "  isaac config unset crew.marvin.soul"}))
 
 (defn run [opts arguments _options]
-  (if-let [{:keys [home path-str]} (mutate-common/target-home+path! opts (first arguments))]
-    (mutate-common/unset-config! home path-str)
+  (if-let [{:keys [state-dir path-str]} (mutate-common/target-state-dir+path! opts (first arguments))]
+    (mutate-common/unset-config! state-dir path-str)
     1))
 
 (def subcommand

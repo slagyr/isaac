@@ -20,7 +20,7 @@
 ;; region ----- Helpers -----
 
 (def env-overrides* (atom {}))
-(def ^:dynamic *isaac-home* nil)
+(def ^:dynamic *state-dir* nil)
 (defonce ^:private load-cache* (atom {}))
 
 (defn- runtime-fs
@@ -40,8 +40,8 @@
   (reset! load-cache* {}))
 
 (defn- isaac-env-path []
-  (when *isaac-home*
-    (str *isaac-home* "/.isaac/.env")))
+  (when *state-dir*
+    (str *state-dir* "/.env")))
 
 (defn- isaac-env-value [name]
   (when-let [path (isaac-env-path)]
@@ -71,8 +71,8 @@
 (defn- source-path [relative]
   (str "config/" relative))
 
-(defn- missing-config-message [home]
-  (str "no config found; run `isaac init` or create " home "/.isaac/config/isaac.edn"))
+(defn- missing-config-message [state-dir]
+  (str "no config found; run `isaac init` or create " state-dir "/config/isaac.edn"))
 
 (defn- cache-key [opts]
   (let [fs* (runtime-fs opts)]
@@ -1052,8 +1052,8 @@
 ;; region ----- Loading -----
 
 (defn load-config-result
-  [& [{:keys [home raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
-        :or   {home (System/getProperty "user.home") substitute-env? true}
+  [& [{:keys [state-dir raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
+        :or   {substitute-env? true}
         :as   opts}]]
   (let [fs*       (runtime-fs opts)
         opts      (assoc opts :fs fs* :substitute-env? substitute-env?)
@@ -1062,11 +1062,11 @@
       cached
       (let [result
             (nexus/-with-nested-nexus {:fs fs*}
-              (binding [*isaac-home* home]
-                (let [root (paths/config-root home)]
+              (binding [*state-dir* state-dir]
+                (let [root (paths/config-root state-dir)]
                 (if-not (config-files-present? root opts)
-                  {:config          {:state-dir (paths/state-dir home)}
-                   :errors          [{:key "config" :value (missing-config-message home)}]
+                  {:config          {:state-dir state-dir}
+                   :errors          [{:key "config" :value (missing-config-message state-dir)}]
                    :missing-config? true
                    :warnings        []
                    :sources         []}
@@ -1105,11 +1105,11 @@
                         config           (if data-path-overlay
                                            (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
                                            config)
-                        discovery        (module-loader/discover! config {:state-dir (paths/state-dir home)
+                        discovery        (module-loader/discover! config {:state-dir state-dir
                                                                           :cwd       (System/getProperty "user.dir")})
                         config           (assoc config
                                            :module-index (:index discovery)
-                                           :state-dir    (paths/state-dir home))
+                                           :state-dir    state-dir)
                         raw-providers    (merge (get-in result [:root :providers])
                                                 (get-in result [:raw :providers]))
                         comms-check      (check-comms config (:index discovery))
@@ -1169,15 +1169,19 @@
 ;; region ----- Workspace -----
 
 (defn resolve-workspace
-  [crew-id & [{:keys [home] :or {home (System/getProperty "user.home")} :as opts}]]
+  [crew-id & [{:keys [state-dir] :as opts}]]
   (let [fs*       (runtime-fs opts)
-        crew-dir  (str home "/.isaac/crew/" crew-id)
-        oc-dir    (str home "/.openclaw/workspace-" crew-id)
-        isaac-dir (str home "/.isaac/workspace-" crew-id)]
+        crew-dir  (str state-dir "/crew/" crew-id)
+        isaac-dir (str state-dir "/workspace-" crew-id)
+        ;; Legacy ~/.openclaw lives beside ~/.isaac, so it only applies when the
+        ;; state dir is a .isaac directory under a user home.
+        oc-dir    (when (str/ends-with? (str state-dir) "/.isaac")
+                    (str (subs state-dir 0 (- (count state-dir) (count "/.isaac")))
+                         "/.openclaw/workspace-" crew-id))]
     (nexus/-with-nested-nexus {:fs fs*}
       (cond
         (some? (children* crew-dir)) crew-dir
-        (some? (children* oc-dir)) oc-dir
+        (and oc-dir (some? (children* oc-dir))) oc-dir
         (some? (children* isaac-dir)) isaac-dir
         :else nil))))
 

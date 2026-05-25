@@ -6,7 +6,8 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [clojure.walk :as walk]
-    [isaac.config.loader :as loader]))
+    [isaac.config.loader :as loader]
+    [isaac.config.paths :as paths]))
 
 ;; region ----- Option parsing -----
 
@@ -76,8 +77,9 @@
 
 ;; region ----- Paths -----
 
-(defn home-dir [{:keys [home state-dir]}]
-  (or home state-dir (System/getProperty "user.home")))
+(defn resolve-state-dir [{:keys [home state-dir]}]
+  (or state-dir
+      (paths/default-state-dir (or home (System/getProperty "user.home")))))
 
 (defn- keyword-safe-segment? [s]
   (and (not (str/blank? s))
@@ -220,10 +222,10 @@
     value))
 
 (defn load-result [opts]
-  (loader/load-config-result {:home (home-dir opts)}))
+  (loader/load-config-result {:state-dir (resolve-state-dir opts)}))
 
 (defn load-raw-result [opts]
-  (loader/load-config-result {:home (home-dir opts) :substitute-env? false}))
+  (loader/load-config-result {:state-dir (resolve-state-dir opts) :substitute-env? false}))
 
 (defn printable-config [opts reveal?]
   (let [raw      (load-raw-result opts)

@@ -119,14 +119,14 @@
            :soul?         (and entity? (= :crew root-key) (= [:soul] field-path))
            :whole-entity? (and entity? (= 2 (count segments)))})))))
 
-(defn- config-state [home parsed]
-  (let [root-path         (paths/root-config-file home)
+(defn- config-state [state-dir parsed]
+  (let [root-path         (paths/root-config-file state-dir)
         root-data         (or (read-edn-path root-path) {})
         entity-relative   (when (:entity? parsed) (paths/entity-relative (:root-key parsed) (:entity-id parsed)))
-        entity-path       (when entity-relative (paths/config-path home entity-relative))
+        entity-path       (when entity-relative (paths/config-path state-dir entity-relative))
         entity-data       (or (some-> entity-path read-edn-path) {})
         soul-relative     (when (:soul? parsed) (paths/soul-relative (:entity-id parsed)))
-        soul-path         (when soul-relative (paths/config-path home soul-relative))]
+        soul-path         (when soul-relative (paths/config-path state-dir soul-relative))]
     {:entity-data           entity-data
      :entity-exists?        (boolean (and entity-path (fs/exists? (runtime-fs) entity-path)))
      :entity-path           entity-path
@@ -227,29 +227,29 @@
         (-> {:deletes #{} :file paths/root-filename :writes {}}
             (update-edn-file paths/root-filename root-data'))))))
 
-(defn- apply-plan! [home plan]
+(defn- apply-plan! [state-dir plan]
   (let [fs* (runtime-fs)]
     (doseq [relative (:deletes plan)]
-      (let [path (paths/config-path home relative)]
+      (let [path (paths/config-path state-dir relative)]
         (when (fs/exists? fs* path)
           (fs/delete fs* path))))
     (doseq [[relative content] (:writes plan)]
-      (let [path   (paths/config-path home relative)
+      (let [path   (paths/config-path state-dir relative)
             parent (fs/parent path)]
         (when parent
           (fs/mkdirs fs* parent))
         (fs/spit fs* path content)))))
 
-(defn- validate-plan [home plan]
+(defn- validate-plan [state-dir plan]
   (let [source-fs (or (:fs (nexus/necho))
                       (fs/mem-fs))
         stage-fs  (fs/mem-fs)
-        root      (paths/config-root home)]
+        root      (paths/config-root state-dir)]
     (fs/copy-tree! source-fs stage-fs root)
     (try
       (nexus/-with-nested-nexus {:fs stage-fs}
-        (apply-plan! home plan)
-        (loader/load-config-result {:home home :fs stage-fs}))
+        (apply-plan! state-dir plan)
+        (loader/load-config-result {:state-dir state-dir :fs stage-fs}))
       (finally
         (loader/clear-load-cache!)))))
 
@@ -283,7 +283,7 @@
   (mapv (fn [e] (-> e (assoc :value (str "pre-existing: " (:value e))))) errors))
 
 (defn set-config
-  "Writes `value` at dotted `path` under `home`. See ns docstring for
+  "Writes `value` at dotted `path` under `state-dir`. See ns docstring for
    return shape.
 
    Pre-existing config errors do not block the mutation — they're
@@ -294,7 +294,7 @@
    crew-exists?, etc.) are never treated as new errors — only type errors
    can block the mutation. Use this from the CLI so operators can wire up
    values that reference entities not yet defined."
-  [home path value & {:keys [skip-ref-validation?] :or {skip-ref-validation? false}}]
+  [state-dir path value & {:keys [skip-ref-validation?] :or {skip-ref-validation? false}}]
   (let [parsed (parse-config-path path)]
     (cond
       (:status parsed)
@@ -304,11 +304,11 @@
        :warnings []}
 
        :else
-       (let [current        (loader/load-config-result {:home home})
+       (let [current        (loader/load-config-result {:state-dir state-dir})
              pre-errors     (or (:errors current) [])
-             state          (config-state home parsed)
+             state          (config-state state-dir parsed)
              plan           (set-plan parsed state value)
-             result         (validate-plan home plan)
+             result         (validate-plan state-dir plan)
              [new-errors carried-errors] (partition-errors pre-errors (:errors result))
              new-errors     (if skip-ref-validation?
                               (remove reference-error? new-errors)
@@ -318,38 +318,38 @@
          (if (seq new-errors)
            {:status :invalid :file nil :errors new-errors :warnings warnings}
           (do
-            (apply-plan! home plan)
+            (apply-plan! state-dir plan)
             {:status :ok :file (:file plan) :errors [] :warnings warnings}))))))
 
 (defn unset-config
-  "Removes dotted `path` under `home`. See ns docstring for return shape.
+  "Removes dotted `path` under `state-dir`. See ns docstring for return shape.
 
    Pre-existing config errors do not block the unset; they're surfaced
    as warnings."
-  [home path]
+  [state-dir path]
   (let [parsed (parse-config-path path)]
     (cond
       (:status parsed)
       {:status (:status parsed) :file nil :errors [] :warnings []}
 
       :else
-      (let [current    (loader/load-config-result {:home home})
+      (let [current    (loader/load-config-result {:state-dir state-dir})
             pre-errors (or (:errors current) [])
-            state      (config-state home parsed)
+            state      (config-state state-dir parsed)
             plan       (unset-plan parsed state)]
         (cond
           (nil? plan)
           {:status :ok :file nil :errors [] :warnings []}
 
           :else
-          (let [result   (validate-plan home plan)
+          (let [result   (validate-plan state-dir plan)
                 [new-errors carried-errors] (partition-errors pre-errors (:errors result))
                 warnings (concat (:warnings result)
                                  (pre-existing->warnings carried-errors))]
             (if (seq new-errors)
               {:status :invalid :file nil :errors new-errors :warnings warnings}
               (do
-                (apply-plan! home plan)
+                (apply-plan! state-dir plan)
                 {:status :ok :file (:file plan) :errors [] :warnings warnings}))))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -34,10 +34,10 @@
     (coll? x)   (mapv substitute-env x)
     :else        x))
 
-(defn- register-module-cli-commands! [home fs*]
+(defn- register-module-cli-commands! [state-dir fs*]
   (registry/clear-module-commands!)
-  (when home
-    (let [config-file (paths/root-config-file home)]
+  (when state-dir
+    (let [config-file (paths/root-config-file state-dir)]
       (when (fs/exists? fs* config-file)
         (try
           (nexus/-with-nested-nexus {:fs fs*}
@@ -86,8 +86,9 @@
          opts (rest args)
          extra-opts    (or *extra-opts* {})
          fs*           (startup-fs extra-opts)
-         resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)) fs*)]
-    (register-module-cli-commands! resolved-home fs*)
+         resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)) fs*)
+         state-dir     (or (:state-dir extra-opts) (str resolved-home "/.isaac"))]
+    (register-module-cli-commands! state-dir fs*)
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
       (do (println (usage)) 0)
@@ -105,7 +106,7 @@
        :else
        (if-let [command (registry/get-command cmd)]
          (binding [home/*resolved-home* resolved-home
-                   home/*state-dir*     (str resolved-home "/.isaac")]
+                   home/*state-dir*     state-dir]
             (nexus/-with-nested-nexus {:fs fs*}
               (nexus/init! {:fs fs*})
               (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)

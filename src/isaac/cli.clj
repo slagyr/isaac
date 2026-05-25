@@ -5,8 +5,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.config.paths :as paths]
-    [isaac.fs :as fs]
-    [isaac.nexus :as nexus]))
+    [isaac.fs :as fs]))
 
 ;; region ----- Command Registry -----
 
@@ -77,8 +76,8 @@
                            "---\n\n"
                            body))))
 
-(defn- isaac-edn-path [home]
-  (paths/root-config-file home))
+(defn- isaac-edn-path [state-dir]
+  (paths/root-config-file state-dir))
 
 (defn- created-files []
   ["config/isaac.edn"
@@ -87,17 +86,17 @@
    "config/providers/ollama.edn"
    "config/cron/heartbeat.md"])
 
-(defn- scaffold! [home fs*]
-  (write-edn! fs* (paths/config-path home "isaac.edn")
+(defn- scaffold! [state-dir fs*]
+  (write-edn! fs* (paths/config-path state-dir "isaac.edn")
                {:defaults            {:crew :main :model :llama}
                 :tz                  "America/Chicago"
                 :prefer-entity-files true})
-  (write-markdown-entity! fs* (paths/config-path home "crew/main.md")
+  (write-markdown-entity! fs* (paths/config-path state-dir "crew/main.md")
                            {:model :llama}
                            "You are Isaac, a helpful AI assistant.")
-  (write-edn! fs* (paths/config-path home "models/llama.edn") {:model "llama3.2" :provider :ollama})
-  (write-edn! fs* (paths/config-path home "providers/ollama.edn") {:base-url "http://localhost:11434" :api :ollama})
-  (write-markdown-entity! fs* (paths/config-path home "cron/heartbeat.md")
+  (write-edn! fs* (paths/config-path state-dir "models/llama.edn") {:model "llama3.2" :provider :ollama})
+  (write-edn! fs* (paths/config-path state-dir "providers/ollama.edn") {:base-url "http://localhost:11434" :api :ollama})
+  (write-markdown-entity! fs* (paths/config-path state-dir "cron/heartbeat.md")
                            {:expr "*/30 * * * *" :crew :main}
                            "Heartbeat. Anything worth noting?"))
 
@@ -123,15 +122,16 @@
        "Scaffold a default Isaac config for a fresh install."))
 
 (defn init-run [{:keys [display-home home] :as opts}]
-  (let [fs*  (runtime-fs opts)
-        path (isaac-edn-path home)]
+  (let [fs*       (runtime-fs opts)
+        state-dir (paths/default-state-dir home)
+        path      (isaac-edn-path state-dir)]
     (if (fs/exists? fs* path)
       (do
         (binding [*out* *err*]
           (println (str "config already exists at " path "; edit it directly.")))
         1)
       (do
-        (scaffold! home fs*)
+        (scaffold! state-dir fs*)
         (print-success! (or display-home home))
         0))))
 

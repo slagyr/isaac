@@ -183,17 +183,16 @@
 
 ;; endregion ^^^^^ Output ^^^^^
 
-(defn- resolve-state-dir [opts loaded-cfg]
+(defn- resolve-state-dir [opts]
   (or (:state-dir opts)
-      (:state-dir loaded-cfg)
-      (str (System/getProperty "user.home") "/.isaac")))
+      (str (or (:home opts) (System/getProperty "user.home")) "/.isaac")))
 
 (defn- install-cli!
   "Load config, resolve the state dir, and install it into the nexus (snapshot +
    session store + tree). Returns {:config :state-dir :store}."
   [opts]
-  (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
-        state-dir  (resolve-state-dir opts loaded-cfg)
+  (let [state-dir  (resolve-state-dir opts)
+        loaded-cfg (config/normalize-config (config/load-config {:state-dir state-dir}))
         loaded-cfg (assoc loaded-cfg :state-dir state-dir)]
     (install/install! {:config loaded-cfg})
     {:config loaded-cfg :state-dir state-dir :store (store/registered-store)}))
@@ -210,7 +209,7 @@
             (print-session-data (session->payload session) opts)
             0)
           (try
-            (let [ctx    (binding [config/*isaac-home* state-dir]
+            (let [ctx    (binding [config/*state-dir* state-dir]
                            (assoc (session-ctx/resolve-behavior session-id {})
                                    :boot-files (session-ctx/read-boot-files (:cwd session))
                                    :state-dir state-dir))

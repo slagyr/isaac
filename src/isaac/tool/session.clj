@@ -54,7 +54,7 @@
          session     (store/get-session (bounds/session-store args) session-key)]
     (if (nil? session)
       {:isError true :error (str "session not found: " session-key)}
-      (let [cfg      (config/load-config {:home (bounds/state-dir->home state-dir)})
+      (let [cfg      (config/load-config {:state-dir state-dir})
             crew-id  (or (:crew session) "main")
             crew-cfg (or (get-in cfg [:crew crew-id]) {})
             defaults (:defaults cfg)]
@@ -79,7 +79,7 @@
             session       (store/get-session session-store session-key)]
         (if (nil? session)
           {:isError true :error (str "session not found: " session-key)}
-          (let [cfg        (config/load-config {:home (bounds/state-dir->home state-dir)})
+          (let [cfg        (config/load-config {:state-dir state-dir})
                 crew-id    (or (:crew session) "main")
                 crew-cfg   (or (get-in cfg [:crew crew-id]) {})
                 defaults   (:defaults cfg)

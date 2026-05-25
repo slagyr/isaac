@@ -17,7 +17,7 @@
   (or (g/get :state-dir) "/isaac-state"))
 
 (defn- config-root []
-  (str (state-dir) "/.isaac/config"))
+  (str (state-dir) "/config"))
 
 (defn- mem-fs []
   (or (g/get :mem-fs)
@@ -59,7 +59,7 @@
                     module-loader/manifest-resource (fn [id]
                                                       (or (module-manifest-path id)
                                                           (real-manifest-resource id)))]
-        (loader/load-config-result {:home (state-dir) :fs fs*}))
+        (loader/load-config-result {:state-dir (state-dir) :fs fs*}))
       (finally
         (System/setProperty "user.dir" base-cwd)))))
 
@@ -107,7 +107,7 @@
   (str (config-root) "/" path))
 
 (defn- isaac-env-path []
-  (str (state-dir) "/.isaac/.env"))
+  (str (state-dir) "/.env"))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

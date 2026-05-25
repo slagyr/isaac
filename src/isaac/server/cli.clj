@@ -9,8 +9,7 @@
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
     [isaac.server.app :as app]
-    [isaac.tool.builtin :as builtin]
-    [isaac.tool.registry :as tool-registry]))
+    [isaac.tool.builtin :as builtin]))
 
 (defn block!
   "Block the current thread until interrupted."
@@ -39,8 +38,8 @@
 
 (defn run [{:keys [port host logs] :as opts}]
   (let [home             (or (:home opts) (System/getProperty "user.home"))
-        state-dir        (str home "/.isaac")
-        loaded-config    (config/load-config {:home home})
+        state-dir        (or (:state-dir opts) (str home "/.isaac"))
+        loaded-config    (config/load-config {:state-dir state-dir})
         effective-config (if (contains? opts :dev)
                            (assoc loaded-config :dev (:dev opts))
                            loaded-config)

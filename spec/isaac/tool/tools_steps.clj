@@ -157,7 +157,7 @@
 
 (defn- feature-config-snapshot []
   (when-let [dir (state-dir)]
-    (let [cfg-path (str dir "/.isaac/config/isaac.edn")]
+    (let [cfg-path (str dir "/config/isaac.edn")]
       (with-feature-fs
         #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
            (try

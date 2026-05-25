@@ -33,19 +33,18 @@
       (str (subs s 0 37) "...")
       s)))
 
-(defn- derive-home [opts]
-  (if-let [sd (:state-dir opts)]
-    sd
-    (System/getProperty "user.home")))
+(defn- derive-state-dir [opts]
+  (or (:state-dir opts)
+      (str (System/getProperty "user.home") "/.isaac")))
 
 (defn resolve-crew
   "Returns a seq of {:name :model :provider :soul-source :tags} for display."
   [opts]
   (let [{:keys [crew models]} opts
-        home      (derive-home opts)
+        state-dir (derive-state-dir opts)
         cfg       (if crew
                     (cli-common/build-cfg crew models)
-                    (config/load-config {:home home}))
+                    (config/load-config {:state-dir state-dir}))
         cfg       (config/normalize-config cfg)
         crew-map  (cond-> (:crew cfg)
                     (not (contains? (:crew cfg) "main")) (assoc "main" {}))]

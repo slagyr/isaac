@@ -36,7 +36,7 @@
 (defn- effective-config [state-dir fs*]
   (or (config/snapshot)
       (when state-dir
-        (config/load-config {:home state-dir :fs fs*}))
+        (config/load-config {:state-dir state-dir :fs fs*}))
       {}))
 
 (defn- default-cwd [state-dir crew-id]

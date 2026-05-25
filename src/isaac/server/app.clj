@@ -99,8 +99,8 @@
       (log/error :config/validation-error :path path :message message))
     errors))
 
-(defn- reload-config! [config-home cfg* host comm-registry registries path]
-  (let [load-result (config/load-config-result {:home config-home :raw-parse-errors? true})
+(defn- reload-config! [state-dir cfg* host comm-registry registries path]
+  (let [load-result (config/load-config-result {:state-dir state-dir :raw-parse-errors? true})
         errors      (:errors load-result)
         new-cfg     (assoc (:config load-result) :module-index (:module-index host))]
     (cond
@@ -117,10 +117,10 @@
         (install/install! {:config new-cfg :old-config old-cfg :registries registries :host host})
         (log/info :config/reloaded :path path)))))
 
-(defn- start-config-reloader! [source config-home cfg* host comm-registry registries]
+(defn- start-config-reloader! [source state-dir cfg* host comm-registry registries]
   (let [reload! (nexus/bound-runtime-fn
                   (bound-fn [path]
-                    (reload-config! config-home cfg* host comm-registry registries path)))]
+                    (reload-config! state-dir cfg* host comm-registry registries path)))]
     (future
       (loop []
         (when-let [path (change-source/poll! source 5000)]
@@ -142,10 +142,10 @@
    :module-index (:module-index cfg)
    :state-dir state-dir})
 
-(defn- start-config-source [opts hot-reload? config-home]
+(defn- start-config-source [opts hot-reload? state-dir]
   (or (:config-change-source opts)
-      (when (and hot-reload? config-home)
-        (change-source/watch-service-source config-home))))
+      (when (and hot-reload? state-dir)
+        (change-source/watch-service-source state-dir))))
 
 (defn- build-handler-opts [opts config-home state-dir cfg*]
   (cond-> (dissoc opts :home)
@@ -217,10 +217,10 @@
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
                 _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                           (module-loader/register-route-extensions! (:manifest entry)))
-                config-source           (start-config-source opts hot-reload? config-home)
+                config-source           (start-config-source opts hot-reload? state-dir)
                 _                       (some-> config-source change-source/start!)
-                reloader                (when (and config-source config-home)
-                                          (start-config-reloader! config-source config-home cfg* host-ctx comm-registry registries))
+                reloader                (when (and config-source state-dir)
+                                          (start-config-reloader! config-source state-dir cfg* host-ctx comm-registry registries))
                 handler-opts            (build-handler-opts opts config-home state-dir cfg*)
                 {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
                 {:keys [delivery]}      (start-background-services opts scheduler)]

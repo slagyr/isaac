@@ -38,13 +38,13 @@
 (describe "watch service config change source"
 
   (it "notify-path ignores non-config files under the config root"
-    (let [source (sut/watch-service-source "/tmp/isaac-home")]
+    (let [source (sut/watch-service-source "/tmp/isaac-home/.isaac")]
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/.DS_Store")
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/isaac.edn.bak")
       (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/captain ".tmp"))
       (should= nil (sut/poll! source 0))))
 
   (it "notify-path publishes config-relative changes for the watch service source"
-    (let [source (sut/watch-service-source "/tmp/isaac-home")]
+    (let [source (sut/watch-service-source "/tmp/isaac-home/.isaac")]
       (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/captain ".edn"))
       (should= (str "crew/" marigold/captain ".edn") (sut/poll! source 0)))))

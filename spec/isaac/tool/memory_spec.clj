@@ -11,7 +11,7 @@
 (def test-crew marigold/captain)
 
 (defn- seed-default-crew! []
-  (let [config-path (str test-dir "/.isaac/config/isaac.edn")]
+  (let [config-path (str test-dir "/config/isaac.edn")]
     #_{:clj-kondo/ignore [:invalid-arity]}
     (fs/mkdirs (nexus/get :fs) (fs/parent config-path))
     (fs/spit (nexus/get :fs) config-path (pr-str {:defaults {:crew test-crew}}))))

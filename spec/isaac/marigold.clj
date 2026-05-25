@@ -298,11 +298,15 @@
 ;; against the resulting world.
 
 (def home
-  "Canonical test root path used by all aboard-style tests."
+  "Canonical user-home path used by all aboard-style tests."
   "/marigold")
 
+(def state-dir
+  "Canonical state directory (home/.isaac); config lives at <state-dir>/config."
+  (str home "/.isaac"))
+
 (defn- config-path [suffix]
-  (str home "/.isaac/config/" suffix))
+  (str state-dir "/config/" suffix))
 
 (defn aboard
   "Inside a `(describe ...)` block, sets the scene aboard the Marigold:
@@ -334,7 +338,7 @@
    ;; seam instead of trying to add an in-memory local/root to the real JVM classpath.
    (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _])
                  isaac.module.loader/manifest-resource local-module-manifest-path]
-     (config-loader/load-config-result (merge {:home home} opts)))))
+     (config-loader/load-config-result (merge {:state-dir state-dir} opts)))))
 
 (defn write-config!
   "Write isaac.edn at the Marigold home, replacing any prior contents."
@@ -398,9 +402,9 @@
   (fs/spit (nexus/get :fs) (config-path (str "hooks/" (name hook-id) ".md")) body))
 
 (defn write-env-file!
-  "Write the .isaac/.env file at the Marigold home."
+  "Write the .env file in the Marigold state directory."
   [content]
-  (fs/spit (nexus/get :fs) (str home "/.isaac/.env") content))
+  (fs/spit (nexus/get :fs) (str state-dir "/.env") content))
 
 (defn write-raw!
   "Write arbitrary text at a path relative to .isaac/config/. Used by

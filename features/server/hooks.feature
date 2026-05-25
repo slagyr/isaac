@@ -44,7 +44,7 @@ Feature: Webhook receiver
     Then the response status is 202
     And session "hook:lettuce" matches:
       | key | value                              |
-      | cwd | #".*/target/test-state/.isaac/crew/main$" |
+      | cwd | #".*/target/test-state/crew/main$" |
 
   Scenario: existing hook session keeps its own cwd
     Given the following sessions exist:

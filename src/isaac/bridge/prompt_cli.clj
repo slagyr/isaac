@@ -74,8 +74,9 @@
     {:comm (->PromptComm text)
      :text text}))
 
-(defn- home-dir [{:keys [home state-dir]}]
-  (or home state-dir (System/getProperty "user.home")))
+(defn- state-dir-of [{:keys [home state-dir]}]
+  (or state-dir
+      (str (or home (System/getProperty "user.home")) "/.isaac")))
 
 (defn- print-error! [message]
   (binding [*out* *err*]
@@ -84,14 +85,14 @@
 (defn- ensure-local-config! [opts]
   (when-not (or (map? (:crew opts))
                 (map? (:agents opts)))
-    (let [result (config/load-config-result {:home (home-dir opts)})]
+    (let [result (config/load-config-result {:state-dir (state-dir-of opts)})]
       (when (:missing-config? result)
         (print-error! (get-in result [:errors 0 :value]))
         false))))
 
 (defn- effective-cfg [opts]
-  (let [home          (home-dir opts)
-        cfg           (config/normalize-config (config/load-config {:home home}))
+  (let [state-dir     (state-dir-of opts)
+        cfg           (config/normalize-config (config/load-config {:state-dir state-dir}))
         injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         effective-cfg (cond-> cfg
                         injected-crew           (assoc :crew injected-crew)

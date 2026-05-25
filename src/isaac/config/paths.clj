@@ -1,8 +1,9 @@
 (ns isaac.config.paths
   "Filesystem layout knowledge for Isaac config. Pure path
-   construction — no I/O. Centralizes where config files live under
-   ~/.isaac/config so loader and mutate don't each build paths from
-   scratch."
+   construction — no I/O. The state directory is the canonical root: config
+   lives at <state-dir>/config and runtime data (crew, sessions, memory) under
+   <state-dir>. In production the state dir defaults to ~/.isaac, but any
+   directory is valid."
   (:require [clojure.string :as str]))
 
 (def ^:private entity-file-pattern #"[^/]+/[^/]+\.edn")
@@ -10,17 +11,19 @@
 
 (def root-filename "isaac.edn")
 
-(defn state-dir [home]
+(defn default-state-dir
+  "The default state directory for a user home directory (~/.isaac)."
+  [home]
   (str home "/.isaac"))
 
-(defn config-root [home]
-  (str (state-dir home) "/config"))
+(defn config-root [state-dir]
+  (str state-dir "/config"))
 
-(defn config-path [home relative]
-  (str (config-root home) "/" relative))
+(defn config-path [state-dir relative]
+  (str (config-root state-dir) "/" relative))
 
-(defn root-config-file [home]
-  (config-path home root-filename))
+(defn root-config-file [state-dir]
+  (config-path state-dir root-filename))
 
 (defn entity-relative [kind id]
   (str (name kind) "/" id ".edn"))
@@ -34,8 +37,8 @@
 (defn hook-relative [id]
   (str "hooks/" id ".md"))
 
-(defn config-relative [home path]
-  (let [root-prefix (str (config-root home) "/")]
+(defn config-relative [state-dir path]
+  (let [root-prefix (str (config-root state-dir) "/")]
     (when (str/starts-with? path root-prefix)
       (subs path (count root-prefix)))))
 

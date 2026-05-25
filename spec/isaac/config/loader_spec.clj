@@ -300,12 +300,12 @@
 
     (it "loads config from an explicit fs option without installing runtime fs"
       (let [mem  (fs/mem-fs)
-            root (paths/config-root marigold/home)
+            root (paths/config-root marigold/state-dir)
             path (str root "/" paths/root-filename)]
         (fs/mkdirs mem root)
         (fs/spit mem path (pr-str marigold/baseline-config))
         (nexus/reset!)
-        (let [result (sut/load-config-result {:home marigold/home :fs mem})]
+        (let [result (sut/load-config-result {:state-dir marigold/state-dir :fs mem})]
           (should= [] (:errors result))
           (should= "atticus" (get-in result [:config :defaults :crew])))))
 

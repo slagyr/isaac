@@ -22,6 +22,6 @@
       (change-source/start! source)
       (g/assoc! :mem-fs (nexus/get :fs))
       (g/assoc! :config-change-source source)
-      (sut/file-exists-with (str "/target/test-state/.isaac/config/crew/" marigold/captain ".edn") "{:model :llama}")
+      (sut/file-exists-with (str "/target/test-state/config/crew/" marigold/captain ".edn") "{:model :llama}")
       (should= (str "crew/" marigold/captain ".edn") (change-source/poll! source 0))
       (change-source/stop! source))))

@@ -28,7 +28,7 @@
 (defn- effective-config [state-dir]
   (or (config/snapshot)
       (when state-dir
-        (config/load-config {:home state-dir}))
+        (config/load-config {:state-dir state-dir}))
       {}))
 
 ;; endregion

@@ -7,21 +7,21 @@
 (describe "config change source"
 
   (it "publishes config-relative paths immediately for the memory source"
-    (let [source (sut/memory-source "/tmp/isaac-home")]
+    (let [source (sut/memory-source "/tmp/isaac-home/.isaac")]
       (sut/start! source)
       (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/first-mate ".edn"))
       (should= (str "crew/" marigold/first-mate ".edn") (sut/poll! source 0))
       (sut/stop! source)))
 
   (it "ignores paths outside the config root for the memory source"
-    (let [source (sut/memory-source "/tmp/isaac-home")]
+    (let [source (sut/memory-source "/tmp/isaac-home/.isaac")]
       (sut/start! source)
       (sut/notify-path! source "/tmp/isaac-home/random.txt")
       (should= nil (sut/poll! source 0))
       (sut/stop! source)))
 
   (it "ignores non-config files under the config root for the memory source"
-    (let [source (sut/memory-source "/tmp/isaac-home")]
+    (let [source (sut/memory-source "/tmp/isaac-home/.isaac")]
       (sut/start! source)
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/.DS_Store")
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/isaac.edn.bak")
@@ -31,7 +31,7 @@
       (sut/stop! source)))
 
   (it "publishes only allowlisted config shapes for the memory source"
-    (let [source (sut/memory-source "/tmp/isaac-home")]
+    (let [source (sut/memory-source "/tmp/isaac-home/.isaac")]
       (sut/start! source)
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/isaac.edn")
       (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/first-mate ".md"))

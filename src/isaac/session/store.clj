@@ -141,7 +141,7 @@
   [state-dir fs*]
   (or (nexus/get-in [:sessions :naming-strategy])
       (let [cfg   (or (config/snapshot)
-                      (when state-dir (config/load-config {:home state-dir :fs fs*}))
+                      (when state-dir (config/load-config {:state-dir state-dir :fs fs*}))
                       {})
             strat (make-naming-strategy cfg state-dir (registered-store) fs*)]
         (nexus/register! [:sessions :naming-strategy] strat)

@@ -14,17 +14,12 @@
 (defn- string-key-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
 
-(defn- state-dir->home [state-dir]
-  (if (= ".isaac" (.getName (java.io.File. state-dir)))
-    (.getParent (java.io.File. state-dir))
-    state-dir))
-
 (defn- crew-id [args]
   (let [args        (string-key-map args)
         session-key (get args "session_key")
         state-dir   (bounds/state-dir args)]
     (or (some->> session-key (store/get-session (bounds/session-store args)) :crew)
-        (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
+        (get-in (config/load-config {:state-dir state-dir}) [:defaults :crew])
         "main")))
 
 (defn- memory-dir [state-dir crew-id]

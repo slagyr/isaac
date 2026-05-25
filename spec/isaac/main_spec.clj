@@ -199,7 +199,7 @@
       (registry/register-module-command! {:name "stale-cmd" :desc "old" :usage "stale-cmd"
                                           :option-spec [] :run-fn (fn [_] 0)})
       (should-not-be-nil (registry/get-command "stale-cmd"))
-      (binding [sut/*extra-opts* {:state-dir "target/test-state"}]
+      (binding [sut/*extra-opts* {:state-dir (str (System/getProperty "user.dir") "/target/test-state")}]
         (with-out-str (sut/run ["--help"])))
       (should-be-nil (registry/get-command "stale-cmd")))
 
@@ -213,7 +213,7 @@
                                                 (should= {:cwd (System/getProperty "user.dir")} context)
                                                 {:index {:hello {:manifest {:cli {:greet {:factory 'isaac.main-spec/make-greet-command
                                                                                           :description "Greets"}}}}}})]
-          (@#'sut/register-module-cli-commands! "/tmp/home" mem))
+          (@#'sut/register-module-cli-commands! "/tmp/home/.isaac" mem))
         (should-not-be-nil (registry/get-command "greet"))
         (should= "Greets" (:desc (registry/get-command "greet")))))
 

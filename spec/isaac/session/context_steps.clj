@@ -50,7 +50,7 @@
        (let [agents (or (not-empty crew) (not-empty agents))
              cfg    (if agents
                        (build-synthetic-cfg agents models)
-                       (config/load-config {:home state-dir :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))}))
+                       (config/load-config {:state-dir state-dir :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))}))
              ctx    (config/resolve-crew-context cfg crew-id)]
          (assoc ctx :boot-files (session-ctx/read-boot-files nil))))))
 

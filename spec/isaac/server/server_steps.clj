@@ -111,11 +111,12 @@
   (if (str/starts-with? path "/") path (str (g/get :state-dir) "/" path)))
 
 (defn- isaac-root-path []
-  (str (or (g/get :state-dir) (g/get :isaac-home)) "/.isaac"))
+  (or (g/get :state-dir) (g/get :isaac-home)))
 
 (defn- runtime-state-dir []
   (or (g/get :runtime-state-dir)
-      (str (or (g/get :state-dir) (g/get :isaac-home)) "/.isaac")))
+      (g/get :state-dir)
+      (g/get :isaac-home)))
 
 (defn- config-path? [path]
   (str/starts-with? path "config/"))
@@ -195,13 +196,13 @@
           (str/split path #"\.")))
 
 (defn- config-file-path []
-  (str (g/get :state-dir) "/.isaac/config/isaac.edn"))
+  (str (g/get :state-dir) "/config/isaac.edn"))
 
-(defn- load-server-config [home fs*]
-  (let [load!       #(config/load-config {:home home :fs fs*})
+(defn- load-server-config [state-dir fs*]
+  (let [load!       #(config/load-config {:state-dir state-dir :fs fs*})
         entity-dir? #(with-server-fs
                        (fn []
-                         (seq (fs/children fs* (str home "/.isaac/config/" %)))))
+                         (seq (fs/children fs* (str state-dir "/config/" %)))))
         _           (config/clear-load-cache!)
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
@@ -353,7 +354,7 @@
                              (clean-real-dir! virtual-home)
                              (g/assoc! :state-dir virtual-home))
                            virtual-home))
-        runtime-state  (str home "/.isaac")
+        runtime-state  home
         server-config  (let [fs*     (server-fs)
                              base    (with-server-fs #(load-server-config home fs*))
                              merged  (deep-merge base
@@ -568,7 +569,7 @@
 
 (defn scheduler-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
+  (g/assoc! :runtime-state-dir (g/get :state-dir))
   (with-server-fs
     (fn []
       (let [fs*        (server-fs)
@@ -616,7 +617,7 @@
 
 (defn delivery-worker-ticks []
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
+  (g/assoc! :runtime-state-dir (g/get :state-dir))
   (with-server-fs
     (fn []
       (with-stub-comm (runtime-state-dir)
@@ -626,7 +627,7 @@
 
 (defn delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
+  (g/assoc! :runtime-state-dir (g/get :state-dir))
   (with-server-fs
     (fn []
       (with-stub-comm (runtime-state-dir)
