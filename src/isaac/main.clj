@@ -9,7 +9,6 @@
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.module.loader :as module-loader]
-    [isaac.session.store :as store]
     [isaac.nexus :as nexus]
     [isaac.version :as version]
     isaac.llm.auth.cli
@@ -109,7 +108,6 @@
                    home/*state-dir*     (str resolved-home "/.isaac")]
             (nexus/-with-nested-nexus {:fs fs*}
               (nexus/init! {:fs fs*})
-              (store/register! (or (config/snapshot) {}) (str resolved-home "/.isaac"))
               (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
                                                         :home         resolved-home
                                                         :_raw-args    (vec opts)})) 0)))

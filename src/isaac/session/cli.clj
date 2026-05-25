@@ -8,6 +8,7 @@
     [isaac.cli.common :as cli-common]
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
+    [isaac.config.install :as install]
     [isaac.config.loader :as config]
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
@@ -135,10 +136,6 @@
       (assoc :name (or (:key entry) (:id entry)))
       (update :tags #(or % #{}))))
 
-(defn- resolve-session-store [loaded-cfg state-dir]
-  (or (store/registered-store)
-      (store/register! loaded-cfg state-dir)))
-
 (defn list-all
   "Returns a map of crew-id -> sessions (sorted by updated-at desc).
     Sessions without an explicit crew are grouped under 'main'.
@@ -191,14 +188,21 @@
       (:state-dir loaded-cfg)
       (str (System/getProperty "user.home") "/.isaac")))
 
+(defn- install-cli!
+  "Load config, resolve the state dir, and install it into the nexus (snapshot +
+   session store + tree). Returns {:config :state-dir :store}."
+  [opts]
+  (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
+        state-dir  (resolve-state-dir opts loaded-cfg)
+        loaded-cfg (assoc loaded-cfg :state-dir state-dir)]
+    (install/install! {:config loaded-cfg})
+    {:config loaded-cfg :state-dir state-dir :store (store/registered-store)}))
+
 (defn- run-show [opts session-id]
   (if (str/blank? session-id)
     (do (println "Usage: isaac sessions show <session-id>") 1)
-    (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
-          state-dir   (resolve-state-dir opts loaded-cfg)
-          loaded-cfg  (assoc loaded-cfg :state-dir state-dir)
-          session-store (resolve-session-store loaded-cfg state-dir)
-          session     (store/get-session session-store session-id)]
+    (let [{:keys [state-dir store]} (install-cli! opts)
+          session     (store/get-session store session-id)]
       (if (nil? session)
         (do (println (str "session not found: " session-id)) 1)
         (if (or (:json opts) (:edn opts))
@@ -206,7 +210,6 @@
             (print-session-data (session->payload session) opts)
             0)
           (try
-            (config/set-snapshot! loaded-cfg)
             (let [ctx    (binding [config/*isaac-home* state-dir]
                            (assoc (session-ctx/resolve-behavior session-id {})
                                    :boot-files (session-ctx/read-boot-files (:cwd session))
@@ -220,11 +223,7 @@
 (defn- run-delete [opts session-id]
   (if (str/blank? session-id)
     (do (println "Usage: isaac sessions delete <session-id>") 1)
-    (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
-          state-dir  (resolve-state-dir opts loaded-cfg)
-          loaded-cfg (assoc loaded-cfg :state-dir state-dir)
-          _          (config/set-snapshot! loaded-cfg)
-          session-store (resolve-session-store loaded-cfg state-dir)]
+    (let [{session-store :store} (install-cli! opts)]
       (if (store/delete-session! session-store session-id)
         (do (println (str "deleted: " session-id)) 0)
         (do (println (str "session not found: " session-id)) 1)))))
@@ -267,10 +266,8 @@
         (str "invalid value for " path-str))))
 
 (defn- run-mutation [opts operation raw-path raw-value]
-  (let [loaded-cfg     (config/normalize-config (config/load-config {:home (:home opts)}))
-        state-dir      (resolve-state-dir opts loaded-cfg)
-        session-store  (resolve-session-store loaded-cfg state-dir)
-        target         (parse-mutation-target raw-path)]
+  (let [{session-store :store} (install-cli! opts)
+        target                 (parse-mutation-target raw-path)]
     (if-let [error (:error target)]
       (print-mutation-error! error)
       (let [{:keys [session-id path-str]} target
@@ -292,10 +289,8 @@
               (print-mutation-error! "missing value")
 
               :else
-              (do
-                (config/set-snapshot! loaded-cfg)
-                (try
-                  (let [nav-result (case operation
+              (try
+                (let [nav-result (case operation
                                      :set   (nav/set-value session-schema/Session session path-str
                                                            (when-not (:member path-result)
                                                              (parse-set-value (:spec path-result) raw-value)))
@@ -315,20 +310,14 @@
                                                                                  :updated-at (str (memory/now))})
                                 0)))))))
                   (finally
-                    (config/set-snapshot! nil)))))))))))
+                    (config/set-snapshot! nil))))))))))
 
 ;; region ----- Command -----
 
 (defn run [opts]
   (let [injected-crew (when (map? (:crew opts)) (:crew opts))
         injected-agents (when (map? (:agents opts)) (:agents opts))
-        loaded-cfg    (config/normalize-config (config/load-config {:home (:home opts)}))
-        state-dir     (or (:state-dir opts)
-                          (:state-dir loaded-cfg)
-                          (str (System/getProperty "user.home") "/.isaac"))
-        loaded-cfg    (assoc loaded-cfg :state-dir state-dir)
-        _             (config/set-snapshot! loaded-cfg)
-        session-store (resolve-session-store loaded-cfg state-dir)
+        {loaded-cfg :config session-store :store} (install-cli! opts)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)
                           (cli-common/build-cfg (or injected-crew injected-agents) (:models opts))
