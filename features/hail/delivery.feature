@@ -1,4 +1,3 @@
-@wip
 Feature: Hail delivery
   The hail delivery worker ticks on the shared scheduler, reads pending
   deliveries from hail/deliveries/, binds unbound (reach-one) deliveries

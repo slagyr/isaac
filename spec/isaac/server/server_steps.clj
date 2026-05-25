@@ -4,9 +4,11 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
+    [isaac.config.api :as config-api]
     [isaac.server.cli :as server]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
+    [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
     [isaac.scheduler.cron :as cron]
     [isaac.module.loader :as module-loader]
@@ -659,6 +661,45 @@
                             :sessions  {:store session-store}}
           (hail-router/tick! {:cfg cfg :session-store session-store}))))))
 
+(defn- record-turn-future! [futures]
+  (if-let [future* (first futures)]
+    (g/assoc! :turn-future future*)
+    (g/dissoc! :turn-future)))
+
+(defn hail-delivery-worker-ticks []
+  (g/assoc! :isaac-file-phase :assert)
+  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (with-server-fs
+    (fn []
+      (let [fs*           (server-fs)
+            cfg           (current-server-config)
+            state-dir     (runtime-state-dir)
+            session-store (store/create state-dir)]
+        (nexus/-with-nexus {:config    (atom cfg)
+                            :state-dir state-dir
+                            :fs        fs*
+                            :sessions  {:store session-store}}
+          (config-api/set-snapshot! cfg)
+          (record-turn-future! (hail-delivery-worker/tick! {:cfg cfg :session-store session-store})))))))
+
+(defn hail-delivery-worker-ticks-at [iso]
+  (g/assoc! :isaac-file-phase :assert)
+  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (with-server-fs
+    (fn []
+      (let [fs*           (server-fs)
+            cfg           (current-server-config)
+            state-dir     (runtime-state-dir)
+            session-store (store/create state-dir)]
+        (nexus/-with-nexus {:config    (atom cfg)
+                            :state-dir state-dir
+                            :fs        fs*
+                            :sessions  {:store session-store}}
+          (config-api/set-snapshot! cfg)
+          (record-turn-future! (hail-delivery-worker/tick! {:cfg           cfg
+                                                            :now           (java.time.Instant/parse iso)
+                                                            :session-store session-store})))))))
+
 (defn comm-stub-returns [_comm-name table]
   (let [headers (:headers table)
         row     (first (:rows table))
@@ -918,6 +959,13 @@
   "Invokes hail-router/tick! once against the current on-disk hail and
    session state. Flips :isaac-file-phase to :assert so follow-up file
    assertions read/assert instead of write.")
+
+(defwhen "the hail delivery worker ticks" isaac.server.server-steps/hail-delivery-worker-ticks
+  "Invokes hail-delivery-worker/tick! once against the current hail and
+   session state, capturing the launched background future for later
+   'the turn ends on session ...' coordination.")
+
+(defwhen #"the hail delivery worker ticks at \"([^\"]+)\"" isaac.server.server-steps/hail-delivery-worker-ticks-at)
 
 (defgiven #"the comm \"([^\"]+)\" returns:" isaac.server.server-steps/comm-stub-returns
   "Configures the StubComm return value for all subsequent send! calls.

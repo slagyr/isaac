@@ -10,6 +10,7 @@
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
     [isaac.hail.bands :as hail-bands]
+    [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
     [isaac.home :as home]
     [isaac.config.configurator :as configurator]
@@ -171,10 +172,12 @@
 (defn- start-background-services [_opts scheduler]
   {:delivery    (when scheduler
                   (worker/start! {}))
+   :hail-delivery (when scheduler
+                    (hail-delivery-worker/start! {}))
    :hail-router (when scheduler
                   (hail-router/start! {}))})
 
-(defn- reset-server-state! [cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-router server actual host start-http-server?]
+(defn- reset-server-state! [cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?]
   (reset! state {:cfg                cfg*
                  :tree               tree*
                  :host-ctx           host-ctx
@@ -185,6 +188,7 @@
                  :reloader           reloader
                  :scheduler          scheduler
                  :delivery           delivery
+                 :hail-delivery      hail-delivery
                  :hail-router        hail-router
                  :server             server
                  :port               actual
@@ -226,16 +230,18 @@
                                           (start-config-reloader! config-source state-dir cfg* host-ctx comm-registry registries))
                 handler-opts            (build-handler-opts opts config-home state-dir cfg*)
                 {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
-                {:keys [delivery hail-router]} (start-background-services opts scheduler)]
+                {:keys [delivery hail-delivery hail-router]} (start-background-services opts scheduler)]
             (when (and dev? start-http-server?)
               (log/info :server/dev-mode-enabled :host host :port actual))
-            (reset-server-state! cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-router server actual host start-http-server?)
+            (reset-server-state! cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?)
             {:port actual :host host}))))))
 
 (defn stop! []
-  (when-let [{:keys [cfg config-source scheduler delivery hail-router host-ctx registries reloader server tree]} @state]
+  (when-let [{:keys [cfg config-source scheduler delivery hail-delivery hail-router host-ctx registries reloader server tree]} @state]
     (when delivery
       (worker/stop! delivery))
+    (when hail-delivery
+      (hail-delivery-worker/stop! hail-delivery))
     (when hail-router
       (hail-router/stop! hail-router))
     (when scheduler

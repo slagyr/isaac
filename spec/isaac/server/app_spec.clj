@@ -5,6 +5,7 @@
      [isaac.fs :as fs]
      [isaac.cron.service :as cron-service]
      [isaac.comm.delivery.worker :as worker]
+     [isaac.hail.delivery-worker :as hail-delivery-worker]
      [isaac.hail.router :as hail-router]
      [isaac.config.configurator :as configurator]
      [isaac.logger :as log]
@@ -24,8 +25,10 @@
 
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
   (around [it]
-    (with-redefs [hail-router/start! (fn [_] ::hail-router)
-                  hail-router/stop!  (fn [_] nil)]
+    (with-redefs [hail-delivery-worker/start! (fn [_] ::hail-delivery-worker)
+                  hail-delivery-worker/stop!  (fn [_] nil)
+                  hail-router/start!          (fn [_] ::hail-router)
+                  hail-router/stop!           (fn [_] nil)]
       (it)))
 
   (after (sut/stop!))
@@ -172,9 +175,30 @@
                     scheduler-core/start!    identity
                     scheduler-core/shutdown! (fn [_] nil)
                     worker/start!            (fn [_] ::worker)
+                    hail-delivery-worker/start! (fn [_] ::hail-delivery-worker)
                     hail-router/start!       (fn [opts]
                                                (reset! started opts)
                                                ::hail-router)]
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {}})
+        (sut/stop!))
+      (should= {} @started)))
+
+  (it "starts the hail delivery worker when the server has a state dir"
+    (let [started (atom nil)]
+      (with-redefs [httpkit/run-server           (fn [_ _] (fn [] nil))
+                    httpkit/server-port          (fn [_] 7001)
+                    httpkit/server-stop!         (fn [_] nil)
+                    scheduler-core/create        (fn [_] ::scheduler)
+                    scheduler-core/start!        identity
+                    scheduler-core/shutdown!     (fn [_] nil)
+                    worker/start!                (fn [_] ::worker)
+                    hail-delivery-worker/start!  (fn [opts]
+                                                   (reset! started opts)
+                                                   ::hail-delivery-worker)
+                    hail-router/start!           (fn [_] ::hail-router)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
                      :state-dir "/tmp/isaac"
