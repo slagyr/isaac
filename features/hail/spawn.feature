@@ -1,4 +1,3 @@
-@wip
 Feature: Hail-driven session spawning (get-or-create)
   A spawn-enabled reach-one hail uses get-or-create for its target session.
   The :spawn flag is the descriptive/prescriptive toggle for the frequency's

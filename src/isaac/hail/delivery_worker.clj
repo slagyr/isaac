@@ -7,9 +7,12 @@
     [isaac.config.api :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
+    [isaac.hail.router :as router]
     [isaac.logger :as log]
+    [isaac.naming :as naming]
     [isaac.nexus :as nexus]
     [isaac.scheduler :as scheduler]
+    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.tool.memory :as memory])
   (:import
@@ -118,17 +121,66 @@
 (defn- bind-candidate [delivery session]
   (-> delivery
       (assoc :crew (id-keyword (:crew session))
-             :session (id-keyword (:id session)))
+             :session (router/state-id-value (:id session)))
       (dissoc :candidates)))
 
+(defn- delivery-band [cfg delivery]
+  (when-let [band-name (get-in delivery [:hail :frequency :band])]
+    (get-in cfg [:hail band-name])))
+
+(defn- spawn-delivery? [cfg delivery]
+  (let [band (delivery-band cfg delivery)
+        hail (:hail delivery)]
+    (and (= :one (router/effective-reach band hail))
+         (true? (router/effective-spawn band hail)))))
+
+(defn- matching-spawn-sessions [cfg session-store delivery]
+  (let [band     (delivery-band cfg delivery)
+        sessions (store/list-sessions session-store)]
+    (:sessions (router/matching-sessions band (:crew cfg) sessions (:hail delivery)))))
+
+(defn- available-spawn-session [cfg session-store delivery]
+  (some #(session-available? cfg session-store (normalize-id (:id %)))
+        (matching-spawn-sessions cfg session-store delivery)))
+
+(defn- available-host-crew [cfg session-store delivery]
+  (let [band (delivery-band cfg delivery)]
+    (some (fn [{:keys [id]}]
+            (when (crew-available? cfg session-store id)
+              id))
+          (:crews (router/matching-crews band (:crew cfg) (:hail delivery))))))
+
+(defn- spawn-session! [session-store delivery host-crew]
+  (let [state-dir (runtime-state-dir {})
+        name      (naming/generate (naming/->SequentialStrategy state-dir "sessions" "session-" (filesystem)))]
+    (session-ctx/create-with-resolved-behavior!
+    name
+    {:crew          host-crew
+     :tags          (router/normalize-tags (get-in delivery [:hail :frequency :session-tags]))
+     :origin        {:kind :hail
+                     :hail-id (normalize-id (get-in delivery [:hail :id]))}
+     :session-store session-store})))
+
+(defn- spawn-runnable-delivery [cfg session-store delivery]
+  (if-let [session (available-spawn-session cfg session-store delivery)]
+    (bind-candidate delivery session)
+    (when (empty? (matching-spawn-sessions cfg session-store delivery))
+      (when-let [host-crew (available-host-crew cfg session-store delivery)]
+        (bind-candidate delivery (spawn-session! session-store delivery host-crew))))))
+
 (defn- runnable-delivery [cfg session-store delivery]
-  (if-let [session-id (normalize-id (:session delivery))]
-    (when (session-available? cfg session-store session-id)
-      delivery)
-    (some (fn [{:keys [session]}]
-            (when-let [session-entry (session-available? cfg session-store (normalize-id session))]
-              (bind-candidate delivery session-entry)))
-          (:candidates delivery))))
+  (cond
+    (spawn-delivery? cfg delivery)
+    (spawn-runnable-delivery cfg session-store delivery)
+
+    :else
+    (if-let [session-id (normalize-id (:session delivery))]
+      (when (session-available? cfg session-store session-id)
+        delivery)
+      (some (fn [{:keys [session]}]
+              (when-let [session-entry (session-available? cfg session-store (normalize-id session))]
+                (bind-candidate delivery session-entry)))
+            (:candidates delivery)))))
 
 (defn- inflight-path [state-dir id]
   (record-path (inflight-dir state-dir) id))

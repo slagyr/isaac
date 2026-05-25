@@ -45,6 +45,31 @@
                               :attempts   0}]}
                result)))
 
+  (it "emits an unbound spawn delivery when a reach-one spawn hail has a host crew but no session"
+    (let [hail   {:id "hail-1"
+                  :frequency {:crew-tags #{:role/engineer}
+                              :session-tags #{:project/warp-coil}
+                              :reach :one
+                              :spawn true}}
+          result (sut/resolve-obligations {}
+                                          {:bartholomew {:tags #{:role/engineer}}}
+                                          []
+                                          hail)]
+      (should= {:deliveries [{:hail hail :crew nil :session nil :attempts 0}]}
+               result)))
+
+  (it "returns no-host when a spawn hail has no resolvable host crew"
+    (let [hail   {:id "hail-1"
+                  :frequency {:session-tags #{:project/warp-coil}
+                              :reach :one
+                              :spawn true}}
+          result (sut/resolve-obligations {}
+                                          {}
+                                          []
+                                          hail)]
+      (should= {:undeliverable {:hail hail :reason :no-host}}
+               result)))
+
   (it "returns unknown-band when the referenced band is missing"
     (let [result (sut/resolve-obligations {}
                                           {}

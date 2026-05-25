@@ -8,6 +8,7 @@
     [isaac.hail.delivery-worker :as sut]
     [isaac.llm.api.grover :as grover]
     [isaac.logger :as log]
+    [isaac.marigold :as marigold]
     [isaac.nexus :as nexus]
     [isaac.scheduler :as scheduler]
     [isaac.session.store :as store]
@@ -45,6 +46,7 @@
 
 (describe "hail delivery worker"
 
+  (marigold/with-manifest)
   (helper/with-captured-logs)
 
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
@@ -100,8 +102,77 @@
                                                       :hail       {:id "hail-1" :prompt "Status report?"}
                                                       :candidates [{:crew :atticus :session :bridge}
                                                                    {:crew :cordelia :session :first-watch}]
-                                                      :attempts   0})
+                                                     :attempts   0})
                             [:crew :session]))))
+
+  (it "spawns a sequential hail-origin session when a spawn delivery has no existing match"
+    (let [session-store (nexus/get-in [:sessions :store])
+          cfg           (-> test-config
+                            (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
+                            config/normalize-config)]
+      (config/set-snapshot! cfg)
+      (grover/enqueue! [{:type "text" :content "On the coil." :model "grover"}])
+      (write-delivery! {:id       "delivery-1"
+                        :hail     {:id "hail-1"
+                                   :prompt "Resonance climbing."
+                                   :frequency {:crew-tags #{:role/engineer}
+                                               :session-tags #{:project/warp-coil}
+                                               :reach :one
+                                               :spawn true}}
+                        :attempts 0})
+      @(first (sut/tick! {:cfg cfg :session-store session-store}))
+      (should= {:crew "bartholomew"
+                :tags #{:project/warp-coil}
+                :origin {:kind :hail :hail-id "hail-1"}}
+               (select-keys (store/get-session session-store "session-1") [:crew :tags :origin]))
+      (should= {:crew :bartholomew
+                :session "session-1"}
+               (select-keys (read-edn "/test/isaac/hail/delivered/delivery-1.edn") [:crew :session]))))
+
+  (it "binds a spawn delivery to an existing matching session instead of creating one"
+    (let [session-store (nexus/get-in [:sessions :store])
+          cfg           (-> test-config
+                            (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
+                            config/normalize-config)]
+      (config/set-snapshot! cfg)
+      (store/open-session! session-store "coil-work" {:crew "bartholomew" :tags #{:project/warp-coil}})
+      (should= {:crew :bartholomew :session :coil-work}
+               (select-keys (#'sut/runnable-delivery
+                             cfg
+                             session-store
+                             {:id       "delivery-1"
+                              :hail     {:id "hail-1"
+                                         :prompt "Resonance climbing."
+                                         :frequency {:crew-tags #{:role/engineer}
+                                                     :session-tags #{:project/warp-coil}
+                                                     :reach :one
+                                                     :spawn true}}
+                              :attempts 0})
+                            [:crew :session]))
+      (should-be-nil (store/get-session session-store "session-1"))))
+
+  (it "waits on a busy matching session for a spawn delivery and does not create a sibling"
+    (let [session-store (nexus/get-in [:sessions :store])
+          cfg           (-> test-config
+                            (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
+                            (assoc-in [:crew "bartholomew" :max-in-flight] 2)
+                            config/normalize-config)]
+      (config/set-snapshot! cfg)
+      (store/open-session! session-store "coil-work" {:crew "bartholomew" :tags #{:project/warp-coil}})
+      (store/mark-in-flight! session-store "coil-work")
+      (should= nil
+               (#'sut/runnable-delivery
+                cfg
+                session-store
+                {:id       "delivery-1"
+                 :hail     {:id "hail-1"
+                            :prompt "Resonance climbing."
+                            :frequency {:crew-tags #{:role/engineer}
+                                        :session-tags #{:project/warp-coil}
+                                        :reach :one
+                                        :spawn true}}
+                 :attempts 0}))
+      (should-be-nil (store/get-session session-store "session-1"))))
 
   (it "leaves a delivery pending when its session is already in flight"
     (let [session-store (nexus/get-in [:sessions :store])]

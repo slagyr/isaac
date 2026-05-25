@@ -73,17 +73,23 @@
 (defn- delivery-id [state-dir fs*]
   (naming/generate (naming/->SequentialStrategy state-dir "hail/deliveries" "delivery-" fs*)))
 
-(defn- normalize-id [value]
+(defn normalize-id [value]
   (cond
     (keyword? value) (name value)
     (string? value)  value
     (nil? value)     nil
     :else            (str value)))
 
-(defn- id-keyword [value]
+(defn id-keyword [value]
   (some-> value normalize-id keyword))
 
-(defn- normalize-tags [tags]
+(defn state-id-value [value]
+  (let [id (normalize-id value)]
+    (if (and (string? id) (re-matches #"[a-z][a-z-]*" id))
+      (keyword id)
+      id)))
+
+(defn normalize-tags [tags]
   (set (map keyword (or tags #{}))))
 
 (defn- selector-ids [selector]
@@ -99,11 +105,17 @@
     (seq right)                  right
     :else                        nil))
 
-(defn- effective-reach [band hail]
+(defn effective-reach [band hail]
   (or (:reach hail)
       (get-in hail [:frequency :reach])
       (:reach band)
       :one))
+
+(defn effective-spawn [band hail]
+  (or (:spawn hail)
+      (get-in hail [:frequency :spawn])
+      (:spawn band)
+      false))
 
 (defn- effective-filter [band hail key selector-fn]
   (let [band-value (selector-fn (get band key))
@@ -115,7 +127,31 @@
     (or (get crews crew-id)
         (get crews (some-> crew-id keyword)))))
 
-(defn- matching-sessions [band crews sessions hail]
+(defn matching-crews [band crews hail]
+  (let [band-name (get-in hail [:frequency :band])
+        crew-ids  (effective-filter band hail :crew selector-ids)
+        crew-tags (effective-filter band hail :crew-tags selector-tags)]
+    (cond
+      (and band-name (nil? band))
+      {:reason :unknown-band}
+
+      (and (nil? crew-ids) (nil? crew-tags))
+      {:crews []}
+
+      :else
+      {:crews
+       (->> crews
+            (map (fn [[crew-id crew-cfg]]
+                   {:id   (normalize-id crew-id)
+                    :crew crew-cfg}))
+            (filter (fn [{:keys [id crew]}]
+                      (and (or (nil? crew-ids) (contains? crew-ids (keyword id)))
+                           (or (nil? crew-tags)
+                               (every? #(contains? (crew-store/tags-of crew) %) crew-tags)))))
+            (sort-by :id)
+            vec)})))
+
+(defn matching-sessions [band crews sessions hail]
   (let [band-name    (get-in hail [:frequency :band])
         crew-ids     (effective-filter band hail :crew selector-ids)
         session-ids  (effective-filter band hail :session selector-ids)
@@ -145,25 +181,35 @@
 (defn- bound-delivery [hail session]
   {:hail     hail
    :crew     (id-keyword (:crew session))
-   :session  (id-keyword (:id session))
+   :session  (state-id-value (:id session))
    :attempts 0})
 
 (defn- candidate-entry [session]
   {:crew    (id-keyword (:crew session))
-   :session (id-keyword (:id session))})
+   :session (state-id-value (:id session))})
 
 (defn resolve-obligations [bands crews sessions hail]
   (let [band-name     (get-in hail [:frequency :band])
         band          (when band-name (get bands band-name))
         reach         (effective-reach band hail)
+        spawn?        (effective-spawn band hail)
+        crew-result   (matching-crews band crews hail)
         match-result  (matching-sessions band crews sessions hail)
-        matches       (:sessions match-result)]
+        matches       (:sessions match-result)
+        host-crews    (:crews crew-result)]
     (cond
       (:reason match-result)
       {:undeliverable {:hail hail :reason (:reason match-result)}}
 
       (empty? matches)
-      {:undeliverable {:hail hail :reason :no-recipients}}
+      (if (and spawn? (= :one reach))
+        (if (seq host-crews)
+          {:deliveries [{:hail     hail
+                         :crew     nil
+                         :session  nil
+                         :attempts 0}]}
+          {:undeliverable {:hail hail :reason :no-host}})
+        {:undeliverable {:hail hail :reason :no-recipients}})
 
       (= :all reach)
       {:deliveries (mapv #(bound-delivery hail %) matches)}

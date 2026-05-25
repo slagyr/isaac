@@ -4,8 +4,10 @@ title: 'Hail-driven session spawning: get-or-create a crew''s session for spawn-
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-25T01:01:23Z
-updated_at: 2026-05-25T18:09:23Z
+updated_at: 2026-05-25T18:16:44Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
