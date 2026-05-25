@@ -1,11 +1,11 @@
 ---
 # isaac-7v5h
 title: 'Hail router: resolve pending hails into delivery files'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-23T21:55:37Z
-updated_at: 2026-05-25T00:37:37Z
+updated_at: 2026-05-25T02:42:08Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-i4ly
