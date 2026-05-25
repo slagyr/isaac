@@ -61,11 +61,27 @@
       (should= "Heads up"
                (:prompt (sut/read-pending "hail-1")))))
 
+  (it "accepts --session and persists it under :frequency :session"
+    (let [output (with-out-str
+                   (should= 0 (sut/run-fn {:_raw-args ["send" "--session" "alpha" "--prompt" "Heads up" "--payload" "{:n 1}"]})))]
+      (should= "hail-1\n" output)
+      (should= {:session [:alpha]}
+               (:frequency (sut/read-pending "hail-1")))
+      (should= "Heads up"
+               (:prompt (sut/read-pending "hail-1")))))
+
   (it "accepts repeatable tag flags and persists them as keyword sets"
     (let [output (with-out-str
                    (should= 0 (sut/run-fn {:_raw-args ["send" "--crew-tag" "role/worker" "--crew-tag" "wip" "--prompt" "go"]})))]
       (should= "hail-1\n" output)
       (should= {:crew-tags #{:role/worker :wip}}
+               (:frequency (sut/read-pending "hail-1")))))
+
+  (it "accepts repeatable --session-tag values and persists them as a keyword set"
+    (let [output (with-out-str
+                   (should= 0 (sut/run-fn {:_raw-args ["send" "--session-tag" "project/chess" "--session-tag" "wip" "--prompt" "go"]})))]
+      (should= "hail-1\n" output)
+      (should= {:session-tags #{:project/chess :wip}}
                (:frequency (sut/read-pending "hail-1")))))
 
   (it "combines distinct direct-addressing flags into one frequency map"
