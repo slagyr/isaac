@@ -7,6 +7,7 @@
     [isaac.charge :as charge]
     [isaac.cli :as registry]
     [isaac.comm :as comm]
+    [isaac.config.install :as install]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.session.context :as session-ctx]
@@ -105,11 +106,11 @@
     (if (= false (ensure-local-config! opts))
       1
       (let [cfg           (effective-cfg opts)
-            state-dir     (or (:state-dir opts) (:state-dir cfg) (:stateDir cfg)
+            state-dir     (or (:state-dir opts) (:state-dir cfg)
                               (str (System/getProperty "user.home") "/.isaac"))
             cfg           (assoc cfg :state-dir state-dir)
-            _             (config/set-snapshot! cfg)
-            session-store (store/register! cfg state-dir)
+            _             (install/install! {:config cfg})
+            session-store (store/registered-store)
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))
             session-key    (or (:session opts) resumed-key "prompt-default")
