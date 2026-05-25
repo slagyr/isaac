@@ -1,4 +1,3 @@
-@wip
 Feature: Hail HTTP route POST /hail/send
   External producers (CI, webhooks, beans CLI, other Isaac installs)
   publish hails via POST /hail/send. The route reuses the existing
@@ -9,6 +8,13 @@ Feature: Hail HTTP route POST /hail/send
 
   Background:
     Given default Grover setup
+    And config:
+      | key               | value     |
+      | bind-server-port  | false     |
+      | server.host       | 0.0.0.0   |
+      | server.auth.token | secret123 |
+      | server.port       | 0         |
+    And the Isaac server is started
 
   Scenario: POST with JSON body and valid auth persists a hail
     When a POST request is made to "/hail/send":

@@ -4,8 +4,10 @@ title: 'Hail HTTP route: POST /hail/send for external producers'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T21:57:57Z
-updated_at: 2026-05-25T00:51:44Z
+updated_at: 2026-05-25T00:58:08Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
