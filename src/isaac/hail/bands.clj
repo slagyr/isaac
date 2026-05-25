@@ -1,6 +1,6 @@
 (ns isaac.hail.bands
   (:require
-    [isaac.configurator :as configurator]))
+    [isaac.config.configurator :as configurator]))
 
 (defprotocol BandRegistry
   (lookup [this band-name])

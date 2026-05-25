@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.charge :as charge]
     [isaac.config.loader :as config]
-    [isaac.configurator :as configurator]
+    [isaac.config.configurator :as configurator]
     [isaac.fs :as fs]
     [isaac.hooks :as sut]
     [isaac.logger :as log]

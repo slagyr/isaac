@@ -3,7 +3,7 @@
     [speclj.core :refer :all]
     [isaac.config.install :as sut]
     [isaac.config.loader :as config]
-    [isaac.configurator :as configurator]
+    [isaac.config.configurator :as configurator]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
     [isaac.session.store :as store]))

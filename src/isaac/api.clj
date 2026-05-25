@@ -3,9 +3,8 @@
     [isaac.bridge.core :as bridge-impl]
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as comm-registry]
-    [isaac.configurator :as configurator-impl]
+    [isaac.config.configurator :as configurator-impl]
     [isaac.llm.api :as api-impl]
-    [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
     [isaac.session.store :as session-store]))
 
@@ -19,7 +18,7 @@
   "Protocol implemented by long-running module instances.
    on-startup! is called when the instance is first started;
    on-config-change! is called on every config reload.
-   See isaac.configurator/Reconfigurable for method signatures."
+   See isaac.config.configurator/Reconfigurable for method signatures."
   configurator-impl/Reconfigurable)
 
 (defn register-comm!

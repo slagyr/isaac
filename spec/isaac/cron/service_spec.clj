@@ -1,7 +1,7 @@
 (ns isaac.cron.service-spec
   (:require
     [isaac.config.loader :as config]
-    [isaac.configurator :as configurator]
+    [isaac.config.configurator :as configurator]
     [isaac.cron.service :as sut]
     [isaac.fs :as fs]
     [isaac.scheduler :as scheduler-core]

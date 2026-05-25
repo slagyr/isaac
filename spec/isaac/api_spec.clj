@@ -4,7 +4,7 @@
     [isaac.bridge.core]
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as registry]
-    [isaac.configurator :as configurator-impl]
+    [isaac.config.configurator :as configurator-impl]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]

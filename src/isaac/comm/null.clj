@@ -1,7 +1,7 @@
 (ns isaac.comm.null
   (:require
     [isaac.comm :as comm]
-    [isaac.configurator :as configurator]))
+    [isaac.config.configurator :as configurator]))
 
 (deftype NullComm []
   comm/Comm

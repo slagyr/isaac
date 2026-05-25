@@ -5,7 +5,7 @@
      [isaac.fs :as fs]
      [isaac.cron.service :as cron-service]
      [isaac.comm.delivery.worker :as worker]
-     [isaac.configurator :as configurator]
+     [isaac.config.configurator :as configurator]
      [isaac.logger :as log]
      [isaac.marigold :as marigold]
      [isaac.module.loader :as module-loader]

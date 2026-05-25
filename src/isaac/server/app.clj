@@ -11,7 +11,7 @@
     [isaac.fs :as fs]
     [isaac.hail.bands :as hail-bands]
     [isaac.home :as home]
-    [isaac.configurator :as configurator]
+    [isaac.config.configurator :as configurator]
     [isaac.hooks :as hooks]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]

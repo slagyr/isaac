@@ -5,7 +5,7 @@
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
-    [isaac.configurator :as configurator]
+    [isaac.config.configurator :as configurator]
     [isaac.scheduler.cron :as cron]
      [isaac.cron.state :as state]
      [isaac.logger :as log]

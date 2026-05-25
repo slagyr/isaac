@@ -1,6 +1,6 @@
 (ns isaac.hail.bands-spec
   (:require
-    [isaac.configurator :as configurator]
+    [isaac.config.configurator :as configurator]
     [isaac.hail.bands :as sut]
     [speclj.core :refer :all]))
 

@@ -10,7 +10,7 @@
    hooks, cron)."
   (:require
     [isaac.config.loader :as config]
-    [isaac.configurator :as configurator]
+    [isaac.config.configurator :as configurator]
     [isaac.nexus :as nexus]
     [isaac.session.store :as store]))
 

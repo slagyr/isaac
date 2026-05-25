@@ -5,7 +5,7 @@
     [isaac.config.schema :as schema]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
-    [isaac.configurator :as sut]
+    [isaac.config.configurator :as sut]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
     [isaac.module.loader :as module-loader]
