@@ -26,6 +26,7 @@
     [isaac.spec-helper :as helper]
     [isaac.server.app :as app]
     [isaac.server.http :as server-http]
+    [isaac.server.routes :as routes]
     [org.httpkit.client :as http]
     [org.httpkit.server :as httpkit]
     [taoensso.timbre :as timbre])
@@ -460,14 +461,50 @@
                (seq (:headers table)) (conj (:headers table)))]
     (mapv (fn [row] (mapv identity row)) rows)))
 
+(defn- current-server-config []
+  (let [home     (or (g/get :state-dir) (g/get :isaac-home))
+        fs*      (server-fs)
+        base     (with-server-fs #(load-server-config home fs*))
+        merged   (deep-merge base
+                             (merge (or (g/get :server-config) {})
+                                    (when-let [providers (g/get :provider-configs)]
+                                      {:providers providers})))
+        runtime  (runtime-state-dir)
+        disc     (nexus/-with-nested-nexus {:fs fs*}
+                   (module-loader/discover! merged {:state-dir runtime
+                                                    :cwd       (System/getProperty "user.dir")}))]
+    (assoc merged
+           :module-index (:index disc)
+           :state-dir runtime)))
+
+(defn- current-handler-opts []
+  (or (g/get :server-handler-opts)
+      (let [home (or (g/get :state-dir) (g/get :isaac-home))]
+        {:cfg-fn    current-server-config
+         :state-dir (runtime-state-dir)
+         :home      home})))
+
+(defn- register-direct-routes! [cfg]
+  (reset! routes/*registry* (routes/fresh-registry))
+  (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
+  (doseq [[_ entry] (:module-index cfg)]
+    (module-loader/register-route-extensions! (:manifest entry))))
+
+(defn- direct-response [request]
+  (let [handler-opts (current-handler-opts)
+        cfg          ((:cfg-fn handler-opts))
+        fs*          (server-fs)]
+    (register-direct-routes! cfg)
+    (nexus/-with-nested-nexus {:fs fs* :state-dir (:state-dir handler-opts)}
+      ((server-http/create-handler handler-opts) request))))
+
 (defn get-request [path]
   (let [port (g/get :server-port)
         resp (if (pos? (long (or port 0)))
                @(http/get (str (request-base-url) path))
-                ((server-http/create-handler (g/get :server-handler-opts))
-                 {:request-method :get
-                  :uri            path
-                 :headers        {}}))]
+               (direct-response {:request-method :get
+                                 :uri            path
+                                 :headers        {}}))]
     (g/assoc! :http-response resp)))
 
 (defn get-request-with-headers [path table]
@@ -476,10 +513,9 @@
         headers (extract-headers rows)
         resp    (if (pos? (long (or port 0)))
                   @(http/get (str (request-base-url) path) {:headers headers})
-                   ((server-http/create-handler (g/get :server-handler-opts))
-                    {:request-method :get
-                     :uri            path
-                    :headers        (direct-headers headers)}))]
+                  (direct-response {:request-method :get
+                                    :uri            path
+                                    :headers        (direct-headers headers)}))]
     (g/assoc! :http-response resp)))
 
 (defn get-request-with-header [path header]
@@ -488,10 +524,9 @@
         headers         {name value}
         resp            (if (pos? (long (or port 0)))
                           @(http/get (str (request-base-url) path) {:headers headers})
-                          ((server-http/create-handler (g/get :server-handler-opts))
-                           {:request-method :get
-                            :uri            path
-                            :headers        (direct-headers headers)}))]
+                          (direct-response {:request-method :get
+                                            :uri            path
+                                            :headers        (direct-headers headers)}))]
     (g/assoc! :http-response resp)))
 
 (defn post-request [path table]
@@ -506,11 +541,10 @@
                    @(http/post (str (request-base-url) path)
                                (cond-> {:headers headers :as :text}
                                  body (assoc :body body)))
-                    ((server-http/create-handler (g/get :server-handler-opts))
-                    {:request-method :post
-                     :uri            path
-                     :headers        (direct-headers headers)
-                     :body           body}))]
+                   (direct-response {:request-method :post
+                                     :uri            path
+                                     :headers        (direct-headers headers)
+                                     :body           body}))]
     (g/assoc! :http-response resp)
     ;; Store hook turn future so session-transcript-matching can await it
     (when-let [hook-ns (find-ns 'isaac.hooks)]
