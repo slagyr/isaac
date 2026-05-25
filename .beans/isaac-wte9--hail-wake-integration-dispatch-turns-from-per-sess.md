@@ -4,10 +4,8 @@ title: 'Hail delivery worker: dispatch pending deliveries as turns'
 status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:56:51Z
-updated_at: 2026-05-25T17:55:44Z
+updated_at: 2026-05-25T18:03:59Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
