@@ -5,7 +5,7 @@
     [clojure.pprint :as pprint]
     [clojure.set :as set]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.naming :as naming]

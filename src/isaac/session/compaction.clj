@@ -1,7 +1,7 @@
 (ns isaac.session.compaction
   (:require
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.llm.api :as llm]
     [isaac.logger :as log]
     [isaac.session.context :as session-ctx]

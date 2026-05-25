@@ -4,7 +4,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.configurator :as configurator]
     [isaac.scheduler.cron :as cron]
      [isaac.cron.state :as state]

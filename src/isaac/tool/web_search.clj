@@ -4,7 +4,7 @@
     [babashka.http-client :as http]
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.tool.fs-bounds :as bounds]))
 
 (def ^:private brave-search-endpoint "https://api.search.brave.com/res/v1/web/search")

@@ -1,7 +1,7 @@
 (ns isaac.server.http
   (:require
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.logger :as log]
     [isaac.server.routes :as routes]))
 

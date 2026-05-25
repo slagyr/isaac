@@ -4,7 +4,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.followup :as followup]
     [isaac.fs :as fs]

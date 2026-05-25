@@ -1,7 +1,7 @@
 (ns isaac.tool.memory
   (:require
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.tool.fs-bounds :as bounds]))

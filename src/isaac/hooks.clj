@@ -6,7 +6,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.configurator :as configurator]
     [isaac.fs :as fs]
     [isaac.logger :as log]

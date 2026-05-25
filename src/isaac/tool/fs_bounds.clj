@@ -3,7 +3,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]

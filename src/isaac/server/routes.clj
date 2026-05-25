@@ -4,7 +4,7 @@
   (:require
     [c3kit.apron.util :as util]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.module.loader :as module-loader]))
 
 (def ^:dynamic *registry* (atom {}))

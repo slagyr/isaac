@@ -3,7 +3,7 @@
   (:require
     [clojure.string :as str]
     [isaac.bridge.cancellation :as cancellation]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.llm.provider :as llm-provider]
     [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]

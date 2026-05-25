@@ -4,7 +4,7 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [isaac.cli :as registry]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.config.paths :as paths]
     [isaac.fs :as fs]
     [isaac.home :as home]

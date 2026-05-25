@@ -1,7 +1,7 @@
 (ns isaac.session.schema
   (:require
     [c3kit.apron.schema :as schema]
-    [isaac.config.loader :as config]))
+    [isaac.config.api :as config]))
 
 (defn- mutable [spec]
   (assoc spec :mutable? true :system-managed? false))

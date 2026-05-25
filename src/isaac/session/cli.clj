@@ -8,8 +8,8 @@
     [isaac.cli.common :as cli-common]
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
-    [isaac.config.install :as install]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.schema :as session-schema]
@@ -194,7 +194,7 @@
   (let [state-dir  (resolve-state-dir opts)
         loaded-cfg (config/normalize-config (config/load-config {:state-dir state-dir}))
         loaded-cfg (assoc loaded-cfg :state-dir state-dir)]
-    (install/install! {:config loaded-cfg})
+    (config/install! {:config loaded-cfg})
     {:config loaded-cfg :state-dir state-dir :store (store/registered-store)}))
 
 (defn- run-show [opts session-id]
@@ -209,7 +209,7 @@
             (print-session-data (session->payload session) opts)
             0)
           (try
-            (let [ctx    (binding [config/*state-dir* state-dir]
+            (let [ctx    (binding [loader/*state-dir* state-dir]
                            (assoc (session-ctx/resolve-behavior session-id {})
                                    :boot-files (session-ctx/read-boot-files (:cwd session))
                                    :state-dir state-dir))

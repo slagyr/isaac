@@ -5,8 +5,7 @@
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.change-source :as change-source]
-    [isaac.config.install :as install]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.cron.service :as cron-service]
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
@@ -114,7 +113,7 @@
       :else
       (let [old-cfg @cfg*]
         (reset! cfg* new-cfg)
-        (install/install! {:config new-cfg :old-config old-cfg :registries registries :host host})
+        (config/install! {:config new-cfg :old-config old-cfg :registries registries :host host})
         (log/info :config/reloaded :path path)))))
 
 (defn- start-config-reloader! [source state-dir cfg* host comm-registry registries]
@@ -213,7 +212,7 @@
                 _                       (when scheduler
                                           (nexus/register! [:scheduler] scheduler))
                 host-ctx                (host-context cfg state-dir connect-ws!)
-                {tree* :tree}           (install/install! {:config cfg :registries registries :host host-ctx})
+                {tree* :tree}           (config/install! {:config cfg :registries registries :host host-ctx})
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
                 _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                           (module-loader/register-route-extensions! (:manifest entry)))

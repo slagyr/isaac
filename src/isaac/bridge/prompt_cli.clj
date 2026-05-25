@@ -7,8 +7,7 @@
     [isaac.charge :as charge]
     [isaac.cli :as registry]
     [isaac.comm :as comm]
-    [isaac.config.install :as install]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
@@ -110,7 +109,7 @@
             state-dir     (or (:state-dir opts) (:state-dir cfg)
                               (str (System/getProperty "user.home") "/.isaac"))
             cfg           (assoc cfg :state-dir state-dir)
-            _             (install/install! {:config cfg})
+            _             (config/install! {:config cfg})
             session-store (store/registered-store)
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))

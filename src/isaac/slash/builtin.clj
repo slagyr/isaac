@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.bridge.status :as status]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.effort :as effort]
      [isaac.fs :as fs]
      [isaac.home :as home]

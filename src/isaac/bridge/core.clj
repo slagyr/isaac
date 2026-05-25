@@ -4,7 +4,7 @@
     [isaac.bridge.status :as status]
     [isaac.charge :as charge]
     [isaac.comm :as comm]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.drive.turn :as turn]
     [isaac.logger :as log]
     [isaac.nexus :as nexus]

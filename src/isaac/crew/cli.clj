@@ -4,7 +4,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.crew.store :as store]))
 
 (def option-spec

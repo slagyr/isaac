@@ -1,7 +1,7 @@
 (ns isaac.session.context
   (:require
     [c3kit.apron.schema :as schema]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.logger :as log]

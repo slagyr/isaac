@@ -5,7 +5,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
     [isaac.server.app :as app]
