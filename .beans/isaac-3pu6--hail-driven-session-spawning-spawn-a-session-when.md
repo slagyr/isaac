@@ -4,10 +4,8 @@ title: 'Hail-driven session spawning: get-or-create a crew''s session for spawn-
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-25T01:01:23Z
-updated_at: 2026-05-25T18:16:44Z
+updated_at: 2026-05-25T18:25:22Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
@@ -119,3 +117,15 @@ to persist `:origin` on the session record.
 - **Extends isaac-wte9** (delivery worker): adds the get-or-create + spawn
   path. Should land after both 7v5h and wte9 are implemented.
 - Uses isaac-a1nu (`in-flight?` / `can-dispatch?`) for idle/capacity.
+
+
+## Verification failed
+
+HEAD: 10654ce79804f1785850d5984d85b30d3a46b497
+Working tree: clean
+
+Verification stopped at acceptance check 1.
+
+I found a non-`@wip` edit in `features/hail/spawn.feature`, but the bean has no top-level `## Exceptions` section authorizing it. The original spawn spec landed in `52200d7f`; `990fdf6e` then removed the transcript-level system-preamble assertion from the spawned-session scenario; and `10654ce7` only removed `@wip`.
+
+Per the repo verifier rules, non-`@wip` feature edits must be documented under a top-level `## Exceptions` heading. Because this bean has no such section, I did not continue to the test gate. If the framing assertion move is intentional, add a `## Exceptions` section authorizing the non-`@wip` edits to `features/hail/spawn.feature` and re-hand off for verify.
