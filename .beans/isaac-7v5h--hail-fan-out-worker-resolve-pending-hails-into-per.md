@@ -4,10 +4,8 @@ title: 'Hail router: resolve pending hails into delivery files'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:55:37Z
-updated_at: 2026-05-25T02:59:23Z
+updated_at: 2026-05-25T05:41:43Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-i4ly
@@ -129,3 +127,15 @@ and `bb features features/hail/router.feature` is green.
   filters.
 - Unblocks isaac-wte9 (delivery worker, step 2), which consumes
   `hail/deliveries/`.
+
+
+## Verification failed
+
+HEAD: 990fdf6ef5a8ab134d81a307fbcba7ff4dc8e960
+Working tree: clean
+
+Verification stopped at acceptance check 1.
+
+The bean has no `## Exceptions` section, but `features/hail/router.feature` was changed after the original spec commit in ways beyond `@wip` removal. The original feature landed in `159f581f`; a later bean commit, `9c41756f`, rewrote the scenarios and delivery model from per-session inbox / delivered retry semantics to the current deliveries / undeliverable pipeline with unbound `:candidates`; and the final work commit, `e6b4089e`, only removed `@wip`.
+
+Per the repo verifier rules, feature-file changes are only allowed when they are limited to `@wip` removal or explicitly authorized in the bean. Because this bean has no exception covering that rewrite, I did not continue to the test gate. If the feature rewrite is intentional, add a `## Exceptions` section authorizing the non-`@wip` edits to `features/hail/router.feature` and re-hand off for verify.
