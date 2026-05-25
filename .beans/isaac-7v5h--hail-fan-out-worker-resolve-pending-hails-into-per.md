@@ -4,8 +4,10 @@ title: 'Hail router: resolve pending hails into delivery files'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T21:55:37Z
-updated_at: 2026-05-25T05:41:43Z
+updated_at: 2026-05-25T15:39:06Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-i4ly
@@ -118,6 +120,19 @@ and `bb features features/hail/router.feature` is green.
 
 **New step introduced:** `the hail router ticks` (parallel to
 `the delivery worker ticks`).
+
+## Exceptions
+
+- `features/hail/router.feature` is allowed to change beyond `@wip` removal to
+  reflect the two-step hail delivery pipeline introduced in `9c41756f`.
+- Authorized non-`@wip` edits include replacing the original per-session inbox
+  plus `hail/delivered/<hail>.edn` forensic model with the current
+  `hail/deliveries/<delivery>.edn` and `hail/undeliverable/<hail>.edn`
+  pipeline.
+- Authorized non-`@wip` edits also include the current `:reach :one`
+  unbound-`candidates` snapshot semantics, fail-fast undeliverable reasons
+  (`:unknown-band`, `:no-recipients`), and the shared-scheduler registration
+  scenario for `hail/route`.
 
 ## Relationship to other beans
 
