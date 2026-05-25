@@ -1,13 +1,11 @@
 ---
 # isaac-uysx
 title: Universal injection guard + per-session nonce + sanitization (system prompt, all comms)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-25T01:01:23Z
-updated_at: 2026-05-25T19:33:47Z
+updated_at: 2026-05-25T23:43:36Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
