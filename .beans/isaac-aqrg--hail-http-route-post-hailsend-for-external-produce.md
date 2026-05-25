@@ -1,11 +1,11 @@
 ---
 # isaac-aqrg
 title: 'Hail HTTP route: POST /hail/send for external producers'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-23T21:57:57Z
-updated_at: 2026-05-24T00:49:12Z
+updated_at: 2026-05-25T00:51:44Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
