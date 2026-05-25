@@ -1,11 +1,11 @@
 ---
 # isaac-ffhl
 title: 'Comm-origin framing: per-turn :origin block in the current message (hail + cron)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-05-25T18:16:21Z
-updated_at: 2026-05-25T23:51:09Z
+updated_at: 2026-05-25T23:55:04Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-uysx
