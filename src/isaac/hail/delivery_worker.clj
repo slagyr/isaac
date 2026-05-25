@@ -3,6 +3,7 @@
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
     [isaac.charge :as charge]
+    [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
@@ -176,6 +177,7 @@
 
 (defn- delivery-charge [cfg delivery]
   (charge/build {:config      cfg
+                 :comm        null-comm/channel
                  :session-key (normalize-id (:session delivery))
                  :input       (get-in delivery [:hail :prompt])
                  :origin      {:kind :hail :hail-id (normalize-id (get-in delivery [:hail :id]))}}))

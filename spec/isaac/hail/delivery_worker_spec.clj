@@ -1,6 +1,7 @@
 (ns isaac.hail.delivery-worker-spec
   (:require
     [isaac.charge]
+    [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
     [isaac.drive.turn]
     [isaac.fs :as fs]
@@ -76,6 +77,7 @@
           (should-not-be-nil future*)
           @future*))
       (should= {:kind :hail :hail-id "hail-1"} (:origin @captured))
+      (should= null-comm/channel (:comm @captured))
       (should= "Seal the leak." (:input @captured))
       (should= "engine-room" (:session-key @captured))
       (should-not (fs/exists? (nexus/get :fs) "/test/isaac/hail/deliveries/delivery-1.edn"))

@@ -1,11 +1,13 @@
 ---
 # isaac-wte9
 title: 'Hail delivery worker: dispatch pending deliveries as turns'
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T21:56:51Z
-updated_at: 2026-05-25T17:07:43Z
+updated_at: 2026-05-25T17:55:44Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
@@ -101,6 +103,16 @@ and `bb features features/hail/delivery.feature` is green.
 
 **New steps introduced:** `the hail delivery worker ticks` and
 `the hail delivery worker ticks at "<time>"`.
+
+## Exceptions
+
+- `features/hail/delivery.feature` is allowed non-`@wip` edits from
+  `990fdf6e` that remove the transcript-level system-preamble assertion from
+  the first scenario and replace it with explanatory comments.
+- Those edits are authorized because origin/autonomy framing moved to the
+  shared comm-origin helper in `isaac-uysx`; this bean dispatches with
+  `:origin {:kind :hail ...}` and verifies prompt delivery/finalization, while
+  the preamble assertion now lives in the shared framing coverage.
 
 ## Relationship to other beans
 
