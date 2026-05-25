@@ -6,9 +6,7 @@
 
    Each entry delegates to its source at call time (rather than aliasing the
    var), so `with-redefs` on the underlying fn still takes effect for callers
-   through this API. Dynamic vars (loader/*state-dir*, *config*) are not
-   exposed: a `binding` must target the real var, so the rare caller that binds
-   them requires loader directly."
+   through this API."
   (:require
     [isaac.config.install :as install]
     [isaac.config.loader :as loader]

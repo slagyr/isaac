@@ -20,7 +20,10 @@
 ;; region ----- Helpers -----
 
 (def env-overrides* (atom {}))
-(def ^:dynamic *state-dir* nil)
+;; Snapshot of the <state-dir>/.env file, locked at load time (see
+;; lock-dotenv!). Avoids re-reading the file on every ${VAR} lookup and removes
+;; the need to thread/bind state-dir through the substitution pipeline.
+(defonce ^:private dotenv* (atom {}))
 (defonce ^:private load-cache* (atom {}))
 
 (defn- runtime-fs
@@ -39,19 +42,23 @@
 (defn clear-load-cache! []
   (reset! load-cache* {}))
 
-(defn- isaac-env-path []
-  (when *state-dir*
-    (str *state-dir* "/.env")))
-
-(defn- isaac-env-value [name]
-  (when-let [path (isaac-env-path)]
-    (when (exists?* path)
+(defn- read-dotenv [state-dir]
+  (let [path (when state-dir (str state-dir "/.env"))]
+    (if (and path (exists?* path))
       (let [props (doto (java.util.Properties.)
                     (.load (java.io.StringReader. (or (slurp* path) ""))))]
-        (.getProperty props name)))))
+        (into {} (map (fn [k] [k (.getProperty props k)])) (.stringPropertyNames props)))
+      {})))
+
+(defn- lock-dotenv!
+  "Snapshots <state-dir>/.env into dotenv*. Called once per load so ${VAR}
+   substitution reads a locked map rather than re-reading the file."
+  [state-dir]
+  (reset! dotenv* (read-dotenv state-dir)))
 
 (defn clear-env-overrides! []
   (reset! env-overrides* {})
+  (reset! dotenv* {})
   (clear-load-cache!))
 
 (defn set-env-override! [name value]
@@ -61,7 +68,7 @@
 (defn env [name]
   (or (get @env-overrides* name)
       (c3env/env name)
-      (isaac-env-value name)))
+      (get @dotenv* name)))
 
 (def ^:private ->id schema/->id)
 
@@ -1062,8 +1069,8 @@
       cached
       (let [result
             (nexus/-with-nested-nexus {:fs fs*}
-              (binding [*state-dir* state-dir]
-                (let [root (paths/config-root state-dir)]
+              (lock-dotenv! state-dir)
+              (let [root (paths/config-root state-dir)]
                 (if-not (config-files-present? root opts)
                   {:config          {:state-dir state-dir}
                    :errors          [{:key "config" :value (missing-config-message state-dir)}]
@@ -1124,7 +1131,7 @@
                     {:config   config
                      :errors   (vec (sort-by :key errors))
                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
-                     :sources  (vec (sort (:sources result)))})))))]
+                     :sources  (vec (sort (:sources result)))}))))]
         (when cache-key
           (swap! load-cache* assoc cache-key result))
         result))))

@@ -9,7 +9,6 @@
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
     [isaac.config.api :as config]
-    [isaac.config.loader :as loader]
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.schema :as session-schema]
@@ -209,10 +208,9 @@
             (print-session-data (session->payload session) opts)
             0)
           (try
-            (let [ctx    (binding [loader/*state-dir* state-dir]
-                           (assoc (session-ctx/resolve-behavior session-id {})
-                                   :boot-files (session-ctx/read-boot-files (:cwd session))
-                                   :state-dir state-dir))
+            (let [ctx    (assoc (session-ctx/resolve-behavior session-id {})
+                                :boot-files (session-ctx/read-boot-files (:cwd session))
+                                :state-dir state-dir)
                   status (bridge/status-data session-id ctx)]
               (println (bridge/format-status status))
               0)
