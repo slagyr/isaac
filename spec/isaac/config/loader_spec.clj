@@ -487,7 +487,7 @@
         (should= [{:key "config"
                    :value (str "no config found; run `isaac init` or create " marigold/home "/.isaac/config/isaac.edn")}]
                  (:errors result))
-        (should= {} (:config result))
+        (should= {:state-dir (str marigold/home "/.isaac")} (:config result))
         (should= true (:missing-config? result))
         (should= [] (:warnings result))
         (should= [] (:sources result))))

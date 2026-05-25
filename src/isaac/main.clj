@@ -109,9 +109,7 @@
                    home/*state-dir*     (str resolved-home "/.isaac")]
             (nexus/-with-nested-nexus {:fs fs*}
               (nexus/init! {:fs fs*})
-              (let [state-dir (str resolved-home "/.isaac")]
-                (nexus/register! [:state-dir] state-dir)
-                (store/register! (or (config/snapshot) {}) state-dir))
+              (store/register! (or (config/snapshot) {}) (str resolved-home "/.isaac"))
               (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
                                                         :home         resolved-home
                                                         :_raw-args    (vec opts)})) 0)))

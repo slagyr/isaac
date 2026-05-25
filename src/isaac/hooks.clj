@@ -144,7 +144,7 @@
    (handler (nexus/necho) request))
   ([runtime request]
    (let [cfg          (config/snapshot)
-         state-dir    (:state-dir runtime)
+         state-dir    (or (:state-dir cfg) (:state-dir runtime))
          name         (hook-name (:uri request))]
      (cond
        ;; 1. Method check

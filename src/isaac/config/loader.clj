@@ -1065,7 +1065,7 @@
               (binding [*isaac-home* home]
                 (let [root (paths/config-root home)]
                 (if-not (config-files-present? root opts)
-                  {:config          {}
+                  {:config          {:state-dir (paths/state-dir home)}
                    :errors          [{:key "config" :value (missing-config-message home)}]
                    :missing-config? true
                    :warnings        []
@@ -1105,9 +1105,11 @@
                         config           (if data-path-overlay
                                            (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
                                            config)
-                        discovery        (module-loader/discover! config {:state-dir (str home "/.isaac")
+                        discovery        (module-loader/discover! config {:state-dir (paths/state-dir home)
                                                                           :cwd       (System/getProperty "user.dir")})
-                        config           (assoc config :module-index (:index discovery))
+                        config           (assoc config
+                                           :module-index (:index discovery)
+                                           :state-dir    (paths/state-dir home))
                         raw-providers    (merge (get-in result [:root :providers])
                                                 (get-in result [:raw :providers]))
                         comms-check      (check-comms config (:index discovery))
@@ -1154,12 +1156,13 @@
   cfg)
 
 (defn state-dir
-  "Returns the resolved state directory from the current config snapshot.
-   Falls back to the nexus :state-dir slot for test fixtures that set it
-   that way; production paths put it on the snapshot."
+  "Returns the resolved state directory. Test fixtures install an explicit
+   :state-dir on the nexus via -with-nested-nexus and that wins; otherwise the
+   loaded config carries :state-dir (derived from home). Production never
+   installs the nexus slot, so the config snapshot is authoritative there."
   []
-  (or (:state-dir (snapshot))
-      (nexus/get :state-dir)))
+  (or (nexus/get :state-dir)
+      (:state-dir (snapshot))))
 
 ;; endregion ^^^^^ Ambient Config Snapshot ^^^^^
 

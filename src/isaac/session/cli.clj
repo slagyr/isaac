@@ -188,7 +188,7 @@
 
 (defn- resolve-state-dir [opts loaded-cfg]
   (or (:state-dir opts)
-      (:stateDir loaded-cfg)
+      (:state-dir loaded-cfg)
       (str (System/getProperty "user.home") "/.isaac")))
 
 (defn- run-show [opts session-id]
@@ -269,7 +269,6 @@
 (defn- run-mutation [opts operation raw-path raw-value]
   (let [loaded-cfg     (config/normalize-config (config/load-config {:home (:home opts)}))
         state-dir      (resolve-state-dir opts loaded-cfg)
-        _              (nexus/register! [:state-dir] state-dir)
         session-store  (resolve-session-store loaded-cfg state-dir)
         target         (parse-mutation-target raw-path)]
     (if-let [error (:error target)]
@@ -325,7 +324,7 @@
         injected-agents (when (map? (:agents opts)) (:agents opts))
         loaded-cfg    (config/normalize-config (config/load-config {:home (:home opts)}))
         state-dir     (or (:state-dir opts)
-                          (:stateDir loaded-cfg)
+                          (:state-dir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
         loaded-cfg    (assoc loaded-cfg :state-dir state-dir)
         _             (config/set-snapshot! loaded-cfg)

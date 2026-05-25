@@ -39,10 +39,10 @@
    cron-service/registry])
 
 (defn comm-tree
-  "Returns the live object-tree atom (mirrors :comms shape). Returns nil if
-   the server is not running."
+  "Returns the live object-tree atom (mirrors :comms shape) from the nexus.
+   Returns nil if the server is not running."
   []
-  (some-> @state :tree))
+  (nexus/get :tree))
 
 (defn- dev-handler [handler-opts]
   (refresh/init refresh/services "isaac" [])
@@ -208,11 +208,11 @@
                                                       :fs     (or (fs/instance opts) (fs/real-fs))})
                 _                       (when state-dir
                                           (home/init-state-dir! state-dir)
-                                          (nexus/register! [:state-dir] state-dir)
                                           (store/register! cfg state-dir))
                 _                       (config/set-snapshot! cfg)
                 cfg*                    (atom cfg)
                 tree*                   (atom {})
+                _                       (nexus/register! [:tree] tree*)
                 scheduler               (when state-dir
                                           (-> (scheduler-core/create {})
                                               scheduler-core/start!))

@@ -627,7 +627,7 @@
   [charge]
   (let [{:keys [session-key crew crew-members context-window
                 model model-cfg provider]} charge
-        state-dir      (get-in charge [:config :state-dir])
+        state-dir      (or (nexus/get :state-dir) (get-in charge [:config :state-dir]))
         session-store* (nexus/get-in [:sessions :store])
         session        (store/get-session session-store* session-key)
         allowed-tools  (allowed-tool-names crew-members crew)

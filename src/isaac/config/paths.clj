@@ -10,8 +10,11 @@
 
 (def root-filename "isaac.edn")
 
+(defn state-dir [home]
+  (str home "/.isaac"))
+
 (defn config-root [home]
-  (str home "/.isaac/config"))
+  (str (state-dir home) "/config"))
 
 (defn config-path [home relative]
   (str (config-root home) "/" relative))
