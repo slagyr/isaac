@@ -1,11 +1,11 @@
 ---
 # isaac-u217
 title: 'Hail send CLI: addressing flags follow-up (--crew, --session, --crew-tag, --session-tag, --from-json)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-23T21:51:36Z
-updated_at: 2026-05-23T22:30:12Z
+updated_at: 2026-05-25T00:05:05Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
