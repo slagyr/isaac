@@ -4,10 +4,8 @@ title: 'Hail HTTP route: POST /hail/send for external producers'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:57:57Z
-updated_at: 2026-05-25T00:58:08Z
+updated_at: 2026-05-25T01:08:12Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
@@ -131,3 +129,18 @@ Run targeted: `bb features features/hail/http.feature`.
 - **Depends on existing server auth (isaac-g69y).** Same token
   protects this route.
 - **Independent of fan-out / wake** — this bean only produces.
+
+
+
+## Verification failed
+
+HEAD: e792927cdccf9892241636079798fd620c98f8cd
+Working tree: clean
+
+Failed at acceptance check 1: feature file tampering. I found no `## Exceptions` section in the bean authorizing feature edits, and `features/hail/http.feature` changed after the original spec commit in ways beyond `@wip` removal.
+
+Diff reviewed: after `f84f9c6e` the work commit added background setup lines:
+- `And config:` with `bind-server-port`, `server.host`, `server.auth.token`, and `server.port`
+- `And the Isaac server is started`
+
+Per the repo verifier rules, permitted feature-file changes are only `@wip` removal or edits explicitly authorized in the bean's `## Exceptions` section. Because this bean has no such exception, I stopped verification here and did not proceed to the test gate. If these setup edits are intended, add a bean exception for `features/hail/http.feature` describing the allowed changes and re-hand off for verify.
