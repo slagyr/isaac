@@ -1,11 +1,11 @@
 ---
 # isaac-uysx
 title: Universal injection guard + per-session nonce + sanitization (system prompt, all comms)
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-05-25T01:01:23Z
-updated_at: 2026-05-25T18:16:21Z
+updated_at: 2026-05-25T18:27:42Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
@@ -83,3 +83,14 @@ filtering of user prose — lossy and a losing cat-and-mouse.
 - Foundational: **unblocks isaac-uysx-B** (origin framing) and **isaac-1yjs**
   (soul placement) — both consume the nonce/guard contract.
 - Type: `task` (baseline security + infra). 7v5h/wte9 already complete.
+
+
+## Feature file
+
+`features/session/injection_guard.feature` — 3 `@wip` scenarios (guard present + cached; guard carries the session nonce; nonce stripped from user content). Run:
+
+```
+bb features features/session/injection_guard.feature
+```
+
+**Definition of done:** remove `@wip` and the feature is green. Implementation introduces: a `:nonce` session field (per-session generation + storage; the `the following sessions exist:` step threads a `nonce` column); guard+nonce injected in `build-system` for every dispatch path; build-time sanitization stripping the nonce from user content. Plus the test ripple (update existing `system[..].text` assertions).
