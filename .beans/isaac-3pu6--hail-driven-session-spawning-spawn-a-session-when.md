@@ -1,13 +1,11 @@
 ---
 # isaac-3pu6
 title: 'Hail-driven session spawning: get-or-create a crew''s session for spawn-enabled hails'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-25T01:01:23Z
-updated_at: 2026-05-25T18:26:46Z
+updated_at: 2026-05-25T18:28:55Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
