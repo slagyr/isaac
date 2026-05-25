@@ -4,10 +4,8 @@ title: 'Hail send CLI: addressing flags follow-up (--crew, --session, --crew-tag
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:51:36Z
-updated_at: 2026-05-25T00:14:04Z
+updated_at: 2026-05-25T00:27:05Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
@@ -115,3 +113,16 @@ validation rules, JSON-vs-EDN stdin dispatch).
 - **Parent: isaac-ugx7 (Hail epic).**
 - **Blocked by isaac-vduq (substrate + base CLI).** The CLI must
   exist with `--band` working before adding more flags.
+
+
+
+## Verification failed
+
+HEAD: e4a35698c918d0e4b6a86449fa19e6e79a819e20
+Working tree: clean
+
+Acceptance checks run clean: `bb spec` passed outside the sandbox (1707 examples, 0 failures) and `bb features features/hail/send-addressing.feature` passed (8 examples, 0 failures).
+
+The bean still misses the unit-spec coverage promised in its `## Verification` section: "Speclj specs for the CLI argv parser additions (each flag's binding, validation rules, JSON-vs-EDN stdin dispatch)." In `spec/isaac/hail/cli_spec.clj`, there is direct coverage for `--crew` (lines 55-62), `--crew-tag` (64-69), `--reach` (78-83), `--from-json` (85-93), and validation failures (95-107), but there is no direct speclj example for `--session`, and `--session-tag` only appears in a combined case (`--crew` + `--session-tag`, lines 71-76) rather than its own binding check.
+
+Feature scenarios are not a substitute for those unit specs under this repo's testing rules. Add explicit speclj coverage for the missing flag bindings and re-hand off for verify.
