@@ -1,7 +1,7 @@
 (ns isaac.main-spec
   (:require
     [isaac.cli :as registry]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.module.loader :as module-loader]

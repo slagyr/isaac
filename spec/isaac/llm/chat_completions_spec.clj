@@ -3,6 +3,7 @@
     [babashka.http-client :as http]
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
+    [isaac.config.api :as config]
     [isaac.llm.api :as api]
     [isaac.llm.api.chat-completions :as sut]
     [isaac.llm.api.openai.shared :as shared]
@@ -128,14 +129,14 @@
       (should= "explicit" (shared/resolve-api-key "xai" {:api-key "explicit"})))
 
     (it "resolve-api-key falls back to the <PROVIDER>_API_KEY env when :api-key is blank"
-      (isaac.config.loader/set-env-override! "XAI_API_KEY" "env-supplied")
+      (config/set-env-override! "XAI_API_KEY" "env-supplied")
       (try
         (should= "env-supplied" (shared/resolve-api-key "xai" {:api-key ""}))
         (should= "env-supplied" (shared/resolve-api-key "xai" {}))
-        (finally (isaac.config.loader/clear-env-overrides!))))
+        (finally (config/clear-env-overrides!))))
 
     (it "resolve-api-key returns nil when neither :api-key nor env are set"
-      (isaac.config.loader/clear-env-overrides!)
+      (config/clear-env-overrides!)
       (should-be-nil (shared/resolve-api-key "definitely-not-a-real-provider-xyz" {})))
 
     (it "returns nil when jwt payload decoding fails"

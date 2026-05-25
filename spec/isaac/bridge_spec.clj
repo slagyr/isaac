@@ -2,7 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [isaac.charge :as charge]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.bridge.cancellation :as bridge-cancel]

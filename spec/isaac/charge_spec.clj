@@ -1,7 +1,7 @@
 (ns isaac.charge-spec
   (:require
     [isaac.charge :as sut]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.marigold :as marigold]
     [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]

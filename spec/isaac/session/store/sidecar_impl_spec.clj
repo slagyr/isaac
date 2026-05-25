@@ -4,7 +4,7 @@
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]

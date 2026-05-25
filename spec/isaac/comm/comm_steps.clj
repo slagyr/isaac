@@ -4,7 +4,7 @@
     [gherclj.core :as g :refer [defthen defwhen helper!]]
     [isaac.bridge.core :as bridge]
     [isaac.comm.memory :as memory-comm]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.drive.dispatch :as drive-dispatch]
     [isaac.llm.provider :as llm-provider]
     [isaac.step-tables :as match]

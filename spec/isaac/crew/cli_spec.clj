@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.edn :as edn]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.crew.cli :as sut]
     [speclj.core :refer :all]))
 

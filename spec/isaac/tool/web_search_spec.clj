@@ -3,7 +3,7 @@
     [babashka.http-client :as http]
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
     [isaac.tool.web-search :as sut]

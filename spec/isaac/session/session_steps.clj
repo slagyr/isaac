@@ -7,8 +7,7 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.config.change-source :as change-source]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.drive.dispatch :as drive-dispatch]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
@@ -31,7 +30,6 @@
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory-store]
     [isaac.module.loader :as module-loader]
-    [isaac.config.schema :as schema]
     [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory]
     [isaac.spec-helper :as helper]
@@ -92,7 +90,7 @@
 
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]
-    (change-source/notify-path! source path)))
+    (config/notify-path! source path)))
 
 (defn- with-current-time [f]
   (if-let [current-time (g/get :current-time)]
@@ -446,7 +444,6 @@
     (when-let [ns-obj (find-ns 'isaac.comm.telly)]
       (remove-ns (ns-name ns-obj)))
     (tool-registry/clear!)
-    (schema/clear-schemas!)
     (single-turn/clear-async-compactions!)
     (log/set-output! :memory)
     (log/clear-entries!)

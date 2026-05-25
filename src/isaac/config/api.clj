@@ -128,6 +128,17 @@
    on-config-change!."
   configurator/Reconfigurable)
 
+(defn on-startup!
+  "Reconfigurable method: called when an instance is first started with its
+   config slice."
+  [instance slice]
+  (configurator/on-startup! instance slice))
+
+(defn on-config-change!
+  "Reconfigurable method: called on reload with the old and new config slices."
+  [instance old-slice new-slice]
+  (configurator/on-config-change! instance old-slice new-slice))
+
 (defn reconcile!
   "Walks the registries' config slices and reconciles the live object tree
    against them. One fn for boot (old nil), reload (old vs new), and shutdown
@@ -157,23 +168,23 @@
   [state-dir]
   (change-source/memory-source state-dir))
 
-(defn change-source-start!
+(defn start!
   "Starts a config change source. Returns the source."
   [source]
   (change-source/start! source))
 
-(defn change-source-stop!
+(defn stop!
   "Stops a config change source."
   [source]
   (change-source/stop! source))
 
-(defn change-source-poll!
+(defn poll!
   "Polls a config change source for the next changed config-relative path,
    waiting up to `timeout-ms` (default 0)."
   ([source]            (change-source/poll! source))
   ([source timeout-ms] (change-source/poll! source timeout-ms)))
 
-(defn change-source-notify!
+(defn notify-path!
   "Notifies a config change source that `path` changed (test/dev)."
   [source path]
   (change-source/notify-path! source path))

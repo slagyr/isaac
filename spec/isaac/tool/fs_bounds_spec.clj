@@ -1,6 +1,6 @@
 (ns isaac.tool.fs-bounds-spec
   (:require
-    [isaac.config.loader :as config-loader]
+    [isaac.config.api :as config-loader]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]

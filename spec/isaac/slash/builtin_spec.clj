@@ -1,6 +1,6 @@
 (ns isaac.slash.builtin-spec
   (:require
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.home :as home]

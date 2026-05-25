@@ -1,7 +1,7 @@
 (ns isaac.tool.registry-spec
   (:require
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.spec-helper :as helper]

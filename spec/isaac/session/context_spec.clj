@@ -1,6 +1,6 @@
 (ns isaac.session.context-spec
   (:require
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.server.routes]

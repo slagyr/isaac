@@ -4,10 +4,8 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.config.api :as config-api]
+    [isaac.config.api :as config]
     [isaac.server.cli :as server]
-    [isaac.config.change-source :as change-source]
-    [isaac.config.loader :as config]
     [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
     [isaac.scheduler.cron :as cron]
@@ -97,7 +95,7 @@
 
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]
-    (change-source/notify-path! source path)))
+    (config/notify-path! source path)))
 
 (defn- parse-state-value [value]
   (cond
@@ -381,8 +379,8 @@
         ;; is enabled; no watcher is needed for pure startup-only scenarios.
         config-source  (when (:hot-reload cfg)
                          (if (or mem (not explicit-home?))
-                           (change-source/memory-source home)
-                           (change-source/watch-service-source home)))
+                           (config/memory-source home)
+                           (config/watch-service-source home)))
         _              (g/assoc! :config-change-source config-source)
         run-server?    (not (false? (g/get :bind-server-port?)))
         start-opts     {:cfg                  server-config
@@ -679,7 +677,7 @@
                             :state-dir state-dir
                             :fs        fs*
                             :sessions  {:store session-store}}
-          (config-api/set-snapshot! cfg)
+          (config/set-snapshot! cfg)
           (record-turn-future! (hail-delivery-worker/tick! {:cfg cfg :session-store session-store})))))))
 
 (defn hail-delivery-worker-ticks-at [iso]
@@ -695,7 +693,7 @@
                             :state-dir state-dir
                             :fs        fs*
                             :sessions  {:store session-store}}
-          (config-api/set-snapshot! cfg)
+          (config/set-snapshot! cfg)
           (record-turn-future! (hail-delivery-worker/tick! {:cfg           cfg
                                                             :now           (java.time.Instant/parse iso)
                                                             :session-store session-store})))))))

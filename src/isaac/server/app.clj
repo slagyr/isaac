@@ -122,7 +122,7 @@
                     (reload-config! state-dir cfg* host comm-registry registries path)))]
     (future
       (loop []
-        (when-let [path (config/change-source-poll! source 5000)]
+        (when-let [path (config/poll! source 5000)]
           (reload! path))
         (recur)))))
 
@@ -223,7 +223,7 @@
                 _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                           (module-loader/register-route-extensions! (:manifest entry)))
                 config-source           (start-config-source opts hot-reload? state-dir)
-                _                       (some-> config-source config/change-source-start!)
+                _                       (some-> config-source config/start!)
                 reloader                (when (and config-source state-dir)
                                           (start-config-reloader! config-source state-dir cfg* host-ctx comm-registry registries))
                 handler-opts            (build-handler-opts opts config-home state-dir cfg*)
@@ -248,7 +248,7 @@
       (config/reconcile! tree host-ctx @cfg nil registries))
     (some-> reloader future-cancel)
     (when config-source
-      (config/change-source-stop! config-source))
+      (config/stop! config-source))
     (when server
       (if (fn? server)
         (server)

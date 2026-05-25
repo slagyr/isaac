@@ -19,7 +19,7 @@
   (:require
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
-    [isaac.config.loader :as config-loader]
+    [isaac.config.api :as config-loader]
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     ;; Grover is the only impl namespace we need — all themed apis

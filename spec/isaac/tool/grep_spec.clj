@@ -2,7 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
     [isaac.nexus :as nexus]

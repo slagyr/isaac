@@ -4,7 +4,7 @@
     [isaac.bridge.cancellation :as bridge]
     [isaac.comm.memory :as memory-comm]
     [isaac.comm.null :as null-comm]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as sut]
     [isaac.fs :as fs]

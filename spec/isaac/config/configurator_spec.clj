@@ -1,4 +1,4 @@
-(ns isaac.configurator-spec
+(ns isaac.config.configurator-spec
   (:require
     [c3kit.apron.env :as c3env]
     [isaac.api]

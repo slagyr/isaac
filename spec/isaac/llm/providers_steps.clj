@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.step-tables :as match]
     [isaac.session.session-steps :as session-steps]
     [isaac.fs :as fs]

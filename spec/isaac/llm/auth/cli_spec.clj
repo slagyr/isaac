@@ -5,7 +5,7 @@
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.auth.cli :as sut]
     [isaac.cli :as registry]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 

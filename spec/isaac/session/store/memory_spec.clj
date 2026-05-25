@@ -1,6 +1,6 @@
 (ns isaac.session.store.memory-spec
   (:require
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]

@@ -3,7 +3,7 @@
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]
