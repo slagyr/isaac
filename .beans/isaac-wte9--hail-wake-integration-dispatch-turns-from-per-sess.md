@@ -1,11 +1,11 @@
 ---
 # isaac-wte9
-title: 'Hail wake integration: dispatch turns from per-session inboxes'
-status: draft
+title: 'Hail delivery worker: dispatch pending deliveries as turns'
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-23T21:56:51Z
-updated_at: 2026-05-23T22:05:40Z
+updated_at: 2026-05-25T00:37:37Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
@@ -13,109 +13,99 @@ blocked_by:
 
 ## Motivation
 
-Slice 4 of the Hail epic. Per-session inboxes accumulate delivery
-records from the fan-out worker (isaac-7v5h). Without something to
-wake the sessions, those records sit there. This bean adds the
-**wake worker** — ticks on the scheduler, polls each session's
-inbox, and when a session is idle and has pending deliveries,
-builds a charge and dispatches a turn via `bridge/dispatch!`. The
-turn's opening context includes the delivery records (system
-message describing each hail + user message from the resolved
-prompt). Deliveries are removed after the turn completes.
-
-This bean closes the Hail core loop: substrate produces → bands
-registry routes → fan-out distributes → **wake delivers to LLM
-turns**.
+Slice 4 of the Hail epic, **step 2 of the two-step delivery pipeline**. The
+router (isaac-7v5h) writes resolved delivery files to
+`<state-dir>/hail/deliveries/`. The delivery worker ticks on the shared
+scheduler, binds unbound (reach-one) deliveries to an idle candidate, gates
+on session in-flight + crew capacity, and dispatches a turn per delivery.
+This closes the Hail core loop: substrate produces → router resolves →
+delivery worker wakes turns.
 
 ## Scope
 
-### Worker loop
+### Worker loop (async dispatch)
 
-A `Reconfigurable` module registering a scheduler task on startup,
-ticking ~1s. Same shape as fan-out worker.
+A Reconfigurable module registering a scheduler task (`hail/deliver`) on
+startup, ticking ~1s.
 
-On each tick:
+On each tick, for each ready delivery (backoff window elapsed) in
+`hail/deliveries/`:
+- **Bind if unbound**: pick the first idle candidate from `:candidates`
+  (idle via `store/in-flight?`, capacity via `store/can-dispatch?`). If none
+  idle, leave pending.
+- **Skip** if the (bound) session is in-flight, or the crew is at capacity.
+  Gating is **not** a failed attempt.
+- Otherwise **claim** the session (mark in-flight) so a sibling delivery to
+  the same session is gated this tick, move the delivery
+  `hail/deliveries/ → hail/inflight/`, and **schedule the turn as a
+  background task**. The worker does **not** wait for the turn (unlike
+  `cron/service.clj`, which blocks — a queue-draining worker must not stall
+  on one slow turn).
 
-1. Enumerate `<state-dir>/hail/sessions/*/inbox/*.edn`
-2. Group deliveries by session
-3. For each session with pending deliveries:
-   - Skip if session is in-flight (`a1nu/in-flight?`)
-   - Skip if crew at max-concurrent (`a1nu/can-dispatch?`)
-   - Otherwise: build a charge, dispatch the turn
+Never dispatches two turns on the same session at once. Multiple deliveries
+to one session serialize across ticks.
 
-### Charge construction
+### Turn context (origin + autonomy preamble)
 
-The charge to `bridge/dispatch!`:
+The turn opens with a **system preamble** conveying (a) **origin** — this
+turn came from hail `<id>`, its addressing, and payload — and (b)
+**autonomy** — it runs unattended; the user may not see the reply and may be
+unavailable for questions, so don't block on clarification. Followed by a
+**user** message = the resolved prompt. (Candidate to generalise into shared
+comm-origin framing later — Discord/iMessage do the analogous thing; built
+hail-specific for now, no premature abstraction.)
 
-- `:session-key` — the session id
-- `:crew` — derived from session's `:crew` field
-- `:initial-context` — built from the inbox deliveries (see below)
+### Completion (finalize on turn end, not at tick time)
 
-### Initial context format
+Because the worker doesn't wait, finalization happens in the turn's
+**completion hook**:
+- success → `hail/inflight/ → hail/delivered/`
+- failure → `attempts++`; if < 5, back to `hail/deliveries/` with
+  `:next-attempt-at` (backoff 1s/5s/30s/2m/10m, reusing comm delivery's
+  schedule); at 5, `hail/inflight/ → hail/failed/` + log `:hail/dead-lettered`
+  (error).
 
-The deliveries become the turn's opening messages:
-
-- For each delivery, a **system** message describing the hail
-  metadata: `Hail <hail-id> received on <addressing>: <payload>`
-- A **user** message from the resolved prompt (band's `.md`
-  contents for band-addressed deliveries; the hail's `:prompt` for
-  direct-addressed ones)
-
-Multiple deliveries in one inbox are batched into ONE turn —
-single dispatch with all current deliveries in context, rather than
-waking N times. Simpler, lower turn overhead.
-
-### Inbox lifecycle
-
-After successful dispatch (turn completes), the deliveries that
-triggered the turn are removed from inbox. v1 default: delete.
-
-Race: between picking deliveries and dispatch end, new deliveries
-may arrive. v1 simple semantics — snapshot inbox at dispatch
-start; new arrivals wait for next tick.
+The `inflight/` dir keeps a dispatched delivery out of the pickable queue so
+it is never re-picked mid-turn.
 
 ## Out of scope (deferred)
 
-- **Delivery retention** (`read/` archive instead of delete).
-- **Hail-driven session spawning** — if a hail targets a session
-  that doesn't exist, fan-out doesn't write to its inbox; wake
-  never sees it. Spawning new sessions on hail arrival is a
-  separate concern.
-- **Per-delivery turn (no batching)** — v1 batches; per-delivery
-  isolation is follow-up.
-- **Backpressure / queue limits** on inbox size.
+- **Batching** multiple deliveries into one turn (rejected — re-couples
+  per-delivery failure, hides partial completion, contaminates context).
+- **Hail-driven session spawning** (no idle candidate → wait, don't spawn).
+- Delivery retention policy beyond `delivered/` + `failed/`.
 
 ## Acceptance
 
-- Worker ticks on the shared scheduler.
-- A non-empty inbox on an idle session triggers a turn dispatch.
-- Charge carries proper session-key, crew, and initial context
-  derived from deliveries.
-- After turn completes, those deliveries are removed from inbox.
-- In-flight sessions or capacity-exhausted crews aren't dispatched
-  again until they free up.
-- Empty inboxes never trigger.
-- Multiple deliveries in one inbox dispatch in one turn.
+- Worker registered on the shared scheduler (`hail/deliver`, ~1s).
+- A bound delivery on an idle session dispatches a turn opening with the
+  origin+autonomy preamble + prompt, then moves to `delivered/`.
+- An unbound delivery binds the first idle candidate (skips in-flight ones).
+- In-flight session or at-capacity crew → no dispatch, delivery stays,
+  `attempts` unchanged.
+- Never two turns on one session at once; same-session deliveries serialize
+  across ticks.
+- Dispatch failure → `attempts++` + backoff; 5th attempt → `failed/` +
+  `:hail/dead-lettered` log.
 
-## Feature scenarios
+## Feature file
 
-`features/hail/wake.feature`, `@wip`. Scenarios to draft later:
+`features/hail/delivery.feature` — 8 `@wip` scenarios. Run:
 
-- Idle session with one delivery → turn dispatched with delivery
-  context.
-- Multiple deliveries in inbox → one turn dispatched with all in
-  context.
-- In-flight session → no dispatch (deferred to next tick).
-- Capacity-exhausted crew → no dispatch (deferred).
-- Empty inbox → no dispatch.
-- After dispatch + turn completion → inbox files removed.
+```
+bb features features/hail/delivery.feature
+```
+
+**Definition of done:** remove `@wip` from `features/hail/delivery.feature`
+and `bb features features/hail/delivery.feature` is green.
+
+**New steps introduced:** `the hail delivery worker ticks` and
+`the hail delivery worker ticks at "<time>"`.
 
 ## Relationship to other beans
 
-- **Parent: isaac-ugx7 (Hail epic).**
-- **Blocked by isaac-7v5h (fan-out worker)** — consumes the
-  delivery records fan-out writes.
-- **Companion to isaac-a1nu (concurrency).** Uses `in-flight?` and
-  `can-dispatch?` for skip-on-busy semantics. a1nu is verified.
-- **Closes the Hail core loop.** Substrate produces, registry
-  routes, fan-out distributes, this wakes turns.
+- Parent: isaac-ugx7 (Hail epic).
+- **Blocked by isaac-7v5h** (router) — consumes `hail/deliveries/`.
+- Uses isaac-a1nu (concurrency: `in-flight?` / `can-dispatch?`). a1nu is
+  complete.
+- Closes the Hail core loop.
