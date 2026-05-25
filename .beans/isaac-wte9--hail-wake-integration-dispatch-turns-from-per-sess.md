@@ -1,11 +1,11 @@
 ---
 # isaac-wte9
 title: 'Hail delivery worker: dispatch pending deliveries as turns'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-23T21:56:51Z
-updated_at: 2026-05-25T03:10:15Z
+updated_at: 2026-05-25T15:58:03Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
