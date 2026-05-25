@@ -4,8 +4,10 @@ title: 'Hail-driven session spawning: get-or-create a crew''s session for spawn-
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-25T01:01:23Z
-updated_at: 2026-05-25T18:25:22Z
+updated_at: 2026-05-25T18:26:46Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
@@ -109,6 +111,15 @@ New reason keyword: `:no-host`. No new step phrases beyond those `7v5h` /
 `wte9` already introduce (`the hail router ticks`, `the hail delivery worker
 ticks`). Asserting `origin.kind` on a spawned session forces the implementer
 to persist `:origin` on the session record.
+
+## Exceptions
+
+- `features/hail/spawn.feature` includes one authorized non-`@wip` edit from
+  `990fdf6e`: the spawned-session scenario no longer asserts the transcript-
+  level system preamble. That framing assertion moved to `isaac-uysx`, which
+  owns shared comm-origin framing behavior. This bean still owns the
+  session-spawn, `origin.kind`, and delivery-state assertions in that
+  scenario.
 
 ## Relationship to other beans
 
