@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-05-25T18:16:21Z
-updated_at: 2026-05-25T18:16:21Z
+updated_at: 2026-05-25T23:45:13Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-ffhl
@@ -13,41 +13,34 @@ blocked_by:
 
 ## Motivation
 
-Discord and iMessage already hand-roll origin framing — each builds a
-`build-trusted-block` and passes it as `:soul-prepend`, which merges into the
-cached system block (busting the cache, lying in the soul). Retrofit both to the
-shared model from isaac-uysx (A) + isaac-uysx-B: set `:origin`, let the
-universal guard + per-turn nonce-tagged block do the work, and drop the
-hand-rolled block. This is the "reduce code" payoff.
+Discord and iMessage hand-roll framing — `build-trusted-block` passed as
+`:soul-prepend`, which busts the cache and lies in the soul. Retrofit both to
+the shared model (A's guard + nonce, B's charge `:guidance` + current-turn
+injection): stamp `:guidance` on the charge, keep `:origin`, and drop the
+hand-rolled block. The "reduce code" payoff.
 
 ## Scope (cross-repo)
 
-- `../isaac-discord`: remove `build-trusted-block` / `:soul-prepend` framing;
-  set `:origin {:kind :discord …}`; rely on the shared per-turn origin block.
-  Move its attended/conversational guidance into B's kind→guidance table.
-- `../isaac-imessage`: same — remove `build-trusted-block`; set
-  `:origin {:kind :imessage …}`; its "keep brief / bubbles" guidance moves into
-  B's table.
-- Both depend on isaac as `:local/root "../isaac"`, so they import the shared
-  helper directly.
+- `../isaac-discord`: `DiscordComm` stamps `:guidance` on its charge (text moved
+  from `build-trusted-block` / `build-user-prefix`); keep `:origin {:kind
+  :discord …}`; remove the `:soul-prepend` framing.
+- `../isaac-imessage`: stamp `:guidance` (brevity/bubbles text moved from
+  `build-trusted-block`); keep `:origin {:kind :imessage …}`; remove
+  `:soul-prepend`.
+- Both depend on isaac via `:local/root "../isaac"`, so they pick up the charge
+  `:guidance` field + the framing helper directly.
 
 ## Scenarios
 
-- Update each repo's existing prompt/framing specs to the unified format
-  (the trusted-block text now comes from the shared helper, in the current
-  user turn, nonce-tagged) and keep them green.
-- Assert Discord/iMessage turns carry the attended (conversational) guidance
-  variant, not the autonomy variant.
+- Update each repo's existing prompt/framing specs to the unified shape
+  (guidance now in the current-turn nonce-tagged block, not `:soul-prepend`) and
+  keep them green.
+- Assert Discord/iMessage turns stamp their guidance into the current user turn.
 
 ## Notes
 
-- Could split one-per-repo for parallel workers; kept as one bean with a
-  per-repo checklist for now.
-- Attended-vs-unattended guidance is the key behavioral difference these
-  channels exercise (vs hail/cron's unattended framing in B).
+- Could split one-per-repo for parallel workers.
 
 ## Relationship
 
-- Parent: isaac-ugx7.
-- **Blocked by isaac-uysx-B** (the shared helper + per-turn block must exist).
-- Type: `task`. Cross-repo (`../isaac-discord`, `../isaac-imessage`).
+- Parent: isaac-ugx7. **Blocked by isaac-ffhl (B).** Type: `task`. Cross-repo.

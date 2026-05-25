@@ -1,11 +1,11 @@
 ---
 # isaac-ffhl
 title: 'Comm-origin framing: per-turn :origin block in the current message (hail + cron)'
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-05-25T18:16:21Z
-updated_at: 2026-05-25T18:16:21Z
+updated_at: 2026-05-25T23:51:09Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-uysx
@@ -13,53 +13,61 @@ blocked_by:
 
 ## Motivation
 
-Tell the model each turn's **origin** and **audience expectations** without
+Per-turn origin framing: tell the model each turn's origin/audience without
 busting the prompt cache or lying in the soul. Builds on the guard + nonce from
-**isaac-uysx (A)**.
-
-A crew session is **multi-origin** — it takes CLI, hail, and cron turns
-interleaved — so origin framing must NOT live in the (stable, cached) system
-prompt. It rides with the turn it describes.
+isaac-uysx (A). A crew session is multi-origin (CLI + hail + cron interleaved),
+so framing rides with the turn, never in the (cached) system prompt.
 
 ## Model
 
-`:origin → {guidance, metadata}` helper. Inject the result as a **nonce-tagged
-block into the current user turn** (the live message), **never persisted to the
-transcript**:
+Guidance is **charge data**, set by the dispatcher — symmetric with `:origin`.
+No polymorphism: guidance is known at dispatch time, so whoever builds the
+charge stamps it. No `TurnFraming` protocol, no `HailComm`/`CronComm` —
+NullComm stays a pure null object.
 
-- **guidance**, keyed on origin kind / attended-ness — unattended (hail, cron):
-  "autonomous run; the user may not see your reply and may be unavailable, so
-  don't block on questions"; attended (future chat channels): conversational
-  variant.
-- **metadata** (kind, ids), nonce-tagged so A's guard treats it as trusted.
+- **Charge gains `:guidance`** (string) alongside `:origin` (metadata map).
+- **Framing helper** at request-build: if `:guidance`/`:origin` present, render
+  `:origin` generically (tagged), combine with `:guidance`, tag with the
+  **session nonce** (A), and inject as a block into the **current user turn**,
+  **never persisted**.
+- **Dispatchers stamp `:guidance`:** hail worker and cron service set their
+  guidance on the charge (keep `null-comm` for output). Each owns its guidance
+  string (a private const/fn).
 
-Current-turn-only means: one guidance block per turn (no accumulation /
-confusion), the cached history stays pure user/assistant, and only the small
-origin block is uncached. **Do not place a cache breakpoint on the
-origin-bearing message** (its bytes differ live `[origin+text]` vs historical
-`[text]`, so a breakpoint there buys a wasted cache-write).
+## Caching
+
+Current-turn-only → one guidance block per turn (no accumulation), clean cached
+history; the origin-bearing message is **uncached** (no breakpoint on it — the
+breakpoint stays on the origin-free penultimate message).
 
 ## Scope
 
-- `:origin → {guidance, metadata}` helper (the kind→guidance table lives here).
-- Inject the nonce-tagged block into the current user message at request-build;
-  never store it.
-- New step: extend `the prompt "<input>" on session "<key>" matches:` to thread
-  an `:origin` so framing can be asserted on the composed prompt.
-- Wire **hail** (already sets `:origin`, via wte9) and **cron** (gains framing).
+- Add `:guidance` to the charge; framing helper (generic `:origin` render +
+  guidance + nonce-tag + current-turn injection, never persisted).
+- Hail worker + cron service stamp `:guidance`.
+- New test step threading `:origin` + `:guidance` into the synthetic prompt
+  build: `the prompt "<input>" on session "<key>" with origin {…} and guidance "<text>" matches:`.
 
-## Scenarios (to draft; via the origin-threaded `the prompt … matches:`)
+## Scenarios (to draft)
 
-- Unattended origin (hail/cron) → the current user message carries a
-  nonce-tagged block with autonomy guidance + metadata; origin is **not** in the
-  system block; no cache breakpoint on that message.
-- The origin block is current-turn-only — a second turn shows exactly one
-  guidance block (the new one), not two.
-- cron turn gains the unattended framing.
+- A turn with guidance+origin → current user message carries a nonce-tagged
+  block (guidance + rendered metadata); origin not in system; message uncached.
+- Multi-turn → block is current-turn-only; history clean; breakpoint on the
+  origin-free historical message.
+- Hail worker / cron service stamp the expected guidance (dispatcher checks).
 
 ## Relationship
 
-- Parent: isaac-ugx7.
-- **Blocked by isaac-uysx (A)** — consumes the nonce/guard trust contract.
-- **Blocks isaac-uysx-C** (Discord/iMessage retrofit).
-- Type: `task`.
+- Parent: isaac-ugx7. **Blocked by isaac-uysx (A).** **Blocks isaac-ho1s (C).**
+  Type: `task`.
+
+
+## Feature file
+
+`features/session/origin_framing.feature` — 2 `@wip` scenarios (helper wraps guidance + origin into a current-turn nonce-tagged block, uncached, not in system; framing is current-turn-only so history stays clean + cacheable). Run:
+
+```
+bb features features/session/origin_framing.feature
+```
+
+**Definition of done:** remove `@wip` and green. Adds: `:guidance` on the charge; the framing helper (generic `:origin` render + guidance + nonce-tag + current-turn injection, never persisted); the `… with origin {…} and guidance "…" matches:` test step. Plus the **dispatcher requirement** (not in this file): the hail worker and cron service must stamp `:guidance` on their charges — verified by a lighter check where each worker runs, not a synthetic prompt assertion.
