@@ -4,10 +4,8 @@ title: 'Hail delivery worker: dispatch pending deliveries as turns'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:56:51Z
-updated_at: 2026-05-25T16:12:39Z
+updated_at: 2026-05-25T17:07:43Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-7v5h
@@ -121,3 +119,15 @@ rendered centrally by the shared comm-origin helper (isaac-uysx). So the
 delivery/spawn scenarios assert the user prompt + assistant reply + delivery
 finalization, NOT the preamble — preamble assertions live in isaac-uysx,
 checked on the composed prompt (system blocks), not the transcript.
+
+
+## Verification failed
+
+HEAD: 9d76a2268ca0682e786909f0dafc87e2713b699c
+Working tree: clean
+
+Verification stopped at acceptance check 1.
+
+I found a non-`@wip` edit in `features/hail/delivery.feature`, but the bean has no top-level `## Exceptions` section authorizing it. The original delivery spec landed in `9c41756f`; `990fdf6e` then removed the system-preamble assertion from the first scenario and replaced it with explanatory comments about `isaac-uysx`; and `9d76a226` only removed `@wip`.
+
+I did consider the beans `## Update: origin framing moved to isaac-uysx` note, but the repo verifier rules only allow non-`@wip` feature edits when they are documented under a top-level `## Exceptions` heading. Because this bean has no such section, I did not continue to the test gate. If the framing assertion move is intentional, add a `## Exceptions` section authorizing the non-`@wip` edits to `features/hail/delivery.feature` and re-hand off for verify.
