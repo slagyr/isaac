@@ -1,4 +1,3 @@
-@wip
 Feature: Hail send — direct addressing flags
   Beyond `--band`, `isaac hail send` accepts `--crew`, `--session`,
   `--crew-tag`, `--session-tag`, and `--from-json`. Each contributes

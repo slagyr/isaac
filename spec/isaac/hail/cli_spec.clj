@@ -50,4 +50,58 @@
                   :sent-at   "2026-05-23T12:00:00Z"
                   :frequency {:band "bean-pickup"}
                   :from      :cli}
-                 (select-keys (sut/read-pending "hail-1") [:id :sent-at :frequency :from]))))))
+                 (select-keys (sut/read-pending "hail-1") [:id :sent-at :frequency :from])))))
+
+  (it "accepts --crew and persists it under :frequency :crew"
+    (let [output (with-out-str
+                   (should= 0 (sut/run-fn {:_raw-args ["send" "--crew" "marvin" "--prompt" "Heads up" "--payload" "{:n 1}"]})))]
+      (should= "hail-1\n" output)
+      (should= {:crew [:marvin]}
+               (:frequency (sut/read-pending "hail-1")))
+      (should= "Heads up"
+               (:prompt (sut/read-pending "hail-1")))))
+
+  (it "accepts repeatable tag flags and persists them as keyword sets"
+    (let [output (with-out-str
+                   (should= 0 (sut/run-fn {:_raw-args ["send" "--crew-tag" "role/worker" "--crew-tag" "wip" "--prompt" "go"]})))]
+      (should= "hail-1\n" output)
+      (should= {:crew-tags #{:role/worker :wip}}
+               (:frequency (sut/read-pending "hail-1")))))
+
+  (it "combines distinct direct-addressing flags into one frequency map"
+    (let [output (with-out-str
+                   (should= 0 (sut/run-fn {:_raw-args ["send" "--crew" "marvin" "--session-tag" "project/chess" "--prompt" "go"]})))]
+      (should= "hail-1\n" output)
+      (should= {:crew [:marvin] :session-tags #{:project/chess}}
+               (:frequency (sut/read-pending "hail-1")))))
+
+  (it "accepts --reach for direct/tag addressing"
+    (let [output (with-out-str
+                   (should= 0 (sut/run-fn {:_raw-args ["send" "--crew" "marvin" "--reach" "all" "--prompt" "go"]})))]
+      (should= "hail-1\n" output)
+      (should= {:crew [:marvin] :reach :all}
+               (:frequency (sut/read-pending "hail-1")))))
+
+  (it "reads a whole hail record from stdin as JSON when --from-json is given"
+    (let [output (with-in-str "{\"frequency\":{\"band\":\"bean-pickup\"},\"payload\":{\"n\":1}}"
+                   (with-out-str
+                     (should= 0 (sut/run-fn {:_raw-args ["send" "-" "--from-json"]}))))]
+      (should= "hail-1\n" output)
+      (should= {:band "bean-pickup"}
+               (:frequency (sut/read-pending "hail-1")))
+      (should= {:n 1}
+               (:payload (sut/read-pending "hail-1")))))
+
+  (it "rejects direct addressing without a prompt"
+    (let [err* (java.io.StringWriter.)]
+      (binding [*err* err*]
+        (should= 1 (sut/run-fn {:_raw-args ["send" "--crew" "marvin" "--payload" "{:n 1}"]})))
+      (let [err (str err*)]
+        (should (.contains err "--prompt")))))
+
+  (it "rejects --reach without direct or tag addressing"
+    (let [err* (java.io.StringWriter.)]
+      (binding [*err* err*]
+        (should= 1 (sut/run-fn {:_raw-args ["send" "--band" "bean-pickup" "--reach" "all"]})))
+      (let [err (str err*)]
+        (should (.contains err "--reach"))))))
