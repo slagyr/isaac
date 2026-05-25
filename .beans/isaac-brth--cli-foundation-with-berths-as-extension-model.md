@@ -1,11 +1,11 @@
 ---
 # isaac-brth
 title: CLI-as-foundation with berths as the extension model
-status: todo
+status: draft
 type: refactor
 priority: normal
 created_at: 2026-05-21T20:58:30Z
-updated_at: 2026-05-21T20:58:30Z
+updated_at: 2026-05-25T00:04:03Z
 ---
 
 ## Motivation
