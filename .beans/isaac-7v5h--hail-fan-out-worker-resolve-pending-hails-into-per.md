@@ -4,8 +4,10 @@ title: 'Hail router: resolve pending hails into delivery files'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T21:55:37Z
-updated_at: 2026-05-25T02:42:08Z
+updated_at: 2026-05-25T02:59:23Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-i4ly

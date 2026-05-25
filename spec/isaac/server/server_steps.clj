@@ -7,6 +7,7 @@
     [isaac.server.cli :as server]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
+    [isaac.hail.router :as hail-router]
     [isaac.scheduler.cron :as cron]
     [isaac.module.loader :as module-loader]
     [isaac.cron.service :as cron-service]
@@ -101,6 +102,12 @@
     (re-matches #"-?\d+" value) (parse-long value)
     (= "true" (str/lower-case value)) true
     (= "false" (str/lower-case value)) false
+    (or (str/starts-with? value "[")
+        (str/starts-with? value "{")
+        (str/starts-with? value ":")
+        (str/starts-with? value "\"")
+        (str/starts-with? value "#"))
+    (edn/read-string value)
     (re-matches #"[a-z][a-z-]*" value) (keyword value)
     :else value))
 
@@ -635,6 +642,23 @@
           (nexus/-with-nexus {:state-dir (runtime-state-dir) :fs (server-fs)}
             (worker/tick! {:now (java.time.Instant/parse iso)})))))))
 
+(defn hail-router-ticks []
+  (g/assoc! :isaac-file-phase :assert)
+  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (with-server-fs
+    (fn []
+      (let [fs*           (server-fs)
+            cfg           (merge (load-server-config (g/get :state-dir) fs*)
+                                 (when-let [providers (g/get :provider-configs)]
+                                   {:providers providers}))
+            state-dir     (runtime-state-dir)
+            session-store (store/create state-dir)]
+        (nexus/-with-nexus {:config    (atom cfg)
+                            :state-dir state-dir
+                            :fs        fs*
+                            :sessions  {:store session-store}}
+          (hail-router/tick! {:cfg cfg :session-store session-store}))))))
+
 (defn comm-stub-returns [_comm-name table]
   (let [headers (:headers table)
         row     (first (:rows table))
@@ -889,6 +913,11 @@
    read/assert. For time-sensitive scheduling, use 'ticks at' variant.")
 
 (defwhen #"the delivery worker ticks at \"([^\"]+)\"" isaac.server.server-steps/delivery-worker-ticks-at)
+
+(defwhen "the hail router ticks" isaac.server.server-steps/hail-router-ticks
+  "Invokes hail-router/tick! once against the current on-disk hail and
+   session state. Flips :isaac-file-phase to :assert so follow-up file
+   assertions read/assert instead of write.")
 
 (defgiven #"the comm \"([^\"]+)\" returns:" isaac.server.server-steps/comm-stub-returns
   "Configures the StubComm return value for all subsequent send! calls.

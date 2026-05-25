@@ -5,6 +5,7 @@
      [isaac.fs :as fs]
      [isaac.cron.service :as cron-service]
      [isaac.comm.delivery.worker :as worker]
+     [isaac.hail.router :as hail-router]
      [isaac.config.configurator :as configurator]
      [isaac.logger :as log]
      [isaac.marigold :as marigold]
@@ -20,6 +21,12 @@
 
   (marigold/with-manifest)
   (helper/with-captured-logs)
+
+  #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
+  (around [it]
+    (with-redefs [hail-router/start! (fn [_] ::hail-router)
+                  hail-router/stop!  (fn [_] nil)]
+      (it)))
 
   (after (sut/stop!))
 
@@ -156,6 +163,25 @@
         (sut/stop!))
       (should= {} @started)))
 
+  (it "starts the hail router when the server has a state dir"
+    (let [started (atom nil)]
+      (with-redefs [httpkit/run-server       (fn [_ _] (fn [] nil))
+                    httpkit/server-port      (fn [_] 7001)
+                    httpkit/server-stop!     (fn [_] nil)
+                    scheduler-core/create    (fn [_] ::scheduler)
+                    scheduler-core/start!    identity
+                    scheduler-core/shutdown! (fn [_] nil)
+                    worker/start!            (fn [_] ::worker)
+                    hail-router/start!       (fn [opts]
+                                               (reset! started opts)
+                                               ::hail-router)]
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {}})
+        (sut/stop!))
+      (should= {} @started)))
+
   (it "registers the shared scheduler in isaac.nexus when the server has a state dir"
     (with-redefs [httpkit/run-server       (fn [_ _] (fn [] nil))
                   httpkit/server-port      (fn [_] 7001)
@@ -243,8 +269,28 @@
                      :port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {}})
-         (sut/stop!))
+        (sut/stop!))
        (should= ::worker @stopped)))
+
+  (it "stops the hail router with the server"
+    (let [stopped (atom nil)]
+      (with-redefs [httpkit/run-server       (fn [_ _] (fn [] nil))
+                    httpkit/server-port      (fn [_] 7001)
+                    httpkit/server-stop!     (fn [_] nil)
+                    scheduler-core/create    (fn [_] ::scheduler)
+                    scheduler-core/start!    identity
+                    scheduler-core/shutdown! (fn [_] nil)
+                    worker/start!            (fn [_] ::worker)
+                    worker/stop!             (fn [_] nil)
+                    hail-router/start!       (fn [_] ::hail-router)
+                    hail-router/stop!        (fn [runner]
+                                               (reset! stopped runner))]
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {}})
+        (sut/stop!))
+      (should= ::hail-router @stopped)))
 
   (it "shuts down the shared scheduler with the server"
     (let [stopped (atom nil)]

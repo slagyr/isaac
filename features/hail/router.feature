@@ -1,4 +1,3 @@
-@wip
 Feature: Hail router
   The hail router ticks on the shared scheduler, reads raw hails from
   hail/pending/, resolves each :frequency into delivery obligations, and
