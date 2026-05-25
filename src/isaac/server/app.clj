@@ -5,8 +5,8 @@
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.change-source :as change-source]
+    [isaac.config.install :as install]
     [isaac.config.loader :as config]
-    [isaac.session.store :as store]
     [isaac.cron.service :as cron-service]
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
@@ -99,7 +99,7 @@
       (log/error :config/validation-error :path path :message message))
     errors))
 
-(defn- reload-config! [config-home cfg* tree* host comm-registry registries path]
+(defn- reload-config! [config-home cfg* host comm-registry registries path]
   (let [load-result (config/load-config-result {:home config-home :raw-parse-errors? true})
         errors      (:errors load-result)
         new-cfg     (assoc (:config load-result) :module-index (:module-index host))]
@@ -114,14 +114,13 @@
       :else
       (let [old-cfg @cfg*]
         (reset! cfg* new-cfg)
-        (config/set-snapshot! new-cfg)
-        (configurator/reconcile! tree* host old-cfg new-cfg registries)
+        (install/install! {:config new-cfg :old-config old-cfg :registries registries :host host})
         (log/info :config/reloaded :path path)))))
 
-(defn- start-config-reloader! [source config-home cfg* tree* host comm-registry registries]
+(defn- start-config-reloader! [source config-home cfg* host comm-registry registries]
   (let [reload! (nexus/bound-runtime-fn
                   (bound-fn [path]
-                    (reload-config! config-home cfg* tree* host comm-registry registries path)))]
+                    (reload-config! config-home cfg* host comm-registry registries path)))]
     (future
       (loop []
         (when-let [path (change-source/poll! source 5000)]
@@ -204,29 +203,24 @@
                      :message "missing :server :auth :token for non-loopback bind"))
         (when-not (auth-required? cfg host start-http-server?)
           (let [cfg                     (cond-> cfg state-dir (assoc :state-dir state-dir))
-                _                       (nexus/init! {:config (atom cfg)
-                                                      :fs     (or (fs/instance opts) (fs/real-fs))})
+                _                       (nexus/init! {:fs (or (fs/instance opts) (fs/real-fs))})
                 _                       (when state-dir
-                                          (home/init-state-dir! state-dir)
-                                          (store/register! cfg state-dir))
-                _                       (config/set-snapshot! cfg)
+                                          (home/init-state-dir! state-dir))
                 cfg*                    (atom cfg)
-                tree*                   (atom {})
-                _                       (nexus/register! [:tree] tree*)
                 scheduler               (when state-dir
                                           (-> (scheduler-core/create {})
                                               scheduler-core/start!))
                 _                       (when scheduler
                                           (nexus/register! [:scheduler] scheduler))
                 host-ctx                (host-context cfg state-dir connect-ws!)
-                _                       (configurator/reconcile! tree* host-ctx nil cfg registries)
+                {tree* :tree}           (install/install! {:config cfg :registries registries :host host-ctx})
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
                 _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                           (module-loader/register-route-extensions! (:manifest entry)))
                 config-source           (start-config-source opts hot-reload? config-home)
                 _                       (some-> config-source change-source/start!)
                 reloader                (when (and config-source config-home)
-                                          (start-config-reloader! config-source config-home cfg* tree* host-ctx comm-registry registries))
+                                          (start-config-reloader! config-source config-home cfg* host-ctx comm-registry registries))
                 handler-opts            (build-handler-opts opts config-home state-dir cfg*)
                 {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
                 {:keys [delivery]}      (start-background-services opts scheduler)]
