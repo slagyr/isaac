@@ -4,7 +4,6 @@
     [c3kit.apron.refresh :as refresh]
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
-    [isaac.config.change-source :as change-source]
     [isaac.config.api :as config]
     [isaac.cron.service :as cron-service]
     [isaac.comm.delivery.worker :as worker]
@@ -13,7 +12,6 @@
     [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
     [isaac.home :as home]
-    [isaac.config.configurator :as configurator]
     [isaac.hooks :as hooks]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
@@ -72,7 +70,7 @@
       {:reason :validation :error formatted-error})))
 
 (defn- dotted-path [path]
-  (str/join "." (map configurator/->name path)))
+  (str/join "." (map config/->name path)))
 
 (defn- comm-validation-errors [cfg registry]
   (let [path  (:path registry)
@@ -82,11 +80,11 @@
     (->> cont
          (keep (fn [[slot slice]]
                   (when (map? slice)
-                    (let [impl     (configurator/slot-impl slot slice)
-                          lazy?    (some #(get-in % [:manifest :comm (keyword (configurator/->name impl))])
+                    (let [impl     (config/slot-impl slot slice)
+                          lazy?    (some #(get-in % [:manifest :comm (keyword (config/->name impl))])
                                          (vals mod-index))
                           slot-pth (dotted-path (conj (vec path) slot))]
-                      (when (and impl (not lazy?) (not (contains? impls (configurator/->name impl))))
+                      (when (and impl (not lazy?) (not (contains? impls (config/->name impl))))
                         {:path slot-pth :message (str "unknown :type " (pr-str impl))})))))
           (remove nil?)
           vec)))
@@ -124,7 +122,7 @@
                     (reload-config! state-dir cfg* host comm-registry registries path)))]
     (future
       (loop []
-        (when-let [path (change-source/poll! source 5000)]
+        (when-let [path (config/change-source-poll! source 5000)]
           (reload! path))
         (recur)))))
 
@@ -146,7 +144,7 @@
 (defn- start-config-source [opts hot-reload? state-dir]
   (or (:config-change-source opts)
       (when (and hot-reload? state-dir)
-        (change-source/watch-service-source state-dir))))
+        (config/watch-service-source state-dir))))
 
 (defn- build-handler-opts [opts config-home state-dir cfg*]
   (cond-> (dissoc opts :home)
@@ -225,7 +223,7 @@
                 _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                           (module-loader/register-route-extensions! (:manifest entry)))
                 config-source           (start-config-source opts hot-reload? state-dir)
-                _                       (some-> config-source change-source/start!)
+                _                       (some-> config-source config/change-source-start!)
                 reloader                (when (and config-source state-dir)
                                           (start-config-reloader! config-source state-dir cfg* host-ctx comm-registry registries))
                 handler-opts            (build-handler-opts opts config-home state-dir cfg*)
@@ -247,10 +245,10 @@
     (when scheduler
       (scheduler-core/shutdown! scheduler))
     (when (and tree registries)
-      (configurator/reconcile! tree host-ctx @cfg nil registries))
+      (config/reconcile! tree host-ctx @cfg nil registries))
     (some-> reloader future-cancel)
     (when config-source
-      (change-source/stop! config-source))
+      (config/change-source-stop! config-source))
     (when server
       (if (fn? server)
         (server)

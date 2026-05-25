@@ -165,14 +165,14 @@
         (should= 1 (count (store/list-sessions-by-agent (s) "main")))))
 
     (it "uses sequential names for unnamed sessions when configured"
-      (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
+      (do (config/set-snapshot! {:sessions {:naming-strategy :sequential}})
         (let [first  (sut/create-session! test-dir nil)
               second (sut/create-session! test-dir nil)]
           (should= "session-1" (:name first))
           (should= "session-2" (:name second)))))
 
     (it "persists the sequential counter across unnamed creates"
-      (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
+      (do (config/set-snapshot! {:sessions {:naming-strategy :sequential}})
         (sut/create-session! test-dir nil)
         (should= "1" (str/trim (fs/slurp (nexus/get :fs) (str test-dir "/sessions/.counter"))))
         (let [entry (sut/create-session! test-dir nil)]
@@ -180,7 +180,7 @@
           (should= "2" (str/trim (fs/slurp (nexus/get :fs) (str test-dir "/sessions/.counter")))))))
 
     (it "prefers an explicit name over the configured sequential strategy"
-      (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
+      (do (config/set-snapshot! {:sessions {:naming-strategy :sequential}})
         (let [entry (sut/create-session! test-dir "friday-debug")]
           (should= "friday-debug" (:name entry))
           (should= nil (store/get-session (s) "session-1"))))))

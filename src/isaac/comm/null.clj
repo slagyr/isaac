@@ -1,7 +1,7 @@
 (ns isaac.comm.null
   (:require
     [isaac.comm :as comm]
-    [isaac.config.configurator :as configurator]))
+    [isaac.config.api :as config]))
 
 (deftype NullComm []
   comm/Comm
@@ -16,7 +16,7 @@
   (on-compaction-disabled [_ _ _] nil)
   (on-turn-end [_ _ _] nil)
   (send! [_ _] {:ok false :transient? false})
-  configurator/Reconfigurable
+  config/Reconfigurable
   (on-startup! [_ _] nil)
   (on-config-change! [_ _ _] nil))
 

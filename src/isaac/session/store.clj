@@ -1,10 +1,15 @@
 (ns isaac.session.store
   (:require
     [clojure.string :as str]
-    [isaac.config.loader :as config]
     [isaac.naming :as naming]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]))
+
+;; session.store is a dependency of config.install, so it can't require the
+;; config namespace (config.api -> install -> store would cycle). It reads the
+;; config snapshot straight from the nexus :config slot instead.
+(defn- config-snapshot []
+  (some-> (nexus/get :config) deref))
 
 (defprotocol SessionStore
   (open-session! [this name opts])
@@ -25,7 +30,7 @@
 (defonce ^:private in-flight* (atom {}))
 
 (defn- crew-max-in-flight [crew-name]
-  (or (get-in (config/snapshot) [:crew crew-name :max-in-flight]) 1))
+  (or (get-in (config-snapshot) [:crew crew-name :max-in-flight]) 1))
 
 (defn mark-in-flight! [store session-id]
   (let [crew-name (:crew (get-session store session-id))
@@ -140,9 +145,7 @@
   "Returns the registered naming strategy, building and caching it from config if not yet present."
   [state-dir fs*]
   (or (nexus/get-in [:sessions :naming-strategy])
-      (let [cfg   (or (config/snapshot)
-                      (when state-dir (config/load-config {:state-dir state-dir :fs fs*}))
-                      {})
+      (let [cfg   (or (config-snapshot) {})
             strat (make-naming-strategy cfg state-dir (registered-store) fs*)]
         (nexus/register! [:sessions :naming-strategy] strat)
         strat)))

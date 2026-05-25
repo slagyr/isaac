@@ -3,7 +3,7 @@
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
     [clojure.set :as set]
-    [isaac.config.loader :as config]
+    [isaac.config.api :as config]
     [isaac.crew.store :as crew-store]
     [isaac.fs :as fs]
     [isaac.naming :as naming]

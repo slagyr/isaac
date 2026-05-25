@@ -1,12 +1,18 @@
 (ns isaac.config.api
-  "Public API for Isaac configuration. Clients require this namespace (aliased
-   `config`) and use these functions instead of reaching into
-   isaac.config.loader / install directly, leaving internal config namespaces
-   free to reorganize behind this surface.
+  "The public interface to Isaac configuration. Everything outside the
+   isaac.config.* namespaces requires *only* this namespace (aliased `config`)
+   — never loader / install / mutate / configurator / change-source directly —
+   so those internals stay free to reorganize behind this surface.
+
+   Exceptions: isaac.config.paths and isaac.config.nav are dependency-free
+   utilities (pure path construction / schema-path walking) that callers may
+   require directly; they carry no config state or logic to hide.
 
    Each fn delegates to its source at call time, so `with-redefs` on the
    underlying fn still takes effect for callers through this API."
   (:require
+    [isaac.config.change-source :as change-source]
+    [isaac.config.configurator :as configurator]
     [isaac.config.install :as install]
     [isaac.config.loader :as loader]))
 
@@ -48,11 +54,28 @@
   []
   (loader/state-dir))
 
+;; ----- env -----
+
 (defn env
   "Resolves an environment variable name for ${VAR} substitution: an override
    first, then the process environment, then the loaded .env snapshot."
   [name]
   (loader/env name))
+
+(defn set-env-override!
+  "Sets an env-var override (test support). Clears the load cache."
+  [name value]
+  (loader/set-env-override! name value))
+
+(defn clear-env-overrides!
+  "Clears all env-var overrides and the .env snapshot (test support)."
+  []
+  (loader/clear-env-overrides!))
+
+(defn clear-load-cache!
+  "Clears the memoized load-config-result cache (test support / after writes)."
+  []
+  (loader/clear-load-cache!))
 
 ;; ----- resolution -----
 
@@ -96,3 +119,61 @@
    :registries, :host. Returns {:config :tree}."
   [opts]
   (install/install! opts))
+
+;; ----- reconciliation (config -> live components) -----
+
+(def Reconfigurable
+  "Protocol implemented by config-driven components (comms, hail bands, hooks,
+   cron) so the reconciler can start/stop/update them: on-startup! /
+   on-config-change!."
+  configurator/Reconfigurable)
+
+(defn reconcile!
+  "Walks the registries' config slices and reconciles the live object tree
+   against them. One fn for boot (old nil), reload (old vs new), and shutdown
+   (new nil): [tree-atom host old-cfg new-cfg registry-or-registries]."
+  [tree-atom host old-cfg new-cfg registry-or-registries]
+  (configurator/reconcile! tree-atom host old-cfg new-cfg registry-or-registries))
+
+(defn slot-impl
+  "Resolves the component impl/type for a slot from its config slice."
+  [slot slice]
+  (configurator/slot-impl slot slice))
+
+(defn ->name
+  "Coerces a keyword or value to its string name (reconciler helper)."
+  [x]
+  (configurator/->name x))
+
+;; ----- config change source (file watcher for hot reload) -----
+
+(defn watch-service-source
+  "Creates a filesystem-watching config change source rooted at `state-dir`."
+  [state-dir]
+  (change-source/watch-service-source state-dir))
+
+(defn memory-source
+  "Creates an in-memory config change source rooted at `state-dir` (test/dev)."
+  [state-dir]
+  (change-source/memory-source state-dir))
+
+(defn change-source-start!
+  "Starts a config change source. Returns the source."
+  [source]
+  (change-source/start! source))
+
+(defn change-source-stop!
+  "Stops a config change source."
+  [source]
+  (change-source/stop! source))
+
+(defn change-source-poll!
+  "Polls a config change source for the next changed config-relative path,
+   waiting up to `timeout-ms` (default 0)."
+  ([source]            (change-source/poll! source))
+  ([source timeout-ms] (change-source/poll! source timeout-ms)))
+
+(defn change-source-notify!
+  "Notifies a config change source that `path` changed (test/dev)."
+  [source path]
+  (change-source/notify-path! source path))
