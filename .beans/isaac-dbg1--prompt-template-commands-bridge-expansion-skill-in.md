@@ -4,8 +4,10 @@ title: 'Prompt-template commands: bridge expansion + skill includes'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-26T04:21:10Z
-updated_at: 2026-05-26T17:36:29Z
+updated_at: 2026-05-26T17:45:44Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
@@ -31,7 +33,7 @@ Parent: isaac-nwj3. **Blocked by the discovery bean.**
 
 ## Feature file
 
-`features/prompts/commands.feature` — 4 `@wip` scenarios: expand + param substitution; declared skills inlined into the user turn; unknown command from an interactive caller -> rejected; unknown command in a hail -> dispatched raw and delivered. Run:
+`features/prompts/commands.feature` — 4 scenarios: expand + param substitution; declared skills inlined into the user turn; unknown command from an interactive caller -> rejected; unknown command in a hail -> dispatched raw and delivered. Run:
 
 ```
 bb features features/prompts/commands.feature

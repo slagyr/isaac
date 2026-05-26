@@ -1,4 +1,3 @@
-@wip
 Feature: Prompt-template command expansion
   A config-defined command's body is a prompt template. The bridge recognizes
   these (a kind alongside builtin handler commands like /crew) and expands an

@@ -1,5 +1,6 @@
 (ns isaac.bridge-spec
   (:require
+    [clojure.string :as str]
     [clojure.java.io :as io]
     [isaac.charge :as charge]
     [isaac.config.api :as config]
@@ -29,6 +30,11 @@
     (when (.exists f)
       (doseq [file (reverse (file-seq f))]
         (.delete file)))))
+
+(defn- write-file! [path content]
+  (let [fs* (nexus/get :fs)]
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path content)))
 
 (def ^:dynamic *state-dir* nil)
 
@@ -180,6 +186,64 @@
             result (bridge/dispatch! (slash-charge *state-dir* "testuser" "/unknown" ctx))]
         (should= :command (:type result))
         (should= :unknown (:command result))))
+
+    (it "rejects an unknown interactive slash command without running a turn"
+      (let [called? (atom false)
+            ctx     {:agent "main" :model "echo" :origin {:kind :cli}}]
+        (with-redefs [single-turn/run-turn! (fn [_]
+                                              (reset! called? true)
+                                              {:content "should not run"})]
+          (let [result (bridge/dispatch! (slash-charge *state-dir* "testuser" "/prune orchid" ctx))]
+            (should= :command (:type result))
+            (should= :unknown (:command result))
+            (should= "unknown command: prune" (:message result))))
+        (should-not @called?)))
+
+    (it "routes an unknown autonomous slash command through run-turn!"
+      (let [captured (atom nil)
+            ctx      {:agent "main" :model "echo" :origin {:kind :hail}}]
+        (with-redefs [single-turn/run-turn! (fn [charge*]
+                                              (reset! captured charge*)
+                                              {:content "delivered"})]
+          (bridge/dispatch! (slash-charge *state-dir* "testuser" "/prune orchid" ctx)))
+        (should= "/prune orchid" (:input @captured))))
+
+    (it "expands configured prompt-template commands before running the turn"
+      (write-file! (str *state-dir* "/config/commands/tend.md")
+                   (str "---\n"
+                        "type: command\n"
+                        "params: [specimen]\n"
+                        "---\n\n"
+                        "Tend the {{specimen}} in the greenhouse."))
+      (let [captured (atom nil)
+            ctx      {:config {:state-dir *state-dir*}}]
+        (with-redefs [single-turn/run-turn! (fn [charge*]
+                                              (reset! captured charge*)
+                                              {:content "done"})]
+          (bridge/dispatch! (slash-charge *state-dir* "testuser" "/tend dilithium-orchid" ctx)))
+        (should= "Tend the dilithium-orchid in the greenhouse." (:input @captured))))
+
+    (it "inlines declared skill bodies into expanded prompt-template commands"
+      (write-file! (str *state-dir* "/config/skills/greenhouse-protocol/SKILL.md")
+                   (str "---\n"
+                        "type: skill\n"
+                        "---\n\n"
+                        "Always quarantine new specimens for one cycle before integration."))
+      (write-file! (str *state-dir* "/config/commands/tend.md")
+                   (str "---\n"
+                        "type: command\n"
+                        "params: [specimen]\n"
+                        "skills: [greenhouse-protocol]\n"
+                        "---\n\n"
+                        "Tend the {{specimen}} in the greenhouse."))
+      (let [captured (atom nil)
+            ctx      {:config {:state-dir *state-dir*}}]
+        (with-redefs [single-turn/run-turn! (fn [charge*]
+                                              (reset! captured charge*)
+                                              {:content "done"})]
+          (bridge/dispatch! (slash-charge *state-dir* "testuser" "/tend dilithium-orchid" ctx)))
+        (should (str/includes? (:input @captured) "Tend the dilithium-orchid in the greenhouse."))
+        (should (str/includes? (:input @captured) "Always quarantine new specimens for one cycle before integration."))))
 
     (it "routes non-slash input through run-turn!"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}

@@ -185,6 +185,49 @@
       (should (number? (:file-count entry)))
       (should (number? (:elapsed-ms entry)))))
 
+  (it "resolves command prompt text with params substituted"
+    (write-config-file! "config/commands/work.md"
+                        (str "---\n"
+                             "type: command\n"
+                             "params: [bean]\n"
+                             "---\n\n"
+                             "Start work on {{bean}}."))
+    (should= {:name  "work"
+              :input "Start work on isaac-1234."}
+             (select-keys (sut/resolve-command-prompt {:fs        (nexus/get :fs)
+                                                       :state-dir state-dir}
+                                                      "work"
+                                                      "isaac-1234")
+                          [:name :input])))
+
+  (it "appends declared skill bodies to the resolved command prompt"
+    (write-config-file! "config/skills/tdd/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "---\n\n"
+                             "Write a failing test first."))
+    (write-config-file! "config/skills/gherclj/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "---\n\n"
+                             "Reuse existing feature steps."))
+    (write-config-file! "config/commands/work.md"
+                        (str "---\n"
+                             "type: command\n"
+                             "params: [bean]\n"
+                             "skills: [tdd, gherclj]\n"
+                             "---\n\n"
+                             "Start work on {{bean}}."))
+    (should= {:name  "work"
+              :input (str "Start work on isaac-1234.\n\n"
+                          "Write a failing test first.\n\n"
+                          "Reuse existing feature steps.")}
+             (select-keys (sut/resolve-command-prompt {:fs        (nexus/get :fs)
+                                                       :state-dir state-dir}
+                                                      "work"
+                                                      "isaac-1234")
+                          [:name :input])))
+
   (it "preserves prompt catalog config keys when config is loaded"
     (write-config-file! "config/isaac.edn"
                         "{:prompt-paths [\"config/prompts\"] :prompt-dir-names {\"abilities\" \"skill\"}}")

@@ -6,8 +6,10 @@
     [isaac.comm :as comm]
     [isaac.config.api :as config]
     [isaac.drive.turn :as turn]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.nexus :as nexus]
+    [isaac.prompt.catalog :as prompt-catalog]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.slash.builtin :as slash-builtin]
@@ -42,6 +44,34 @@
   (log/warn :dispatch/refused :reason :session-in-flight :session session-key)
   {:dispatched? false :reason :session-in-flight})
 
+(defn- reply-result [session-key ch result]
+  (let [output (if (contains? result :data)
+                 (status/format-status (:data result))
+                 (:message result))]
+    (when ch
+      (comm/on-text-chunk ch session-key output)
+      (comm/on-turn-end ch session-key (assoc result :content output)))
+    result))
+
+(defn- autonomous-origin? [origin]
+  (contains? #{:hail :cron} (:kind origin)))
+
+(defn- prompt-catalog-opts [ctx]
+  {:config    (:config ctx)
+   :cwd       (:cwd ctx)
+   :fs        (or (nexus/get :fs) (fs/instance))
+   :state-dir (or (get-in ctx [:config :state-dir])
+                  (:state-dir ctx)
+                  (nexus/get :state-dir))})
+
+(defn- unknown-command-result [name args]
+  {:type    :command
+   :command :unknown
+   :message (str "unknown command: "
+                 (if (str/blank? args)
+                   (str "/" name)
+                   name))})
+
 (defn- ensure-session! [request]
   (let [session-key    (:session-key request)
         session-store* (or (:session-store request) (nexus/get-in [:sessions :store]))
@@ -64,12 +94,18 @@
 ;; region ----- Slash Command Handlers -----
 
 (defn- handle-slash [session-key input ctx]
-  (let [{:keys [name]} (slash-builtin/parse-command input)]
+  (let [{:keys [args name]} (slash-builtin/parse-command input)]
     (if-let [command (slash-registry/lookup name (:module-index ctx))]
-      ((:handler command) session-key input ctx)
-      {:type    :command
-       :command :unknown
-       :message (str "unknown command: /" name)})))
+      {:action :reply
+       :result ((:handler command) session-key input ctx)}
+      (if-let [{:keys [input]} (prompt-catalog/resolve-command-prompt (prompt-catalog-opts ctx) name args)]
+        {:action :turn
+         :charge (assoc ctx :input input)}
+        (if (autonomous-origin? (:origin ctx))
+          {:action :turn
+           :charge ctx}
+          {:action :reply
+           :result (unknown-command-result name args)})))))
 
 ;; endregion ^^^^^ Slash Command Handlers ^^^^^
 
@@ -85,36 +121,35 @@
         session-key (:session-key c)]
     (cond
       (charge/slash? c)
-      (let [result (handle-slash session-key (:input c) c)
-            output (if (contains? result :data)
-                     (status/format-status (:data result))
-                     (:message result))]
-        (when ch
-          (comm/on-text-chunk ch session-key output)
-          (comm/on-turn-end ch session-key (assoc result :content output)))
-        result)
+      (let [{:keys [action charge result]} (handle-slash session-key (:input c) c)]
+        (case action
+          :reply {:result (reply-result session-key ch result)}
+          :turn  {:charge charge}
+          {:error :invalid-slash-action}))
 
       (charge/unresolved? c)
-      (reject-turn session-key (:crew c) (:charge/reason c)
-                   (case (:charge/reason c)
-                     :unknown-crew (unknown-session-crew-message session-key (:crew c) (:origin c))
-                     :no-model     (no-model-message (:crew c))
-                     "resolution failed"))
+      {:result (reject-turn session-key (:crew c) (:charge/reason c)
+                            (case (:charge/reason c)
+                              :unknown-crew (unknown-session-crew-message session-key (:crew c) (:origin c))
+                              :no-model     (no-model-message (:crew c))
+                              "resolution failed"))}
 
       :else
-      (turn/run-turn! c))))
+      {:charge c})))
 
 (defn- dispatch-charge! [c]
-  (if (or (charge/slash? c) (charge/unresolved? c) (nil? (:session-key c)))
-    (route-charge! c)
-    (let [session-store* (nexus/get-in [:sessions :store])
-          session-key    (:session-key c)]
-      (if (store/mark-in-flight! session-store* session-key)
-        (try
-          (route-charge! c)
-          (finally
-            (store/clear-in-flight! session-store* session-key)))
-        (refuse-dispatch session-key)))))
+  (let [{:keys [charge result]} (route-charge! c)]
+    (if charge
+      (if-let [session-key (:session-key charge)]
+        (let [session-store* (or (:session-store charge) (nexus/get-in [:sessions :store]))]
+          (if (store/mark-in-flight! session-store* session-key)
+            (try
+              (turn/run-turn! charge)
+              (finally
+                (store/clear-in-flight! session-store* session-key)))
+            (refuse-dispatch session-key)))
+        (turn/run-turn! charge))
+      result)))
 
 (defn dispatch!
   "Comm-facing entry point. Accepts a charge (built via charge/build) or a

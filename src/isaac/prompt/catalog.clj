@@ -138,6 +138,35 @@
   (when-let [load-body (:body-loader entry)]
     (load-body)))
 
+(defn- normalize-entry-name [value]
+  (some-> value name))
+
+(defn- parameter-names [entry]
+  (mapv normalize-entry-name (:params entry)))
+
+(defn- bind-params [entry args]
+  (let [params      (parameter-names entry)
+        arg-count   (count params)
+        trimmed     (str/trim (or args ""))
+        arg-values  (if (or (zero? arg-count) (str/blank? trimmed))
+                      []
+                      (str/split trimmed #"\s+" arg-count))]
+    (zipmap params (concat arg-values (repeat "")))))
+
+(defn- render-template [template bindings]
+  (reduce-kv (fn [text param value]
+               (str/replace text (str "{{" param "}}") (or value "")))
+             (or template "")
+             bindings))
+
+(defn- skill-bodies [catalog skill-names]
+  (->> skill-names
+       (map normalize-entry-name)
+       (map #(get-in catalog [:skills %]))
+       (keep entry-body)
+       (map str/trim)
+       (remove str/blank?)))
+
 (defn- dedupe-file-specs [file-specs]
   (vals (reduce (fn [acc spec] (assoc acc (:path spec) spec)) {} file-specs)))
 
@@ -214,6 +243,15 @@
                :rule-count (count (:rules catalog))
                :skill-count (count (:skills catalog)))
     catalog))
+
+(defn resolve-command-prompt [{:keys [config cwd fs state-dir]} command-name args]
+  (let [catalog (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})]
+    (when-let [entry (get-in catalog [:commands (normalize-entry-name command-name)])]
+      (let [body     (-> entry entry-body (render-template (bind-params entry args)) str/trim)
+            skills   (skill-bodies catalog (:skills entry))
+            parts    (remove str/blank? (cons body skills))]
+        {:input (str/join "\n\n" parts)
+         :name  (:name entry)}))))
 
 (defn resolve-rules-text [{:keys [config cwd fs state-dir]}]
   (some->> (:rules (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir}))
