@@ -163,7 +163,10 @@
           (let [charge (sut/build {:session-key "s1"
                                    :input       "hi"})]
             (should= "/tmp/isaac/.isaac" (get-in charge [:config :state-dir]))
-            (should= {:crew "main" :model nil} @seen)))))
+            (should= "main" (:crew @seen))
+            (should= nil (:model @seen))
+            ;; build now threads the resolved config to resolve-behavior as a value
+            (should= "/tmp/isaac/.isaac" (get-in @seen [:config :state-dir]))))))
 
     (it "returns an unresolved charge with :no-model when no model is configured"
       (with-redefs [config/snapshot             (fn [_] {:defaults {:crew "main"}

@@ -121,7 +121,7 @@
                              (not (or (= crew-id "main")
                                       (contains? known-crews crew-id)
                                       (= crew-id default-crew))))
-        session-context (delay (session-ctx/resolve-behavior session-key {:crew crew-id :model model-ref*}))
+        session-context (delay (session-ctx/resolve-behavior session-key {:crew crew-id :model model-ref* :config config*}))
         model*          (delay (or model (get-in @session-context [:model-cfg :model]) (:model @session-context)))
         base            {:session-key   session-key
                          :input         input

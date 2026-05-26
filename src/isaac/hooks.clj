@@ -201,6 +201,7 @@
                     (session-ctx/create-with-resolved-behavior!
                       session-key {:crew          crew-id
                                    :cwd           quarters
+                                   :config        cfg
                                    :session-store session-store
                                    :origin        {:kind :webhook :name name}}))
                  (dispatch-turn! charge*)

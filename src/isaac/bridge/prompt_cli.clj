@@ -122,6 +122,7 @@
                                 session-key {:crew          crew-override
                                             :tags          (option-tags opts)
                                             :cwd           (System/getProperty "user.dir")
+                                            :config        cfg
                                             :origin        {:kind :cli}
                                             :session-store session-store}))
             {:keys [comm text]} (make-prompt-comm)]

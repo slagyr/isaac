@@ -81,9 +81,8 @@
   (let [state-dir      (:state-dir ctx)
         session-store* (or (:session-store ctx) (nexus/get-in [:sessions :store]))
         session        (session-ctx/create-with-resolved-behavior!
-                         nil {:cfg           cfg
+                         nil {:config        (assoc cfg :state-dir state-dir)
                               :state-dir     state-dir
-                              :home          state-dir
                               :crew          crew
                               :origin        {:kind :cron :name (str job-name)}
                               :session-store session-store*})

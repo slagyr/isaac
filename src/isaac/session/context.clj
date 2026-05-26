@@ -34,8 +34,9 @@
       (throw (ex-info "session context requires :session-store" {}))))
 
 
-(defn- effective-config [state-dir fs*]
-  (or (config/snapshot "session behavior resolution — TODO thread config as a value")
+(defn- effective-config [passed-config state-dir fs*]
+  (or passed-config
+      (config/snapshot "session behavior resolution — ambient fallback when caller passes no :config")
       (when state-dir
         (config/load-config {:state-dir state-dir :fs fs*}))
       {}))
@@ -118,9 +119,10 @@
   ([session-key]
    (resolve-behavior session-key {}))
   ([session-key overrides]
-   (let [state-dir      (config/state-dir)
+   (let [passed-config  (:config overrides)
+         state-dir      (or (:state-dir overrides) (:state-dir passed-config) (config/state-dir))
          session-store* (session-store (:session-store overrides))
-         cfg            (config/normalize-config (effective-config state-dir (fs/instance)))
+         cfg            (config/normalize-config (effective-config passed-config state-dir (fs/instance)))
          session-entry  (merge (or (some-> session-store* (store/get-session session-key) (ensure-session-nonce session-store*)) {})
                                (select-keys overrides behavioral-keys))
          behavior       (resolve-behavior* cfg state-dir session-entry)]
@@ -135,8 +137,9 @@
 
 (defn create-with-resolved-behavior!
   [session-key opts]
-  (let [state-dir (config/state-dir)
-        cfg       (config/normalize-config (effective-config state-dir (fs/instance)))
+  (let [passed-config (:config opts)
+        state-dir (or (:state-dir opts) (:state-dir passed-config) (config/state-dir))
+        cfg       (config/normalize-config (effective-config passed-config state-dir (fs/instance)))
         behavior  (resolve-behavior* cfg state-dir (select-keys opts behavioral-keys))
         store     (require-session-store (:session-store opts))
         entry     (store/open-session! store session-key {:channel           (:channel opts)

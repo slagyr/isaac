@@ -56,6 +56,7 @@
         session-key {:crew          crew-id
                      :cwd           resolved-cwd
                      :origin        (:origin request)
+                     :config        cfg
                      :session-store session-store*}))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
