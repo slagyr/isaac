@@ -1,4 +1,3 @@
-@wip
 Feature: Model-driven skill activation
   Skills are advertised to the model by name + description in the cached system
   prompt (progressive disclosure, like Anthropic Agent Skills): cheap, stable

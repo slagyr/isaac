@@ -421,6 +421,10 @@
                  :skill-paths         {:type        :seq
                                        :spec        {:type :string}
                                        :description "Extra typed roots to scan for prepared skills"}
+                 :skill-menu-threshold {:type        :int
+                                        :validate    #(or (nil? %) (<= 0 %))
+                                        :message     "must be a non-negative integer"
+                                        :description "Max skill count to inject into the cached prompt before falling back to list_skills"}
                  :slash-commands      slash-commands
                  :sessions            sessions
                  :server              server

@@ -228,6 +228,58 @@
                                                       "isaac-1234")
                           [:name :input])))
 
+  (it "renders a stable sorted skill menu and enables load_skill"
+    (write-config-file! "config/skills/greenhouse-protocol/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use when tending specimens\n"
+                             "---\n\n"
+                             "Always quarantine new specimens for one cycle."))
+    (write-config-file! "config/skills/aeroponics/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use for soil-free growing\n"
+                             "---\n\n"
+                             "Mist the roots on a schedule."))
+    (should= {:menu-text  (str "Available skills:\n"
+                               "- aeroponics: Use for soil-free growing\n"
+                               "- greenhouse-protocol: Use when tending specimens\n\n"
+                               "Use load_skill to load a skill body on demand.")
+              :tool-names #{"load_skill"}}
+             (sut/resolve-skill-disclosure {:fs        (nexus/get :fs)
+                                            :state-dir state-dir})))
+
+  (it "falls back to list_skills when the menu threshold is exceeded"
+    (write-config-file! "config/skills/a/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: First\n"
+                             "---\n\n"
+                             "One."))
+    (write-config-file! "config/skills/b/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Second\n"
+                             "---\n\n"
+                             "Two."))
+    (should= {:menu-text  nil
+              :tool-names #{"list_skills" "load_skill"}}
+             (sut/resolve-skill-disclosure {:config    {:skill-menu-threshold 1}
+                                            :fs        (nexus/get :fs)
+                                            :state-dir state-dir})))
+
+  (it "resolves a discovered skill body by name"
+    (write-config-file! "config/skills/greenhouse-protocol/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use when tending specimens\n"
+                             "---\n\n"
+                             "Always quarantine new specimens for one cycle."))
+    (should= "Always quarantine new specimens for one cycle."
+             (sut/resolve-skill-body {:fs        (nexus/get :fs)
+                                      :state-dir state-dir}
+                                     "greenhouse-protocol")))
+
   (it "preserves prompt catalog config keys when config is loaded"
     (write-config-file! "config/isaac.edn"
                         "{:prompt-paths [\"config/prompts\"] :prompt-dir-names {\"abilities\" \"skill\"}}")

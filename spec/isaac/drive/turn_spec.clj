@@ -14,6 +14,7 @@
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
+    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.spec-helper :as helper]
@@ -254,7 +255,26 @@
                                           :soul       "You are Isaac."
                                           :transcript []})
         (should= {:kind :hail :hail-id "hail-1"} (:origin @seen))
-        (should= "Autonomous hail; the user may not see your reply." (:guidance @seen)))))
+        (should= "Autonomous hail; the user may not see your reply." (:guidance @seen))))
+
+    (it "passes skill-menu-text through to the provider prompt builder"
+      (let [seen     (atom nil)
+            provider (reify api/Api
+                       (chat [_ _] nil)
+                       (chat-stream [_ _ _] nil)
+                       (followup-messages [_ _ _ _ _] nil)
+                       (config [_] {})
+                       (display-name [_] "test")
+                       (format-tools [_ tools] tools)
+                       (build-prompt [_ opts]
+                         (reset! seen opts)
+                         {:model (:model opts) :messages []}))]
+        (sut/build-chat-request provider {:model           "spark"
+                                          :skill-menu-text "Available skills:\n- greenhouse-protocol: Use when tending specimens"
+                                          :soul            "You are Isaac."
+                                          :transcript      []})
+        (should= "Available skills:\n- greenhouse-protocol: Use when tending specimens"
+                 (:skill-menu-text @seen)))))
 
   )
 
@@ -420,7 +440,29 @@
             (should= 5     (:effort turn))
             (should= ["spyglass"] (sort (:allowed-tools turn)))
             (should-not-be-nil (:state-dir turn))
-            (should-not-be-nil (:session-store turn)))))))
+            (should-not-be-nil (:session-store turn))))))
+
+    (it "auto-allows skill activation tools discovered from the prompt catalog"
+      (helper/create-session! test-dir "skill-turn")
+      (helper/update-session! test-dir "skill-turn" {:crew "main"})
+      (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
+            charge   {:charge/type    :charge
+                      :session-key    "skill-turn"
+                      :input          "hi"
+                      :comm           :test-comm
+                      :config         {:state-dir test-dir}
+                      :crew           "main"
+                      :crew-members   {"main" {:model "spark"}}
+                      :context-window 32768
+                      :model          "helm-spark-1.0"
+                      :provider       provider
+                      :soul           "You are Isaac."}]
+        (with-redefs [sut/augment-provider (fn [_state-dir p _session-key _context-window _model-cfg-overrides] p)
+                      session-ctx/read-skill-disclosure (fn [& _]
+                                                          {:menu-text  nil
+                                                           :tool-names #{"list_skills" "load_skill"}})]
+          (let [turn (#'sut/build-turn charge)]
+            (should= ["list_skills" "load_skill"] (sort (:allowed-tools turn))))))))
 
   (describe "context-mode"
     #_{:clj-kondo/ignore [:unresolved-symbol]}

@@ -14,6 +14,8 @@
                   :glob          {:factory isaac.tool.builtin/glob-tool-factory}
                   :grep          {:factory isaac.tool.builtin/grep-tool-factory}
                   :hail-send     {:factory isaac.tool.hail/hail-send-tool-factory}
+                  :list_skills   {:factory isaac.tool.skill/list-skills-tool-factory}
+                  :load_skill    {:factory isaac.tool.skill/load-skill-tool-factory}
                   :memory_get    {:factory isaac.tool.builtin/memory-get-tool-factory}
                   :memory_search {:factory isaac.tool.builtin/memory-search-tool-factory}
                   :memory_write  {:factory isaac.tool.builtin/memory-write-tool-factory}

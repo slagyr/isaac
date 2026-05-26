@@ -36,6 +36,18 @@
                                            :fs        fs*
                                            :state-dir state-dir'})))))
 
+(defn read-skill-disclosure
+  ([cfg state-dir cwd]
+   (read-skill-disclosure cfg state-dir cwd (fs/instance)))
+  ([cfg state-dir cwd fs*]
+   (let [cfg        (or cfg {})
+         state-dir' (or state-dir (:state-dir cfg))]
+     (when (and state-dir' (not (str/blank? (str state-dir'))))
+       (prompt-catalog/resolve-skill-disclosure {:config    cfg
+                                                 :cwd       cwd
+                                                 :fs        fs*
+                                                 :state-dir state-dir'})))))
+
 (defn default-threshold [_window] 0.8)
 
 (defn default-head [_window] 0.3)

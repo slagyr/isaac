@@ -9,6 +9,7 @@
     [isaac.config.api :as config]
     [isaac.step-tables :as match]
     [isaac.fs :as isaac-fs]
+    [isaac.session.session-steps :as session-steps]
     [isaac.session.store :as session-store-proto]
     [isaac.nexus :as nexus]
     [isaac.tool.builtin :as builtin]
@@ -50,9 +51,19 @@
         (str root "/" (subs p (inc (count root-name))))
         (str root "/" p)))))
 
+(defn- ensure-tool-result-ready! []
+  (when (and (nil? (g/get :tool-result))
+             (g/get :turn-future))
+    (session-steps/await-turn!)))
+
 (defn- result-text []
+  (ensure-tool-result-ready!)
   (let [r (g/get :tool-result)]
-    (or (:result r) (:error r) "")))
+    (cond
+      (map? r) (or (:result r) (:error r) "")
+      (string? r) r
+      (nil? r) ""
+      :else (str r))))
 
 (defn- result-lines []
   (str/split-lines (result-text)))

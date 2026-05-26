@@ -3,6 +3,7 @@
     [babashka.http-client :as http]
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
+    [isaac.llm.api.grover :as grover]
     [isaac.llm.api.messages :as sut]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
@@ -80,6 +81,19 @@
           (should= 1 (count (:tool-calls result)))
           (should= "read_file" (:name (first (:tool-calls result))))
           (should= {:path "README"} (:arguments (first (:tool-calls result)))))))
+
+    (it "parses tool_use blocks from a grover-simulated anthropic provider"
+      (grover/reset-queue!)
+      (grover/enqueue! [{:model     "claude-sonnet-4-6"
+                         :type      "tool_call"
+                         :tool_call "load_skill"
+                         :arguments {:name "greenhouse-protocol"}}])
+      (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []}
+                             "anthropic"
+                             (assoc (api-key-config) :simulate-provider "anthropic"))]
+        (should= 1 (count (:tool-calls result)))
+        (should= "load_skill" (:name (first (:tool-calls result))))
+        (should= {:name "greenhouse-protocol"} (:arguments (first (:tool-calls result))))))
 
     (it "sets x-api-key header for api-key auth"
       (let [captured-headers (atom nil)]

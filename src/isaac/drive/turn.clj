@@ -578,17 +578,20 @@
                (tool-registry/tool-definitions allowed-tools module-index)
                (tool-registry/tool-definitions allowed-tools))))
 
-(defn- ensure-default-tools-registered! []
-  (when (empty? (tool-registry/all-tools))
-    (builtin/register-all!)))
+(defn- merge-allowed-tools [crew-tools auto-tools]
+  (not-empty (into (set (or crew-tools [])) auto-tools)))
 
-(defn build-chat-request [p {:keys [boot-files effort guidance model nonce origin rules-text soul transcript tools]}]
+(defn- ensure-default-tools-registered! []
+  (builtin/register-all!))
+
+(defn build-chat-request [p {:keys [boot-files effort guidance model nonce origin rules-text skill-menu-text soul transcript tools]}]
   (let [prompt-out (api/build-prompt p {:boot-files boot-files
                                         :guidance   guidance
                                         :model      model
                                         :nonce      nonce
                                         :origin     origin
                                         :rules-text rules-text
+                                        :skill-menu-text skill-menu-text
                                         :soul       soul
                                         :transcript transcript
                                         :tools      tools})]
@@ -625,6 +628,7 @@
             :allowed-tools {:type :ignore  :description "Set of tool keywords allowed for this turn's crew"}
             :boot-files    {:type :ignore  :description "Boot-file contents read from the session cwd"}
             :rules-text    {:type :ignore  :description "Always-on prepared rule bodies read from global/project roots"}
+            :skill-menu-text {:type :ignore :description "Advertised skill descriptions injected into the cached system prompt"}
             :provider      {:type :ignore  :description "Tools-augmented LLM provider for this turn"}}})
 
 (defn- build-turn
@@ -638,7 +642,10 @@
         state-dir      (or (nexus/get :state-dir) (get-in charge [:config :state-dir]))
         session-store* (nexus/get-in [:sessions :store])
         session        (store/get-session session-store* session-key)
-        allowed-tools  (allowed-tool-names crew-members crew)
+        skill-disclosure (or (session-ctx/read-skill-disclosure (:config charge) state-dir (:cwd session))
+                             {:menu-text nil :tool-names #{}})
+        allowed-tools  (merge-allowed-tools (allowed-tool-names crew-members crew)
+                                            (:tool-names skill-disclosure))
         boot-files     (session-ctx/read-boot-files (:cwd session))
         rules-text     (session-ctx/read-rules-text (:config charge) state-dir (:cwd session))
         augmented      (augment-provider state-dir provider session-key context-window
@@ -666,6 +673,7 @@
                       :allowed-tools allowed-tools
                       :boot-files    boot-files
                       :rules-text    rules-text
+                      :skill-menu-text (:menu-text skill-disclosure)
                       :provider      augmented})))
 
 (defn- finish-turn! [ch session-key result]
@@ -682,7 +690,7 @@
                       (comm/on-tool-cancel ch session-key tc))]
     (comm/on-tool-call ch session-key tc)
     (bridge/on-cancel! session-key cancel!)
-    (let [tool-fn* (tool-registry/tool-fn allowed-tools module-index caps)
+    (let [tool-fn* #_{:clj-kondo/ignore [:invalid-arity]} (tool-registry/tool-fn allowed-tools module-index caps)
           result   (tool-fn*
                      name
                      (assoc arguments "session_key" session-key))]
@@ -698,7 +706,7 @@
   "Build the chat request, drive the tool-loop, persist tool pairs and the
    final assistant response. Returns the final result map."
   [session-key input ctx]
-  (let [{:keys [provider allowed-tools effort boot-files rules-text]} ctx
+  (let [{:keys [provider allowed-tools effort boot-files rules-text skill-menu-text]} ctx
         {:keys [guidance model module-index nonce origin soul context-mode comm config]} (:charge ctx)
         caps {:max-lines (get-in config [:tools :defaults :max-lines])
               :max-bytes (get-in config [:tools :defaults :max-bytes])}
@@ -721,6 +729,7 @@
                                                  :nonce      nonce
                                                  :origin     origin
                                                  :rules-text rules-text
+                                                 :skill-menu-text skill-menu-text
                                                  :soul       soul
                                                  :transcript transcript
                                                  :tools      tools})

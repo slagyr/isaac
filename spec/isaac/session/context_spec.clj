@@ -71,6 +71,43 @@
   (it "returns nil when no rules are discovered"
     (should-be-nil (sut/read-rules-text {:state-dir test-root} test-root (str test-root "/missing-project")))))
 
+(describe "read-skill-disclosure"
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (nexus/-with-nexus {:fs (fs/mem-fs)}
+      (example)))
+
+  (it "returns a cached skill menu and load_skill when skills are discovered"
+    (fs/spit (nexus/get :fs) (str test-root "/config/skills/greenhouse-protocol/SKILL.md")
+             (str "---\n"
+                  "type: skill\n"
+                  "description: Use when tending specimens\n"
+                  "---\n\n"
+                  "Always quarantine new specimens for one cycle."))
+    (should= {:menu-text  (str "Available skills:\n"
+                               "- greenhouse-protocol: Use when tending specimens\n\n"
+                               "Use load_skill to load a skill body on demand.")
+              :tool-names #{"load_skill"}}
+             (sut/read-skill-disclosure {:state-dir test-root} test-root (str test-root "/project"))))
+
+  (it "falls back to list_skills when the configured threshold is exceeded"
+    (fs/spit (nexus/get :fs) (str test-root "/config/skills/a/SKILL.md")
+             (str "---\n"
+                  "type: skill\n"
+                  "description: First\n"
+                  "---\n\n"
+                  "One."))
+    (fs/spit (nexus/get :fs) (str test-root "/config/skills/b/SKILL.md")
+             (str "---\n"
+                  "type: skill\n"
+                  "description: Second\n"
+                  "---\n\n"
+                  "Two."))
+    (should= {:menu-text  nil
+              :tool-names #{"list_skills" "load_skill"}}
+             (sut/read-skill-disclosure {:skill-menu-threshold 1} test-root (str test-root "/project")))))
+
 (describe "behavior funnel"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}

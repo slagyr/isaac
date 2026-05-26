@@ -72,9 +72,9 @@
 
 (defn build
   "Build an Anthropic Messages API request body."
-  [{:keys [boot-files guidance model nonce origin rules-text soul transcript tools max-tokens]
+  [{:keys [boot-files guidance model nonce origin rules-text skill-menu-text soul transcript tools max-tokens]
      :or   {max-tokens 4096}}]
-  (let [system-text (builder/build-system-text soul boot-files rules-text nonce)
+  (let [system-text (builder/build-system-text soul boot-files rules-text skill-menu-text nonce)
         messages    (-> (extract-messages transcript nonce guidance origin)
                       vec
                       apply-cache-breakpoints)]
@@ -230,6 +230,8 @@
   (build-prompt [_ opts] (build opts)))
 
 (defn make [name cfg]
-  (->MessagesAPI name cfg))
+  (->MessagesAPI name (cond-> cfg
+                         (not (contains? cfg :stream-supports-tool-calls))
+                         (assoc :stream-supports-tool-calls false))))
 
 ;; endregion ^^^^^ Public API ^^^^^

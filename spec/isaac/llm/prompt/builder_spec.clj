@@ -130,6 +130,16 @@
         (should-contain "You are Isaac." (get-in p [:messages 0 :content]))
         (should-contain "Never vent atmosphere while specimens are unsealed." (get-in p [:messages 0 :content]))))
 
+    (it "appends advertised skill descriptions to the system prompt when present"
+      (let [p (sut/build {:model           "test"
+                          :skill-menu-text (str "Available skills:\n"
+                                                "- greenhouse-protocol: Use when tending specimens")
+                          :soul            "You are Isaac."
+                          :transcript      sample-transcript})]
+        (should= "system" (get-in p [:messages 0 :role]))
+        (should-contain "You are Isaac." (get-in p [:messages 0 :content]))
+        (should-contain "greenhouse-protocol" (get-in p [:messages 0 :content]))))
+
     (it "adds the universal guard and session nonce to the system message"
       (let [p (sut/build {:model "test" :soul "You are Isaac." :nonce "N0NCE-abc123" :transcript sample-transcript})
             system-text (get-in p [:messages 0 :content])]

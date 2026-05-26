@@ -4,8 +4,10 @@ title: Model-driven skill auto-activation (advertise descriptions + load-on-dema
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-26T20:04:09Z
+updated_at: 2026-05-26T23:08:30Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5

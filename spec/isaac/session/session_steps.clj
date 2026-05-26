@@ -366,6 +366,11 @@
                               (seq (grover/provider-requests)))
         outbound-requests (some-> outbound-requests vec)
         grover-request    (some-> (grover/last-request) (hash-map :body))
+        tool-result       (some->> (g/get :channel-events)
+                                   deref
+                                   (filter #(= "tool-result" (:event %)))
+                                   last
+                                   :result)
         event-text        (->> (or (some-> (g/get :channel-events) deref) [])
                                (filter #(= "text-chunk" (:event %)))
                                (map :text)
@@ -381,6 +386,7 @@
     (g/assoc! :outbound-http-request (or (first outbound-requests)
                                          (grover/last-provider-request)
                                          grover-request))
+    (g/assoc! :tool-result tool-result)
     (g/assoc! :output full-output)
     result))
 
@@ -1195,9 +1201,11 @@
         builder    (if (str/includes? provider' "anthropic")
                      messages-api/build
                      prompt/build)
+        skill-disclosure (session-ctx/read-skill-disclosure cfg (state-dir) (:cwd session) (mem-fs))
         ctx        (assoc (config/resolve-crew-context cfg agent-id)
-                          :boot-files (session-ctx/read-boot-files (:cwd session))
-                          :rules-text (session-ctx/read-rules-text cfg (state-dir) (:cwd session) (mem-fs)))]
+                          :boot-files      (session-ctx/read-boot-files (:cwd session))
+                          :rules-text      (session-ctx/read-rules-text cfg (state-dir) (:cwd session) (mem-fs))
+                          :skill-menu-text (:menu-text skill-disclosure))]
     (builder {:boot-files     (:boot-files ctx)
               :context-window (:context-window model-cfg)
               :filter-fn      (when openai? prompt/filter-messages-openai)
@@ -1206,6 +1214,7 @@
               :nonce          (:nonce session)
               :origin         origin
               :rules-text     (:rules-text ctx)
+              :skill-menu-text (:skill-menu-text ctx)
               :soul           (:soul ctx)
               :tools          tools
               :transcript     transcript})))

@@ -15,7 +15,7 @@
 ;; region ----- Registration -----
 
 (def ^:private ordered-built-in-tools
-  ["read" "write" "edit" "grep" "glob" "web_fetch" "web_search" "memory_write" "memory_get" "memory_search" "exec" "session_info" "session_model" "hail-send"])
+  ["read" "write" "edit" "grep" "glob" "web_fetch" "web_search" "memory_write" "memory_get" "memory_search" "exec" "session_info" "session_model" "load_skill" "list_skills" "hail-send"])
 
 (def ^:private built-in-tool-specs
   {"read"          {:name        "read"

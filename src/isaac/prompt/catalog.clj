@@ -167,6 +167,23 @@
        (map str/trim)
        (remove str/blank?)))
 
+(defn- sorted-skill-entries [catalog]
+  (->> (:skills catalog)
+       vals
+       (sort-by :name)))
+
+(defn- skill-menu-line [entry]
+  (let [description (some-> (:description entry) str/trim not-empty)]
+    (str "- " (:name entry)
+         (when description
+           (str ": " description)))))
+
+(defn- render-skill-menu [entries]
+  (when (seq entries)
+    (str "Available skills:\n"
+         (str/join "\n" (map skill-menu-line entries))
+         "\n\nUse load_skill to load a skill body on demand.")))
+
 (defn- dedupe-file-specs [file-specs]
   (vals (reduce (fn [acc spec] (assoc acc (:path spec) spec)) {} file-specs)))
 
@@ -252,6 +269,33 @@
             parts    (remove str/blank? (cons body skills))]
         {:input (str/join "\n\n" parts)
          :name  (:name entry)}))))
+
+(defn resolve-skill-menu [{:keys [config cwd fs state-dir]}]
+  (some-> (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+          sorted-skill-entries
+          render-skill-menu))
+
+(defn resolve-skill-disclosure [{:keys [config cwd fs state-dir]}]
+  (let [catalog       (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+        skill-entries (sorted-skill-entries catalog)
+        threshold     (:skill-menu-threshold (or config {}))]
+    (cond
+      (empty? skill-entries)
+      {:menu-text nil :tool-names #{}}
+
+      (and (some? threshold) (> (count skill-entries) threshold))
+      {:menu-text nil :tool-names #{"list_skills" "load_skill"}}
+
+      :else
+      {:menu-text  (render-skill-menu skill-entries)
+       :tool-names #{"load_skill"}})))
+
+(defn resolve-skill-body [{:keys [config cwd fs state-dir]} skill-name]
+  (some-> (get-in (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+                  [:skills (normalize-entry-name skill-name)])
+          entry-body
+          str/trim
+          not-empty))
 
 (defn resolve-rules-text [{:keys [config cwd fs state-dir]}]
   (some->> (:rules (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir}))

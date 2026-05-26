@@ -1045,7 +1045,7 @@
                          :cron      new-cron}
                         (cond-> cfg
                                 (contains? cfg :cron) (assoc :cron new-cron))
-                        [:acp :channels :command-paths :comms :cron :gateway :hooks :module-index :modules :prefer-entity-files :prompt-dir-names :prompt-paths :server :sessions :skill-paths :slash-commands :state-dir :tools :tz])))
+                        [:acp :channels :command-paths :comms :cron :dev :gateway :hooks :module-index :modules :prefer-entity-files :prompt-dir-names :prompt-paths :server :sessions :skill-menu-threshold :skill-paths :slash-commands :state-dir :tools :tz])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

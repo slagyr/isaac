@@ -205,6 +205,20 @@
    :usage   {:prompt_tokens (:prompt_eval_count response)
              :completion_tokens (:eval_count response)}})
 
+(defn- messages-json [response]
+  (let [tool-call (first (get-in response [:message :tool_calls]))
+        content   (cond-> [{:type "text" :text (or (get-in response [:message :content]) "")}]
+                    tool-call (conj {:type  "tool_use"
+                                     :id    (or (:id tool-call) "tc_grover")
+                                     :name  (get-in tool-call [:function :name])
+                                     :input (get-in tool-call [:function :arguments])}))]
+    {:content     content
+     :model       (:model response)
+     :stop_reason (if tool-call "tool_use" "end_turn")
+     :usage       (merge {:input_tokens  (:prompt_eval_count response)
+                          :output_tokens (:eval_count response)}
+                         (:usage response))}))
+
 (defn- responses-json [response]
   {:output [{:type    "message"
              :role    "assistant"
@@ -229,9 +243,11 @@
 (defn post-json!
   [provider url headers body]
   (capture-provider-request! provider url headers body)
-  (if (str/ends-with? url "/responses")
-    (responses-json (provider-response body nil))
-    (chat-completions-json (provider-response body nil))))
+  (let [response (provider-response body nil)]
+    (cond
+      (str/ends-with? url "/responses") (responses-json response)
+      (str/ends-with? url "/messages")  (messages-json response)
+      :else                             (chat-completions-json response))))
 
 (defn- content-chunks [content]
   (cond
