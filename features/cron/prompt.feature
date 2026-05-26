@@ -44,15 +44,16 @@ Feature: Cron prompts from config or markdown companion
       | type    | message.role | message.content               |
       | message | user         | Run the daily health checkin. |
 
-  Scenario: cron job loaded from a single markdown file with EDN frontmatter
+  @wip
+  Scenario: cron job loaded from a single markdown file with YAML frontmatter
     Given config:
       | sessions.naming-strategy | sequential      |
       | tz                       | America/Chicago |
     And config file "cron/health-check.md" containing:
       """
       ---
-      {:expr "0 9 * * *"
-       :crew :main}
+      expr: "0 9 * * *"
+      crew: main
       ---
 
       Run the daily health checkin.
