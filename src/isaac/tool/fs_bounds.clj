@@ -102,7 +102,7 @@
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters state-dir crew-id)
               _           (fs/mkdirs fs* quarters)
-              cfg         (config/load-config {:state-dir state-dir :fs fs*})
+              cfg         (config/snapshot "tool fs-bounds: crew tool directories")
               directories (or (get-in cfg [:crew crew-id :tools :directories]) [])]
           (vec (concat [quarters]
                        (keep (fn [directory]

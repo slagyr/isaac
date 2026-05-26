@@ -22,6 +22,7 @@
   (around [example]
     (helper/with-memory-store
       (nexus/-with-nested-nexus {:state-dir support/test-dir :fs (fs/real-fs)}
+        (config/dangerously-install-config! nil "spec")
         (example))))
 
   (describe "read"
@@ -91,13 +92,13 @@
         (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
         (.mkdirs (io/file whitelisted))
         (spit (str whitelisted "/data.txt") "hello")
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
-                                                                :crew {crew-name {:tools {:allow ["read"]
-                                                                                          :directories [whitelisted]}}}
-                                                                :models {}
-                                                                :providers {}})]
-                       (sut/read-tool {"file_path"   (str whitelisted "/data.txt")
-                                       "session_key" session-key}))]
+        (config/dangerously-install-config! {:defaults {}
+                                             :crew {crew-name {:tools {:allow ["read"]
+                                                                       :directories [whitelisted]}}}
+                                             :models {}
+                                             :providers {}} "spec")
+        (let [result (sut/read-tool {"file_path"   (str whitelisted "/data.txt")
+                                     "session_key" session-key})]
           (should= "1: hello" (:result result)))))
 
     (it "rejects reading outside allowed directories"
@@ -117,13 +118,13 @@
         (helper/create-session! state-dir session-key {:crew crew-name :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
-                                                                :crew {crew-name {:tools {:allow ["read"]
-                                                                                          :directories [:cwd]}}}
-                                                                :models {}
-                                                                :providers {}})]
-                       (sut/read-tool {"file_path"   (str cwd "/hello.txt")
-                                       "session_key" session-key}))]
+        (config/dangerously-install-config! {:defaults {}
+                                             :crew {crew-name {:tools {:allow ["read"]
+                                                                       :directories [:cwd]}}}
+                                             :models {}
+                                             :providers {}} "spec")
+        (let [result (sut/read-tool {"file_path"   (str cwd "/hello.txt")
+                                     "session_key" session-key})]
           (should= "1: hi there" (:result result)))))
 
     (it "rejects reading the session cwd without :cwd opt in"

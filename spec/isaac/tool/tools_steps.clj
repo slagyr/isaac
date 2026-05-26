@@ -156,14 +156,12 @@
     (f)))
 
 (defn- feature-config-snapshot [_reason]
-  (when-let [dir (state-dir)]
-    (let [cfg-path (str dir "/config/isaac.edn")]
-      (with-feature-fs
-        #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
-           (try
-             (when (isaac-fs/exists? fs* cfg-path)
-               (edn/read-string (isaac-fs/slurp fs* cfg-path)))
-             (catch Exception _ nil)))))))
+  (let [base (when-let [dir (state-dir)]
+               (with-feature-fs
+                 #(config/load-config {:state-dir dir
+                                       :fs (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))})))]
+    (cond-> (or base {})
+      (g/get :web-search-config) (assoc-in [:tools :web_search] (g/get :web-search-config)))))
 
 (defn- with-http-stubs [f]
   (let [stubs          (g/get :url-stubs)

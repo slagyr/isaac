@@ -9,10 +9,8 @@
 
 (def ^:private brave-search-endpoint "https://api.search.brave.com/res/v1/web/search")
 
-(defn- web-search-config [args]
-  (let [state-dir (bounds/state-dir args)
-         load-opts (if state-dir {:state-dir state-dir} {})]
-    (get-in (config/load-config load-opts) [:tools :web_search])))
+(defn- web-search-config [_args]
+  (get-in (config/snapshot "tool web-search: settings") [:tools :web_search]))
 
 (defn- web-search-api-key [args]
   (:api-key (web-search-config args)))

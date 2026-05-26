@@ -1,5 +1,6 @@
 (ns isaac.tool.memory-spec
   (:require
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
@@ -11,10 +12,7 @@
 (def test-crew marigold/captain)
 
 (defn- seed-default-crew! []
-  (let [config-path (str test-dir "/config/isaac.edn")]
-    #_{:clj-kondo/ignore [:invalid-arity]}
-    (fs/mkdirs (nexus/get :fs) (fs/parent config-path))
-    (fs/spit (nexus/get :fs) config-path (pr-str {:defaults {:crew test-crew}}))))
+  (config/dangerously-install-config! {:defaults {:crew test-crew}} "spec"))
 
 (describe "Memory tools"
 

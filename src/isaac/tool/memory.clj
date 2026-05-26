@@ -16,10 +16,9 @@
 
 (defn- crew-id [args]
   (let [args        (string-key-map args)
-        session-key (get args "session_key")
-        state-dir   (bounds/state-dir args)]
+        session-key (get args "session_key")]
     (or (some->> session-key (store/get-session (bounds/session-store args)) :crew)
-        (get-in (config/load-config {:state-dir state-dir}) [:defaults :crew])
+        (get-in (config/snapshot "tool memory: default crew") [:defaults :crew])
         "main")))
 
 (defn- memory-dir [state-dir crew-id]

@@ -50,11 +50,10 @@
   [args]
   (let [args        (bounds/string-key-map args)
          session-key (get args "session_key")
-         state-dir   (bounds/state-dir args)
          session     (store/get-session (bounds/session-store args) session-key)]
     (if (nil? session)
       {:isError true :error (str "session not found: " session-key)}
-      (let [cfg      (config/load-config {:state-dir state-dir})
+      (let [cfg      (config/snapshot "session_info tool: model/crew resolution")
             crew-id  (or (:crew session) "main")
             crew-cfg (or (get-in cfg [:crew crew-id]) {})
             defaults (:defaults cfg)]
@@ -68,7 +67,6 @@
         model       (get args "model")
         reset?      (bounds/arg-bool args "reset" false)
         session-key (get args "session_key")
-        state-dir   (bounds/state-dir args)
         model       (when-not (str/blank? (str model)) model)]
     (cond
       (and model reset?)
@@ -79,7 +77,7 @@
             session       (store/get-session session-store session-key)]
         (if (nil? session)
           {:isError true :error (str "session not found: " session-key)}
-          (let [cfg        (config/load-config {:state-dir state-dir})
+          (let [cfg        (config/snapshot "session_model tool: model/crew resolution")
                 crew-id    (or (:crew session) "main")
                 crew-cfg   (or (get-in cfg [:crew crew-id]) {})
                 defaults   (:defaults cfg)

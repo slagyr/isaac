@@ -10,6 +10,14 @@
 (defmacro with-captured-logs []
   '(speclj.core/around [it] (isaac.logger/capture-logs (it))))
 
+(defmacro with-config
+  "Commit `cfg` as the process-wide config snapshot for the duration of `body`.
+   The test-setup way to provision config so in-flight readers (which read the
+   committed snapshot) see it — replaces stubbing the loader."
+  [cfg & body]
+  `(do (config/dangerously-install-config! ~cfg "spec")
+       ~@body))
+
 (def ^:dynamic *session-store* nil)
 
 (defn- session-store [state-dir]

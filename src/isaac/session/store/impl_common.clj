@@ -101,15 +101,13 @@
           :chat-type (or (:chat-type opts) (:chatType opts))}
          (into {} (remove (comp nil? val) opts))))
 
-(defn effective-config [passed-config state-dir fs]
+(defn effective-config [passed-config]
   (or passed-config
       (config/snapshot "session store config — ambient fallback when caller passes no :config")
-      (when state-dir
-        (config/load-config {:state-dir state-dir :fs fs}))
       {}))
 
-(defn resolve-history-retention [state-dir opts fs]
-  (config/resolve-history-retention (effective-config (:config opts) state-dir fs)
+(defn resolve-history-retention [opts]
+  (config/resolve-history-retention (effective-config (:config opts))
                                     (or (:crew opts) "main")
                                     (:history-retention opts)))
 
@@ -304,7 +302,7 @@
       :else
       (let [session-file  (str id ".jsonl")
             now           (or (normalize-ts-fn (:updated-at opts)) (now-iso-fn))
-            retention     (resolve-history-retention state-dir opts fs)
+            retention     (resolve-history-retention opts)
             transcript-id (new-id)
             header        {:type      "session"
                            :id        transcript-id

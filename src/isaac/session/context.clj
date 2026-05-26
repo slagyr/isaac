@@ -35,11 +35,9 @@
       (throw (ex-info "session context requires :session-store" {}))))
 
 
-(defn- effective-config [passed-config state-dir fs*]
+(defn- effective-config [passed-config]
   (or passed-config
       (config/snapshot "session behavior resolution — ambient fallback when caller passes no :config")
-      (when state-dir
-        (config/load-config {:state-dir state-dir :fs fs*}))
       {}))
 
 (defn- default-cwd [state-dir crew-id]
@@ -123,7 +121,7 @@
    (let [passed-config  (:config overrides)
          state-dir      (or (:state-dir overrides) (:state-dir passed-config) (config/state-dir))
          session-store* (session-store (:session-store overrides))
-         cfg            (config/normalize-config (effective-config passed-config state-dir (fs/instance)))
+         cfg            (config/normalize-config (effective-config passed-config))
          session-entry  (merge (or (some-> session-store* (store/get-session session-key) (ensure-session-nonce session-store*)) {})
                                (select-keys overrides behavioral-keys))
          behavior       (resolve-behavior* cfg state-dir session-entry)]
@@ -140,7 +138,7 @@
   [session-key opts]
   (let [passed-config (:config opts)
         state-dir (or (:state-dir opts) (:state-dir passed-config) (config/state-dir))
-        cfg       (config/normalize-config (effective-config passed-config state-dir (fs/instance)))
+        cfg       (config/normalize-config (effective-config passed-config))
         behavior  (resolve-behavior* cfg state-dir (select-keys opts behavioral-keys))
         store     (require-session-store (:session-store opts))]
    ;; bind the known crew set for the schema's crew validation on the writes below

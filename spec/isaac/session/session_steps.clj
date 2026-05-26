@@ -88,6 +88,15 @@
   (nexus/-with-nested-nexus {:fs (mem-fs)}
     (f)))
 
+(defn- commit-feature-config!
+  "Load the feature's on-disk config and commit it as the snapshot, so the
+   in-flight readers (resolve-behavior etc.) see the current config — the same
+   load-and-commit an entry point performs in production."
+  []
+  (when-let [sd (state-dir)]
+    (config/clear-load-cache!)
+    (config/load-config! {:state-dir sd :fs (mem-fs)} "feature: session behavior config")))
+
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]
     (config/notify-path! source path)))
@@ -561,6 +570,7 @@
 (defn- create-session-from-row! [row-map]
   (with-feature-fs
     (fn []
+      (commit-feature-config!)
       (let [name        (get row-map "name")
             agent       (or (get row-map "crew")
                             (get row-map "agent")
@@ -760,7 +770,8 @@
         value (parse-behavior-value field value)
         opts  (cond-> {}
                 (some? value) (assoc (keyword field) value))
-        entry (with-feature-fs #(session-ctx/create-with-resolved-behavior! name opts))]
+        entry (with-feature-fs #(do (commit-feature-config!)
+                                    (session-ctx/create-with-resolved-behavior! name opts)))]
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
@@ -769,6 +780,7 @@
         value (parse-behavior-value field value)]
     (with-feature-fs
       (fn []
+        (commit-feature-config!)
         (let [entry (or (get-session name)
                         (session-ctx/create-with-resolved-behavior! name {}))]
           (when (some? value)
@@ -776,12 +788,14 @@
           (g/assoc! :current-key (:id entry)))))))
 
 (defn resolved-behavior-matches [session-name table]
-  (let [behavior (with-feature-fs #(session-ctx/resolve-behavior (unquote-string session-name)))
+  (let [behavior (with-feature-fs #(do (commit-feature-config!)
+                                       (session-ctx/resolve-behavior (unquote-string session-name))))
         result   (match/match-object table behavior)]
     (g/should= [] (:failures result))))
 
 (defn resolved-behavior-has [session-name field value]
-  (let [behavior (with-feature-fs #(session-ctx/resolve-behavior (unquote-string session-name)))
+  (let [behavior (with-feature-fs #(do (commit-feature-config!)
+                                       (session-ctx/resolve-behavior (unquote-string session-name))))
         expected (cond-> (parse-behavior-value field value)
                    (= "compaction" field) ((fn [compaction]
                                               (cond-> compaction

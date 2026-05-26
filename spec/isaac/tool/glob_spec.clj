@@ -69,13 +69,13 @@
           session-key session-key]
       (helper/create-session! support/test-dir session-key {:crew crew-name :cwd cwd})
       (support/write-file! "workspace/src/core.clj" "")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
-                                                              :crew {crew-name {:tools {:allow ["glob"]
-                                                                                        :directories [:cwd]}}}
-                                                              :models {}
-                                                              :providers {}})]
-                     (sut/glob-tool {"pattern" "**/*.clj"
-                                     "session_key" session-key}))]
+      (config/dangerously-install-config! {:defaults {}
+                                           :crew {crew-name {:tools {:allow ["glob"]
+                                                                     :directories [:cwd]}}}
+                                           :models {}
+                                           :providers {}} "spec")
+      (let [result (sut/glob-tool {"pattern" "**/*.clj"
+                                   "session_key" session-key})]
         (should-be-nil (:isError result))
         (should= "src/core.clj" (:result result)))))
 

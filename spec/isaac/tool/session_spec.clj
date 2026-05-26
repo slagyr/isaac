@@ -33,7 +33,7 @@
       (it "returns current session state with snake_case keys"
         (helper/create-session! support/test-dir "si-basic" {:crew crew-name :cwd support/test-dir})
         (helper/update-session! support/test-dir "si-basic" {:createdAt "2026-04-27T10:00:00" :updated-at "2026-04-27T10:00:00"})
-        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+        (let [result (helper/with-config base-cfg
                        (sut/session-info-tool {"session_key" "si-basic"}))
               data   (json/parse-string (:result result) true)]
           (should= crew-name (:crew data))
@@ -54,7 +54,7 @@
                       :models    {crew-model {:model "echo" :provider :grover :context-window 32768}
                                   "lettuce" {:model "lettuce-grande" :provider :hieronymus :context-window 128000}}
                       :providers {"hieronymus" {:api "grover" :auth "none"}}}
-              result (with-redefs [config/load-config (fn [& _] cfg)]
+              result (helper/with-config cfg
                        (sut/session-info-tool {"session_key" "si-upstream"}))
               data   (json/parse-string (:result result) true)]
           (should= "lettuce" (get-in data [:model :alias]))
@@ -68,7 +68,7 @@
         (helper/create-session! support/test-dir "sm-switch" {:crew crew-name :cwd support/test-dir})
         (helper/update-session! support/test-dir "sm-switch" {:compaction-disabled true
                                                                 :compaction {:consecutive-failures 5}})
-        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+        (let [result (helper/with-config base-cfg
                        (sut/session-model-tool {"session_key" "sm-switch" "model" "parrot"}))
               data   (json/parse-string (:result result) true)]
           (should= "parrot" (get-in data [:model :alias]))
@@ -80,7 +80,7 @@
       (it "resets model to crew default when reset is true"
         (helper/create-session! support/test-dir "sm-reset" {:crew crew-name :cwd support/test-dir})
         (helper/update-session! support/test-dir "sm-reset" {:model "parrot"})
-        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+        (let [result (helper/with-config base-cfg
                        (sut/session-model-tool {"session_key" "sm-reset" "reset" true}))
               data   (json/parse-string (:result result) true)]
           (should= crew-model (get-in data [:model :alias]))
@@ -94,7 +94,7 @@
 
       (it "errors when model alias does not exist"
         (helper/create-session! support/test-dir "sm-nomodel" {:crew crew-name :cwd support/test-dir})
-        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+        (let [result (helper/with-config base-cfg
                        (sut/session-model-tool {"session_key" "sm-nomodel" "model" "nonexistent"}))]
           (should (:isError result))
           (should (str/includes? (:error result) "unknown model: nonexistent")))))))

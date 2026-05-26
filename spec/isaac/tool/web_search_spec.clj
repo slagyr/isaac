@@ -22,8 +22,8 @@
                                                         {:title "Rich Hickey talk"
                                                          :url "https://youtu.be/hMIZ9g6ucs"
                                                          :description "Intro to core.async"}]}})
-          result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave :api-key "brave-key"}}})
-                               http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
+          _      (config/dangerously-install-config! {:tools {:web_search {:provider :brave :api-key "brave-key"}}} "spec")
+          result (with-redefs [http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
                    (sut/web-search-tool {"query" "clojure core async"}))]
       (should-be-nil (:isError result))
       (should (str/includes? (:result result) "1. core.async guide"))
@@ -34,8 +34,8 @@
     (let [body   (json/generate-string {:web {:results [{:title "Guide 1" :url "https://example.com/1" :description "snippet 1"}
                                                         {:title "Guide 2" :url "https://example.com/2" :description "snippet 2"}
                                                         {:title "Guide 3" :url "https://example.com/3" :description "snippet 3"}]}})
-          result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave :api-key "brave-key"}}})
-                               http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
+          _      (config/dangerously-install-config! {:tools {:web_search {:provider :brave :api-key "brave-key"}}} "spec")
+          result (with-redefs [http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
                    (sut/web-search-tool {"query" "clojure" "num_results" 2}))]
       (should-be-nil (:isError result))
       (should (str/includes? (:result result) "1. Guide 1"))
@@ -44,15 +44,15 @@
 
   (it "returns no results when the provider returns none"
     (let [body   (json/generate-string {:web {:results []}})
-          result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave :api-key "brave-key"}}})
-                               http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
+          _      (config/dangerously-install-config! {:tools {:web_search {:provider :brave :api-key "brave-key"}}} "spec")
+          result (with-redefs [http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
                    (sut/web-search-tool {"query" "ajshdkajshdakjsh"}))]
       (should-be-nil (:isError result))
       (should= "no results" (:result result))))
 
   (it "returns a config error when no api key is configured"
-    (let [result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave}}})]
-                   (sut/web-search-tool {"query" "clojure"}))]
+    (config/dangerously-install-config! {:tools {:web_search {:provider :brave}}} "spec")
+    (let [result (sut/web-search-tool {"query" "clojure"})]
       (should (:isError result))
       (should (str/includes? (:error result) "web_search"))
       (should (str/includes? (:error result) "api_key")))))

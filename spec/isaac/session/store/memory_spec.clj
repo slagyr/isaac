@@ -27,13 +27,12 @@
             again (store/open-session! s "friday-debug" {:crew "main"})]
         (should= (:sessionId first) (:sessionId again))))
 
-    (it "uses the store state-dir when resolving retention"
+    (it "resolves retention from the passed :config"
       #_{:clj-kondo/ignore [:invalid-arity]}
-      (let [s (sut/create-store "/tmp/isaac")]
-        (with-redefs [config/snapshot    (constantly nil)
-                      config/load-config (fn [& _] {:defaults {:history-retention :prune}})]
-          (let [entry (store/open-session! s "friday-debug" {:crew "main"})]
-            (should= :prune (:history-retention entry)))))))
+      (let [s     (sut/create-store "/tmp/isaac")
+            entry (store/open-session! s "friday-debug"
+                                       {:crew "main" :config {:defaults {:history-retention :prune}}})]
+        (should= :prune (:history-retention entry)))))
 
   (describe "append-message!"
 
