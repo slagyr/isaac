@@ -120,7 +120,7 @@
           (should= 4096 (:context-window charge)))))
 
     (it "preserves explicit guidance alongside origin"
-      (with-redefs [config/snapshot              (fn [] base-cfg)
+      (with-redefs [config/snapshot              (fn [_] base-cfg)
                     session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are Atticus." test-model-id 4096))]
         (let [charge (sut/build {:session-key "s1"
                                  :input       "hello there"
