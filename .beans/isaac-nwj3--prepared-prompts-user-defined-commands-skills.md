@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
-updated_at: 2026-05-26T00:59:48Z
+updated_at: 2026-05-26T01:20:30Z
 ---
 
 ## Motivation
@@ -121,3 +121,24 @@ Resolution = fallthrough: `type:` -> else `user-invocable:` -> else path -> else
 - On *conflicting* signals (e.g. a `commands/` file with `type: skill`), the higher-precedence signal wins AND we **log a warning** (don't silently hide a misfiled file).
 - **Isaac-native files use `type:`** (canonical); the other two signals exist only to ingest foreign files — tolerate inbound, stay clean outbound.
 - Skills accept both `<name>/SKILL.md` (name = dir) and `<name>.md` (flat).
+
+
+## Loading lifecycle
+
+- **Index frontmatter-first at config-load:** scan all roots, parse only each file's frontmatter -> in-memory index (name, type, description, params, included-skills, path). Cheap; scales to many files. Refresh on config/file hot-reload.
+- **Bodies loaded lazily** on invocation/inclusion (cache after first read) — don't hold every body resident.
+- **Registry** (same shape as tool/comm registries) keyed by `(type, name)`, holding the frontmatter index + a lazy body-loader. Powers command resolution, disambiguation, `/help`-style listing, and the ACP advertisement — all from frontmatter, no bodies needed.
+
+## Command + skills composition
+
+Invoking `/work isaac-xyz`:
+1. Load command body (template); substitute params (`bean=isaac-xyz`).
+2. Resolve declared `skills:` -> load each skill body.
+3. **Assemble into the turn's USER message** — expanded command + inlined skill bodies. That composed text IS the user turn (stored in the transcript, sent to the model).
+
+- **Skills go in the user message, not the system prompt** — per-invocation content, so inlining keeps the cached system prefix clean (same principle as origin framing). The expansion is a real user turn -> persisted normally -> cached as history on later turns (no re-sending).
+- The **expanded** prompt is stored/sent, not the raw `/work isaac-xyz`.
+
+## Deferred: model-driven skill auto-activation
+
+MVP = commands that **explicitly include** skills by name (deterministic). The other mechanic — the model auto-activating a skill by matching its `description` to the task — is a separate, later feature. The frontmatter index already captures `description`, so it's ready when wanted.
