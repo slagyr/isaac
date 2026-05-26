@@ -19,7 +19,8 @@
     (= "~" path)                  (home/user-home)
     (str/starts-with? path "~/")  (str (home/user-home) (subs path 1))
     (str/starts-with? path "<uid>") (str/replace path "<uid>" (uid-placeholder))
-    :else                          path))
+    (str/starts-with? path "/")   path
+    :else                         (str (or (g/get :state-dir) (System/getProperty "user.dir")) "/" path)))
 
 
 (defn- check-file-exists [path]

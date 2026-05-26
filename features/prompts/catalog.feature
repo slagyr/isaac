@@ -1,4 +1,3 @@
-@wip
 Feature: Prepared-prompt catalog (commands + skills)
   Isaac discovers commands and skills from layered roots (global install +
   per-project, plus configurable extra roots), parses YAML frontmatter, and

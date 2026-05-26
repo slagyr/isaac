@@ -4,8 +4,10 @@ title: Prepared-prompt discovery & registry (commands + skills)
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-26T04:21:10Z
-updated_at: 2026-05-26T13:21:36Z
+updated_at: 2026-05-26T13:35:38Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-udzf

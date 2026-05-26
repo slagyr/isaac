@@ -1,0 +1,181 @@
+;; mutation-tested: pending
+(ns isaac.prompt.catalog-spec
+  (:require
+    [isaac.config.api :as config]
+    [isaac.fs :as fs]
+    [isaac.logger :as log]
+    [isaac.nexus :as nexus]
+    [isaac.prompt.catalog :as sut]
+    [isaac.spec-helper :as helper]
+    [speclj.core :refer :all]))
+
+(def ^:private state-dir "/test-state")
+
+(defn- write-file! [path content]
+  (let [fs* (nexus/get :fs)]
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path content)))
+
+(defn- write-config-file! [relative content]
+  (write-file! (str state-dir "/" relative) content))
+
+(defn- resolve-catalog
+  ([] (resolve-catalog {}))
+  ([opts]
+   (sut/resolve-catalog (merge {:fs        (nexus/get :fs)
+                                :state-dir state-dir}
+                               opts))))
+
+(describe "prompt catalog"
+
+  (helper/with-captured-logs)
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
+      (example)))
+
+  (it "discovers a command from config/commands"
+    (write-config-file! "config/commands/work.md"
+                        (str "---\n"
+                             "type: command\n"
+                             "description: Start work on a ready bean\n"
+                             "params: [bean]\n"
+                             "---\n\n"
+                             "Start work on bean {{bean}}."))
+    (should= {:description "Start work on a ready bean"
+              :name        "work"
+              :type        :command}
+             (select-keys (get-in (resolve-catalog) [:commands "work"])
+                          [:description :name :type])))
+
+  (it "discovers a skill from SKILL.md"
+    (write-config-file! "config/skills/tdd/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use when writing code\n"
+                             "---\n\n"
+                             "Write a failing test first."))
+    (should= {:description "Use when writing code"
+              :name        "tdd"
+              :type        :skill}
+             (select-keys (get-in (resolve-catalog) [:skills "tdd"])
+                          [:description :name :type])))
+
+  (it "prefers explicit type over a conflicting directory signal and warns"
+    (write-config-file! "config/commands/helper.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Reusable helper\n"
+                             "---\n\n"
+                             "Some reusable guidance."))
+    (let [catalog (resolve-catalog)
+          entry   (first (filter #(= :prompt/type-conflict (:event %)) @log/captured-logs))]
+      (should= {:description "Reusable helper"
+                :name        "helper"
+                :type        :skill}
+               (select-keys (get-in catalog [:skills "helper"])
+                            [:description :name :type]))
+      (should= {:level :warn :event :prompt/type-conflict :name "helper"}
+               (select-keys entry [:level :event :name]))))
+
+  (it "uses user-invocable when a generic root has no explicit type"
+    (write-file! (str state-dir "/config/isaac.edn")
+                 "{:prompt-paths [\"config/prompts\"]}")
+    (write-config-file! "config/prompts/review.md"
+                        (str "---\n"
+                             "description: Review a pull request\n"
+                             "user-invocable: true\n"
+                             "---\n\n"
+                             "Review PR {{pr}}."))
+    (should= {:description "Review a pull request"
+              :name        "review"
+              :type        :command}
+             (select-keys (get-in (resolve-catalog {:config {:prompt-paths ["config/prompts"]}}) [:commands "review"])
+                          [:description :name :type])))
+
+  (it "falls back to the directory type map when frontmatter provides no signal"
+    (write-config-file! "config/abilities/refactor.md"
+                        (str "---\n"
+                             "description: Refactoring guidance\n"
+                             "---\n\n"
+                             "Make small, safe steps."))
+    (should= {:description "Refactoring guidance"
+              :name        "refactor"
+              :type        :skill}
+             (select-keys (get-in (resolve-catalog {:config {:prompt-dir-names {"abilities" "skill"}}})
+                                  [:skills "refactor"])
+                          [:description :name :type])))
+
+  (it "lets project entries shadow global entries of the same type and name"
+    (write-config-file! "config/commands/work.md"
+                        (str "---\n"
+                             "type: command\n"
+                             "description: GLOBAL work\n"
+                             "---\n\n"
+                             "Global work prompt."))
+    (write-file! "/workspace/proj/.isaac/commands/work.md"
+                 (str "---\n"
+                      "type: command\n"
+                      "description: PROJECT work\n"
+                      "---\n\n"
+                      "Project work prompt."))
+    (should= {:description "PROJECT work"
+              :name        "work"
+              :type        :command}
+             (select-keys (get-in (resolve-catalog {:cwd "/workspace/proj"}) [:commands "work"])
+                          [:description :name :type])))
+
+  (it "finds the project root by walking up from the cwd"
+    (write-file! "/workspace/proj/.isaac/commands/work.md"
+                 (str "---\n"
+                      "type: command\n"
+                      "description: PROJECT work\n"
+                      "---\n\n"
+                      "Project work prompt."))
+    (should= {:description "PROJECT work"
+              :name        "work"
+              :type        :command}
+             (select-keys (get-in (resolve-catalog {:cwd "/workspace/proj/src/deep"}) [:commands "work"])
+                          [:description :name :type])))
+
+  (it "supports extra typed roots from config"
+    (write-file! "/workspace/commands/review.md"
+                 (str "---\n"
+                      "description: Review a pull request\n"
+                      "---\n\n"
+                      "Review PR {{pr}}."))
+    (should= {:description "Review a pull request"
+              :name        "review"
+              :type        :command}
+             (select-keys (get-in (resolve-catalog {:config {:command-paths ["/workspace/commands"]}}) [:commands "review"])
+                          [:description :name :type])))
+
+  (it "emits a debug timing log with counts when the catalog resolves"
+    (write-config-file! "config/commands/work.md"
+                        (str "---\n"
+                             "type: command\n"
+                             "description: Start work on a ready bean\n"
+                             "---\n\n"
+                             "Start work on bean {{bean}}."))
+    (write-config-file! "config/skills/tdd/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use when writing code\n"
+                             "---\n\n"
+                             "Write a failing test first."))
+    (let [entry (do (resolve-catalog)
+                    (first (filter #(= :prompt/catalog-resolved (:event %)) @log/captured-logs)))]
+      (should= :debug (:level entry))
+      (should= 1 (:command-count entry))
+      (should= 1 (:skill-count entry))
+      (should (number? (:file-count entry)))
+      (should (number? (:elapsed-ms entry)))))
+
+  (it "preserves prompt catalog config keys when config is loaded"
+    (write-config-file! "config/isaac.edn"
+                        "{:prompt-paths [\"config/prompts\"] :prompt-dir-names {\"abilities\" \"skill\"}}")
+    (let [config (:config (config/load-config-result {:state-dir state-dir
+                                                      :fs        (nexus/get :fs)}))]
+      (should= ["config/prompts"] (:prompt-paths config))
+      (should= {"abilities" "skill"} (:prompt-dir-names config)))))

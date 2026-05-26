@@ -397,6 +397,13 @@
                                         :snapshot-only? true
                                         :key-spec    {:type :string}
                                         :value-spec  model}
+                 :prompt-dir-names    {:type        :map
+                                       :key-spec    {:type :string}
+                                       :value-spec  {:type :string}
+                                       :description "Directory-name to prompt-type mapping for prepared prompts"}
+                 :prompt-paths        {:type        :seq
+                                       :spec        {:type :string}
+                                       :description "Extra roots to scan for prepared prompts"}
                  :prefer-entity-files {:type        :boolean
                                        :default     false
                                        :description "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
@@ -406,11 +413,17 @@
                                         :snapshot-only? true
                                         :key-spec    {:type :string}
                                         :value-spec  provider}
+                 :command-paths       {:type        :seq
+                                       :spec        {:type :string}
+                                       :description "Extra typed roots to scan for prepared commands"}
                  :cron                {:description "Cron job configurations (map of job name -> cron job config)"
                                        :type        :map
                                        :name        "cron table"
                                        :key-spec    {:type :string}
                                        :value-spec  cron-job}
+                 :skill-paths         {:type        :seq
+                                       :spec        {:type :string}
+                                       :description "Extra typed roots to scan for prepared skills"}
                  :slash-commands      slash-commands
                  :sessions            sessions
                  :server              server

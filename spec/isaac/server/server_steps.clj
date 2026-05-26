@@ -49,6 +49,15 @@
     (re-matches #"-?\d+" value) (parse-long value)
     (= "true" (str/lower-case value)) true
     (= "false" (str/lower-case value)) false
+    (or (str/starts-with? value "[")
+        (str/starts-with? value "{")
+        (str/starts-with? value ":")
+        (str/starts-with? value "\"")
+        (str/starts-with? value "#"))
+    (try
+      (edn/read-string value)
+      (catch RuntimeException _
+        value))
     (= "bind-server-port" value) false
     :else value))
 
