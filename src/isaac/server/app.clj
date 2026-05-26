@@ -29,7 +29,7 @@
   (some? @state))
 
 (defn current-config []
-  (some-> @state :cfg deref))
+  (config/snapshot "server/current-config accessor"))
 
 (defn registries []
   [(assoc @comm-registry/*registry* :kind :slot-tree)
@@ -48,77 +48,19 @@
                      (refreshing request))]
     (http/wrap-logging (http/wrap-auth handler-opts scanning))))
 
-(defn- config-error-prefix [path]
-  (when-let [[_ kind id] (re-matches #"(crew|models|providers)/([^/]+)\.edn" path)]
-    (str kind "." id)))
-
-(defn- reload-failure [path errors]
-  (if-let [parse-error (some #(when (= path (:key %)) %) errors)]
-    {:reason :parse :error (:value parse-error)}
-    (let [prefix           (config-error-prefix path)
-          relevant-errors  (cond
-                             prefix (filter #(str/starts-with? (:key %) prefix) errors)
-                             :else  errors)
-          formatted-error  (->> relevant-errors
-                                (map #(str (:key %) " " (:value %)))
-                                (clojure.string/join "\n"))]
-      {:reason :validation :error formatted-error})))
-
-(defn- dotted-path [path]
-  (str/join "." (map config/->name path)))
-
-(defn- comm-validation-errors [cfg registry]
-  (let [path  (:path registry)
-        impls (:impls registry)
-        mod-index (:module-index cfg)
-        cont  (get-in cfg path)]
-    (->> cont
-         (keep (fn [[slot slice]]
-                  (when (map? slice)
-                    (let [impl     (config/slot-impl slot slice)
-                          lazy?    (some #(get-in % [:manifest :comm (keyword (config/->name impl))])
-                                         (vals mod-index))
-                          slot-pth (dotted-path (conj (vec path) slot))]
-                      (when (and impl (not lazy?) (not (contains? impls (config/->name impl))))
-                        {:path slot-pth :message (str "unknown :type " (pr-str impl))})))))
-          (remove nil?)
-          vec)))
-
-(defn validate-config!
-  "Logs any comm-impl validation errors against the given registry. Returns
-   the seq of errors (empty if cfg is valid)."
-  [cfg registry]
-  (let [errors (comm-validation-errors cfg registry)]
-    (doseq [{:keys [path message]} errors]
-      (log/error :config/validation-error :path path :message message))
-    errors))
-
-(defn- reload-config! [state-dir cfg* host comm-registry registries path]
-  (let [load-result (config/load-config-result {:state-dir state-dir :raw-parse-errors? true})
-        errors      (:errors load-result)
-        new-cfg     (assoc (:config load-result) :module-index (:module-index host))]
-    (cond
-      (seq errors)
-      (let [{:keys [error reason]} (reload-failure path errors)]
-        (log/error :config/reload-failed :error error :path path :reason reason))
-
-      (seq (validate-config! new-cfg comm-registry))
-      nil
-
-      :else
-      (let [old-cfg @cfg*]
-        (reset! cfg* new-cfg)
-        (config/dangerously-install-config! new-cfg "config hot reload")
-        (config/install! {:config new-cfg :old-config old-cfg :registries registries :host host})
-        (log/info :config/reloaded :path path)))))
-
-(defn- start-config-reloader! [source state-dir cfg* host comm-registry registries]
-  ;; The reloader manages the live runtime: it reconciles components directly
-  ;; into the (global) nexus, so it must NOT capture+restore a runtime snapshot
-  ;; the way bound-runtime-fn does for one-shot deferred work — that would
-  ;; discard the reconcile. bound-fn still propagates dynamic var bindings.
+(defn- start-config-reloader! [source state-dir host comm-registry registries]
+  ;; The reloader manages the live runtime: config/reload! reconciles components
+  ;; directly into the (global) nexus, so we must NOT capture+restore a runtime
+  ;; snapshot the way bound-runtime-fn does for one-shot deferred work — that
+  ;; would discard the reconcile. bound-fn still propagates dynamic var bindings.
   (let [reload! (bound-fn [path]
-                  (reload-config! state-dir cfg* host comm-registry registries path))]
+                  (config/reload! {:state-dir     state-dir
+                                   :fs            (fs/instance)
+                                   :old-config    (config/snapshot "reload: previous config for the reconcile diff")
+                                   :comm-registry comm-registry
+                                   :registries    registries
+                                   :host          host
+                                   :path          path}))]
     (future
       (loop []
         (when-let [path (config/poll! source 5000)]
@@ -145,11 +87,11 @@
       (when (and hot-reload? state-dir)
         (config/watch-service-source state-dir))))
 
-(defn- build-handler-opts [opts config-home state-dir cfg*]
+(defn- build-handler-opts [opts config-home state-dir]
   (cond-> (dissoc opts :home)
     config-home (assoc :home config-home)
     state-dir   (assoc :state-dir state-dir)
-    true        (assoc :cfg-fn (fn [] @cfg*))))
+    true        (assoc :cfg-fn (fn [] (config/snapshot "http handler: ambient config")))))
 
 (defn- start-http-server [dev? start-http-server? handler-opts port host]
   (let [handler (when start-http-server?
@@ -174,9 +116,8 @@
    :hail-router (when scheduler
                   (hail-router/start! {}))})
 
-(defn- reset-server-state! [cfg* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?]
-  (reset! state {:cfg                cfg*
-                 :host-ctx           host-ctx
+(defn- reset-server-state! [host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?]
+  (reset! state {:host-ctx           host-ctx
                  :registry           comm-registry
                  :registries         registries
                  :config-source      config-source
@@ -196,7 +137,7 @@
   (let [cfg               (:cfg opts)
         comm-registry     @comm-registry/*registry*
         registries        (registries)
-        validation-errors (validate-config! cfg comm-registry)]
+        validation-errors (config/validate-config! cfg comm-registry)]
     (when-not (seq validation-errors)
       (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]}
             (startup-settings opts)]
@@ -209,7 +150,6 @@
                 _                       (nexus/init! {:fs (or (fs/instance opts) (fs/real-fs))})
                 _                       (when state-dir
                                           (home/init-state-dir! state-dir))
-                cfg*                    (atom cfg)
                 scheduler               (when state-dir
                                           (-> (scheduler-core/create {})
                                               scheduler-core/start!))
@@ -224,17 +164,17 @@
                 config-source           (start-config-source opts hot-reload? state-dir)
                 _                       (some-> config-source config/start!)
                 reloader                (when (and config-source state-dir)
-                                          (start-config-reloader! config-source state-dir cfg* host-ctx comm-registry registries))
-                handler-opts            (build-handler-opts opts config-home state-dir cfg*)
+                                          (start-config-reloader! config-source state-dir host-ctx comm-registry registries))
+                handler-opts            (build-handler-opts opts config-home state-dir)
                 {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
                 {:keys [delivery hail-delivery hail-router]} (start-background-services opts scheduler)]
             (when (and dev? start-http-server?)
               (log/info :server/dev-mode-enabled :host host :port actual))
-            (reset-server-state! cfg* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?)
+            (reset-server-state! host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?)
             {:port actual :host host}))))))
 
 (defn stop! []
-  (when-let [{:keys [cfg config-source scheduler delivery hail-delivery hail-router host-ctx registries reloader server]} @state]
+  (when-let [{:keys [config-source scheduler delivery hail-delivery hail-router host-ctx registries reloader server]} @state]
     (when delivery
       (worker/stop! delivery))
     (when hail-delivery
@@ -244,7 +184,7 @@
     (when scheduler
       (scheduler-core/shutdown! scheduler))
     (when registries
-      (config/reconcile! host-ctx @cfg nil registries))
+      (config/reconcile! host-ctx (config/snapshot "shutdown: current config for teardown reconcile") nil registries))
     (some-> reloader future-cancel)
     (when config-source
       (config/stop! config-source))

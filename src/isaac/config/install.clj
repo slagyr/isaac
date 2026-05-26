@@ -9,8 +9,10 @@
    stays free of dependencies on the component implementations (comms, hail,
    hooks, cron)."
   (:require
+    [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.config.configurator :as configurator]
+    [isaac.logger :as log]
     [isaac.nexus :as nexus]
     [isaac.session.store :as store]))
 
@@ -46,3 +48,76 @@
     (config/set-snapshot! config "load-and-install! coordinator")
     (install! {:config config :registries registries :host host})
     {:config config :errors errors :warnings warnings}))
+
+;; ----- comm-impl validation (boot + reload) -----
+
+(defn- config-error-prefix [path]
+  (when-let [[_ kind id] (re-matches #"(crew|models|providers)/([^/]+)\.edn" path)]
+    (str kind "." id)))
+
+(defn- reload-failure [path errors]
+  (if-let [parse-error (some #(when (= path (:key %)) %) errors)]
+    {:reason :parse :error (:value parse-error)}
+    (let [prefix          (config-error-prefix path)
+          relevant-errors (cond
+                            prefix (filter #(str/starts-with? (:key %) prefix) errors)
+                            :else  errors)
+          formatted-error (->> relevant-errors
+                               (map #(str (:key %) " " (:value %)))
+                               (str/join "\n"))]
+      {:reason :validation :error formatted-error})))
+
+(defn- dotted-path [path]
+  (str/join "." (map configurator/->name path)))
+
+(defn- comm-validation-errors [cfg registry]
+  (let [path      (:path registry)
+        impls     (:impls registry)
+        mod-index (:module-index cfg)
+        cont      (get-in cfg path)]
+    (->> cont
+         (keep (fn [[slot slice]]
+                 (when (map? slice)
+                   (let [impl     (configurator/slot-impl slot slice)
+                         lazy?    (some #(get-in % [:manifest :comm (keyword (configurator/->name impl))])
+                                        (vals mod-index))
+                         slot-pth (dotted-path (conj (vec path) slot))]
+                     (when (and impl (not lazy?) (not (contains? impls (configurator/->name impl))))
+                       {:path slot-pth :message (str "unknown :type " (pr-str impl))})))))
+         (remove nil?)
+         vec)))
+
+(defn validate-config!
+  "Logs any comm-impl validation errors against the given comm registry. Returns
+   the seq of errors (empty if cfg is valid). Used at boot and on reload."
+  [cfg comm-registry]
+  (let [errors (comm-validation-errors cfg comm-registry)]
+    (doseq [{:keys [path message]} errors]
+      (log/error :config/validation-error :path path :message message))
+    errors))
+
+(defn reload!
+  "Hot-reload coordinator (server only): re-load config from `state-dir`/`fs`,
+   validate it (parse + semantic + comm-impl against `comm-registry`); on any
+   error, log and KEEP the running config (returns nil); on success, commit the
+   new snapshot and reconcile `registries` against `old-config`. Returns the new
+   config on success, nil if rejected."
+  [{:keys [state-dir fs old-config comm-registry registries host path]}]
+  (let [load-result (config/load-config-result {:state-dir state-dir :fs fs :raw-parse-errors? true})
+        errors      (:errors load-result)
+        new-cfg     (assoc (:config load-result) :module-index (:module-index host))]
+    (cond
+      (seq errors)
+      (let [{:keys [error reason]} (reload-failure path errors)]
+        (log/error :config/reload-failed :error error :path path :reason reason)
+        nil)
+
+      (seq (validate-config! new-cfg comm-registry))
+      nil
+
+      :else
+      (do
+        (config/set-snapshot! new-cfg "config hot reload")
+        (install! {:config new-cfg :old-config old-config :registries registries :host host})
+        (log/info :config/reloaded :path path)
+        new-cfg))))

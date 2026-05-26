@@ -240,7 +240,7 @@
 
   (it "returns nil and does not start services when config validation fails"
     (let [started (atom nil)]
-      (with-redefs [sut/validate-config! (fn [_ _] [{:key "server.port" :value "bad"}])
+      (with-redefs [config/validate-config! (fn [_ _] [{:key "server.port" :value "bad"}])
                     httpkit/run-server    (fn [& _] (reset! started :http))
                     worker/start!         (fn [& _] (reset! started :worker))
                     cron-service/start!   (fn [& _] (reset! started :cron))]
