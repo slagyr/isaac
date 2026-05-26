@@ -1,11 +1,11 @@
 ---
 # isaac-bgx0
 title: Model-driven skill auto-activation (advertise descriptions + load-on-demand tool)
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-26T13:04:45Z
+updated_at: 2026-05-26T13:17:53Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
@@ -40,3 +40,18 @@ This is the industry pattern (Anthropic Agent Skills progressive disclosure: nam
 ## load_skill shape: resource-arg-ready
 
 Shape the tool as `load_skill(name, [resource])`. MVP of this bean implements `load_skill(name)` -> body only, but the signature anticipates an optional `resource` arg so bundled-resource loading (isaac-etpt) slots in without a redesign. `load_skill` is a **scoped reader** of a skill's own directory (it can read skill assets even though they live under config/, outside general crew fs-bounds).
+
+
+## Feature file
+
+`features/prompts/skill_activation.feature` — 3 `@wip` scenarios: skills advertised (name+description) in the cached system prompt; `load_skill` loads a body on demand; menu rendered in stable sorted order (cache-safe). Run:
+
+```
+bb features features/prompts/skill_activation.feature
+```
+
+**Definition of done:** remove `@wip` and green.
+
+**Acceptance (not scenarios):** debug-safe deterministic menu rendering; large-set `list_skills` fallback (threshold knob).
+
+**New step:** none (reuses `the prompt ... matches:`, queued tool_call responses, `the tool result lines match:`).
