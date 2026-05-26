@@ -1,11 +1,11 @@
 ---
 # isaac-bgx0
 title: Model-driven skill auto-activation (advertise descriptions + load-on-demand tool)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-26T13:17:53Z
+updated_at: 2026-05-26T20:04:09Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
