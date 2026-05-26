@@ -2,6 +2,7 @@
   (:require
     [cheshire.core :as json]
     [isaac.config.api :as config]
+    [isaac.fs :as fs]
     [isaac.tool.memory :as memory]
     [isaac.session.cli :as sut]
     [isaac.session.store :as store]
@@ -70,9 +71,8 @@
 
   (it "reassigns the crew when the target exists"
     (helper/create-session! "/test/sessions" "joe" {:crew "main"})
-    (with-redefs [config/load-config (fn [& _]
-                                       {:crew {"main" {} "alice" {}}})]
-      (should= 0 (sut/run-fn {:home "/test" :_raw-args ["set" "joe.crew" "alice"]})))
+    (fs/spit (nexus/get :fs) "/test/.isaac/config/isaac.edn" (pr-str {:crew {"main" {} "alice" {}}}))
+    (should= 0 (sut/run-fn {:home "/test" :_raw-args ["set" "joe.crew" "alice"]}))
     (should= "alice" (:crew (helper/get-session "/test/sessions" "joe"))))
 
   (it "rejects immutable fields"
@@ -106,9 +106,8 @@
 
   (it "rejects reassignment to an unknown crew"
     (helper/create-session! "/test/sessions" "joe" {:crew "main"})
-    (with-redefs [config/load-config (fn [& _]
-                                       {:crew {"main" {}}})]
-      (let [err (binding [*err* (java.io.StringWriter.)]
-                  (should= 1 (sut/run-fn {:home "/test" :_raw-args ["set" "joe.crew" "nobody"]}))
-                  (str *err*))]
-        (should-contain "nobody" err)))))
+    (fs/spit (nexus/get :fs) "/test/.isaac/config/isaac.edn" (pr-str {:crew {"main" {}}}))
+    (let [err (binding [*err* (java.io.StringWriter.)]
+                (should= 1 (sut/run-fn {:home "/test" :_raw-args ["set" "joe.crew" "nobody"]}))
+                (str *err*))]
+      (should-contain "nobody" err))))

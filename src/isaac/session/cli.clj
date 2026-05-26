@@ -191,9 +191,7 @@
    session store + tree). Returns {:config :state-dir :store}."
   [opts]
   (let [state-dir  (resolve-state-dir opts)
-        loaded-cfg (config/normalize-config (config/load-config {:state-dir state-dir}))
-        loaded-cfg (assoc loaded-cfg :state-dir state-dir)]
-    (config/dangerously-install-config! loaded-cfg "session cli command")
+        loaded-cfg (config/load-config! {:state-dir state-dir} "session cli command")]
     (config/install! {:config loaded-cfg})
     {:config loaded-cfg :state-dir state-dir :store (store/registered-store)}))
 
