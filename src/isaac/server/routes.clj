@@ -4,7 +4,6 @@
   (:require
     [c3kit.apron.util :as util]
     [clojure.string :as str]
-    [isaac.config.api :as config]
     [isaac.module.loader :as module-loader]))
 
 (def ^:dynamic *registry* (atom {}))
@@ -72,8 +71,9 @@
   ([request]
    (dispatch-request request))
   ([opts request]
+    ;; Thread the server's current config into the request as a value. We do NOT
+    ;; write it to the global snapshot here — install! sets the snapshot at boot
+    ;; and on every reload, so per-request mutation is both redundant and racy.
     (let [cfg (or (when-let [cfg-fn (:cfg-fn opts)] (cfg-fn))
                   (:cfg opts))]
-      (when cfg
-        (config/set-snapshot! cfg "http request entry — refresh ambient config from server state"))
-      (dispatch-request request))))
+      (dispatch-request (cond-> request cfg (assoc :config cfg))))))

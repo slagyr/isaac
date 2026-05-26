@@ -32,7 +32,8 @@
     (sut/register-route! :post "/thingy" #'post-handler)
     (let [request {:request-method :post :uri "/thingy" :body "payload"}
           opts    {:cfg {:mode :test}}]
-      (should= {:status 202 :body request}
+      ;; the handler threads the server's config into the request as a value
+      (should= {:status 202 :body (assoc request :config {:mode :test})}
                (sut/handler opts request))))
 
   (it "routes GET /status to status handler"
@@ -46,7 +47,7 @@
       (let [request {:request-method :post :uri "/hooks/bibelot"}
             opts    {:cfg {:mode :test}}]
         (module-loader/activate-core!)
-        (should= {:status 204 :body request}
+        (should= {:status 204 :body (assoc request :config {:mode :test})}
                  (sut/handler opts request)))))
 
   (it "returns 404 for unknown paths"
