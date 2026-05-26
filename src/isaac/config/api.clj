@@ -83,11 +83,6 @@
   []
   (loader/clear-env-overrides!))
 
-(defn clear-load-cache!
-  "Clears the memoized load-config-result cache (test support / after writes)."
-  []
-  (loader/clear-load-cache!))
-
 ;; ----- resolution -----
 
 (defn resolve-provider

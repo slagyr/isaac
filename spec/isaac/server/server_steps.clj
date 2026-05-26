@@ -219,15 +219,12 @@
         entity-dir? #(with-server-fs
                        (fn []
                          (seq (fs/children fs* (str state-dir "/config/" %)))))
-        _           (config/clear-load-cache!)
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
              (empty? (or (:crew cfg) {}))
              (empty? (or (:models cfg) {}))
              (empty? (or (:providers cfg) {})))
-      (do
-        (config/clear-load-cache!)
-        (load!))
+      (load!)
       cfg)))
 
 (defn- persist-config-entry! [k v]

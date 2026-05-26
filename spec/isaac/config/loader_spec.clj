@@ -260,47 +260,6 @@
             (should= {:data nil :errors [] :warnings [] :sources []}
                      (#'sut/load-root-config marigold/home {})))))))
 
-  (describe "load-config-result caching"
-
-    (it "reuses the cached result on mem-fs when nothing changed"
-      (let [mem   (fs/mem-fs)
-            calls (atom 0)]
-        (nexus/-with-nested-nexus {:fs mem}
-          (with-redefs [sut/config-files-present? (constantly true)
-                        sut/load-root-config      (fn [_ _]
-                                                    (swap! calls inc)
-                                                    {:data {} :errors [] :warnings [] :sources []})
-                        sut/entity-files          (fn [& _] {:files [] :warnings []})
-                        sut/dangling-md-warnings  (fn [& _] [])
-                        isaac.module.loader/discover! (fn [_ _] {:index {} :errors []})
-                        sut/check-comms           (fn [& _] {:errors [] :warnings []})
-                        sut/check-tools           (fn [& _] {:errors [] :warnings []})
-                        sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
-            (sut/clear-load-cache!)
-            (marigold/load-config)
-            (marigold/load-config)
-            (should= 1 @calls)))))
-
-    (it "invalidates the cached result after mem-fs changes"
-      (let [mem   (fs/mem-fs)
-            calls (atom 0)]
-        (nexus/-with-nested-nexus {:fs mem}
-          (with-redefs [sut/config-files-present? (constantly true)
-                        sut/load-root-config      (fn [_ _]
-                                                    (swap! calls inc)
-                                                    {:data {} :errors [] :warnings [] :sources []})
-                        sut/entity-files          (fn [& _] {:files [] :warnings []})
-                        sut/dangling-md-warnings  (fn [& _] [])
-                        isaac.module.loader/discover! (fn [_ _] {:index {} :errors []})
-                        sut/check-comms           (fn [& _] {:errors [] :warnings []})
-                        sut/check-tools           (fn [& _] {:errors [] :warnings []})
-                        sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
-            (sut/clear-load-cache!)
-            (marigold/load-config)
-            (marigold/write-raw! "isaac.edn" "{}")
-            (marigold/load-config)
-            (should= 2 @calls))))))
-
   (describe "runtime fs"
 
     (it "loads the root config from the installed runtime fs without binding fs/*fs*"

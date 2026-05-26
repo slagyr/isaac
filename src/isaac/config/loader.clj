@@ -25,7 +25,6 @@
 ;; lock-dotenv!). Avoids re-reading the file on every ${VAR} lookup and removes
 ;; the need to thread/bind state-dir through the substitution pipeline.
 (defonce ^:private dotenv* (atom {}))
-(defonce ^:private load-cache* (atom {}))
 
 (defn- runtime-fs
   ([]      (or (fs/instance) (throw (ex-info "config.loader requires :fs in system" {}))))
@@ -39,9 +38,6 @@
 
 (defn- children* [path]
   (fs/children (runtime-fs) path))
-
-(defn clear-load-cache! []
-  (reset! load-cache* {}))
 
 (defn- read-dotenv [state-dir]
   (let [path (when state-dir (str state-dir "/.env"))]
@@ -59,12 +55,10 @@
 
 (defn clear-env-overrides! []
   (reset! env-overrides* {})
-  (reset! dotenv* {})
-  (clear-load-cache!))
+  (reset! dotenv* {}))
 
 (defn set-env-override! [name value]
-  (swap! env-overrides* assoc name value)
-  (clear-load-cache!))
+  (swap! env-overrides* assoc name value))
 
 (defn env [name]
   (or (get @env-overrides* name)
@@ -81,14 +75,6 @@
 
 (defn- missing-config-message [state-dir]
   (str "no config found; run `isaac init` or create " state-dir "/config/isaac.edn"))
-
-(defn- cache-key [opts]
-  (let [fs* (runtime-fs opts)]
-    (when-let [token (fs/cache-token fs*)]
-      {:fs-id         (System/identityHashCode fs*)
-       :fs-token      token
-       :env-overrides @env-overrides*
-       :opts          (dissoc opts :fs)})))
 
 (defn- warning [key value]
   {:key key :value value})
@@ -1070,14 +1056,10 @@
   [& [{:keys [state-dir raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
         :or   {substitute-env? true}
         :as   opts}]]
-  (let [fs*       (runtime-fs opts)
-        opts      (assoc opts :fs fs* :substitute-env? substitute-env?)
-        cache-key (cache-key opts)]
-    (if-let [cached (and cache-key (get @load-cache* cache-key))]
-      cached
-      (let [result
-            (nexus/-with-nested-nexus {:fs fs*}
-              (lock-dotenv! state-dir)
+  (let [fs*  (runtime-fs opts)
+        opts (assoc opts :fs fs* :substitute-env? substitute-env?)]
+    (nexus/-with-nested-nexus {:fs fs*}
+      (lock-dotenv! state-dir)
               (let [root (paths/config-root state-dir)]
                 (if-not (config-files-present? root opts)
                   {:config          {:state-dir state-dir}
@@ -1139,10 +1121,7 @@
                     {:config   config
                      :errors   (vec (sort-by :key errors))
                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
-                     :sources  (vec (sort (:sources result)))}))))]
-        (when cache-key
-          (swap! load-cache* assoc cache-key result))
-        result))))
+                     :sources  (vec (sort (:sources result)))}))))))
 
 (defn load-config
   [& [opts]]

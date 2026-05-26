@@ -246,12 +246,9 @@
         stage-fs  (fs/mem-fs)
         root      (paths/config-root state-dir)]
     (fs/copy-tree! source-fs stage-fs root)
-    (try
-      (nexus/-with-nested-nexus {:fs stage-fs}
-        (apply-plan! state-dir plan)
-        (loader/load-config-result {:state-dir state-dir :fs stage-fs}))
-      (finally
-        (loader/clear-load-cache!)))))
+    (nexus/-with-nested-nexus {:fs stage-fs}
+      (apply-plan! state-dir plan)
+      (loader/load-config-result {:state-dir state-dir :fs stage-fs}))))
 
 ;; endregion ^^^^^ Plan & apply ^^^^^
 

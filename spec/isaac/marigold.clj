@@ -320,7 +320,6 @@
         (binding [module-loader/*core-index-override* baseline-core-index]
           (reset! c3env/-overrides {})
           (config-loader/clear-env-overrides!)
-          (config-loader/clear-load-cache!)
           (example))))))
 
 (defn- local-module-manifest-path [id]

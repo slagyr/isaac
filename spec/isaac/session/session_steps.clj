@@ -94,7 +94,6 @@
    load-and-commit an entry point performs in production."
   []
   (when-let [sd (state-dir)]
-    (config/clear-load-cache!)
     (config/load-config! {:state-dir sd :fs (mem-fs)} "feature: session behavior config")))
 
 (defn- notify-config-change! [path]
@@ -190,9 +189,7 @@
              (empty? (or (:crew cfg) {}))
              (empty? (or (:models cfg) {}))
              (empty? (or (:providers cfg) {})))
-      (do
-        (config/clear-load-cache!)
-        (load!))
+      (load!)
       cfg)))
 
 (defn- merged-agents []
@@ -500,10 +497,7 @@
     (fs/spit   fs* (str root "/providers/grover.edn")
                     (pr-str {}))
     (fs/spit   fs* (str root "/crew/main.edn")
-                    (pr-str {:model :grover :soul "You are Atticus."}))
-    ;; Feature setup writes root and entity files incrementally; clear the loader
-    ;; cache so later steps never reuse a root-only snapshot from mid-write.
-    (config/clear-load-cache!)))
+                    (pr-str {:model :grover :soul "You are Atticus."}))))
 
 (defn default-grover-setup []
   (initialize-state-dir! "target/test-state" true)
