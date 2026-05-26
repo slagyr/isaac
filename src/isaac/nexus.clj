@@ -57,6 +57,13 @@
   [path v]
   (swap! root-runtime clojure.core/assoc-in path v))
 
+(defn deregister!
+  "Removes whatever is registered at path in the current nexus."
+  [path]
+  (if (= 1 (count path))
+    (swap! root-runtime dissoc (first path))
+    (swap! root-runtime update-in (vec (butlast path)) dissoc (last path))))
+
 (defn registered?
   "Returns true if path has been registered in the current nexus."
   [path]

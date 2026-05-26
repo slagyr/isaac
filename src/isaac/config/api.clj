@@ -119,10 +119,11 @@
 ;; ----- install (config -> nexus) -----
 
 (defn install!
-  "Populates the nexus from a loaded config map: sets the snapshot, ensures the
-   session store and the [:tree] object-tree slot, then reconciles the given
-   registries into it. opts keys: :config (required), :old-config (nil on boot),
-   :registries, :host. Returns {:config :tree}."
+  "Reconciles an already-committed config into the nexus: ensures the session
+   store, then reconciles the given registries' config slices into the nexus as
+   live component instances (the snapshot must already be committed). opts keys:
+   :config (required), :old-config (nil on boot), :registries, :host. Returns
+   {:config config}."
   [opts]
   (install/install! opts))
 
@@ -146,11 +147,11 @@
   (configurator/on-config-change! instance old-slice new-slice))
 
 (defn reconcile!
-  "Walks the registries' config slices and reconciles the live object tree
-   against them. One fn for boot (old nil), reload (old vs new), and shutdown
-   (new nil): [tree-atom host old-cfg new-cfg registry-or-registries]."
-  [tree-atom host old-cfg new-cfg registry-or-registries]
-  (configurator/reconcile! tree-atom host old-cfg new-cfg registry-or-registries))
+  "Walks the registries' config slices and reconciles the live component
+   instances in the nexus against them. One fn for boot (old nil), reload (old
+   vs new), and shutdown (new nil): [host old-cfg new-cfg registry-or-registries]."
+  [host old-cfg new-cfg registry-or-registries]
+  (configurator/reconcile! host old-cfg new-cfg registry-or-registries))
 
 (defn slot-impl
   "Resolves the component impl/type for a slot from its config slice."

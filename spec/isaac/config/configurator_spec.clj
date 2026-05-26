@@ -34,25 +34,23 @@
         (unload-telly!))))
 
   (it "activates a declared module when a comm impl is first needed"
-    (let [tree*    (atom {})
-          host     {:module-index {:isaac.comm.telly {:manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
+    (let [host     {:module-index {:isaac.comm.telly {:manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
           registry @comm-registry/*registry*]
       (log/capture-logs
-        (sut/reconcile! tree* host nil {:comms {:bert {:type :telly}}} registry)
-        (should-not-be-nil (get-in @tree* [:comms :bert]))
+        (sut/reconcile! host nil {:comms {:bert {:type :telly}}} registry)
+        (should-not-be-nil (nexus/get-in [:comms :bert]))
         (should (some #(= :module/activated (:event %)) @log/captured-logs))
         (should (some #(and (= :telly/started (:event %))
                             (= "bert" (:module %)))
                       @log/captured-logs)))))
 
   (it "logs activation failure and leaves the slot inert when the module load fails"
-    (let [tree*    (atom {})
-          host     {:module-index {:isaac.comm.telly {:manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
+    (let [host     {:module-index {:isaac.comm.telly {:manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
           registry @comm-registry/*registry*]
       (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
       (log/capture-logs
-        (sut/reconcile! tree* host nil {:comms {:bert {:type :telly}}} registry)
-        (should= {} @tree*)
+        (sut/reconcile! host nil {:comms {:bert {:type :telly}}} registry)
+        (should-be-nil (nexus/get-in [:comms :bert]))
         (should (some #(= :module/activation-failed (:event %)) @log/captured-logs)))))
 
   (it "stops an existing slot when it is removed from config"
@@ -61,11 +59,11 @@
                      (on-startup! [_ _] nil)
                      (on-config-change! [_ old new]
                        (reset! stopped [old new])))
-          tree*    (atom {:comms {:bert instance}})
           registry {:path [:comms] :impls {}}
           old-cfg  {:comms {:bert {:type :telly :token "abc"}}}]
-      (sut/reconcile! tree* {} old-cfg {:comms {}} registry)
-      (should= {:comms {}} @tree*)
+      (nexus/register! [:comms :bert] instance)
+      (sut/reconcile! {} old-cfg {:comms {}} registry)
+      (should-be-nil (nexus/get-in [:comms :bert]))
       (should= [{:type :telly :token "abc"} nil] @stopped)))
 
   (it "restarts a slot when its impl changes"
@@ -78,13 +76,13 @@
                       (on-startup! [_ slice]
                         (swap! events conj [:new slice]))
                       (on-config-change! [_ _ _] nil))
-           tree*    (atom {:comms {:bert old-inst}})
            registry @comm-registry/*registry*
            old-cfg  {:comms {:bert {:type (keyword marigold/longwave) :token "abc"}}}
            new-cfg  {:comms {:bert {:type :telly}}}]
       (comm-registry/register-factory! "telly" (fn [_] new-inst))
-      (sut/reconcile! tree* {} old-cfg new-cfg registry)
-      (should= new-inst (get-in @tree* [:comms :bert]))
+      (nexus/register! [:comms :bert] old-inst)
+      (sut/reconcile! {} old-cfg new-cfg registry)
+      (should= new-inst (nexus/get-in [:comms :bert]))
       (should= [[:old {:type (keyword marigold/longwave) :token "abc"} nil]
                 [:new {:type :telly}]]
                @events)))
@@ -95,22 +93,21 @@
                       (on-startup! [_ _] nil)
                       (on-config-change! [_ old new]
                         (reset! changes [old new])))
-           tree*    (atom {:comms {:bert instance}})
            registry {:path [:comms] :impls {}}
            old-cfg  {:comms {:bert {:type :telly :token marigold/helm-api}}}
            new-cfg  {:comms {:bert {:type :telly :token "xyz"}}}]
-      (sut/reconcile! tree* {} old-cfg new-cfg registry)
-      (should= instance (get-in @tree* [:comms :bert]))
+      (nexus/register! [:comms :bert] instance)
+      (sut/reconcile! {} old-cfg new-cfg registry)
+      (should= instance (nexus/get-in [:comms :bert]))
       (should= [{:type :telly :token marigold/helm-api}
                 {:type :telly :token "xyz"}]
                @changes)))
 
   (it "leaves a new slot inert when no factory can be resolved"
-    (let [tree*    (atom {})
-          registry {:path [:comms] :impls {}}
+    (let [registry {:path [:comms] :impls {}}
           new-cfg  {:comms {:bert {:type :ghost}}}]
-      (sut/reconcile! tree* {} nil new-cfg registry)
-      (should= {} @tree*)))
+      (sut/reconcile! {} nil new-cfg registry)
+      (should-be-nil (nexus/get-in [:comms :bert]))))
 
   (it "starts a slot when impl changes and no existing instance is present"
     (let [events   (atom [])
@@ -118,13 +115,12 @@
                       (on-startup! [_ slice]
                         (swap! events conj [:new slice]))
                       (on-config-change! [_ _ _] nil))
-           tree*    (atom {})
            registry @comm-registry/*registry*
            old-cfg  {:comms {:bert {:type (keyword marigold/longwave) :token "abc"}}}
            new-cfg  {:comms {:bert {:type :telly}}}]
       (comm-registry/register-factory! "telly" (fn [_] new-inst))
-      (sut/reconcile! tree* {} old-cfg new-cfg registry)
-      (should= new-inst (get-in @tree* [:comms :bert]))
+      (sut/reconcile! {} old-cfg new-cfg registry)
+      (should= new-inst (nexus/get-in [:comms :bert]))
       (should= [[:new {:type :telly}]] @events)))
 
   (it "does not log comm activation for non-comm components"
@@ -135,17 +131,16 @@
                     :path    [:cron]
                     :factory (fn [_] instance)}]
       (log/capture-logs
-        (sut/reconcile! (atom {}) {} nil {:cron {:health-check {:expr "0 0 * * *"}}} registry)
+        (sut/reconcile! {} nil {:cron {:health-check {:expr "0 0 * * *"}}} registry)
         (should (some #(= :lifecycle/started (:event %)) @log/captured-logs))
         (should-not (some #(= :comm/activated (:event %)) @log/captured-logs)))))
 
   (it "does nothing for slice changes when no instance exists"
-    (let [tree*    (atom {})
-          registry {:path [:comms] :impls {}}
+    (let [registry {:path [:comms] :impls {}}
           old-cfg  {:comms {:bert {:type :telly :token marigold/helm-api}}}
           new-cfg  {:comms {:bert {:type :telly :token "xyz"}}}]
-      (sut/reconcile! tree* {} old-cfg new-cfg registry)
-      (should= {} @tree*)))
+      (sut/reconcile! {} old-cfg new-cfg registry)
+      (should-be-nil (nexus/get-in [:comms :bert]))))
 
   (describe "schema ownership"
 

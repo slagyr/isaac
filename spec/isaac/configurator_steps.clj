@@ -21,12 +21,10 @@
   (keyword name))
 
 (defn- live-instance [slot-name]
-  (when-let [tree (app/comm-tree)]
-    (get-in @tree [:comms (->slot-key slot-name)])))
+  (nexus/get-in [:comms (->slot-key slot-name)]))
 
 (defn- live-node [path]
-  (when-let [tree (app/comm-tree)]
-    (get-in @tree path)))
+  (nexus/get-in path))
 
 (defn- parse-state-value [value]
   (cond

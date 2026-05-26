@@ -225,7 +225,7 @@
       (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                     httpkit/server-port  (fn [_] 7001)
                     httpkit/server-stop! (fn [_] nil)
-                    config/reconcile! (fn [_tree host _old _new _registry]
+                    config/reconcile! (fn [host _old _new _registry]
                                            (reset! captured host))]
         (sut/start! {:host      "127.0.0.1"
                      :port      0

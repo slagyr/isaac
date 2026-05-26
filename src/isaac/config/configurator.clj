@@ -4,7 +4,8 @@
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
-    [isaac.module.loader :as module-loader]))
+    [isaac.module.loader :as module-loader]
+    [isaac.nexus :as nexus]))
 
 (defprotocol Reconfigurable
   (on-startup!       [this slice])
@@ -47,22 +48,6 @@
         (get slice "type")
         (->name slot))))
 
-(defn- assoc-tree [tree path value]
-  (if (empty? path)
-    value
-    (assoc-in tree path value)))
-
-(defn- dissoc-tree [tree path]
-  (cond
-    (empty? path) nil
-    (= 1 (count path)) (dissoc tree (first path))
-    :else (let [parent-path (vec (butlast path))
-                leaf        (last path)
-                parent      (get-in tree parent-path)]
-            (if (map? parent)
-              (assoc-in tree parent-path (dissoc parent leaf))
-              tree))))
-
 (defn- slot-keys [container-cfg]
   (when (map? container-cfg)
     (set (keys container-cfg))))
@@ -71,79 +56,79 @@
   (or (:impl registry)
       (->name (last (:path registry)))))
 
-(defn- start-instance! [tree-atom factory host slot-path slice impl]
+(defn- start-instance! [factory host slot-path slice impl]
   (let [host-with-name (assoc host :name (last slot-path))
         instance-name  (->name (last slot-path))
         instance       (factory host-with-name)]
     (on-startup! instance slice)
     (when (= [:comms] (:path (:registry host)))
       (comm-registry/register-instance! impl instance))
-    (swap! tree-atom assoc-tree slot-path instance)
+    (nexus/register! slot-path instance)
     (log/info :lifecycle/started :path (dotted slot-path) :impl impl)
     (when (= [:comms] (:path (:registry host)))
       (log/info :comm/activated :comm instance-name :type impl))
     instance))
 
-(defn- stop-instance! [tree-atom instance slot-path old-slice impl]
+(defn- stop-instance! [instance slot-path old-slice impl]
   (on-config-change! instance old-slice nil)
   (when (= [:comms] (butlast slot-path))
     (comm-registry/deregister-instance! impl))
-  (swap! tree-atom dissoc-tree slot-path)
+  (nexus/deregister! slot-path)
   (log/info :lifecycle/stopped :path (dotted slot-path) :impl impl))
 
 (defn- change-instance! [instance slot-path old-slice new-slice impl]
   (on-config-change! instance old-slice new-slice)
   (log/info :lifecycle/changed :path (dotted slot-path) :impl impl))
 
-(defn- reconcile-slot! [tree-atom host registry slot-path old-slice new-slice]
+(defn- reconcile-slot! [host registry slot-path old-slice new-slice]
   (let [slot     (last slot-path)
         old-impl (slot-impl slot old-slice)
         new-impl (slot-impl slot new-slice)
-        existing (get-in @tree-atom slot-path)]
+        existing (nexus/get-in slot-path)]
     (cond
       (and (nil? old-slice) (some? new-slice))
       (when-let [factory (resolve-factory registry host new-impl)]
-        (start-instance! tree-atom factory host slot-path new-slice new-impl))
+        (start-instance! factory host slot-path new-slice new-impl))
 
       (and (some? old-slice) (nil? new-slice))
       (when existing
-        (stop-instance! tree-atom existing slot-path old-slice old-impl))
+        (stop-instance! existing slot-path old-slice old-impl))
 
       (not= old-impl new-impl)
       (do
         (when existing
-          (stop-instance! tree-atom existing slot-path old-slice old-impl))
+          (stop-instance! existing slot-path old-slice old-impl))
         (when-let [factory (resolve-factory registry host new-impl)]
-          (start-instance! tree-atom factory host slot-path new-slice new-impl)))
+          (start-instance! factory host slot-path new-slice new-impl)))
 
       (not= old-slice new-slice)
       (when existing
         (change-instance! existing slot-path old-slice new-slice new-impl)))))
 
-(defn- reconcile-component! [tree-atom host old-cfg new-cfg registry]
+(defn- reconcile-component! [host old-cfg new-cfg registry]
   (let [path      (vec (:path registry))
         old-slice (get-in old-cfg path)
         new-slice (get-in new-cfg path)
-        existing  (get-in @tree-atom path)
+        existing  (nexus/get-in path)
         factory   (:factory registry)
         impl      (singleton-impl registry)
         host      (assoc host :registry registry)]
     (cond
       (and (nil? old-slice) (some? new-slice) (nil? existing))
-      (start-instance! tree-atom factory host path new-slice impl)
+      (start-instance! factory host path new-slice impl)
 
       (and (some? old-slice) (nil? new-slice) existing)
-      (stop-instance! tree-atom existing path old-slice impl)
+      (stop-instance! existing path old-slice impl)
 
       (and (not= old-slice new-slice) existing)
       (change-instance! existing path old-slice new-slice impl)
 
       (and (not= old-slice new-slice) (some? new-slice) (nil? existing))
-      (start-instance! tree-atom factory host path new-slice impl))))
+      (start-instance! factory host path new-slice impl))))
 
-(defn- reconcile-registry! [tree-atom host old-cfg new-cfg registry]
+(defn- reconcile-registry! [host old-cfg new-cfg registry]
   (case (:kind registry)
-    :component (reconcile-component! tree-atom host old-cfg new-cfg registry)
+    :component (reconcile-component! host old-cfg new-cfg registry)
     (let [path        (:path registry)
           old-cont    (get-in old-cfg path)
           new-cont    (get-in new-cfg path)
@@ -154,18 +139,18 @@
         (let [old-slice (get old-cont slot)
               new-slice (get new-cont slot)
               slot-path (conj (vec path) slot)]
-          (reconcile-slot! tree-atom host registry slot-path old-slice new-slice))))))
+          (reconcile-slot! host registry slot-path old-slice new-slice))))))
 
 (defn reconcile!
-  "Walks user-chosen slots under (:path registry), reconciling object-tree
-   instances against config-tree slices. One function for boot, reload, and
-   shutdown.
+  "Walks user-chosen slots under (:path registry), reconciling the live
+   component instances in the nexus against config-tree slices. One function
+   for boot, reload, and shutdown.
 
-   Boot:    (reconcile! tree host nil  cfg  registry)
-   Reload:  (reconcile! tree host old  new  registry)
-   Stop:    (reconcile! tree host @cfg nil  registry)"
-  [tree-atom host old-cfg new-cfg registry-or-registries]
+   Boot:    (reconcile! host nil  cfg  registry)
+   Reload:  (reconcile! host old  new  registry)
+   Stop:    (reconcile! host @cfg nil  registry)"
+  [host old-cfg new-cfg registry-or-registries]
   (if (map? registry-or-registries)
-    (reconcile-registry! tree-atom host old-cfg new-cfg registry-or-registries)
+    (reconcile-registry! host old-cfg new-cfg registry-or-registries)
     (doseq [registry registry-or-registries]
-      (reconcile-registry! tree-atom host old-cfg new-cfg registry))))
+      (reconcile-registry! host old-cfg new-cfg registry))))

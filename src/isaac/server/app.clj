@@ -37,11 +37,6 @@
    hooks/registry
    cron-service/registry])
 
-(defn comm-tree
-  "Returns the live object-tree atom (mirrors :comms shape) from the nexus.
-   Returns nil if the server is not running."
-  []
-  (nexus/get :tree))
 
 (defn- dev-handler [handler-opts]
   (refresh/init refresh/services "isaac" [])
@@ -118,9 +113,12 @@
         (log/info :config/reloaded :path path)))))
 
 (defn- start-config-reloader! [source state-dir cfg* host comm-registry registries]
-  (let [reload! (nexus/bound-runtime-fn
-                  (bound-fn [path]
-                    (reload-config! state-dir cfg* host comm-registry registries path)))]
+  ;; The reloader manages the live runtime: it reconciles components directly
+  ;; into the (global) nexus, so it must NOT capture+restore a runtime snapshot
+  ;; the way bound-runtime-fn does for one-shot deferred work — that would
+  ;; discard the reconcile. bound-fn still propagates dynamic var bindings.
+  (let [reload! (bound-fn [path]
+                  (reload-config! state-dir cfg* host comm-registry registries path))]
     (future
       (loop []
         (when-let [path (config/poll! source 5000)]
@@ -176,9 +174,8 @@
    :hail-router (when scheduler
                   (hail-router/start! {}))})
 
-(defn- reset-server-state! [cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?]
+(defn- reset-server-state! [cfg* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?]
   (reset! state {:cfg                cfg*
-                 :tree               tree*
                  :host-ctx           host-ctx
                  :registry           comm-registry
                  :registries         registries
@@ -220,7 +217,7 @@
                                           (nexus/register! [:scheduler] scheduler))
                 host-ctx                (host-context cfg state-dir connect-ws!)
                 _                       (config/dangerously-install-config! cfg "server boot")
-                {tree* :tree}           (config/install! {:config cfg :registries registries :host host-ctx})
+                _                       (config/install! {:config cfg :registries registries :host host-ctx})
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
                 _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                           (module-loader/register-route-extensions! (:manifest entry)))
@@ -233,11 +230,11 @@
                 {:keys [delivery hail-delivery hail-router]} (start-background-services opts scheduler)]
             (when (and dev? start-http-server?)
               (log/info :server/dev-mode-enabled :host host :port actual))
-            (reset-server-state! cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?)
+            (reset-server-state! cfg* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?)
             {:port actual :host host}))))))
 
 (defn stop! []
-  (when-let [{:keys [cfg config-source scheduler delivery hail-delivery hail-router host-ctx registries reloader server tree]} @state]
+  (when-let [{:keys [cfg config-source scheduler delivery hail-delivery hail-router host-ctx registries reloader server]} @state]
     (when delivery
       (worker/stop! delivery))
     (when hail-delivery
@@ -246,8 +243,8 @@
       (hail-router/stop! hail-router))
     (when scheduler
       (scheduler-core/shutdown! scheduler))
-    (when (and tree registries)
-      (config/reconcile! tree host-ctx @cfg nil registries))
+    (when registries
+      (config/reconcile! host-ctx @cfg nil registries))
     (some-> reloader future-cancel)
     (when config-source
       (config/stop! config-source))

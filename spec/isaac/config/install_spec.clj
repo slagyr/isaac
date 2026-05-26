@@ -26,17 +26,6 @@
       (sut/install! {:config {:defaults {:crew "main"}}})
       (should-be-nil (config/snapshot "spec")))
 
-    (it "ensures the object-tree slot"
-      (should-be-nil (nexus/get :tree))
-      (sut/install! {:config {}})
-      (should-not-be-nil (nexus/get :tree)))
-
-    (it "reuses an already-installed tree"
-      (let [tree (atom {:existing true})]
-        (nexus/register! [:tree] tree)
-        (sut/install! {:config {}})
-        (should= tree (nexus/get :tree))))
-
     (it "registers a session store when state-dir is known"
       (should-be-nil (store/registered-store))
       (sut/install! {:config {:state-dir "/test/isaac"}})
@@ -46,7 +35,7 @@
       (sut/install! {:config {}})
       (should-be-nil (store/registered-store)))
 
-    (it "reconciles injected registries into the tree"
+    (it "reconciles injected registries into the nexus"
       (let [started  (atom nil)
             registry {:kind    :component
                       :path    [:thing]
@@ -54,17 +43,15 @@
                       :factory (fn [_host] (fake-component started))}]
         (sut/install! {:config {:thing {:a 1}} :registries [registry] :host {}})
         (should= {:a 1} @started)
-        (should-not-be-nil (get-in @(nexus/get :tree) [:thing]))))
+        (should-not-be-nil (nexus/get-in [:thing]))))
 
-    (it "returns the config and tree"
+    (it "returns the config"
       (let [result (sut/install! {:config {:defaults {}}})]
-        (should= {:defaults {}} (:config result))
-        (should= (nexus/get :tree) (:tree result)))))
+        (should= {:defaults {}} (:config result)))))
 
   (context "load-and-install!"
 
     (it "loads via the loader and installs, surfacing loader errors"
       (let [result (sut/load-and-install! {:home "/test"})]
         (should (seq (:errors result)))
-        (should-not-be-nil (nexus/get :tree))
         (should-not-be-nil (config/snapshot "spec"))))))
