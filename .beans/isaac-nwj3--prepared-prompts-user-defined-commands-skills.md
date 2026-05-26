@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
-updated_at: 2026-05-26T03:55:46Z
+updated_at: 2026-05-26T04:10:02Z
 ---
 
 ## Motivation
@@ -184,3 +184,17 @@ MVP sidesteps this — commands **pre-include** skills (the `/work` command load
 
 - **Advertise**: inject skill **name + description** (not bodies) into context — short, stable per project, cacheable. The model reads "TDD — use when coding", matches the task, decides to activate.
 - **Load on demand**: activation pulls the skill **body** via a **tool** (`load_skill <name>` -> returns body into the turn). The session frontmatter index already holds the descriptions, ready to feed the advertisement.
+
+
+## MVP instrumentation: time the per-turn catalog resolution
+
+Load cwd (project) prompts at the **start of each turn** (simple; global cached at startup). **Instrument it:** emit a **debug**-level timing log on resolve (`elapsed-ms` + file/command/skill counts) so we gather real numbers before deciding whether session-level caching is worth it. (Info would flood per-turn logs; debug is opt-in for data-gathering.)
+
+## Deferred activation: where skill name+descriptions are injected
+
+Unlike per-turn origin framing (current user turn, uncached), the **skill menu is per-project and stable** — it does not change turn-to-turn within a session — so it goes in the **system prompt** and **caches cleanly** (soul + guard + skill-menu block all in the cached prefix).
+
+- Render a compact block from the session frontmatter index: `name: description` lines ("Available skills (load with the skill tool when a description fits): - tdd: use when writing code; ...").
+- The model matches the task to a description and calls **`load_skill <name>`** -> body comes into the turn. Descriptions cached in the prompt; bodies pulled on demand.
+- **Large skill sets:** injecting every description bloats the cached system prompt -> fallback to a `list_skills` tool (no always-on menu), possibly threshold-based.
+- **Overlaps with the future `rules` type** — both are project-scoped, stable, system-prompt content; likely share one "project context block" slot in the cached system prompt.
