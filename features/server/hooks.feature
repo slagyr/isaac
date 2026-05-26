@@ -1,7 +1,7 @@
 Feature: Webhook receiver
   Isaac exposes POST /hooks/<name> for inbound webhooks. Each hook is
   declared as a single markdown config entity at config/hooks/<name>.md
-  with EDN frontmatter and a markdown template body. A successful POST
+  with YAML frontmatter and a markdown template body. A successful POST
   substitutes JSON body fields into the template and dispatches a turn
   on the configured session and crew.
 
@@ -22,8 +22,8 @@ Feature: Webhook receiver
     And the isaac file "config/hooks/lettuce.md" exists with:
       """
       ---
-      {:crew :main
-       :session-key "hook:lettuce"}
+      crew: main
+      session-key: hook:lettuce
       ---
 
       Hieronymus's emergency lettuce report — {{leaves}} leaves remaining, freshness {{freshness}}/10, expires in {{daysToExpiry}} days.

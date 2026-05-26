@@ -4,6 +4,7 @@
     [c3kit.apron.corec :as ccc]
     [c3kit.apron.env :as c3env]
     [c3kit.apron.schema :as cs]
+    [clj-yaml.core :as yaml]
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
@@ -115,6 +116,13 @@
 (defn- read-edn-string [content substitute-env?]
   (-> content
       edn/read-string
+      ((fn [value]
+         (if substitute-env?
+           (substitute-env-recursive value)
+           value)))))
+
+(defn- read-yaml-string [content substitute-env?]
+  (-> (yaml/parse-string content :keywords true)
       ((fn [value]
          (if substitute-env?
            (substitute-env-recursive value)
@@ -391,12 +399,12 @@
   (try
     (if-let [{:keys [body frontmatter]} (split-frontmatter (entry-content entry))]
       {:body body
-       :data (read-edn-string frontmatter substitute-env?)}
-      {:error (str relative " is missing EDN frontmatter")})
+       :data (read-yaml-string frontmatter substitute-env?)}
+      {:error (str relative " is missing YAML frontmatter")})
     (catch Exception e
       {:error (if raw-parse-errors?
                 (.getMessage e)
-                "EDN syntax error")})))
+                "YAML syntax error")})))
 
 (defn- entity-files [root dir-name opts]
   (let [edn-files (-> (read-entity-files root dir-name)

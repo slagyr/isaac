@@ -38,7 +38,7 @@ Feature: Config Composition
     And config file "crew/cordelia.md" containing:
       """
       ---
-      {:model :llama}
+      model: llama
       ---
 
       You are Cordelia.

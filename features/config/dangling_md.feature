@@ -32,7 +32,7 @@ Feature: Config validation — dangling .md warnings
     Given config file "crew/main.md" containing:
       """
       ---
-      {:model :llama}
+      model: llama
       ---
 
       You are Atticus.

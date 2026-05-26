@@ -4,8 +4,10 @@ title: Switch markdown frontmatter from EDN to YAML
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-26T05:06:59Z
-updated_at: 2026-05-26T05:22:03Z
+updated_at: 2026-05-26T05:34:13Z
 ---
 
 Isaac's markdown frontmatter (the cron single-md job-config variant) uses **EDN**; almost every other agent (Claude, agent-lib, toolbox) uses **YAML**. Switch all md frontmatter to YAML for interoperability — so Isaac reads foreign command/skill files natively and the `user-invocable` signal is just a YAML field.
@@ -24,6 +26,13 @@ Unblocks the prepared-prompts work (isaac-8qd5) to parse YAML, and dissolves mos
 ## Relationship
 Standalone refactor (touches cron, not only prepared-prompts). **Blocks isaac-8qd5.**
 
+## Exceptions
+- Authorized feature-file edits beyond `@wip` removal:
+  - `features/cli/init.feature`
+  - `features/config/composition.feature`
+  - `features/config/dangling_md.feature`
+  - `features/server/hooks.feature`
+- Reason: these files contain executable markdown frontmatter fixtures or user-visible scaffold expectations that would otherwise keep asserting the old EDN frontmatter contract after the YAML migration.
 
 ## Feature spec
 

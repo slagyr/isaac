@@ -156,7 +156,7 @@
                :prefer-entity-files true}
               (slurp-edn (str test-home "/.isaac/config/isaac.edn")))
     (should= (str "---\n"
-                  "{:model :llama}\n"
+                  "model: \"llama\"\n"
                   "---\n\n"
                   "You are Isaac, a helpful AI assistant.")
              (fs/slurp *fs* (str test-home "/.isaac/config/crew/main.md")))
@@ -165,7 +165,8 @@
     (should= {:base-url "http://localhost:11434" :api :ollama}
               (slurp-edn (str test-home "/.isaac/config/providers/ollama.edn")))
     (should= (str "---\n"
-                  "{:expr \"*/30 * * * *\", :crew :main}\n"
+                  "expr: \"*/30 * * * *\"\n"
+                  "crew: \"main\"\n"
                   "---\n\n"
                   "Heartbeat. Anything worth noting?")
              (fs/slurp *fs* (str test-home "/.isaac/config/cron/heartbeat.md"))))

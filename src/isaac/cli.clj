@@ -68,13 +68,28 @@
   (binding [*print-namespace-maps* false]
     (fs/spit fs* path (with-out-str (pprint/pprint value)))))
 
+(defn- yaml-scalar [value]
+  (cond
+    (keyword? value) (pr-str (name value))
+    (string? value) (pr-str value)
+    (number? value) (str value)
+    (true? value) "true"
+    (false? value) "false"
+    (nil? value) "null"
+    :else (throw (ex-info "unsupported YAML frontmatter value" {:value value}))))
+
+(defn- yaml-frontmatter [config]
+  (str/join "\n"
+            (map (fn [[k v]]
+                   (str (name k) ": " (yaml-scalar v)))
+                 config)))
+
 (defn- write-markdown-entity! [fs* path config body]
   (fs/mkdirs fs* (fs/parent path))
-  (binding [*print-namespace-maps* false]
-    (fs/spit fs* path (str "---\n"
-                           (with-out-str (pprint/pprint config))
-                           "---\n\n"
-                           body))))
+  (fs/spit fs* path (str "---\n"
+                         (yaml-frontmatter config)
+                         "\n---\n\n"
+                         body)))
 
 (defn- isaac-edn-path [state-dir]
   (paths/root-config-file state-dir))

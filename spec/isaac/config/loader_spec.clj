@@ -68,6 +68,27 @@
 
      )
 
+  (describe "read-frontmatter-file"
+
+    (it "parses YAML frontmatter and applies env substitution"
+      (sut/set-env-override! "TEST_CREW" "main")
+      (should= {:body "You are Cordelia."
+                :data {:crew "main"
+                       :model "llama"}}
+               (#'sut/read-frontmatter-file {:overlay? true
+                                             :relative "crew/cordelia.md"
+                                             :content  "---\ncrew: ${TEST_CREW}\nmodel: llama\n---\n\nYou are Cordelia."}
+                                            true
+                                            false)))
+
+    (it "reports YAML syntax errors for malformed frontmatter"
+      (should= {:error "YAML syntax error"}
+               (#'sut/read-frontmatter-file {:overlay? true
+                                             :relative "crew/cordelia.md"
+                                             :content  "---\nmodel: [broken\n---\n\nYou are Cordelia."}
+                                            true
+                                            false))))
+
   (describe "resolve-history-retention"
 
     (it "defaults to retain"
@@ -499,12 +520,12 @@
         (should= "llama" (get-in result [:config :crew test-crew :model]))
         (should= "You are Cordelia." (get-in result [:config :crew test-crew :soul]))))
 
-    (it "loads crew members from a single markdown file with EDN frontmatter"
+    (it "loads crew members from a single markdown file with YAML frontmatter"
       (marigold/write-config!
                      {:models    {:llama (marigold/model-cfg (keyword marigold/flicker-labs) "llama3.2")}
                       :providers {(keyword marigold/flicker-labs) {:api marigold/groves-api}}})
       (marigold/write-crew-md! test-crew-kw (str "---\n"
-                                                         "{:model :llama}\n"
+                                                         "model: llama\n"
                                                          "---\n\n"
                                                          "You are Cordelia."))
       (let [result (marigold/load-config)]
@@ -518,7 +539,7 @@
                       :providers {(keyword marigold/helm-systems) {:api marigold/helm-api}}})
       (marigold/write-crew! test-crew-kw {:model :llama})
       (marigold/write-crew-md! test-crew-kw (str "---\n"
-                                                         "{:model :grover}\n"
+                                                         "model: grover\n"
                                                          "---\n\n"
                                                          "You are Cordelia."))
       (let [result (marigold/load-config)]
@@ -543,6 +564,13 @@
         (should= [{:key test-crew-file
                      :value "EDN syntax error"}]
                    (:errors result))))
+
+    (it "reports malformed crew YAML frontmatter with the relative file path"
+      (marigold/write-raw! test-crew-md "---\nmodel: [broken\n---\n\nYou are Cordelia.")
+      (let [result (marigold/load-config)]
+        (should= [{:key test-crew-md
+                   :value "YAML syntax error"}]
+                 (:errors result))))
 
     (it "reports a soul conflict when both edn and companion md define soul"
       (marigold/write-crew! test-crew-kw {:soul "Inline soul."})
@@ -743,11 +771,11 @@
         (should= "Run the daily health checkin."
                  (get-in result [:config :cron "health-check" :prompt]))))
 
-    (it "loads cron jobs from a single markdown file with EDN frontmatter"
+    (it "loads cron jobs from a single markdown file with YAML frontmatter"
       (marigold/write-config! {:crew {:main {}}})
       (marigold/write-cron-md! :health-check (str "---\n"
-                                                               "{:expr \"0 9 * * *\"\n"
-                                                               " :crew :main}\n"
+                                                               "expr: \"0 9 * * *\"\n"
+                                                               "crew: main\n"
                                                                "---\n\n"
                                                                "Run the daily health checkin."))
       (let [result (marigold/load-config)]
@@ -769,12 +797,12 @@
                   :prompt "Run the daily health checkin."}
                  (get-in result [:config :cron "health-check"]))))
 
-    (it "loads hooks from a single markdown file with EDN frontmatter"
+    (it "loads hooks from a single markdown file with YAML frontmatter"
       (marigold/write-config! {:crew  {:main {}}
                                                  :hooks {:auth {:token "secret123"}}})
       (marigold/write-hook-md! :lettuce (str "---\n"
-                                                          "{:crew :main\n"
-                                                          " :session-key \"hook:lettuce\"}\n"
+                                                          "crew: main\n"
+                                                          "session-key: hook:lettuce\n"
                                                           "---\n\n"
                                                           "Emergency lettuce report: {{leaves}} leaves remaining."))
       (let [result (marigold/load-config)]

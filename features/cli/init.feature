@@ -6,10 +6,10 @@ Feature: isaac init
 
   Scaffolded files (at <home>/config/):
     - isaac.edn         :defaults, :tz, :prefer-entity-files true
-    - crew/main.md      EDN frontmatter + starter soul
+    - crew/main.md      YAML frontmatter + starter soul
     - models/llama.edn  Ollama model reference
     - providers/ollama.edn  local Ollama provider
-    - cron/heartbeat.md     EDN frontmatter + heartbeat prompt
+    - cron/heartbeat.md     YAML frontmatter + heartbeat prompt
 
   Background:
     Given the user home directory is "/tmp/user"
@@ -51,7 +51,7 @@ Feature: isaac init
     And the isaac file "config/crew/main.md" contains:
       """
       ---
-      {:model :llama}
+      model: "llama"
       ---
 
       You are Isaac, a helpful AI assistant.
@@ -67,7 +67,8 @@ Feature: isaac init
     And the isaac file "config/cron/heartbeat.md" contains:
       """
       ---
-      {:expr "*/30 * * * *", :crew :main}
+      expr: "*/30 * * * *"
+      crew: "main"
       ---
 
       Heartbeat. Anything worth noting?

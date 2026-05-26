@@ -44,7 +44,6 @@ Feature: Cron prompts from config or markdown companion
       | type    | message.role | message.content               |
       | message | user         | Run the daily health checkin. |
 
-  @wip
   Scenario: cron job loaded from a single markdown file with YAML frontmatter
     Given config:
       | sessions.naming-strategy | sequential      |
