@@ -87,17 +87,24 @@
   (fs-bounds/session-workdir (or (get arguments "session_key")
                                  (get arguments :session_key))))
 
-(defn- cap-output [s]
-  (let [cfg       (or (config/snapshot "tool output caps — TODO thread config as a value (in-flight read)") {})
-        max-lines (get-in cfg [:tools :defaults :max-lines] output-cap/default-max-output-lines)
-        max-bytes (get-in cfg [:tools :defaults :max-bytes] output-cap/default-max-output-bytes)]
+(defn- snapshot-caps []
+  (let [cfg (or (config/snapshot "tool output caps — ambient fallback when caller passes no caps") {})]
+    {:max-lines (get-in cfg [:tools :defaults :max-lines])
+     :max-bytes (get-in cfg [:tools :defaults :max-bytes])}))
+
+;; caps is {:max-lines _ :max-bytes _} resolved from config at the turn boundary
+;; and threaded in as a value; nil falls back to the ambient snapshot.
+(defn- cap-output [caps s]
+  (let [caps*     (or caps (snapshot-caps))
+        max-lines (or (:max-lines caps*) output-cap/default-max-output-lines)
+        max-bytes (or (:max-bytes caps*) output-cap/default-max-output-bytes)]
     (output-cap/cap-result (str s) max-lines max-bytes)))
 
 (defn- unknown-tool-error [name]
   (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
   {:isError true :error (str "unknown tool: " name)})
 
-(defn- run-handler [name arguments]
+(defn- run-handler [name arguments caps]
   (if-let [tool (lookup name)]
     (let [cwd      (tool-cwd arguments)
           log-args (log-arguments arguments)]
@@ -114,12 +121,12 @@
                 {:isError true :error "tool returned nil"})
 
             (and (map? result) (contains? result :result))
-            (let [capped (cap-output (:result result))]
+            (let [capped (cap-output caps (:result result))]
               (log/debug :tool/result (assoc (result-metadata capped) :tool name :cwd cwd))
               (assoc result :result capped))
 
             :else
-            (let [capped (cap-output result)]
+            (let [capped (cap-output caps result)]
               (log/debug :tool/result (assoc (result-metadata capped) :tool name :cwd cwd))
               {:result capped})))
         (catch Exception e
@@ -129,19 +136,19 @@
 
 (defn execute
   ([name arguments]
-   (run-handler name arguments))
+   (run-handler name arguments nil))
   ([name arguments allowed-tools]
    (if (allowed-tool? allowed-tools name)
-      (run-handler name arguments)
+      (run-handler name arguments nil)
       (unknown-tool-error name)))
   ([name arguments allowed-tools module-index]
+   (execute name arguments allowed-tools module-index nil))
+  ([name arguments allowed-tools module-index caps]
    (if (allowed-tool? allowed-tools name)
      (do
-       (when-not (lookup name)
+       (when (and module-index (not (lookup name)))
          (activate-missing-tool! module-index name))
-       (if (lookup name)
-         (run-handler name arguments)
-         (unknown-tool-error name)))
+       (run-handler name arguments caps))
      (unknown-tool-error name))))
 
 (defn- result->string [{:keys [result error isError]}]
@@ -159,7 +166,10 @@
       (result->string (execute name arguments allowed-tools))))
   ([allowed-tools module-index]
    (fn [name arguments]
-     (result->string (execute name arguments allowed-tools module-index)))))
+     (result->string (execute name arguments allowed-tools module-index))))
+  ([allowed-tools module-index caps]
+   (fn [name arguments]
+     (result->string (execute name arguments allowed-tools module-index caps)))))
 
 ;; endregion ^^^^^ Execution ^^^^^
 

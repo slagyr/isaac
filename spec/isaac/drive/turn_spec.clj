@@ -176,7 +176,7 @@
         (with-redefs [bridge/on-cancel!      (fn [session-key cancel!]
                                                (reset! registered [session-key cancel!])
                                                nil)
-                      tool-registry/tool-fn   (fn [allowed-tools]
+                      tool-registry/tool-fn   (fn [allowed-tools _module-index _caps]
                                                 (should= #{"search"} allowed-tools)
                                                 (fn [name args]
                                                   (reset! args-seen [name args])
@@ -201,7 +201,7 @@
         (with-redefs [bridge/on-cancel!    (fn [session-key cancel!]
                                              (reset! registered [session-key cancel!])
                                              nil)
-                      tool-registry/tool-fn (fn [allowed-tools module-index]
+                      tool-registry/tool-fn (fn [allowed-tools module-index _caps]
                                               (should= #{"search"} allowed-tools)
                                               (should= {:modules true} module-index)
                                               (fn [_ _] {:error :cancelled}))]

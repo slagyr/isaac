@@ -671,16 +671,14 @@
 (defn- record-tool-call!
   "Wrap a tool invocation with comm callbacks, cancellation tracking, and
    accumulation into the executed-tools atom for later transcript persistence."
-  [{:keys [session-key allowed-tools module-index executed-tools] ch :comm} name arguments]
+  [{:keys [session-key allowed-tools module-index executed-tools caps] ch :comm} name arguments]
   (let [tc         {:id (str (java.util.UUID/randomUUID)) :name name :arguments arguments :type "toolCall"}
         tool-state (atom :pending)
         cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
                       (comm/on-tool-cancel ch session-key tc))]
     (comm/on-tool-call ch session-key tc)
     (bridge/on-cancel! session-key cancel!)
-    (let [tool-fn* (if module-index
-                     (tool-registry/tool-fn allowed-tools module-index)
-                     (tool-registry/tool-fn allowed-tools))
+    (let [tool-fn* (tool-registry/tool-fn allowed-tools module-index caps)
           result   (tool-fn*
                      name
                      (assoc arguments "session_key" session-key))]
@@ -697,7 +695,9 @@
    final assistant response. Returns the final result map."
   [session-key input ctx]
   (let [{:keys [provider allowed-tools effort boot-files]} ctx
-        {:keys [guidance model module-index nonce origin soul context-mode comm]} (:charge ctx)
+        {:keys [guidance model module-index nonce origin soul context-mode comm config]} (:charge ctx)
+        caps {:max-lines (get-in config [:tools :defaults :max-lines])
+              :max-bytes (get-in config [:tools :defaults :max-bytes])}
         ch (or comm cli-comm/channel)
         p  provider]
     (append-message! ctx session-key {:role "user" :content input})
@@ -736,6 +736,7 @@
                                                        :session-key    session-key
                                                        :allowed-tools  allowed-tools
                                                       :module-index   module-index
+                                                      :caps           caps
                                                       :executed-tools executed-tools})]
       (when-let [done (:compaction-llm-done (active-compaction-state session-key))]
         (deref done 5000 nil))
