@@ -9,6 +9,7 @@
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
     [isaac.config.api :as config]
+    [isaac.fs :as fs]
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.schema :as session-schema]
@@ -191,7 +192,7 @@
    session store + tree). Returns {:config :state-dir :store}."
   [opts]
   (let [state-dir  (resolve-state-dir opts)
-        loaded-cfg (config/load-config! {:state-dir state-dir} "session cli command")]
+        loaded-cfg (config/load-config! state-dir (fs/instance) "session cli command")]
     (config/install! {:config loaded-cfg})
     {:config loaded-cfg :state-dir state-dir :store (store/registered-store)}))
 

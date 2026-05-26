@@ -90,11 +90,15 @@
 
 (defn- commit-feature-config!
   "Load the feature's on-disk config and commit it as the snapshot, so the
-   in-flight readers (resolve-behavior etc.) see the current config — the same
-   load-and-commit an entry point performs in production."
+   in-flight readers (resolve-behavior etc.) see the current config. Uses the
+   non-validating loader + dangerously-install-config! (rather than load-config!)
+   because feature fixtures are intentionally partial and need not pass full
+   production validation."
   []
   (when-let [sd (state-dir)]
-    (config/load-config! {:state-dir sd :fs (mem-fs)} "feature: session behavior config")))
+    (config/dangerously-install-config!
+      (:config (config/load-config-result {:state-dir sd :fs (mem-fs)}))
+      "feature: session behavior config")))
 
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]

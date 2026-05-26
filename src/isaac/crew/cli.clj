@@ -5,7 +5,8 @@
     [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
     [isaac.config.api :as config]
-    [isaac.crew.store :as store]))
+    [isaac.crew.store :as store]
+    [isaac.fs :as fs]))
 
 (def option-spec
   [[nil  "--json" "Output result as JSON"]
@@ -44,7 +45,7 @@
         state-dir (derive-state-dir opts)
         cfg       (if crew
                     (cli-common/build-cfg crew models)
-                    (config/load-config! {:state-dir state-dir} "crew cli"))
+                    (config/load-config! state-dir (fs/instance) "crew cli"))
         cfg       (config/normalize-config cfg)
         crew-map  (cond-> (:crew cfg)
                     (not (contains? (:crew cfg) "main")) (assoc "main" {}))]

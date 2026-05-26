@@ -1305,3 +1305,30 @@
         (nexus/-with-nexus {:config cfg*}
           (sut/set-snapshot! {:crew {"main" {:soul "Hi"}}} "spec")
           (should= {:crew {"main" {:soul "Hi"}}} @cfg*)))))
+
+  (describe "load-config!"
+
+    (around [it]
+      (with-config-slot it))
+
+    (after (sut/set-snapshot! nil "spec"))
+
+    (it "loads, commits, and returns the config"
+      (with-redefs [sut/load-config-result (fn [_] {:config {:crew {"main" {}}} :errors []})]
+        (should= {:crew {"main" {}}} (sut/load-config! "/sd" (fs/mem-fs) "spec"))
+        (should= {:crew {"main" {}}} (sut/snapshot "spec"))))
+
+    (it "throws carrying ALL validation errors when the config is invalid, and does not commit"
+      (with-redefs [sut/load-config-result (fn [_] {:config {} :errors [{:key "a" :value "bad"}
+                                                                        {:key "b" :value "worse"}]})]
+        (let [ex (try (sut/load-config! "/sd" (fs/mem-fs) "spec") nil
+                      (catch clojure.lang.ExceptionInfo e e))]
+          (should-not-be-nil ex)
+          (should= 2 (count (:errors (ex-data ex))))
+          (should-be-nil (sut/snapshot "spec")))))
+
+    (it "commits the empty default for a missing config without throwing"
+      (with-redefs [sut/load-config-result (fn [_] {:config {:state-dir "/sd"}
+                                                    :errors [{:key "config" :value "missing"}]
+                                                    :missing-config? true})]
+        (should= {:state-dir "/sd"} (sut/load-config! "/sd" (fs/mem-fs) "spec")))))

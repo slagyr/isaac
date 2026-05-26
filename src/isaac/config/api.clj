@@ -36,12 +36,13 @@
   (loader/normalize-config cfg))
 
 (defn load-config!
-  "THE loader: load config from `opts` (e.g. {:state-dir ...}), commit it as the
-   process-wide snapshot, and return the value. Call once per process at an entry
-   point, then thread the returned value onward or read the snapshot — never
-   re-load. `reason` documents the call site."
-  [opts reason]
-  (loader/load-config! opts reason))
+  "THE loader: load config from `state-dir` (read via `fs`), validate it, commit
+   it as the process-wide snapshot, and return the value. Call once per process
+   at an entry point, then thread the returned value onward or read the snapshot
+   — never re-load. Throws ex-info {:errors [...]} carrying ALL validation errors
+   when the config is invalid. `reason` documents the call site."
+  [state-dir fs reason]
+  (loader/load-config! state-dir fs reason))
 
 (defn snapshot
   "Returns the current process-wide config snapshot, or nil if not yet set.

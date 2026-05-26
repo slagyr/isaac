@@ -1157,11 +1157,20 @@
   cfg)
 
 (defn load-config!
-  "THE loader: load config from `opts`, commit it as the process-wide snapshot,
-   and return the value. Call once at an entry point, then thread the returned
-   value onward (or read the snapshot). `reason` documents the call site."
-  [opts reason]
-  (set-snapshot! (load-config opts) reason))
+  "THE loader: load config from `state-dir` (read via `fs`), validate it, commit
+   it as the process-wide snapshot, and return the value. Call once at an entry
+   point, then thread the returned value onward (or read the snapshot). Throws
+   ex-info {:errors [...]} carrying ALL validation/coercion errors when the
+   config is invalid (a missing config is not an error — it commits the empty
+   default). `reason` documents the call site."
+  [state-dir fs reason]
+  (let [{:keys [config errors missing-config?]}
+        (load-config-result {:state-dir state-dir :fs fs})]
+    (when (and (seq errors) (not missing-config?))
+      (throw (ex-info (str "invalid configuration in " state-dir)
+                      {:errors errors :state-dir state-dir})))
+    (set-snapshot! config reason)
+    config))
 
 (defn state-dir
   "Returns the resolved state directory. Test fixtures install an explicit

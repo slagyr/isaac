@@ -21,7 +21,7 @@
     (if (str/blank? key)
       (do (println "Error: API key is required")
           1)
-      (let [sdir (or (:state-dir (config/load-config! {:state-dir (home/state-dir)} "auth cli: key login"))
+      (let [sdir (or (:state-dir (config/load-config! (home/state-dir) (fs/instance) "auth cli: key login"))
                      (home/state-dir))]
         (auth-store/save-api-key! sdir provider-name key (fs/instance))
         (println (str "Authenticated with " provider-name " via API key"))
@@ -111,7 +111,7 @@
 ;; region ----- Status -----
 
 (defn- status [_opts]
-  (let [cfg (config/load-config! {:state-dir (home/state-dir)} "auth cli: status")]
+  (let [cfg (config/load-config! (home/state-dir) (fs/instance) "auth cli: status")]
     (println "Provider status:")
     (doseq [[name p] (or (seq (:providers cfg)) [["ollama" {}]])]
       (case name
