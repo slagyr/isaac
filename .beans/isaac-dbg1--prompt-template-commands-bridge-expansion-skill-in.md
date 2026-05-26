@@ -1,13 +1,11 @@
 ---
 # isaac-dbg1
 title: 'Prompt-template commands: bridge expansion + skill includes'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-26T04:21:10Z
-updated_at: 2026-05-26T17:45:44Z
+updated_at: 2026-05-26T17:54:39Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
