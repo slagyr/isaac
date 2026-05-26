@@ -8,6 +8,7 @@
     [isaac.cli :as registry]
     [isaac.comm :as comm]
     [isaac.config.api :as config]
+    [isaac.fs :as fs]
     [isaac.drive.turn :as single-turn]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
@@ -99,17 +100,26 @@
                         (:provider-configs opts) (update :providers merge (:provider-configs opts)))]
     (config/normalize-config effective-cfg)))
 
+(defn- injected-config? [opts]
+  (or (map? (:crew opts))
+      (map? (:agents opts))
+      (:models opts)
+      (:provider-configs opts)))
+
 (defn run [opts]
   (if-not (:message opts)
     (do (println "Error: -m/--message is required")
         1)
     (if (= false (ensure-local-config! opts))
       1
-      (let [cfg           (effective-cfg opts)
-            state-dir     (or (:state-dir opts) (:state-dir cfg)
-                              (str (System/getProperty "user.home") "/.isaac"))
-            cfg           (assoc cfg :state-dir state-dir)
-            _             (config/dangerously-install-config! cfg "prompt-cli boot (injected crew/models)")
+      (let [state-dir     (state-dir-of opts)
+            ;; Common path: load + validate + commit the user's config. Injected
+            ;; crew/models build a one-off config value committed directly.
+            cfg           (if (injected-config? opts)
+                            (let [c (assoc (effective-cfg opts) :state-dir state-dir)]
+                              (config/dangerously-install-config! c "prompt-cli: injected crew/models")
+                              c)
+                            (config/load-config! state-dir (fs/instance) "prompt-cli"))
             _             (config/install! {:config cfg})
             session-store (store/registered-store)
             resumed-key   (when (:resume opts)
