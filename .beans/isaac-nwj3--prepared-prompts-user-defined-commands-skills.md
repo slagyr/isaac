@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
-updated_at: 2026-05-26T01:25:51Z
+updated_at: 2026-05-26T01:38:10Z
 ---
 
 ## Motivation
@@ -154,3 +154,18 @@ Project-local commands/skills must NOT live in the global registry — they are 
 - **Project-root detection:** walk up from cwd to a marker (`.isaac/`, fallback `.git`/boot file), else cwd-is-root. (Sub-decision: walk-up vs cwd-is-root; lean walk-up.)
 - **Eviction:** `root -> index` cache is small (frontmatter only) — LRU or process-lifetime is fine.
 - **Trust flag (future):** project-local commands are repo-authored — loading them runs repo prompts. Within the trust of running a crew in that repo, but a malicious `.isaac/commands/` in a cloned repo is a supply-chain surface. No trust-gating in MVP; consider trust-on-first-use per project later.
+
+
+## Storage: the session holds the project catalog (supersedes "lazy on first use")
+
+- **Global registry**: process-level, shared, built once at startup (install roots).
+- **The live session holds its project catalog** — a list of commands (name + file [+ description/params]) and an index of skill frontmatter (+ file) for the session's project root. **In-memory runtime state on the live session, NOT persisted** (derived from files; re-scan is cheap; persisting derived data violates config/state discipline). Rebuilt on session load; refreshed on file change (hot-reload).
+- **Built at session open/activation** (resolve root -> frontmatter-scan global + project -> store on session) — NOT lazily at first resolution. So the catalog exists before any turn resolves a command (fixes the chicken-and-egg).
+- **Resolution per turn** = `session.project-catalog UNION global`, project wins. Body loaded lazily from the winning layer.
+- Root detection at session open: walk up from cwd for any `.isaac/` or configured prompt dir; else cwd-is-root.
+
+## Model-facing skills tool — deferred (with auto-activation)
+
+- **Commands** are user/producer-invoked -> the model needs no discovery tool (client discovery = ACP advertisement).
+- **Skills (MVP)** are command-included by name (deterministic) -> the model doesn't choose them.
+- A model-facing `skills` tool (`list` + `load <name>`) is the right mechanism for the **deferred model-driven activation** (load-on-demand beats injecting every skill description into every prompt). The session already holds the skill frontmatter index, so it is ready to power that tool when built.
