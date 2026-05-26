@@ -1,11 +1,11 @@
 ---
 # isaac-h34o
 title: Expose resolved commands over ACP (available-commands advertisement)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-26T16:21:28Z
+updated_at: 2026-05-26T23:20:28Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
