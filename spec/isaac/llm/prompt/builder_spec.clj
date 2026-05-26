@@ -149,6 +149,26 @@
             p (sut/build {:model "test" :soul "You are Isaac." :transcript transcript})]
         (should= "before  inside  after" (get-in p [:messages 1 :content]))))
 
+    (it "injects a trusted framing block into the current user turn only"
+      (let [transcript [{:type "session" :id "sess-1" :timestamp 1000}
+                        {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
+                         :message {:role "user" :content "First request."}}
+                        {:type "message" :id "m2" :parentId "m1" :timestamp 3000
+                         :message {:role "assistant" :content "First reply."}}
+                        {:type "message" :id "m3" :parentId "m2" :timestamp 4000
+                         :message {:role "user" :content "Seal the leak."}}]
+            p          (sut/build {:guidance       "Autonomous hail; the user may not see your reply."
+                                   :model          "test"
+                                   :nonce          "N0NCE-abc123"
+                                   :origin         {:kind :hail :hail-id "hail-1"}
+                                   :soul           "You are Isaac."
+                                   :transcript     transcript
+                                   :context-window 1000})]
+        (should= "First request." (get-in p [:messages 1 :content]))
+        (should-contain "Autonomous hail; the user may not see your reply." (get-in p [:messages 3 :content]))
+        (should-contain "hail-1" (get-in p [:messages 3 :content]))
+        (should-contain "N0NCE-abc123" (get-in p [:messages 3 :content]))))
+
     (it "skips non-message entries"
       (let [p (sut/build {:model "test" :soul "Test." :transcript sample-transcript})]
         (should (every? #(contains? #{"system" "user" "assistant"} (:role %)) (:messages p)))))

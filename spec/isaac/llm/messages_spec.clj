@@ -17,6 +17,46 @@
 
 (describe "Anthropic Client"
 
+  (describe "build"
+
+    (it "adds a trusted framing block ahead of the current user text"
+      (let [transcript [{:type "session" :id "sess-1" :timestamp 1000}
+                        {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
+                         :message {:role "user" :content "Seal the leak."}}]
+            request    (sut/build {:guidance   "Autonomous hail; the user may not see your reply."
+                                   :model      "claude-sonnet-4-6"
+                                   :nonce      "N0NCE-abc123"
+                                   :origin     {:kind :hail :hail-id "hail-1"}
+                                   :soul       "You are Isaac."
+                                   :transcript transcript})]
+        (should= "user" (get-in request [:messages 0 :role]))
+        (should= "Seal the leak." (get-in request [:messages 0 :content 1 :text]))
+        (should-contain "Autonomous hail; the user may not see your reply." (get-in request [:messages 0 :content 0 :text]))
+        (should-contain "hail-1" (get-in request [:messages 0 :content 0 :text]))
+        (should-contain "N0NCE-abc123" (get-in request [:messages 0 :content 0 :text]))
+        (should-be-nil (get-in request [:messages 0 :cache_control]))))
+
+    (it "keeps the framing block on the current turn and leaves the historical breakpoint origin-free"
+      (let [transcript [{:type "session" :id "sess-1" :timestamp 1000}
+                        {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
+                         :message {:role "user" :content "First request."}}
+                        {:type "message" :id "m2" :parentId "m1" :timestamp 3000
+                         :message {:role "assistant" :content "First reply."}}
+                        {:type "message" :id "m3" :parentId "m2" :timestamp 4000
+                         :message {:role "user" :content "Seal the leak."}}]
+            request    (sut/build {:guidance   "Autonomous hail; the user may not see your reply."
+                                   :model      "claude-sonnet-4-6"
+                                   :nonce      "N0NCE-abc123"
+                                   :origin     {:kind :hail :hail-id "hail-2"}
+                                   :soul       "You are Isaac."
+                                   :transcript transcript})]
+        (should= "First request." (get-in request [:messages 0 :content 0 :text]))
+        (should= {:type "ephemeral"} (get-in request [:messages 0 :content 0 :cache_control]))
+        (should-contain "Autonomous hail; the user may not see your reply." (get-in request [:messages 2 :content 0 :text]))
+        (should-contain "hail-2" (get-in request [:messages 2 :content 0 :text]))
+        (should= "Seal the leak." (get-in request [:messages 2 :content 1 :text]))
+        (should-be-nil (get-in request [:messages 2 :content 1 :cache_control])))))
+
   (describe "chat"
 
     (it "parses a text response"

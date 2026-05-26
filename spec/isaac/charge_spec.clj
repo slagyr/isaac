@@ -119,6 +119,16 @@
           (should= "N0NCE-stubbed" (:nonce charge))
           (should= 4096 (:context-window charge)))))
 
+    (it "preserves explicit guidance alongside origin"
+      (with-redefs [config/snapshot              (fn [] base-cfg)
+                    session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are Atticus." test-model-id 4096))]
+        (let [charge (sut/build {:session-key "s1"
+                                 :input       "hello there"
+                                 :origin      {:kind :hail :hail-id "hail-7"}
+                                 :guidance    "Autonomous hail; the user may not see your reply."})]
+          (should= {:kind :hail :hail-id "hail-7"} (:origin charge))
+          (should= "Autonomous hail; the user may not see your reply." (:guidance charge)))))
+
     (it "uses explicit crew override when provided"
       (let [first-mate-model marigold/starcore-7]
         (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}

@@ -1,4 +1,3 @@
-@wip
 Feature: Per-turn origin framing
   A dispatched turn can carry origin framing — a behavioral guidance string and
   origin metadata — set on the charge (:guidance + :origin) by whoever

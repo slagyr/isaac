@@ -582,9 +582,15 @@
   (when (empty? (tool-registry/all-tools))
     (builtin/register-all!)))
 
-(defn build-chat-request [p {:keys [boot-files effort model nonce soul transcript tools]}]
-  (let [prompt-out (api/build-prompt p {:boot-files boot-files :model model :nonce nonce :soul soul
-                                        :transcript transcript :tools tools})]
+(defn build-chat-request [p {:keys [boot-files effort guidance model nonce origin soul transcript tools]}]
+  (let [prompt-out (api/build-prompt p {:boot-files boot-files
+                                        :guidance   guidance
+                                        :model      model
+                                        :nonce      nonce
+                                        :origin     origin
+                                        :soul       soul
+                                        :transcript transcript
+                                        :tools      tools})]
     (cond-> {:model (:model prompt-out) :messages (:messages prompt-out)}
             (:system prompt-out) (assoc :system (:system prompt-out))
             (:max_tokens prompt-out) (assoc :max_tokens (:max_tokens prompt-out))
@@ -691,7 +697,7 @@
    final assistant response. Returns the final result map."
   [session-key input ctx]
   (let [{:keys [provider allowed-tools effort boot-files]} ctx
-        {:keys [model module-index nonce soul context-mode comm]} (:charge ctx)
+        {:keys [guidance model module-index nonce origin soul context-mode comm]} (:charge ctx)
         ch (or comm cli-comm/channel)
         p  provider]
     (append-message! ctx session-key {:role "user" :content input})
@@ -706,8 +712,10 @@
                             :else                           nil)
           request         (build-chat-request p {:boot-files boot-files
                                                  :effort     effort
+                                                 :guidance   guidance
                                                  :model      model
                                                  :nonce      nonce
+                                                 :origin     origin
                                                  :soul       soul
                                                  :transcript transcript
                                                  :tools      tools})

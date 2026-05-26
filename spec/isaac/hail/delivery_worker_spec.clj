@@ -90,6 +90,18 @@
                 :attempts 0}
                (read-edn "/test/isaac/hail/delivered/delivery-1.edn"))))
 
+  (it "stamps hail guidance on the dispatched charge"
+    (let [session-store (nexus/get-in [:sessions :store])
+          captured      (atom nil)]
+      (store/open-session! session-store "engine-room" {:crew "bartholomew"})
+      (with-redefs [isaac.charge/build (fn [request]
+                                         (reset! captured request)
+                                         {:charge/type :charge})]
+        (#'sut/delivery-charge test-config {:id      "delivery-1"
+                                            :hail    {:id "hail-1" :prompt "Seal the leak."}
+                                            :session :engine-room}))
+      (should= "Autonomous hail; the user may not see your reply." (:guidance @captured))))
+
   (it "binds an unbound delivery to the first idle candidate"
     (let [session-store (nexus/get-in [:sessions :store])]
       (store/open-session! session-store "bridge" {:crew "atticus"})
@@ -151,6 +163,26 @@
                             [:crew :session]))
       (should-be-nil (store/get-session session-store "session-1"))))
 
+  (it "chooses the first available host crew by id for a spawn delivery"
+    (let [session-store (nexus/get-in [:sessions :store])
+          cfg           (-> test-config
+                            (assoc-in [:crew "atticus" :tags] #{:role/engineer})
+                            (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
+                            config/normalize-config)]
+      (config/set-snapshot! cfg)
+      (should= {:action :spawn :crew-id "atticus"}
+               (#'sut/spawn-target
+                cfg
+                session-store
+                {:id       "delivery-1"
+                 :hail     {:id "hail-1"
+                            :prompt "Resonance climbing."
+                            :frequency {:crew-tags #{:role/engineer}
+                                        :session-tags #{:project/warp-coil}
+                                        :reach :one
+                                        :spawn true}}
+                 :attempts 0}))))
+
   (it "waits on a busy matching session for a spawn delivery and does not create a sibling"
     (let [session-store (nexus/get-in [:sessions :store])
           cfg           (-> test-config
@@ -173,6 +205,32 @@
                                         :spawn true}}
                  :attempts 0}))
       (should-be-nil (store/get-session session-store "session-1"))))
+
+  (it "waits when spawn host crews match but all are at capacity"
+    (let [session-store (nexus/get-in [:sessions :store])
+          cfg           (-> test-config
+                            (assoc-in [:crew "atticus" :tags] #{:role/engineer})
+                            (assoc-in [:crew "atticus" :max-in-flight] 1)
+                            (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
+                            (assoc-in [:crew "bartholomew" :max-in-flight] 1)
+                            config/normalize-config)]
+      (config/set-snapshot! cfg)
+      (store/open-session! session-store "atticus-busy" {:crew "atticus"})
+      (store/open-session! session-store "bart-busy" {:crew "bartholomew"})
+      (store/mark-in-flight! session-store "atticus-busy")
+      (store/mark-in-flight! session-store "bart-busy")
+      (should= {:action :wait}
+               (#'sut/spawn-target
+                cfg
+                session-store
+                {:id       "delivery-1"
+                 :hail     {:id "hail-1"
+                            :prompt "Resonance climbing."
+                            :frequency {:crew-tags #{:role/engineer}
+                                        :session-tags #{:project/warp-coil}
+                                        :reach :one
+                                        :spawn true}}
+                 :attempts 0}))))
 
   (it "leaves a delivery pending when its session is already in flight"
     (let [session-store (nexus/get-in [:sessions :store])]

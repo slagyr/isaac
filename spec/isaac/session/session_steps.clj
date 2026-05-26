@@ -1167,36 +1167,48 @@
         (g/should= (Double/parseDouble (get row "threshold")) (session-ctx/default-threshold window))
         (g/should= (Double/parseDouble (get row "head")) (session-ctx/default-head window))))))
 
+(defn- build-session-prompt [content key-str & {:keys [guidance origin]}]
+  (append-message! key-str {:role "user" :content content})
+  (let [transcript (get-transcript key-str)
+        session    (get-session key-str)
+        agent-id   (or (:crew session) (:agent session) "main")
+        cfg        (loaded-config)
+        agents     (merged-agents)
+        models     (loaded-models)
+        agent-cfg  (get agents agent-id)
+        model-cfg  (get models (:model agent-cfg))
+        tools      (g/get :tools)
+        provider'  (name (or (:provider model-cfg) ""))
+        openai?    (or (str/includes? provider' "openai") (str/includes? provider' "grok"))
+        builder    (if (str/includes? provider' "anthropic")
+                     messages-api/build
+                     prompt/build)
+        ctx        (assoc (config/resolve-crew-context cfg agent-id)
+                          :boot-files (session-ctx/read-boot-files (:cwd session)))]
+    (builder {:boot-files     (:boot-files ctx)
+              :context-window (:context-window model-cfg)
+              :filter-fn      (when openai? prompt/filter-messages-openai)
+              :guidance       guidance
+              :model          (:model model-cfg)
+              :nonce          (:nonce session)
+              :origin         origin
+              :soul           (:soul ctx)
+              :tools          tools
+              :transcript     transcript})))
+
 (defn prompt-on-session-matches [content key-str table]
   (g/assoc! :current-key key-str)
   (with-feature-fs
     (fn []
-      (append-message! key-str {:role "user" :content content})
-      (let [transcript (get-transcript key-str)
-            session    (get-session key-str)
-            agent-id   (or (:crew session) (:agent session) "main")
-            cfg        (loaded-config)
-            agents     (merged-agents)
-            models     (loaded-models)
-            agent-cfg  (get agents agent-id)
-            model-cfg  (get models (:model agent-cfg))
-            tools      (g/get :tools)
-            provider'  (name (or (:provider model-cfg) ""))
-            openai?    (or (str/includes? provider' "openai") (str/includes? provider' "grok"))
-            builder    (if (str/includes? provider' "anthropic")
-                         messages-api/build
-                         prompt/build)
-            ctx        (assoc (config/resolve-crew-context cfg agent-id)
-                              :boot-files (session-ctx/read-boot-files (:cwd session)))
-            p          (builder {:model          (:model model-cfg)
-                                 :boot-files     (:boot-files ctx)
-                                 :nonce          (:nonce session)
-                                 :soul           (:soul ctx)
-                                 :filter-fn      (when openai? prompt/filter-messages-openai)
-                                 :transcript     transcript
-                                 :tools          tools
-                                 :context-window (:context-window model-cfg)})
-             result     (match/match-object table p)]
+      (let [result (match/match-object table (build-session-prompt content key-str))]
+        (g/should= [] (:failures result))))))
+
+(defn prompt-on-session-with-framing-matches [content key-str origin-edn guidance table]
+  (g/assoc! :current-key key-str)
+  (with-feature-fs
+    (fn []
+      (let [origin (edn/read-string origin-edn)
+            result (match/match-object table (build-session-prompt content key-str :guidance guidance :origin origin))]
         (g/should= [] (:failures result))))))
 
 (defn session-sidecars-exist-for [table]
@@ -1494,13 +1506,16 @@
 
 (defthen "the compaction defaults are:" isaac.session.session-steps/compaction-defaults)
 
-(defthen "the prompt \"{content:string}\" on session {key:string} matches:" isaac.session.session-steps/prompt-on-session-matches
+(defthen #"the prompt \"([^\"]+)\" on session \"([^\"]+)\" matches:" isaac.session.session-steps/prompt-on-session-matches
   "Appends a synthetic user message with the given content, rebuilds the
    prompt in-process (via loaded-config + :crew + :models atoms), and
    matches against the table. Does NOT route through production turn
    code — any hot-reload or comm-layer logic is bypassed. Use
    'the system prompt contains' after a real 'the user sends' for
    end-to-end assertions instead.")
+
+(defthen #"the prompt \"([^\"]+)\" on session \"([^\"]+)\" with origin (.+) and guidance \"([^\"]+)\" matches:"
+  isaac.session.session-steps/prompt-on-session-with-framing-matches)
 
 (defthen "the session sidecars exist for:" isaac.session.session-steps/session-sidecars-exist-for)
 

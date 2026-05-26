@@ -1,11 +1,15 @@
 (ns isaac.cron.service-spec
   (:require
+    [isaac.bridge.core :as bridge]
+    [isaac.charge :as charge]
+    [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
     [isaac.cron.service :as sut]
     [isaac.fs :as fs]
     [isaac.scheduler :as scheduler-core]
     [isaac.spec-helper :as helper]
     [isaac.nexus :as nexus]
+    [isaac.session.context :as session-ctx]
     [speclj.core :refer :all]))
 
 (describe "cron scheduler"
@@ -95,4 +99,27 @@
         (sut/stop! {:scheduler fake-scheduler :task-ids [:cron/nightly-cleanup :cron/heartbeat]}))
       (should= [[fake-scheduler :cron/nightly-cleanup]
                 [fake-scheduler :cron/heartbeat]]
-               @cancelled))))
+               @cancelled)))
+
+  (it "stamps cron guidance on dispatched charges"
+    (let [built   (atom nil)
+          routed  (atom nil)
+          session  {:id "session-1"}]
+      (with-redefs [session-ctx/create-with-resolved-behavior! (fn [_ opts]
+                                                                 (should= {:kind :cron :name "health-check"} (:origin opts))
+                                                                 session)
+                    charge/build                               (fn [request]
+                                                                 (reset! built request)
+                                                                 {:charge/type :charge})
+                    bridge/dispatch!                           (fn [c]
+                                                                 (reset! routed c)
+                                                                 {})]
+        (#'sut/fire-job! {:state-dir "/test/isaac"}
+                         {:defaults {:crew "main"}}
+                         "health-check"
+                         {:crew "main" :prompt "Run the health checkin."}
+                         (java.time.ZonedDateTime/parse "2026-05-25T09:00:00-07:00[America/Phoenix]")))
+      (should= {:kind :cron :name "health-check"} (:origin @built))
+      (should= null-comm/channel (:comm @built))
+      (should= "Scheduled cron turn; the user may not see your reply." (:guidance @built))
+      (should= {:charge/type :charge} @routed))))

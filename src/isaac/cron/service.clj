@@ -17,6 +17,9 @@
 
 (def ^:private default-tick-ms 30000)
 
+(def ^:private cron-guidance
+  "Scheduled cron turn; the user may not see your reply.")
+
 (defn- task-id [job-name]
   (keyword "cron" (str job-name)))
 
@@ -90,6 +93,7 @@
                                           :input         prompt
                                           :config        (assoc cfg :state-dir state-dir)
                                           :crew          crew
+                                          :guidance      cron-guidance
                                           :origin        {:kind :cron :name (str job-name)}
                                           :comm          null-comm/channel})))
         failed?   (boolean (:error result))]

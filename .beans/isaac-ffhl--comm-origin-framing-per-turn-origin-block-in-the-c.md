@@ -4,8 +4,10 @@ title: 'Comm-origin framing: per-turn :origin block in the current message (hail
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-25T18:16:21Z
-updated_at: 2026-05-25T23:55:04Z
+updated_at: 2026-05-26T00:05:18Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-uysx

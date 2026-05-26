@@ -32,6 +32,7 @@
             :cwd               {:type :string :description "Session working directory"}
             :soul              {:type :string :description "System prompt"}
             :nonce             {:type :string :description "Session-scoped trusted-block nonce"}
+            :guidance          {:type :string :description "Per-turn trusted guidance injected into the current user turn"}
             :origin            {:type :ignore :description "Inbound origin metadata"}
             :charge/type       {:type :keyword :description "Charge type marker (:charge)"}
             :charge/unresolved {:type :boolean :description "True when crew/model could not be resolved"}
@@ -107,7 +108,7 @@
    model) returns a charge marked :charge/unresolved with a :charge/reason
    keyword."
   [{:keys [session-key input comm crew config model model-ref model-override model-cfg
-           provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
+           provider provider-cfg context-window soul soul-prepend guidance origin dispatch-error]}]
   (let [config*         (or (when (map? config) config) (config/snapshot) {})
         ss*             (store/registered-store)
         session-entry   (when (and ss* session-key (satisfies? store/SessionStore ss*))
@@ -130,6 +131,7 @@
                          :crew-members  known-crews
                          :models        (:models config*)
                          :module-index  (:module-index config*)
+                         :guidance      guidance
                          :origin        origin}]
     (cond (:error dispatch-error) (unresolved-charge base (:error dispatch-error))
           unknown? (unresolved-charge base :unknown-crew)

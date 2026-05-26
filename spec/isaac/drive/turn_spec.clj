@@ -233,7 +233,28 @@
                          (reset! seen opts)
                          {:model (:model opts) :messages []}))]
         (sut/build-chat-request provider {:model "spark" :soul "You are Isaac." :nonce "N0NCE-abc123" :transcript []})
-        (should= "N0NCE-abc123" (:nonce @seen)))))
+        (should= "N0NCE-abc123" (:nonce @seen))))
+
+    (it "passes origin and guidance through to the provider prompt builder"
+      (let [seen     (atom nil)
+            provider (reify api/Api
+                       (chat [_ _] nil)
+                       (chat-stream [_ _ _] nil)
+                       (followup-messages [_ _ _ _ _] nil)
+                       (config [_] {})
+                       (display-name [_] "test")
+                       (format-tools [_ tools] tools)
+                       (build-prompt [_ opts]
+                         (reset! seen opts)
+                         {:model (:model opts) :messages []}))]
+        (sut/build-chat-request provider {:guidance   "Autonomous hail; the user may not see your reply."
+                                          :model      "spark"
+                                          :nonce      "N0NCE-abc123"
+                                          :origin     {:kind :hail :hail-id "hail-1"}
+                                          :soul       "You are Isaac."
+                                          :transcript []})
+        (should= {:kind :hail :hail-id "hail-1"} (:origin @seen))
+        (should= "Autonomous hail; the user may not see your reply." (:guidance @seen)))))
 
   )
 

@@ -20,6 +20,9 @@
 
 (def default-tick-ms 1000)
 
+(def ^:private hail-guidance
+  "Autonomous hail; the user may not see your reply.")
+
 (def ^:private delays-ms
   {1 1000
    2 5000
@@ -154,19 +157,28 @@
   (let [state-dir (runtime-state-dir {})
         name      (naming/generate (naming/->SequentialStrategy state-dir "sessions" "session-" (filesystem)))]
     (session-ctx/create-with-resolved-behavior!
-    name
-    {:crew          host-crew
-     :tags          (router/normalize-tags (get-in delivery [:hail :frequency :session-tags]))
-     :origin        {:kind :hail
-                     :hail-id (normalize-id (get-in delivery [:hail :id]))}
-     :session-store session-store})))
+     name
+     {:crew          host-crew
+      :tags          (router/normalize-tags (get-in delivery [:hail :frequency :session-tags]))
+      :origin        {:kind :hail
+                      :hail-id (normalize-id (get-in delivery [:hail :id]))}
+      :session-store session-store})))
+
+(defn- spawn-target [cfg session-store delivery]
+  (if-let [session (available-spawn-session cfg session-store delivery)]
+    {:action :bind :session session}
+    (if (seq (matching-spawn-sessions cfg session-store delivery))
+      {:action :wait}
+      (if-let [host-crew (available-host-crew cfg session-store delivery)]
+        {:action :spawn :crew-id host-crew}
+        {:action :wait}))))
 
 (defn- spawn-runnable-delivery [cfg session-store delivery]
-  (if-let [session (available-spawn-session cfg session-store delivery)]
-    (bind-candidate delivery session)
-    (when (empty? (matching-spawn-sessions cfg session-store delivery))
-      (when-let [host-crew (available-host-crew cfg session-store delivery)]
-        (bind-candidate delivery (spawn-session! session-store delivery host-crew))))))
+  (let [{:keys [action session crew-id]} (spawn-target cfg session-store delivery)]
+    (case action
+      :bind  (bind-candidate delivery session)
+      :spawn (bind-candidate delivery (spawn-session! session-store delivery crew-id))
+      nil)))
 
 (defn- runnable-delivery [cfg session-store delivery]
   (cond
@@ -230,6 +242,7 @@
 (defn- delivery-charge [cfg delivery]
   (charge/build {:config      cfg
                  :comm        null-comm/channel
+                 :guidance    hail-guidance
                  :session-key (normalize-id (:session delivery))
                  :input       (get-in delivery [:hail :prompt])
                  :origin      {:kind :hail :hail-id (normalize-id (get-in delivery [:hail :id]))}}))

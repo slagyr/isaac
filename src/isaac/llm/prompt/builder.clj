@@ -21,7 +21,24 @@
 (defn- content->text [content]
   (message-content/content->text content))
 
-(declare sanitize-user-messages)
+(declare inject-turn-framing sanitize-user-messages)
+
+(defn- text-block [text]
+  {:type "text" :text text})
+
+(defn- text-blocks [content]
+  (cond
+    (string? content)
+    [(text-block content)]
+
+    (and (vector? content) (every? map? content))
+    (let [parts (->> content
+                     (filter #(= "text" (:type %)))
+                     vec)]
+      (when (seq parts) parts))
+
+    :else
+    nil))
 
 (defn filter-messages
   "Filter a sequence of raw message maps for Ollama-compatible providers.
@@ -97,6 +114,39 @@
          (remove nil?)
          vec)))
 
+(defn filter-messages-anthropic
+  "Filter messages for Anthropic-compatible providers.
+   Preserves current-turn text blocks so trusted framing can ride alongside the
+   user content in the request body."
+  [messages context-window]
+  (let [msgs (vec messages)
+        n    (count msgs)]
+    (->> (range n)
+         (keep (fn [i]
+                 (let [msg      (nth msgs i)
+                       next-msg (when (< (inc i) n) (nth msgs (inc i)))]
+                   (cond
+                     (and (= "user" (:role msg)) (some-> next-msg tool-call?))
+                     nil
+
+                     (tool-call? msg)
+                     nil
+
+                     (= "toolResult" (:role msg))
+                     (let [text (content->text (:content msg))]
+                       (when text
+                         {:role    "user"
+                          :content [(text-block (if context-window
+                                                  (truncate-tool-result text context-window)
+                                                  text))]}))
+
+                     (contains? #{"user" "assistant"} (:role msg))
+                     (when-let [content (text-blocks (:content msg))]
+                       {:role (:role msg) :content content})
+
+                     :else nil))))
+         vec)))
+
 (defn- entry->message
   "Convert a transcript entry to an LLM message, or nil if the entry has no message shape."
   [entry]
@@ -108,10 +158,11 @@
 
 (defn- transcript->messages
   "Extract and filter conversation messages from transcript entries."
-  [transcript context-window filter-fn nonce]
-  (let [messages (sanitize-user-messages (->> transcript
-                                             (keep entry->message))
-                                         nonce)]
+  [transcript context-window filter-fn nonce guidance origin]
+  (let [messages (-> (sanitize-user-messages (->> transcript
+                                                  (keep entry->message))
+                                             nonce)
+                     (inject-turn-framing nonce guidance origin))]
     (filter-fn messages context-window)))
 
 (defn- find-last-compaction
@@ -187,9 +238,37 @@
             message))
         messages))
 
+(defn- render-origin [origin]
+  (when (some? origin)
+    (str "Origin: " (pr-str origin))))
+
+(defn- trusted-turn-block [nonce guidance origin]
+  (when (seq guidance)
+    (str trusted-block-open "\n"
+         "Nonce: " (or nonce "") "\n"
+         (str/join "\n" (remove str/blank? [guidance (render-origin origin)]))
+         "\n" trusted-block-close)))
+
+(defn- frame-current-user-message [message trusted-text]
+  (if (and (= "user" (:role message)) trusted-text)
+    (assoc message :content (into [(text-block trusted-text)]
+                                  (or (text-blocks (:content message)) [])))
+    message))
+
+(defn- inject-turn-framing [messages nonce guidance origin]
+  (if-let [trusted-text (trusted-turn-block nonce guidance origin)]
+    (if-let [idx (->> messages
+                      (map-indexed vector)
+                      (filter #(= "user" (:role (second %))))
+                      last
+                      first)]
+      (update messages idx frame-current-user-message trusted-text)
+      messages)
+    messages))
+
 (defn- build-messages
   "Compose the messages array: system prompt + history (or compacted summary + post-compaction)."
-  [soul boot-files nonce transcript context-window filter-fn]
+  [soul boot-files nonce guidance origin transcript context-window filter-fn]
   (let [system-text (build-system-text soul boot-files nonce)
         compaction  (find-last-compaction transcript)]
     (if compaction
@@ -197,13 +276,14 @@
                         (messages-from-entry-id transcript first-kept-entry-id))]
         (into [{:role "system" :content system-text}
                {:role "user" :content (:summary compaction)}]
-              (filter-fn (sanitize-user-messages (if (seq preserved)
-                                                  preserved
-                                                  (messages-after-compaction transcript compaction))
-                                                nonce)
+              (filter-fn (-> (sanitize-user-messages (if (seq preserved)
+                                                       preserved
+                                                       (messages-after-compaction transcript compaction))
+                                                     nonce)
+                             (inject-turn-framing nonce guidance origin))
                          context-window)))
        (into [{:role "system" :content system-text}]
-             (transcript->messages transcript context-window filter-fn nonce)))))
+             (transcript->messages transcript context-window filter-fn nonce guidance origin)))))
 
 (defn build-transcript-messages
   "Build user/assistant messages from transcript with compaction handling.
@@ -212,20 +292,24 @@
   ([transcript context-window filter-fn]
    (build-transcript-messages transcript context-window filter-fn nil))
   ([transcript context-window filter-fn nonce]
+   (build-transcript-messages transcript context-window filter-fn nonce nil nil))
+  ([transcript context-window filter-fn nonce guidance origin]
    (let [f          (or filter-fn filter-messages)
          compaction (find-last-compaction transcript)]
      (if compaction
        (let [preserved (when-let [id (:firstKeptEntryId compaction)]
                          (messages-from-entry-id transcript id))]
          (into [{:role "user" :content (:summary compaction)}]
-               (f (sanitize-user-messages (if (seq preserved)
-                                            preserved
-                                            (messages-after-compaction transcript compaction))
-                                          nonce)
+               (f (-> (sanitize-user-messages (if (seq preserved)
+                                                preserved
+                                                (messages-after-compaction transcript compaction))
+                                              nonce)
+                      (inject-turn-framing nonce guidance origin))
                   context-window)))
-       (let [messages (sanitize-user-messages (->> transcript
-                                                  (keep entry->message))
-                                              nonce)]
+       (let [messages (-> (sanitize-user-messages (->> transcript
+                                                      (keep entry->message))
+                                                  nonce)
+                          (inject-turn-framing nonce guidance origin))]
          (f messages context-window))))))
 
 (def estimate-tokens llm-api/estimate-tokens)
@@ -241,8 +325,8 @@
      :tools          - vector of tool definitions (optional)
      :context-window - context window size for tool result truncation (optional)
      :filter-fn      - message filter function (default filter-messages)"
-  [{:keys [boot-files model nonce soul transcript tools context-window filter-fn]}]
-  (let [messages (build-messages soul boot-files nonce transcript context-window (or filter-fn filter-messages))
+  [{:keys [boot-files guidance model nonce origin soul transcript tools context-window filter-fn]}]
+  (let [messages (build-messages soul boot-files nonce guidance origin transcript context-window (or filter-fn filter-messages))
         prompt   (cond-> {:model    model
                           :messages messages}
                     (seq tools) (assoc :tools (mapv llm-api/wrapped-function-tool tools)))]

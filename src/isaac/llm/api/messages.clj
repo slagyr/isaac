@@ -33,8 +33,8 @@
     :text          system-text
     :cache_control {:type "ephemeral"}}])
 
-(defn- extract-messages [transcript nonce]
-  (->> (builder/build-transcript-messages transcript nil nil nonce)
+(defn- extract-messages [transcript nonce guidance origin]
+  (->> (builder/build-transcript-messages transcript nil builder/filter-messages-anthropic nonce guidance origin)
        (mapv #(select-keys % [:role :content]))))
 
 (defn- penultimate-user-index [messages]
@@ -72,10 +72,10 @@
 
 (defn build
   "Build an Anthropic Messages API request body."
-  [{:keys [boot-files model nonce soul transcript tools max-tokens]
+  [{:keys [boot-files guidance model nonce origin soul transcript tools max-tokens]
      :or   {max-tokens 4096}}]
   (let [system-text (builder/build-system-text soul boot-files nonce)
-        messages    (-> (extract-messages transcript nonce)
+        messages    (-> (extract-messages transcript nonce guidance origin)
                       vec
                       apply-cache-breakpoints)]
     (cond-> {:model      model
