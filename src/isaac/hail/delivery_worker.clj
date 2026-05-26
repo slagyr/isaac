@@ -276,14 +276,17 @@
       (future (run!)))))
 
 (defn tick!
+  ;; A tick is a wake boundary: config may have changed while we slept, so we
+  ;; read the current snapshot here (an entry-point read). The resolved cfg is
+  ;; then threaded as a value into each in-flight delivery — we never write the
+  ;; snapshot back.
   [{:keys [cfg session-store now] :as opts}]
-  (let [cfg           (config/normalize-config (or cfg (config/snapshot) {}))
+  (let [cfg           (or cfg (config/snapshot) {})
         state-dir     (runtime-state-dir opts)
         session-store (or session-store
                           (nexus/get-in [:sessions :store])
                           (store/create state-dir))
         now           (or now (memory/now))]
-    (config/set-snapshot! cfg)
     (->> (list-deliveries state-dir)
          (filter #(due? % now))
          (map #(runnable-delivery cfg session-store %))
