@@ -109,6 +109,7 @@
             state-dir     (or (:state-dir opts) (:state-dir cfg)
                               (str (System/getProperty "user.home") "/.isaac"))
             cfg           (assoc cfg :state-dir state-dir)
+            _             (config/dangerously-install-config! cfg "prompt-cli boot (injected crew/models)")
             _             (config/install! {:config cfg})
             session-store (store/registered-store)
             resumed-key   (when (:resume opts)

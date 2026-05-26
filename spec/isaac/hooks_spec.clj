@@ -89,28 +89,28 @@
   (describe "unauthenticated handler"
     (it "checks the path before unknown-hook requests fail"
       (nexus/-with-nexus {:state-dir "/test"}
-        (config/set-snapshot! test-cfg "spec")
+        (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {}))]
           (should= 404 (:status resp))))))
 
   (describe "method check"
     (it "returns 405 for GET requests"
       (nexus/-with-nexus {:state-dir "/test"}
-        (config/set-snapshot! test-cfg "spec")
+        (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (get-request (str "/hooks/" marigold/lettuce-hook) {}))]
           (should= 405 (:status resp))))))
 
   (describe "path lookup"
     (it "returns 404 for unknown hook name"
       (nexus/-with-nexus {:state-dir "/test"}
-        (config/set-snapshot! test-cfg "spec")
+        (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {}))]
           (should= 404 (:status resp))))))
 
   (describe "content-type check"
     (it "returns 415 for non-JSON content-type"
       (nexus/-with-nexus {:state-dir "/test"}
-        (config/set-snapshot! test-cfg "spec")
+        (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler {:request-method :post
                                  :uri            (str "/hooks/" marigold/lettuce-hook)
                                  :headers        {"content-type"   "text/plain"}
@@ -120,7 +120,7 @@
   (describe "body parse"
     (it "returns 400 for malformed JSON"
       (nexus/-with-nexus {:state-dir "/test"}
-        (config/set-snapshot! test-cfg "spec")
+        (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook) "not-json" {}))]
           (should= 400 (:status resp))))))
 
@@ -143,7 +143,7 @@
           (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
-            (config/set-snapshot! test-cfg "spec")
+            (config/dangerously-install-config! test-cfg "spec")
             (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
@@ -170,7 +170,7 @@
           (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
-            (config/set-snapshot! hook-cfg "spec")
+            (config/dangerously-install-config! hook-cfg "spec")
             (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                       (json/generate-string {:count 3 :level 8})
                                                       {}))]
@@ -196,7 +196,7 @@
           (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}
-            (config/set-snapshot! hook-cfg "spec")
+            (config/dangerously-install-config! hook-cfg "spec")
             (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                       (json/generate-string {:count 3 :level 8})
                                                       {}))]
@@ -220,7 +220,7 @@
           (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
-            (config/set-snapshot! hook-cfg "spec")
+            (config/dangerously-install-config! hook-cfg "spec")
             (log/capture-logs
               (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                         (json/generate-string {:count 3 :level 8})
@@ -241,7 +241,7 @@
           (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}
-            (config/set-snapshot! test-cfg "spec")
+            (config/dangerously-install-config! test-cfg "spec")
             (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                       (json/generate-string {:count 3 :level 8})
                                                       {}))]

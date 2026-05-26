@@ -677,7 +677,7 @@
                             :state-dir state-dir
                             :fs        fs*
                             :sessions  {:store session-store}}
-          (config/set-snapshot! cfg "spec")
+          (config/dangerously-install-config! cfg "spec")
           (record-turn-future! (hail-delivery-worker/tick! {:cfg cfg :session-store session-store})))))))
 
 (defn hail-delivery-worker-ticks-at [iso]
@@ -693,7 +693,7 @@
                             :state-dir state-dir
                             :fs        fs*
                             :sessions  {:store session-store}}
-          (config/set-snapshot! cfg "spec")
+          (config/dangerously-install-config! cfg "spec")
           (record-turn-future! (hail-delivery-worker/tick! {:cfg           cfg
                                                             :now           (java.time.Instant/parse iso)
                                                             :session-store session-store})))))))

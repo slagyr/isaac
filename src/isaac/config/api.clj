@@ -38,6 +38,14 @@
   [cfg]
   (loader/normalize-config cfg))
 
+(defn load-config!
+  "THE loader: load config from `opts` (e.g. {:state-dir ...}), commit it as the
+   process-wide snapshot, and return the value. Call once per process at an entry
+   point, then thread the returned value onward or read the snapshot — never
+   re-load. `reason` documents the call site."
+  [opts reason]
+  (loader/load-config! opts reason))
+
 (defn snapshot
   "Returns the current process-wide config snapshot, or nil if not yet set.
    An ambient read: call ONLY at entry points / wake boundaries; in-flight code
@@ -46,10 +54,11 @@
   [reason]
   (loader/snapshot reason))
 
-(defn set-snapshot!
-  "Installs the process-wide config snapshot. Set only at config-change
-   boundaries — the install! coordinator does this at boot and on reload; direct
-   use is for tests. `reason` documents the call site."
+(defn dangerously-install-config!
+  "Commit an already-built config value as the process-wide snapshot, bypassing
+   the loader. Reserved for boot (after its runtime :dev transform), reload
+   (after validation), and tests committing a synthetic config. Prefer
+   load-config!. `reason` documents the call site."
   [cfg reason]
   (loader/set-snapshot! cfg reason))
 

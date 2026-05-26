@@ -38,7 +38,7 @@
 (helper! isaac.session.session-steps)
 
 (g/before-scenario g/reset!)
-(g/before-scenario #(config/set-snapshot! nil "spec"))
+(g/before-scenario #(config/dangerously-install-config! nil "spec"))
 (g/before-scenario module-loader/clear-activations!)
 (g/before-scenario slash-registry/clear!)
 
@@ -845,7 +845,7 @@
   (isaac.llm.http/clear-outbound-requests!)
   (drive-dispatch/clear-last-request!)
   (let [cfg           (config/normalize-config (loaded-config))
-        _             (config/set-snapshot! cfg "spec")
+        _             (config/dangerously-install-config! cfg "spec")
         agent-cfg     (current-agent-config)
         model-cfg     (current-model-config)
         provider-name (:provider model-cfg)

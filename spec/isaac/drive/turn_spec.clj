@@ -558,7 +558,7 @@
                       :model   "test-model"
                       :usage   {}
                       :tool-calls []}]
-        (config/set-snapshot! {:defaults {:crew "main" :model "test"}
+        (config/dangerously-install-config! {:defaults {:crew "main" :model "test"}
                                :crew     {"main" {:model "test" :soul "You are Isaac." :tools {:allow [:logbook-entry]}}}
                                :models   {"test" {:model "test-model" :provider marigold/starcore :context-window 32768}}} "spec")
         (tool-registry/clear!)
@@ -596,4 +596,4 @@
               (should= 2 (:assistant-content-chars response-entry))
               (should= 0 (:tool-calls-count response-entry))
               (should= 0 (:executed-tools-count response-entry)))))
-        (config/set-snapshot! nil "spec")))))
+        (config/dangerously-install-config! nil "spec")))))

@@ -26,18 +26,18 @@
       (store/register! config state-dir))))
 
 (defn install!
-  "Populate the nexus from an already-loaded config map: set the snapshot,
-   ensure the session store and the [:tree] object-tree slot, then reconcile the
-   given registries' config slices into the tree.
+  "Reconcile an already-committed config into the nexus: ensure the session store
+   and the [:tree] object-tree slot, then reconcile the given registries' config
+   slices into the tree. The snapshot must already be committed (via load-config!
+   or dangerously-install-config!) — install! no longer commits it.
 
    opts:
-     :config      - loaded config map (required)
+     :config      - the committed config map (required)
      :old-config  - previous config for the reconcile diff (nil on boot)
      :registries  - configurator registries to reconcile (default none)
      :host        - host context for reconcile! (module-index, connect-ws!, ...)
    Returns {:config config :tree tree}."
   [{:keys [config old-config registries host]}]
-  (config/set-snapshot! config "install! coordinator (boot/reload)")
   (ensure-store! config)
   (let [tree (ensure-tree!)]
     (when (seq registries)
@@ -45,10 +45,11 @@
     {:config config :tree tree}))
 
 (defn load-and-install!
-  "Load config (loader) and install! it into the nexus. opts are loader opts
-   plus :registries and :host (see install!). Returns
-   {:config :errors :warnings :tree}."
+  "Load config (loader), commit it as the snapshot, and install! it into the
+   nexus. opts are loader opts plus :registries and :host (see install!).
+   Returns {:config :errors :warnings :tree}."
   [{:keys [registries host] :as opts}]
-  (let [{:keys [config errors warnings]} (config/load-config-result (dissoc opts :registries :host))
-        {:keys [tree]}                   (install! {:config config :registries registries :host host})]
-    {:config config :errors errors :warnings warnings :tree tree}))
+  (let [{:keys [config errors warnings]} (config/load-config-result (dissoc opts :registries :host))]
+    (config/set-snapshot! config "load-and-install! coordinator")
+    (let [{:keys [tree]} (install! {:config config :registries registries :host host})]
+      {:config config :errors errors :warnings warnings :tree tree})))

@@ -352,7 +352,7 @@
                       :models    {"fast"  {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}
                                   "smart" {:model "anvil-x"      :provider marigold/quantum-anvil :context-window 128000}}
                       :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
-        (config/set-snapshot! cfg "spec")
+        (config/dangerously-install-config! cfg "spec")
         (helper/create-session! (nexus/get :state-dir) "pinky-session" {:crew "pinky"})
         (with-redefs [single-turn/run-turn! (fn [charge]
                                               (reset! captured charge)
@@ -369,7 +369,7 @@
                       :models    {"fast"  {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}
                                   "smart" {:model "anvil-x"      :provider marigold/quantum-anvil :context-window 128000}}
                       :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
-        (config/set-snapshot! cfg "spec")
+        (config/dangerously-install-config! cfg "spec")
         (helper/create-session! (nexus/get :state-dir) "pinky-session" {:crew "pinky"})
         (with-redefs [single-turn/run-turn! (fn [charge]
                                               (reset! captured charge)
@@ -383,7 +383,7 @@
                  :crew     {"main" {:soul "Main soul" :model "fast"}}
                  :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
                  :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
-        (config/set-snapshot! cfg "spec")
+        (config/dangerously-install-config! cfg "spec")
         (helper/create-session! (nexus/get :state-dir) "cli-origin-unknown-crew" {:crew "ghost"})
         (let [result (bridge/dispatch! (charge/build {:session-key "cli-origin-unknown-crew"
                                                       :input       "hello"
@@ -397,7 +397,7 @@
                  :crew     {"main" {:soul "Main soul" :model "fast"}}
                  :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
                  :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
-        (config/set-snapshot! cfg "spec")
+        (config/dangerously-install-config! cfg "spec")
         (helper/create-session! (nexus/get :state-dir) "webhook-unknown-crew" {:crew "ghost"})
         (let [result (bridge/dispatch! (charge/build {:session-key "webhook-unknown-crew"
                                                       :input       "hello"

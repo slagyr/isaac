@@ -22,9 +22,9 @@
 
   (context "install!"
 
-    (it "sets the config snapshot"
+    (it "does not commit the snapshot — the caller commits before reconciling"
       (sut/install! {:config {:defaults {:crew "main"}}})
-      (should= {:crew "main"} (:defaults (config/snapshot "spec"))))
+      (should-be-nil (config/snapshot "spec")))
 
     (it "ensures the object-tree slot"
       (should-be-nil (nexus/get :tree))

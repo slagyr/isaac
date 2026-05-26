@@ -143,7 +143,7 @@
                                        captured*
                                        (fn []
                                          (try
-                                           (config/set-snapshot! cfg "spec")
+                                           (config/dangerously-install-config! cfg "spec")
                                            (reset! result (bridge/dispatch! (state-dir)
                                                                             (assoc opts :input content :session-key key-str)))
                                            (catch Exception e

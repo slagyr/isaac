@@ -1161,14 +1161,20 @@
   @(config-atom))
 
 (defn set-snapshot!
-  "Installs the process-wide config snapshot. Set only at config-change
-   boundaries — the install! coordinator does this at boot and on reload; direct
-   use is for tests. `reason` is a short string documenting the call site (kept
-   greppable / logged)."
+  "Low-level primitive: reset the process-wide config snapshot to `cfg`. Internal
+   to config — callers use load-config! (load + commit) or, for an already-built
+   value, dangerously-install-config!. `reason` documents the call site."
   [cfg reason]
   (log/debug :config/set-snapshot :reason reason)
   (reset! (config-atom) cfg)
   cfg)
+
+(defn load-config!
+  "THE loader: load config from `opts`, commit it as the process-wide snapshot,
+   and return the value. Call once at an entry point, then thread the returned
+   value onward (or read the snapshot). `reason` documents the call site."
+  [opts reason]
+  (set-snapshot! (load-config opts) reason))
 
 (defn state-dir
   "Returns the resolved state directory. Test fixtures install an explicit

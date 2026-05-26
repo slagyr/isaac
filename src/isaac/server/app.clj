@@ -113,6 +113,7 @@
       :else
       (let [old-cfg @cfg*]
         (reset! cfg* new-cfg)
+        (config/dangerously-install-config! new-cfg "config hot reload")
         (config/install! {:config new-cfg :old-config old-cfg :registries registries :host host})
         (log/info :config/reloaded :path path)))))
 
@@ -218,6 +219,7 @@
                 _                       (when scheduler
                                           (nexus/register! [:scheduler] scheduler))
                 host-ctx                (host-context cfg state-dir connect-ws!)
+                _                       (config/dangerously-install-config! cfg "server boot")
                 {tree* :tree}           (config/install! {:config cfg :registries registries :host host-ctx})
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
                 _                       (doseq [[_mod-id entry] (:module-index cfg)]

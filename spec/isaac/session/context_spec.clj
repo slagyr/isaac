@@ -45,7 +45,7 @@
         (example))))
 
   (it "resolves locked and cascade fields for an existing session"
-    (config/set-snapshot! {:defaults  {:crew crew-name :model "spark" :effort 5 :history-retention :prune}
+    (config/dangerously-install-config! {:defaults  {:crew crew-name :model "spark" :effort 5 :history-retention :prune}
                            :crew      {crew-name {:model "spark" :soul crew-soul :context-mode :reset :compaction {:threshold 0.7}}}
                            :models    {"spark" {:model "echo" :provider "grover" :context-window 1000 :effort 6 :compaction {:threshold 0.6}}}
                            :providers {"grover" {:api "grover" :effort 7 :compaction {:threshold 0.5}}}} "spec")
@@ -57,10 +57,10 @@
       (should= :reset (:context-mode behavior))
       (should= 6 (:effort behavior))
       (should= {:async? false :strategy :rubberband :head 0.3 :threshold 0.7} (:compaction behavior)))
-    (config/set-snapshot! nil "spec"))
+    (config/dangerously-install-config! nil "spec"))
 
   (it "creates a session with resolved locked defaults and explicit overrides"
-    (config/set-snapshot! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
+    (config/dangerously-install-config! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
                            :crew      {crew-name {:model "spark" :soul crew-soul}}
                            :models    {"spark" {:model "echo" :provider "grover" :context-window 1000}}
                            :providers {"grover" {:api "grover"}}} "spec")
@@ -70,10 +70,10 @@
       (should= (str "/test/session-context/.isaac/crew/" crew-name) (:cwd session))
       (should= :prune (:history-retention session))
       (should= 9 (:effort session)))
-    (config/set-snapshot! nil "spec"))
+    (config/dangerously-install-config! nil "spec"))
 
   (it "falls back to main when defaults.crew is absent"
-    (config/set-snapshot! {:defaults  {:model "spark" :history-retention :prune}
+    (config/dangerously-install-config! {:defaults  {:model "spark" :history-retention :prune}
                            :crew      {"main" {:model "spark" :soul crew-soul}}
                            :models    {"spark" {:model "echo" :provider "grover" :context-window 1000}}
                            :providers {"grover" {:api "grover"}}} "spec")
@@ -82,10 +82,10 @@
       (should= "main" (:crew session))
       (should= (str test-root "/.isaac/crew/main") (:cwd session))
       (should= :prune (:history-retention session)))
-    (config/set-snapshot! nil "spec"))
+    (config/dangerously-install-config! nil "spec"))
 
   (it "creates a session in an explicit session store"
-    (config/set-snapshot! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
+    (config/dangerously-install-config! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
                            :crew      {crew-name {:model "spark" :soul crew-soul}}
                            :models    {"spark" {:model "echo" :provider "grover" :context-window 1000}}
                            :providers {"grover" {:api "grover"}}} "spec")
@@ -97,10 +97,10 @@
         (should= (str "/test/session-context/.isaac/crew/" crew-name) (:cwd session))
         (should= :prune (:history-retention session))
         (should= 9 (:effort session))))
-    (config/set-snapshot! nil "spec"))
+    (config/dangerously-install-config! nil "spec"))
 
   (it "creates sessions with stable distinct nonces"
-    (config/set-snapshot! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
+    (config/dangerously-install-config! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
                            :crew      {crew-name {:model "spark" :soul crew-soul}}
                            :models    {"spark" {:model "echo" :provider "grover" :context-window 1000}}
                            :providers {"grover" {:api "grover"}}} "spec")
@@ -112,10 +112,10 @@
       (should (:nonce session-2))
       (should= (:nonce session-1) (:nonce (sut/resolve-behavior "s1")))
       (should (not= (:nonce session-1) (:nonce session-2))))
-    (config/set-snapshot! nil "spec"))
+    (config/dangerously-install-config! nil "spec"))
 
   (it "backfills a missing nonce for an existing session"
-    (config/set-snapshot! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
+    (config/dangerously-install-config! {:defaults  {:crew crew-name :model "spark" :history-retention :prune}
                            :crew      {crew-name {:model "spark" :soul crew-soul}}
                            :models    {"spark" {:model "echo" :provider "grover" :context-window 1000}}
                            :providers {"grover" {:api "grover"}}} "spec")
@@ -127,4 +127,4 @@
             updated  (helper/get-session test-root "legacy")]
         (should (:nonce behavior))
         (should= (:nonce behavior) (:nonce updated))))
-    (config/set-snapshot! nil "spec")))
+    (config/dangerously-install-config! nil "spec")))
