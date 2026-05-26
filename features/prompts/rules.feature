@@ -1,4 +1,3 @@
-@wip
 Feature: Rules (always-on prepared prompts)
   A rule is a prepared prompt with always-on activation: unlike a skill (whose
   description sits in the system prompt and whose body loads on demand), a

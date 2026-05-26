@@ -62,6 +62,19 @@
              (select-keys (get-in (resolve-catalog) [:skills "tdd"])
                           [:description :name :type])))
 
+  (it "discovers a rule from config/rules"
+    (write-config-file! "config/rules/greenhouse-standards.md"
+                        (str "---\n"
+                             "type: rule\n"
+                             "description: Greenhouse operating standards\n"
+                             "---\n\n"
+                             "Never vent atmosphere while specimens are unsealed."))
+    (should= {:description "Greenhouse operating standards"
+              :name        "greenhouse-standards"
+              :type        :rule}
+             (select-keys (get-in (resolve-catalog) [:rules "greenhouse-standards"])
+                          [:description :name :type])))
+
   (it "prefers explicit type over a conflicting directory signal and warns"
     (write-config-file! "config/commands/helper.md"
                         (str "---\n"

@@ -121,6 +121,15 @@
         (should-contain "You are Isaac." (get-in p [:messages 0 :content]))
         (should-contain "## House Rules\nNo tabs." (get-in p [:messages 0 :content]))))
 
+    (it "appends always-on rule bodies to the system prompt when present"
+      (let [p (sut/build {:model      "test"
+                          :soul       "You are Isaac."
+                          :rules-text "Never vent atmosphere while specimens are unsealed."
+                          :transcript sample-transcript})]
+        (should= "system" (get-in p [:messages 0 :role]))
+        (should-contain "You are Isaac." (get-in p [:messages 0 :content]))
+        (should-contain "Never vent atmosphere while specimens are unsealed." (get-in p [:messages 0 :content]))))
+
     (it "adds the universal guard and session nonce to the system message"
       (let [p (sut/build {:model "test" :soul "You are Isaac." :nonce "N0NCE-abc123" :transcript sample-transcript})
             system-text (get-in p [:messages 0 :content])]

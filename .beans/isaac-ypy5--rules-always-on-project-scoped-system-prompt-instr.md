@@ -4,8 +4,10 @@ title: 'Rules: always-on project-scoped system-prompt instructions (new prepared
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-26T14:44:47Z
+updated_at: 2026-05-26T16:12:22Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5

@@ -72,9 +72,9 @@
 
 (defn build
   "Build an Anthropic Messages API request body."
-  [{:keys [boot-files guidance model nonce origin soul transcript tools max-tokens]
+  [{:keys [boot-files guidance model nonce origin rules-text soul transcript tools max-tokens]
      :or   {max-tokens 4096}}]
-  (let [system-text (builder/build-system-text soul boot-files nonce)
+  (let [system-text (builder/build-system-text soul boot-files rules-text nonce)
         messages    (-> (extract-messages transcript nonce guidance origin)
                       vec
                       apply-cache-breakpoints)]

@@ -36,6 +36,41 @@
         (let [boot-files (sut/read-boot-files (str test-root "/project-runtime"))]
           (should (.contains boot-files "Runtime Rules"))))))
 
+(describe "read-rules-text"
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (nexus/-with-nexus {:fs (fs/mem-fs)}
+      (example)))
+
+  (it "returns global and project rules in stable name order"
+    (let [cfg {:state-dir test-root}]
+      (fs/spit (nexus/get :fs) (str test-root "/config/rules/quarantine.md")
+               (str "---\n"
+                    "type: rule\n"
+                    "description: Quarantine discipline\n"
+                    "---\n\n"
+                    "Isolate new specimens for one cycle."))
+      (fs/spit (nexus/get :fs) (str test-root "/config/rules/airlock.md")
+               (str "---\n"
+                    "type: rule\n"
+                    "description: Airlock discipline\n"
+                    "---\n\n"
+                    "Seal both doors before cycling."))
+      (fs/spit (nexus/get :fs) (str test-root "/project/.isaac/rules/greenhouse.md")
+               (str "---\n"
+                    "type: rule\n"
+                    "description: Greenhouse standing orders\n"
+                    "---\n\n"
+                    "Never vent atmosphere while specimens are unsealed."))
+      (should= (str "Seal both doors before cycling.\n\n"
+                    "Isolate new specimens for one cycle.\n\n"
+                    "Never vent atmosphere while specimens are unsealed.")
+               (sut/read-rules-text cfg test-root (str test-root "/project")))))
+
+  (it "returns nil when no rules are discovered"
+    (should-be-nil (sut/read-rules-text {:state-dir test-root} test-root (str test-root "/missing-project")))))
+
 (describe "behavior funnel"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}

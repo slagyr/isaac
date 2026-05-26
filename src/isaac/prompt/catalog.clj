@@ -8,6 +8,7 @@
 
 (def ^:private default-prompt-dir-names
   {"commands" :command
+   "rules"    :rule
    "skills"   :skill})
 
 (defn- split-frontmatter [content]
@@ -133,6 +134,10 @@
           (log/warn :prompt/missing-type-signal :path path)
           nil)))))
 
+(defn- entry-body [entry]
+  (when-let [load-body (:body-loader entry)]
+    (load-body)))
+
 (defn- dedupe-file-specs [file-specs]
   (vals (reduce (fn [acc spec] (assoc acc (:path spec) spec)) {} file-specs)))
 
@@ -183,6 +188,7 @@
 (defn- index-entry [catalog entry]
   (case (:type entry)
     :command (assoc-in catalog [:commands (:name entry)] entry)
+    :rule    (assoc-in catalog [:rules (:name entry)] entry)
     :skill   (assoc-in catalog [:skills (:name entry)] entry)
     catalog))
 
@@ -199,11 +205,22 @@
                                      (map #(merge root %) (root-file-specs fs* root dir-names))))
                            dedupe-file-specs)
         entries       (keep #(file-entry fs* dir-names %) file-specs)
-        catalog       (reduce index-entry {:commands {} :skills {}} entries)
+        catalog       (reduce index-entry {:commands {} :rules {} :skills {}} entries)
         elapsed-ms    (/ (- (System/nanoTime) start-ns) 1000000.0)]
     (log/debug :prompt/catalog-resolved
                :elapsed-ms elapsed-ms
                :file-count (count file-specs)
                :command-count (count (:commands catalog))
+               :rule-count (count (:rules catalog))
                :skill-count (count (:skills catalog)))
     catalog))
+
+(defn resolve-rules-text [{:keys [config cwd fs state-dir]}]
+  (some->> (:rules (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir}))
+           vals
+           (sort-by (juxt (comp {:global 0 :project 1} :layer) :name))
+           (map entry-body)
+           (map str/trim)
+           (remove str/blank?)
+           seq
+           (str/join "\n\n")))

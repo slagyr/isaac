@@ -582,12 +582,13 @@
   (when (empty? (tool-registry/all-tools))
     (builtin/register-all!)))
 
-(defn build-chat-request [p {:keys [boot-files effort guidance model nonce origin soul transcript tools]}]
+(defn build-chat-request [p {:keys [boot-files effort guidance model nonce origin rules-text soul transcript tools]}]
   (let [prompt-out (api/build-prompt p {:boot-files boot-files
                                         :guidance   guidance
                                         :model      model
                                         :nonce      nonce
                                         :origin     origin
+                                        :rules-text rules-text
                                         :soul       soul
                                         :transcript transcript
                                         :tools      tools})]
@@ -623,6 +624,7 @@
             :effort        {:type :long    :description "Per-turn effort budget, nil when model disallows effort"}
             :allowed-tools {:type :ignore  :description "Set of tool keywords allowed for this turn's crew"}
             :boot-files    {:type :ignore  :description "Boot-file contents read from the session cwd"}
+            :rules-text    {:type :ignore  :description "Always-on prepared rule bodies read from global/project roots"}
             :provider      {:type :ignore  :description "Tools-augmented LLM provider for this turn"}}})
 
 (defn- build-turn
@@ -638,6 +640,7 @@
         session        (store/get-session session-store* session-key)
         allowed-tools  (allowed-tool-names crew-members crew)
         boot-files     (session-ctx/read-boot-files (:cwd session))
+        rules-text     (session-ctx/read-rules-text (:config charge) state-dir (:cwd session))
         augmented      (augment-provider state-dir provider session-key context-window
                                          (select-keys (or model-cfg {})
                                                       [:thinking-budget-max :think-mode]))]
@@ -662,6 +665,7 @@
                                        (:effort charge))
                       :allowed-tools allowed-tools
                       :boot-files    boot-files
+                      :rules-text    rules-text
                       :provider      augmented})))
 
 (defn- finish-turn! [ch session-key result]
@@ -694,7 +698,7 @@
   "Build the chat request, drive the tool-loop, persist tool pairs and the
    final assistant response. Returns the final result map."
   [session-key input ctx]
-  (let [{:keys [provider allowed-tools effort boot-files]} ctx
+  (let [{:keys [provider allowed-tools effort boot-files rules-text]} ctx
         {:keys [guidance model module-index nonce origin soul context-mode comm config]} (:charge ctx)
         caps {:max-lines (get-in config [:tools :defaults :max-lines])
               :max-bytes (get-in config [:tools :defaults :max-bytes])}
@@ -716,6 +720,7 @@
                                                  :model      model
                                                  :nonce      nonce
                                                  :origin     origin
+                                                 :rules-text rules-text
                                                  :soul       soul
                                                  :transcript transcript
                                                  :tools      tools})

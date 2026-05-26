@@ -1,10 +1,12 @@
 (ns isaac.session.context
   (:require
     [c3kit.apron.schema :as schema]
+    [clojure.string :as str]
     [isaac.config.api :as config]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.logger :as log]
+    [isaac.prompt.catalog :as prompt-catalog]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.schema :as session-schema]
     [isaac.session.store :as store]
@@ -21,6 +23,18 @@
      (let [path (str cwd "/AGENTS.md")]
        (when (fs/exists? fs* path)
          (fs/slurp fs* path))))))
+
+(defn read-rules-text
+  ([cfg state-dir cwd]
+   (read-rules-text cfg state-dir cwd (fs/instance)))
+  ([cfg state-dir cwd fs*]
+   (let [cfg        (or cfg {})
+         state-dir' (or state-dir (:state-dir cfg))]
+     (when (and state-dir' (not (str/blank? (str state-dir'))))
+       (prompt-catalog/resolve-rules-text {:config    cfg
+                                           :cwd       cwd
+                                           :fs        fs*
+                                           :state-dir state-dir'})))))
 
 (defn default-threshold [_window] 0.8)
 

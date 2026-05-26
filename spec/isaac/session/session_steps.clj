@@ -1196,7 +1196,8 @@
                      messages-api/build
                      prompt/build)
         ctx        (assoc (config/resolve-crew-context cfg agent-id)
-                          :boot-files (session-ctx/read-boot-files (:cwd session)))]
+                          :boot-files (session-ctx/read-boot-files (:cwd session))
+                          :rules-text (session-ctx/read-rules-text cfg (state-dir) (:cwd session) (mem-fs)))]
     (builder {:boot-files     (:boot-files ctx)
               :context-window (:context-window model-cfg)
               :filter-fn      (when openai? prompt/filter-messages-openai)
@@ -1204,6 +1205,7 @@
               :model          (:model model-cfg)
               :nonce          (:nonce session)
               :origin         origin
+              :rules-text     (:rules-text ctx)
               :soul           (:soul ctx)
               :tools          tools
               :transcript     transcript})))
