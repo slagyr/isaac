@@ -1,11 +1,11 @@
 ---
 # isaac-udzf
 title: Switch markdown frontmatter from EDN to YAML
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-05-26T05:06:59Z
-updated_at: 2026-05-26T05:19:36Z
+updated_at: 2026-05-26T05:22:03Z
 ---
 
 Isaac's markdown frontmatter (the cron single-md job-config variant) uses **EDN**; almost every other agent (Claude, agent-lib, toolbox) uses **YAML**. Switch all md frontmatter to YAML for interoperability — so Isaac reads foreign command/skill files natively and the `user-invocable` signal is just a YAML field.
