@@ -19,7 +19,6 @@
       (fs/real-fs)))
 
 (defn- current-config []
-  (config/clear-load-cache!)
   (:config (config/load-config-result {:state-dir (state-dir)
                                        :fs        (feature-fs)})))
 
