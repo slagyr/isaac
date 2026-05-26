@@ -263,7 +263,7 @@
         (str "invalid value for " path-str))))
 
 (defn- run-mutation [opts operation raw-path raw-value]
-  (let [{session-store :store} (install-cli! opts)
+  (let [{session-store :store loaded-cfg :config} (install-cli! opts)
         target                 (parse-mutation-target raw-path)]
     (if-let [error (:error target)]
       (print-mutation-error! error)
@@ -299,7 +299,8 @@
                             current-value (get-in session [top-key])]
                         (if (= current-value updated-value)
                           0
-                          (let [conformed (session-schema/conform-read (:config nav-result))]
+                          (let [conformed (binding [session-schema/*config* loaded-cfg]
+                                            (session-schema/conform-read (:config nav-result)))]
                             (if (schema/error? conformed)
                               (print-mutation-error! (path-message path-str conformed updated-value))
                               (do

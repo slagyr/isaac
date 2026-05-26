@@ -6,6 +6,7 @@
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.compaction-schema :as compaction-schema]
+    [isaac.session.schema :as session-schema]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as store-common]
     [isaac.nexus :as nexus]))
@@ -141,22 +142,24 @@
         state-dir (or (:state-dir opts) (:state-dir passed-config) (config/state-dir))
         cfg       (config/normalize-config (effective-config passed-config state-dir (fs/instance)))
         behavior  (resolve-behavior* cfg state-dir (select-keys opts behavioral-keys))
-        store     (require-session-store (:session-store opts))
-        entry     (store/open-session! store session-key {:channel           (:channel opts)
-                                                           :chat-type         (or (:chat-type opts) (:chatType opts))
-                                                           :crew              (:crew behavior)
-                                                           :nonce             (or (:nonce opts) (store-common/new-nonce))
-                                                           :tags              (:tags opts)
-                                                           :cwd               (:cwd behavior)
-                                                           :history-retention (:history-retention behavior)
-                                                           :config            cfg
-                                                           :origin            (:origin opts)})
-        updates   (cond-> {}
-                    (contains? opts :compaction)   (assoc :compaction (:compaction opts))
-                    (contains? opts :context-mode) (assoc :context-mode (:context-mode opts))
-                    (contains? opts :effort)       (assoc :effort (:effort opts))
-                    (contains? opts :model)        (assoc :model (:model opts))
-                    (contains? opts :provider)     (assoc :provider (:provider opts)))]
+        store     (require-session-store (:session-store opts))]
+   ;; bind the known crew set for the schema's crew validation on the writes below
+   (binding [session-schema/*config* cfg]
+    (let [entry     (store/open-session! store session-key {:channel           (:channel opts)
+                                                            :chat-type         (or (:chat-type opts) (:chatType opts))
+                                                            :crew              (:crew behavior)
+                                                            :nonce             (or (:nonce opts) (store-common/new-nonce))
+                                                            :tags              (:tags opts)
+                                                            :cwd               (:cwd behavior)
+                                                            :history-retention (:history-retention behavior)
+                                                            :config            cfg
+                                                            :origin            (:origin opts)})
+          updates   (cond-> {}
+                      (contains? opts :compaction)   (assoc :compaction (:compaction opts))
+                      (contains? opts :context-mode) (assoc :context-mode (:context-mode opts))
+                      (contains? opts :effort)       (assoc :effort (:effort opts))
+                      (contains? opts :model)        (assoc :model (:model opts))
+                      (contains? opts :provider)     (assoc :provider (:provider opts)))]
      (if (seq updates)
        (store/update-session! store (:id entry) updates)
-       entry)))
+       entry)))))

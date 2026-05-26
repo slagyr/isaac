@@ -1,7 +1,13 @@
 (ns isaac.session.schema
   (:require
-    [c3kit.apron.schema :as schema]
-    [isaac.config.api :as config]))
+    [c3kit.apron.schema :as schema]))
+
+(def ^:dynamic *config*
+  "Config bound around session conform so crew validation resolves the known
+   crew set from a value rather than the ambient snapshot. Unbound means no crew
+   constraint — reads don't reject; bind it on write paths to validate. Mirrors
+   isaac.config.loader/*config*."
+  nil)
 
 (defn- mutable [spec]
   (assoc spec :mutable? true :system-managed? false))
@@ -13,7 +19,7 @@
   (assoc spec :mutable? false :system-managed? true))
 
 (defn- known-crew? [crew]
-  (let [crews (:crew (config/snapshot "session schema crew validation — TODO thread config as a value"))]
+  (let [crews (:crew *config*)]
     (or (nil? crew)
         (nil? crews)
         (empty? crews)
