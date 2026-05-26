@@ -149,6 +149,7 @@
                                                            :tags              (:tags opts)
                                                            :cwd               (:cwd behavior)
                                                            :history-retention (:history-retention behavior)
+                                                           :config            cfg
                                                            :origin            (:origin opts)})
         updates   (cond-> {}
                     (contains? opts :compaction)   (assoc :compaction (:compaction opts))

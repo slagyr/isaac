@@ -25,8 +25,9 @@
 (defn- get-val [m k]
   (or (get m k) (get m (name k))))
 
-(defn- effective-config [state-dir]
-  (or (config/snapshot "session store config — TODO thread config as a value")
+(defn- effective-config [passed-config state-dir]
+  (or passed-config
+      (config/snapshot "session store config — ambient fallback when caller passes no :config")
       (when state-dir
         (config/load-config {:state-dir state-dir}))
       {}))
@@ -47,7 +48,7 @@
 
   (open-session! [_ name opts]
     (let [opts      (c/entry-defaults opts)
-          retention (config/resolve-history-retention (effective-config state-dir)
+          retention (config/resolve-history-retention (effective-config (:config opts) state-dir)
                                                       (or (:crew opts) "main")
                                                       (:history-retention opts))
           name      (or name

@@ -101,14 +101,15 @@
           :chat-type (or (:chat-type opts) (:chatType opts))}
          (into {} (remove (comp nil? val) opts))))
 
-(defn effective-config [state-dir fs]
-  (or (config/snapshot "session store config — TODO thread config as a value")
+(defn effective-config [passed-config state-dir fs]
+  (or passed-config
+      (config/snapshot "session store config — ambient fallback when caller passes no :config")
       (when state-dir
         (config/load-config {:state-dir state-dir :fs fs}))
       {}))
 
 (defn resolve-history-retention [state-dir opts fs]
-  (config/resolve-history-retention (effective-config state-dir fs)
+  (config/resolve-history-retention (effective-config (:config opts) state-dir fs)
                                     (or (:crew opts) "main")
                                     (:history-retention opts)))
 
