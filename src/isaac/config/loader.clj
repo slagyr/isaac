@@ -60,7 +60,7 @@
   (swap! env-overrides* assoc name value))
 
 (defn env [name]
-  (or (get @env-overrides* name)
+  (or (get @env-overrides* name)                            ;; TODO - MDM: c3env allows overrides.  Why reimplement?
       (c3env/env name)
       (get @dotenv* name)))
 
@@ -1045,7 +1045,7 @@
                          :cron      new-cron}
                         (cond-> cfg
                                 (contains? cfg :cron) (assoc :cron new-cron))
-                        [:acp :channels :command-paths :comms :cron :dev :gateway :hooks :module-index :modules :prefer-entity-files :prompt-dir-names :prompt-paths :server :sessions :skill-paths :slash-commands :state-dir :tools :tz])))
+                        [:acp :channels :command-paths :comms :cron :gateway :hooks :module-index :modules :prefer-entity-files :prompt-dir-names :prompt-paths :server :sessions :skill-paths :slash-commands :state-dir :tools :tz])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -1337,8 +1337,7 @@
       ctx)))
 
 (defn server-config [config]
-  (let [config (normalize-config config)
-        dev    (get config :dev)]
+  (let [config (normalize-config config)]
     {:port       (or (get-in config [:server :port])
                      (get-in config [:gateway :port])
                      6674)
@@ -1346,11 +1345,7 @@
                      (get-in config [:gateway :host])
                      "127.0.0.1")
      :hot-reload (let [hot-reload (get-in config [:server :hot-reload])]
-                   (if (boolean? hot-reload) hot-reload true))
-     :dev        (cond
-                   (boolean? dev) dev
-                   (string? dev) (contains? #{"1" "true" "yes" "on"} (str/lower-case dev))
-                   :else false)}))
+                   (if (boolean? hot-reload) hot-reload true))}))
 
 ;; Module-loader registration: dispatched by module.loader when reading
 ;; user-supplied config for a module's :tools or :slash-commands entry.

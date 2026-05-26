@@ -835,7 +835,6 @@
                        :sessions            {:retention-days 7}
                        :gateway             {:port 9000}
                        :tz                  "UTC"
-                       :dev                 {:log-level :debug}
                        :acp                 {:enabled true}
                        :prefer-entity-files true
                        :modules             {:isaac.comm.pigeon {:local/root "/tmp/pigeon"}}}
@@ -852,7 +851,6 @@
           (should= (:sessions cfg) (:sessions result))
           (should= (:gateway cfg) (:gateway result))
           (should= (:tz cfg) (:tz result))
-          (should= (:dev cfg) (:dev result))
           (should= (:acp cfg) (:acp result))
           (should= true (:prefer-entity-files result))
           (should= (:modules cfg) (:modules result)))))

@@ -54,7 +54,7 @@
 
 (defn dangerously-install-config!
   "Commit an already-built config value as the process-wide snapshot, bypassing
-   the loader. Reserved for boot (after its runtime :dev transform), reload
+   the loader. Reserved for boot (committing a runtime-built config), reload
    (after validation), and tests committing a synthetic config. Prefer
    load-config!. `reason` documents the call site."
   [cfg reason]

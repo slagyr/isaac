@@ -40,21 +40,22 @@
   (let [home             (or (:home opts) (System/getProperty "user.home"))
         state-dir        (or (:state-dir opts) (str home "/.isaac"))
         loaded-config    (:config (config/load-config-result {:state-dir state-dir}))
-        effective-config (if (contains? opts :dev)
-                           (assoc loaded-config :dev (:dev opts))
-                           loaded-config)
-        cfg              (config/server-config effective-config)
+        cfg              (config/server-config loaded-config)
         port             (or (when port (parse-long (str port))) (:port cfg))
         host             (or host (:host cfg))
-        dev              (:dev cfg)]
+        ;; dev mode is an environment/launch concern, not config: --dev overrides,
+        ;; otherwise the ISAAC_DEV env var.
+        dev?             (if (contains? opts :dev)
+                           (boolean (:dev opts))
+                           (= "true" (config/env "ISAAC_DEV")))]
     (when logs
       (when-let [abs-path (start-log-tail! (log/log-file) state-dir opts)]
         (log/set-log-file! abs-path)
         (log/set-output! :file)))
     (builtin/register-all!)
     (log/info :server/starting :host host :port port)
-    (let [{started-port :port started-host :host} (app/start! {:cfg       effective-config
-                                                               :dev       dev
+    (let [{started-port :port started-host :host} (app/start! {:cfg       loaded-config
+                                                               :dev       dev?
                                                                :host      host
                                                                :port      port
                                                                :state-dir state-dir})]

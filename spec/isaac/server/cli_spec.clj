@@ -124,21 +124,35 @@
         (should= 7000 (:port started))
         (should= "0.0.0.0" (:host started))))
 
-    (it "enables dev mode from config"
+    (it "enables dev mode from the ISAAC_DEV env var"
       (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {:dev true}})]
-          (with-out-str (sut/run {})))
+        (config/set-env-override! "ISAAC_DEV" "true")
+        (try
+          (with-redefs [app/start!                (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
+                        sut/block!                (fn [] nil)
+                        config/load-config-result (fn [& _] {:config {}})]
+            (with-out-str (sut/run {})))
+          (finally (config/clear-env-overrides!)))
         (should= true (:dev @started))))
 
-    (it "CLI --dev overrides config dev false"
+    (it "CLI --dev enables dev mode"
       (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {:dev false}})]
+        (with-redefs [app/start!                (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
+                      sut/block!                (fn [] nil)
+                      config/load-config-result (fn [& _] {:config {}})]
           (with-out-str (sut/run {:dev true})))
         (should= true (:dev @started))))
+
+    (it "CLI --dev false overrides the ISAAC_DEV env var"
+      (let [started (atom nil)]
+        (config/set-env-override! "ISAAC_DEV" "true")
+        (try
+          (with-redefs [app/start!                (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
+                        sut/block!                (fn [] nil)
+                        config/load-config-result (fn [& _] {:config {}})]
+            (with-out-str (sut/run {:dev false})))
+          (finally (config/clear-env-overrides!)))
+        (should= false (:dev @started))))
 
     (it "derives state-dir from home before starting the app"
       (let [started (atom nil)]

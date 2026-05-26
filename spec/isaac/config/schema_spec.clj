@@ -108,14 +108,12 @@
                  :crew      {"main" {:soul "You are Isaac."}}
                  :models    {test-model-id {:model marigold/helm-mark-iii :provider test-provider-id}}
                  :providers {test-provider-id {:base-url "http://localhost:11434"}}
-                 :dev       false
                  :prefer-entity-files false}
                (schema/conform (runtime-spec sut/root)
                                 {:defaults  {:crew :main :model (keyword test-model-id)}
                                  :crew      {"main" {:soul "You are Isaac."}}
                                  :models    {test-model-id {:model marigold/helm-mark-iii :provider (keyword test-provider-id)}}
                                  :providers {test-provider-id {:base-url "http://localhost:11434"}}
-                                 :dev       false
                                  :prefer-entity-files false}))))
 
     (it "root conforms cron jobs and timezone"

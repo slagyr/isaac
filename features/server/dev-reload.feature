@@ -10,9 +10,9 @@ Feature: Server Dev Reload
       | server.hot-reload | false  |
 
   Scenario: Dev mode wraps the root handler with refresh
-    Given config:
+    Given environment variable "ISAAC_DEV" is "true"
+    And config:
       | key         | value |
-      | dev         | true  |
       | server.port | 0     |
     And the Isaac server is started
     When a GET request is made to "/status"
@@ -21,9 +21,9 @@ Feature: Server Dev Reload
       | :debug | :server/dev-reload-scan  |
 
   Scenario: Non-dev mode does not reload
-    Given config:
+    Given environment variable "ISAAC_DEV" is "false"
+    And config:
       | key         | value |
-      | dev         | false |
       | server.port | 0     |
     And the Isaac server is started
     When a GET request is made to "/status"
@@ -31,10 +31,10 @@ Feature: Server Dev Reload
       | event                   |
       | :server/dev-reload-scan |
 
-  Scenario: --dev CLI flag overrides config
-    Given config:
+  Scenario: --dev CLI flag enables dev mode, overriding the env
+    Given environment variable "ISAAC_DEV" is "false"
+    And config:
       | key         | value |
-      | dev         | false |
       | server.port | 0     |
     When the server command is run with args "--dev"
     Then the log has entries matching:

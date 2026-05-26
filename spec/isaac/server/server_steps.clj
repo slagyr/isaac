@@ -391,7 +391,7 @@
         run-server?    (not (false? (g/get :bind-server-port?)))
         start-opts     {:cfg                  server-config
                          :config-change-source config-source
-                         :dev                  (:dev cfg)
+                         :dev                  (= "true" (config/env "ISAAC_DEV"))
                          :fs                   (server-fs)
                          :host                 (:host cfg)
                          :port                 (if run-server? (:port cfg) 0)

@@ -380,9 +380,6 @@
                                         :key-spec    {:type :string}
                                         :value-spec  crew}
                  :defaults            defaults
-                 :dev                 {:type        :boolean
-                                       :default     false
-                                       :description "Development mode flag"}
                  :gateway             gateway
                  :hail                hail
                  :hooks               hooks
