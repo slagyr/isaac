@@ -1,11 +1,11 @@
 ---
 # isaac-ypy5
 title: 'Rules: always-on project-scoped system-prompt instructions (new prepared-prompt type)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-26T14:31:35Z
+updated_at: 2026-05-26T14:44:47Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
