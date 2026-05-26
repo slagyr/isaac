@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
-updated_at: 2026-05-26T01:20:30Z
+updated_at: 2026-05-26T01:25:51Z
 ---
 
 ## Motivation
@@ -142,3 +142,15 @@ Invoking `/work isaac-xyz`:
 ## Deferred: model-driven skill auto-activation
 
 MVP = commands that **explicitly include** skills by name (deterministic). The other mechanic — the model auto-activating a skill by matching its `description` to the task — is a separate, later feature. The frontmatter index already captures `description`, so it's ready when wanted.
+
+
+## Project scoping (two-tier registry)
+
+Project-local commands/skills must NOT live in the global registry — they are scoped to a project directory. Scope is keyed on the **session's cwd / project root**.
+
+- **Global index** — built once at startup from install roots; shared.
+- **Per-project indices** — a cache keyed by **project root** (`root -> index`), **built lazily the first time a session whose cwd is in that root resolves a command/skill** (NOT at startup — Isaac is multi-session and a crew can be in any repo). Frontmatter-only scan; refresh on file/config change.
+- **Resolution composes per-turn, never globally merges:** available = `global UNION project-index(session.root)`, precedence **project > global**. A session in project A never sees project B's commands (we compose only the one matching index).
+- **Project-root detection:** walk up from cwd to a marker (`.isaac/`, fallback `.git`/boot file), else cwd-is-root. (Sub-decision: walk-up vs cwd-is-root; lean walk-up.)
+- **Eviction:** `root -> index` cache is small (frontmatter only) — LRU or process-lifetime is fine.
+- **Trust flag (future):** project-local commands are repo-authored — loading them runs repo prompts. Within the trust of running a crew in that repo, but a malicious `.isaac/commands/` in a cloned repo is a supply-chain surface. No trust-gating in MVP; consider trust-on-first-use per project later.
