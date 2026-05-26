@@ -91,7 +91,7 @@
 
 (defn- effective-cfg [opts]
   (let [state-dir     (state-dir-of opts)
-        cfg           (config/normalize-config (config/load-config {:state-dir state-dir}))
+        cfg           (config/normalize-config (:config (config/load-config-result {:state-dir state-dir})))
         injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         effective-cfg (cond-> cfg
                         injected-crew           (assoc :crew injected-crew)

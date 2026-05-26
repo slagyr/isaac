@@ -82,7 +82,7 @@
   (it "rejects glob outside allowed directories"
     (let [session-key session-key]
       (helper/create-session! support/test-dir session-key {:crew crew-name :cwd "/work/project"})
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["glob"]}}} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["glob"]}}} :models {} :providers {}}
                      (sut/glob-tool {"pattern" "*.clj"
                                       "path" "/tmp/secret-stash"
                                       "session_key" session-key}))]
@@ -100,14 +100,14 @@
 
     (it "resolves '.' to session cwd"
       (spit (str @cwd "/dot.clj") "(ns dot)")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/glob-tool {"pattern" "*.clj" "path" "." "session_key" @session-key}))]
         (should-be-nil (:isError result))
         (should= "dot.clj" (:result result))))
 
     (it "resolves an empty path to session cwd"
       (spit (str @cwd "/empty.clj") "(ns empty)")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/glob-tool {"pattern" "*.clj" "path" "" "session_key" @session-key}))]
         (should-be-nil (:isError result))
         (should= "empty.clj" (:result result))))
@@ -115,7 +115,7 @@
     (it "resolves a relative path against session cwd"
       (.mkdirs (io/file @cwd "src"))
       (spit (str @cwd "/src/core.clj") "(ns core)")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/glob-tool {"pattern" "*.clj" "path" "src" "session_key" @session-key}))]
         (should-be-nil (:isError result))
         (should= "core.clj" (:result result))))))

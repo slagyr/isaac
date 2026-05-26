@@ -18,14 +18,11 @@
 
 ;; ----- loading & snapshot -----
 
-(defn load-config
-  "Loads config from `opts` and returns the resolved config map (the :config of
-   load-config-result). `opts` keys: :state-dir, :fs, ..."
-  [opts]
-  (loader/load-config opts))
-
 (defn load-config-result
-  "Loads config and returns the full result map:
+  "Loads config and returns the full result map (config plus errors/warnings),
+   WITHOUT committing it as the snapshot. For config tooling that inspects or
+   validates config (mutate/validate CLIs, reload, missing-config checks) — to
+   load config for the running process use load-config!.
    {:config :errors :warnings :sources :missing-config?}.
    opts keys: :state-dir (required), :fs, :substitute-env?, :raw-parse-errors?,
    :skip-entity-files?, :data-path-overlay."

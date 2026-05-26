@@ -71,7 +71,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {})]
+                      config/load-config-result (fn [& _] {:config {}})]
           (with-out-str (sut/run {:port "4000"})))
         (should= 4000 (:port @started))))
 
@@ -79,7 +79,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {:gateway {:port 8888}})]
+                      config/load-config-result (fn [& _] {:config {:gateway {:port 8888}}})]
           (with-out-str (sut/run {})))
         (should= 8888 (:port @started))))
 
@@ -87,7 +87,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {})]
+                      config/load-config-result (fn [& _] {:config {}})]
           (with-out-str (sut/run {})))
         (should= 6674 (:port @started))))
 
@@ -95,7 +95,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {:gateway {:port 8888}})]
+                      config/load-config-result (fn [& _] {:config {:gateway {:port 8888}}})]
           (with-out-str (sut/run {:port "4000"})))
         (should= 4000 (:port @started))))
 
@@ -103,21 +103,21 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {:server {:host "127.0.0.1"}})]
+                      config/load-config-result (fn [& _] {:config {:server {:host "127.0.0.1"}}})]
           (with-out-str (sut/run {})))
         (should= "127.0.0.1" (:host @started))))
 
     (it "prints the host and port on startup"
       (with-redefs [app/start!         (fn [_] {:port 5000 :host "0.0.0.0"})
                     sut/block!         (fn [] nil)
-                    config/load-config (fn [& _] {})]
+                    config/load-config-result (fn [& _] {:config {}})]
         (let [output (with-out-str (sut/run {:port "5000"}))]
           (should (re-find #"5000" output)))))
 
     (it "logs server/started with host and port"
       (with-redefs [app/start!         (fn [_] {:port 7000 :host "0.0.0.0"})
                     sut/block!         (fn [] nil)
-                    config/load-config (fn [& _] {})]
+                    config/load-config-result (fn [& _] {:config {}})]
         (with-out-str (sut/run {:port "7000"})))
       (let [started (first (filter #(= :server/started (:event %)) @log/captured-logs))]
         (should-not-be-nil started)
@@ -128,7 +128,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {:dev true})]
+                      config/load-config-result (fn [& _] {:config {:dev true}})]
           (with-out-str (sut/run {})))
         (should= true (:dev @started))))
 
@@ -136,7 +136,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {:dev false})]
+                      config/load-config-result (fn [& _] {:config {:dev false}})]
           (with-out-str (sut/run {:dev true})))
         (should= true (:dev @started))))
 
@@ -144,7 +144,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {})]
+                      config/load-config-result (fn [& _] {:config {}})]
           (with-out-str (sut/run {:home "/tmp/server-home"})))
         (should= "/tmp/server-home/.isaac" (:state-dir @started))
         (should-not (contains? @started :home))))
@@ -153,7 +153,7 @@
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
                       sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {:server {:auth {:token "s3cr3t"}}})]
+                      config/load-config-result (fn [& _] {:config {:server {:auth {:token "s3cr3t"}}}})]
           (with-out-str (sut/run {:host "0.0.0.0"})))
         (should= "s3cr3t" (get-in @started [:cfg :server :auth :token]))))
 
@@ -164,7 +164,7 @@
             output-kind  (atom nil)]
         (with-redefs [app/start!           (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
                       sut/block!           (fn [] nil)
-                      config/load-config   (fn [& _] {})
+                      config/load-config-result   (fn [& _] {:config {}})
                       log/log-file         (fn [] "server.log")
                       sut/start-log-tail!  (fn [path state-dir opts]
                                              (reset! tailed-path [path state-dir opts])

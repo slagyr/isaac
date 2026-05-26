@@ -99,7 +99,7 @@
   (it "rejects grep outside allowed directories"
     (let [session-key session-key]
       (helper/create-session! support/test-dir session-key {:crew crew-name :cwd "/work/project"})
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["grep"]}}} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["grep"]}}} :models {} :providers {}}
                      (sut/grep-tool {"pattern"     "hunter"
                                       "path"        "/tmp/secret-stash"
                                       "session_key" session-key}))]
@@ -118,16 +118,14 @@
     (it "resolves '.' to session cwd"
       (let [captured (atom nil)]
         (with-redefs [sut/available? (constantly true)
-                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})
-                      config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})]
           (sut/grep-tool {"pattern" "needle" "path" "." "session_key" @session-key}))
         (should= @cwd (last @captured))))
 
     (it "resolves an empty path to session cwd"
       (let [captured (atom nil)]
         (with-redefs [sut/available? (constantly true)
-                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})
-                      config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})]
           (sut/grep-tool {"pattern" "needle" "path" "" "session_key" @session-key}))
         (should= @cwd (last @captured))))
 
@@ -136,8 +134,7 @@
             subdir   (str @cwd "/src")]
         (.mkdirs (io/file subdir))
         (with-redefs [sut/available? (constantly true)
-                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})
-                      config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})]
           (sut/grep-tool {"pattern" "needle" "path" "src" "session_key" @session-key}))
         (should= subdir (last @captured)))))
 

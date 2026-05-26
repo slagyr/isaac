@@ -183,7 +183,7 @@
 
 (defn- loaded-config []
   (let [fs*         (mem-fs)
-        load!       #(with-feature-fs (fn [] (config/load-config {:state-dir (state-dir) :fs fs*})))
+        load!       #(with-feature-fs (fn [] (:config (config/load-config-result {:state-dir (state-dir) :fs fs*}))))
         entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (state-dir) "/config/" %)))))
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))

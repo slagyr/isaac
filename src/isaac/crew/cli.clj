@@ -44,7 +44,7 @@
         state-dir (derive-state-dir opts)
         cfg       (if crew
                     (cli-common/build-cfg crew models)
-                    (config/load-config {:state-dir state-dir}))
+                    (config/load-config! {:state-dir state-dir} "crew cli"))
         cfg       (config/normalize-config cfg)
         crew-map  (cond-> (:crew cfg)
                     (not (contains? (:crew cfg) "main")) (assoc "main" {}))]

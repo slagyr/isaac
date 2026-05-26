@@ -39,7 +39,7 @@
 (defn run [{:keys [port host logs] :as opts}]
   (let [home             (or (:home opts) (System/getProperty "user.home"))
         state-dir        (or (:state-dir opts) (str home "/.isaac"))
-        loaded-config    (config/load-config {:state-dir state-dir})
+        loaded-config    (:config (config/load-config-result {:state-dir state-dir}))
         effective-config (if (contains? opts :dev)
                            (assoc loaded-config :dev (:dev opts))
                            loaded-config)

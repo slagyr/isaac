@@ -206,7 +206,7 @@
   (str (g/get :state-dir) "/config/isaac.edn"))
 
 (defn- load-server-config [state-dir fs*]
-  (let [load!       #(config/load-config {:state-dir state-dir :fs fs*})
+  (let [load!       #(:config (config/load-config-result {:state-dir state-dir :fs fs*}))
         entity-dir? #(with-server-fs
                        (fn []
                          (seq (fs/children fs* (str state-dir "/config/" %)))))
@@ -405,7 +405,7 @@
 (defn server-command-run [port]
   (let [cfg (or (g/get :server-config) {})]
     (with-redefs [server/block!         (fn [] nil)
-                  config/load-config   (fn [& _] cfg)]
+                  config/load-config-result   (fn [& _] {:config cfg})]
       (with-out-str
         (app/stop!)
         (main/run ["server" "--port" (str port)]))))
@@ -414,7 +414,7 @@
 (defn server-command-run-no-port []
   (let [cfg (or (g/get :server-config) {})]
     (with-redefs [server/block!           (fn [] nil)
-                  config/load-config      (fn [& _] cfg)
+                  config/load-config-result      (fn [& _] {:config cfg})
                   httpkit/run-server      (fn [_handler opts] (atom (:port opts)))
                   httpkit/server-port     (fn [s] (or @s 0))
                   httpkit/server-stop!    (fn [_s] nil)]
@@ -427,7 +427,7 @@
   (let [cfg       (or (g/get :server-config) {})
         arg-parts (remove str/blank? (str/split args #"\s+" 2))]
     (with-redefs [server/block!       (fn [] nil)
-                  config/load-config (fn [& _] cfg)]
+                  config/load-config-result (fn [& _] {:config cfg})]
       (with-out-str
         (app/stop!)
         (main/run (into ["server"] arg-parts))))
@@ -436,7 +436,7 @@
 (defn gateway-command-run [port]
   (let [cfg (or (g/get :server-config) {})]
     (with-redefs [server/block!       (fn [] nil)
-                  config/load-config (fn [& _] cfg)]
+                  config/load-config-result (fn [& _] {:config cfg})]
       (with-out-str
         (app/stop!)
         (main/run ["gateway" "--port" (str port)]))))

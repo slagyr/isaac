@@ -150,16 +150,15 @@
      :body    (json/generate-string {:web {:results results}})}))
 
 (defn- with-tool-config [f]
-  (if-let [search-config (g/get :web-search-config)]
-    (with-redefs [config/load-config (fn [& _] {:tools {:web_search search-config}})]
-      (f))
-    (f)))
+  ;; web_search config is provided via feature-config-snapshot (the committed
+  ;; snapshot), so no loader stub is needed here.
+  (f))
 
 (defn- feature-config-snapshot [_reason]
   (let [base (when-let [dir (state-dir)]
                (with-feature-fs
-                 #(config/load-config {:state-dir dir
-                                       :fs (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))})))]
+                 #(:config (config/load-config-result {:state-dir dir
+                                                       :fs (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))}))))]
     (cond-> (or base {})
       (g/get :web-search-config) (assoc-in [:tools :web_search] (g/get :web-search-config)))))
 

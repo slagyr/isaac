@@ -80,7 +80,7 @@
         (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
         (.mkdirs (io/file quarters))
         (spit (str quarters "/notes.txt") "hello")
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}})]
+        (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   (str quarters "/notes.txt")
                                         "session_key" session-key}))]
           (should= "1: hello" (:result result)))))
@@ -105,7 +105,7 @@
       (let [state-dir   support/test-dir
             session-key default-session-key]
         (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}})]
+        (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   "/etc/passwd"
                                         "session_key" session-key}))]
           (should (:isError result))
@@ -134,7 +134,7 @@
         (helper/create-session! state-dir session-key {:crew crew-name :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}})]
+        (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   (str cwd "/hello.txt")
                                         "session_key" session-key}))]
           (should (:isError result))
@@ -145,7 +145,7 @@
             session-key default-session-key
             quarters    (str state-dir "/crew/" crew-name)]
         (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}})]
+        (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   (str quarters "/../../etc/passwd")
                                         "session_key" session-key}))]
           (should (:isError result))
@@ -155,7 +155,7 @@
       (let [state-dir   support/test-dir
             session-key default-session-key]
         (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}})]
+        (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   (str state-dir "/config/crew/" crew-name ".edn")
                                        "session_key" session-key}))]
           (should (:isError result))
@@ -189,7 +189,7 @@
             session-key default-session-key
             path        (str state-dir "/crew/" crew-name "/new.txt")]
         (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
-        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}})]
+        (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}}
                        (sut/write-tool {"file_path"   path
                                         "content"     "hello"
                                         "session_key" session-key}))]
@@ -199,7 +199,7 @@
     (it "rejects writes outside allowed directories"
       (let [state-dir   support/test-dir
             session-key default-session-key
-            result      (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}})]
+            result      (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}}
                           (do
                             (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
                             (sut/write-tool {"file_path"   "/tmp/evil.txt"
@@ -262,34 +262,34 @@
 
     (it "read resolves '.' to session cwd"
       (spit (str @cwd "/marker.txt") "found")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/read-tool {"file_path" "." "session_key" @session-key}))]
         (should-be-nil (:isError result))
         (should (str/includes? (:result result) "marker.txt"))))
 
     (it "read resolves an empty file_path to session cwd"
       (spit (str @cwd "/marker.txt") "found")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/read-tool {"file_path" "" "session_key" @session-key}))]
         (should-be-nil (:isError result))
         (should (str/includes? (:result result) "marker.txt"))))
 
     (it "read resolves a relative file_path against session cwd"
       (spit (str @cwd "/hello.txt") "relative content")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/read-tool {"file_path" "hello.txt" "session_key" @session-key}))]
         (should-be-nil (:isError result))
         (should (str/includes? (:result result) "relative content"))))
 
     (it "write resolves a relative file_path against session cwd"
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/write-tool {"file_path" "out.txt" "content" "written" "session_key" @session-key}))]
         (should-be-nil (:isError result))
         (should= "written" (slurp (str @cwd "/out.txt")))))
 
     (it "edit resolves a relative file_path against session cwd"
       (spit (str @cwd "/target.txt") "original")
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+      (let [result (helper/with-config {:defaults {} :crew {} :models {} :providers {}}
                      (sut/edit-tool {"file_path" "target.txt" "old_string" "original"
                                      "new_string" "updated" "session_key" @session-key}))]
         (should-be-nil (:isError result))
