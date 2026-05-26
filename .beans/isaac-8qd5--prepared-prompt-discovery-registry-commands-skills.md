@@ -3,8 +3,9 @@
 title: Prepared-prompt discovery & registry (commands + skills)
 status: draft
 type: feature
+priority: normal
 created_at: 2026-05-26T04:21:10Z
-updated_at: 2026-05-26T04:21:10Z
+updated_at: 2026-05-26T04:31:32Z
 parent: isaac-nwj3
 ---
 
@@ -23,3 +24,8 @@ Discovery of a command + a skill; type disambiguation (conflicting signals); pro
 
 ## Relationship
 Parent: isaac-nwj3. Blocks the command-expansion bean and the deferred beans (skill activation, ACP advertisement, rules, crew-specific) which build on this registry.
+
+
+## Skill file shapes (MVP)
+
+Support **both** `<name>.md` (flat; name = file) and `<name>/SKILL.md` (dir; name = directory) — the latter for compatibility with existing Claude/agent-lib skills. **Bundled reference files in a skill directory are OUT OF SCOPE** — MVP inlines only the markdown body. Bundled-file support (entangles fs-bounds + how files reach the model) is a separate deferred bean.
