@@ -1156,26 +1156,19 @@
    start, request/turn entry, a worker waking from sleep) — in-flight code must
    receive config as a value, not pull a fresh snapshot. `reason` is a short
    string documenting why this site reads ambient config; it keeps such reads
-   greppable and reviewable. See load-config! / set-snapshot!."
+   greppable and reviewable. See set-snapshot!."
   [reason]
   @(config-atom))
 
 (defn set-snapshot!
-  "Installs the process-wide config snapshot. Prefer `load-config!` at entry
-   points; direct use is for the install coordinator and tests. `reason` is a
-   short string documenting the call site (kept greppable / logged)."
+  "Installs the process-wide config snapshot. Set only at config-change
+   boundaries — the install! coordinator does this at boot and on reload; direct
+   use is for tests. `reason` is a short string documenting the call site (kept
+   greppable / logged)."
   [cfg reason]
   (log/debug :config/set-snapshot :reason reason)
   (reset! (config-atom) cfg)
   cfg)
-
-(defn load-config!
-  "Entry-point loader: loads config from `opts`, installs it as the process-wide
-   snapshot, and returns the config value. Call once per process at an entry
-   point, then thread the returned value onward — do NOT call it from in-flight
-   code. `reason` is a short string documenting the call site."
-  [opts reason]
-  (set-snapshot! (load-config opts) reason))
 
 (defn state-dir
   "Returns the resolved state directory. Test fixtures install an explicit

@@ -12,7 +12,7 @@
 (defn- web-search-config [args]
   (let [state-dir (bounds/state-dir args)
          load-opts (if state-dir {:state-dir state-dir} {})]
-    (get-in (apply config/load-config (when (seq load-opts) [load-opts])) [:tools :web_search])))
+    (get-in (config/load-config load-opts) [:tools :web_search])))
 
 (defn- web-search-api-key [args]
   (:api-key (web-search-config args)))
