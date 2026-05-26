@@ -1,13 +1,11 @@
 ---
 # isaac-8qd5
 title: Prepared-prompt discovery & registry (commands + skills)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-26T04:21:10Z
-updated_at: 2026-05-26T13:35:38Z
+updated_at: 2026-05-26T13:43:49Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-udzf
