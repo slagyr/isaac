@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
-updated_at: 2026-05-26T01:38:10Z
+updated_at: 2026-05-26T03:55:46Z
 ---
 
 ## Motivation
@@ -169,3 +169,18 @@ Project-local commands/skills must NOT live in the global registry — they are 
 - **Commands** are user/producer-invoked -> the model needs no discovery tool (client discovery = ACP advertisement).
 - **Skills (MVP)** are command-included by name (deterministic) -> the model doesn't choose them.
 - A model-facing `skills` tool (`list` + `load <name>`) is the right mechanism for the **deferred model-driven activation** (load-on-demand beats injecting every skill description into every prompt). The session already holds the skill frontmatter index, so it is ready to power that tool when built.
+
+
+## Catalog lifetime — it is a cache, resolved per turn (supersedes "durable on session")
+
+- The catalog is **derived, cheap to rebuild** (frontmatter scan) -> treat as a **cache, not durable state**; files are the source of truth.
+- **Resolved per turn**: the bridge needs it to triage `/work` and prompt-build needs it to expand, so it is resolved each turn. Global stays cached from startup (install roots rarely change); only the **project roots** are scanned per turn (a few small frontmatter reads — negligible).
+- **Session-level caching is optional** (skip re-scan across a resident session's turns; invalidate on file change). Not authoritative, no required lifetime, fine to rebuild anytime.
+- (Supersedes the earlier "stored durably on the session, built at session open" wording.)
+
+## Deferred: model-driven skill activation (the "use me when you code" case)
+
+MVP sidesteps this — commands **pre-include** skills (the `/work` command loads TDD + gherclj), so the worker gets them without the model discovering anything. The ad-hoc case (user says "write code", model should auto-apply project TDD) needs activation, deferred. Mechanism when we build it:
+
+- **Advertise**: inject skill **name + description** (not bodies) into context — short, stable per project, cacheable. The model reads "TDD — use when coding", matches the task, decides to activate.
+- **Load on demand**: activation pulls the skill **body** via a **tool** (`load_skill <name>` -> returns body into the turn). The session frontmatter index already holds the descriptions, ready to feed the advertisement.
