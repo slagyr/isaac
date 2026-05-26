@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
-updated_at: 2026-05-26T04:10:02Z
+updated_at: 2026-05-26T04:15:19Z
 ---
 
 ## Motivation
@@ -198,3 +198,12 @@ Unlike per-turn origin framing (current user turn, uncached), the **skill menu i
 - The model matches the task to a description and calls **`load_skill <name>`** -> body comes into the turn. Descriptions cached in the prompt; bodies pulled on demand.
 - **Large skill sets:** injecting every description bloats the cached system prompt -> fallback to a `list_skills` tool (no always-on menu), possibly threshold-based.
 - **Overlaps with the future `rules` type** — both are project-scoped, stable, system-prompt content; likely share one "project context block" slot in the cached system prompt.
+
+
+## Cache impact of the skill menu (deferred feature)
+
+- **MVP is cache-clean:** skills go in the user turn via command expansion; no skill content in the system prompt, no menu -> the cached prefix never depends on the skill set. Skill edits do not touch the MVP cache.
+- **Menu-injection (deferred) is the only place skills hit the cache.** Skill-set changes are dev-time edits, not runtime -> a one-time re-cache on a real change is acceptable.
+- **Hard requirement: deterministic menu rendering.** Because we re-resolve per turn, the menu must render byte-identically for an unchanged skill set (stable sort by name + stable formatting). Otherwise the cache busts every turn.
+- **Knob:** inject menu (always-aware, skill edits bust cache rarely) vs `list_skills` tool-only (cache-stable, model must query). Churny/large skill sets tilt toward tool-only. Decide when building activation.
+- Commands are never in the model prompt (user-invoked, advertised to clients via ACP) -> command changes never affect the prompt cache; this is purely the skill menu.
