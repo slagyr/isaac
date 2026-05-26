@@ -1298,23 +1298,23 @@
     (around [it]
       (with-config-slot it))
 
-    (after (sut/set-snapshot! nil))
+    (after (sut/set-snapshot! nil "spec"))
 
     (it "returns nil before any snapshot is set"
-      (sut/set-snapshot! nil)
-      (should-be-nil (sut/snapshot)))
+      (sut/set-snapshot! nil "spec")
+      (should-be-nil (sut/snapshot "spec")))
 
     (it "returns the config after set-snapshot!"
-      (sut/set-snapshot! {:crew {"main" {:soul "You are helpful."}}})
-      (should= {:crew {"main" {:soul "You are helpful."}}} (sut/snapshot)))
+      (sut/set-snapshot! {:crew {"main" {:soul "You are helpful."}}} "spec")
+      (should= {:crew {"main" {:soul "You are helpful."}}} (sut/snapshot "spec")))
 
     (it "returns the latest value after multiple set-snapshot! calls"
-      (sut/set-snapshot! {:first true})
-      (sut/set-snapshot! {:second true})
-      (should= {:second true} (sut/snapshot)))
+      (sut/set-snapshot! {:first true} "spec")
+      (sut/set-snapshot! {:second true} "spec")
+      (should= {:second true} (sut/snapshot "spec")))
 
     (it "writes through the system config atom"
       (let [cfg* (atom nil)]
         (nexus/-with-nexus {:config cfg*}
-          (sut/set-snapshot! {:crew {"main" {:soul "Hi"}}})
+          (sut/set-snapshot! {:crew {"main" {:soul "Hi"}}} "spec")
           (should= {:crew {"main" {:soul "Hi"}}} @cfg*)))))

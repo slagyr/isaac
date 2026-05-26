@@ -13,7 +13,7 @@
   (assoc spec :mutable? false :system-managed? true))
 
 (defn- known-crew? [crew]
-  (let [crews (:crew (config/snapshot))]
+  (let [crews (:crew (config/snapshot "session schema crew validation — TODO thread config as a value"))]
     (or (nil? crew)
         (nil? crews)
         (empty? crews)

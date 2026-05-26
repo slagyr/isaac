@@ -155,7 +155,7 @@
       (f))
     (f)))
 
-(defn- feature-config-snapshot []
+(defn- feature-config-snapshot [_reason]
   (when-let [dir (state-dir)]
     (let [cfg-path (str dir "/config/isaac.edn")]
       (with-feature-fs

@@ -17,14 +17,14 @@
 
   (around [it]
     (nexus/-with-nexus {:fs (fs/mem-fs)}
-      (config/set-snapshot! nil)
+      (config/set-snapshot! nil "spec")
       (it)))
 
   (context "install!"
 
     (it "sets the config snapshot"
       (sut/install! {:config {:defaults {:crew "main"}}})
-      (should= {:crew "main"} (:defaults (config/snapshot))))
+      (should= {:crew "main"} (:defaults (config/snapshot "spec"))))
 
     (it "ensures the object-tree slot"
       (should-be-nil (nexus/get :tree))
@@ -67,4 +67,4 @@
       (let [result (sut/load-and-install! {:home "/test"})]
         (should (seq (:errors result)))
         (should-not-be-nil (nexus/get :tree))
-        (should-not-be-nil (config/snapshot))))))
+        (should-not-be-nil (config/snapshot "spec"))))))

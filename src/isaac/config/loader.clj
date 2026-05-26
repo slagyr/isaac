@@ -1152,15 +1152,30 @@
 
 (defn snapshot
   "Returns the current process-wide config, or nil if not yet initialized.
-   Updated by set-snapshot! at server boot and on every hot reload."
-  []
+   Reads ambient config; call ONLY at entry points and wake boundaries (process
+   start, request/turn entry, a worker waking from sleep) — in-flight code must
+   receive config as a value, not pull a fresh snapshot. `reason` is a short
+   string documenting why this site reads ambient config; it keeps such reads
+   greppable and reviewable. See load-config! / set-snapshot!."
+  [reason]
   @(config-atom))
 
 (defn set-snapshot!
-  "Sets the process-wide current config. Call at boot and on config reload."
-  [cfg]
+  "Installs the process-wide config snapshot. Prefer `load-config!` at entry
+   points; direct use is for the install coordinator and tests. `reason` is a
+   short string documenting the call site (kept greppable / logged)."
+  [cfg reason]
+  (log/debug :config/set-snapshot :reason reason)
   (reset! (config-atom) cfg)
   cfg)
+
+(defn load-config!
+  "Entry-point loader: loads config from `opts`, installs it as the process-wide
+   snapshot, and returns the config value. Call once per process at an entry
+   point, then thread the returned value onward — do NOT call it from in-flight
+   code. `reason` is a short string documenting the call site."
+  [opts reason]
+  (set-snapshot! (load-config opts) reason))
 
 (defn state-dir
   "Returns the resolved state directory. Test fixtures install an explicit
@@ -1169,7 +1184,7 @@
    installs the nexus slot, so the config snapshot is authoritative there."
   []
   (or (nexus/get :state-dir)
-      (:state-dir (snapshot))))
+      (:state-dir (snapshot "state-dir resolution — ambient config fallback"))))
 
 ;; endregion ^^^^^ Ambient Config Snapshot ^^^^^
 
@@ -1338,7 +1353,7 @@
 ;; user-supplied config for a module's :tools or :slash-commands entry.
 (module-loader/register-handler! :user-config
   (fn [root-key entry-id]
-    (let [snap (snapshot)]
+    (let [snap (snapshot "module :user-config handler — ambient config lookup")]
       (or (get-in snap [root-key entry-id])
           (get-in snap [root-key (keyword entry-id)])))))
 

@@ -281,7 +281,7 @@
   ;; then threaded as a value into each in-flight delivery — we never write the
   ;; snapshot back.
   [{:keys [cfg session-store now] :as opts}]
-  (let [cfg           (or cfg (config/snapshot) {})
+  (let [cfg           (or cfg (config/snapshot "hail delivery tick wake boundary — config may have changed") {})
         state-dir     (runtime-state-dir opts)
         session-store (or session-store
                           (nexus/get-in [:sessions :store])

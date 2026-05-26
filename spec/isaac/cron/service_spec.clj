@@ -30,7 +30,7 @@
                                    (reset! started opts)
                                    ::runner)]
           (config/on-startup! module {"health-check" {:expr "0 9 * * *"}})
-          (should= {:cfg (or (config/snapshot) {}) :state-dir "/test/isaac"}
+          (should= {:cfg (or (config/snapshot "spec") {}) :state-dir "/test/isaac"}
                    @started))))
 
     (it "stops the old scheduler and restarts it when the slice changes"

@@ -38,15 +38,29 @@
   [cfg]
   (loader/normalize-config cfg))
 
+(defn load-config!
+  "Entry-point loader: loads config from `opts`, installs it as the process-wide
+   snapshot, and returns the config value. Call once per process at an entry
+   point (process start, CLI command), then thread the returned value onward —
+   never from in-flight code. `reason` is a short string documenting the call
+   site, so ambient-config writes stay greppable and reviewable."
+  [opts reason]
+  (loader/load-config! opts reason))
+
 (defn snapshot
-  "Returns the current process-wide config snapshot, or nil if not yet set."
-  []
-  (loader/snapshot))
+  "Returns the current process-wide config snapshot, or nil if not yet set.
+   An ambient read: call ONLY at entry points / wake boundaries; in-flight code
+   must receive config as a value. `reason` documents why this site reads
+   ambient config (kept greppable / reviewable)."
+  [reason]
+  (loader/snapshot reason))
 
 (defn set-snapshot!
-  "Sets the process-wide config snapshot. Called at boot and on every reload."
-  [cfg]
-  (loader/set-snapshot! cfg))
+  "Installs the process-wide config snapshot. Prefer `load-config!` at entry
+   points; direct use is for the install coordinator and tests. `reason`
+   documents the call site."
+  [cfg reason]
+  (loader/set-snapshot! cfg reason))
 
 (defn state-dir
   "Returns the resolved state directory: a nexus-installed test override if

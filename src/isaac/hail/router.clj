@@ -237,7 +237,7 @@
 
 (defn tick!
   [{:keys [cfg state-dir] :as opts}]
-  (let [cfg            (or cfg (config/snapshot) {})
+  (let [cfg            (or cfg (config/snapshot "hail router tick wake boundary — config may have changed") {})
         state-dir      (or state-dir (runtime-state-dir))
         fs*            (filesystem)
         session-store* (or (:session-store opts)

@@ -35,7 +35,7 @@
 
 
 (defn- effective-config [state-dir fs*]
-  (or (config/snapshot)
+  (or (config/snapshot "session behavior resolution — TODO thread config as a value")
       (when state-dir
         (config/load-config {:state-dir state-dir :fs fs*}))
       {}))

@@ -30,7 +30,7 @@
   (on-startup! [_ slice]
     (reset! config* (or slice {}))
     (when (seq slice)
-      (reset! runner* (start! {:cfg (or (config/snapshot) {}) :state-dir state-dir}))))
+      (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :state-dir state-dir}))))
   (on-config-change! [_ _old-slice new-slice]
     (when (not= @config* (or new-slice {}))
       (when-let [runner @runner*]
@@ -38,7 +38,7 @@
       (reset! runner* nil)
       (reset! config* (or new-slice {}))
       (when (seq new-slice)
-        (reset! runner* (start! {:cfg (or (config/snapshot) {}) :state-dir state-dir})))))
+        (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :state-dir state-dir})))))
   Object
   (toString [_] "CronModule"))
 

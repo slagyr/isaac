@@ -45,7 +45,7 @@
 (defn- ensure-session! [request]
   (let [session-key    (:session-key request)
         session-store* (or (:session-store request) (nexus/get-in [:sessions :store]))
-        cfg            (or (when (map? (:config request)) (:config request)) (config/snapshot) {})
+        cfg            (or (when (map? (:config request)) (:config request)) (config/snapshot "turn dispatch entry — falls back to ambient config when charge carries none") {})
         crew-id        (or (:crew request) (get-in cfg [:defaults :crew]) "main")
         crew-cfg       (get (:crew cfg) crew-id)
         resolved-cwd   (resolve-session-cwd (:cwd request) crew-cfg nil)]

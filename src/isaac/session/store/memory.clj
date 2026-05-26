@@ -26,7 +26,7 @@
   (or (get m k) (get m (name k))))
 
 (defn- effective-config [state-dir]
-  (or (config/snapshot)
+  (or (config/snapshot "session store config — TODO thread config as a value")
       (when state-dir
         (config/load-config {:state-dir state-dir}))
       {}))

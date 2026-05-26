@@ -37,7 +37,7 @@
      :host        - host context for reconcile! (module-index, connect-ws!, ...)
    Returns {:config config :tree tree}."
   [{:keys [config old-config registries host]}]
-  (config/set-snapshot! config)
+  (config/set-snapshot! config "install! coordinator (boot/reload)")
   (ensure-store! config)
   (let [tree (ensure-tree!)]
     (when (seq registries)

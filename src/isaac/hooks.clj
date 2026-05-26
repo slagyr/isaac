@@ -142,7 +142,7 @@
   ([request]
    (handler (nexus/necho) request))
   ([runtime request]
-   (let [cfg          (config/snapshot)
+   (let [cfg          (config/snapshot "hook dispatch entry — ambient config for hook handler")
          state-dir    (or (:state-dir cfg) (:state-dir runtime))
          name         (hook-name (:uri request))]
      (cond

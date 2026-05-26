@@ -88,7 +88,7 @@
                                  (get arguments :session_key))))
 
 (defn- cap-output [s]
-  (let [cfg       (or (config/snapshot) {})
+  (let [cfg       (or (config/snapshot "tool output caps — TODO thread config as a value (in-flight read)") {})
         max-lines (get-in cfg [:tools :defaults :max-lines] output-cap/default-max-output-lines)
         max-bytes (get-in cfg [:tools :defaults :max-bytes] output-cap/default-max-output-bytes)]
     (output-cap/cap-result (str s) max-lines max-bytes)))

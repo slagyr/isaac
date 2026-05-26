@@ -677,7 +677,7 @@
                             :state-dir state-dir
                             :fs        fs*
                             :sessions  {:store session-store}}
-          (config/set-snapshot! cfg)
+          (config/set-snapshot! cfg "spec")
           (record-turn-future! (hail-delivery-worker/tick! {:cfg cfg :session-store session-store})))))))
 
 (defn hail-delivery-worker-ticks-at [iso]
@@ -693,7 +693,7 @@
                             :state-dir state-dir
                             :fs        fs*
                             :sessions  {:store session-store}}
-          (config/set-snapshot! cfg)
+          (config/set-snapshot! cfg "spec")
           (record-turn-future! (hail-delivery-worker/tick! {:cfg           cfg
                                                             :now           (java.time.Instant/parse iso)
                                                             :session-store session-store})))))))
@@ -850,7 +850,7 @@
   (g/should (some (fn [entry] (= :config/reloaded (:event entry))) (log/get-entries))))
 
 (defn available-slash-commands-include [table]
-  (let [commands (slash-registry/all-commands (:module-index (or (config/snapshot) {})))
+  (let [commands (slash-registry/all-commands (:module-index (or (config/snapshot "spec") {})))
         headers  (:headers table)]
     (doseq [row (:rows table)]
       (let [expected (zipmap headers row)

@@ -121,7 +121,7 @@
         (should= 1 (count (store/list-sessions-by-agent (s) "main")))))
 
     (it "uses sequential names for unnamed sessions when configured"
-      (do (config/set-snapshot! {:sessions {:naming-strategy :sequential}})
+      (do (config/set-snapshot! {:sessions {:naming-strategy :sequential}} "spec")
         (let [first  (sut/create-session! test-dir nil)
               second (sut/create-session! test-dir nil)]
           (should= "session-1" (:name first))

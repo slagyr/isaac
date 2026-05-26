@@ -75,5 +75,5 @@
     (let [cfg (or (when-let [cfg-fn (:cfg-fn opts)] (cfg-fn))
                   (:cfg opts))]
       (when cfg
-        (config/set-snapshot! cfg))
+        (config/set-snapshot! cfg "http request entry — refresh ambient config from server state"))
       (dispatch-request request))))

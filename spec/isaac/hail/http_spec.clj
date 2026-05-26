@@ -21,7 +21,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (nexus/-with-nested-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
-      (config/set-snapshot! {:state-dir "/test/isaac"})
+      (config/set-snapshot! {:state-dir "/test/isaac"} "spec")
       (example)))
 
   (it "accepts JSON and returns 201 with the persisted hail as JSON"

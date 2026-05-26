@@ -33,7 +33,7 @@
                         :config    (atom cfg)
                         :state-dir "/test/isaac"
                         :sessions  {:store session-store}}
-      (config/set-snapshot! cfg)
+      (config/set-snapshot! cfg "spec")
       (example))))
 
 (defn- read-edn [path]
@@ -122,7 +122,7 @@
           cfg           (-> test-config
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             config/normalize-config)]
-      (config/set-snapshot! cfg)
+      (config/set-snapshot! cfg "spec")
       (grover/enqueue! [{:type "text" :content "On the coil." :model "grover"}])
       (write-delivery! {:id       "delivery-1"
                         :hail     {:id "hail-1"
@@ -146,7 +146,7 @@
           cfg           (-> test-config
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             config/normalize-config)]
-      (config/set-snapshot! cfg)
+      (config/set-snapshot! cfg "spec")
       (store/open-session! session-store "coil-work" {:crew "bartholomew" :tags #{:project/warp-coil}})
       (should= {:crew :bartholomew :session :coil-work}
                (select-keys (#'sut/runnable-delivery
@@ -169,7 +169,7 @@
                             (assoc-in [:crew "atticus" :tags] #{:role/engineer})
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             config/normalize-config)]
-      (config/set-snapshot! cfg)
+      (config/set-snapshot! cfg "spec")
       (should= {:action :spawn :crew-id "atticus"}
                (#'sut/spawn-target
                 cfg
@@ -189,7 +189,7 @@
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             (assoc-in [:crew "bartholomew" :max-in-flight] 2)
                             config/normalize-config)]
-      (config/set-snapshot! cfg)
+      (config/set-snapshot! cfg "spec")
       (store/open-session! session-store "coil-work" {:crew "bartholomew" :tags #{:project/warp-coil}})
       (store/mark-in-flight! session-store "coil-work")
       (should= nil
@@ -214,7 +214,7 @@
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             (assoc-in [:crew "bartholomew" :max-in-flight] 1)
                             config/normalize-config)]
-      (config/set-snapshot! cfg)
+      (config/set-snapshot! cfg "spec")
       (store/open-session! session-store "atticus-busy" {:crew "atticus"})
       (store/open-session! session-store "bart-busy" {:crew "bartholomew"})
       (store/mark-in-flight! session-store "atticus-busy")
@@ -255,7 +255,7 @@
     (let [session-store (nexus/get-in [:sessions :store])
           cfg           (assoc-in test-config [:crew "bartholomew" :max-in-flight] 1)
           cfg           (config/normalize-config cfg)]
-      (config/set-snapshot! cfg)
+      (config/set-snapshot! cfg "spec")
       (store/open-session! session-store "engine-room" {:crew "bartholomew"})
       (store/open-session! session-store "warp-core" {:crew "bartholomew"})
       (store/mark-in-flight! session-store "warp-core")
