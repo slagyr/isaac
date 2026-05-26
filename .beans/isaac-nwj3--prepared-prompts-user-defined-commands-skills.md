@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
-updated_at: 2026-05-26T00:49:06Z
+updated_at: 2026-05-26T00:59:48Z
 ---
 
 ## Motivation
@@ -106,3 +106,18 @@ The agent-agnostic taxonomy (per the toolbox): skills, commands, rules, modes, a
 ### ACP
 - Config-defined commands are first-class slash commands (same bridge triage as builtin; prompt-template kind expands into the turn input vs handler kind that replies).
 - **Advertise resolved commands over ACP** (ACP available-commands) so ACP clients (Zed, etc.) can list/invoke them with CLI parity; the advertisement must convey each command's params/usage. Follow-up child bean, not MVP-blocking.
+
+
+### Disambiguation precedence (multi-signal, for cross-agent compatibility)
+
+Support all common signals so foreign files (Claude/toolbox) need no conversion, but fix a strict precedence so conflicting signals are deterministic — most-explicit wins:
+
+1. **`type:` frontmatter** (`command`/`skill`/…) — author stated it. Highest.
+2. **`user-invocable:`** — Claude semantic: `true -> command`, `false -> skill`.
+3. **Directory / filename** — `commands/…` -> command; `skills/<name>/SKILL.md` or `skills/<name>.md` -> skill. Weakest (positional).
+
+Resolution = fallthrough: `type:` -> else `user-invocable:` -> else path -> else **skip + warn** (never guess).
+
+- On *conflicting* signals (e.g. a `commands/` file with `type: skill`), the higher-precedence signal wins AND we **log a warning** (don't silently hide a misfiled file).
+- **Isaac-native files use `type:`** (canonical); the other two signals exist only to ingest foreign files — tolerate inbound, stay clean outbound.
+- Skills accept both `<name>/SKILL.md` (name = dir) and `<name>.md` (flat).
