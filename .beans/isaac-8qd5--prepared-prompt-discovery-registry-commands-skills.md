@@ -1,11 +1,11 @@
 ---
 # isaac-8qd5
 title: Prepared-prompt discovery & registry (commands + skills)
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-26T04:21:10Z
-updated_at: 2026-05-26T05:07:09Z
+updated_at: 2026-05-26T05:14:41Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-udzf
@@ -36,3 +36,21 @@ Support **both** `<name>.md` (flat; name = file) and `<name>/SKILL.md` (dir; nam
 ## Disambiguation is full 3-signal in MVP (YAML makes it viable)
 
 Because frontmatter is YAML (the common format), foreign files read natively, so the full ladder is MVP-viable: `type:` > `user-invocable:` (true -> command / false -> skill) > directory/filename. No separate foreign-format-ingestion deferral needed; only directory-convention differences remain (handled by configurable roots).
+
+
+## Feature file
+
+`features/prompts/catalog.feature` — 7 `@wip` scenarios: command discovered; skill via SKILL.md; type beats misfiled dir (+ warn); user-invocable in a generic root; directory fallback; project shadows global; project-root walk-up. Run:
+
+```
+bb features features/prompts/catalog.feature
+```
+
+**Definition of done:** remove `@wip` and green. Acceptance also requires the **debug timing log** on resolve (`elapsed-ms` + command/skill counts) — verified by enabling debug, not a scenario (debug is not spec-asserted).
+
+**New steps:** `the prompt catalog is resolved`, `the prompt catalog for session "<key>" is resolved`, `the prompt catalog contains:`.
+
+
+## Configurable dir-name -> type mapping (`prompt-dir-names`)
+
+The path-disambiguation rung is **configurable**, not hardcoded: `prompt-dir-names` maps directory-segment names to types (default `{commands: command, skills: skill}`, **merged** with project overrides), so layouts using other dir names (e.g. `abilities/`) still resolve. Drives which subdirs of a base root are treated as typed prompt dirs. (Covered by the catalog.feature `prompt-dir-names` scenario.)
