@@ -1,11 +1,11 @@
 ---
 # isaac-etpt
 title: Skill bundled reference files (directory-packaged skills)
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-26T04:31:32Z
-updated_at: 2026-05-26T13:04:45Z
+updated_at: 2026-05-26T14:43:27Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
@@ -30,3 +30,16 @@ Parent: isaac-nwj3. Builds on the discovery/registry + command/skill inclusion.
 The scoped-tool option is realized as `load_skill(name, resource: "X")` — the same tool isaac-bgx0 introduces, extended to serve a skill's bundled files. This is Anthropic Agent Skills tier 3 (progressive disclosure: name+description -> body -> bundled files on demand), and the scoped reader resolves the fs-bounds tension (it reads the skill's own dir under config/ on the skill's behalf, without opening general crew fs access). Supersedes the earlier "inline-all vs new tool" fork.
 
 Blocked by isaac-bgx0 (needs the load_skill tool).
+
+
+## Feature file
+
+`features/prompts/skill_resources.feature` — 2 `@wip` scenarios: `load_skill(name, resource)` returns a bundled file; a traversal resource path is rejected (scoped reader confined to the skill dir). Run:
+
+```
+bb features features/prompts/skill_resources.feature
+```
+
+**Definition of done:** remove `@wip` and green. Acceptance also: an unknown/missing resource -> not-found error (noted, not a scenario).
+
+**Security crux:** `load_skill` deliberately reads under `config/` (bypassing general crew fs-bounds for skill assets), so it MUST confine to the named skill's own directory — no `..` traversal. Implemented as `load_skill(name, [resource])`, the resource-arg shape isaac-bgx0 reserves.
