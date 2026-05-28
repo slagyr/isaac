@@ -1,10 +1,11 @@
 (ns isaac.slash.registry-spec
   (:require
     [isaac.fs :as fs]
+    [isaac.nexus :as nexus]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
+    [isaac.server.routes]
     [isaac.slash.registry :as sut]
-    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (defn echo-command [cfg]
@@ -12,10 +13,22 @@
    :description  "Echo"
    :handler      identity})
 
+(def ^:private state-dir "/test-state")
+
+(defn- write-file! [path content]
+  (let [fs* (nexus/get :fs)]
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path content)))
+
 (describe "slash registry"
 
   (before (sut/clear!))
   (after (sut/clear!))
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
+      (example)))
 
   (it "registers and looks up a command by name"
     (sut/register! {:name "echo" :description "Echo" :handler identity})
@@ -70,4 +83,39 @@
       (nexus/-with-nexus {:config (atom {:slash-commands {:echo {:command-name "beep"}}})
                            :fs (fs/mem-fs)}
         (module-loader/clear-activations!)
-        (should= "beep" (:name (sut/lookup "beep" module-index)))))))
+        (should= "beep" (:name (sut/lookup "beep" module-index))))))
+
+  (it "includes resolved prompt-template commands when listing advertised commands"
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
+      (write-file! (str state-dir "/config/commands/work.md")
+                   (str "---\n"
+                        "type: command\n"
+                        "description: Start work on a ready bean\n"
+                        "params: [bean]\n"
+                        "---\n\n"
+                        "Start work on bean {{bean}}."))
+      (should= {:description "Start work on a ready bean"
+                :name        "work"
+                :params      ["bean"]}
+               (->> (apply sut/all-commands [{} {:fs        (nexus/get :fs)
+                                                :state-dir state-dir}])
+                    (filter #(= "work" (:name %)))
+                    first
+                    (#(select-keys % [:description :name :params]))))))
+
+  (it "keeps a registered slash command when a prompt-template command has the same name"
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
+      (write-file! (str state-dir "/config/commands/status.md")
+                   (str "---\n"
+                        "type: command\n"
+                        "description: Prompt template status\n"
+                        "params: [detail]\n"
+                        "---\n\n"
+                        "Status {{detail}}."))
+      (should= {:description "Show session status"
+                :name        "status"}
+               (->> (apply sut/all-commands [{} {:fs        (nexus/get :fs)
+                                                :state-dir state-dir}])
+                    (filter #(= "status" (:name %)))
+                    first
+                    (#(select-keys % [:description :name])))))))

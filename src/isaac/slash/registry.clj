@@ -1,7 +1,10 @@
 (ns isaac.slash.registry
   (:require
+    [isaac.config.api :as config]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
+    [isaac.nexus :as nexus]
+    [isaac.prompt.catalog :as prompt-catalog]
     [isaac.slash.builtin :as builtin]))
 
 (defonce ^:private commands* (atom {}))
@@ -33,6 +36,35 @@
           :when (seq (get-in entry [:manifest :slash-commands]))]
     (module-loader/activate! module-id module-index)))
 
+(defn- prompt-catalog-opts [opts]
+  (let [state-dir (or (:state-dir opts)
+                      (nexus/get :state-dir)
+                      (config/state-dir))
+        fs*       (or (:fs opts) (nexus/get :fs))]
+    (when (and state-dir fs*)
+      {:config    (or (:config opts)
+                      (config/snapshot "slash command advertisement resolves prompt-template commands"))
+       :cwd       (:cwd opts)
+       :fs        fs*
+       :state-dir state-dir})))
+
+(defn- prompt-template-commands [opts]
+  (if-let [catalog-opts (prompt-catalog-opts opts)]
+    (->> (prompt-catalog/resolve-catalog catalog-opts)
+         :commands
+         vals
+         (map #(select-keys % [:description :name :params])))
+    []))
+
+(defn- advertised-commands [opts]
+  (let [registered   (->> (vals @commands*)
+                          (map #(dissoc % :handler)))
+        claimed      (into #{} (map :name) registered)
+        templated    (remove #(contains? claimed (:name %)) (prompt-template-commands opts))]
+    (->> (concat registered templated)
+         (sort-by :name)
+         vec)))
+
 (defn lookup
   ([name]
    (ensure-builtins!)
@@ -45,17 +77,13 @@
 (defn all-commands
   ([]
    (ensure-builtins!)
-   (->> (vals @commands*)
-        (sort-by :name)
-        (map #(dissoc % :handler))
-        vec))
+   (advertised-commands nil))
   ([module-index]
-    (ensure-builtins!)
+   (all-commands module-index nil))
+  ([module-index opts]
+   (ensure-builtins!)
    (activate-all! module-index)
-   (->> (vals @commands*)
-        (sort-by :name)
-        (map #(dissoc % :handler))
-        vec)))
+   (advertised-commands opts)))
 
 ;; Module-loader registration: dispatched by module.loader when activating a
 ;; manifest's :slash-commands extension.

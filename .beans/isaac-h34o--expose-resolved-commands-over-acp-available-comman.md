@@ -4,8 +4,10 @@ title: Expose resolved commands over ACP (available-commands advertisement)
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-26T23:20:28Z
+updated_at: 2026-05-28T05:20:27Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
