@@ -12,6 +12,9 @@
 (defn- temp-dir []
   (.toFile (java.nio.file.Files/createTempDirectory "isaac-server-cli-spec" (make-array java.nio.file.attribute.FileAttribute 0))))
 
+(def config-stub (atom {}))
+(def started (atom {}))
+
 (describe "Server command"
 
   (helper/with-captured-logs)
@@ -27,6 +30,12 @@
         (should= ["server" "--port" "3000"] (resolve ["gateway" "--port" "3000"])))))
 
   (describe "run"
+
+    (before (reset! config-stub {})
+            (reset! started false))
+    (redefs-around [sut/block!         (fn [] nil)
+                    app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+                    config/load-config-result (fn [& _] @config-stub)])
 
     (describe "start-log-tail!"
 
@@ -75,22 +84,6 @@
           (with-out-str (sut/run {:port "4000"})))
         (should= 4000 (:port @started))))
 
-    (it "loads port from config when no port flag given"
-      (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {:gateway {:port 8888}}})]
-          (with-out-str (sut/run {})))
-        (should= 8888 (:port @started))))
-
-    (it "defaults to port 6674 when no port flag and no config"
-      (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {}})]
-          (with-out-str (sut/run {})))
-        (should= 6674 (:port @started))))
-
     (it "CLI --port overrides config port"
       (let [started (atom nil)]
         (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
@@ -99,13 +92,13 @@
           (with-out-str (sut/run {:port "4000"})))
         (should= 4000 (:port @started))))
 
-    (it "loads host from config when no host flag given"
+    (it "loads config and passes it to app start as :cfg"
       (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
                       sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {:server {:host "127.0.0.1"}}})]
+                      config/load-config-result (fn [& _] {:config {:server {:auth {:token "s3cr3t"}}}})]
           (with-out-str (sut/run {})))
-        (should= "127.0.0.1" (:host @started))))
+        (should= "s3cr3t" (get-in @started [:cfg :server :auth :token]))))
 
     (it "prints the host and port on startup"
       (with-redefs [app/start!         (fn [_] {:port 5000 :host "0.0.0.0"})
@@ -162,14 +155,6 @@
           (with-out-str (sut/run {:home "/tmp/server-home"})))
         (should= "/tmp/server-home/.isaac" (:state-dir @started))
         (should-not (contains? @started :home))))
-
-    (it "passes the configured server auth token through to app start"
-      (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {:server {:auth {:token "s3cr3t"}}}})]
-          (with-out-str (sut/run {:host "0.0.0.0"})))
-        (should= "s3cr3t" (get-in @started [:cfg :server :auth :token]))))
 
     (it "enables file logging when --logs is requested"
       (let [started      (atom nil)

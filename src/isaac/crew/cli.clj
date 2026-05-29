@@ -35,8 +35,7 @@
       s)))
 
 (defn- derive-state-dir [opts]
-  (or (:state-dir opts)
-      (str (System/getProperty "user.home") "/.isaac")))
+  (config/default-state-dir opts))
 
 (defn resolve-crew
   "Returns a seq of {:name :model :provider :soul-source :tags} for display."

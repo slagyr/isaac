@@ -22,9 +22,20 @@
   (marigold/with-manifest)
   (helper/with-captured-logs)
 
+  ;; Default stubs so each test boots in microseconds, not seconds. The
+  ;; main offender was config/watch-service-source — it starts a real
+  ;; FSwatcher and sleeps 1s for FSEvents to settle (change_source_bb.clj).
+  ;; httpkit / scheduler / workers are stubbed so the suite doesn't bind
+  ;; real ports, spawn real thread pools, or start real polling workers.
+  ;; Tests that need to capture or assert against a specific stub re-stub
+  ;; it locally.
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
   (around [it]
-    (with-redefs [hail-delivery-worker/start! (fn [_] ::hail-delivery-worker)
+    (with-redefs [config/watch-service-source (fn [_] nil)
+                  httpkit/run-server          (fn [_ _] (fn [] nil))
+                  httpkit/server-port         (fn [_] 7001)
+                  httpkit/server-stop!        (fn [_] nil)
+                  hail-delivery-worker/start! (fn [_] ::hail-delivery-worker)
                   hail-delivery-worker/stop!  (fn [_] nil)
                   hail-router/start!          (fn [_] ::hail-router)
                   hail-router/stop!           (fn [_] nil)]
@@ -43,6 +54,24 @@
   (it "defaults to 127.0.0.1 when no host given"
     (let [result (sut/start! {:port 0 :cfg {:server {:auth {:token "s3cr3t"}}}})]
       (should= "127.0.0.1" (:host result))))
+
+  (it "resolves the bound port from config when no :port override is given"
+    (let [bound (atom nil)]
+      (with-redefs [httpkit/run-server   (fn [_ opts] (reset! bound (:port opts)) (fn [] nil))
+                    httpkit/server-port  (fn [_] @bound)
+                    httpkit/server-stop! (fn [_] nil)]
+        (sut/start! {:cfg {:gateway {:port 8888}}})
+        (sut/stop!))
+      (should= 8888 @bound)))
+
+  (it "resolves the bound host from config when no :host override is given"
+    (let [bound (atom nil)]
+      (with-redefs [httpkit/run-server   (fn [_ opts] (reset! bound (:ip opts)) (fn [] nil))
+                    httpkit/server-port  (fn [_] 0)
+                    httpkit/server-stop! (fn [_] nil)]
+        (sut/start! {:cfg {:server {:host "0.0.0.0" :auth {:token "x"}}}})
+        (sut/stop!))
+      (should= "0.0.0.0" @bound)))
 
   (it "reports running? as true after start"
     (sut/start! {:port 0 :host "127.0.0.1"})
@@ -406,7 +435,7 @@
           (sut/stop!)))))
 
   (it "preserves the previous config when reload fails validation"
-    (let [source     (config/memory-source marigold/home)
+    (let [source     (config/memory-source marigold/state-dir)
           orig-poll  config/poll!
           poll-count (atom 0)
           poll-ready (promise)]

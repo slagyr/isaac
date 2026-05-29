@@ -67,16 +67,6 @@
           (reload! path))
         (recur)))))
 
-(defn- startup-settings [opts]
-  {:port               (or (:port opts) 6674)
-   :host               (or (:host opts) "127.0.0.1")
-   :dev?               (true? (:dev opts))
-   :hot-reload?        (not (false? (get-in opts [:cfg :server :hot-reload])))
-   :start-http-server? (not (false? (:start-http-server? opts)))
-   :state-dir          (:state-dir opts)
-   :config-home        (some-> (:state-dir opts) fs/parent)
-   :connect-ws!        (:connect-ws! opts)})
-
 (defn- host-context [cfg state-dir connect-ws!]
   {:connect-ws! connect-ws!
    :module-index (:module-index cfg)
@@ -132,46 +122,69 @@
                  :host               host
                  :start-http-server? start-http-server?}))
 
-(defn start! [opts]
+(defn start!
+  "Boot the server. Loads config from :state-dir and commits it (or uses an
+   injected :cfg for tests/embedding), validates it, reconciles components, starts
+   background services, and binds the HTTP server. dev? comes from :dev (resolved
+   by the caller from --dev / ISAAC_DEV), port/host from the config with :port /
+   :host overrides. Returns {:port :host}, or nil if config is invalid or a
+   non-loopback bind lacks an auth token."
+  [opts]
   (when (running?) (stop!))
-  (let [cfg               (:cfg opts)
-        comm-registry     @comm-registry/*registry*
-        registries        (registries)
-        validation-errors (config/validate-config! cfg comm-registry)]
-    (when-not (seq validation-errors)
-      (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]}
-            (startup-settings opts)]
-        (when (auth-required? cfg host start-http-server?)
-          (log/error :server/auth-required
+  (let [state-dir          (:state-dir opts)
+        fs                 (or (fs/instance opts) (fs/real-fs))
+        load-result        (when (and (not (:cfg opts)) state-dir)
+                             (config/load-config-result {:state-dir state-dir :fs fs}))
+        cfg                (cond-> (or (:cfg opts) (:config load-result) {})
+                             state-dir (assoc :state-dir state-dir))
+        comm-registry      @comm-registry/*registry*
+        registries         (registries)
+        server-cfg         (config/server-config cfg)
+        port               (or (:port opts) (:port server-cfg))
+        host               (or (:host opts) (:host server-cfg))
+        dev?               (true? (:dev opts))
+        hot-reload?        (:hot-reload server-cfg)
+        start-http-server? (not (false? (:start-http-server? opts)))
+        config-home        (some-> state-dir fs/parent)
+        connect-ws!        (:connect-ws! opts)]
+    (cond
+      (and load-result (seq (:errors load-result)) (not (:missing-config? load-result)))
+      (do (log/error :config/invalid :state-dir state-dir :errors (:errors load-result)) nil)
+
+      (seq (config/validate-config! cfg comm-registry))
+      nil
+
+      (auth-required? cfg host start-http-server?)
+      (do (log/error :server/auth-required
                      :host host
-                     :message "missing :server :auth :token for non-loopback bind"))
-        (when-not (auth-required? cfg host start-http-server?)
-          (let [cfg                     (cond-> cfg state-dir (assoc :state-dir state-dir))
-                _                       (nexus/init! {:fs (or (fs/instance opts) (fs/real-fs))})
-                _                       (when state-dir
-                                          (home/init-state-dir! state-dir))
-                scheduler               (when state-dir
-                                          (-> (scheduler-core/create {})
-                                              scheduler-core/start!))
-                _                       (when scheduler
-                                          (nexus/register! [:scheduler] scheduler))
-                host-ctx                (host-context cfg state-dir connect-ws!)
-                _                       (config/dangerously-install-config! cfg "server boot")
-                _                       (config/install! {:config cfg :registries registries :host host-ctx})
-                _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
-                _                       (doseq [[_mod-id entry] (:module-index cfg)]
-                                          (module-loader/register-route-extensions! (:manifest entry)))
-                config-source           (start-config-source opts hot-reload? state-dir)
-                _                       (some-> config-source config/start!)
-                reloader                (when (and config-source state-dir)
-                                          (start-config-reloader! config-source state-dir host-ctx comm-registry registries))
-                handler-opts            (build-handler-opts opts config-home state-dir)
-                {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
-                {:keys [delivery hail-delivery hail-router]} (start-background-services opts scheduler)]
-            (when (and dev? start-http-server?)
-              (log/info :server/dev-mode-enabled :host host :port actual))
-            (reset-server-state! host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?)
-            {:port actual :host host}))))))
+                     :message "missing :server :auth :token for non-loopback bind")
+          nil)
+
+      :else
+      (let [_                       (nexus/init! {:fs fs})
+            _                       (when state-dir (home/init-state-dir! state-dir))
+            scheduler               (when state-dir
+                                       (-> (scheduler-core/create {})
+                                           scheduler-core/start!))
+            _                       (when scheduler
+                                      (nexus/register! [:scheduler] scheduler))
+            host-ctx                (host-context cfg state-dir connect-ws!)
+            _                       (config/dangerously-install-config! cfg "server boot")
+            _                       (config/install! {:config cfg :registries registries :host host-ctx})
+            _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
+            _                       (doseq [[_mod-id entry] (:module-index cfg)]
+                                      (module-loader/register-route-extensions! (:manifest entry)))
+            config-source           (start-config-source opts hot-reload? state-dir)
+            _                       (some-> config-source config/start!)
+            reloader                (when (and config-source state-dir)
+                                      (start-config-reloader! config-source state-dir host-ctx comm-registry registries))
+            handler-opts            (build-handler-opts opts config-home state-dir)
+            {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
+            {:keys [delivery hail-delivery hail-router]} (start-background-services opts scheduler)]
+        (when (and dev? start-http-server?)
+          (log/info :server/dev-mode-enabled :host host :port actual))
+        (reset-server-state! host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery hail-delivery hail-router server actual host start-http-server?)
+        {:port actual :host host}))))
 
 (defn stop! []
   (when-let [{:keys [config-source scheduler delivery hail-delivery hail-router host-ctx registries reloader server]} @state]

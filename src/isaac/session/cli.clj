@@ -184,8 +184,7 @@
 ;; endregion ^^^^^ Output ^^^^^
 
 (defn- resolve-state-dir [opts]
-  (or (:state-dir opts)
-      (str (or (:home opts) (System/getProperty "user.home")) "/.isaac")))
+  (config/default-state-dir opts))
 
 (defn- install-cli!
   "Load config, resolve the state dir, and install it into the nexus (snapshot +

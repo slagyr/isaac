@@ -37,31 +37,33 @@
       path)))
 
 (defn run [{:keys [port host logs] :as opts}]
-  (let [home             (or (:home opts) (System/getProperty "user.home"))
-        state-dir        (or (:state-dir opts) (str home "/.isaac"))
-        loaded-config    (:config (config/load-config-result {:state-dir state-dir}))
-        cfg              (config/server-config loaded-config)
-        port             (or (when port (parse-long (str port))) (:port cfg))
-        host             (or host (:host cfg))
+  (let [state-dir     (config/default-state-dir opts)
+        ;; CLIs load config at their entry point (never reload — that's a
+        ;; server-only concern); app/start! resolves port/host and commits it.
+        loaded-config (:config (config/load-config-result {:state-dir state-dir}))
         ;; dev mode is an environment/launch concern, not config: --dev overrides,
         ;; otherwise the ISAAC_DEV env var.
-        dev?             (if (contains? opts :dev)
-                           (boolean (:dev opts))
-                           (= "true" (config/env "ISAAC_DEV")))]
+        dev?          (if (contains? opts :dev)
+                        (boolean (:dev opts))
+                        (= "true" (config/env "ISAAC_DEV")))]
     (when logs
       (when-let [abs-path (start-log-tail! (log/log-file) state-dir opts)]
         (log/set-log-file! abs-path)
         (log/set-output! :file)))
     (builtin/register-all!)
-    (log/info :server/starting :host host :port port)
-    (let [{started-port :port started-host :host} (app/start! {:cfg       loaded-config
-                                                               :dev       dev?
-                                                               :host      host
-                                                               :port      port
-                                                               :state-dir state-dir})]
-      (log/info :server/started :host started-host :port started-port)
-      (println (str "Isaac server running on " started-host ":" started-port))
-      (block!))))
+    (if-let [{started-port :port started-host :host}
+             (app/start! {:cfg       loaded-config
+                          :state-dir state-dir
+                          :dev       dev?
+                          :port      (when port (parse-long (str port)))
+                          :host      host})]
+      (do
+        (log/info :server/started :host started-host :port started-port)
+        (println (str "Isaac server running on " started-host ":" started-port))
+        (block!))
+      (do
+        (println "Failed to start: invalid configuration (see logs)")
+        1))))
 
 (def option-spec
   [["-p" "--port N" "Port to listen on (default: 6674)"]

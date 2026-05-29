@@ -14,7 +14,9 @@
     [isaac.config.change-source :as change-source]
     [isaac.config.configurator :as configurator]
     [isaac.config.install :as install]
-    [isaac.config.loader :as loader]))
+    [isaac.config.loader :as loader]
+    [isaac.config.paths :as paths]
+    [isaac.home :as home]))
 
 ;; ----- loading & snapshot -----
 
@@ -65,6 +67,15 @@
    present, otherwise the loaded config snapshot's :state-dir."
   []
   (loader/state-dir))
+
+(defn default-state-dir
+  "Computes the default state directory for CLI-style opts: :state-dir wins,
+   otherwise :home (or the user's home directory) + the standard .isaac suffix.
+   Use at entry points before load; the running process should read [[state-dir]]
+   (the resolved snapshot) instead."
+  [opts]
+  (or (:state-dir opts)
+      (paths/default-state-dir (or (:home opts) (home/user-home)))))
 
 ;; ----- env -----
 

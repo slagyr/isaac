@@ -74,9 +74,8 @@
     {:comm (->PromptComm text)
      :text text}))
 
-(defn- state-dir-of [{:keys [home state-dir]}]
-  (or state-dir
-      (str (or home (System/getProperty "user.home")) "/.isaac")))
+(defn- state-dir-of [opts]
+  (config/default-state-dir opts))
 
 (defn- print-error! [message]
   (binding [*out* *err*]
