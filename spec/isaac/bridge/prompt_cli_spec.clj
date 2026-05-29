@@ -5,6 +5,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.comm :as comm]
     [isaac.bridge.prompt-cli :as sut]
+    [isaac.config.api :as config]
     [isaac.server.routes]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
@@ -14,9 +15,19 @@
 
 (def base-opts
   {:state-dir "/test/prompt"
-   :crew      crew-name
-   :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}}
-   :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
+   :crew      crew-name})
+
+;; A complete cfg with both crews (atticus + ketch) so tests that exercise
+;; --session / --crew dispatch against both can share one stub. Loader stubs
+;; in the run describe return this; the missing-config test resets the atom
+;; to a missing-config result.
+(def synthetic-config
+  {:crew   {crew-name {:name crew-name :soul crew-soul :model "grover"}
+            "ketch"   {:name "ketch" :soul "You are a pirate." :model "grover2"}}
+   :models {"grover"  {:alias "grover"  :model "echo"     :provider "grover" :context-window 32768}
+            "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384}}})
+
+(def loader-stub (atom {:config synthetic-config}))
 
 (defn- fake-dispatch! [text]
   (fn [charge]
@@ -69,6 +80,10 @@
 
   (describe "run"
 
+    (before (reset! loader-stub {:config synthetic-config}))
+    (redefs-around [config/load-config!        (fn [& _] (:config @loader-stub))
+                    config/load-config-result  (fn [& _] @loader-stub)])
+
     (it "returns 1 and mentions 'required' when --message is missing"
       (let [output (with-out-str
                      (should= 1 (sut/run base-opts)))]
@@ -83,6 +98,9 @@
           (should= "Hello there" (:message @captured)))))
 
     (it "fails clearly when no config exists"
+      (reset! loader-stub {:missing-config? true
+                           :errors          [{:key   "config"
+                                              :value "no config found at /tmp/missing-config/.isaac/config/isaac.edn"}]})
       (let [err (java.io.StringWriter.)]
         (binding [*err* err]
           (with-out-str
@@ -126,11 +144,7 @@
           (with-out-str
             (sut/run {:state-dir "/test/prompt"
                       :message   "Next"
-                      :session   (str "agent:" crew-name ":cli:direct:user1")
-                      :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}
-                                  "ketch" {:name "ketch" :soul "You are a pirate." :model "grover2"}}
-                      :models    {"grover"  {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
-                                  "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384}}})))
+                      :session   (str "agent:" crew-name ":cli:direct:user1")})))
         (should= "echo-alt" (:model @captured))
         (should= "You are a pirate." (:soul @captured))))
 
@@ -145,11 +159,7 @@
             (sut/run {:state-dir "/test/prompt"
                       :message   "Next"
                       :session   (str "agent:" crew-name ":cli:direct:user1")
-                      :crew      crew-name
-                      :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}
-                                  "ketch" {:name "ketch" :soul "You are a pirate." :model "grover2"}}
-                      :models    {"grover"  {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
-                                  "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384}}})))
+                      :crew      crew-name})))
         (should= "echo" (:model @captured))
         (should= crew-soul (:soul @captured))))
 

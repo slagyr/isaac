@@ -3,6 +3,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.bridge.prompt-cli :as sut]
     [isaac.comm :as comm]
+    [isaac.config.api :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.marigold :as marigold]
     [isaac.server.routes]
@@ -14,14 +15,19 @@
 
 (def ^:private base-opts
   {:state-dir "/test/prompt"
-   :crew      crew-name
-   :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}}
-   :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
+   :crew      crew-name})
+
+(def ^:private synthetic-config
+  {:crew   {crew-name {:name crew-name :soul crew-soul :model "grover"}}
+   :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
 (describe "CLI Prompt origin"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example] (helper/with-memory-store (example)))
+
+  (redefs-around [config/load-config!       (fn [& _] synthetic-config)
+                  config/load-config-result (fn [& _] {:config synthetic-config})])
 
   (it "creates prompt sessions with a cli origin"
     (with-redefs [single-turn/run-turn! (fn [charge]

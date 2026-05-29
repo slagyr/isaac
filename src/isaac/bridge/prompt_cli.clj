@@ -82,28 +82,10 @@
     (println message)))
 
 (defn- ensure-local-config! [opts]
-  (when-not (or (map? (:crew opts))
-                (map? (:agents opts)))
-    (let [result (config/load-config-result {:state-dir (state-dir-of opts)})]
-      (when (:missing-config? result)
-        (print-error! (get-in result [:errors 0 :value]))
-        false))))
-
-(defn- effective-cfg [opts]
-  (let [state-dir     (state-dir-of opts)
-        cfg           (config/normalize-config (:config (config/load-config-result {:state-dir state-dir})))
-        injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
-        effective-cfg (cond-> cfg
-                        injected-crew           (assoc :crew injected-crew)
-                        (:models opts)          (assoc :models (:models opts))
-                        (:provider-configs opts) (update :providers merge (:provider-configs opts)))]
-    (config/normalize-config effective-cfg)))
-
-(defn- injected-config? [opts]
-  (or (map? (:crew opts))
-      (map? (:agents opts))
-      (:models opts)
-      (:provider-configs opts)))
+  (let [result (config/load-config-result {:state-dir (state-dir-of opts)})]
+    (when (:missing-config? result)
+      (print-error! (get-in result [:errors 0 :value]))
+      false)))
 
 (defn run [opts]
   (if-not (:message opts)
@@ -112,13 +94,7 @@
     (if (= false (ensure-local-config! opts))
       1
       (let [state-dir     (state-dir-of opts)
-            ;; Common path: load + validate + commit the user's config. Injected
-            ;; crew/models build a one-off config value committed directly.
-            cfg           (if (injected-config? opts)
-                            (let [c (assoc (effective-cfg opts) :state-dir state-dir)]
-                              (config/dangerously-install-config! c "prompt-cli: injected crew/models")
-                              c)
-                            (config/load-config! state-dir (fs/instance) "prompt-cli"))
+            cfg           (config/load-config! state-dir (fs/instance) "prompt-cli")
             _             (config/install! {:config cfg})
             session-store (store/registered-store)
             resumed-key   (when (:resume opts)
