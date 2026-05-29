@@ -408,45 +408,41 @@
 
 ;; region ----- Server Commands -----
 
-(defn server-command-run [port]
+(defn- run-cli-with-stubbed-config!
+  "Runs `argv` through isaac.main with config/load-config-result stubbed to
+   the current :server-config bean and block! no-op'd, then stops the
+   server. Stops any prior server first so consecutive scenarios don't
+   collide on the same port."
+  [argv]
   (let [cfg (or (g/get :server-config) {})]
-    (with-redefs [server/block!         (fn [] nil)
-                  config/load-config-result   (fn [& _] {:config cfg})]
+    (with-redefs [server/block!             (fn [] nil)
+                  config/load-config-result (fn [& _] {:config cfg})]
       (with-out-str
         (app/stop!)
-        (main/run ["server" "--port" (str port)]))))
+        (main/run argv))))
   (app/stop!))
+
+(defn server-command-run [port]
+  (run-cli-with-stubbed-config! ["server" "--port" (str port)]))
 
 (defn server-command-run-no-port []
   (let [cfg (or (g/get :server-config) {})]
-    (with-redefs [server/block!           (fn [] nil)
-                  config/load-config-result      (fn [& _] {:config cfg})
-                  httpkit/run-server      (fn [_handler opts] (atom (:port opts)))
-                  httpkit/server-port     (fn [s] (or @s 0))
-                  httpkit/server-stop!    (fn [_s] nil)]
+    (with-redefs [server/block!             (fn [] nil)
+                  config/load-config-result (fn [& _] {:config cfg})
+                  httpkit/run-server        (fn [_handler opts] (atom (:port opts)))
+                  httpkit/server-port       (fn [s] (or @s 0))
+                  httpkit/server-stop!      (fn [_s] nil)]
       (with-out-str
         (app/stop!)
         (main/run ["server"]))
       (app/stop!))))
 
 (defn server-command-run-with-args [args]
-  (let [cfg       (or (g/get :server-config) {})
-        arg-parts (remove str/blank? (str/split args #"\s+" 2))]
-    (with-redefs [server/block!       (fn [] nil)
-                  config/load-config-result (fn [& _] {:config cfg})]
-      (with-out-str
-        (app/stop!)
-        (main/run (into ["server"] arg-parts))))
-    (app/stop!)))
+  (let [arg-parts (remove str/blank? (str/split args #"\s+" 2))]
+    (run-cli-with-stubbed-config! (into ["server"] arg-parts))))
 
 (defn gateway-command-run [port]
-  (let [cfg (or (g/get :server-config) {})]
-    (with-redefs [server/block!       (fn [] nil)
-                  config/load-config-result (fn [& _] {:config cfg})]
-      (with-out-str
-        (app/stop!)
-        (main/run ["gateway" "--port" (str port)]))))
-  (app/stop!))
+  (run-cli-with-stubbed-config! ["gateway" "--port" (str port)]))
 
 ;; endregion ^^^^^ Server Commands ^^^^^
 

@@ -29,17 +29,14 @@
   ;; real ports, spawn real thread pools, or start real polling workers.
   ;; Tests that need to capture or assert against a specific stub re-stub
   ;; it locally.
-  #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
-  (around [it]
-    (with-redefs [config/watch-service-source (fn [_] nil)
+  (redefs-around [config/watch-service-source (fn [_] nil)
                   httpkit/run-server          (fn [_ _] (fn [] nil))
                   httpkit/server-port         (fn [_] 7001)
                   httpkit/server-stop!        (fn [_] nil)
                   hail-delivery-worker/start! (fn [_] ::hail-delivery-worker)
                   hail-delivery-worker/stop!  (fn [_] nil)
                   hail-router/start!          (fn [_] ::hail-router)
-                  hail-router/stop!           (fn [_] nil)]
-      (it)))
+                  hail-router/stop!           (fn [_] nil)])
 
   (after (sut/stop!))
 

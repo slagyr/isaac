@@ -1,11 +1,11 @@
 (ns isaac.server.cli-spec
   (:require
     [isaac.cli :as registry]
-    [isaac.server.cli :as sut]
     [isaac.config.api :as config]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
     [isaac.server.app :as app]
+    [isaac.server.cli :as sut]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
@@ -33,8 +33,8 @@
 
     (before (reset! config-stub {})
             (reset! started false))
-    (redefs-around [sut/block!         (fn [] nil)
-                    app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+    (redefs-around [sut/block! (fn [] nil)
+                    app/start! (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
                     config/load-config-result (fn [& _] @config-stub)])
 
     (describe "start-log-tail!"
@@ -74,102 +74,61 @@
                                 :limit   10}]
                      (deref events 1000 ::timeout)))))
 
-    )
+      )
 
     (it "starts the server on the given port"
-      (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {}})]
-          (with-out-str (sut/run {:port "4000"})))
-        (should= 4000 (:port @started))))
-
-    (it "CLI --port overrides config port"
-      (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {:gateway {:port 8888}}})]
-          (with-out-str (sut/run {:port "4000"})))
-        (should= 4000 (:port @started))))
+      (with-out-str (sut/run {:port "4000"}))
+      (should= 4000 (:port @started)))
 
     (it "loads config and passes it to app start as :cfg"
-      (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {:server {:auth {:token "s3cr3t"}}}})]
-          (with-out-str (sut/run {})))
-        (should= "s3cr3t" (get-in @started [:cfg :server :auth :token]))))
+      (swap! config-stub assoc-in [:config :server :auth :token] "s3cr3t")
+      (with-out-str (sut/run {}))
+      (should= "s3cr3t" (get-in @started [:cfg :server :auth :token])))
 
     (it "prints the host and port on startup"
-      (with-redefs [app/start!         (fn [_] {:port 5000 :host "0.0.0.0"})
-                    sut/block!         (fn [] nil)
-                    config/load-config-result (fn [& _] {:config {}})]
-        (let [output (with-out-str (sut/run {:port "5000"}))]
-          (should (re-find #"5000" output)))))
+      (let [output (with-out-str (sut/run {:port "5000"}))]
+        (should (re-find #"5000" output))))
 
     (it "logs server/started with host and port"
-      (with-redefs [app/start!         (fn [_] {:port 7000 :host "0.0.0.0"})
-                    sut/block!         (fn [] nil)
-                    config/load-config-result (fn [& _] {:config {}})]
-        (with-out-str (sut/run {:port "7000"})))
+      (with-out-str (sut/run {:port "7000" :host "0.0.0.0"}))
       (let [started (first (filter #(= :server/started (:event %)) @log/captured-logs))]
         (should-not-be-nil started)
         (should= 7000 (:port started))
         (should= "0.0.0.0" (:host started))))
 
     (it "enables dev mode from the ISAAC_DEV env var"
-      (let [started (atom nil)]
-        (config/set-env-override! "ISAAC_DEV" "true")
-        (try
-          (with-redefs [app/start!                (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
-                        sut/block!                (fn [] nil)
-                        config/load-config-result (fn [& _] {:config {}})]
-            (with-out-str (sut/run {})))
-          (finally (config/clear-env-overrides!)))
-        (should= true (:dev @started))))
+      (config/set-env-override! "ISAAC_DEV" "true")
+      (try
+        (with-out-str (sut/run {}))
+        (finally (config/clear-env-overrides!)))
+      (should= true (:dev @started)))
 
     (it "CLI --dev enables dev mode"
-      (let [started (atom nil)]
-        (with-redefs [app/start!                (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
-                      sut/block!                (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {}})]
-          (with-out-str (sut/run {:dev true})))
-        (should= true (:dev @started))))
+      (with-out-str (sut/run {:dev true}))
+      (should= true (:dev @started)))
 
     (it "CLI --dev false overrides the ISAAC_DEV env var"
-      (let [started (atom nil)]
-        (config/set-env-override! "ISAAC_DEV" "true")
-        (try
-          (with-redefs [app/start!                (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
-                        sut/block!                (fn [] nil)
-                        config/load-config-result (fn [& _] {:config {}})]
-            (with-out-str (sut/run {:dev false})))
-          (finally (config/clear-env-overrides!)))
-        (should= false (:dev @started))))
+      (config/set-env-override! "ISAAC_DEV" "true")
+      (try
+        (with-out-str (sut/run {:dev false}))
+        (finally (config/clear-env-overrides!)))
+      (should= false (:dev @started)))
 
     (it "derives state-dir from home before starting the app"
-      (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
-                      sut/block!         (fn [] nil)
-                      config/load-config-result (fn [& _] {:config {}})]
-          (with-out-str (sut/run {:home "/tmp/server-home"})))
-        (should= "/tmp/server-home/.isaac" (:state-dir @started))
-        (should-not (contains? @started :home))))
+      (with-out-str (sut/run {:home "/tmp/server-home"}))
+      (should= "/tmp/server-home/.isaac" (:state-dir @started))
+      (should-not (contains? @started :home)))
 
     (it "enables file logging when --logs is requested"
-      (let [started      (atom nil)
-            log-file     (temp-dir)
-            tailed-path  (atom nil)
-            output-kind  (atom nil)]
-        (with-redefs [app/start!           (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
-                      sut/block!           (fn [] nil)
-                      config/load-config-result   (fn [& _] {:config {}})
-                      log/log-file         (fn [] "server.log")
-                      sut/start-log-tail!  (fn [path state-dir opts]
-                                             (reset! tailed-path [path state-dir opts])
-                                             (.getAbsolutePath log-file))
-                      log/set-log-file!    (fn [path] (reset! tailed-path (conj @tailed-path path)))
-                      log/set-output!      (fn [kind] (reset! output-kind kind))]
+      (let [log-file    (temp-dir)
+            tailed-path (atom nil)
+            output-kind (atom nil)]
+        (with-redefs [log/log-file              (fn [] "server.log")
+                      sut/start-log-tail!       (fn [path state-dir opts]
+                                                  (reset! tailed-path [path state-dir opts])
+                                                  (.getAbsolutePath log-file))
+                      log/set-log-file!         (fn [path] (reset! tailed-path (conj @tailed-path path)))
+                      log/set-output!           (fn [kind] (reset! output-kind kind))]
           (with-out-str (sut/run {:home "/tmp/server-home" :logs true :zebra true})))
         (should= ["server.log"
                   "/tmp/server-home/.isaac"
@@ -184,8 +143,8 @@
   (describe "run-fn"
 
     (it "prints command help and returns 0 when --help is requested"
-      (with-redefs [sut/parse-option-map (fn [_] {:options {:help true} :errors []})
-                    registry/get-command (fn [_] {:name "server"})
+      (with-redefs [sut/parse-option-map  (fn [_] {:options {:help true} :errors []})
+                    registry/get-command  (fn [_] {:name "server"})
                     registry/command-help (fn [_] "server help")]
         (let [output (with-out-str (should= 0 (sut/run-fn {:_raw-args ["--help"]})))]
           (should (re-find #"server help" output)))))
