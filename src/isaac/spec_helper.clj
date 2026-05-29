@@ -25,8 +25,13 @@
       (sidecar-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
+  ;; Install a fresh mem-fs so the body's writes/reads are isolated from
+  ;; whatever fs an earlier spec might have leaked into the global nexus
+  ;; (e.g., a real-fs from app/start! → nexus/init!). Outer fixtures that
+  ;; need a specific fs should install it inside the body, not rely on
+  ;; with-memory-store inheriting it.
   `(let [mem-store# (memory/create-store (config/state-dir))]
-     (nexus/-with-nested-nexus {:fs       (or (fs/instance) (fs/mem-fs))
+     (nexus/-with-nested-nexus {:fs       (fs/mem-fs)
                                  :sessions {:store mem-store#}}
        (binding [*session-store* (store/registered-store)]
          (with-redefs [sidecar-store/create-store (fn [& _#] *session-store*)]
