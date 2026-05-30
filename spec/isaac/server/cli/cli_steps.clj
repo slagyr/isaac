@@ -245,12 +245,16 @@
         provider-configs (g/get :provider-configs)
         state-dir        (g/get :state-dir)
         isaac-home       (g/get :isaac-home)
-        extra-opts       (cond-> (cond
-                                    isaac-home {:home isaac-home}
-                                    :else {})
-                                   state-dir (assoc :state-dir state-dir)
-                                   (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
-                                   (g/get :main-extra-opts) (merge (g/get :main-extra-opts)))
+        extra-opts       (let [base-opts (cond
+                                           isaac-home {:home isaac-home}
+                                           state-dir  {:state-dir state-dir}
+                                           :else      {})
+                               merged    (cond-> base-opts
+                                           (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
+                                           (g/get :main-extra-opts) (merge (g/get :main-extra-opts)))]
+                           (if isaac-home
+                             (dissoc merged :state-dir)
+                             merged))
         stdin-content    (g/get :stdin-content)
          run-final        (fn []
                             (let [run* (fn [run-opts]
@@ -462,7 +466,20 @@
   (g/assoc! :isaac-home (absolute-path home)))
 
 (defn isaac-home-has-no-config [home]
-  (g/assoc! :isaac-home (absolute-path home)))
+  (let [abs-home    (absolute-path home)
+        state-dir   (str abs-home "/.isaac")
+        config-dir  (str state-dir "/config")
+        config-file (str config-dir "/isaac.edn")]
+    (if-let [mem-fs (g/get :mem-fs)]
+      (nexus/-with-nested-nexus {:fs mem-fs}
+        (when (fs/exists? mem-fs config-file)
+          (fs/delete mem-fs config-file))
+        (fs/mkdirs mem-fs state-dir))
+      (do
+        (when (.exists (io/file config-file))
+          (.delete (io/file config-file)))
+        (.mkdirs (io/file state-dir))))
+    (g/assoc! :isaac-home abs-home)))
 
 (defn empty-isaac-home [path]
   (let [home      (absolute-path path)
