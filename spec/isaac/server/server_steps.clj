@@ -911,8 +911,8 @@
 (defgiven "the Isaac server is started" isaac.server.server-steps/server-running
   "Stops any prior server, then starts one against :state-dir / :isaac-home.
    Merges in-memory :server-config and :provider-configs over whatever
-   config/load-config returns from disk. When mem-fs is active, wires a
-   synchronous memory change-source so hot-reload scenarios fire
+   config/load-config-result returns from disk. When mem-fs is active,
+   wires a synchronous memory change-source so hot-reload scenarios fire
    deterministically from test writes.")
 
 (defwhen "the Isaac process is started" isaac.server.server-steps/server-running
@@ -921,8 +921,9 @@
 
 (defwhen "the server command is run on port {port:int}" isaac.server.server-steps/server-command-run
   "Runs 'isaac server --port N' with server/block! stubbed to no-op and
-   config/load-config stubbed to {}. Immediately stops the server after
-   the run returns — use for testing startup flags/logging only.")
+   config/load-config-result stubbed to {:config <feature server-config>}.
+   Immediately stops the server after the run returns — use for testing
+   startup flags/logging only.")
 
 (defwhen "the server command is run without a port flag" isaac.server.server-steps/server-command-run-no-port)
 

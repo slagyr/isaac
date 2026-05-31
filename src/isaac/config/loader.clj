@@ -1131,10 +1131,6 @@
                                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
                                      :sources  (vec (sort (:sources result)))}))))))
 
-(defn load-config
-  [& [opts]]
-  (:config (apply load-config-result (when opts [opts]))))
-
 ;; endregion ^^^^^ Loading ^^^^^
 
 ;; region ----- Ambient Config Snapshot -----
