@@ -199,11 +199,16 @@ but each API adapter treats 0 as "omit the field" — same effect as
 
 Isaac splits these cleanly and every new feature should honor it:
 
-- **Config** (`~/.isaac/config/*.edn` + companion `.md` files):
+- **Config** (`<root>/config/*.edn` + companion `.md` files):
   declarative intent, hand-editable, version-controllable. Never
   mutated at runtime.
-- **State** (`<state-dir>/*`): mutable runtime data — sessions,
+- **State** (`<root>/*`): mutable runtime data — sessions,
   transcripts, last-run timestamps, queued deliveries.
+
+`<root>` is whatever `--root` / `ISAAC_ROOT` / `~/.config/isaac.edn`
+resolves to; default `~/.isaac`. See `src/isaac/root.clj`. The
+internal `:state-dir` opt key is currently a synonym for `:root`
+and will collapse in a follow-up (see bean `isaac-root`).
 
 When scoping a new feature, identify which parts are intent
 (config) vs observation (state) and place them accordingly. Avoid

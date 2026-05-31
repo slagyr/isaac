@@ -100,11 +100,16 @@ Isaac stores runtime state under `~/.isaac` by default.
 - Crew definitions live under `~/.isaac/config/crew/`
 - Session and runtime state live under `~/.isaac/`
 
-You can override the home directory at runtime:
+You can override the root directory at runtime:
 
 ```bash
-bb run isaac --home /path/to/home chat
+bb run isaac --root /path/to/isaac-data chat
 ```
+
+Resolution order (first hit wins): `--root` flag → `ISAAC_ROOT` env var
+→ `~/.config/isaac.edn` `{:root "/path"}` → `~/.isaac.edn` (same key) →
+the default `~/.isaac`. The legacy `--home <dir>` flag is accepted as a
+transitional alias and appends `/.isaac` for backward compat.
 
 ## Development
 
