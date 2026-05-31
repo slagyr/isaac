@@ -378,7 +378,7 @@
                   (cond-> (not (cs/error? entity))
                           (assoc-in [:config kind id] (dissoc entity :id))))))
           result
-          (get-in result [:root kind])))
+          (get-in result [:state-dir kind])))
 
 (defn- read-frontmatter-file [{:keys [relative] :as entry} substitute-env? raw-parse-errors?]
   (try
@@ -472,10 +472,10 @@
                       (assoc-error result (str (name kind) "." id ".id") (str "must match filename (got \"" explicit-id "\")"))
                       result)
         result      (if (and (get-in (:config result) [kind id])
-                             (get-in (:root result) [kind id]))
+                             (get-in (:state-dir result) [kind id]))
                       (assoc-error result (str (name kind) "." id) (str "defined in both isaac.edn and " relative))
                       result)]
-    (if (or (some? (get-in (:root result) [kind id]))
+    (if (or (some? (get-in (:state-dir result) [kind id]))
             (cs/error? entity))
       (update result :sources conj (source-path relative))
       (-> result
@@ -1087,7 +1087,7 @@
                                                                                         (:warnings provider-files)
                                                                                         md-warnings))
                                                           :sources         root-sources
-                                                          :root            (normalize-config (or root-data {}))}
+                                                          :state-dir            (normalize-config (or root-data {}))}
                                         result           (reduce merge-root-entity result [:crew :cron :hail :models :providers])
                                         result           (cond-> result
                                                                  (not skip-entity-files?)
@@ -1106,7 +1106,7 @@
                                         config           (assoc config
                                                            :module-index (:index discovery)
                                                            :state-dir state-dir)
-                                        raw-providers    (merge (get-in result [:root :providers])
+                                        raw-providers    (merge (get-in result [:state-dir :providers])
                                                                 (get-in result [:raw :providers]))
                                         comms-check      (check-comms config (:index discovery))
                                         manifest-check   (manifest-ref-errors (:index discovery))

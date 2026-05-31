@@ -45,7 +45,7 @@
         module-index        (select-keys discovered-index declared-module-ids)]
     {:config        config
      :module-index  module-index
-     :root          (manifest-schema/enrich-root config-schema/root module-index)}))
+     :state-dir          (manifest-schema/enrich-root config-schema/root module-index)}))
 
 (defn- comm-resolver [module-index]
   (let [module-index (or module-index (module-loader/core-index))]

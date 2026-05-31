@@ -11,7 +11,7 @@
     [isaac.hail.bands :as hail-bands]
     [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.hooks :as hooks]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
@@ -162,7 +162,7 @@
 
       :else
       (let [_                       (nexus/init! {:fs fs})
-            _                       (when state-dir (home/init-state-dir! state-dir))
+            _                       (when state-dir (root/init-root! state-dir))
             scheduler               (when state-dir
                                        (-> (scheduler-core/create {})
                                            scheduler-core/start!))

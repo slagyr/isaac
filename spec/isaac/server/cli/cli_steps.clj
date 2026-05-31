@@ -7,7 +7,7 @@
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.drive.dispatch :as drive-dispatch]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.bridge.status :as bridge]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
@@ -258,7 +258,7 @@
         stdin-content    (g/get :stdin-content)
          run-final        (fn []
                             (let [run* (fn [run-opts]
-                                         (binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
+                                         (binding [root/*user-home* (or (g/get :user-home) root/*user-home*)
                                                    shell/*sh*       (or (g/get :sh-fn) shell/*sh*)
                                                    shell/*os-name*  (or (g/get :os-name) shell/*os-name*)]
                                            (if (seq run-opts)
@@ -317,7 +317,7 @@
        (let [run! (fn [run-opts]
                     (binding [*out* output-writer
                               *err* error-writer
-                              home/*user-home* (or (g/get :user-home) home/*user-home*)]
+                              root/*user-home* (or (g/get :user-home) root/*user-home*)]
                       (let [code (with-current-time
                                    #(if (seq run-opts)
                                       (binding [main/*extra-opts* run-opts]

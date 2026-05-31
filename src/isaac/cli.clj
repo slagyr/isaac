@@ -115,8 +115,8 @@
                            {:expr "*/30 * * * *" :crew :main}
                            "Heartbeat. Anything worth noting?"))
 
-(defn- print-success! [display-home]
-  (println (str "Isaac initialized at " display-home "."))
+(defn- print-success! [display-root]
+  (println (str "Isaac initialized at " display-root "."))
   (println)
   (println "Created:")
   (doseq [path (created-files)]
@@ -136,26 +136,29 @@
   (str "Usage: isaac init\n\n"
        "Scaffold a default Isaac config for a fresh install."))
 
-(defn init-run [{:keys [display-home home] :as opts}]
-  (let [fs*       (runtime-fs opts)
-        state-dir (paths/default-state-dir home)
-        path      (isaac-edn-path state-dir)]
+(defn init-run [{:keys [display-root root home] :as opts}]
+  ;; Accept both :root (new, the data dir directly) and :home (legacy, parent
+  ;; dir; appends /.isaac). Callers going through main.clj get :root stamped;
+  ;; older unit specs that pass :home keep working.
+  (let [fs*  (runtime-fs opts)
+        effective-root (or root (when home (str home "/.isaac")))
+        path (isaac-edn-path effective-root)]
     (if (fs/exists? fs* path)
       (do
         (binding [*out* *err*]
           (println (str "config already exists at " path "; edit it directly.")))
         1)
       (do
-        (scaffold! state-dir fs*)
-        (print-success! (or display-home home))
+        (scaffold! effective-root fs*)
+        (print-success! (or display-root root home effective-root))
         0))))
 
-(defn init-run-fn [{:keys [display-home home _raw-args fs]}]
+(defn init-run-fn [{:keys [display-root root _raw-args fs]}]
   (if (some #(or (= "--help" %) (= "-h" %)) (or _raw-args []))
     (do
       (println (init-help))
       0)
-    (init-run {:display-home display-home :home home :fs fs})))
+    (init-run {:display-root display-root :root root :state-dir root :fs fs})))
 
 (register!
   {:name      "init"

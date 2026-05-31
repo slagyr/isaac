@@ -3,7 +3,7 @@
     [isaac.cli :as registry]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.module.loader :as module-loader]
     [isaac.main :as sut]
     [isaac.session.store :as store]
@@ -47,7 +47,7 @@
         (should= 0 (sut/run ["test-dispatch" "--agent" "bot"]))
         (should= ["--agent" "bot"] (:_raw-args @received))))
 
-    (it "injects home resolved from the XDG pointer file"
+    (it "injects root resolved from the XDG pointer file"
       (let [received (atom nil)
             mem      (fs/mem-fs)]
         (registry/register! {:name   "pointer-dispatch"
@@ -55,14 +55,30 @@
                              :usage  "pointer-dispatch"
                              :option-spec []
                              :run-fn (fn [opts] (reset! received opts) 0)})
-        (binding [home/*user-home*  "/tmp/user"
+        (binding [root/*user-home*  "/tmp/user"
                   sut/*extra-opts*  {:fs mem}]
           (fs/mkdirs mem "/tmp/user/.config")
-          (fs/spit   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
+          (fs/spit   mem "/tmp/user/.config/isaac.edn" "{:root \"/tmp/pointer\"}")
           (should= 0 (sut/run ["pointer-dispatch"])))
-        (should= "/tmp/pointer" (:home @received))))
+        (should= "/tmp/pointer" (:root @received))))
 
-    (it "lets the top-level --home flag override the pointer file"
+    (it "lets the top-level --root flag override the pointer file"
+      (let [received (atom nil)
+            mem      (fs/mem-fs)]
+        (registry/register! {:name   "root-flag-dispatch"
+                             :desc   "Test"
+                             :usage  "root-flag-dispatch"
+                             :option-spec []
+                             :run-fn (fn [opts] (reset! received opts) 0)})
+        (binding [root/*user-home* "/tmp/user"
+                  sut/*extra-opts* {:fs mem}]
+          (fs/mkdirs mem "/tmp/user/.config")
+          (fs/spit   mem "/tmp/user/.config/isaac.edn" "{:root \"/tmp/pointer\"}")
+          (should= 0 (sut/run ["--root" "/tmp/flag" "root-flag-dispatch"])))
+        (should= "/tmp/flag" (:root @received))
+        (should= [] (:_raw-args @received))))
+
+    (it "legacy --home flag still works as an alias that appends /.isaac"
       (let [received (atom nil)
             mem      (fs/mem-fs)]
         (registry/register! {:name   "home-flag-dispatch"
@@ -70,13 +86,10 @@
                              :usage  "home-flag-dispatch"
                              :option-spec []
                              :run-fn (fn [opts] (reset! received opts) 0)})
-        (binding [home/*user-home* "/tmp/user"
+        (binding [root/*user-home* "/tmp/user"
                   sut/*extra-opts* {:fs mem}]
-          (fs/mkdirs mem "/tmp/user/.config")
-          (fs/spit   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
-          (should= 0 (sut/run ["--home" "/tmp/flag" "home-flag-dispatch"])))
-        (should= "/tmp/flag" (:home @received))
-        (should= [] (:_raw-args @received))))
+          (should= 0 (sut/run ["--home" "/tmp/legacy" "home-flag-dispatch"])))
+        (should= "/tmp/legacy/.isaac" (:root @received))))
 
     (it "returns exit code from command run-fn"
       (registry/register! {:name   "fail-cmd"
@@ -127,7 +140,7 @@
       (let [output (with-out-str (should= 0 (sut/run ["--help"])))]
         (should-contain "Usage: isaac [options] <command> [args]" output)
         (should-contain "Global Options:" output)
-        (should-contain "--home <dir>" output)
+        (should-contain "--root <dir>" output)
         (should-contain "~/.config/isaac.edn" output)
         (should-contain "--help, -h" output)
         (should-contain "Commands:" output))))
@@ -230,7 +243,7 @@
                                            ([opts] (reset! init-opts opts)))
                       nexus/register!   (fn [& _])
                       store/register!    (fn [& _])
-                      home/resolve-home  (fn [_ _ _] "/tmp/home")]
+                      root/resolve-root  (fn [& _] "/tmp/home")]
           (binding [sut/*extra-opts* {:fs mem}]
             (should= 0 (sut/run ["fs-init"]))))
         (should= mem (:fs @init-opts))))))

@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.main :as main]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]
@@ -21,7 +21,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
-      (binding [home/*user-home* "/test/home"
+      (binding [root/*user-home* "/test/home"
                 shell/*sh*       (fn [& _]
                                     {:exit 0 :out "" :err ""})]
         (example))))

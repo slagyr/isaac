@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.service.macos :as sut]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]
@@ -22,7 +22,7 @@
     (let [mem (fs/mem-fs)]
       (nexus/-with-nested-nexus {:fs mem}
         (binding [*fs*             mem
-                  home/*user-home* "/test/home"]
+                  root/*user-home* "/test/home"]
           (example)))))
 
   (describe "plist-content"

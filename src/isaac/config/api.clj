@@ -16,7 +16,7 @@
     [isaac.config.install :as install]
     [isaac.config.loader :as loader]
     [isaac.config.paths :as paths]
-    [isaac.home :as home]))
+    [isaac.root :as root]))
 
 ;; ----- loading & snapshot -----
 
@@ -75,7 +75,7 @@
    (the resolved snapshot) instead."
   [opts]
   (or (:state-dir opts)
-      (paths/default-state-dir (or (:home opts) (home/user-home)))))
+      (paths/default-state-dir (or (:home opts) (root/user-home)))))
 
 ;; ----- env -----
 

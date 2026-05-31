@@ -1,9 +1,9 @@
 (ns isaac.config.paths
-  "Filesystem layout knowledge for Isaac config. Pure path
-   construction — no I/O. The state directory is the canonical root: config
-   lives at <state-dir>/config and runtime data (crew, sessions, memory) under
-   <state-dir>. In production the state dir defaults to ~/.isaac, but any
-   directory is valid."
+  "Filesystem layout knowledge for Isaac config. Pure path construction — no
+   I/O. The root directory is the canonical home for config and runtime data:
+   config lives at <root>/config and runtime data (crew, sessions, memory)
+   under <root>. In production the root defaults to ~/.isaac, but any
+   directory is valid (see isaac.root/default-root)."
   (:require [clojure.string :as str]))
 
 (def ^:private entity-file-pattern #"[^/]+/[^/]+\.edn")
@@ -12,18 +12,21 @@
 (def root-filename "isaac.edn")
 
 (defn default-state-dir
-  "The default state directory for a user home directory (~/.isaac)."
+  "Legacy helper: derive the Isaac data dir from a parent `home` (returns
+   `<home>/.isaac`). Kept as a transitional shim for callers that still
+   pass :home in opts; prefer isaac.root/default-root or pass :root
+   directly."
   [home]
   (str home "/.isaac"))
 
-(defn config-root [state-dir]
-  (str state-dir "/config"))
+(defn config-root [root]
+  (str root "/config"))
 
-(defn config-path [state-dir relative]
-  (str (config-root state-dir) "/" relative))
+(defn config-path [root relative]
+  (str (config-root root) "/" relative))
 
-(defn root-config-file [state-dir]
-  (config-path state-dir root-filename))
+(defn root-config-file [root]
+  (config-path root root-filename))
 
 (defn entity-relative [kind id]
   (str (name kind) "/" id ".edn"))
@@ -37,8 +40,8 @@
 (defn hook-relative [id]
   (str "hooks/" id ".md"))
 
-(defn config-relative [state-dir path]
-  (let [root-prefix (str (config-root state-dir) "/")]
+(defn config-relative [root path]
+  (let [root-prefix (str (config-root root) "/")]
     (when (str/starts-with? path root-prefix)
       (subs path (count root-prefix)))))
 

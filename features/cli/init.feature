@@ -110,11 +110,11 @@ Feature: isaac init
     Then the stderr contains "no config found; run `isaac init` or create /tmp/does-not-exist/.isaac/config/isaac.edn"
     And the exit code is 1
 
-  Scenario: pointer file targeting a home with no config surfaces the no-config error
+  Scenario: pointer file targeting a root with no config surfaces the no-config error
     Given the file "/tmp/user/.config/isaac.edn" exists with:
       """
-      {:home "/tmp/empty-home"}
+      {:root "/tmp/empty-root"}
       """
     When isaac is run with "config get defaults.crew"
-    Then the stderr contains "no config found; run `isaac init` or create /tmp/empty-home/.isaac/config/isaac.edn"
+    Then the stderr contains "no config found; run `isaac init` or create /tmp/empty-root/config/isaac.edn"
     And the exit code is 1

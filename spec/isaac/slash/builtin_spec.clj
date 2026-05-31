@@ -3,7 +3,7 @@
     [isaac.config.api :as config]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.nexus :as nexus]
     [isaac.session.store :as store]
     [isaac.session.store.memory :as memory]
@@ -28,7 +28,7 @@
                (#'sut/resolve-cwd-path {:state-dir test-dir} "/tmp/workspace")))
 
     (it "expands home-relative paths"
-      (with-redefs [home/user-home (fn [] "/Users/spec")]
+      (with-redefs [root/user-home (fn [] "/Users/spec")]
         (should= "/Users/spec/project"
                  (#'sut/resolve-cwd-path {:state-dir test-dir} "~/project"))))
 

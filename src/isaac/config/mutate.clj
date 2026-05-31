@@ -113,8 +113,8 @@
            :entity?       entity?
            :field-path    field-path
            :path          path-str
-           :root-key      root-key
-           :root-path     (if entity? [(first segments) (second segments)] [(first segments)])
+           :state-dir-key      root-key
+           :state-dir-path     (if entity? [(first segments) (second segments)] [(first segments)])
            :segments      segments
            :soul?         (and entity? (= :crew root-key) (= [:soul] field-path))
            :whole-entity? (and entity? (= 2 (count segments)))})))))
@@ -122,7 +122,7 @@
 (defn- config-state [state-dir parsed]
   (let [root-path         (paths/root-config-file state-dir)
         root-data         (or (read-edn-path root-path) {})
-        entity-relative   (when (:entity? parsed) (paths/entity-relative (:root-key parsed) (:entity-id parsed)))
+        entity-relative   (when (:entity? parsed) (paths/entity-relative (:state-dir-key parsed) (:entity-id parsed)))
         entity-path       (when entity-relative (paths/config-path state-dir entity-relative))
         entity-data       (or (some-> entity-path read-edn-path) {})
         soul-relative     (when (:soul? parsed) (paths/soul-relative (:entity-id parsed)))
@@ -131,14 +131,14 @@
      :entity-exists?        (boolean (and entity-path (fs/exists? (runtime-fs) entity-path)))
      :entity-path           entity-path
      :entity-relative       entity-relative
-     :entity-root-exists?   (and (:entity? parsed) (path-present? root-data (:root-path parsed)))
+     :entity-root-exists?   (and (:entity? parsed) (path-present? root-data (:state-dir-path parsed)))
      :inline-entity-soul?   (and (:soul? parsed) (path-present? entity-data [:soul]))
      :inline-root-soul?     (and (:soul? parsed) (path-present? root-data (:segments parsed)))
      :md-exists?            (boolean (and soul-path (fs/exists? (runtime-fs) soul-path)))
      :prefer-entity-files?  (true? (value-at-path root-data [:prefer-entity-files]))
-     :root-data             root-data
-     :root-path-exists?     (path-present? root-data (:segments parsed))
-     :root-path             root-path
+     :state-dir-data             root-data
+     :state-dir-path-exists?     (path-present? root-data (:segments parsed))
+     :state-dir-path             root-path
      :soul-path             soul-path
      :soul-relative         soul-relative}))
 
@@ -163,17 +163,17 @@
 (defn- choose-set-location [parsed state]
   (cond
     (and (:soul? parsed) (:md-exists? state)) :md
-    (and (:soul? parsed) (:inline-root-soul? state)) :root
+    (and (:soul? parsed) (:inline-root-soul? state)) :state-dir
     (and (:soul? parsed) (:inline-entity-soul? state)) :entity
-    (and (:entity? parsed) (:entity-root-exists? state)) :root
+    (and (:entity? parsed) (:entity-root-exists? state)) :state-dir
     (and (:entity? parsed) (:entity-exists? state)) :entity
     (and (:entity? parsed) (:prefer-entity-files? state)) :entity
-    :else :root))
+    :else :state-dir))
 
 (defn- choose-unset-location [parsed state]
   (cond
     (and (:soul? parsed) (:md-exists? state)) :md
-    (:root-path-exists? state) :root
+    (:state-dir-path-exists? state) :state-dir
     (and (:entity? parsed)
          (or (and (:whole-entity? parsed) (:entity-exists? state))
              (path-present? (:entity-data state) (:field-path parsed)))) :entity
@@ -205,7 +205,7 @@
             (update-edn-file (:entity-relative state) entity-data')))
 
       :else
-      (let [root-data' (assoc-path (:root-data state) (:segments parsed) value)]
+      (let [root-data' (assoc-path (:state-dir-data state) (:segments parsed) value)]
         (-> {:deletes #{} :file paths/root-filename :writes {}}
             (update-edn-file paths/root-filename root-data'))))))
 
@@ -222,8 +222,8 @@
         (-> {:deletes #{} :file (:entity-relative state) :writes {}}
             (update-edn-file (:entity-relative state) entity-data')))
 
-      :root
-      (let [root-data' (dissoc-path (:root-data state) (:segments parsed))]
+      :state-dir
+      (let [root-data' (dissoc-path (:state-dir-data state) (:segments parsed))]
         (-> {:deletes #{} :file paths/root-filename :writes {}}
             (update-edn-file paths/root-filename root-data'))))))
 

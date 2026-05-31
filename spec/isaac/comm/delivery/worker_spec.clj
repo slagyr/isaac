@@ -5,7 +5,7 @@
     [isaac.comm.delivery.worker :as sut]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.logger :as log]
     [isaac.scheduler :as scheduler]
     [isaac.spec-helper :as helper]
@@ -35,7 +35,7 @@
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
-      (binding [home/*state-dir*         "/test/isaac"
+      (binding [root/*root*         "/test/isaac"
                 comm-registry/*registry* (atom (comm-registry/fresh-registry))]
         (it))))
 

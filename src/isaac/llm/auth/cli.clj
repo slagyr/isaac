@@ -7,7 +7,7 @@
     [isaac.llm.auth.store :as auth-store]
     [isaac.cli :as registry]
     [isaac.config.api :as config]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.fs :as fs]))
 
 ;; region ----- Login -----
@@ -21,8 +21,8 @@
     (if (str/blank? key)
       (do (println "Error: API key is required")
           1)
-      (let [sdir (or (:state-dir (config/load-config! (home/state-dir) (fs/instance) "auth cli: key login"))
-                     (home/state-dir))]
+      (let [sdir (or (:state-dir (config/load-config! (root/current-root) (fs/instance) "auth cli: key login"))
+                     (root/current-root))]
         (auth-store/save-api-key! sdir provider-name key (fs/instance))
         (println (str "Authenticated with " provider-name " via API key"))
         0))
@@ -30,7 +30,7 @@
         1)))
 
 (defn- auth-dir []
-  (home/state-dir))
+  (root/current-root))
 
 (defn- login-device-code [provider-name]
   (println "Requesting device code...")
@@ -111,7 +111,7 @@
 ;; region ----- Status -----
 
 (defn- status [_opts]
-  (let [cfg (config/load-config! (home/state-dir) (fs/instance) "auth cli: status")]
+  (let [cfg (config/load-config! (root/current-root) (fs/instance) "auth cli: status")]
     (println "Provider status:")
     (doseq [[name p] (or (seq (:providers cfg)) [["ollama" {}]])]
       (case name

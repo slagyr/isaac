@@ -1,21 +1,23 @@
-Feature: Home-pointer config file
-  Isaac locates its home directory via a lookup chain. A pointer file
+Feature: Root-pointer config file
+  Isaac locates its root directory via a lookup chain. A pointer file
   at ~/.config/isaac.edn (or ~/.isaac.edn as fallback) can specify
-  an alternate home, avoiding --home on every command.
+  an alternate root, avoiding --root on every command.
 
   Lookup order (first hit wins):
-    1. --home CLI flag
-    2. ~/.config/isaac.edn with {:home "/path"}
-    3. ~/.isaac.edn with {:home "/path"}
-    4. ~/.isaac/ (built-in default)
+    1. --root CLI flag
+    2. --home CLI flag (LEGACY alias, appends /.isaac)
+    3. ISAAC_ROOT environment variable
+    4. ~/.config/isaac.edn with {:root "/path"}
+    5. ~/.isaac.edn with {:root "/path"}
+    6. ~/.isaac (built-in default)
 
   Background:
     Given the user home directory is "/tmp/user"
 
-  Scenario: Isaac reads its home from ~/.config/isaac.edn
+  Scenario: Isaac reads its root from ~/.config/isaac.edn
     Given the file "/tmp/user/.config/isaac.edn" exists with:
       """
-      {:home "/tmp/elsewhere"}
+      {:root "/tmp/elsewhere/.isaac"}
       """
     And the file "/tmp/elsewhere/.isaac/config/isaac.edn" exists with:
       """
@@ -28,10 +30,10 @@ Feature: Home-pointer config file
     Then the stdout contains "llama"
     And the exit code is 0
 
-  Scenario: --home flag overrides the pointer file
+  Scenario: --root flag overrides the pointer file
     Given the file "/tmp/user/.config/isaac.edn" exists with:
       """
-      {:home "/tmp/pointer-path"}
+      {:root "/tmp/pointer-path/.isaac"}
       """
     And the file "/tmp/pointer-path/.isaac/config/isaac.edn" exists with:
       """
@@ -47,7 +49,7 @@ Feature: Home-pointer config file
        :models {:flag {:model "flag" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "--home /tmp/flag-path config get defaults.model"
+    When isaac is run with "--root /tmp/flag-path/.isaac config get defaults.model"
     Then the stdout contains "flag"
     And the stdout does not contain "pointer"
     And the exit code is 0

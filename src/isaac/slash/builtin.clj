@@ -5,7 +5,7 @@
     [isaac.config.api :as config]
     [isaac.effort :as effort]
      [isaac.fs :as fs]
-     [isaac.home :as home]
+     [isaac.root :as root]
      [isaac.logger :as log]
      [isaac.module.loader :as module-loader]
      [isaac.session.store :as store]
@@ -76,7 +76,7 @@
   (let [state-dir (or (get-in ctx [:config :state-dir]) (:state-dir ctx) (config/state-dir))]
     (cond
       (str/starts-with? path "/") path
-      (str/starts-with? path "~/") (str (home/user-home) (subs path 1))
+      (str/starts-with? path "~/") (str (root/user-home) (subs path 1))
       (nil? state-dir) (throw (ex-info "cwd command requires :state-dir for relative paths" {:path path}))
       :else (str state-dir "/" path))))
 

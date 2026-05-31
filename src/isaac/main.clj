@@ -7,9 +7,9 @@
     [isaac.config.api :as config]
     [isaac.config.paths :as paths]
     [isaac.fs :as fs]
-    [isaac.home :as home]
     [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
+    [isaac.root :as root]
     [isaac.version :as version]
     isaac.llm.auth.cli
     isaac.config.cli.command
@@ -34,10 +34,10 @@
     (coll? x)   (mapv substitute-env x)
     :else        x))
 
-(defn- register-module-cli-commands! [state-dir fs*]
+(defn- register-module-cli-commands! [root fs*]
   (registry/clear-module-commands!)
-  (when state-dir
-    (let [config-file (paths/root-config-file state-dir)]
+  (when root
+    (let [config-file (paths/root-config-file root)]
       (when (fs/exists? fs* config-file)
         (try
           (nexus/-with-nested-nexus {:fs fs*}
@@ -55,8 +55,8 @@
         max-len (if (seq cmds) (apply max (map #(count (:name %)) cmds)) 0)]
     (str "Usage: isaac [options] <command> [args]\n\n"
          "Global Options:\n"
-         "  --home <dir>    Override Isaac's home directory (default: ~/.isaac)\n"
-         "                  May also be set via ~/.config/isaac.edn or ~/.isaac.edn\n"
+         "  --root <dir>    Override Isaac's root directory (default: ~/.isaac)\n"
+         "                  May also be set via ISAAC_ROOT, ~/.config/isaac.edn, or ~/.isaac.edn\n"
          "  --help, -h      Show this message\n\n"
          "Commands:\n"
          (str/join "\n" (map (fn [cmd]
@@ -80,15 +80,15 @@
 (defn run
   "Run the CLI. Returns exit code."
   [args]
-  (let [{:keys [args home]} (home/extract-home-flag args)
-         args (resolve-alias args)
+  (let [{after-root :args :keys [root]} (root/extract-root-flag args)
+         {after-home :args :keys [home]} (root/extract-home-flag after-root)
+         args (resolve-alias after-home)
          cmd  (first args)
          opts (rest args)
          extra-opts    (or *extra-opts* {})
          fs*           (startup-fs extra-opts)
-         resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)) fs*)
-         state-dir     (or (:state-dir extra-opts) (str resolved-home "/.isaac"))]
-    (register-module-cli-commands! state-dir fs*)
+         resolved-root (root/resolve-root root home (:state-dir extra-opts) fs*)]
+    (register-module-cli-commands! resolved-root fs*)
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
       (do (println (usage)) 0)
@@ -105,12 +105,15 @@
 
        :else
        (if-let [command (registry/get-command cmd)]
-         (binding [home/*resolved-home* resolved-home
-                   home/*state-dir*     state-dir]
+         (binding [root/*root* resolved-root]
             (nexus/-with-nested-nexus {:fs fs*}
               (nexus/init! {:fs fs*})
-              (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
-                                                        :home         resolved-home
+              ;; :root is the new public name for the data directory; :state-dir is the
+              ;; legacy internal key kept as a synonym until follow-up cleanup (see
+              ;; isaac-root bean PR 2/3). Every consumer can read either.
+              (or ((:run-fn command) (merge extra-opts {:display-root (or root home resolved-root)
+                                                        :root         resolved-root
+                                                        :state-dir    resolved-root
                                                         :_raw-args    (vec opts)})) 0)))
           (do (println (str "Unknown command: " cmd))
               (println (usage))

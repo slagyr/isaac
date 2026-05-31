@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
 
@@ -45,7 +45,7 @@
       (str/replace "{HOME}"    (or home ""))
       (str/replace "{LOG_DIR}" log-dir)))
 
-(defn- user-home [] (home/user-home))
+(defn- user-home [] (root/user-home))
 (defn- plist-path [] (str (user-home) "/Library/LaunchAgents/" label ".plist"))
 (defn- log-dir []   (str (user-home) "/Library/Logs/isaac"))
 

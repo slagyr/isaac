@@ -16,7 +16,7 @@
     [isaac.comm.delivery.worker :as worker]
     [isaac.comm.registry :as comm-registry]
     [isaac.bridge.status :as bridge-status]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.scheduler :as scheduler-core]
     [isaac.slash.registry :as slash-registry]
     [isaac.nexus :as nexus]
@@ -621,7 +621,7 @@
 (defn- with-stub-comm [state-dir f]
   (let [reg (assoc (comm-registry/fresh-registry) :instances {"stub" (->StubComm)})]
     (binding [comm-registry/*registry* (atom reg)
-              home/*state-dir*         state-dir]
+              root/*root*         state-dir]
       (f))))
 
 (defn delivery-worker-ticks []

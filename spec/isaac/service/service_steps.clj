@@ -5,7 +5,7 @@
     [clojure.data.xml :as xml]
     [gherclj.core :as g :refer [defgiven defthen helper!]]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.root :as root]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
 
@@ -16,8 +16,8 @@
 
 (defn- expand-path [path]
   (cond
-    (= "~" path)                  (home/user-home)
-    (str/starts-with? path "~/")  (str (home/user-home) (subs path 1))
+    (= "~" path)                  (root/user-home)
+    (str/starts-with? path "~/")  (str (root/user-home) (subs path 1))
     (str/starts-with? path "<uid>") (str/replace path "<uid>" (uid-placeholder))
     (str/starts-with? path "/")   path
     :else                         (str (or (g/get :state-dir) (System/getProperty "user.dir")) "/" path)))
@@ -106,7 +106,7 @@
   (let [calls   (or (g/get :launchctl-calls) [])
         norm    (fn [s] (-> s
                             (str/replace "<uid>" "501")
-                            (str/replace "~" (home/user-home))
+                            (str/replace "~" (root/user-home))
                             str/trim))
         pattern (norm expected)]
     (g/should (some (fn [call]
