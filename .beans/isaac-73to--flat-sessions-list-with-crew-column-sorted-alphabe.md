@@ -1,10 +1,11 @@
 ---
 # isaac-73to
 title: Flat sessions list with crew column, sorted alphabetically
-status: todo
+status: completed
 type: feature
+priority: normal
 created_at: 2026-06-03T08:56:24Z
-updated_at: 2026-06-03T08:56:24Z
+updated_at: 2026-06-03T14:42:35Z
 ---
 
 Replace the crew-grouped session listing with one flat alphabetical
@@ -47,3 +48,15 @@ CREW column").
 - `tagged-session-columns` already includes CREW + TAGS — preserve
   the "TAGS appear when any session has tags" branch for both code
   paths.
+
+## Summary of Changes
+
+- `src/isaac/session/cli.clj`:
+  - New `default-session-columns` (session-columns + CREW), used when no `--crew` filter.
+  - `list-all` now returns a single vector of sessions sorted alphabetically by name (was `{crew-id -> sessions-by-date}`). No external callers, so no shim needed.
+  - Replaced `print-crew-sessions` with `print-session-table`: one table, picks columns by (any tags? → tagged-session-columns; crew-filter? → session-columns; else → default-session-columns).
+  - `run` drops the by-crew grouping for both the text and JSON/EDN paths; sessions are flat, sorted by name.
+
+- `features/session/cli.feature`: removed @wip; the spaced patterns were hand-counted with a 3-space gap but the table renderer (and the already-passing `--crew main` scenario at L57) uses a 2-space gap, so the expected patterns were adjusted to match the actual aligned output.
+
+bb features features/session/cli.feature 11/0; bb spec 1807/0; bb features 726/0.

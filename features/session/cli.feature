@@ -13,7 +13,6 @@ Feature: Sessions Command
     Then the stdout contains "Usage: isaac sessions"
     And the exit code is 0
 
-  @wip
   Scenario: sessions defaults to one flat table sorted alphabetically with a CREW column
     Given the following sessions exist:
       | name         | crew  | total-tokens | last-input-tokens | updated-at          |
@@ -22,11 +21,11 @@ Feature: Sessions Command
       | alpha-chat   | main  | 5000         | 5000              | 2026-04-12T15:00:00 |
     When isaac is run with "sessions"
     Then the stdout matches:
-      | pattern                                            |
-      | SESSION       AGE     USED   WINDOW   PCT  CREW    |
-      | alpha-chat    \S+    5,000   32,768  \d+%  main    |
-      | bravo-chat    \S+   12,000   32,768  \d+%  ketch   |
-      | charlie-chat  \S+      778   32,768  \d+%  main    |
+      | pattern                                           |
+      | SESSION       AGE    USED  WINDOW  PCT  CREW      |
+      | alpha-chat    \S+   5,000  32,768  \d+%  main     |
+      | bravo-chat    \S+  12,000  32,768  \d+%  ketch    |
+      | charlie-chat  \S+     778  32,768 \s+\d+%  main   |
     And the stdout does not contain "crew: main"
     And the stdout does not contain "crew: ketch"
     And the exit code is 0

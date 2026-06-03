@@ -89,6 +89,10 @@
                  (let [p (or p 0)]
                    (cond (> p 100) :red (>= p 80) :yellow :else nil)))}])
 
+(def ^:private default-session-columns
+  (conj session-columns
+        {:key :crew :header "CREW" :align :left}))
+
 (def ^:private tagged-session-columns
   [{:key :name   :header "Name"    :align :left}
    {:key :age    :header "AGE"     :align :right}
@@ -137,19 +141,17 @@
       (update :tags #(or % #{}))))
 
 (defn list-all
-  "Returns a map of crew-id -> sessions (sorted by updated-at desc).
-    Sessions without an explicit crew are grouped under 'main'.
-    When crew-filter is provided, only that crew member is included."
+  "Returns a vector of sessions sorted alphabetically by name. When
+    crew-filter is provided, only sessions for that crew member are
+    included. Sessions without an explicit crew are treated as 'main'."
   ([crew-filter]
    (list-all (nexus/get-in [:sessions :store]) crew-filter))
   ([explicit-store crew-filter]
    (let [session-store (session-store explicit-store)]
      (->> (store/list-sessions session-store)
           (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
-         (group-by #(or (:crew %) "main"))
-         (map (fn [[crew-id sessions]]
-                [crew-id (->> sessions (sort-by :updated-at) reverse vec)]))
-         (into {})))))
+          (sort-by #(or (:key %) (:id %)))
+          vec))))
 
 ;; endregion ^^^^^ Data ^^^^^
 
@@ -162,18 +164,23 @@
         model-cfg (get-in cfg [:models model-id])]
     (or (:context-window model-cfg) 32768)))
 
-(defn- print-crew-sessions [crew-id sessions cfg color?]
-  (println (str "crew: " crew-id))
-  (if (empty? sessions)
-    (println "  (no sessions)")
-    (let [cw            (resolve-context-window cfg crew-id)
-          session-store (or (store/registered-store) (nexus/get-in [:sessions :store]))
-          rows          (mapv #(session->row % cw session-store) sessions)
-          columns       (if (some (comp seq :tags) sessions) tagged-session-columns session-columns)]
-      (println (table/render {:columns  columns
-                                 :rows     rows
-                                 :zebra?   true
-                                 :color?   color?})))))
+(defn- print-session-table [sessions cfg crew-filter color?]
+  (let [session-store (or (store/registered-store) (nexus/get-in [:sessions :store]))
+        ;; Per-session context-window resolution: each row uses its own
+        ;; crew's window. (When a --crew filter is set, every session
+        ;; resolves through the same crew, which matches prior behavior.)
+        rows          (mapv (fn [entry]
+                              (let [cw (resolve-context-window cfg (or (:crew entry) "main"))]
+                                (session->row entry cw session-store)))
+                            sessions)
+        columns       (cond
+                        (some (comp seq :tags) sessions) tagged-session-columns
+                        crew-filter                      session-columns
+                        :else                            default-session-columns)]
+    (println (table/render {:columns columns
+                            :rows    rows
+                            :zebra?  true
+                            :color?  color?}))))
 
 (defn- print-session-data [value opts]
   (cond
@@ -330,34 +337,26 @@
           (binding [*out* *err*]
             (println (str "unknown crew: " crew-filter)))
           1)
-        (let [required-tags    (set (map keyword (:tag opts)))
-              sessions         (->> (store/list-sessions session-store)
-                                    (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
-                                    (filter #(every? (fn [tag] (store/has-tag? % tag)) required-tags))
-                                    (filter #(if (:in-flight opts) (store/in-flight? session-store (:id %)) true))
-                                    (filter #(if (:not-in-flight opts) (not (store/in-flight? session-store (:id %))) true)))
-              sessions-by-crew (->> sessions
-                                    (group-by #(or (:crew %) "main"))
-                                    (map (fn [[crew-id grouped]] [crew-id (->> grouped (sort-by :updated-at) reverse vec)]))
-                                    (into {}))
-              color?           (effective-color? opts)]
+        (let [required-tags (set (map keyword (:tag opts)))
+              sessions      (->> (store/list-sessions session-store)
+                                 (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
+                                 (filter #(every? (fn [tag] (store/has-tag? % tag)) required-tags))
+                                 (filter #(if (:in-flight opts) (store/in-flight? session-store (:id %)) true))
+                                 (filter #(if (:not-in-flight opts) (not (store/in-flight? session-store (:id %))) true))
+                                 (sort-by #(or (:key %) (:id %)))
+                                 vec)
+              color?        (effective-color? opts)]
           (cond
-            (and (or (:json opts) (:edn opts)) (empty? sessions-by-crew))
-            (print-session-data [] opts)
-
             (or (:json opts) (:edn opts))
             (print-session-data
-              (vec (for [[crew-id grouped] (sort-by key sessions-by-crew)
-                         session            grouped]
-                     (session->payload (assoc session :crew (or (:crew session) crew-id)))))
+              (mapv #(session->payload (assoc % :crew (or (:crew %) "main"))) sessions)
               opts)
 
-            (empty? sessions-by-crew)
+            (empty? sessions)
             (println "no sessions found")
 
             :else
-            (doseq [[crew-id grouped] (sort-by key sessions-by-crew)]
-              (print-crew-sessions crew-id grouped cfg color?)))
+            (print-session-table sessions cfg crew-filter color?))
           0)))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
