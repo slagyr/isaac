@@ -13,18 +13,22 @@ Feature: Sessions Command
     Then the stdout contains "Usage: isaac sessions"
     And the exit code is 0
 
-  Scenario: sessions lists all sessions
+  @wip
+  Scenario: sessions defaults to one flat table sorted alphabetically with a CREW column
     Given the following sessions exist:
-      | name         | total-tokens | updated-at           |
-      | design-chat  | 5000        | 2026-04-12T15:00:00 |
-      | review-chat  | 778         | 2026-04-12T10:00:00 |
-      | pirate-chat  | 12000       | 2026-04-11T10:00:00 |
+      | name         | crew  | total-tokens | last-input-tokens | updated-at          |
+      | charlie-chat | main  | 778          | 778               | 2026-04-12T10:00:00 |
+      | bravo-chat   | ketch | 12000        | 12000             | 2026-04-11T10:00:00 |
+      | alpha-chat   | main  | 5000         | 5000              | 2026-04-12T15:00:00 |
     When isaac is run with "sessions"
     Then the stdout matches:
-      | pattern      |
-      | design-chat  |
-      | review-chat  |
-      | pirate-chat  |
+      | pattern                                            |
+      | SESSION       AGE     USED   WINDOW   PCT  CREW    |
+      | alpha-chat    \S+    5,000   32,768  \d+%  main    |
+      | bravo-chat    \S+   12,000   32,768  \d+%  ketch   |
+      | charlie-chat  \S+      778   32,768  \d+%  main    |
+    And the stdout does not contain "crew: main"
+    And the stdout does not contain "crew: ketch"
     And the exit code is 0
 
   Scenario: sessions --crew filters by current crew member
