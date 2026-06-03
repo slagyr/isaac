@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-06-03T08:56:24Z
-updated_at: 2026-06-03T15:51:30Z
+updated_at: 2026-06-03T20:19:39Z
 ---
 
 Replace the crew-grouped session listing with one flat alphabetical
