@@ -4,10 +4,8 @@ title: Expose resolved commands over ACP (available-commands advertisement)
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-26T04:21:33Z
-updated_at: 2026-05-28T05:20:27Z
+updated_at: 2026-06-03T06:01:37Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5
@@ -32,3 +30,12 @@ ACP is the `../isaac-acp` sibling repo. The advertisement plumbing already exist
 **Scope:** mostly main-repo (register config commands into `slash-registry/all-commands` with description + a params-derived hint — overlaps isaac-dbg1) + an isaac-acp transform mapping the command's params to ACP `input.hint` if needed.
 
 Cross-repo (isaac-acp). Blocked by isaac-8qd5 (catalog) and effectively isaac-dbg1 (command registration).
+
+
+
+## Verification failed
+
+HEAD: 5c24201d35e3d1c532c2b560365933b53c8b9067
+Working tree: clean
+
+Acceptance check 1 failed. I found no top-level ## Exceptions section in the bean. The bean explicitly references ../isaac-acp/features/comm/acp/slash_commands.feature and says an @wip scenario was committed there in isaac-acp commit b6c9bbb, but the current sibling checkout at f554ccf640e388c1b4d00710d62e2a582ac5cf42 does not contain that commit and the feature file does not contain the advertised config-command scenario at all. Current git log for that feature only shows 316464e, and the file currently has only the base status-command scenarios. Because the cross-repo spec artifact required by the bean is absent from the checkout I can verify, I stopped before the test gate.
