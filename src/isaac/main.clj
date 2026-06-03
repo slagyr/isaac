@@ -87,7 +87,10 @@
          opts (rest args)
          extra-opts    (or *extra-opts* {})
          fs*           (startup-fs extra-opts)
-         resolved-root (root/resolve-root root home (:state-dir extra-opts) fs*)]
+         ;; --home is the user-facing override; programmatic callers (tests,
+         ;; embedding) can pass an equivalent via *extra-opts*'s :home so the
+         ;; same root-resolution chain runs without re-parsing argv.
+         resolved-root (root/resolve-root root (or home (:home extra-opts)) (:state-dir extra-opts) fs*)]
     (register-module-cli-commands! resolved-root fs*)
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
