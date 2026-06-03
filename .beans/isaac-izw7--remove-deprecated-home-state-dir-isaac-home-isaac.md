@@ -4,8 +4,10 @@ title: Remove deprecated --home, :state-dir, :isaac-home, :isaac-state-dir, :hom
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-03T08:57:09Z
-updated_at: 2026-06-03T16:40:26Z
+updated_at: 2026-06-03T16:49:02Z
 ---
 
 Finish the isaac-root collapse by removing all backward-compat
@@ -61,6 +63,17 @@ The longer aliases live, the more new code is written against them.
 - Pointer-file migration helper. The umbrella `isaac-root` bean already
   chose breaking-change semantics (option a) — old `{:home ...}` pointer
   files just stop working.
+
+## Exceptions
+
+- Feature-file edits beyond `@wip` removal are authorized for the
+  root-terminology migration required by this bean. Specifically, the
+  implementation may rewrite existing step phrasing across the affected
+  feature corpus from legacy "Isaac state directory" / "empty Isaac
+  state directory" language to `root` language, and may make the
+  corresponding table/header wording updates needed to keep those
+  scenarios executable after the alias removal. These are mechanical
+  terminology migrations, not scenario-direction changes.
 
 ## Acceptance
 
