@@ -438,6 +438,11 @@
 (defn tool-result-contains [text]
   (g/should (str/includes? (result-text) text)))
 
+(defn- line-matches? [line needle]
+  (if (and (string? needle) (str/starts-with? needle "#\""))
+    (:pass? (match/match-object {:rows [["text" needle]]} {:text line}))
+    (str/includes? line needle)))
+
 (defn tool-result-lines-match [table]
   (let [lines     (vec (result-lines))
         headers   (:headers table)
@@ -454,13 +459,13 @@
               resolved    (resolve-index idx)
               line        (when (some? resolved) (nth lines resolved nil))]
           (g/should (some? resolved))
-          (g/should (str/includes? (or line "") needle))))
+          (g/should (line-matches? (or line "") needle))))
       (let [needles (mapv #(or (get % "text") (first (vals %))) row-maps)]
         (loop [needles needles
                from    0]
           (when-let [needle (first needles)]
             (let [idx (first (keep-indexed (fn [i line]
-                                             (when (and (<= from i) (str/includes? line needle)) i))
+                                             (when (and (<= from i) (line-matches? line needle)) i))
                                            lines))]
               (g/should (some? idx))
               (recur (rest needles) idx))))))))

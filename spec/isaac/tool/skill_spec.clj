@@ -59,10 +59,45 @@
       (should (:isError result))
       (should= "unknown skill: missing" (:error result))))
 
-  (it "errors when a resource is requested before resource loading ships"
+  (it "loads a bundled resource from a directory-packaged skill"
     (helper/create-session! "/test/isaac" "work-sess" {:crew "main" :cwd "/workspace/project"})
+    (write-skill! "/test/isaac/config/skills/greenhouse-protocol/SKILL.md"
+                  (str "---\n"
+                       "type: skill\n"
+                       "description: Use when tending specimens\n"
+                       "---\n\n"
+                       "Follow checklist.md."))
+    (write-skill! "/test/isaac/config/skills/greenhouse-protocol/checklist.md"
+                  "1. Check soil moisture.\n2. Quarantine new specimens.")
+    (should= {:result "1. Check soil moisture.\n2. Quarantine new specimens."}
+             (sut/load-skill-tool {"session_key" "work-sess"
+                                   "name"        "greenhouse-protocol"
+                                   "resource"    "checklist.md"})))
+
+  (it "rejects a resource path that escapes the skill directory"
+    (helper/create-session! "/test/isaac" "work-sess" {:crew "main" :cwd "/workspace/project"})
+    (write-skill! "/test/isaac/config/skills/greenhouse-protocol/SKILL.md"
+                  (str "---\n"
+                       "type: skill\n"
+                       "description: Use when tending specimens\n"
+                       "---\n\n"
+                       "Follow checklist.md."))
     (let [result (sut/load-skill-tool {"session_key" "work-sess"
                                        "name"        "greenhouse-protocol"
-                                       "resource"    "checklist.md"})]
+                                       "resource"    "../../auth.json"})]
       (should (:isError result))
-      (should= "skill resources are not supported yet" (:error result)))))
+      (should= "resource path escapes the skill directory: ../../auth.json" (:error result))))
+
+  (it "returns not found when the bundled resource does not exist"
+    (helper/create-session! "/test/isaac" "work-sess" {:crew "main" :cwd "/workspace/project"})
+    (write-skill! "/test/isaac/config/skills/greenhouse-protocol/SKILL.md"
+                  (str "---\n"
+                       "type: skill\n"
+                       "description: Use when tending specimens\n"
+                       "---\n\n"
+                       "Follow checklist.md."))
+    (let [result (sut/load-skill-tool {"session_key" "work-sess"
+                                       "name"        "greenhouse-protocol"
+                                       "resource"    "missing.md"})]
+      (should (:isError result))
+      (should= "skill resource not found: greenhouse-protocol/missing.md" (:error result)))))

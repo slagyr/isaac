@@ -4,8 +4,10 @@ title: Skill bundled reference files (directory-packaged skills)
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-26T04:31:32Z
-updated_at: 2026-06-03T05:21:31Z
+updated_at: 2026-06-03T05:45:30Z
 parent: isaac-nwj3
 blocked_by:
     - isaac-8qd5

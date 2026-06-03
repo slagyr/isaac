@@ -4,7 +4,8 @@
     [clj-yaml.core :as yaml]
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.tool.fs-bounds :as fs-bounds]))
 
 (def ^:private default-prompt-dir-names
   {"commands" :command
@@ -137,6 +138,9 @@
 (defn- entry-body [entry]
   (when-let [load-body (:body-loader entry)]
     (load-body)))
+
+(defn- join-resource-path [root path]
+  (str root "/" path))
 
 (defn- normalize-entry-name [value]
   (some-> value name))
@@ -296,6 +300,22 @@
           entry-body
           str/trim
           not-empty))
+
+(defn resolve-skill-resource [{:keys [config cwd fs state-dir]} skill-name resource-name]
+  (let [catalog    (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+        skill-entry (get-in catalog [:skills (normalize-entry-name skill-name)])]
+    (when skill-entry
+      (let [skill-dir      (fs/parent (:path skill-entry))
+            resource-path  (join-resource-path skill-dir resource-name)]
+        (cond
+          (not (fs-bounds/path-inside? skill-dir resource-path))
+          {:error :path-outside-skill}
+
+          (not (fs/file? fs resource-path))
+          {:error :resource-not-found}
+
+          :else
+          {:body (fs/slurp fs resource-path)})))))
 
 (defn resolve-rules-text [{:keys [config cwd fs state-dir]}]
   (some->> (:rules (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir}))

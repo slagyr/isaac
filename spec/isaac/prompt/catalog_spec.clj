@@ -280,6 +280,49 @@
                                       :state-dir state-dir}
                                      "greenhouse-protocol")))
 
+  (it "resolves a bundled skill resource by name"
+    (write-config-file! "config/skills/greenhouse-protocol/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use when tending specimens\n"
+                             "---\n\n"
+                             "Follow checklist.md."))
+    (write-config-file! "config/skills/greenhouse-protocol/checklist.md"
+                        "1. Check soil moisture.\n2. Quarantine new specimens.")
+    (should= {:body "1. Check soil moisture.\n2. Quarantine new specimens."}
+             (sut/resolve-skill-resource {:fs        (nexus/get :fs)
+                                          :state-dir state-dir}
+                                         "greenhouse-protocol"
+                                         "checklist.md")))
+
+  (it "rejects a bundled skill resource that escapes the skill directory"
+    (write-config-file! "config/skills/greenhouse-protocol/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use when tending specimens\n"
+                             "---\n\n"
+                             "Follow checklist.md."))
+    (should= {:error :path-outside-skill}
+             (select-keys (sut/resolve-skill-resource {:fs        (nexus/get :fs)
+                                                       :state-dir state-dir}
+                                                      "greenhouse-protocol"
+                                                      "../../auth.json")
+                          [:error])))
+
+  (it "returns a not found error when a bundled skill resource is missing"
+    (write-config-file! "config/skills/greenhouse-protocol/SKILL.md"
+                        (str "---\n"
+                             "type: skill\n"
+                             "description: Use when tending specimens\n"
+                             "---\n\n"
+                             "Follow checklist.md."))
+    (should= {:error :resource-not-found}
+             (select-keys (sut/resolve-skill-resource {:fs        (nexus/get :fs)
+                                                       :state-dir state-dir}
+                                                      "greenhouse-protocol"
+                                                      "missing.md")
+                          [:error])))
+
   (it "preserves prompt catalog config keys when config is loaded"
     (write-config-file! "config/isaac.edn"
                         "{:prompt-paths [\"config/prompts\"] :prompt-dir-names {\"abilities\" \"skill\"}}")

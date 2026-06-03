@@ -35,7 +35,19 @@
       (missing-session-error session-key)
 
       resource
-      {:isError true :error "skill resources are not supported yet"}
+      (let [result (prompt-catalog/resolve-skill-resource (catalog-opts args) skill-name resource)]
+        (cond
+          (:body result)
+          {:result (:body result)}
+
+          (= :path-outside-skill (:error result))
+          {:isError true :error (str "resource path escapes the skill directory: " resource)}
+
+          (= :resource-not-found (:error result))
+          {:isError true :error (str "skill resource not found: " skill-name "/" resource)}
+
+          :else
+          {:isError true :error (str "unknown skill: " skill-name)}))
 
       :else
       (if-let [body (prompt-catalog/resolve-skill-body (catalog-opts args) skill-name)]
@@ -53,10 +65,10 @@
                    "No skills discovered.")})))
 
 (defn load-skill-tool-factory [_]
-  {:description "Load the full body of a discovered skill by name."
+  {:description "Load the full body of a discovered skill by name, or a bundled resource from that skill's directory."
    :parameters  {:type       "object"
                  :properties {"name"     {:type "string" :description "Skill name to load"}
-                              "resource" {:type "string" :description "Optional bundled resource name for future skill assets"}}
+                              "resource" {:type "string" :description "Optional bundled resource path within the skill directory"}}
                  :required   ["name"]}
    :handler     #'load-skill-tool})
 

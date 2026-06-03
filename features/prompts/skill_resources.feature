@@ -1,4 +1,3 @@
-@wip
 Feature: Skill bundled resources via load_skill
   A skill packaged as a directory (<name>/SKILL.md) may bundle reference files.
   load_skill, shaped load_skill(name, [resource]), serves them: with a resource
