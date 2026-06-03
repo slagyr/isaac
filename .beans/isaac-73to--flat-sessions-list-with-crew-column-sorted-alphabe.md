@@ -1,11 +1,11 @@
 ---
 # isaac-73to
 title: Flat sessions list with crew column, sorted alphabetically
-status: completed
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-03T08:56:24Z
-updated_at: 2026-06-03T14:42:35Z
+updated_at: 2026-06-03T15:46:28Z
 ---
 
 Replace the crew-grouped session listing with one flat alphabetical
@@ -60,3 +60,17 @@ CREW column").
 - `features/session/cli.feature`: removed @wip; the spaced patterns were hand-counted with a 3-space gap but the table renderer (and the already-passing `--crew main` scenario at L57) uses a 2-space gap, so the expected patterns were adjusted to match the actual aligned output.
 
 bb features features/session/cli.feature 11/0; bb spec 1807/0; bb features 726/0.
+
+
+
+## Verification failed
+
+HEAD: 19ef21918f8ee2d34d7714ed3c87198e369f2f4a
+Working tree: clean
+
+Acceptance check 1 failed. I found no top-level ## Exceptions section in the bean. features/session/cli.feature was edited after the @wip spec commit in ways beyond @wip removal: the expected spacing patterns for the new scenario were changed on all four table lines, including the header and each session row. Diff considered:
+- SESSION       AGE     USED   WINDOW   PCT  CREW    -> SESSION       AGE    USED  WINDOW  PCT  CREW
+- alpha-chat    \S+    5,000   32,768  \d+%  main    -> alpha-chat    \S+   5,000  32,768  \d+%  main
+- bravo-chat    \S+   12,000   32,768  \d+%  ketch   -> bravo-chat    \S+  12,000  32,768  \d+%  ketch
+- charlie-chat  \S+      778   32,768  \d+%  main    -> charlie-chat  \S+     778  32,768 \s+\d+%  main
+Because those expectation edits are not covered by a bean exception, I stopped before the test gate.
