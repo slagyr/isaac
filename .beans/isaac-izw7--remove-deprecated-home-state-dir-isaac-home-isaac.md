@@ -4,10 +4,8 @@ title: Remove deprecated --home, :state-dir, :isaac-home, :isaac-state-dir, :hom
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-03T08:57:09Z
-updated_at: 2026-06-03T15:27:55Z
+updated_at: 2026-06-03T16:40:26Z
 ---
 
 Finish the isaac-root collapse by removing all backward-compat
@@ -101,3 +99,12 @@ Definition of done:
   `isaac.root/current-root` instead of `system/get :state-dir`. Confirm
   no other module repos (`isaac-discord`, `isaac-imessage`) still reach
   for the old nexus key.
+
+
+
+## Verification failed
+
+HEAD: 0fd778ea9f72d128cd527962b41f914159de53cc
+Working tree: clean
+
+Acceptance check 1 failed. I found no top-level ## Exceptions section in the bean. The implementation commit 19ef2191 edits a large set of feature files beyond @wip removal while the bean explicitly describes broad step-phrase rewrites across roughly 50 features (for example replacing "an in-memory Isaac state directory" / "an empty Isaac state directory" phrasing with "an Isaac root at"). Because the commit touches dozens of files under features/ and those edits are not authorized by a bean exception, I stopped before the test gate.
