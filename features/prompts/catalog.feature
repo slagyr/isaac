@@ -11,7 +11,7 @@ Feature: Prepared-prompt catalog (commands + skills)
   requirement, not a scenario here.)
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: a markdown file with type command is discovered as a command
     Given the isaac file "config/commands/work.md" exists with:

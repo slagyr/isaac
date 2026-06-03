@@ -3,7 +3,7 @@ Feature: Context Compaction Logging
   and preserves the new user message after compaction.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     Given config:
       | key        | value  |
       | log.output | memory |
@@ -346,7 +346,7 @@ Feature: Context Compaction Logging
       | 3      | message    |                   | assistant    | next answer             | new turn reply                          |
 
   Scenario: Crew compaction config with unknown :strategy is rejected
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:crew {:main {:compaction {:strategy :rainbow :threshold 100000}}}}

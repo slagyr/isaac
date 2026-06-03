@@ -24,7 +24,7 @@
 (defn register-comm!
   "Register a Comm factory under impl-name.
    factory is (fn [host-map] -> Comm-instance) where host-map contains
-   :state-dir and :connect-ws!.
+   :root and :connect-ws!.
    Returns impl-name (normalised to a string). Side-effects the global registry."
   [impl-name factory]
   (comm-registry/register-factory! impl-name factory))
@@ -50,18 +50,18 @@
    (session-store/open-session! (session-store/registered-store) identifier {}))
   ([identifier opts]
    (let [store        (or (:session-store opts) (session-store/registered-store))
-         session-opts (dissoc opts :state-dir :session-store)]
+         session-opts (dissoc opts :root :session-store)]
      (session-store/open-session! store identifier session-opts)))
-  ([state-dir identifier opts]
-   (session-store/open-session! (session-store/create state-dir) identifier opts)))
+  ([root identifier opts]
+   (session-store/open-session! (session-store/create root) identifier opts)))
 
 (defn get-session
   "Return the session map for identifier, or nil if not found.
    identifier may be a session name string, key string, or session map."
   ([identifier]
    (session-store/get-session (session-store/registered-store) identifier))
-  ([state-dir identifier]
-   (session-store/get-session (session-store/create state-dir) identifier)))
+  ([root identifier]
+   (session-store/get-session (session-store/create root) identifier)))
 
 (defn dispatch!
   "Comm-facing entry point for inbound messages. Triage slash commands,
@@ -69,5 +69,5 @@
    request must have :session-key and :input; see bridge/dispatch! for full shape."
   ([request]
    (bridge-impl/dispatch! (merge (nexus/necho) request)))
-  ([state-dir request]
-   (bridge-impl/dispatch! state-dir request)))
+  ([root request]
+   (bridge-impl/dispatch! root request)))

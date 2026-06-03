@@ -3,7 +3,7 @@ Feature: Anthropic API Key Authentication
   an API key from environment variables.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/claude.edn" exists with:
       | path | value |
       | model | claude-sonnet-4-6 |

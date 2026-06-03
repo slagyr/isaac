@@ -5,36 +5,36 @@
     [isaac.config.api :as config]
     [isaac.fs :as fs]))
 
-(defn- cron-state-path [state-dir]
-  (str state-dir "/cron.edn"))
+(defn- cron-state-path [root]
+  (str root "/cron.edn"))
 
 (defn- write-edn [value]
   (binding [*print-namespace-maps* false]
     (with-out-str (pprint/pprint value))))
 
-(defn- runtime-state-dir []
-  (or (config/state-dir) (throw (ex-info "cron state requires :state-dir" {}))))
+(defn- runtime-root []
+  (or (config/root) (throw (ex-info "cron state requires :root" {}))))
 
 (defn- runtime-fs! []
   (or (fs/instance) (throw (ex-info "cron state requires :fs in system" {}))))
 
 (defn read-state
   ([]
-   (read-state (runtime-state-dir)))
-  ([state-dir]
+   (read-state (runtime-root)))
+  ([root]
    (let [fs*  (runtime-fs!)
-          path (cron-state-path state-dir)]
+          path (cron-state-path root)]
      (if (fs/exists? fs* path)
        (or (edn/read-string (fs/slurp fs* path)) {})
         {}))))
 
 (defn write-job-state!
   ([job-name attrs]
-   (write-job-state! (runtime-state-dir) job-name attrs))
-  ([state-dir job-name attrs]
+   (write-job-state! (runtime-root) job-name attrs))
+  ([root job-name attrs]
    (let [fs*     (runtime-fs!)
-          path    (cron-state-path state-dir)
-          current (read-state state-dir)
+          path    (cron-state-path root)
+          current (read-state root)
          updated (update current (str job-name) #(merge (or % {}) attrs))]
      (fs/mkdirs fs* (fs/parent path))
      (fs/spit fs* path (write-edn updated))

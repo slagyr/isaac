@@ -32,7 +32,7 @@
    :allowed-tools []
    :boot-files    nil
    :effort        nil
-   :state-dir     test-dir
+   :root     test-dir
    :session-store (store/registered-store)
    :charge        charge})
 
@@ -95,7 +95,7 @@
   (describe "process-response!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -309,7 +309,7 @@
   (describe "perform-compaction!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -339,7 +339,7 @@
                                                         :model         "test-model"
                                                         :provider      provider
                                                         :soul          "You are Isaac."
-                                                        :state-dir     test-dir
+                                                        :root     test-dir
                                                         :session-store session-store})
           (let [session (helper/get-session test-dir session-key)]
             (should= true (:compaction-disabled session))
@@ -375,7 +375,7 @@
                                                         :model          "test-model"
                                                         :provider       provider
                                                         :soul           "You are Isaac."
-                                                        :state-dir      test-dir
+                                                        :root      test-dir
                                                         :session-store  session-store})
           (let [session (helper/get-session test-dir session-key)
                 success (event events "compaction-success")]
@@ -404,7 +404,7 @@
                                                           :model          "test-model"
                                                           :provider       provider
                                                           :soul           "You are Isaac."
-                                                          :state-dir      test-dir
+                                                          :root      test-dir
                                                           :session-store  session-store})
             (let [entry (first (filter #(= :session/compaction-stopped (:event %)) @log/captured-logs))]
               (should-not-be-nil entry)
@@ -414,7 +414,7 @@
   (describe "build-turn"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -426,7 +426,7 @@
                       :session-key    "wrap-test"
                       :input          "hi"
                       :comm           :test-comm
-                      :config         {:state-dir test-dir}
+                      :config         {:root test-dir}
                       :crew           "main"
                       :crew-members   {"main" {:model "spark" :tools {:allow [:spyglass]}}}
                       :context-window 32768
@@ -434,12 +434,12 @@
                       :provider       provider
                       :soul           "You are Isaac."
                       :effort         5}]
-        (with-redefs [sut/augment-provider (fn [_state-dir p _session-key _context-window _model-cfg-overrides] p)]
+        (with-redefs [sut/augment-provider (fn [_root p _session-key _context-window _model-cfg-overrides] p)]
           (let [turn (#'sut/build-turn charge)]
             (should= charge (:charge turn))
             (should= 5     (:effort turn))
             (should= ["spyglass"] (sort (:allowed-tools turn)))
-            (should-not-be-nil (:state-dir turn))
+            (should-not-be-nil (:root turn))
             (should-not-be-nil (:session-store turn))))))
 
     (it "auto-allows skill activation tools discovered from the prompt catalog"
@@ -450,14 +450,14 @@
                       :session-key    "skill-turn"
                       :input          "hi"
                       :comm           :test-comm
-                      :config         {:state-dir test-dir}
+                      :config         {:root test-dir}
                       :crew           "main"
                       :crew-members   {"main" {:model "spark"}}
                       :context-window 32768
                       :model          "helm-spark-1.0"
                       :provider       provider
                       :soul           "You are Isaac."}]
-        (with-redefs [sut/augment-provider (fn [_state-dir p _session-key _context-window _model-cfg-overrides] p)
+        (with-redefs [sut/augment-provider (fn [_root p _session-key _context-window _model-cfg-overrides] p)
                       session-ctx/read-skill-disclosure (fn [& _]
                                                           {:menu-text  nil
                                                            :tool-names #{"list_skills" "load_skill"}})]
@@ -467,7 +467,7 @@
   (describe "context-mode"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -522,7 +522,7 @@
   (describe "1-arg run-turn! (charge arity)"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -533,7 +533,7 @@
             charge   {:charge/type    :charge
                       :session-key    "charge-arity"
                       :input          "engage"
-                      :state-dir      test-dir
+                      :root      test-dir
                       :session-store  (store/registered-store)
                       :comm           null-comm/channel
                       :crew           "main"
@@ -556,7 +556,7 @@
   (describe "logging"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (nexus/-with-nexus {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root test-dir :fs (fs/mem-fs)}
         (helper/with-memory-store
           (example))))
 
@@ -568,7 +568,7 @@
                       :session-key    "context-log"
                       :input          "go"
                       :comm           :test-comm
-                      :state-dir      test-dir
+                      :root      test-dir
                       :session-store  (store/registered-store)
                       :crew           "main"
                       :crew-members   {"main" {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}}
@@ -577,7 +577,7 @@
                       :model          "helm-spark-1.0"
                       :provider       provider
                       :soul           "You are Isaac."}]
-        (with-redefs [sut/augment-provider (fn [_state-dir p _session-key _context-window _model-cfg-overrides] p)]
+        (with-redefs [sut/augment-provider (fn [_root p _session-key _context-window _model-cfg-overrides] p)]
           (log/capture-logs
             (#'sut/build-turn charge)
             (let [entry (first (filter #(= :turn/context-resolved (:event %)) @log/captured-logs))]
@@ -616,7 +616,7 @@
             (sut/run-turn! {:charge/type    :charge
                             :session-key    "log-turn"
                             :input          "hi"
-                            :state-dir      test-dir
+                            :root      test-dir
                             :session-store  (store/registered-store)
                             :comm           null-comm/channel
                             :crew           "main"

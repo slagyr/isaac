@@ -26,7 +26,7 @@
    validates config (mutate/validate CLIs, reload, missing-config checks) — to
    load config for the running process use load-config!.
    {:config :errors :warnings :sources :missing-config?}.
-   opts keys: :state-dir (required), :fs, :substitute-env?, :raw-parse-errors?,
+   opts keys: :root (required), :fs, :substitute-env?, :raw-parse-errors?,
    :skip-entity-files?, :data-path-overlay."
   ([]     (loader/load-config-result))
   ([opts] (loader/load-config-result opts)))
@@ -38,13 +38,13 @@
   (loader/normalize-config cfg))
 
 (defn load-config!
-  "THE loader: load config from `state-dir` (read via `fs`), validate it, commit
+  "THE loader: load config from `root` (read via `fs`), validate it, commit
    it as the process-wide snapshot, and return the value. Call once per process
    at an entry point, then thread the returned value onward or read the snapshot
    — never re-load. Throws ex-info {:errors [...]} carrying ALL validation errors
    when the config is invalid. `reason` documents the call site."
-  [state-dir fs reason]
-  (loader/load-config! state-dir fs reason))
+  [root fs reason]
+  (loader/load-config! root fs reason))
 
 (defn snapshot
   "Returns the current process-wide config snapshot, or nil if not yet set.
@@ -62,20 +62,20 @@
   [cfg reason]
   (loader/set-snapshot! cfg reason))
 
-(defn state-dir
+(defn root
   "Returns the resolved state directory: a nexus-installed test override if
-   present, otherwise the loaded config snapshot's :state-dir."
+   present, otherwise the loaded config snapshot's :root."
   []
-  (loader/state-dir))
+  (loader/root))
 
-(defn default-state-dir
-  "Computes the default state directory for CLI-style opts: :state-dir wins,
+(defn default-root
+  "Computes the default state directory for CLI-style opts: :root wins,
    otherwise :home (or the user's home directory) + the standard .isaac suffix.
-   Use at entry points before load; the running process should read [[state-dir]]
+   Use at entry points before load; the running process should read [[root]]
    (the resolved snapshot) instead."
   [opts]
-  (or (:state-dir opts)
-      (paths/default-state-dir (or (:home opts) (root/user-home)))))
+  (or (:root opts)
+      (paths/default-root (or (:home opts) (root/user-home)))))
 
 ;; ----- env -----
 
@@ -140,10 +140,10 @@
   (install/install! opts))
 
 (defn reload!
-  "Hot-reload coordinator (server only): re-load config from :state-dir/:fs,
+  "Hot-reload coordinator (server only): re-load config from :root/:fs,
    validate it; on error log and keep the running config (returns nil); on
    success commit the new snapshot and reconcile :registries against :old-config.
-   opts keys: :state-dir :fs :old-config :comm-registry :registries :host :path.
+   opts keys: :root :fs :old-config :comm-registry :registries :host :path.
    Returns the new config on success, nil if rejected."
   [opts]
   (install/reload! opts))
@@ -193,14 +193,14 @@
 ;; ----- config change source (file watcher for hot reload) -----
 
 (defn watch-service-source
-  "Creates a filesystem-watching config change source rooted at `state-dir`."
-  [state-dir]
-  (change-source/watch-service-source state-dir))
+  "Creates a filesystem-watching config change source rooted at `root`."
+  [root]
+  (change-source/watch-service-source root))
 
 (defn memory-source
-  "Creates an in-memory config change source rooted at `state-dir` (test/dev)."
-  [state-dir]
-  (change-source/memory-source state-dir))
+  "Creates an in-memory config change source rooted at `root` (test/dev)."
+  [root]
+  (change-source/memory-source root))
 
 (defn start!
   "Starts a config change source. Returns the source."

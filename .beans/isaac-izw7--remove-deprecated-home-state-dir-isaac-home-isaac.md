@@ -4,8 +4,10 @@ title: Remove deprecated --home, :state-dir, :isaac-home, :isaac-state-dir, :hom
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-03T08:57:09Z
-updated_at: 2026-06-03T14:37:45Z
+updated_at: 2026-06-03T15:27:55Z
 ---
 
 Finish the isaac-root collapse by removing all backward-compat

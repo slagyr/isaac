@@ -12,7 +12,7 @@
             "sue"  {:model "grover" :tags #{:role/verify}}}
    :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
-(def crew-opts {:state-dir "/test/crew" :home "/test/crew-home"})
+(def crew-opts {:root "/test/crew" :home "/test/crew-home"})
 
 (describe "crew cli"
 

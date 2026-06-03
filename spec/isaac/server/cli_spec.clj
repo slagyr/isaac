@@ -42,7 +42,7 @@
       (it "returns nil when log-path is nil"
         (should-be-nil (#'sut/start-log-tail! nil "/tmp/state" {})))
 
-      (it "resolves a relative log path under state-dir creates the file and forwards tail options"
+      (it "resolves a relative log path under root creates the file and forwards tail options"
         (let [base     (temp-dir)
               events   (promise)
               log-path "logs/server.log"
@@ -114,9 +114,9 @@
         (finally (config/clear-env-overrides!)))
       (should= false (:dev @started)))
 
-    (it "derives state-dir from home before starting the app"
+    (it "derives root from home before starting the app"
       (with-out-str (sut/run {:home "/tmp/server-home"}))
-      (should= "/tmp/server-home/.isaac" (:state-dir @started))
+      (should= "/tmp/server-home/.isaac" (:root @started))
       (should-not (contains? @started :home)))
 
     (it "enables file logging when --logs is requested"
@@ -124,8 +124,8 @@
             tailed-path (atom nil)
             output-kind (atom nil)]
         (with-redefs [log/log-file              (fn [] "server.log")
-                      sut/start-log-tail!       (fn [path state-dir opts]
-                                                  (reset! tailed-path [path state-dir opts])
+                      sut/start-log-tail!       (fn [path root opts]
+                                                  (reset! tailed-path [path root opts])
                                                   (.getAbsolutePath log-file))
                       log/set-log-file!         (fn [path] (reset! tailed-path (conj @tailed-path path)))
                       log/set-output!           (fn [kind] (reset! output-kind kind))]
@@ -136,7 +136,7 @@
                   (.getAbsolutePath log-file)]
                  @tailed-path)
         (should= :file @output-kind)
-        (should= "/tmp/server-home/.isaac" (:state-dir @started))))
+        (should= "/tmp/server-home/.isaac" (:root @started))))
 
     )
 

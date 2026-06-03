@@ -34,17 +34,17 @@
       (str (subs s 0 37) "...")
       s)))
 
-(defn- derive-state-dir [opts]
-  (config/default-state-dir opts))
+(defn- derive-root [opts]
+  (config/default-root opts))
 
 (defn resolve-crew
   "Returns a seq of {:name :model :provider :soul-source :tags} for display."
   [opts]
   (let [{:keys [crew models]} opts
-        state-dir (derive-state-dir opts)
+        root (derive-root opts)
         cfg       (if crew
                     (cli-common/build-cfg crew models)
-                    (config/load-config! state-dir (fs/instance) "crew cli"))
+                    (config/load-config! root (fs/instance) "crew cli"))
         cfg       (config/normalize-config cfg)
         crew-map  (cond-> (:crew cfg)
                     (not (contains? (:crew cfg) "main")) (assoc "main" {}))]

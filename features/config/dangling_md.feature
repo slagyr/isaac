@@ -9,7 +9,7 @@ Feature: Config validation — dangling .md warnings
   mode that promotes these to errors.
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
+    Given an Isaac root at "isaac-state"
 
   Scenario: dangling crew/<id>.md with no matching entity warns
     Given config file "isaac.edn" containing:

@@ -6,7 +6,7 @@ Feature: Compaction with memory flush
   session's compaction entry.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/local.edn" exists with:
       | path | value |
       | model | test-model |

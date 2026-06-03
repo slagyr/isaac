@@ -48,13 +48,13 @@
                      (refreshing request))]
     (http/wrap-logging (http/wrap-auth handler-opts scanning))))
 
-(defn- start-config-reloader! [source state-dir host comm-registry registries]
+(defn- start-config-reloader! [source root host comm-registry registries]
   ;; The reloader manages the live runtime: config/reload! reconciles components
   ;; directly into the (global) nexus, so we must NOT capture+restore a runtime
   ;; snapshot the way bound-runtime-fn does for one-shot deferred work — that
   ;; would discard the reconcile. bound-fn still propagates dynamic var bindings.
   (let [reload! (bound-fn [path]
-                  (config/reload! {:state-dir     state-dir
+                  (config/reload! {:root     root
                                    :fs            (fs/instance)
                                    :old-config    (config/snapshot "reload: previous config for the reconcile diff")
                                    :comm-registry comm-registry
@@ -67,20 +67,20 @@
           (reload! path))
         (recur)))))
 
-(defn- host-context [cfg state-dir connect-ws!]
+(defn- host-context [cfg root connect-ws!]
   {:connect-ws! connect-ws!
    :module-index (:module-index cfg)
-   :state-dir state-dir})
+   :root root})
 
-(defn- start-config-source [opts hot-reload? state-dir]
+(defn- start-config-source [opts hot-reload? root]
   (or (:config-change-source opts)
-      (when (and hot-reload? state-dir)
-        (config/watch-service-source state-dir))))
+      (when (and hot-reload? root)
+        (config/watch-service-source root))))
 
-(defn- build-handler-opts [opts config-home state-dir]
+(defn- build-handler-opts [opts config-home root]
   (cond-> (dissoc opts :home)
     config-home (assoc :home config-home)
-    state-dir   (assoc :state-dir state-dir)
+    root   (assoc :root root)
     true        (assoc :cfg-fn (fn [] (config/snapshot "http handler: ambient config")))))
 
 (defn- start-http-server [dev? start-http-server? handler-opts port host]
@@ -123,7 +123,7 @@
                  :start-http-server? start-http-server?}))
 
 (defn start!
-  "Boot the server. Loads config from :state-dir and commits it (or uses an
+  "Boot the server. Loads config from :root and commits it (or uses an
    injected :cfg for tests/embedding), validates it, reconciles components, starts
    background services, and binds the HTTP server. dev? comes from :dev (resolved
    by the caller from --dev / ISAAC_DEV), port/host from the config with :port /
@@ -131,12 +131,12 @@
    non-loopback bind lacks an auth token."
   [opts]
   (when (running?) (stop!))
-  (let [state-dir          (:state-dir opts)
+  (let [root          (:root opts)
         fs                 (or (fs/instance opts) (fs/real-fs))
-        load-result        (when (and (not (:cfg opts)) state-dir)
-                             (config/load-config-result {:state-dir state-dir :fs fs}))
+        load-result        (when (and (not (:cfg opts)) root)
+                             (config/load-config-result {:root root :fs fs}))
         cfg                (cond-> (or (:cfg opts) (:config load-result) {})
-                             state-dir (assoc :state-dir state-dir))
+                             root (assoc :root root))
         comm-registry      @comm-registry/*registry*
         registries         (registries)
         server-cfg         (config/server-config cfg)
@@ -145,11 +145,11 @@
         dev?               (true? (:dev opts))
         hot-reload?        (:hot-reload server-cfg)
         start-http-server? (not (false? (:start-http-server? opts)))
-        config-home        (some-> state-dir fs/parent)
+        config-home        (some-> root fs/parent)
         connect-ws!        (:connect-ws! opts)]
     (cond
       (and load-result (seq (:errors load-result)) (not (:missing-config? load-result)))
-      (do (log/error :config/invalid :state-dir state-dir :errors (:errors load-result)) nil)
+      (do (log/error :config/invalid :root root :errors (:errors load-result)) nil)
 
       (seq (config/validate-config! cfg comm-registry))
       nil
@@ -162,23 +162,23 @@
 
       :else
       (let [_                       (nexus/init! {:fs fs})
-            _                       (when state-dir (root/init-root! state-dir))
-            scheduler               (when state-dir
+            _                       (when root (root/init-root! root))
+            scheduler               (when root
                                        (-> (scheduler-core/create {})
                                            scheduler-core/start!))
             _                       (when scheduler
                                       (nexus/register! [:scheduler] scheduler))
-            host-ctx                (host-context cfg state-dir connect-ws!)
+            host-ctx                (host-context cfg root connect-ws!)
             _                       (config/dangerously-install-config! cfg "server boot")
             _                       (config/install! {:config cfg :registries registries :host host-ctx})
             _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
             _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                       (module-loader/register-route-extensions! (:manifest entry)))
-            config-source           (start-config-source opts hot-reload? state-dir)
+            config-source           (start-config-source opts hot-reload? root)
             _                       (some-> config-source config/start!)
-            reloader                (when (and config-source state-dir)
-                                      (start-config-reloader! config-source state-dir host-ctx comm-registry registries))
-            handler-opts            (build-handler-opts opts config-home state-dir)
+            reloader                (when (and config-source root)
+                                      (start-config-reloader! config-source root host-ctx comm-registry registries))
+            handler-opts            (build-handler-opts opts config-home root)
             {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
             {:keys [delivery hail-delivery hail-router]} (start-background-services opts scheduler)]
         (when (and dev? start-http-server?)

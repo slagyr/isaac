@@ -5,7 +5,7 @@ Feature: Hail send — direct addressing flags
   an intersection at fan-out time.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: --crew populates :crew in the address map
     When isaac is run with "hail send --crew marvin --prompt 'Heads up' --payload '{:n 1}'"

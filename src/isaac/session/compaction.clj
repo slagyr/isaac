@@ -179,7 +179,7 @@
 
 (defn- compaction-tool-fn [key-str]
   (fn [ctx name arguments]
-    (let [result (tool-registry/execute name (assoc arguments "session_key" key-str "state_dir" (:state-dir ctx) "session_store" (:session-store ctx)) memory-tool-names)]
+    (let [result (tool-registry/execute name (assoc arguments "session_key" key-str "state_dir" (:root ctx) "session_store" (:session-store ctx)) memory-tool-names)]
       (if (:isError result)
         (str "Error: " (:error result))
         (:result result)))))
@@ -264,10 +264,10 @@
         :transcript-lock - optional lock used only for the final transcript splice
         :compaction-llm-done - optional promise delivered after LLM call completes
         :splice-ready - optional promise waited on before performing the splice"
-  [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock state-dir session-store]}]
-  (let [state-dir      (or state-dir (config/state-dir))
+  [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock root session-store]}]
+  (let [root      (or root (config/root))
         session-store  (or session-store (nexus/get-in [:sessions :store]))
-        ctx            {:state-dir state-dir :session-store session-store}
+        ctx            {:root root :session-store session-store}
         behavior       (session-ctx/resolve-behavior key-str {:context-window context-window})
         transcript      (store/get-transcript session-store key-str)
         history-entries (effective-history-entries transcript)

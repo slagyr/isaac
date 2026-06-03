@@ -4,7 +4,7 @@ Feature: Hail crew tool
   sent hail's :from records the calling crew's identity.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And default Grover setup
 
   Scenario: crew with hail-send allowed dispatches a hail from a turn

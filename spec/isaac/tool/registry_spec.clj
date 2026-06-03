@@ -287,27 +287,27 @@
         (helper/with-memory-store (it)))
 
       (it "includes :cwd on :tool/start when session_key is present"
-        (let [state-dir "/test/registry-cwd"
-              _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
-          (nexus/-with-nested-nexus {:state-dir state-dir}
+        (let [root "/test/registry-cwd"
+              _         (helper/create-session! root "s1" {:cwd "/tmp"})]
+          (nexus/-with-nested-nexus {:root root}
             (sut/register! {:name "echo" :handler (fn [_] "ok")})
             (sut/execute "echo" {"session_key" "s1"})
             (let [start (first (filter #(= :tool/start (:event %)) @log/captured-logs))]
               (should= "/tmp" (:cwd start))))))
 
       (it "includes :cwd on :tool/result when session_key is present"
-        (let [state-dir "/test/registry-cwd-result"
-              _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
-          (nexus/-with-nested-nexus {:state-dir state-dir}
+        (let [root "/test/registry-cwd-result"
+              _         (helper/create-session! root "s1" {:cwd "/tmp"})]
+          (nexus/-with-nested-nexus {:root root}
             (sut/register! {:name "echo" :handler (fn [_] "ok")})
             (sut/execute "echo" {"session_key" "s1"})
             (let [result (first (filter #(= :tool/result (:event %)) @log/captured-logs))]
               (should= "/tmp" (:cwd result))))))
 
       (it "includes :cwd on :tool/execute-failed when session_key is present"
-        (let [state-dir "/test/registry-cwd-fail"
-              _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
-          (nexus/-with-nested-nexus {:state-dir state-dir}
+        (let [root "/test/registry-cwd-fail"
+              _         (helper/create-session! root "s1" {:cwd "/tmp"})]
+          (nexus/-with-nested-nexus {:root root}
             (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "oops")))})
             (sut/execute "boom" {"session_key" "s1"})
             (let [err (first (filter #(= :tool/execute-failed (:event %)) @log/captured-logs))]

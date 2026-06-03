@@ -25,12 +25,12 @@
 
 (declare start! stop!)
 
-(deftype CronModule [state-dir config* runner*]
+(deftype CronModule [root config* runner*]
   config/Reconfigurable
   (on-startup! [_ slice]
     (reset! config* (or slice {}))
     (when (seq slice)
-      (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :state-dir state-dir}))))
+      (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :root root}))))
   (on-config-change! [_ _old-slice new-slice]
     (when (not= @config* (or new-slice {}))
       (when-let [runner @runner*]
@@ -38,12 +38,12 @@
       (reset! runner* nil)
       (reset! config* (or new-slice {}))
       (when (seq new-slice)
-        (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :state-dir state-dir})))))
+        (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :root root})))))
   Object
   (toString [_] "CronModule"))
 
 (defn make [host]
-  (->CronModule (:state-dir host) (atom {}) (atom nil)))
+  (->CronModule (:root host) (atom {}) (atom nil)))
 
 (def registry
   {:kind    :component
@@ -78,11 +78,11 @@
     :else (ZonedDateTime/ofInstant (memory/now) zone)))
 
 (defn- fire-job! [ctx cfg job-name {:keys [crew prompt]} scheduled-at]
-  (let [state-dir      (:state-dir ctx)
+  (let [root      (:root ctx)
         session-store* (or (:session-store ctx) (nexus/get-in [:sessions :store]))
         session        (session-ctx/create-with-resolved-behavior!
-                         nil {:config        (assoc cfg :state-dir state-dir)
-                              :state-dir     state-dir
+                         nil {:config        (assoc cfg :root root)
+                              :root     root
                               :crew          crew
                               :origin        {:kind :cron :name (str job-name)}
                               :session-store session-store*})
@@ -90,13 +90,13 @@
                          (bridge/dispatch!
                            (charge/build {:session-key   (:id session)
                                           :input         prompt
-                                          :config        (assoc cfg :state-dir state-dir)
+                                          :config        (assoc cfg :root root)
                                           :crew          crew
                                           :guidance      cron-guidance
                                           :origin        {:kind :cron :name (str job-name)}
                                           :comm          null-comm/channel})))
         failed?   (boolean (:error result))]
-    (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
+    (state/write-job-state! root job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
                                                 :last-status (if failed? :failed :succeeded)
                                                 :last-error  (when failed?
                                                                (or (:message result)
@@ -112,20 +112,20 @@
         (fire-job! ctx cfg job-name job scheduled-zdt)
         (catch Exception e
           (log/ex :cron/job-failed e :job (str job-name))
-          (state/write-job-state! (:state-dir ctx) job-name {:last-run    (cron/format-zoned-date-time scheduled-zdt)
+          (state/write-job-state! (:root ctx) job-name {:last-run    (cron/format-zoned-date-time scheduled-zdt)
                                                               :last-status :failed
                                                               :last-error  (.getMessage e)})))
       (log/warn :cron/missed-schedule
                 :job (str job-name)
                 :scheduled-at (cron/format-zoned-date-time scheduled-zdt)))))
 
-(defn start! [{:keys [cfg state-dir session-store tick-ms]
+(defn start! [{:keys [cfg root session-store tick-ms]
                  :or   {tick-ms default-tick-ms}}]
-  (let [state-dir        (or state-dir (config/state-dir))
+  (let [root        (or root (config/root))
         session-store    (or session-store (nexus/get-in [:sessions :store]))
         shared-scheduler (or (nexus/get :scheduler)
                              (throw (ex-info "cron scheduler requires :scheduler in isaac.nexus" {})))
-        runtime-ctx      {:state-dir state-dir :session-store session-store}
+        runtime-ctx      {:root root :session-store session-store}
         zone             (str (zone-id cfg))
         task-ids         (reduce (fn [ids [job-name job]]
                                    (scheduler/schedule! shared-scheduler

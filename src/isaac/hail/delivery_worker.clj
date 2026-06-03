@@ -34,27 +34,27 @@
   (binding [*print-namespace-maps* false]
     (with-out-str (pprint/pprint value))))
 
-(defn- runtime-state-dir [opts]
-  (or (:state-dir opts)
-      (config/state-dir)
-      (nexus/get :state-dir)
-      (throw (ex-info "hail delivery worker requires :state-dir" {}))))
+(defn- runtime-root [opts]
+  (or (:root opts)
+      (config/root)
+      (nexus/get :root)
+      (throw (ex-info "hail delivery worker requires :root" {}))))
 
 (defn- filesystem []
   (or (fs/instance)
       (throw (ex-info "hail delivery worker requires :fs in system" {}))))
 
-(defn- deliveries-dir [state-dir]
-  (str state-dir "/hail/deliveries"))
+(defn- deliveries-dir [root]
+  (str root "/hail/deliveries"))
 
-(defn- inflight-dir [state-dir]
-  (str state-dir "/hail/inflight"))
+(defn- inflight-dir [root]
+  (str root "/hail/inflight"))
 
-(defn- delivered-dir [state-dir]
-  (str state-dir "/hail/delivered"))
+(defn- delivered-dir [root]
+  (str root "/hail/delivered"))
 
-(defn- failed-dir [state-dir]
-  (str state-dir "/hail/failed"))
+(defn- failed-dir [root]
+  (str root "/hail/failed"))
 
 (defn- record-path [dir id]
   (str dir "/" id ".edn"))
@@ -87,9 +87,9 @@
 (defn- delete-record! [path]
   (fs/delete (filesystem) path))
 
-(defn- list-deliveries [state-dir]
+(defn- list-deliveries [root]
   (let [fs* (filesystem)
-        dir (deliveries-dir state-dir)]
+        dir (deliveries-dir root)]
     (if-let [children (fs/children fs* dir)]
       (->> children
            (map #(read-record (str dir "/" %)))
@@ -154,8 +154,8 @@
           (:crews (router/matching-crews band (:crew cfg) (:hail delivery))))))
 
 (defn- spawn-session! [session-store delivery host-crew]
-  (let [state-dir (runtime-state-dir {})
-        name      (naming/generate (naming/->SequentialStrategy state-dir "sessions" "session-" (filesystem)))]
+  (let [root (runtime-root {})
+        name      (naming/generate (naming/->SequentialStrategy root "sessions" "session-" (filesystem)))]
     (session-ctx/create-with-resolved-behavior!
      name
      {:crew          host-crew
@@ -194,49 +194,49 @@
                 (bind-candidate delivery session-entry)))
             (:candidates delivery)))))
 
-(defn- inflight-path [state-dir id]
-  (record-path (inflight-dir state-dir) id))
+(defn- inflight-path [root id]
+  (record-path (inflight-dir root) id))
 
-(defn- delivery-path [state-dir id]
-  (record-path (deliveries-dir state-dir) id))
+(defn- delivery-path [root id]
+  (record-path (deliveries-dir root) id))
 
-(defn- delivered-path [state-dir id]
-  (record-path (delivered-dir state-dir) id))
+(defn- delivered-path [root id]
+  (record-path (delivered-dir root) id))
 
-(defn- failed-path [state-dir id]
-  (record-path (failed-dir state-dir) id))
+(defn- failed-path [root id]
+  (record-path (failed-dir root) id))
 
-(defn- claim-delivery! [state-dir delivery]
-  (write-record! (inflight-path state-dir (:id delivery)) delivery)
-  (delete-record! (delivery-path state-dir (:id delivery)))
+(defn- claim-delivery! [root delivery]
+  (write-record! (inflight-path root (:id delivery)) delivery)
+  (delete-record! (delivery-path root (:id delivery)))
   delivery)
 
-(defn- finish-delivered! [state-dir delivery]
-  (write-record! (delivered-path state-dir (:id delivery)) delivery)
-  (delete-record! (inflight-path state-dir (:id delivery))))
+(defn- finish-delivered! [root delivery]
+  (write-record! (delivered-path root (:id delivery)) delivery)
+  (delete-record! (inflight-path root (:id delivery))))
 
-(defn- finish-failed! [state-dir delivery]
-  (write-record! (failed-path state-dir (:id delivery)) delivery)
-  (delete-record! (inflight-path state-dir (:id delivery))))
+(defn- finish-failed! [root delivery]
+  (write-record! (failed-path root (:id delivery)) delivery)
+  (delete-record! (inflight-path root (:id delivery))))
 
 (defn- backoff-ms [attempts]
   (get delays-ms attempts))
 
-(defn- reschedule! [state-dir now delivery]
+(defn- reschedule! [root now delivery]
   (let [attempts (inc (:attempts delivery 0))]
     (if-let [delay-ms (backoff-ms attempts)]
       (if (= attempts 5)
         (do
-          (finish-failed! state-dir (assoc delivery :attempts attempts))
+          (finish-failed! root (assoc delivery :attempts attempts))
           (log/error :hail/dead-lettered :id (:id delivery) :reason :exhausted))
         (do
-          (write-record! (delivery-path state-dir (:id delivery))
+          (write-record! (delivery-path root (:id delivery))
                          (assoc delivery
                                 :attempts attempts
                                 :next-attempt-at (str (.plusMillis now delay-ms))))
-          (delete-record! (inflight-path state-dir (:id delivery)))))
+          (delete-record! (inflight-path root (:id delivery)))))
       (do
-        (finish-failed! state-dir (assoc delivery :attempts attempts))
+        (finish-failed! root (assoc delivery :attempts attempts))
         (log/error :hail/dead-lettered :id (:id delivery) :reason :exhausted)))))
 
 (defn- delivery-charge [cfg delivery]
@@ -256,23 +256,23 @@
 (defn- launch-delivery! [opts delivery]
   (let [cfg           (:cfg opts)
         session-store (:session-store opts)
-        state-dir     (runtime-state-dir opts)
+        root     (runtime-root opts)
         session-id    (normalize-id (:session delivery))
         run!          (nexus/bound-runtime-fn
                         (bound-fn []
                           (try
                             (let [result (run-delivery! cfg delivery)]
                               (if (:error result)
-                                (reschedule! state-dir (:now opts) delivery)
-                                (finish-delivered! state-dir delivery))
+                                (reschedule! root (:now opts) delivery)
+                                (finish-delivered! root delivery))
                               result)
                             (catch Exception e
-                              (reschedule! state-dir (:now opts) delivery)
+                              (reschedule! root (:now opts) delivery)
                               {:error :exception :message (.getMessage e)})
                             (finally
                               (store/clear-in-flight! session-store session-id)))))]
     (when (store/mark-in-flight! session-store session-id)
-      (claim-delivery! state-dir delivery)
+      (claim-delivery! root delivery)
       (future (run!)))))
 
 (defn tick!
@@ -282,12 +282,12 @@
   ;; snapshot back.
   [{:keys [cfg session-store now] :as opts}]
   (let [cfg           (or cfg (config/snapshot "hail delivery tick wake boundary — config may have changed") {})
-        state-dir     (runtime-state-dir opts)
+        root     (runtime-root opts)
         session-store (or session-store
                           (nexus/get-in [:sessions :store])
-                          (store/create state-dir))
+                          (store/create root))
         now           (or now (memory/now))]
-    (->> (list-deliveries state-dir)
+    (->> (list-deliveries root)
          (filter #(due? % now))
          (map #(runnable-delivery cfg session-store %))
          (remove nil?)
@@ -295,7 +295,7 @@
                                    :cfg cfg
                                    :now now
                                    :session-store session-store
-                                   :state-dir state-dir)
+                                   :root root)
                                  %))
          (remove nil?)
          vec)))

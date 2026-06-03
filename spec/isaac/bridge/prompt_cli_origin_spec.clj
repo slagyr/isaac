@@ -14,7 +14,7 @@
 (def crew-soul (:soul (marigold/crew-cfg crew-name)))
 
 (def ^:private base-opts
-  {:state-dir "/test/prompt"
+  {:root "/test/prompt"
    :crew      crew-name})
 
 (def ^:private synthetic-config

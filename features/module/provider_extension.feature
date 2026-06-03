@@ -15,7 +15,7 @@ Feature: Provider extension
   All three are uniform sources for :type inheritance.
 
   Scenario: A user-declared provider is usable for a turn
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:xai {:api      "chat-completions"
@@ -34,7 +34,7 @@ Feature: Provider extension
       | body.model            | grok-2                               |
 
   Scenario: A provider inherits defaults from another via :type
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:corp-anthropic {:type     :anthropic
@@ -51,7 +51,7 @@ Feature: Provider extension
       | body.model        | claude-sonnet-4-6                           |
 
   Scenario: A module-declared provider is usable without any module code
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules   {:isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}
@@ -67,7 +67,7 @@ Feature: Provider extension
       | body.model            | kombucha-large                                |
 
   Scenario: A user-defined provider can inherit from a module-declared provider
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules   {:isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}
@@ -84,7 +84,7 @@ Feature: Provider extension
       | body.model            | kombucha-small                                |
 
   Scenario: A provider with an unknown :api is rejected at config-load
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:bogus {:api      "carrier-pigeon"
@@ -98,7 +98,7 @@ Feature: Provider extension
       | providers.bogus.api | unknown api |
 
   Scenario: A provider with an unknown :type target is rejected
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:dreamy {:type    :ghost-provider
@@ -110,7 +110,7 @@ Feature: Provider extension
       | providers.dreamy.type | references provider not defined in any manifest |
 
   Scenario: User-supplied extra field is rejected when it violates the manifest :schema
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules   {:isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}
@@ -124,7 +124,7 @@ Feature: Provider extension
       | providers.my-kombucha.fizz-level | must be an integer.* |
 
   Scenario: :type referencing a user-only provider is rejected
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:home-anthropic {:api      "messages"
@@ -140,7 +140,7 @@ Feature: Provider extension
       | providers.work-anthropic.type | references provider not defined in any manifest |
 
   Scenario: Self-defined provider with auth api-key but no api key is rejected
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:my-thing {:api      "messages"

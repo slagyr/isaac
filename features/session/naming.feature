@@ -4,7 +4,7 @@ Feature: Session naming strategy
   Test-friendly alternative: sequential ("session-1", "session-2", ...).
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
+    Given an Isaac root at "isaac-state"
 
   Scenario: sequential strategy names unnamed sessions session-1, session-2, ...
     Given config:

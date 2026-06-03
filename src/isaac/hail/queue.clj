@@ -11,14 +11,14 @@
   (binding [*print-namespace-maps* false]
     (with-out-str (pprint/pprint value))))
 
-(defn- runtime-state-dir []
-  (or (config/state-dir) (throw (ex-info "hail queue requires :state-dir" {}))))
+(defn- runtime-root []
+  (or (config/root) (throw (ex-info "hail queue requires :root" {}))))
 
 (defn- filesystem []
   (or (fs/instance) (throw (ex-info "hail.queue requires :fs in system" {}))))
 
 (defn- pending-dir []
-  (str (runtime-state-dir) "/hail/pending"))
+  (str (runtime-root) "/hail/pending"))
 
 (defn- pending-path [id]
   (str (pending-dir) "/" id ".edn"))
@@ -26,15 +26,15 @@
 (defn- temp-path [id]
   (str (pending-dir) "/" id ".tmp"))
 
-(defn- naming-strategy [state-dir fs*]
-  (naming/->SequentialStrategy state-dir "hail" "hail-" fs*))
+(defn- naming-strategy [root fs*]
+  (naming/->SequentialStrategy root "hail" "hail-" fs*))
 
-(defn- next-id [state-dir fs*]
-  (naming/generate (naming-strategy state-dir fs*)))
+(defn- next-id [root fs*]
+  (naming/generate (naming-strategy root fs*)))
 
-(defn- normalize-record [record state-dir fs*]
+(defn- normalize-record [record root fs*]
   (-> record
-      (assoc :id (next-id state-dir fs*))
+      (assoc :id (next-id root fs*))
       (assoc :sent-at (str (memory/now)))))
 
 (defn- read-record [path]
@@ -47,8 +47,8 @@
 
 (defn send! [record]
   (let [fs*    (filesystem)
-        state-dir (runtime-state-dir)
-        record (normalize-record record state-dir fs*)
+        root (runtime-root)
+        record (normalize-record record root fs*)
         path   (pending-path (:id record))
         temp   (temp-path (:id record))]
     (fs/mkdirs fs* (fs/parent path))

@@ -40,7 +40,7 @@
 
 (defn- validate-stdin! [opts]
   (report-validation!
-    (loader/load-config-result {:state-dir          (common/resolve-state-dir opts)
+    (loader/load-config-result {:root          (common/resolve-root opts)
                                 :overlay-content    (slurp *in*)
                                 :overlay-path       "isaac.edn"
                                 :skip-entity-files? true})))
@@ -56,7 +56,7 @@
           (println (str "invalid EDN from stdin: " (:error stdin-value))))
         1)
       (report-validation!
-        (loader/load-config-result {:state-dir         (common/resolve-state-dir opts)
+        (loader/load-config-result {:root         (common/resolve-root opts)
                                     :data-path-overlay {:path  (parse-data-path data-path-str)
                                                         :value (:value stdin-value)}})))))
 

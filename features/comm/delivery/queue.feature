@@ -1,7 +1,7 @@
 Feature: Delivery queue
   Outbound comm posts that fail transiently go into a persistent
   retry queue instead of being dropped. Each delivery is a small EDN
-  file under <state-dir>/comm/delivery/. The worker attempts delivery on
+  file under <root>/comm/delivery/. The worker attempts delivery on
   a schedule; successes are removed; failures after 5 attempts move
   to failed/ for manual review. Permanent failures (transient? false)
   dead-letter immediately without retrying.
@@ -10,7 +10,7 @@ Feature: Delivery queue
   at 1s, 5s, 30s, 2m, 10m.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: a successful delivery is removed from the queue
     Given the comm "stub" returns:

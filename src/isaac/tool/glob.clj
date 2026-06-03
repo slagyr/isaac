@@ -14,7 +14,7 @@
   (let [path        (get args "path")
         session-cwd (bounds/session-workdir args)]
     (or (bounds/resolve-path path session-cwd)
-        (bounds/state-dir args)
+        (bounds/root args)
         (System/getProperty "user.dir"))))
 
 (defn- normalize-relative-path [path]

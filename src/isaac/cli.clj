@@ -91,8 +91,8 @@
                          "\n---\n\n"
                          body)))
 
-(defn- isaac-edn-path [state-dir]
-  (paths/root-config-file state-dir))
+(defn- isaac-edn-path [root]
+  (paths/root-config-file root))
 
 (defn- created-files []
   ["config/isaac.edn"
@@ -101,17 +101,17 @@
    "config/providers/ollama.edn"
    "config/cron/heartbeat.md"])
 
-(defn- scaffold! [state-dir fs*]
-  (write-edn! fs* (paths/config-path state-dir "isaac.edn")
+(defn- scaffold! [root fs*]
+  (write-edn! fs* (paths/config-path root "isaac.edn")
                {:defaults            {:crew :main :model :llama}
                 :tz                  "America/Chicago"
                 :prefer-entity-files true})
-  (write-markdown-entity! fs* (paths/config-path state-dir "crew/main.md")
+  (write-markdown-entity! fs* (paths/config-path root "crew/main.md")
                            {:model :llama}
                            "You are Isaac, a helpful AI assistant.")
-  (write-edn! fs* (paths/config-path state-dir "models/llama.edn") {:model "llama3.2" :provider :ollama})
-  (write-edn! fs* (paths/config-path state-dir "providers/ollama.edn") {:base-url "http://localhost:11434" :api :ollama})
-  (write-markdown-entity! fs* (paths/config-path state-dir "cron/heartbeat.md")
+  (write-edn! fs* (paths/config-path root "models/llama.edn") {:model "llama3.2" :provider :ollama})
+  (write-edn! fs* (paths/config-path root "providers/ollama.edn") {:base-url "http://localhost:11434" :api :ollama})
+  (write-markdown-entity! fs* (paths/config-path root "cron/heartbeat.md")
                            {:expr "*/30 * * * *" :crew :main}
                            "Heartbeat. Anything worth noting?"))
 
@@ -136,21 +136,17 @@
   (str "Usage: isaac init\n\n"
        "Scaffold a default Isaac config for a fresh install."))
 
-(defn init-run [{:keys [display-root root home] :as opts}]
-  ;; Accept both :root (new, the data dir directly) and :home (legacy, parent
-  ;; dir; appends /.isaac). Callers going through main.clj get :root stamped;
-  ;; older unit specs that pass :home keep working.
+(defn init-run [{:keys [display-root root] :as opts}]
   (let [fs*  (runtime-fs opts)
-        effective-root (or root (when home (str home "/.isaac")))
-        path (isaac-edn-path effective-root)]
+        path (isaac-edn-path root)]
     (if (fs/exists? fs* path)
       (do
         (binding [*out* *err*]
           (println (str "config already exists at " path "; edit it directly.")))
         1)
       (do
-        (scaffold! effective-root fs*)
-        (print-success! (or display-root root home effective-root))
+        (scaffold! root fs*)
+        (print-success! (or display-root root))
         0))))
 
 (defn init-run-fn [{:keys [display-root root _raw-args fs]}]
@@ -158,7 +154,7 @@
     (do
       (println (init-help))
       0)
-    (init-run {:display-root display-root :root root :state-dir root :fs fs})))
+    (init-run {:display-root display-root :root root :fs fs})))
 
 (register!
   {:name      "init"

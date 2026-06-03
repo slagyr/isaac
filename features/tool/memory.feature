@@ -1,6 +1,6 @@
 Feature: Crew memory tools
   Each crew has a persistent memory directory under their quarters
-  (<state-dir>/crew/<id>/memory/). Three tools access it:
+  (<root>/crew/<id>/memory/). Three tools access it:
   - memory_write:  append to today's journal note
   - memory_get:    read notes within a date range (inclusive)
   - memory_search: grep the crew's memory files

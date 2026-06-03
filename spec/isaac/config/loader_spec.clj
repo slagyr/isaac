@@ -280,12 +280,12 @@
 
     (it "loads config from an explicit fs option without installing runtime fs"
       (let [mem  (fs/mem-fs)
-            root (paths/config-root marigold/state-dir)
+            root (paths/config-root marigold/root)
             path (str root "/" paths/root-filename)]
         (fs/mkdirs mem root)
         (fs/spit mem path (pr-str marigold/baseline-config))
         (nexus/reset!)
-        (let [result (sut/load-config-result {:state-dir marigold/state-dir :fs mem})]
+        (let [result (sut/load-config-result {:root marigold/root :fs mem})]
           (should= [] (:errors result))
           (should= "atticus" (get-in result [:config :defaults :crew])))))
 
@@ -467,7 +467,7 @@
         (should= [{:key "config"
                    :value (str "no config found; run `isaac init` or create " marigold/home "/.isaac/config/isaac.edn")}]
                  (:errors result))
-        (should= {:state-dir (str marigold/home "/.isaac")} (:config result))
+        (should= {:root (str marigold/home "/.isaac")} (:config result))
         (should= true (:missing-config? result))
         (should= [] (:warnings result))
         (should= [] (:sources result))))
@@ -1326,7 +1326,7 @@
           (should-be-nil (sut/snapshot "spec")))))
 
     (it "commits the empty default for a missing config without throwing"
-      (with-redefs [sut/load-config-result (fn [_] {:config {:state-dir "/sd"}
+      (with-redefs [sut/load-config-result (fn [_] {:config {:root "/sd"}
                                                     :errors [{:key "config" :value "missing"}]
                                                     :missing-config? true})]
-        (should= {:state-dir "/sd"} (sut/load-config! "/sd" (fs/mem-fs) "spec")))))
+        (should= {:root "/sd"} (sut/load-config! "/sd" (fs/mem-fs) "spec")))))

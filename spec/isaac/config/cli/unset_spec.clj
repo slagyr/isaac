@@ -8,6 +8,7 @@
   (:import (java.io StringWriter)))
 
 (def ^:private test-home "/test/config-unset")
+(def ^:private test-root (str test-home "/.isaac"))
 
 (describe "CLI Config unset"
 
@@ -16,13 +17,13 @@
     (support/with-cli-env example))
 
   (it "prints help and returns 0 with unset --help"
-    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["unset" "--help"])))]
+    (let [output (with-out-str (should= 0 (sut/run {:root test-root} ["unset" "--help"])))]
       (should-contain "Usage: isaac config" output)))
 
   (it "returns 1 when unset is missing a path"
     (let [err (StringWriter.)]
       (binding [*err* err]
-        (should= 1 (sut/run {:home test-home} ["unset"])))
+        (should= 1 (sut/run {:root test-root} ["unset"])))
       (should-contain "missing path" (str err))))
 
   (it "treats trailing tokens after the path as arguments, not help options"
@@ -30,5 +31,5 @@
       (with-redefs [mutate/unset-config (fn [_home path]
                                           (reset! captured path)
                                           {:status :ok :warnings [] :file "isaac.edn"})]
-        (should= 0 (sut/run {:home test-home} ["unset" (str "crew." marigold/first-mate ".soul") "--help"])))
+        (should= 0 (sut/run {:root test-root} ["unset" (str "crew." marigold/first-mate ".soul") "--help"])))
       (should= (str "crew." marigold/first-mate ".soul") @captured))))

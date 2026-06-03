@@ -9,13 +9,13 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:root "/test/isaac" :fs (fs/mem-fs)}
       (example)))
 
   (it "returns an empty state map when the file does not exist"
     (should= {} (sut/read-state)))
 
-  (it "reads and writes explicit state-dir paths"
+  (it "reads and writes explicit root paths"
     (sut/write-job-state! "/test/other-isaac" "heartbeat" {:last-status :succeeded})
     (should= {"heartbeat" {:last-status :succeeded}}
              (sut/read-state "/test/other-isaac")))
@@ -40,7 +40,7 @@
 
   (it "uses the installed runtime fs without binding fs/*fs*"
     (let [mem (fs/mem-fs)]
-      (nexus/-with-nexus {:state-dir "/test/isaac" :fs mem}
+      (nexus/-with-nexus {:root "/test/isaac" :fs mem}
         (sut/write-job-state! "health-check" {:last-status :succeeded})
         (should= {"health-check" {:last-status :succeeded}}
                  (sut/read-state))))))

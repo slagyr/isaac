@@ -4,7 +4,7 @@ Feature: Per-crew filesystem boundaries
   are rejected.
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
+    Given an Isaac root at "isaac-state"
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :echo}

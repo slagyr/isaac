@@ -31,7 +31,7 @@
         cfg          (config/normalize-config test-config)]
     (nexus/-with-nexus {:fs        (fs/mem-fs)
                         :config    (atom cfg)
-                        :state-dir "/test/isaac"
+                        :root "/test/isaac"
                         :sessions  {:store session-store}}
       (config/dangerously-install-config! cfg "spec")
       (example))))

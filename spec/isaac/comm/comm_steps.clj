@@ -18,8 +18,8 @@
 
 (helper! isaac.comm.comm-steps)
 
-(defn- state-dir []
-  (g/get :state-dir))
+(defn- root []
+  (g/get :root))
 
 (defn- mem-fs []
   (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs)))
@@ -30,7 +30,7 @@
 
 (defn- session-store []
   (or (store/registered-store)
-      (sidecar-store/create-store (state-dir))))
+      (sidecar-store/create-store (root))))
 
 (defn- get-session [session-key]
   (store/get-session (session-store) session-key))
@@ -100,7 +100,7 @@
     (f)))
 
 (defn- channel-send-opts [key-str channel]
-  (let [cfg        (with-feature-fs #(:config (config/load-config-result {:state-dir (state-dir) :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
+  (let [cfg        (with-feature-fs #(:config (config/load-config-result {:root (root) :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
         agents     (or (:crew cfg) {})
         models     (:models cfg)
         agent-id   (or (:crew (with-feature-fs #(get-session key-str)))
@@ -130,7 +130,7 @@
   (let [events            (atom [])
         captured*         (atom [])
         channel           (memory-comm/channel events)
-        cfg               (with-feature-fs #(:config (config/load-config-result {:state-dir (state-dir) :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
+        cfg               (with-feature-fs #(:config (config/load-config-result {:root (root) :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
         _                 (with-feature-fs #(store/open-session! (session-store) key-str {}))
         opts              (channel-send-opts key-str channel)
         result            (atom nil)
@@ -144,7 +144,7 @@
                                        (fn []
                                          (try
                                            (config/dangerously-install-config! cfg "spec")
-                                           (reset! result (bridge/dispatch! (state-dir)
+                                           (reset! result (bridge/dispatch! (root)
                                                                             (assoc opts :input content :session-key key-str)))
                                            (catch Exception e
                                              (reset! result {:error :exception :message (.getMessage e)}))))))))))

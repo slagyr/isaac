@@ -37,8 +37,8 @@
 
 (defn resolve-oauth-tokens [provider-name {:keys [auth] :as config}]
   (when (= "oauth-device" auth)
-    (when-let [state-dir (or (:auth-dir config) (:state-dir config))]
-      (let [tokens (auth-store/load-tokens state-dir provider-name (fs/instance))]
+    (when-let [root (or (:auth-dir config) (:root config))]
+      (let [tokens (auth-store/load-tokens root provider-name (fs/instance))]
         (when (and tokens (not (auth-store/token-expired? tokens)))
           tokens)))))
 

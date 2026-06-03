@@ -7,7 +7,7 @@ Feature: Config set / unset
   config and are idempotent.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: scalar set writes a value at a known map path
     Given default Grover setup

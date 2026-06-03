@@ -14,7 +14,7 @@
 (def crew-soul (:soul (marigold/crew-cfg crew-name)))
 
 (def base-opts
-  {:state-dir "/test/prompt"
+  {:root "/test/prompt"
    :crew      crew-name})
 
 ;; A complete cfg with both crews (atticus + ketch) so tests that exercise
@@ -142,7 +142,7 @@
                                          (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
                                          {})]
           (with-out-str
-            (sut/run {:state-dir "/test/prompt"
+            (sut/run {:root "/test/prompt"
                       :message   "Next"
                       :session   (str "agent:" crew-name ":cli:direct:user1")})))
         (should= "echo-alt" (:model @captured))
@@ -156,7 +156,7 @@
                                          (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
                                          {})]
           (with-out-str
-            (sut/run {:state-dir "/test/prompt"
+            (sut/run {:root "/test/prompt"
                       :message   "Next"
                       :session   (str "agent:" crew-name ":cli:direct:user1")
                       :crew      crew-name})))

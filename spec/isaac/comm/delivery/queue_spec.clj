@@ -10,7 +10,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:root "/test/isaac" :fs (fs/mem-fs)}
       (example)))
 
   (it "stores a queued delivery under comm/delivery/pending"

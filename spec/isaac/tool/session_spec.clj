@@ -19,7 +19,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (nexus/-with-nested-nexus {:state-dir support/test-dir}
+      (nexus/-with-nested-nexus {:root support/test-dir}
         (example))))
 
   (let [base-cfg {:defaults  {:crew crew-name :model crew-model}

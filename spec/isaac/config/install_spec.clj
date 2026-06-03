@@ -26,12 +26,12 @@
       (sut/install! {:config {:defaults {:crew "main"}}})
       (should-be-nil (config/snapshot "spec")))
 
-    (it "registers a session store when state-dir is known"
+    (it "registers a session store when root is known"
       (should-be-nil (store/registered-store))
-      (sut/install! {:config {:state-dir "/test/isaac"}})
+      (sut/install! {:config {:root "/test/isaac"}})
       (should-not-be-nil (store/registered-store)))
 
-    (it "skips store registration when no state-dir"
+    (it "skips store registration when no root"
       (sut/install! {:config {}})
       (should-be-nil (store/registered-store)))
 

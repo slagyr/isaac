@@ -10,7 +10,7 @@ Feature: Slash command extension
   not happen silently.
 
   Scenario: A module-declared slash command is invokable
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}}
@@ -19,7 +19,7 @@ Feature: Slash command extension
     Then the reply contains "Hieronymus's emergency lettuce"
 
   Scenario: Slash module activation registers its commands
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
@@ -32,7 +32,7 @@ Feature: Slash command extension
       | :info | :slash/registered | echo             |
 
   Scenario: Module-declared slash commands appear alongside built-ins after activation
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}}
@@ -44,7 +44,7 @@ Feature: Slash command extension
       | echo   | Echo the input back unchanged |
 
   Scenario: A configured slash command overrides a built-in
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:log            {:output :memory}

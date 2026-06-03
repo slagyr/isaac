@@ -11,7 +11,7 @@
 
 (def root-filename "isaac.edn")
 
-(defn default-state-dir
+(defn default-root
   "Legacy helper: derive the Isaac data dir from a parent `home` (returns
    `<home>/.isaac`). Kept as a transitional shim for callers that still
    pass :home in opts; prefer isaac.root/default-root or pass :root

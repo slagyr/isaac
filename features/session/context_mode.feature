@@ -7,7 +7,7 @@ Feature: Context Mode
   the model sees, not what is stored.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: :context-mode :reset replays no history — Pinky greets each turn fresh
     Given the isaac EDN file "config/models/local.edn" exists with:
@@ -82,7 +82,7 @@ Feature: Context Mode
       | messages[3].content      | Are the giant slingshot blueprints ready?      |
 
   Scenario: Unknown :context-mode value is rejected
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And config file "isaac.edn" containing:
       """
       {:crew {:pinky {:context-mode :ponder}}}

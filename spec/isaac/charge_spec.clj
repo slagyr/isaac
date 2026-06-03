@@ -156,17 +156,17 @@
         (with-redefs [config/snapshot             (fn [_] {:defaults  {:crew "main"}
                                                          :crew      {"main" (crew-cfg marigold/captain test-model-id "Base.")}
                                                          :models    {test-model-id (model-cfg test-model-id 4096)}
-                                                         :state-dir "/tmp/isaac/.isaac"})
+                                                         :root "/tmp/isaac/.isaac"})
                       session-ctx/resolve-behavior (fn [_ opts]
                                                      (reset! seen opts)
                                                      (stub-behavior "main" "Base." test-model-id 4096))]
           (let [charge (sut/build {:session-key "s1"
                                    :input       "hi"})]
-            (should= "/tmp/isaac/.isaac" (get-in charge [:config :state-dir]))
+            (should= "/tmp/isaac/.isaac" (get-in charge [:config :root]))
             (should= "main" (:crew @seen))
             (should= nil (:model @seen))
             ;; build now threads the resolved config to resolve-behavior as a value
-            (should= "/tmp/isaac/.isaac" (get-in @seen [:config :state-dir]))))))
+            (should= "/tmp/isaac/.isaac" (get-in @seen [:config :root]))))))
 
     (it "returns an unresolved charge with :no-model when no model is configured"
       (with-redefs [config/snapshot             (fn [_] {:defaults {:crew "main"}

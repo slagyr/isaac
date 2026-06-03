@@ -3,7 +3,7 @@ Feature: Ollama Messaging
   Isaac can use Ollama's chat API for local model inference.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/ernie.edn" exists with:
       | path | value |
       | model | ernie |

@@ -22,24 +22,24 @@
    [nil  "--plain" "Raw passthrough — no parsing, color, or zebra"]
    ["-h" "--help" "Show help"]])
 
-(defn- resolve-path [file state-dir]
+(defn- resolve-path [file root]
   (cond
     (nil? file)                         nil
     (str/starts-with? file "/")         file
-    (and state-dir (seq state-dir))     (str state-dir "/" file)
+    (and root (seq root))     (str root "/" file)
     :else                               file))
 
-(defn- config-log-path [state-dir fs*]
-  (when state-dir
-    (let [config-file (str state-dir "/config/isaac.edn")]
+(defn- config-log-path [root fs*]
+  (when root
+    (let [config-file (str root "/config/isaac.edn")]
       (when (fs/exists? fs* config-file)
         (try
           (get-in (edn/read-string (fs/slurp fs* config-file)) [:log :output])
           (catch Exception _ nil))))))
 
-(defn run [{:keys [file follow limit no-color zebra plain state-dir]}]
-  (let [log-path (or (resolve-path file state-dir)
-                     (resolve-path (config-log-path state-dir (fs/instance)) state-dir)
+(defn run [{:keys [file follow limit no-color zebra plain root]}]
+  (let [log-path (or (resolve-path file root)
+                     (resolve-path (config-log-path root (fs/instance)) root)
                      (log/log-file))]
     (viewer/tail! log-path
                   {:color?  (not no-color)

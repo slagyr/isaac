@@ -21,14 +21,14 @@
         (get-in (config/snapshot "tool memory: default crew") [:defaults :crew])
         "main")))
 
-(defn- memory-dir [state-dir crew-id]
-  (str state-dir "/crew/" crew-id "/memory"))
+(defn- memory-dir [root crew-id]
+  (str root "/crew/" crew-id "/memory"))
 
 (defn- date-str [instant]
   (str (.toLocalDate (java.time.ZonedDateTime/ofInstant instant java.time.ZoneOffset/UTC))))
 
-(defn- today-path [state-dir crew-id]
-  (str (memory-dir state-dir crew-id) "/" (date-str (now)) ".md"))
+(defn- today-path [root crew-id]
+  (str (memory-dir root crew-id) "/" (date-str (now)) ".md"))
 
 (defn- lines [content]
   (cond
@@ -40,11 +40,11 @@
   [args]
   (let [args        (string-key-map args)
         content     (get args "content")
-        state-dir   (bounds/state-dir args)
+        root   (bounds/root args)
         fs*         (bounds/filesystem args)]
     (if-let [entries (lines content)]
       (let [crew-id   (crew-id args)
-            path      (today-path state-dir crew-id)
+            path      (today-path root crew-id)
             existing? (fs/exists? fs* path)
             prefix    (when (and existing? (seq (fs/slurp fs* path))) "\n")]
         (fs/mkdirs fs* (fs/parent path))
@@ -66,13 +66,13 @@
   (let [args        (string-key-map args)
         end-time    (get args "end_time")
         start-time  (get args "start_time")
-        state-dir   (bounds/state-dir args)
+        root   (bounds/root args)
         fs*         (bounds/filesystem args)
         start       (parse-date start-time)
         end         (parse-date end-time)
         crew-id     (crew-id args)
         result      (->> (date-range start end)
-                          (map #(str (memory-dir state-dir crew-id) "/" % ".md"))
+                          (map #(str (memory-dir root crew-id) "/" % ".md"))
                           (filter #(fs/exists? fs* %))
                           (map #(fs/slurp fs* %))
                           (str/join "\n"))]
@@ -89,10 +89,10 @@
   [args]
   (let [args        (string-key-map args)
         query       (get args "query")
-        state-dir   (bounds/state-dir args)
+        root   (bounds/root args)
         fs*         (bounds/filesystem args)
         crew-id     (crew-id args)
-        dir         (memory-dir state-dir crew-id)
+        dir         (memory-dir root crew-id)
         matches     (->> (or (fs/children fs* dir) [])
                           sort
                           (mapcat #(matching-lines fs* query (str dir "/" %))))]

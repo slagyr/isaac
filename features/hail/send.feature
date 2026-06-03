@@ -1,6 +1,6 @@
 Feature: Hail send
   `isaac hail send [addressing flags] [--payload <edn>]` produces a
-  hail by atomically writing an EDN record to <state-dir>/hail/pending/.
+  hail by atomically writing an EDN record to <root>/hail/pending/.
   The record carries an auto-generated id (counted via isaac-pctr's
   SequentialStrategy), the address, the payload (if any), sender
   identity, and a sent-at timestamp. This bean covers the substrate
@@ -10,7 +10,7 @@ Feature: Hail send
   follow-up.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: isaac hail send writes a hail record to pending/
     When isaac is run with "hail send --band bean-pickup --payload '{:n 1}'"

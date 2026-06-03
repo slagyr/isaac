@@ -106,8 +106,8 @@
     (it "tracks in-flight counts by crew across store implementations"
       (doseq [impl [:memory :jsonl-edn-sidecar :jsonl-edn-index]]
         (nexus/-with-nexus {:fs (fs/mem-fs)}
-          (let [state-dir (str (System/getProperty "user.dir") "/target/test-state/store-spec-" (name impl))
-                s         (store/create state-dir impl)]
+          (let [root (str (System/getProperty "user.dir") "/target/test-state/store-spec-" (name impl))
+                s         (store/create root impl)]
             (store/open-session! s "k1" {:crew "main"})
             (store/open-session! s "k2" {:crew "main"})
             (store/open-session! s "k3" {:crew "other"})

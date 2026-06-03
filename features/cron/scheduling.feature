@@ -3,11 +3,11 @@ Feature: Cron jobs
   Each cron job specifies: name, cron expression, crew, and the prompt
   to send. When a job fires, it acts as if a user sent that prompt
   on behalf of the configured crew. The run's result is written back
-  to <state-dir>/cron.edn as last-run and last-status.
+  to <root>/cron.edn as last-run and last-status.
 
   Jobs are declared in root config under :cron {<name> {...}} — static
   intent, hand-editable, version-controllable. Runtime state lives in
-  <state-dir>/cron.edn separately.
+  <root>/cron.edn separately.
 
   Standard 5-field cron (minute hour day month weekday) interpreted
   in the timezone from root config :tz (falling back to the JVM

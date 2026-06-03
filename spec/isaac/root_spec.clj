@@ -53,14 +53,6 @@
   (it "defaults to ~/.isaac when no source provides a root"
     (should= "/tmp/user/.isaac" (sut/resolve-root nil nil *fs*)))
 
-  (it "legacy --home (4-arg overload) appends /.isaac"
-    (should= "/tmp/legacy/.isaac"
-             (sut/resolve-root nil "/tmp/legacy" nil *fs*)))
-
-  (it "--root wins over legacy --home"
-    (should= "/tmp/explicit-root"
-             (sut/resolve-root "/tmp/explicit-root" "/tmp/legacy" nil *fs*)))
-
   (it "logs a warning and falls through when a pointer file is malformed"
     (fs/mkdirs *fs* "/tmp/user/.config")
     (fs/spit   *fs* "/tmp/user/.config/isaac.edn" "{:root")

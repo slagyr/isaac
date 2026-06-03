@@ -12,7 +12,7 @@
 
 (describe "Web search tool"
   (around [it]
-    (nexus/-with-nexus {:state-dir support/test-dir :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:root support/test-dir :fs (fs/mem-fs)}
       (it)))
 
   (it "returns ranked result entries"

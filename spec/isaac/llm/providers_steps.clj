@@ -16,7 +16,7 @@
 
 ;; region ----- Helpers -----
 
-(defn- state-dir [] (g/get :state-dir))
+(defn- root [] (g/get :root))
 
 (defn- mem-fs []
   (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs)))
@@ -27,7 +27,7 @@
 
 (defn- session-store []
   (or (store/registered-store)
-      (sidecar-store/create-store (state-dir))))
+      (sidecar-store/create-store (root))))
 
 (defn- current-key []
   (or (g/get :current-key)

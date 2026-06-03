@@ -200,7 +200,7 @@
     (it "dispatches login with --api-key flag"
       (let [saved (atom nil)]
         (with-redefs [read-line                (fn [] "sk-test-key-123")
-                      config/load-config!        (fn [& _] {:state-dir "target/test-auth"})
+                      config/load-config!        (fn [& _] {:root "target/test-auth"})
                       auth-store/save-api-key! (fn [dir provider key _fs]
                                                  (reset! saved [dir provider key]))]
           (should= 0 (sut/run ["login" "--provider" "anthropic" "--api-key"]))

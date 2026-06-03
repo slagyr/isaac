@@ -6,20 +6,11 @@
 
    Lookup chain (first hit wins):
      1. --root <dir>            CLI flag (new, preferred)
-     2. --home <dir>            CLI flag (LEGACY ALIAS — appends /.isaac)
-     3. fallback                test-injection slot
-     4. ISAAC_ROOT              environment variable
-     5. ~/.config/isaac.edn     {:root \"/some/dir\"}
-     6. ~/.isaac.edn            {:root \"/some/dir\"}
-     7. ~/.isaac                default
-
-   Legacy notes:
-   - The old :home pointer-file key is gone — pointer files MUST use :root
-     after the isaac-root collapse. The CLI's --home flag is kept as a
-     transitional alias and will be removed in a follow-up bean.
-   - Many internal opt maps still use the :state-dir key as a synonym for
-     :root. This is a transitional state; PR2/PR3 of the isaac-root bean
-     will collapse those too."
+     2. fallback                test-injection slot
+     3. ISAAC_ROOT              environment variable
+     4. ~/.config/isaac.edn     {:root \"/some/dir\"}
+     5. ~/.isaac.edn            {:root \"/some/dir\"}
+     6. ~/.isaac                default."
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -84,20 +75,15 @@
 
 (defn resolve-root
   "Walks the lookup chain. `explicit-root` is the --root value (or nil);
-   `explicit-home` is the legacy --home value (or nil; appends /.isaac);
    `fallback-root` is a test-injection slot (or nil). Returns an absolute
    path."
-  ([explicit-root fallback-root fs*]
-   (resolve-root explicit-root nil fallback-root fs*))
-  ([explicit-root explicit-home fallback-root fs*]
-   (-> (cond
-         explicit-root explicit-root
-         explicit-home (str explicit-home "/.isaac")
-         :else         (or fallback-root
-                           (env-root)
-                           (pointer-root fs*)
-                           (default-root)))
-       absolute-path)))
+  [explicit-root fallback-root fs*]
+  (-> (or explicit-root
+          fallback-root
+          (env-root)
+          (pointer-root fs*)
+          (default-root))
+      absolute-path))
 
 (defn extract-root-flag
   "Strips --root <dir> (or --root=<dir>) from args, returning
@@ -119,25 +105,3 @@
         :else
         (recur (rest remaining) (conj stripped arg) explicit))
       {:args stripped :root explicit})))
-
-(defn extract-home-flag
-  "Legacy: strips --home <dir> (or --home=<dir>) from args, returning
-   {:args <stripped> :home <explicit-or-nil>}. Kept for backward compat
-   with features and scripts predating the --root flag."
-  [args]
-  (loop [remaining args
-         stripped  []
-         explicit  nil]
-    (if-let [arg (first remaining)]
-      (cond
-        (= "--home" arg)
-        (if-let [value (second remaining)]
-          (recur (nnext remaining) stripped value)
-          {:args args :home explicit})
-
-        (str/starts-with? arg "--home=")
-        (recur (rest remaining) stripped (subs arg (count "--home=")))
-
-        :else
-        (recur (rest remaining) (conj stripped arg) explicit))
-      {:args stripped :home explicit})))

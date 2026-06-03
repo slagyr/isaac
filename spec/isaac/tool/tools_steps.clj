@@ -25,7 +25,7 @@
 
 ;; region ----- Helpers -----
 
-(defn- state-dir [] (g/get :state-dir))
+(defn- root [] (g/get :root))
 
 (defn- feature-fs []
   (or (g/get :mem-fs)
@@ -45,7 +45,7 @@
 (defn- resolve-path [p]
   (if (str/starts-with? p "/")
     p
-    (let [root     (state-dir)
+    (let [root     (root)
           root-name (.getName (io/file root))]
       (if (str/starts-with? p (str root-name "/"))
         (str root "/" (subs p (inc (count root-name))))
@@ -166,9 +166,9 @@
   (f))
 
 (defn- feature-config-snapshot [_reason]
-  (let [base (when-let [dir (state-dir)]
+  (let [base (when-let [dir (root)]
                (with-feature-fs
-                 #(:config (config/load-config-result {:state-dir dir
+                 #(:config (config/load-config-result {:root dir
                                                        :fs (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))}))))]
     (cond-> (or base {})
       (g/get :web-search-config) (assoc-in [:tools :web_search] (g/get :web-search-config)))))
@@ -226,8 +226,8 @@
         (.delete file)))
     (.mkdirs f)
     (nexus/register! [:fs] fs*)
-    (nexus/register! [:state-dir] abs-dir)
-    (g/assoc! :state-dir abs-dir)))
+    (nexus/register! [:root] abs-dir)
+    (g/assoc! :root abs-dir)))
 
 (defn- unescape-content [s]
   (-> s (str/replace "\\\"" "\"") (str/replace "\\n" "\n")))
@@ -377,7 +377,7 @@
 
 (defn- base-tool-args []
   (cond-> {}
-    (state-dir)                  (assoc "state_dir" (state-dir))
+    (root)                  (assoc "state_dir" (root))
     (g/get :current-session-key) (assoc "session_key" (g/get :current-session-key))))
 
 (defn tool-executed [name table]
@@ -416,7 +416,7 @@
         result  (execute-tool* name args)
         store   (session-store)
         _       (when-not (session-store-proto/get-session store session-key)
-                  (session-store-proto/open-session! store session-key {:cwd (state-dir)}))
+                  (session-store-proto/open-session! store session-key {:cwd (root)}))
         tc-id   (str (java.util.UUID/randomUUID))
         content (or (:result result) (:error result) "")
         error?  (boolean (:isError result))]
@@ -521,7 +521,7 @@
 
 (defgiven "a clean test directory {dir:string}" isaac.tool.tools-steps/clean-test-dir
   "Wipes the directory on the REAL filesystem and recreates it, then
-   binds :state-dir. Use for tool tests that need real files (exec,
+   binds :root. Use for tool tests that need real files (exec,
    glob with mtimes, etc.) — not compatible with mem-fs.")
 
 (defgiven "a file {name:string} exists with content {content:string}" isaac.tool.tools-steps/file-with-content)

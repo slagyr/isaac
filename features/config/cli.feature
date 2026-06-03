@@ -6,7 +6,7 @@ Feature: Config Command
   --reveal requires typing "REVEAL" on stdin to surface real values.
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
+    Given an Isaac root at "isaac-state"
 
   # ----- Help -----
 

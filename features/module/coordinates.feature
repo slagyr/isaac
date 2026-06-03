@@ -11,7 +11,7 @@ Feature: Module coordinates
   directory.
 
   Scenario: Modules declared with :local/root coordinates resolve at boot
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}}
@@ -22,7 +22,7 @@ Feature: Module coordinates
       | /module-index/isaac.comm.telly/manifest/id | isaac.comm.telly |
 
   Scenario: Hard error when a :local/root coordinate path is missing
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.ghost {:local/root "modules/isaac.comm.ghost"}}}
@@ -33,7 +33,7 @@ Feature: Module coordinates
       | modules["isaac.comm.ghost"]   | local/root path does not resolve |
 
   Scenario: Module with manifest at src/ (not resources/) is discoverable via :local/root dot
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the effective working directory is "modules/isaac.comm.noop"
     And the isaac file "isaac.edn" exists with:
       """
@@ -45,7 +45,7 @@ Feature: Module coordinates
       | /module-index/isaac.comm.noop/manifest/id | isaac.comm.noop |
 
   Scenario: Legacy vector :modules shape produces a migration error
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules [isaac.comm.telly]}

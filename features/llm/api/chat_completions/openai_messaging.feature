@@ -3,7 +3,7 @@ Feature: OpenAI Messaging
   Isaac can use OpenAI's GPT models via the chat completions API.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | snuffy |

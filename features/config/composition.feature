@@ -6,7 +6,7 @@ Feature: Config Composition
   precedence (overrides, system props, OS env, .env file).
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
+    Given an Isaac root at "isaac-state"
 
   # ----- Shape: map-by-id -----
 

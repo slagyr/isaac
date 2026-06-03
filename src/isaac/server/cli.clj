@@ -6,8 +6,10 @@
     [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
     [isaac.config.api :as config]
+    [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
+    [isaac.nexus :as nexus]
     [isaac.server.app :as app]
     [isaac.tool.builtin :as builtin]))
 
@@ -18,13 +20,13 @@
 
 (def ^:private server-log-prelude-limit 10)
 
-(defn- start-log-tail! [log-path state-dir {:keys [no-color zebra]}]
+(defn- start-log-tail! [log-path root {:keys [no-color zebra]}]
   (let [color? (not no-color)
         zebra? (boolean zebra)
         path   (cond
                  (nil? log-path)                         nil
                  (str/starts-with? log-path "/")         log-path
-                 (and state-dir (seq state-dir))         (str state-dir "/" log-path)
+                 (and root (seq root))         (str root "/" log-path)
                  :else                                   log-path)]
     (when path
       (let [f (java.io.File. path)]
@@ -37,33 +39,36 @@
       path)))
 
 (defn run [{:keys [port host logs] :as opts}]
-  (let [state-dir     (config/default-state-dir opts)
+  (let [root-dir      (config/default-root opts)
+        fs*           (or (fs/instance opts) (fs/real-fs))
         ;; CLIs load config at their entry point (never reload — that's a
         ;; server-only concern); app/start! resolves port/host and commits it.
-        loaded-config (:config (config/load-config-result {:state-dir state-dir}))
+        loaded-config (:config (config/load-config-result {:root root-dir :fs fs*}))
         ;; dev mode is an environment/launch concern, not config: --dev overrides,
         ;; otherwise the ISAAC_DEV env var.
         dev?          (if (contains? opts :dev)
                         (boolean (:dev opts))
                         (= "true" (config/env "ISAAC_DEV")))]
     (when logs
-      (when-let [abs-path (start-log-tail! (log/log-file) state-dir opts)]
+      (when-let [abs-path (start-log-tail! (log/log-file) root-dir opts)]
         (log/set-log-file! abs-path)
         (log/set-output! :file)))
-    (builtin/register-all!)
-    (if-let [{started-port :port started-host :host}
-             (app/start! {:cfg       loaded-config
-                          :state-dir state-dir
-                          :dev       dev?
-                          :port      (when port (parse-long (str port)))
-                          :host      host})]
-      (do
-        (log/info :server/started :host started-host :port started-port)
-        (println (str "Isaac server running on " started-host ":" started-port))
-        (block!))
-      (do
-        (println "Failed to start: invalid configuration (see logs)")
-        1))))
+    (nexus/-with-nested-nexus {:fs fs*}
+      (nexus/init! {:fs fs*})
+      (builtin/register-all!)
+      (if-let [{started-port :port started-host :host}
+               (app/start! {:cfg       loaded-config
+                            :root      root-dir
+                            :dev       dev?
+                            :port      (when port (parse-long (str port)))
+                            :host      host})]
+        (do
+          (log/info :server/started :host started-host :port started-port)
+          (println (str "Isaac server running on " started-host ":" started-port))
+          (block!))
+        (do
+          (println "Failed to start: invalid configuration (see logs)")
+          1)))))
 
 (def option-spec
   [["-p" "--port N" "Port to listen on (default: 6674)"]

@@ -216,13 +216,13 @@
               (ancestor-paths cwd))
         (absolute-path cwd))))
 
-(defn- global-roots [state-dir config]
-  (concat [{:layer :global :mode :typed-base :path (str state-dir "/config")}]
-          (map (fn [path] {:layer :global :mode :generic-root :path (join-path state-dir path)})
+(defn- global-roots [root config]
+  (concat [{:layer :global :mode :typed-base :path (str root "/config")}]
+          (map (fn [path] {:layer :global :mode :generic-root :path (join-path root path)})
                (:prompt-paths config))
-          (map (fn [path] {:default-type :command :layer :global :mode :typed-root :path (join-path state-dir path)})
+          (map (fn [path] {:default-type :command :layer :global :mode :typed-root :path (join-path root path)})
                (:command-paths config))
-          (map (fn [path] {:default-type :skill :layer :global :mode :typed-root :path (join-path state-dir path)})
+          (map (fn [path] {:default-type :skill :layer :global :mode :typed-root :path (join-path root path)})
                (:skill-paths config))))
 
 (defn- project-roots [project-root config]
@@ -242,13 +242,13 @@
     :skill   (assoc-in catalog [:skills (:name entry)] entry)
     catalog))
 
-(defn resolve-catalog [{:keys [config cwd fs state-dir]}]
+(defn resolve-catalog [{:keys [config cwd fs root]}]
   (let [fs*           fs
         config        (or config {})
         dir-names     (normalize-prompt-dir-names config)
         project-root* (project-root fs* cwd config)
         start-ns      (System/nanoTime)
-        root-specs    (concat (global-roots state-dir config)
+        root-specs    (concat (global-roots root config)
                               (project-roots project-root* config))
         file-specs    (->> root-specs
                            (mapcat (fn [root]
@@ -265,8 +265,8 @@
                :skill-count (count (:skills catalog)))
     catalog))
 
-(defn resolve-command-prompt [{:keys [config cwd fs state-dir]} command-name args]
-  (let [catalog (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})]
+(defn resolve-command-prompt [{:keys [config cwd fs root]} command-name args]
+  (let [catalog (resolve-catalog {:config config :cwd cwd :fs fs :root root})]
     (when-let [entry (get-in catalog [:commands (normalize-entry-name command-name)])]
       (let [body     (-> entry entry-body (render-template (bind-params entry args)) str/trim)
             skills   (skill-bodies catalog (:skills entry))
@@ -274,13 +274,13 @@
         {:input (str/join "\n\n" parts)
          :name  (:name entry)}))))
 
-(defn resolve-skill-menu [{:keys [config cwd fs state-dir]}]
-  (some-> (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+(defn resolve-skill-menu [{:keys [config cwd fs root]}]
+  (some-> (resolve-catalog {:config config :cwd cwd :fs fs :root root})
           sorted-skill-entries
           render-skill-menu))
 
-(defn resolve-skill-disclosure [{:keys [config cwd fs state-dir]}]
-  (let [catalog       (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+(defn resolve-skill-disclosure [{:keys [config cwd fs root]}]
+  (let [catalog       (resolve-catalog {:config config :cwd cwd :fs fs :root root})
         skill-entries (sorted-skill-entries catalog)
         threshold     (:skill-menu-threshold (or config {}))]
     (cond
@@ -294,15 +294,15 @@
       {:menu-text  (render-skill-menu skill-entries)
        :tool-names #{"load_skill"}})))
 
-(defn resolve-skill-body [{:keys [config cwd fs state-dir]} skill-name]
-  (some-> (get-in (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+(defn resolve-skill-body [{:keys [config cwd fs root]} skill-name]
+  (some-> (get-in (resolve-catalog {:config config :cwd cwd :fs fs :root root})
                   [:skills (normalize-entry-name skill-name)])
           entry-body
           str/trim
           not-empty))
 
-(defn resolve-skill-resource [{:keys [config cwd fs state-dir]} skill-name resource-name]
-  (let [catalog    (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir})
+(defn resolve-skill-resource [{:keys [config cwd fs root]} skill-name resource-name]
+  (let [catalog    (resolve-catalog {:config config :cwd cwd :fs fs :root root})
         skill-entry (get-in catalog [:skills (normalize-entry-name skill-name)])]
     (when skill-entry
       (let [skill-dir      (fs/parent (:path skill-entry))
@@ -317,8 +317,8 @@
           :else
           {:body (fs/slurp fs resource-path)})))))
 
-(defn resolve-rules-text [{:keys [config cwd fs state-dir]}]
-  (some->> (:rules (resolve-catalog {:config config :cwd cwd :fs fs :state-dir state-dir}))
+(defn resolve-rules-text [{:keys [config cwd fs root]}]
+  (some->> (:rules (resolve-catalog {:config config :cwd cwd :fs fs :root root}))
            vals
            (sort-by (juxt (comp {:global 0 :project 1} :layer) :name))
            (map entry-body)

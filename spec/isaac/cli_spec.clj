@@ -149,30 +149,30 @@
   (it "registers the init command"
     (should-not-be-nil (sut/get-command "init")))
 
-  (it "scaffolds the default config files in a fresh home"
-    (should= 0 (sut/init-run {:home test-home}))
+  (it "scaffolds the default config files in a fresh root"
+    (should= 0 (sut/init-run {:root test-home}))
     (should= {:defaults {:crew :main :model :llama}
                :tz "America/Chicago"
                :prefer-entity-files true}
-              (slurp-edn (str test-home "/.isaac/config/isaac.edn")))
+              (slurp-edn (str test-home "/config/isaac.edn")))
     (should= (str "---\n"
                   "model: \"llama\"\n"
                   "---\n\n"
                   "You are Isaac, a helpful AI assistant.")
-             (fs/slurp *fs* (str test-home "/.isaac/config/crew/main.md")))
+             (fs/slurp *fs* (str test-home "/config/crew/main.md")))
     (should= {:model "llama3.2" :provider :ollama}
-             (slurp-edn (str test-home "/.isaac/config/models/llama.edn")))
+             (slurp-edn (str test-home "/config/models/llama.edn")))
     (should= {:base-url "http://localhost:11434" :api :ollama}
-              (slurp-edn (str test-home "/.isaac/config/providers/ollama.edn")))
+              (slurp-edn (str test-home "/config/providers/ollama.edn")))
     (should= (str "---\n"
                   "expr: \"*/30 * * * *\"\n"
                   "crew: \"main\"\n"
                   "---\n\n"
                   "Heartbeat. Anything worth noting?")
-             (fs/slurp *fs* (str test-home "/.isaac/config/cron/heartbeat.md"))))
+             (fs/slurp *fs* (str test-home "/config/cron/heartbeat.md"))))
 
   (it "prints the scaffold summary and ollama setup instructions on success"
-    (should= 0 (sut/init-run {:home test-home}))
+    (should= 0 (sut/init-run {:root test-home}))
     (should= (str "Isaac initialized at " test-home ".\n\n"
                   "Created:\n"
                   "  config/isaac.edn\n"
@@ -189,10 +189,10 @@
              (str *out*)))
 
   (it "refuses when a config already exists"
-    (fs/mkdirs *fs* (str test-home "/.isaac/config"))
-    (fs/spit   *fs* (str test-home "/.isaac/config/isaac.edn") "{}")
-    (should= 1 (sut/init-run {:home test-home}))
-    (should= (str "config already exists at " test-home "/.isaac/config/isaac.edn; edit it directly.\n")
+    (fs/mkdirs *fs* (str test-home "/config"))
+    (fs/spit   *fs* (str test-home "/config/isaac.edn") "{}")
+    (should= 1 (sut/init-run {:root test-home}))
+    (should= (str "config already exists at " test-home "/config/isaac.edn; edit it directly.\n")
              (str *err*)))
 
   (it "appears in top-level help output"
@@ -200,17 +200,17 @@
       (let [output (with-out-str (should= 0 (main/run ["--help"])))]
         (should-contain "init" output))))
 
-  (it "scaffolds config under a resolved home directory"
+  (it "scaffolds config under an explicit root flag"
     (binding [main/*extra-opts* {:fs *fs*}]
-      (should= 0 (main/run ["--home" test-home "init"])))
-    (should (fs/exists? *fs* (str test-home "/.isaac/config/isaac.edn"))))
+      (should= 0 (main/run ["--root" test-home "init"])))
+    (should (fs/exists? *fs* (str test-home "/config/isaac.edn"))))
 
   (it "accepts an explicit fs via opts"
     (let [mem (fs/mem-fs)]
-      (should= 0 (sut/init-run {:home test-home :fs mem}))
+      (should= 0 (sut/init-run {:root test-home :fs mem}))
       (should= {:defaults {:crew :main :model :llama}
                 :tz "America/Chicago"
                 :prefer-entity-files true}
-               (edn/read-string (fs/slurp mem (str test-home "/.isaac/config/isaac.edn")))))))
+               (edn/read-string (fs/slurp mem (str test-home "/config/isaac.edn")))))))
 
 ;; endregion ^^^^^ Init ^^^^^

@@ -14,7 +14,7 @@ Feature: Compaction history retention policy
   Tracked by isaac-q90z.
 
   Background:
-    Given an empty Isaac state directory "/test"
+    Given an empty Isaac root at "/test"
 
   Scenario: Under :retain, compacted entries remain in the transcript file
     Given the EDN isaac file "isaac.edn" exists with:

@@ -18,25 +18,25 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:root "/test/isaac" :fs (fs/mem-fs)}
       (it)))
 
   (describe "CronModule lifecycle"
 
     (it "starts the scheduler on startup when cron jobs are present"
       (let [started (atom nil)
-          module  (sut/make {:state-dir "/test/isaac"})]
+          module  (sut/make {:root "/test/isaac"})]
         (with-redefs [sut/start! (fn [opts]
                                    (reset! started opts)
                                    ::runner)]
           (config/on-startup! module {"health-check" {:expr "0 9 * * *"}})
-          (should= {:cfg (or (config/snapshot "spec") {}) :state-dir "/test/isaac"}
+          (should= {:cfg (or (config/snapshot "spec") {}) :root "/test/isaac"}
                    @started))))
 
     (it "stops the old scheduler and restarts it when the slice changes"
       (let [started (atom [])
             stopped (atom [])
-            module  (sut/make {:state-dir "/test/isaac"})]
+            module  (sut/make {:root "/test/isaac"})]
         (with-redefs [sut/start! (fn [opts]
                                    (swap! started conj opts)
                                    (keyword (str "runner-" (count @started))))
@@ -51,7 +51,7 @@
 
     (it "stops the scheduler when the slice is removed"
       (let [stopped (atom nil)
-            module  (sut/make {:state-dir "/test/isaac"})]
+            module  (sut/make {:root "/test/isaac"})]
         (with-redefs [sut/start! (fn [_] ::runner)
                       sut/stop!  (fn [runner]
                                    (reset! stopped runner))]
@@ -64,7 +64,7 @@
      (it "leaves the scheduler alone when the slice is unchanged"
        (let [started (atom 0)
              stopped (atom 0)
-             module  (sut/make {:state-dir "/test/isaac"})
+             module  (sut/make {:root "/test/isaac"})
              slice   {"alpha" {:expr "0 9 * * *"}}]
         (with-redefs [sut/start! (fn [_]
                                    (swap! started inc)
@@ -86,7 +86,7 @@
       (with-redefs [scheduler-core/schedule! (fn [scheduler task]
                                                (swap! scheduled conj [scheduler (select-keys task [:id :trigger])])
                                                task)]
-        (sut/start! {:cfg cfg :state-dir "/test/isaac"}))
+        (sut/start! {:cfg cfg :root "/test/isaac"}))
       (should= [[fake-scheduler {:id :cron/heartbeat :trigger {:kind :cron :expr "*/5 * * * *" :zone "America/Chicago"}}]
                 [fake-scheduler {:id :cron/nightly-cleanup :trigger {:kind :cron :expr "0 3 * * *" :zone "America/Chicago"}}]]
                @scheduled)))
@@ -114,7 +114,7 @@
                     bridge/dispatch!                           (fn [c]
                                                                  (reset! routed c)
                                                                  {})]
-        (#'sut/fire-job! {:state-dir "/test/isaac"}
+        (#'sut/fire-job! {:root "/test/isaac"}
                          {:defaults {:crew "main"}}
                          "health-check"
                          {:crew "main" :prompt "Run the health checkin."}

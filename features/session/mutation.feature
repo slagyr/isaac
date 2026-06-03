@@ -7,7 +7,7 @@ Feature: Session mutation
   fail with clear errors. Successful mutations bump :updated-at.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: isaac sessions set <id>.tags.<keyword> adds a tag
     Given default Grover setup

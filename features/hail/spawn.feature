@@ -26,7 +26,7 @@ Feature: Hail-driven session spawning (get-or-create)
   Spawn is reach-one only; :reach :all never spawns. Default :spawn is false.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And default Grover setup
 
   Scenario: spawn-enabled reach-one with a matching crew but no session yields a spawn delivery

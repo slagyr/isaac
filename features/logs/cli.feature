@@ -14,7 +14,7 @@ Feature: isaac logs — colorized log tail
   --file overrides it.
 
   Background:
-    Given an empty Isaac state directory "target/test-logs"
+    Given an empty Isaac root at "target/test-logs"
 
   Scenario: Renders time, level, and event in fixed columns
     Given a file "app.log" exists with content "{:ts \"2026-05-12T15:24:51.491Z\", :level :info, :event :server/started, :port 8080}"

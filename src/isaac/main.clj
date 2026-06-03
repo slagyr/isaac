@@ -81,16 +81,12 @@
   "Run the CLI. Returns exit code."
   [args]
   (let [{after-root :args :keys [root]} (root/extract-root-flag args)
-         {after-home :args :keys [home]} (root/extract-home-flag after-root)
-         args (resolve-alias after-home)
+         args (resolve-alias after-root)
          cmd  (first args)
          opts (rest args)
          extra-opts    (or *extra-opts* {})
          fs*           (startup-fs extra-opts)
-         ;; --home is the user-facing override; programmatic callers (tests,
-         ;; embedding) can pass an equivalent via *extra-opts*'s :home so the
-         ;; same root-resolution chain runs without re-parsing argv.
-         resolved-root (root/resolve-root root (or home (:home extra-opts)) (:state-dir extra-opts) fs*)]
+         resolved-root (root/resolve-root root (:root extra-opts) fs*)]
     (register-module-cli-commands! resolved-root fs*)
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
@@ -111,12 +107,8 @@
          (binding [root/*root* resolved-root]
             (nexus/-with-nested-nexus {:fs fs*}
               (nexus/init! {:fs fs*})
-              ;; :root is the new public name for the data directory; :state-dir is the
-              ;; legacy internal key kept as a synonym until follow-up cleanup (see
-              ;; isaac-root bean PR 2/3). Every consumer can read either.
-              (or ((:run-fn command) (merge extra-opts {:display-root (or root home resolved-root)
+              (or ((:run-fn command) (merge extra-opts {:display-root (or root resolved-root)
                                                         :root         resolved-root
-                                                        :state-dir    resolved-root
                                                         :_raw-args    (vec opts)})) 0)))
           (do (println (str "Unknown command: " cmd))
               (println (usage))

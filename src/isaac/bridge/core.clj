@@ -60,9 +60,9 @@
   {:config    (:config ctx)
    :cwd       (:cwd ctx)
    :fs        (or (nexus/get :fs) (fs/instance))
-   :state-dir (or (get-in ctx [:config :state-dir])
-                  (:state-dir ctx)
-                  (nexus/get :state-dir))})
+   :root (or (get-in ctx [:config :root])
+                  (:root ctx)
+                  (nexus/get :root))})
 
 (defn- unknown-command-result [name args]
   {:type    :command
@@ -161,8 +161,8 @@
       (let [request (merge (nexus/necho) input)]
         (ensure-session! request)
         (dispatch-charge! (charge/build request)))))
-  ([_state-dir request]
-    ;; Two-arg form is a back-compat shim — state-dir now lives on the
+  ([_root request]
+    ;; Two-arg form is a back-compat shim — root now lives on the
     ;; config snapshot, which downstream readers consult directly.
     (dispatch! request)))
 

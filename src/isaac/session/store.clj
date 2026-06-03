@@ -97,8 +97,8 @@
    :memory            — in-memory store (ephemeral, fast)
    :jsonl-edn-sidecar — file store with per-session EDN sidecar files (default)
    :jsonl-edn-index   — file store with single combined index"
-  ([state-dir] (create state-dir default-impl))
-  ([state-dir impl]
+  ([root] (create root default-impl))
+  ([root impl]
     (when-not (contains? @factories* impl)
       ;; Lazy-load the impl ns if no caller has loaded it yet. The impl's
       ;; load triggers a self-registration into factories*.
@@ -107,7 +107,7 @@
     (let [factory (or (get @factories* impl)
                       (throw (ex-info (str "no session store factory for impl " impl)
                                       {:impl impl :registered (vec (sort (keys @factories*)))})))]
-      (factory state-dir))))
+      (factory root))))
 
 (defn- name->id
   "Convert a display name to a session ID slug, matching the store's key format."
@@ -130,10 +130,10 @@
           :else            :adjective-noun)))
 
 (defn make-naming-strategy
-  "Build a long-lived NameStrategy record from config, state-dir, a live session store, and fs."
-  [cfg state-dir session-store fs*]
+  "Build a long-lived NameStrategy record from config, root, a live session store, and fs."
+  [cfg root session-store fs*]
   (case (naming-strategy-kw cfg)
-    :sequential (naming/->SequentialStrategy state-dir "sessions" "session-" fs*)
+    :sequential (naming/->SequentialStrategy root "sessions" "session-" fs*)
     (naming/->AdjectiveNounStrategy (->SessionDomain session-store) naming/adjectives naming/nouns)))
 
 (defn registered-store
@@ -143,10 +143,10 @@
 
 (defn ensure-naming-strategy!
   "Returns the registered naming strategy, building and caching it from config if not yet present."
-  [state-dir fs*]
+  [root fs*]
   (or (nexus/get-in [:sessions :naming-strategy])
       (let [cfg   (or (config-snapshot) {})
-            strat (make-naming-strategy cfg state-dir (registered-store) fs*)]
+            strat (make-naming-strategy cfg root (registered-store) fs*)]
         (nexus/register! [:sessions :naming-strategy] strat)
         strat)))
 
@@ -159,10 +159,10 @@
 (defn register!
   "Create a store and naming strategy from config and register them in the system under :sessions.
    Reads :sessions :store and :sessions :naming-strategy from cfg."
-  [cfg state-dir]
+  [cfg root]
   (let [impl     (get-in cfg [:sessions :store] :jsonl-edn-sidecar)
         fs*      (fs/instance)
-        store    (create state-dir impl)
-        strategy (make-naming-strategy cfg state-dir store fs*)]
+        store    (create root impl)
+        strategy (make-naming-strategy cfg root store fs*)]
     (nexus/register! [:sessions] {:store store :naming-strategy strategy})
     store))

@@ -74,15 +74,16 @@
     {:comm (->PromptComm text)
      :text text}))
 
-(defn- state-dir-of [opts]
-  (config/default-state-dir opts))
+(defn- root-of [opts]
+  (config/default-root opts))
 
 (defn- print-error! [message]
   (binding [*out* *err*]
     (println message)))
 
 (defn- ensure-local-config! [opts]
-  (let [result (config/load-config-result {:state-dir (state-dir-of opts)})]
+  (let [result (config/load-config-result {:root (root-of opts)
+                                           :fs   (fs/instance)})]
     (when (:missing-config? result)
       (print-error! (get-in result [:errors 0 :value]))
       false)))
@@ -93,8 +94,8 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-      (let [state-dir     (state-dir-of opts)
-            cfg           (config/load-config! state-dir (fs/instance) "prompt-cli")
+      (let [root     (root-of opts)
+            cfg           (config/load-config! root (fs/instance) "prompt-cli")
             _             (config/install! {:config cfg})
             session-store (store/registered-store)
             resumed-key   (when (:resume opts)

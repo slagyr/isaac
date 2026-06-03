@@ -5,11 +5,10 @@ Feature: Root-pointer config file
 
   Lookup order (first hit wins):
     1. --root CLI flag
-    2. --home CLI flag (LEGACY alias, appends /.isaac)
-    3. ISAAC_ROOT environment variable
-    4. ~/.config/isaac.edn with {:root "/path"}
-    5. ~/.isaac.edn with {:root "/path"}
-    6. ~/.isaac (built-in default)
+    2. ISAAC_ROOT environment variable
+    3. ~/.config/isaac.edn with {:root "/path"}
+    4. ~/.isaac.edn with {:root "/path"}
+    5. ~/.isaac (built-in default)
 
   Background:
     Given the user home directory is "/tmp/user"

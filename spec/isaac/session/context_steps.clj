@@ -40,17 +40,17 @@
 (defn- resolve-home-path [home]
   (cond
     (str/starts-with? home "/") home
-    (and (g/get :state-dir)
-         (= home (subs (g/get :state-dir) 1))) (g/get :state-dir)
+    (and (g/get :root)
+         (= home (subs (g/get :root) 1))) (g/get :root)
     :else (str (System/getProperty "user.dir") "/" home)))
 
-(defn -resolve-turn-context [{:keys [agents crew models state-dir]} crew-id]
+(defn -resolve-turn-context [{:keys [agents crew models root]} crew-id]
   (with-feature-fs
-    #(nexus/-with-nested-nexus (cond-> {} state-dir (assoc :state-dir state-dir))
+    #(nexus/-with-nested-nexus (cond-> {} root (assoc :root root))
        (let [agents (or (not-empty crew) (not-empty agents))
              cfg    (if agents
                        (build-synthetic-cfg agents models)
-                       (:config (config/load-config-result {:state-dir state-dir :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
+                       (:config (config/load-config-result {:root root :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
              ctx    (config/resolve-crew-context cfg crew-id)]
          (assoc ctx :boot-files (session-ctx/read-boot-files nil))))))
 
@@ -59,7 +59,7 @@
             (-resolve-turn-context {:models    (g/get :models)
                                     :agents    (g/get :agents)
                                     :crew      (g/get :crew)
-                                    :state-dir (g/get :state-dir)}
+                                    :root (g/get :root)}
                                    agent)))
 
 (defn resolved-soul-contains [expected]
@@ -79,7 +79,7 @@
   "Resolves the turn context (soul, model, provider, provider-config)
    for the given crew id. Uses a synthetic cfg built from in-memory
    :crew/:models atoms when present; otherwise loads from disk at
-   :workspace-home or :state-dir. Stores result in :resolved-ctx.")
+   :workspace-home or :root. Stores result in :resolved-ctx.")
 
 (defthen "the resolved soul contains {expected:string}" isaac.session.context-steps/resolved-soul-contains)
 

@@ -16,7 +16,7 @@ Feature: Config hot-reload
   socket does not rebind on port changes.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And config:
       | key              | value |
       | bind-server-port | false |

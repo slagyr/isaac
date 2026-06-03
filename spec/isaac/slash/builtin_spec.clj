@@ -14,7 +14,7 @@
 
 (defn- ctx []
   (let [session-store (memory/create-store)]
-    {:state-dir test-dir :session-store session-store}))
+    {:root test-dir :session-store session-store}))
 
 (defn- create-session! [session-key session-store]
   (store/open-session! session-store session-key {:crew "main"}))
@@ -25,22 +25,22 @@
 
     (it "keeps absolute paths"
       (should= "/tmp/workspace"
-               (#'sut/resolve-cwd-path {:state-dir test-dir} "/tmp/workspace")))
+               (#'sut/resolve-cwd-path {:root test-dir} "/tmp/workspace")))
 
     (it "expands home-relative paths"
       (with-redefs [root/user-home (fn [] "/Users/spec")]
         (should= "/Users/spec/project"
-                 (#'sut/resolve-cwd-path {:state-dir test-dir} "~/project"))))
+                 (#'sut/resolve-cwd-path {:root test-dir} "~/project"))))
 
-    (it "resolves relative paths from state-dir"
+    (it "resolves relative paths from root"
       (should= (str test-dir "/workspace")
-               (#'sut/resolve-cwd-path {:state-dir test-dir} "workspace")))
+               (#'sut/resolve-cwd-path {:root test-dir} "workspace")))
 
-    (it "throws for relative paths without state-dir"
-      (with-redefs [config/state-dir (fn [] nil)
+    (it "throws for relative paths without root"
+      (with-redefs [config/root (fn [] nil)
                     nexus/get        (fn [_] nil)]
         (should-throw clojure.lang.ExceptionInfo
-                      "cwd command requires :state-dir for relative paths"
+                      "cwd command requires :root for relative paths"
                       (#'sut/resolve-cwd-path {} "workspace")))))
 
   (describe "handle-cwd"

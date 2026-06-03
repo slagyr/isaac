@@ -5,7 +5,7 @@ Feature: Isaac .env file for ${VAR} substitution
   cwd-local .env.
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
+    Given an Isaac root at "isaac-state"
 
   Scenario: ${VAR} resolves from the isaac .env file
     Given the isaac .env file contains:

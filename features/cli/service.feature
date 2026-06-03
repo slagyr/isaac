@@ -10,7 +10,7 @@ Feature: isaac service — macOS LaunchAgent management
   supported on <OS>" and exits non-zero.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the operating system is "Mac OS X"
     And launchctl is stubbed
 

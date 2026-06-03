@@ -27,7 +27,7 @@ Feature: CLI version
     And the exit code is 0
 
   Scenario: --version works even when no config is present
-    Given an empty Isaac state directory "/test/no-config"
+    Given an empty Isaac root at "/test/no-config"
     When isaac is run with "--version"
     Then the stdout matches:
       | pattern              |

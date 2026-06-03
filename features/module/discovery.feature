@@ -4,7 +4,7 @@ Feature: Module discovery
   under :module-index. No module source code is loaded at this stage.
 
   Scenario: Discover declared modules
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.pigeon/deps.edn" exists with:
       """
       {:paths ["resources"]}
@@ -35,7 +35,7 @@ Feature: Module discovery
       | /module-index/isaac.comm.crow/manifest/id        | isaac.comm.crow                             |
 
   Scenario: Hard error when a declared module's manifest is invalid
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.pigeon/deps.edn" exists with:
       """
       {:paths ["resources"]}
@@ -57,7 +57,7 @@ Feature: Module discovery
       | /module-index/isaac.comm.pigeon |       |
 
   Scenario: Hard error when a declared module is not found
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.ghost {:local/root "/tmp/isaac/.isaac/modules/isaac.comm.ghost"}}}

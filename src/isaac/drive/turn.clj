@@ -99,9 +99,9 @@
 
 (defonce in-flight-compactions (atom {}))
 
-(defn- normalize-ctx [ctx-or-state-dir]
+(defn- normalize-ctx [ctx-or-root]
   (merge (nexus/necho)
-         (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})))
+         (if (map? ctx-or-root) ctx-or-root {:root ctx-or-root})))
 
 (defn clear-async-compactions! []
   (reset! in-flight-compactions {}))
@@ -137,8 +137,8 @@
 (defn run-tool-calls!
   ([session-key tool-results]
     (run-tool-calls! {} session-key tool-results))
-  ([ctx-or-state-dir session-key tool-results]
-   (let [ctx (normalize-ctx ctx-or-state-dir)]
+  ([ctx-or-root session-key tool-results]
+   (let [ctx (normalize-ctx ctx-or-root)]
      (doseq [[tc result] tool-results]
        (append-message! ctx session-key
                         {:role    "assistant"
@@ -233,8 +233,8 @@
 (defn process-response!
   ([session-key result {:keys [model provider]}]
    (process-response* (nexus/necho) session-key result {:model model :provider provider}))
-  ([ctx-or-state-dir session-key result opts]
-   (process-response* (normalize-ctx ctx-or-state-dir)
+  ([ctx-or-root session-key result opts]
+   (process-response* (normalize-ctx ctx-or-root)
                        session-key result opts)))
 
 ;; endregion ^^^^^ Response Persistence ^^^^^
@@ -431,7 +431,7 @@
                                           {:model               model
                                            :api                 provider
                                            :soul                soul
-                                           :state-dir           (:state-dir opts)
+                                           :root           (:root opts)
                                            :session-store       (:session-store opts)
                                            :context-window      context-window
                                            :transcript-lock     transcript-lock
@@ -486,7 +486,7 @@
                                             :context-window  context-window
                                             :model           model
                                             :provider        provider
-                                            :state-dir       (:state-dir opts)
+                                            :root       (:root opts)
                                             :session-store   (:session-store opts)
                                             :soul            soul
                                             :transcript-lock transcript-lock}
@@ -551,8 +551,8 @@
 (defn check-compaction!
   ([session-key opts]
    (run-compaction-check! session-key (merge (nexus/necho) opts) 1 true))
-  ([ctx-or-state-dir session-key opts]
-   (run-compaction-check! session-key (merge opts (normalize-ctx ctx-or-state-dir)) 1 true)))
+  ([ctx-or-root session-key opts]
+   (run-compaction-check! session-key (merge opts (normalize-ctx ctx-or-root)) 1 true)))
 
 ;; endregion ^^^^^ Context Compaction ^^^^^
 
@@ -606,14 +606,14 @@
 ;; region ----- Public API -----
 
 (defn- augment-provider
-  "Wrap an upstream Api with per-turn runtime values (state-dir,
+  "Wrap an upstream Api with per-turn runtime values (root,
    session-key, context-window, and model-cfg overrides) merged into
    its config. Returns a new Api instance — the upstream one is unchanged."
-  [state-dir p session-key context-window model-cfg-overrides]
+  [root p session-key context-window model-cfg-overrides]
   (when p
     (let [cfg (merge (or (api/config p) {})
                      model-cfg-overrides
-                     {:state-dir      state-dir
+                     {:root      root
                       :session-key    session-key
                       :context-window context-window})]
       (llm-provider/make-provider (api/display-name p) cfg))))
@@ -622,8 +622,8 @@
   {:name   :turn
    :type   :map
    :schema {:charge        {:type :ignore  :description "Resolved charge — the comm-supplied inputs"}
-            :session-store {:type :ignore  :description "Session store backing this turn (derived from charge or state-dir)"}
-            :state-dir     {:type :string  :description "Isaac state directory"}
+            :session-store {:type :ignore  :description "Session store backing this turn (derived from charge or root)"}
+            :root     {:type :string  :description "Isaac state directory"}
             :effort        {:type :long    :description "Per-turn effort budget, nil when model disallows effort"}
             :allowed-tools {:type :ignore  :description "Set of tool keywords allowed for this turn's crew"}
             :boot-files    {:type :ignore  :description "Boot-file contents read from the session cwd"}
@@ -639,16 +639,16 @@
   [charge]
   (let [{:keys [session-key crew crew-members context-window
                 model model-cfg provider]} charge
-        state-dir      (or (nexus/get :state-dir) (get-in charge [:config :state-dir]))
+        root      (or (nexus/get :root) (get-in charge [:config :root]))
         session-store* (nexus/get-in [:sessions :store])
         session        (store/get-session session-store* session-key)
-        skill-disclosure (or (session-ctx/read-skill-disclosure (:config charge) state-dir (:cwd session))
+        skill-disclosure (or (session-ctx/read-skill-disclosure (:config charge) root (:cwd session))
                              {:menu-text nil :tool-names #{}})
         allowed-tools  (merge-allowed-tools (allowed-tool-names crew-members crew)
                                             (:tool-names skill-disclosure))
         boot-files     (session-ctx/read-boot-files (:cwd session))
-        rules-text     (session-ctx/read-rules-text (:config charge) state-dir (:cwd session))
-        augmented      (augment-provider state-dir provider session-key context-window
+        rules-text     (session-ctx/read-rules-text (:config charge) root (:cwd session))
+        augmented      (augment-provider root provider session-key context-window
                                          (select-keys (or model-cfg {})
                                                       [:thinking-budget-max :think-mode]))]
     (log/debug :turn/context-resolved
@@ -667,7 +667,7 @@
                      {:charge        charge
                       ;; convenience accessors for storage helpers — same value, derived via session-store helper
                       :session-store session-store*
-                      :state-dir     state-dir
+                      :root     root
                       :effort        (when (get (or model-cfg {}) :allows-effort true)
                                        (:effort charge))
                       :allowed-tools allowed-tools

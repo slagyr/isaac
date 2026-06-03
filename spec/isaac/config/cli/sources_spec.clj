@@ -9,6 +9,7 @@
      [speclj.core :refer :all]))
 
 (def ^:private test-home "/test/config-sources")
+(def ^:private test-root (str test-home "/.isaac"))
 
 (defn- write-config! [path data]
   (let [fs* (nexus/get :fs)]
@@ -23,9 +24,9 @@
                                (example))))
 
   (it "lists the config files that contributed"
-    (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {(keyword marigold/captain) {}}})
-    (write-config! (str test-home "/.isaac/config/crew/" marigold/first-mate ".edn")
+    (write-config! (str test-root "/config/isaac.edn") {:crew {(keyword marigold/captain) {}}})
+    (write-config! (str test-root "/config/crew/" marigold/first-mate ".edn")
                    {:model (keyword marigold/helm-mark-iii)})
-    (should= 0 (sut/run {:home test-home} ["sources"]))
+    (should= 0 (sut/run {:root test-root} ["sources"]))
     (should-contain "config/isaac.edn" (str *out*))
     (should-contain (str "config/crew/" marigold/first-mate ".edn") (str *out*))))

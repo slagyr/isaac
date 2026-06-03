@@ -19,7 +19,7 @@ Feature: Hail delivery
   turn open so the in-flight window is observable.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And default Grover setup
 
   Scenario: a bound delivery dispatches a turn and moves to delivered

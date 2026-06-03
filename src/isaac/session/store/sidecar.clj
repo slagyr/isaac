@@ -35,53 +35,53 @@
 (defn- with-session-defaults [entry]
   (c/with-session-defaults now-iso normalize-timestamp entry))
 
-(defn- migrate-transcript! [state-dir session-file fs]
-  (c/migrate-transcript! normalize-timestamp state-dir session-file fs))
+(defn- migrate-transcript! [root session-file fs]
+  (c/migrate-transcript! normalize-timestamp root session-file fs))
 
 (defn- normalize-index-store [raw]
   (c/normalize-index-store with-session-defaults raw))
 
-(defn- read-sidecar-store [state-dir fs]
-  (c/read-sidecar-store with-session-defaults state-dir fs))
+(defn- read-sidecar-store [root fs]
+  (c/read-sidecar-store with-session-defaults root fs))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Storage -----
 
-(defn- write-sidecar! [state-dir {:keys [id] :as entry} fs]
-  (let [path (c/sidecar-path state-dir id)]
+(defn- write-sidecar! [root {:keys [id] :as entry} fs]
+  (let [path (c/sidecar-path root id)]
     (c/mkdirs*! fs (fs/parent path))
     (c/spit*! fs path (c/write-edn entry))))
 
-(defn- read-legacy-index-store [state-dir fs]
-  (let [path (c/index-path state-dir)
+(defn- read-legacy-index-store [root fs]
+  (let [path (c/index-path root)
         raw  (if (c/exists?* fs path) (edn/read-string (c/slurp* fs path)) {})]
     (normalize-index-store raw)))
 
-(defn- migrate-legacy-index! [state-dir fs]
-  (let [legacy-store  (read-legacy-index-store state-dir fs)
-        sidecar-store (read-sidecar-store state-dir fs)]
+(defn- migrate-legacy-index! [root fs]
+  (let [legacy-store  (read-legacy-index-store root fs)
+        sidecar-store (read-sidecar-store root fs)]
     (doseq [[id entry] legacy-store
             :when (not (contains? sidecar-store id))]
       (when (and (:session-file entry)
-                 (c/exists?* fs (c/transcript-path state-dir (:session-file entry))))
-        (migrate-transcript! state-dir (:session-file entry) fs))
-      (write-sidecar! state-dir entry fs))))
+                 (c/exists?* fs (c/transcript-path root (:session-file entry))))
+        (migrate-transcript! root (:session-file entry) fs))
+      (write-sidecar! root entry fs))))
 
-(defn- read-session-store [state-dir fs]
-  (migrate-legacy-index! state-dir fs)
-  (let [store (read-sidecar-store state-dir fs)]
+(defn- read-session-store [root fs]
+  (migrate-legacy-index! root fs)
+  (let [store (read-sidecar-store root fs)]
     (doseq [entry (vals store)
             :when (and (:session-file entry)
-                       (c/exists?* fs (c/transcript-path state-dir (:session-file entry))))]
-      (migrate-transcript! state-dir (:session-file entry) fs))
+                       (c/exists?* fs (c/transcript-path root (:session-file entry))))]
+      (migrate-transcript! root (:session-file entry) fs))
     store))
 
-(defn- update-sidecar-entry! [state-dir identifier updater fs]
-  (let [store (read-session-store state-dir fs)]
+(defn- update-sidecar-entry! [root identifier updater fs]
+  (let [store (read-session-store root fs)]
     (when-let [id (c/resolve-entry-id store identifier)]
       (let [entry (c/conform-session! (updater (get store id)))]
-        (write-sidecar! state-dir entry fs)
+        (write-sidecar! root entry fs)
         entry))))
 
 ;; endregion ^^^^^ Storage ^^^^^
@@ -89,39 +89,39 @@
 ;; region ----- Public API -----
 
 (defn create-session!
-  ([state-dir identifier]
-   (create-session! state-dir identifier {} (runtime-fs!)))
-  ([state-dir identifier opts]
-   (create-session! state-dir identifier opts (runtime-fs!)))
-  ([state-dir identifier opts fs]
+  ([root identifier]
+   (create-session! root identifier {} (runtime-fs!)))
+  ([root identifier opts]
+   (create-session! root identifier opts (runtime-fs!)))
+  ([root identifier opts fs]
    (c/create-session! read-session-store
-                      (fn [_store _id entry] (write-sidecar! state-dir entry fs))
+                      (fn [_store _id entry] (write-sidecar! root entry fs))
                       now-iso normalize-timestamp
-                      state-dir identifier opts fs)))
+                      root identifier opts fs)))
 
-(defn- get-session [state-dir identifier fs]
-  (c/get-session read-session-store state-dir identifier fs))
+(defn- get-session [root identifier fs]
+  (c/get-session read-session-store root identifier fs))
 
-(defn- get-transcript [state-dir identifier fs]
-  (c/get-transcript get-session migrate-transcript! state-dir identifier fs))
+(defn- get-transcript [root identifier fs]
+  (c/get-transcript get-session migrate-transcript! root identifier fs))
 
-(defn- delete-session! [state-dir identifier fs]
-  (let [store (read-session-store state-dir fs)]
+(defn- delete-session! [root identifier fs]
+  (let [store (read-session-store root fs)]
     (when-let [id (c/resolve-entry-id store identifier)]
       (let [entry (get store id)
-            path  (c/transcript-path state-dir (:session-file entry))
-            meta  (c/sidecar-path state-dir id)]
+            path  (c/transcript-path root (:session-file entry))
+            meta  (c/sidecar-path root id)]
         (when (c/exists?* fs meta) (c/delete*! fs meta))
         (when (c/exists?* fs path) (c/delete*! fs path))
         true))))
 
 (defn update-tokens!
-  ([state-dir identifier updates]
-   (update-tokens! state-dir identifier updates (runtime-fs!)))
-  ([state-dir identifier {:keys [cache-read cache-write] :as updates} fs]
+  ([root identifier updates]
+   (update-tokens! root identifier updates (runtime-fs!)))
+  ([root identifier {:keys [cache-read cache-write] :as updates} fs]
    (let [input-tokens  (:input-tokens updates)
          output-tokens (:output-tokens updates)]
-     (update-sidecar-entry! state-dir identifier
+     (update-sidecar-entry! root identifier
                             (fn [entry]
                               (cond-> (-> entry
                                           (update :input-tokens + (or input-tokens 0))
@@ -137,42 +137,42 @@
 
 ;; region ----- Store type -----
 
-(deftype SidecarSessionStore [state-dir fs]
+(deftype SidecarSessionStore [root fs]
   store/SessionStore
   (open-session! [_ name opts]
-    (create-session! state-dir name opts fs))
+    (create-session! root name opts fs))
   (delete-session! [_ name]
-    (delete-session! state-dir name fs))
+    (delete-session! root name fs))
   (list-sessions [_]
-    (c/list-sessions read-session-store state-dir nil fs))
+    (c/list-sessions read-session-store root nil fs))
   (list-sessions-by-agent [_ agent]
-    (c/list-sessions read-session-store state-dir agent fs))
+    (c/list-sessions read-session-store root agent fs))
   (most-recent-session [_]
-    (c/most-recent-session read-session-store state-dir nil fs))
+    (c/most-recent-session read-session-store root nil fs))
   (get-session [_ name]
-    (get-session state-dir name fs))
+    (get-session root name fs))
   (get-transcript [_ name]
-    (get-transcript state-dir name fs))
+    (get-transcript root name fs))
   (active-transcript [_ name]
-    (c/active-transcript get-session migrate-transcript! state-dir name fs))
+    (c/active-transcript get-session migrate-transcript! root name fs))
   (update-session! [_ name updates]
-    (c/update-session! update-sidecar-entry! normalize-timestamp state-dir name updates fs))
+    (c/update-session! update-sidecar-entry! normalize-timestamp root name updates fs))
   (append-message! [_ name message]
-    (c/append-message! get-session get-transcript update-sidecar-entry! now-iso state-dir name message fs))
+    (c/append-message! get-session get-transcript update-sidecar-entry! now-iso root name message fs))
   (append-error! [_ name error]
-    (c/append-error! get-session get-transcript update-sidecar-entry! now-iso state-dir name error fs))
+    (c/append-error! get-session get-transcript update-sidecar-entry! now-iso root name error fs))
   (append-compaction! [_ name compaction]
-    (c/append-compaction! get-session get-transcript update-sidecar-entry! now-iso state-dir name compaction fs))
+    (c/append-compaction! get-session get-transcript update-sidecar-entry! now-iso root name compaction fs))
   (splice-compaction! [_ name compaction]
-    (c/splice-compaction! get-session get-transcript update-sidecar-entry! now-iso state-dir name compaction fs))
+    (c/splice-compaction! get-session get-transcript update-sidecar-entry! now-iso root name compaction fs))
   (truncate-after-compaction! [_ name]
-    (c/truncate-after-compaction! get-session state-dir name fs)))
+    (c/truncate-after-compaction! get-session root name fs)))
 
 (defn create-store
-  ([state-dir]
-   (create-store state-dir (runtime-fs!)))
-  ([state-dir fs*]
-   (->SidecarSessionStore state-dir fs*)))
+  ([root]
+   (create-store root (runtime-fs!)))
+  ([root fs*]
+   (->SidecarSessionStore root fs*)))
 
 (store/register-factory! :jsonl-edn-sidecar #'create-store)
 

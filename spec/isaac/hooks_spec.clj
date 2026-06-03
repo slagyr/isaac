@@ -88,28 +88,28 @@
 
   (describe "unauthenticated handler"
     (it "checks the path before unknown-hook requests fail"
-      (nexus/-with-nexus {:state-dir "/test"}
+      (nexus/-with-nexus {:root "/test"}
         (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {}))]
           (should= 404 (:status resp))))))
 
   (describe "method check"
     (it "returns 405 for GET requests"
-      (nexus/-with-nexus {:state-dir "/test"}
+      (nexus/-with-nexus {:root "/test"}
         (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (get-request (str "/hooks/" marigold/lettuce-hook) {}))]
           (should= 405 (:status resp))))))
 
   (describe "path lookup"
     (it "returns 404 for unknown hook name"
-      (nexus/-with-nexus {:state-dir "/test"}
+      (nexus/-with-nexus {:root "/test"}
         (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {}))]
           (should= 404 (:status resp))))))
 
   (describe "content-type check"
     (it "returns 415 for non-JSON content-type"
-      (nexus/-with-nexus {:state-dir "/test"}
+      (nexus/-with-nexus {:root "/test"}
         (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler {:request-method :post
                                  :uri            (str "/hooks/" marigold/lettuce-hook)
@@ -119,7 +119,7 @@
 
   (describe "body parse"
     (it "returns 400 for malformed JSON"
-      (nexus/-with-nexus {:state-dir "/test"}
+      (nexus/-with-nexus {:root "/test"}
         (config/dangerously-install-config! test-cfg "spec")
         (let [resp (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook) "not-json" {}))]
           (should= 400 (:status resp))))))
@@ -133,14 +133,14 @@
                          (str/join "\n"))]
         (should-not-contain "isaac.comm.acp" ns-form)))
 
-    (it "passes the state-dir on :config to charge/build"
-      (let [captured-state-dir (atom nil)
+    (it "passes the root on :config to charge/build"
+      (let [captured-root (atom nil)
             mem                (fs/mem-fs)]
         (with-redefs [charge/build              (fn [input]
-                                                  (reset! captured-state-dir (get-in input [:config :state-dir]))
+                                                  (reset! captured-root (get-in input [:config :root]))
                                                   {:charge/type :charge})
                       isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:root     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
             (config/dangerously-install-config! test-cfg "spec")
@@ -148,7 +148,7 @@
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
-              (should= "/tmp/hooks-home/.isaac" @captured-state-dir))))))
+              (should= "/tmp/hooks-home/.isaac" @captured-root))))))
 
     (it "uses the hook model's provider when dispatching"
       (let [captured (atom nil)
@@ -167,7 +167,7 @@
                                                   (reset! captured input)
                                                   {:charge/type :charge})
                        isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:root     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
             (config/dangerously-install-config! hook-cfg "spec")
@@ -193,7 +193,7 @@
                                                   (reset! captured input)
                                                   {:charge/type :charge})
                       isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:root     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}
             (config/dangerously-install-config! hook-cfg "spec")
@@ -217,7 +217,7 @@
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:root     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
             (config/dangerously-install-config! hook-cfg "spec")
@@ -238,7 +238,7 @@
       (let [mem       (fs/mem-fs)
             mem-store (store/create nil :memory)]
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_] nil)]
-          (nexus/-with-nexus {:state-dir     "/tmp/hooks-home/.isaac"
+          (nexus/-with-nexus {:root     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}
             (config/dangerously-install-config! test-cfg "spec")

@@ -21,7 +21,7 @@
     {:config    cfg
      :cwd       (:cwd session)
      :fs        (bounds/filesystem args)
-     :state-dir (or (:state-dir cfg) (bounds/state-dir args))}))
+     :root (or (:root cfg) (bounds/root args))}))
 
 (defn load-skill-tool
   "Load the full body of a discovered skill for the calling session."

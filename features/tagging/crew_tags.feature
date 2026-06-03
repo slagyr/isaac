@@ -4,7 +4,7 @@ Feature: Crew tags
   (:role/worker, :project/chess); namespacing is a convention.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: crew with :tags round-trips through config get
     Given default Grover setup

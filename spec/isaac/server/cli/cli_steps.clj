@@ -243,18 +243,13 @@
                                (run!))
                              (run!)))
         provider-configs (g/get :provider-configs)
-        state-dir        (g/get :state-dir)
-        isaac-home       (g/get :isaac-home)
-        extra-opts       (let [base-opts (cond
-                                           isaac-home {:home isaac-home}
-                                           state-dir  {:state-dir state-dir}
-                                           :else      {})
+        root-dir         (g/get :root)
+        extra-opts       (let [base-opts (cond-> {}
+                                           root-dir (assoc :root root-dir))
                                merged    (cond-> base-opts
-                                           (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
+                                           provider-configs (assoc :provider-configs provider-configs)
                                            (g/get :main-extra-opts) (merge (g/get :main-extra-opts)))]
-                           (if isaac-home
-                             (dissoc merged :state-dir)
-                             merged))
+                           merged)
         stdin-content    (g/get :stdin-content)
          run-final        (fn []
                             (let [run* (fn [run-opts]
@@ -303,11 +298,9 @@
 
 (defn isaac-run-background [args]
   (let [argv          (parse-argv args)
-         state-dir     (g/get :state-dir)
-         isaac-home    (g/get :isaac-home)
+         root-dir      (g/get :root)
          extra-opts    (cond-> {}
-                         isaac-home (assoc :home isaac-home)
-                         state-dir  (assoc :state-dir state-dir))
+                         root-dir (assoc :root root-dir))
          mem-fs        (g/get :mem-fs)
          output-writer (java.io.StringWriter.)
          error-writer  (java.io.StringWriter.)]
@@ -452,52 +445,38 @@
               iso)]
     (g/assoc! :current-time (java.time.Instant/parse iso))))
 
-(defn isaac-home-contains-config [home doc-string]
-  (let [abs-home   (absolute-path home)
-        config-dir (str abs-home "/.isaac/config")
+(defn isaac-root-contains-config [root doc-string]
+  (let [abs-root    (absolute-path root)
+        config-dir  (str abs-root "/config")
         config-file (str config-dir "/isaac.edn")
-        mem-fs     (g/get :mem-fs)]
+        mem-fs      (g/get :mem-fs)]
     (if mem-fs
       (nexus/-with-nested-nexus {:fs mem-fs}
         (fs/mkdirs mem-fs config-dir)
         (fs/spit   mem-fs config-file (str/trim doc-string)))
       (do (.mkdirs (io/file config-dir))
-          (spit config-file (str/trim doc-string)))))
-  (g/assoc! :isaac-home (absolute-path home)))
+          (spit config-file (str/trim doc-string))))
+    (g/assoc! :root abs-root)))
 
-(defn isaac-home-has-no-config [home]
-  (let [abs-home    (absolute-path home)
-        state-dir   (str abs-home "/.isaac")
-        config-dir  (str state-dir "/config")
+(defn isaac-root-has-no-config [root]
+  (let [abs-root    (absolute-path root)
+        config-dir  (str abs-root "/config")
         config-file (str config-dir "/isaac.edn")]
     (if-let [mem-fs (g/get :mem-fs)]
       (nexus/-with-nested-nexus {:fs mem-fs}
         (when (fs/exists? mem-fs config-file)
           (fs/delete mem-fs config-file))
-        (fs/mkdirs mem-fs state-dir))
+        (fs/mkdirs mem-fs abs-root))
       (do
         (when (.exists (io/file config-file))
           (.delete (io/file config-file)))
-        (.mkdirs (io/file state-dir))))
-    (g/assoc! :isaac-home abs-home)))
-
-(defn empty-isaac-home [path]
-  (let [home      (absolute-path path)
-        state-dir (str home "/.isaac")]
-    (if-let [mem-fs (g/get :mem-fs)]
-      (nexus/-with-nested-nexus {:fs mem-fs}
-        (delete-tree! home)
-        (fs/mkdirs mem-fs state-dir))
-      (do
-        (delete-tree! home)
-        (.mkdirs (io/file state-dir))))
-    (g/assoc! :isaac-home home)
-    (g/assoc! :state-dir state-dir)))
+        (.mkdirs (io/file abs-root))))
+    (g/assoc! :root abs-root)))
 
 (defn isaac-file-contains [path content]
   (let [full-path (if (str/starts-with? path "/")
                     path
-                    (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path))
+                    (str (g/get :root) "/" path))
         expected  (str/trim content)]
     (if-let [mem-fs (g/get :mem-fs)]
       (nexus/-with-nested-nexus {:fs mem-fs}
@@ -514,10 +493,10 @@
    can poll while the command is still running.")
 
 (defwhen "isaac is run with {args:string}" isaac.server.cli.cli-steps/isaac-run
-  "Runs 'isaac <args>' in-process (not a subprocess). Parses argv with
+   "Runs 'isaac <args>' in-process (not a subprocess). Parses argv with
    quoted-token handling, binds *in*/*out*/*err* to capture streams,
    applies any cmd-stubs, propagates mem-fs if set, and routes through
-   main/*extra-opts* when state-dir / provider-configs / isaac-home are
+   main/*extra-opts* when root / provider-configs are
    in scope. Populates :llm-request (from grover), :output (stdout),
    :stderr, :exit-code for downstream assertions.")
 
@@ -593,20 +572,15 @@
   "Pins isaac.tool.memory/*now* for the next 'isaac is run with' invocation so
    CLI scenarios can assert deterministic timestamps.")
 
-(defgiven "isaac home {home:string} contains config:" isaac.server.cli.cli-steps/isaac-home-contains-config
-  "Writes the heredoc content as <home>/.isaac/config/isaac.edn. Differs
+(defgiven "Isaac root {root:string} contains config:" isaac.server.cli.cli-steps/isaac-root-contains-config
+  "Writes the heredoc content as <root>/config/isaac.edn. Differs
    from 'the isaac EDN file' steps, which write per-entity files under
-   state-dir. This is for the monolithic root config in an isaac-home.")
+   root. This is for the monolithic root config.")
 
-(defgiven "isaac home {home:string} has no config file" isaac.server.cli.cli-steps/isaac-home-has-no-config)
-
-(defgiven "an empty isaac home at {path:string}" isaac.server.cli.cli-steps/empty-isaac-home
-  "Deletes the path, creates <path>/.isaac, and binds both :isaac-home
-   and :state-dir for the next 'isaac is run with'. Use when a scenario
-   needs a bare home without any config.")
+(defgiven "Isaac root {root:string} has no config file" isaac.server.cli.cli-steps/isaac-root-has-no-config)
 
 (defthen "the isaac file {path:string} contains:" isaac.server.cli.cli-steps/isaac-file-contains
-  "Asserts an exact-match on file content (trimmed). Path is state-dir-
+  "Asserts an exact-match on file content (trimmed). Path is root-
    relative. Pair with 'the isaac EDN file X exists with:' for the write
    side; 'contains:' is for read-side verification.")
 

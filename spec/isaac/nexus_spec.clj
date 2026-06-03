@@ -17,25 +17,25 @@
   (describe "install! and current"
 
     (it "installs and returns the current runtime"
-      (let [runtime {:state-dir "/tmp/test"
+      (let [runtime {:root "/tmp/test"
                      :config    (atom {:crew {}})}]
         (sut/install! runtime)
         (should= runtime (sut/necho))
-        (should= "/tmp/test" (sut/get :state-dir)))))
+        (should= "/tmp/test" (sut/get :root)))))
 
   (describe "register! and get"
 
     (it "stores and retrieves a flat value by path"
-      (sut/register! [:state-dir] "/tmp/test")
-      (should= "/tmp/test" (sut/get :state-dir)))
+      (sut/register! [:root] "/tmp/test")
+      (should= "/tmp/test" (sut/get :root)))
 
     (it "returns nil for an unregistered key"
-      (should-be-nil (sut/get :state-dir)))
+      (should-be-nil (sut/get :root)))
 
     (it "overwrites a previous value for the same path"
-      (sut/register! [:state-dir] "/tmp/first")
-      (sut/register! [:state-dir] "/tmp/second")
-      (should= "/tmp/second" (sut/get :state-dir)))
+      (sut/register! [:root] "/tmp/first")
+      (sut/register! [:root] "/tmp/second")
+      (should= "/tmp/second" (sut/get :root)))
 
     (it "stores values of any type"
       (let [a (atom {})]
@@ -49,8 +49,8 @@
   (describe "get-in"
 
     (it "returns a flat value by single-element path"
-      (sut/register! [:state-dir] "/tmp/test")
-      (should= "/tmp/test" (sut/get-in [:state-dir])))
+      (sut/register! [:root] "/tmp/test")
+      (should= "/tmp/test" (sut/get-in [:root])))
 
     (it "returns a nested value by multi-element path"
       (sut/register! [:sessions :store] ::store)
@@ -72,14 +72,14 @@
   (describe "registered?"
 
     (it "returns false before registration"
-      (should-not (sut/registered? [:state-dir])))
+      (should-not (sut/registered? [:root])))
 
     (it "returns true after registration"
-      (sut/register! [:state-dir] "/tmp/test")
-      (should (sut/registered? [:state-dir])))
+      (sut/register! [:root] "/tmp/test")
+      (should (sut/registered? [:root])))
 
     (it "returns false for an unrelated key"
-      (sut/register! [:state-dir] "/tmp/test")
+      (sut/register! [:root] "/tmp/test")
       (should-not (sut/registered? [:server])))
 
     (it "returns true for a nested path"
@@ -98,34 +98,34 @@
 
     (it "provides an empty system when initialized with {}"
       (sut/-with-nexus {}
-        (should-be-nil (sut/get :state-dir))))
+        (should-be-nil (sut/get :root))))
 
     (it "provides an pre-populated system"
-      (sut/-with-nexus {:state-dir "/preset"}
-        (should= "/preset" (sut/get :state-dir))))
+      (sut/-with-nexus {:root "/preset"}
+        (should= "/preset" (sut/get :root))))
 
     (it "isolates mutations from the outer scope"
-      (sut/register! [:state-dir] "/outer")
+      (sut/register! [:root] "/outer")
       (sut/-with-nexus {}
-        (sut/register! [:state-dir] "/inner"))
-      (should= "/outer" (sut/get :state-dir)))
+        (sut/register! [:root] "/inner"))
+      (should= "/outer" (sut/get :root)))
 
     (it "inner scope does not see outer registrations"
-      (sut/register! [:state-dir] "/outer")
+      (sut/register! [:root] "/outer")
       (sut/-with-nexus {}
-        (should-be-nil (sut/get :state-dir))))
+        (should-be-nil (sut/get :root))))
 
     (it "is visible to new threads created inside the scope"
       (let [seen (promise)]
-        (sut/-with-nexus {:state-dir "/thread-visible"}
-          (.start (Thread. #(deliver seen (sut/get :state-dir))))
+        (sut/-with-nexus {:root "/thread-visible"}
+          (.start (Thread. #(deliver seen (sut/get :root))))
           (should= "/thread-visible" (deref seen 1000 ::timeout))))))
 
   (describe "bound-runtime-fn"
 
     (it "captures the current runtime for later thread execution"
-      (let [captured (sut/-with-nexus {:state-dir "/captured"}
-                       (sut/bound-runtime-fn (fn [] (sut/get :state-dir))))
+      (let [captured (sut/-with-nexus {:root "/captured"}
+                       (sut/bound-runtime-fn (fn [] (sut/get :root))))
             seen     (promise)]
         (sut/reset!)
         (.start (Thread. #(deliver seen (captured))))

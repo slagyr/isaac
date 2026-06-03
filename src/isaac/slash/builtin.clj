@@ -73,12 +73,12 @@
          :message (str "unknown crew: " args)}))))
 
 (defn- resolve-cwd-path [ctx path]
-  (let [state-dir (or (get-in ctx [:config :state-dir]) (:state-dir ctx) (config/state-dir))]
+  (let [root (or (get-in ctx [:config :root]) (:root ctx) (config/root))]
     (cond
       (str/starts-with? path "/") path
       (str/starts-with? path "~/") (str (root/user-home) (subs path 1))
-      (nil? state-dir) (throw (ex-info "cwd command requires :state-dir for relative paths" {:path path}))
-      :else (str state-dir "/" path))))
+      (nil? root) (throw (ex-info "cwd command requires :root for relative paths" {:path path}))
+      :else (str root "/" path))))
 
 (defn handle-cwd [session-key input ctx]
   (let [{:keys [args]} (parse-command input)]

@@ -127,12 +127,12 @@
                     cron-service/stop!   (fn [_] nil)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
         (sut/stop!))
       (should= {:cfg       {:cron      {"health-check" {:expr "0 9 * * *"}}
-                            :state-dir "/tmp/isaac"}
-                :state-dir "/tmp/isaac"}
+                            :root "/tmp/isaac"}
+                :root "/tmp/isaac"}
                @started)))
 
   (it "registers route extensions from every declared module at startup"
@@ -168,7 +168,7 @@
                                             (reset! stopped scheduler))]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
         (sut/stop!))
       (should= ::scheduler @stopped)))
@@ -186,7 +186,7 @@
                                                ::worker)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
       (should= {} @started)))
@@ -206,7 +206,7 @@
                                                ::hail-router)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
       (should= {} @started)))
@@ -226,7 +226,7 @@
                     hail-router/start!           (fn [_] ::hail-router)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
       (should= {} @started)))
@@ -241,7 +241,7 @@
                   worker/start!            (fn [_] ::worker)]
       (sut/start! {:host      "127.0.0.1"
                    :port      0
-                   :state-dir "/tmp/isaac"
+                   :root "/tmp/isaac"
                    :cfg       {}})
       (should= ::scheduler (nexus/get :scheduler))
       (sut/stop!)))
@@ -256,10 +256,10 @@
         (sut/start! {:host      "127.0.0.1"
                      :port      0
                      :home      "/tmp/service-home"
-                     :state-dir "/tmp/service-home/.isaac"
+                     :root "/tmp/service-home/.isaac"
                      :cfg       {}})
         (sut/stop!))
-      (should= {:state-dir "/tmp/service-home/.isaac"
+      (should= {:root "/tmp/service-home/.isaac"
                 :connect-ws! nil
                 :module-index nil}
                 @captured)))
@@ -297,7 +297,7 @@
                  (sut/start! {:cfg                {}
                               :port               7777
                               :host               "127.0.0.1"
-                              :state-dir          "/tmp/isaac"
+                              :root          "/tmp/isaac"
                               :start-http-server? false}))
         (sut/stop!))
       (should= nil @started-http)
@@ -316,7 +316,7 @@
                                               (reset! stopped worker))]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
        (should= ::worker @stopped)))
@@ -336,7 +336,7 @@
                                                (reset! stopped runner))]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
       (should= ::hail-router @stopped)))
@@ -354,7 +354,7 @@
                     worker/stop!             (fn [_] nil)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
-                     :state-dir "/tmp/isaac"
+                     :root "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
       (should= ::scheduler @stopped)))
@@ -372,7 +372,7 @@
                     httpkit/run-server                 (fn [_ _] (fn [] nil))
                     httpkit/server-port                (fn [_] 7001)
                     httpkit/server-stop!               (fn [_] nil)]
-        (sut/start! {:host "127.0.0.1" :port 0 :state-dir "/tmp/isaac-home/.isaac"})
+        (sut/start! {:host "127.0.0.1" :port 0 :root "/tmp/isaac-home/.isaac"})
         (sut/stop!))
       (should= "/tmp/isaac-home/.isaac" @created)
       (should= ::source @started)))
@@ -390,7 +390,7 @@
                     httpkit/run-server                 (fn [_ _] (fn [] nil))
                     httpkit/server-port                (fn [_] 7001)
                     httpkit/server-stop!               (fn [_] nil)]
-        (sut/start! {:host "127.0.0.1" :port 0 :state-dir "/tmp/isaac" :cfg {:server {:hot-reload false}}})
+        (sut/start! {:host "127.0.0.1" :port 0 :root "/tmp/isaac" :cfg {:server {:hot-reload false}}})
         (sut/stop!))
       (should= nil @created)
       (should= nil @started)))
@@ -408,7 +408,7 @@
       (should= ::source @stopped)))
 
   (it "reloads the in-memory config when the config source publishes a change"
-    (let [source (config/memory-source marigold/state-dir)
+    (let [source (config/memory-source marigold/root)
           helm   (keyword marigold/helm-systems)
           crew   marigold/captain]
       (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
@@ -423,7 +423,7 @@
                                                :providers {marigold/helm-systems {:api marigold/helm-api}}}
                         :config-change-source source
                         :host                 "127.0.0.1"
-                        :state-dir            (str marigold/home "/.isaac")
+                        :root            (str marigold/home "/.isaac")
                         :port                 0})
           (marigold/write-crew! crew {:model :grover :soul "new"})
           (config/notify-path! source (str marigold/home "/.isaac/config/crew/" crew ".edn"))
@@ -432,7 +432,7 @@
           (sut/stop!)))))
 
   (it "preserves the previous config when reload fails validation"
-    (let [source     (config/memory-source marigold/state-dir)
+    (let [source     (config/memory-source marigold/root)
           orig-poll  config/poll!
           poll-count (atom 0)
           poll-ready (promise)]
@@ -450,7 +450,7 @@
                                                :providers {marigold/grover-api {:api marigold/grover-api}}}
                        :config-change-source source
                        :host                 "127.0.0.1"
-                       :state-dir            (str marigold/home "/.isaac")
+                       :root            (str marigold/home "/.isaac")
                        :port                 0})
           (marigold/write-model! :grover (marigold/model-cfg marigold/grover-api "" :context-window 32768))
           (config/notify-path! source (str marigold/home "/.isaac/config/models/grover.edn"))

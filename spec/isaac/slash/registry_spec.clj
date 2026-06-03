@@ -13,7 +13,7 @@
    :description  "Echo"
    :handler      identity})
 
-(def ^:private state-dir "/test-state")
+(def ^:private root "/test-state")
 
 (defn- write-file! [path content]
   (let [fs* (nexus/get :fs)]
@@ -87,7 +87,7 @@
 
   (it "includes resolved prompt-template commands when listing advertised commands"
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
-      (write-file! (str state-dir "/config/commands/work.md")
+      (write-file! (str root "/config/commands/work.md")
                    (str "---\n"
                         "type: command\n"
                         "description: Start work on a ready bean\n"
@@ -98,14 +98,14 @@
                 :name        "work"
                 :params      ["bean"]}
                (->> (apply sut/all-commands [{} {:fs        (nexus/get :fs)
-                                                :state-dir state-dir}])
+                                                :root root}])
                     (filter #(= "work" (:name %)))
                     first
                     (#(select-keys % [:description :name :params]))))))
 
   (it "keeps a registered slash command when a prompt-template command has the same name"
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
-      (write-file! (str state-dir "/config/commands/status.md")
+      (write-file! (str root "/config/commands/status.md")
                    (str "---\n"
                         "type: command\n"
                         "description: Prompt template status\n"
@@ -115,7 +115,7 @@
       (should= {:description "Show session status"
                 :name        "status"}
                (->> (apply sut/all-commands [{} {:fs        (nexus/get :fs)
-                                                :state-dir state-dir}])
+                                                :root root}])
                     (filter #(= "status" (:name %)))
                     first
                     (#(select-keys % [:description :name])))))))

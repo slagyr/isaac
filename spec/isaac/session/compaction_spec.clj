@@ -116,7 +116,7 @@
     (before-all (clean-dir! test-root))
     (after (clean-dir! test-root))
     #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example] (storage/with-memory-store (nexus/-with-nested-nexus {:state-dir test-root :fs (fs/mem-fs)} (example))))
+    (around [example] (storage/with-memory-store (nexus/-with-nested-nexus {:root test-root :fs (fs/mem-fs)} (example))))
 
     (it "calls chat-fn with summary prompt and appends compaction"
       (let [key-str  "isaac:main:cli:chat:abc123"
@@ -212,7 +212,7 @@
                         {:model          "test-model"
                          :soul           "You are helpful."
                          :context-window 10000
-                         :state-dir      explicit-dir
+                         :root      explicit-dir
                          :session-store  explicit-store
                          :chat-fn        mock-chat})
           (should= "ok" @tool-called))))

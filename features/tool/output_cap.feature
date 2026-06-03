@@ -7,7 +7,7 @@ Feature: Global cap on tool-result output before transcript persist
   Tracked by isaac-q7x6.
 
   Background:
-    Given an empty Isaac state directory "/test"
+    Given an empty Isaac root at "/test"
     And the EDN isaac file "isaac.edn" exists with:
       | path                     | value |
       | tools.defaults.max-lines | 5     |

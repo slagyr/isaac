@@ -66,30 +66,30 @@
 
     (it "create-session! delegates to session store"
       (let [called (atom nil)]
-        (with-redefs [sidecar-store/create-store (fn [state-dir] [:store state-dir])
+        (with-redefs [sidecar-store/create-store (fn [root] [:store root])
                       store/open-session!      (fn [& args] (reset! called (vec args)) {:id "s1"})]
           (sut/create-session! "/sdir" "my-session" {:crew "main"}))
         (should= [[:store "/sdir"] "my-session" {:crew "main"}] @called)))
 
     (it "get-session delegates to session store"
       (let [called (atom nil)]
-        (with-redefs [sidecar-store/create-store (fn [state-dir] [:store state-dir])
+        (with-redefs [sidecar-store/create-store (fn [root] [:store root])
                       store/get-session       (fn [session-store id] (reset! called [session-store id]) {:id "s1"})]
           (sut/get-session "/sdir" "my-session"))
         (should= [[:store "/sdir"] "my-session"] @called))))
 
   (it "create-session! uses the installed runtime session store"
     (let [session-store (memory/create-store "/tmp/api-spec")]
-      (nexus/-with-nexus {:state-dir "/tmp/api-spec" :sessions {:store session-store} :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root "/tmp/api-spec" :sessions {:store session-store} :fs (fs/mem-fs)}
         (sut/create-session! "api-session" {:crew "main"})
         (should= "main" (:crew (store/get-session session-store "api-session"))))))
 
   (it "dispatch! forwards the installed runtime to bridge dispatch"
     (let [captured (atom nil)]
-      (nexus/-with-nexus {:state-dir "/tmp/api-spec" :sessions {:store :runtime-store} :fs (fs/mem-fs)}
+      (nexus/-with-nexus {:root "/tmp/api-spec" :sessions {:store :runtime-store} :fs (fs/mem-fs)}
         (with-redefs [isaac.bridge.core/dispatch! (fn [request]
                                                     (reset! captured request)
                                                     {:ok true})]
           (sut/dispatch! {:session-key "s" :input "hi"})
-          (should= "/tmp/api-spec" (:state-dir @captured))
+          (should= "/tmp/api-spec" (:root @captured))
           (should= :runtime-store (get-in @captured [:sessions :store])))))))

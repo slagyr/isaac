@@ -21,7 +21,7 @@
     (if (str/blank? key)
       (do (println "Error: API key is required")
           1)
-      (let [sdir (or (:state-dir (config/load-config! (root/current-root) (fs/instance) "auth cli: key login"))
+      (let [sdir (or (:root (config/load-config! (root/current-root) (fs/instance) "auth cli: key login"))
                      (root/current-root))]
         (auth-store/save-api-key! sdir provider-name key (fs/instance))
         (println (str "Authenticated with " provider-name " via API key"))

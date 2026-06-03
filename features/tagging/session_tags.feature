@@ -5,7 +5,7 @@ Feature: Session tags
   expose them.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: isaac prompt --tag tags the created session
     Given default Grover setup

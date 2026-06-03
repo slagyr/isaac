@@ -123,16 +123,12 @@
 (defn- parse-isaac-state-value [_file-path _path value]
   (parse-state-value value))
 
-(defn- isaac-file-path [path]
-  (if (str/starts-with? path "/") path (str (g/get :state-dir) "/" path)))
-
 (defn- isaac-root-path []
-  (or (g/get :state-dir) (g/get :isaac-home)))
+  (g/get :root))
 
-(defn- runtime-state-dir []
-  (or (g/get :runtime-state-dir)
-      (g/get :state-dir)
-      (g/get :isaac-home)))
+(defn- runtime-root-dir []
+  (or (g/get :runtime-root-dir)
+      (g/get :root)))
 
 (defn- config-path? [path]
   (str/starts-with? path "config/"))
@@ -142,7 +138,7 @@
     (str/starts-with? path "/") path
     (= path "isaac.edn")         (str (isaac-root-path) "/config/isaac.edn")
     (config-path? path)          (str (isaac-root-path) "/" path)
-    :else                        (str (runtime-state-dir) "/" path)))
+    :else                        (str (runtime-root-dir) "/" path)))
 
 (defn- parse-isaac-value [file-path path value]
   (cond
@@ -212,13 +208,13 @@
           (str/split path #"\.")))
 
 (defn- config-file-path []
-  (str (g/get :state-dir) "/config/isaac.edn"))
+  (str (g/get :root) "/config/isaac.edn"))
 
-(defn- load-server-config [state-dir fs*]
-  (let [load!       #(:config (config/load-config-result {:state-dir state-dir :fs fs*}))
+(defn- load-server-config [root fs*]
+  (let [load!       #(:config (config/load-config-result {:root root :fs fs*}))
         entity-dir? #(with-server-fs
                        (fn []
-                         (seq (fs/children fs* (str state-dir "/config/" %)))))
+                         (seq (fs/children fs* (str root "/config/" %)))))
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
              (empty? (or (:crew cfg) {}))
@@ -228,7 +224,7 @@
       cfg)))
 
 (defn- persist-config-entry! [k v]
-  (when-let [_ (g/get :state-dir)]
+  (when-let [_ (g/get :root)]
     (with-server-fs
       (fn []
         (let [path    (config-file-path)
@@ -353,7 +349,7 @@
 
 (defn server-running []
   (app/stop!)
-  (let [explicit-home? (or (g/get :state-dir) (g/get :isaac-home))
+  (let [explicit-home? (or (g/get :root) (g/get :root))
         virtual-home   (or explicit-home?
                            (default-server-home))
         mem            (g/get :mem-fs)
@@ -361,11 +357,11 @@
         ;; uses a mem-fs, app/start! installs it in the global nexus runtime so
         ;; HTTP handler threads see the same fs.
         home           (if mem
-                         (do (g/assoc! :state-dir virtual-home) virtual-home)
+                         (do (g/assoc! :root virtual-home) virtual-home)
                          (do
                            (when-not explicit-home?
                              (clean-real-dir! virtual-home)
-                             (g/assoc! :state-dir virtual-home))
+                             (g/assoc! :root virtual-home))
                            virtual-home))
         runtime-state  home
         server-config  (let [fs*     (server-fs)
@@ -375,13 +371,13 @@
                                                         (when-let [providers (g/get :provider-configs)]
                                                           {:providers providers})))
                              disc    (nexus/-with-nested-nexus {:fs fs*}
-                                       (module-loader/discover! merged {:state-dir runtime-state
+                                       (module-loader/discover! merged {:root runtime-state
                                                                         :cwd       (System/getProperty "user.dir")}))]
                                (assoc merged :module-index (:index disc)))
         cfg            (config/server-config server-config)
         ;; For synthetic default homes, feature steps notify config changes
         ;; explicitly, so a memory-backed source is deterministic and cheap.
-        ;; Real state-dir scenarios keep the real watcher path when hot reload
+        ;; Real root scenarios keep the real watcher path when hot reload
         ;; is enabled; no watcher is needed for pure startup-only scenarios.
         config-source  (when (:hot-reload cfg)
                          (if (or mem (not explicit-home?))
@@ -395,11 +391,11 @@
                          :fs                   (server-fs)
                          :host                 (:host cfg)
                          :port                 (if run-server? (:port cfg) 0)
-                         :state-dir            runtime-state
+                         :root            runtime-state
                         :start-http-server?   run-server?}]
-    (g/assoc! :runtime-state-dir runtime-state)
+    (g/assoc! :runtime-root-dir runtime-state)
     (g/assoc! :server-handler-opts {:cfg-fn    (fn [] (or (some-> app/state deref :cfg deref) server-config))
-                                    :state-dir runtime-state
+                                    :root runtime-state
                                     :home      home})
     (when-let [{:keys [port]} (app/start! start-opts)]
       (g/assoc! :server-port port))))
@@ -472,26 +468,26 @@
     (mapv (fn [row] (mapv identity row)) rows)))
 
 (defn- current-server-config []
-  (let [home     (or (g/get :state-dir) (g/get :isaac-home))
+  (let [home     (or (g/get :root) (g/get :root))
         fs*      (server-fs)
         base     (with-server-fs #(load-server-config home fs*))
         merged   (deep-merge base
                              (merge (or (g/get :server-config) {})
                                     (when-let [providers (g/get :provider-configs)]
                                       {:providers providers})))
-        runtime  (runtime-state-dir)
+        runtime  (runtime-root-dir)
         disc     (nexus/-with-nested-nexus {:fs fs*}
-                   (module-loader/discover! merged {:state-dir runtime
+                   (module-loader/discover! merged {:root runtime
                                                     :cwd       (System/getProperty "user.dir")}))]
     (assoc merged
            :module-index (:index disc)
-           :state-dir runtime)))
+           :root runtime)))
 
 (defn- current-handler-opts []
   (or (g/get :server-handler-opts)
-      (let [home (or (g/get :state-dir) (g/get :isaac-home))]
+      (let [home (or (g/get :root) (g/get :root))]
         {:cfg-fn    current-server-config
-         :state-dir (runtime-state-dir)
+         :root (runtime-root-dir)
          :home      home})))
 
 (defn- register-direct-routes! [cfg]
@@ -505,7 +501,7 @@
         cfg          ((:cfg-fn handler-opts))
         fs*          (server-fs)]
     (register-direct-routes! cfg)
-    (nexus/-with-nested-nexus {:fs fs* :state-dir (:state-dir handler-opts)}
+    (nexus/-with-nested-nexus {:fs fs* :root (:root handler-opts)}
       ((server-http/create-handler handler-opts) request))))
 
 (defn get-request [path]
@@ -578,11 +574,11 @@
 
 (defn scheduler-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (g/assoc! :runtime-root-dir (g/get :root))
   (with-server-fs
     (fn []
       (let [fs*        (server-fs)
-            cfg        (merge (load-server-config (g/get :state-dir) fs*)
+            cfg        (merge (load-server-config (g/get :root) fs*)
                               (when-let [providers (g/get :provider-configs)]
                                 {:providers providers}))
             now        (ZonedDateTime/parse iso offset-formatter)
@@ -590,10 +586,10 @@
         (try
           (nexus/-with-nexus {:config    (atom cfg)
                                :scheduler scheduler
-                               :state-dir (runtime-state-dir)
+                               :root (runtime-root-dir)
                                :fs        fs*
-                               :sessions  {:store (store/create (runtime-state-dir))}}
-            (let [runner (cron-service/start! {:cfg cfg :state-dir (runtime-state-dir)})]
+                               :sessions  {:store (store/create (runtime-root-dir))}}
+            (let [runner (cron-service/start! {:cfg cfg :root (runtime-root-dir)})]
               (try
                 (invoke-scheduled-cron-tasks! scheduler now)
                 (helper/await-condition #(scheduler-idle? scheduler) 3000)
@@ -618,45 +614,45 @@
     (g/update! :stub-comm-calls #(conj (or % []) record))
     (or (g/get :stub-comm-result) {:ok true})))
 
-(defn- with-stub-comm [state-dir f]
+(defn- with-stub-comm [root f]
   (let [reg (assoc (comm-registry/fresh-registry) :instances {"stub" (->StubComm)})]
     (binding [comm-registry/*registry* (atom reg)
-              root/*root*         state-dir]
+              root/*root*         root]
       (f))))
 
 (defn delivery-worker-ticks []
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (g/assoc! :runtime-root-dir (g/get :root))
   (with-server-fs
     (fn []
-      (with-stub-comm (runtime-state-dir)
+      (with-stub-comm (runtime-root-dir)
         (fn []
-          (nexus/-with-nexus {:state-dir (runtime-state-dir) :fs (server-fs)}
+          (nexus/-with-nexus {:root (runtime-root-dir) :fs (server-fs)}
             (worker/tick! {})))))))
 
 (defn delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (g/assoc! :runtime-root-dir (g/get :root))
   (with-server-fs
     (fn []
-      (with-stub-comm (runtime-state-dir)
+      (with-stub-comm (runtime-root-dir)
         (fn []
-          (nexus/-with-nexus {:state-dir (runtime-state-dir) :fs (server-fs)}
+          (nexus/-with-nexus {:root (runtime-root-dir) :fs (server-fs)}
             (worker/tick! {:now (java.time.Instant/parse iso)})))))))
 
 (defn hail-router-ticks []
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (g/assoc! :runtime-root-dir (g/get :root))
   (with-server-fs
     (fn []
       (let [fs*           (server-fs)
-            cfg           (merge (load-server-config (g/get :state-dir) fs*)
+            cfg           (merge (load-server-config (g/get :root) fs*)
                                  (when-let [providers (g/get :provider-configs)]
                                    {:providers providers}))
-            state-dir     (runtime-state-dir)
-            session-store (store/create state-dir)]
+            root     (runtime-root-dir)
+            session-store (store/create root)]
         (nexus/-with-nexus {:config    (atom cfg)
-                            :state-dir state-dir
+                            :root root
                             :fs        fs*
                             :sessions  {:store session-store}}
           (hail-router/tick! {:cfg cfg :session-store session-store}))))))
@@ -668,15 +664,15 @@
 
 (defn hail-delivery-worker-ticks []
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (g/assoc! :runtime-root-dir (g/get :root))
   (with-server-fs
     (fn []
       (let [fs*           (server-fs)
             cfg           (current-server-config)
-            state-dir     (runtime-state-dir)
-            session-store (store/create state-dir)]
+            root     (runtime-root-dir)
+            session-store (store/create root)]
         (nexus/-with-nexus {:config    (atom cfg)
-                            :state-dir state-dir
+                            :root root
                             :fs        fs*
                             :sessions  {:store session-store}}
           (config/dangerously-install-config! cfg "spec")
@@ -684,15 +680,15 @@
 
 (defn hail-delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
-  (g/assoc! :runtime-state-dir (g/get :state-dir))
+  (g/assoc! :runtime-root-dir (g/get :root))
   (with-server-fs
     (fn []
       (let [fs*           (server-fs)
             cfg           (current-server-config)
-            state-dir     (runtime-state-dir)
-            session-store (store/create state-dir)]
+            root     (runtime-root-dir)
+            session-store (store/create root)]
         (nexus/-with-nexus {:config    (atom cfg)
-                            :state-dir state-dir
+                            :root root
                             :fs        fs*
                             :sessions  {:store session-store}}
           (config/dangerously-install-config! cfg "spec")
@@ -869,19 +865,19 @@
   "Sets server-config entries via dot-path keys (e.g. server.port,
     acp.proxy-transport). Special-cases log.output: 'memory' routes
     log output to the captured-entries atom; anything else becomes a
-    log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn.
+    log file. Also persists entries to <root>/.isaac/config/isaac.edn.
     A value of '#delete' removes that key instead of writing the string.")
 
 (defwhen "the isaac EDN file {path:string} is removed" isaac.server.server-steps/isaac-edn-file-removed
-  "Deletes the EDN file at <state-dir>/.isaac/<path> and fires a config-change
+  "Deletes the EDN file at <root>/.isaac/<path> and fires a config-change
    notification so a running server's hot-reload processes the removal.")
 
 (defwhen "the isaac file {path:string} is removed" isaac.server.server-steps/isaac-file-removed
-  "Deletes any file at <state-dir>/.isaac/<path> and fires a config-change
+  "Deletes any file at <root>/.isaac/<path> and fires a config-change
    notification so a running server's hot-reload processes the removal.")
 
 (defgiven "the isaac EDN file {path:string} exists with:" isaac.server.server-steps/isaac-edn-file-exists
-  "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are
+  "Writes structured EDN to <root>/.isaac/<path>. Table rows are
     {path, value}; dot-separated path column creates nested keyword maps
     (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
     notification so a running server's hot-reload picks it up. A value of
@@ -890,12 +886,12 @@
 (defgiven #"the isaac config path \"([^\"]+)\" is \"([^\"]*)\"" isaac.server.server-steps/isaac-config-path-is)
 
 (defgiven "the isaac file {path:string} exists with:" isaac.server.server-steps/isaac-file-exists-with-content
-  "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
+  "Writes heredoc content (not EDN) to <root>/.isaac/<path>. Use
    for markdown companions (.md), raw text files, etc. EDN files should
    use 'the isaac EDN file X exists with:' instead.")
 
 (defgiven #"the isaac EDN file \"([^\"]+)\" contains:" isaac.server.server-steps/isaac-edn-file-contains-content
-  "Writes heredoc EDN content to <state-dir>/.isaac/<path> and notifies the
+  "Writes heredoc EDN content to <root>/.isaac/<path> and notifies the
    running config change source when present. Useful for replacing a whole
    config file instead of patching it with a table.")
 
@@ -904,12 +900,12 @@
    with a full-file replacement.")
 
 (defgiven #"the isaac file \"([^\"]+)\" exists with (\d+) log entries" isaac.server.server-steps/isaac-file-with-log-entries
-  "Writes N EDN log lines to <state-dir>/.isaac/<path>. Each line has a
+  "Writes N EDN log lines to <root>/.isaac/<path>. Each line has a
    distinct two-digit-padded :event keyword (:e01..:eNN) so substring
    assertions don't collide across IDs.")
 
 (defgiven "the Isaac server is started" isaac.server.server-steps/server-running
-  "Stops any prior server, then starts one against :state-dir / :isaac-home.
+  "Stops any prior server, then starts one against :root / :root.
    Merges in-memory :server-config and :provider-configs over whatever
    config/load-config-result returns from disk. When mem-fs is active,
    wires a synchronous memory change-source so hot-reload scenarios fire

@@ -17,20 +17,20 @@
   (binding [*print-namespace-maps* false]
     (with-out-str (pprint/pprint value))))
 
-(defn- runtime-state-dir []
-  (or (config/state-dir) (throw (ex-info "hail router requires :state-dir" {}))))
+(defn- runtime-root []
+  (or (config/root) (throw (ex-info "hail router requires :root" {}))))
 
 (defn- filesystem []
   (or (fs/instance) (throw (ex-info "hail.router requires :fs in system" {}))))
 
 (defn- pending-dir []
-  (str (runtime-state-dir) "/hail/pending"))
+  (str (runtime-root) "/hail/pending"))
 
 (defn- deliveries-dir []
-  (str (runtime-state-dir) "/hail/deliveries"))
+  (str (runtime-root) "/hail/deliveries"))
 
 (defn- undeliverable-dir []
-  (str (runtime-state-dir) "/hail/undeliverable"))
+  (str (runtime-root) "/hail/undeliverable"))
 
 (defn- pending-path [id]
   (str (pending-dir) "/" id ".edn"))
@@ -70,8 +70,8 @@
            vec)
       [])))
 
-(defn- delivery-id [state-dir fs*]
-  (naming/generate (naming/->SequentialStrategy state-dir "hail/deliveries" "delivery-" fs*)))
+(defn- delivery-id [root fs*]
+  (naming/generate (naming/->SequentialStrategy root "hail/deliveries" "delivery-" fs*)))
 
 (defn normalize-id [value]
   (cond
@@ -224,9 +224,9 @@
                      :candidates (mapv candidate-entry matches)
                      :attempts   0}]})))
 
-(defn- write-deliveries! [state-dir fs* hail deliveries]
+(defn- write-deliveries! [root fs* hail deliveries]
   (doseq [delivery deliveries]
-    (let [id       (delivery-id state-dir fs*)
+    (let [id       (delivery-id root fs*)
           delivery (assoc delivery :id id)]
       (write-record! (delivery-path id) delivery)))
   (delete-pending! (:id hail)))
@@ -236,13 +236,13 @@
   (delete-pending! (:id hail)))
 
 (defn tick!
-  [{:keys [cfg state-dir] :as opts}]
+  [{:keys [cfg root] :as opts}]
   (let [cfg            (or cfg (config/snapshot "hail router tick wake boundary — config may have changed") {})
-        state-dir      (or state-dir (runtime-state-dir))
+        root      (or root (runtime-root))
         fs*            (filesystem)
         session-store* (or (:session-store opts)
                            (session-store/registered-store)
-                           (session-store/create state-dir))
+                           (session-store/create root))
         crews          (:crew cfg)
         bands          (:hail cfg)
         sessions       (session-store/list-sessions session-store*)]
@@ -250,7 +250,7 @@
       (let [{:keys [deliveries undeliverable]}
             (resolve-obligations bands crews sessions hail)]
         (cond
-          (seq deliveries)       (write-deliveries! state-dir fs* hail deliveries)
+          (seq deliveries)       (write-deliveries! root fs* hail deliveries)
           undeliverable          (write-undeliverable! hail undeliverable)
           :else                  (write-undeliverable! hail {:hail hail :reason :no-recipients}))))))
 

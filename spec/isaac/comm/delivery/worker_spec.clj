@@ -34,7 +34,7 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (nexus/-with-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nexus {:root "/test/isaac" :fs (fs/mem-fs)}
       (binding [root/*root*         "/test/isaac"
                 comm-registry/*registry* (atom (comm-registry/fresh-registry))]
         (it))))

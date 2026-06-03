@@ -11,7 +11,7 @@ Feature: Config hot-reload integration
   milliseconds).
 
   Background:
-    Given an empty Isaac state directory "/tmp/isaac-hot-reload-integration"
+    Given an empty Isaac root at "/tmp/isaac-hot-reload-integration"
     And config:
       | key        | value  |
       | log.output | memory |

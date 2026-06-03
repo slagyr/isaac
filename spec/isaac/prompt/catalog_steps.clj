@@ -9,9 +9,9 @@
 
 (helper! isaac.prompt.catalog-steps)
 
-(defn- state-dir []
-  (or (g/get :runtime-state-dir)
-      (g/get :state-dir)))
+(defn- root []
+  (or (g/get :runtime-root)
+      (g/get :root)))
 
 (defn- feature-fs []
   (or (g/get :mem-fs)
@@ -19,7 +19,7 @@
       (fs/real-fs)))
 
 (defn- current-config []
-  (:config (config/load-config-result {:state-dir (state-dir)
+  (:config (config/load-config-result {:root (root)
                                        :fs        (feature-fs)})))
 
 (defn- session-cwd [session-key]
@@ -32,7 +32,7 @@
   (g/assoc! :prompt-catalog
             (catalog/resolve-catalog (merge {:config    (current-config)
                                              :fs        (feature-fs)
-                                             :state-dir (state-dir)}
+                                             :root (root)}
                                             opts))))
 
 (defn prompt-catalog-resolved []

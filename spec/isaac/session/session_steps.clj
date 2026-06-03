@@ -45,7 +45,7 @@
 ;; Capture the real `sidecar-store/create-store` once at load time so we can
 ;; always restore it after a scenario, regardless of any in-scenario rewrites.
 ;; Storing in gherclj's per-scenario state was unsafe: scenarios that called
-;; `initialize-state-dir!` more than once recaptured the already-stubbed var
+;; `initialize-root!` more than once recaptured the already-stubbed var
 ;; and then "restored" the stub.
 (defonce ^:private real-sidecar-create-store
   (var-get #'sidecar-store/create-store))
@@ -73,13 +73,13 @@
       (doseq [f (-> dir file-seq reverse butlast)]
         (.delete f)))))
 
-(defn- state-dir []
-  (or (g/get :runtime-state-dir)
-      (g/get :state-dir)))
+(defn- root-dir []
+  (or (g/get :runtime-root-dir)
+      (g/get :root)))
 
 (defn- home-dir []
-  (or (g/get :state-dir)
-      (some-> (g/get :runtime-state-dir) fs/parent)))
+  (or (g/get :root)
+      (some-> (g/get :runtime-root-dir) fs/parent)))
 
 (defn- mem-fs []
   (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs)))
@@ -95,9 +95,9 @@
    because feature fixtures are intentionally partial and need not pass full
    production validation."
   []
-  (when-let [sd (state-dir)]
+  (when-let [root (root-dir)]
     (config/dangerously-install-config!
-      (:config (config/load-config-result {:state-dir sd :fs (mem-fs)}))
+      (:config (config/load-config-result {:root root :fs (mem-fs)}))
       "feature: session behavior config")))
 
 (defn- notify-config-change! [path]
@@ -112,7 +112,7 @@
 
 (defn- session-store []
   (or (store/registered-store)
-      (sidecar-store/create-store (state-dir))))
+      (sidecar-store/create-store (root-dir))))
 
 (defn- open-session [session-name]
   (when-let [entry (store/get-session (session-store) session-name)]
@@ -186,8 +186,8 @@
 
 (defn- loaded-config []
   (let [fs*         (mem-fs)
-        load!       #(with-feature-fs (fn [] (:config (config/load-config-result {:state-dir (state-dir) :fs fs*}))))
-        entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (state-dir) "/config/" %)))))
+        load!       #(with-feature-fs (fn [] (:config (config/load-config-result {:root (root-dir) :fs fs*}))))
+        entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (root-dir) "/config/" %)))))
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
              (empty? (or (:crew cfg) {}))
@@ -217,12 +217,12 @@
     (get (merged-agents) agent-id)))
 
 (defn- crew-config-path [crew-id]
-  (str (state-dir) "/config/crew/" crew-id ".edn"))
+  (str (root-dir) "/config/crew/" crew-id ".edn"))
 
 (defn- configured-crew-ids []
   (with-feature-fs
     (fn []
-      (let [dir (str (state-dir) "/config/crew")]
+      (let [dir (str (root-dir) "/config/crew")]
         (->> (or (fs/children (mem-fs) dir) [])
              (filter #(str/ends-with? % ".edn"))
              (map #(subs % 0 (- (count %) 4)))
@@ -419,7 +419,7 @@
     (when (.exists (io/file agents-md))
       (fs/spit mem agents-md (slurp agents-md)))))
 
-(defn- ->state-dir [dir virtual?]
+(defn- ->root [dir virtual?]
   (if (str/starts-with? dir "/")
     dir
     (if (or virtual? (not (str/includes? dir "/")))
@@ -436,17 +436,17 @@
    :providers {"ollama" {:api      "ollama"
                           :base-url "http://localhost:11434"}}})
 
-(defn- seed-minimal-config! [state-dir]
-  (let [config-path (str state-dir "/config/isaac.edn")
+(defn- seed-minimal-config! [root]
+  (let [config-path (str root "/config/isaac.edn")
         fs*         (mem-fs)]
     (fs/mkdirs fs* (fs/parent config-path))
     (fs/spit   fs* config-path (pr-str minimal-config))))
 
-(defn- initialize-state-dir! [path virtual?]
+(defn- initialize-root! [path virtual?]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
               path)
-        abs-dir  (->state-dir dir virtual?)
+        abs-dir  (->root dir virtual?)
         mem      (when virtual? (fs/mem-fs))]
     (g/reset!)
     (grover/reset-queue!)
@@ -473,28 +473,28 @@
         (g/dissoc! :mem-fs)))
     (let [mem-store (memory-store/create-store abs-dir)]
       (nexus/register! [:fs] (or mem (fs/real-fs)))
-      (nexus/register! [:state-dir] abs-dir)
+      (nexus/register! [:root] abs-dir)
       (store/register-store! mem-store)
       ;; Stub must accept all real arities — session/context calls with
-       ;; (state-dir nil fs*) (3 args), other callers with 1 or 2.
+       ;; (root nil fs*) (3 args), other callers with 1 or 2.
        (alter-var-root #'sidecar-store/create-store (constantly (fn [& _] mem-store)))
-      (g/assoc! :state-dir abs-dir))))
+      (g/assoc! :root abs-dir))))
 
 (defn empty-state [path]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
               path)]
-    (initialize-state-dir! path (or (not (or (str/starts-with? dir "/")
+    (initialize-root! path (or (not (or (str/starts-with? dir "/")
                                              (str/includes? dir "/")))
                                     (= "/test" dir)
                                     (str/starts-with? dir "/test/")))))
 
 (defn in-memory-state [path]
-  (initialize-state-dir! path true)
-  (with-feature-fs #(seed-minimal-config! (state-dir))))
+  (initialize-root! path true)
+  (with-feature-fs #(seed-minimal-config! (root-dir))))
 
 (defn- write-grover-defaults! []
-  (let [root (str (state-dir) "/config")
+  (let [root (str (root-dir) "/config")
         fs*  (mem-fs)]
     (fs/mkdirs fs* root)
     (fs/spit   fs* (str root "/isaac.edn")
@@ -510,11 +510,11 @@
                     (pr-str {:model :grover :soul "You are Atticus."}))))
 
 (defn default-grover-setup []
-  (initialize-state-dir! "target/test-state" true)
+  (initialize-root! "target/test-state" true)
   (with-feature-fs write-grover-defaults!))
 
 (defn default-grover-setup-in [dir]
-  (initialize-state-dir! dir true)
+  (initialize-root! dir true)
   (with-feature-fs write-grover-defaults!))
 
 (defn crew-has-tools [table]
@@ -588,7 +588,7 @@
             history-retention (some-> (get row-map "history-retention") keyword)
             tags        (some-> (get row-map "tags") edn/read-string)
             entry       (or (open-session name)
-                            (open-session! name {:crew agent :agent agent :cwd (state-dir)
+                            (open-session! name {:crew agent :agent agent :cwd (root-dir)
                                                  :nonce (get row-map "nonce")
                                                  :tags tags
                                                  :history-retention history-retention
@@ -611,7 +611,7 @@
                           (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
                                                                       (if (str/starts-with? cwd "/")
                                                                         cwd
-                                                                        (str (state-dir) "/" cwd))))
+                                                                        (str (root-dir) "/" cwd))))
                            (get row-map "total-tokens")  (assoc :total-tokens (parse-long (get row-map "total-tokens")))
                            (get row-map "last-input-tokens") (assoc :last-input-tokens (parse-long (get row-map "last-input-tokens")))
                             (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
@@ -640,7 +640,7 @@
 
 (defn session-exists [session-name]
   (when-not (with-feature-fs #(get-session session-name))
-    (with-feature-fs #(open-session! session-name {:cwd (state-dir)})))
+    (with-feature-fs #(open-session! session-name {:cwd (root-dir)})))
   (g/should-not-be-nil (with-feature-fs #(get-session session-name))))
 
 (defn session-does-not-exist [session-name]
@@ -748,24 +748,24 @@
 ;; region ----- When -----
 
 (defn session-created-randomly []
-  (let [entry (with-feature-fs #(open-session! nil {:cwd (state-dir)}))]
+  (let [entry (with-feature-fs #(open-session! nil {:cwd (root-dir)}))]
     (g/assoc! :current-key (:id entry))))
 
 (defn session-created-without-name []
-  (let [entry (with-feature-fs #(open-session! nil {:cwd (state-dir)}))]
+  (let [entry (with-feature-fs #(open-session! nil {:cwd (root-dir)}))]
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
 (defn session-created-with-name-quoted [session-name]
   (try
-    (let [entry (with-feature-fs #(open-session! session-name {:cwd (state-dir)}))]
+    (let [entry (with-feature-fs #(open-session! session-name {:cwd (root-dir)}))]
       (g/assoc! :current-key (:id entry))
       (g/dissoc! :error))
     (catch clojure.lang.ExceptionInfo e
       (g/assoc! :error (.getMessage e)))))
 
 (defn session-created-named [session-name]
-  (let [entry (with-feature-fs #(open-session! session-name {:cwd (state-dir)}))]
+  (let [entry (with-feature-fs #(open-session! session-name {:cwd (root-dir)}))]
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
@@ -893,8 +893,8 @@
                                                                     (let [request (assoc send-opts :session-key key-str :input content)]
                                                                       (if max-loops
                                                                         (with-redefs [tool-loop/default-max-loops max-loops]
-                                                                          (bridge/dispatch! (state-dir) request))
-                                                                        (bridge/dispatch! (state-dir) request))))))
+                                                                          (bridge/dispatch! (root-dir) request))
+                                                                        (bridge/dispatch! (root-dir) request))))))
                                                   (catch Exception e
                                                     (reset! result {:error :exception :message (.getMessage e)}))))))))]
                           {:output  output
@@ -968,7 +968,7 @@
     (fn []
       (let [abs-path (if (str/starts-with? path "/")
                        path
-                       (str (state-dir) "/" path))
+                       (str (root-dir) "/" path))
             fs*      (mem-fs)]
         (fs/mkdirs fs* (fs/parent abs-path))
         (fs/spit   fs* abs-path content)
@@ -1001,17 +1001,17 @@
 (defn then-file-contains [path content]
   (with-feature-fs
     (fn []
-      (let [root-name (.getName (io/file (state-dir)))
+      (let [root-name (.getName (io/file (root-dir)))
             abs-path  (cond
                         (str/starts-with? path "/") path
-                        (str/starts-with? path (str root-name "/")) (str (state-dir) "/" (subs path (inc (count root-name))))
-                        :else (str (state-dir) "/" path))]
+                        (str/starts-with? path (str root-name "/")) (str (root-dir) "/" (subs path (inc (count root-name))))
+                        :else (str (root-dir) "/" path))]
         (g/should (str/includes? (or (fs/slurp (mem-fs) abs-path) "") content))))))
 
 (defn crew-has-file [crew-id filename content]
   (with-feature-fs
     (fn []
-      (let [quarters (str (state-dir) "/crew/" crew-id)
+      (let [quarters (str (root-dir) "/crew/" crew-id)
             path     (str quarters "/" filename)
             fs*      (mem-fs)]
         (fs/mkdirs fs* quarters)
@@ -1020,7 +1020,7 @@
 (defn crew-has-quarters [crew-id]
   (with-feature-fs
     (fn []
-      (fs/mkdirs (mem-fs) (str (state-dir) "/crew/" crew-id)))))
+      (fs/mkdirs (mem-fs) (str (root-dir) "/crew/" crew-id)))))
 
 ;; endregion ^^^^^ When ^^^^^
 
@@ -1201,10 +1201,10 @@
         builder    (if (str/includes? provider' "anthropic")
                      messages-api/build
                      prompt/build)
-        skill-disclosure (session-ctx/read-skill-disclosure cfg (state-dir) (:cwd session) (mem-fs))
+        skill-disclosure (session-ctx/read-skill-disclosure cfg (root-dir) (:cwd session) (mem-fs))
         ctx        (assoc (config/resolve-crew-context cfg agent-id)
                           :boot-files      (session-ctx/read-boot-files (:cwd session))
-                          :rules-text      (session-ctx/read-rules-text cfg (state-dir) (:cwd session) (mem-fs))
+                          :rules-text      (session-ctx/read-rules-text cfg (root-dir) (:cwd session) (mem-fs))
                           :skill-menu-text (:menu-text skill-disclosure))]
     (builder {:boot-files     (:boot-files ctx)
               :context-window (:context-window model-cfg)
@@ -1235,7 +1235,7 @@
         (g/should= [] (:failures result))))))
 
 (defn session-sidecars-exist-for [table]
-  (let [sidecars  (with-feature-fs #(or (fs/children (mem-fs) (str (state-dir) "/sessions")) []))
+  (let [sidecars  (with-feature-fs #(or (fs/children (mem-fs) (str (root-dir) "/sessions")) []))
         actual    (->> sidecars
                        (filter #(str/ends-with? % ".edn"))
                        (remove #(= "index.edn" %))
@@ -1348,17 +1348,17 @@
 
 ;; region ----- Routing -----
 
-(defgiven "an empty Isaac state directory {string}" isaac.session.session-steps/empty-state
-  "Real-fs state dir when path is absolute or contains '/'; in-memory
+(defgiven "an empty Isaac root at {string}" isaac.session.session-steps/empty-state
+  "Real-fs root when path is absolute or contains '/'; in-memory
    otherwise. Clean slate — deletes any existing content first. No
-   config files are seeded. Use 'in-memory Isaac state directory' if
-   the scenario needs a seeded minimal config.")
+   config files are seeded. Use 'an Isaac root at' if the scenario
+   needs a seeded minimal config.")
 
-(defgiven "an in-memory Isaac state directory {string}" isaac.session.session-steps/in-memory-state
+(defgiven "an Isaac root at {string}" isaac.session.session-steps/in-memory-state
   "Virtual fs (mem-fs) rooted at the given path. Seeds a minimal
    isaac.edn at <path>/.isaac/config/isaac.edn so config loaders have
-   something to parse. For a bare state dir without the seed, use
-   'an empty Isaac state directory'.")
+   something to parse. For a bare root without the seed, use
+   'an empty Isaac root at'.")
 
 (defgiven "default Grover setup" isaac.session.session-steps/default-grover-setup
   "One-line Background: in-memory state dir at target/test-state plus
@@ -1367,7 +1367,7 @@
    working crew/model combo; override pieces afterward as needed.")
 
 (defgiven "default Grover setup in {dir:string}" isaac.session.session-steps/default-grover-setup-in
-  "Same as 'default Grover setup' but at a custom state-dir path.")
+  "Same as 'default Grover setup' but at a custom root path.")
 
 (defgiven "the crew member has tools:" isaac.session.session-steps/crew-has-tools
   "Registers the listed tools with the tool-registry and sets each
@@ -1580,7 +1580,7 @@
 
 (defn use-file-session-store []
   (alter-var-root #'sidecar-store/create-store (constantly real-sidecar-create-store))
-  (store/register-store! (with-feature-fs #(sidecar-store/create-store (state-dir)))))
+  (store/register-store! (with-feature-fs #(sidecar-store/create-store (root-dir)))))
 
 (defgiven "the session store uses the file implementation" isaac.session.session-steps/use-file-session-store
   "Restores the real file-backed SessionStore for this scenario. Use in scenarios

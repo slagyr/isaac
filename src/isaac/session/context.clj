@@ -25,28 +25,28 @@
          (fs/slurp fs* path))))))
 
 (defn read-rules-text
-  ([cfg state-dir cwd]
-   (read-rules-text cfg state-dir cwd (fs/instance)))
-  ([cfg state-dir cwd fs*]
+  ([cfg root cwd]
+   (read-rules-text cfg root cwd (fs/instance)))
+  ([cfg root cwd fs*]
    (let [cfg        (or cfg {})
-         state-dir' (or state-dir (:state-dir cfg))]
-     (when (and state-dir' (not (str/blank? (str state-dir'))))
+         root' (or root (:root cfg))]
+     (when (and root' (not (str/blank? (str root'))))
        (prompt-catalog/resolve-rules-text {:config    cfg
                                            :cwd       cwd
                                            :fs        fs*
-                                           :state-dir state-dir'})))))
+                                           :root root'})))))
 
 (defn read-skill-disclosure
-  ([cfg state-dir cwd]
-   (read-skill-disclosure cfg state-dir cwd (fs/instance)))
-  ([cfg state-dir cwd fs*]
+  ([cfg root cwd]
+   (read-skill-disclosure cfg root cwd (fs/instance)))
+  ([cfg root cwd fs*]
    (let [cfg        (or cfg {})
-         state-dir' (or state-dir (:state-dir cfg))]
-     (when (and state-dir' (not (str/blank? (str state-dir'))))
+         root' (or root (:root cfg))]
+     (when (and root' (not (str/blank? (str root'))))
        (prompt-catalog/resolve-skill-disclosure {:config    cfg
                                                  :cwd       cwd
                                                  :fs        fs*
-                                                 :state-dir state-dir'})))))
+                                                 :root root'})))))
 
 (defn default-threshold [_window] 0.8)
 
@@ -66,8 +66,8 @@
       (config/snapshot "session behavior resolution — ambient fallback when caller passes no :config")
       {}))
 
-(defn- default-cwd [state-dir crew-id]
-  (let [root (if (.endsWith state-dir "/.isaac") state-dir (str state-dir "/.isaac"))]
+(defn- default-cwd [root crew-id]
+  (let [root (if (.endsWith root "/.isaac") root (str root "/.isaac"))]
     (str root "/crew/" crew-id)))
 
 (declare resolve-compaction-config)
@@ -82,13 +82,13 @@
     (seq (:nonce session-entry)) session-entry
     :else (store/update-session! session-store* (:id session-entry) {:nonce (store-common/new-nonce)})))
 
-(defn- resolve-behavior* [cfg state-dir session-entry]
+(defn- resolve-behavior* [cfg root session-entry]
   (let [crew-id        (or (:crew session-entry)
                            (get-in cfg [:defaults :crew])
                            "main")
         model-override (:model session-entry)
         ctx            (config/resolve-crew-context cfg crew-id
-                                                    (cond-> {:home state-dir}
+                                                    (cond-> {:root root}
                                                       model-override (assoc :model-override model-override)))
         crew-cfg       (:crew-cfg ctx)
         model-ref      (or model-override
@@ -106,7 +106,7 @@
      :crew              crew-id
      :crew-cfg          crew-cfg
      :cwd               (or (:cwd session-entry)
-                            (when state-dir (default-cwd state-dir crew-id)))
+                            (when root (default-cwd root crew-id)))
      :effort            (effort/resolve-effort session-entry
                                                (or crew-cfg {})
                                                (or (:model-cfg ctx) {})
@@ -145,12 +145,12 @@
    (resolve-behavior session-key {}))
   ([session-key overrides]
    (let [passed-config  (:config overrides)
-         state-dir      (or (:state-dir overrides) (:state-dir passed-config) (config/state-dir))
+         root      (or (:root overrides) (:root passed-config) (config/root))
          session-store* (session-store (:session-store overrides))
          cfg            (config/normalize-config (effective-config passed-config))
          session-entry  (merge (or (some-> session-store* (store/get-session session-key) (ensure-session-nonce session-store*)) {})
                                (select-keys overrides behavioral-keys))
-         behavior       (resolve-behavior* cfg state-dir session-entry)]
+         behavior       (resolve-behavior* cfg root session-entry)]
        (log/debug :session/behavior-resolved
                   :session session-key
                 :crew (:crew behavior)
@@ -163,9 +163,9 @@
 (defn create-with-resolved-behavior!
   [session-key opts]
   (let [passed-config (:config opts)
-        state-dir (or (:state-dir opts) (:state-dir passed-config) (config/state-dir))
+        root (or (:root opts) (:root passed-config) (config/root))
         cfg       (config/normalize-config (effective-config passed-config))
-        behavior  (resolve-behavior* cfg state-dir (select-keys opts behavioral-keys))
+        behavior  (resolve-behavior* cfg root (select-keys opts behavioral-keys))
         store     (require-session-store (:session-store opts))]
    ;; bind the known crew set for the schema's crew validation on the writes below
    (binding [session-schema/*config* cfg]

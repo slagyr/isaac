@@ -4,7 +4,7 @@ Feature: Anthropic Messaging
   Anthropic Messages API, including prompt caching and tool calling.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/elmo.edn" exists with:
       | path | value |
       | model | elmo |

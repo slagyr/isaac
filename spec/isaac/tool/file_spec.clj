@@ -21,7 +21,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (nexus/-with-nested-nexus {:state-dir support/test-dir :fs (fs/real-fs)}
+      (nexus/-with-nested-nexus {:root support/test-dir :fs (fs/real-fs)}
         (config/dangerously-install-config! nil "spec")
         (example))))
 
@@ -48,7 +48,7 @@
       (let [mem  (fs/mem-fs)
             path (str support/test-dir "/runtime-fs.txt")]
         (fs/spit mem path "runtime fs")
-        (nexus/-with-nexus {:state-dir support/test-dir :fs mem}
+        (nexus/-with-nexus {:root support/test-dir :fs mem}
           (let [result (sut/read-tool {"file_path" path})]
             (should= "1: runtime fs" (:result result))))))
 
@@ -74,10 +74,10 @@
         (should-not (str/includes? (:result result) "line 15"))))
 
     (it "allows reading within the crew quarters"
-      (let [state-dir   support/test-dir
-            quarters    (str state-dir "/crew/" crew-name)
+      (let [root   support/test-dir
+            quarters    (str root "/crew/" crew-name)
             session-key default-session-key]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
+        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (.mkdirs (io/file quarters))
         (spit (str quarters "/notes.txt") "hello")
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
@@ -86,10 +86,10 @@
           (should= "1: hello" (:result result)))))
 
     (it "allows reading within explicit whitelisted directories"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key
             whitelisted (str support/test-dir "/playground")]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
+        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (.mkdirs (io/file whitelisted))
         (spit (str whitelisted "/data.txt") "hello")
         (config/dangerously-install-config! {:defaults {}
@@ -102,9 +102,9 @@
           (should= "1: hello" (:result result)))))
 
     (it "rejects reading outside allowed directories"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
+        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   "/etc/passwd"
                                         "session_key" session-key}))]
@@ -112,10 +112,10 @@
           (should (re-find #"path outside allowed directories" (:error result))))))
 
     (it "allows reading in session cwd only with :cwd opt in"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key
             cwd         (str support/test-dir "/project")]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd cwd})
+        (helper/create-session! root session-key {:crew crew-name :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
         (config/dangerously-install-config! {:defaults {}
@@ -128,10 +128,10 @@
           (should= "1: hi there" (:result result)))))
 
     (it "rejects reading the session cwd without :cwd opt in"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key
             cwd         (str support/test-dir "/project")]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd cwd})
+        (helper/create-session! root session-key {:crew crew-name :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
@@ -141,10 +141,10 @@
           (should (re-find #"path outside allowed directories" (:error result))))))
 
     (it "rejects path traversal that escapes the quarters"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key
-            quarters    (str state-dir "/crew/" crew-name)]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
+            quarters    (str root "/crew/" crew-name)]
+        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   (str quarters "/../../etc/passwd")
                                         "session_key" session-key}))]
@@ -152,11 +152,11 @@
           (should (re-find #"path outside allowed directories" (:error result))))))
 
     (it "rejects reading the config directory"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
+        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
-                       (sut/read-tool {"file_path"   (str state-dir "/config/crew/" crew-name ".edn")
+                       (sut/read-tool {"file_path"   (str root "/config/crew/" crew-name ".edn")
                                        "session_key" session-key}))]
           (should (:isError result))
           (should (re-find #"path outside allowed directories" (:error result)))))))
@@ -185,10 +185,10 @@
         (should (string? (:result result)))))
 
     (it "auto-creates the crew quarters on first use"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key
-            path        (str state-dir "/crew/" crew-name "/new.txt")]
-        (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
+            path        (str root "/crew/" crew-name "/new.txt")]
+        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}}
                        (sut/write-tool {"file_path"   path
                                         "content"     "hello"
@@ -197,15 +197,15 @@
           (should (string? (:result result))))))
 
     (it "rejects writes outside allowed directories"
-      (let [state-dir   support/test-dir
+      (let [root   support/test-dir
             session-key default-session-key
             result      (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}}
                           (do
-                            (helper/create-session! state-dir session-key {:crew crew-name :cwd "/work/project"})
+                            (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
                             (sut/write-tool {"file_path"   "/tmp/evil.txt"
                                              "content"     "evil"
                                              "session_key" session-key
-                                             "state_dir"   state-dir})))]
+                                             "state_dir"   root})))]
         (should (:isError result))
         (should (re-find #"path outside allowed directories" (:error result))))))
 

@@ -20,9 +20,9 @@
 
 (def ^:dynamic *session-store* nil)
 
-(defn- session-store [state-dir]
+(defn- session-store [root]
   (or *session-store*
-      (sidecar-store/create-store state-dir)))
+      (sidecar-store/create-store root)))
 
 (defmacro with-memory-store [& body]
   ;; Install a fresh mem-fs so the body's writes/reads are isolated from
@@ -30,7 +30,7 @@
   ;; (e.g., a real-fs from app/start! → nexus/init!). Outer fixtures that
   ;; need a specific fs should install it inside the body, not rely on
   ;; with-memory-store inheriting it.
-  `(let [mem-store# (memory/create-store (config/state-dir))]
+  `(let [mem-store# (memory/create-store (config/root))]
      (nexus/-with-nested-nexus {:fs       (fs/mem-fs)
                                  :sessions {:store mem-store#}}
        (binding [*session-store* (store/registered-store)]
@@ -38,46 +38,46 @@
            ~@body)))))
 
 (defn create-session!
-  ([state-dir identifier]
-   (create-session! state-dir identifier {}))
-  ([state-dir identifier opts]
-   (store/open-session! (session-store state-dir) identifier opts)))
+  ([root identifier]
+   (create-session! root identifier {}))
+  ([root identifier opts]
+   (store/open-session! (session-store root) identifier opts)))
 
 (defn list-sessions
-  ([state-dir]
-   (store/list-sessions (session-store state-dir)))
-  ([state-dir crew-id]
-   (store/list-sessions-by-agent (session-store state-dir) crew-id)))
+  ([root]
+   (store/list-sessions (session-store root)))
+  ([root crew-id]
+   (store/list-sessions-by-agent (session-store root) crew-id)))
 
-(defn most-recent-session [state-dir]
-  (store/most-recent-session (session-store state-dir)))
+(defn most-recent-session [root]
+  (store/most-recent-session (session-store root)))
 
-(defn get-session [state-dir session-key]
-  (store/get-session (session-store state-dir) session-key))
+(defn get-session [root session-key]
+  (store/get-session (session-store root) session-key))
 
-(defn get-transcript [state-dir session-key]
-  (store/get-transcript (session-store state-dir) session-key))
+(defn get-transcript [root session-key]
+  (store/get-transcript (session-store root) session-key))
 
-(defn update-session! [state-dir session-key updates]
-  (store/update-session! (session-store state-dir) session-key updates))
+(defn update-session! [root session-key updates]
+  (store/update-session! (session-store root) session-key updates))
 
-(defn append-message! [state-dir session-key message]
-  (store/append-message! (session-store state-dir) session-key message))
+(defn append-message! [root session-key message]
+  (store/append-message! (session-store root) session-key message))
 
-(defn append-error! [state-dir session-key error-entry]
-  (store/append-error! (session-store state-dir) session-key error-entry))
+(defn append-error! [root session-key error-entry]
+  (store/append-error! (session-store root) session-key error-entry))
 
-(defn append-compaction! [state-dir session-key compaction]
-  (store/append-compaction! (session-store state-dir) session-key compaction))
+(defn append-compaction! [root session-key compaction]
+  (store/append-compaction! (session-store root) session-key compaction))
 
-(defn splice-compaction! [state-dir session-key compaction]
-  (store/splice-compaction! (session-store state-dir) session-key compaction))
+(defn splice-compaction! [root session-key compaction]
+  (store/splice-compaction! (session-store root) session-key compaction))
 
-(defn update-tokens! [state-dir session-key {:keys [cache-read cache-write] :as updates}]
-  (let [entry         (or (get-session state-dir session-key) {})
+(defn update-tokens! [root session-key {:keys [cache-read cache-write] :as updates}]
+  (let [entry         (or (get-session root session-key) {})
         input-tokens  (:input-tokens updates 0)
         output-tokens (:output-tokens updates 0)]
-    (update-session! state-dir session-key
+    (update-session! root session-key
                      (cond-> {:input-tokens      (+ (or (:input-tokens entry) 0) input-tokens)
                               :last-input-tokens input-tokens
                               :output-tokens     (+ (or (:output-tokens entry) 0) output-tokens)

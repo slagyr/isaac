@@ -47,13 +47,13 @@
 ;; region ----- Public API -----
 
 (defn- session-store
-  ([ctx-or-state-dir]
+  ([ctx-or-root]
     (cond
-      (map? ctx-or-state-dir)
-      (or (:session-store ctx-or-state-dir) (nexus/get-in [:sessions :store]))
+      (map? ctx-or-root)
+      (or (:session-store ctx-or-root) (nexus/get-in [:sessions :store]))
 
       :else
-      (store/create ctx-or-state-dir))))
+      (store/create ctx-or-root))))
 
 (defn- status-data* [session-store session-key ctx]
   (let [entry          (store/get-session session-store session-key)
@@ -86,8 +86,8 @@
   ([session-key ctx]
    (let [ctx (merge (nexus/necho) ctx)]
      (status-data* (session-store ctx) session-key ctx)))
-  ([state-dir session-key ctx]
-   (status-data* (session-store state-dir) session-key ctx)))
+  ([root session-key ctx]
+   (status-data* (session-store root) session-key ctx)))
 
 (defn format-status
   "Format status data as human-readable markdown-style status lines."

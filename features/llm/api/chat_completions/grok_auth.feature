@@ -2,7 +2,7 @@ Feature: Grok Authentication
   Isaac authenticates with xAI's Grok API using an API key.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/grok.edn" exists with:
       | path | value |
       | model | grok-4-1-fast |

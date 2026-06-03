@@ -143,7 +143,7 @@
    (handler (nexus/necho) request))
   ([runtime request]
    (let [cfg          (config/snapshot "hook dispatch entry — ambient config for hook handler")
-         state-dir    (or (:state-dir cfg) (:state-dir runtime))
+         root    (or (:root cfg) (:root runtime))
          name         (hook-name (:uri request))]
      (cond
        ;; 1. Method check
@@ -173,18 +173,18 @@
                  (let [fs*              (runtime-fs! runtime)
                        session-store    (or (nexus/get-in [:sessions :store])
                                             (:session-store runtime)
-                                            (some-> state-dir (sidecar-store/create-store fs*))
-                                            (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
+                                            (some-> root (sidecar-store/create-store fs*))
+                                            (throw (ex-info "hook handler requires :root or :session-store" {})))
                       crew-id          (or (:crew hook) "main")
                       session-key      (or (:session-key hook) (str "hook:" name))
                      existing-session (store/get-session session-store session-key)
-                     quarters         (str state-dir "/crew/" crew-id)
+                     quarters         (str root "/crew/" crew-id)
                      template         (:template hook)
                      message          (render-template template body)
                      charge*          (charge/build {:session-key    session-key
                                                      :input          message
                                                      :comm           null-comm/channel
-                                                     :config         (assoc cfg :state-dir state-dir)
+                                                     :config         (assoc cfg :root root)
                                                      :crew           (:crew hook)
                                                      :model-override (:model hook)
                                                      :origin         {:kind :webhook :name name}})]

@@ -20,9 +20,9 @@
 ;; region ----- Helpers -----
 
 (def env-overrides* (atom {}))
-;; Snapshot of the <state-dir>/.env file, locked at load time (see
+;; Snapshot of the <root>/.env file, locked at load time (see
 ;; lock-dotenv!). Avoids re-reading the file on every ${VAR} lookup and removes
-;; the need to thread/bind state-dir through the substitution pipeline.
+;; the need to thread/bind root through the substitution pipeline.
 (defonce ^:private dotenv* (atom {}))
 
 (defn- runtime-fs
@@ -38,8 +38,8 @@
 (defn- children* [path]
   (fs/children (runtime-fs) path))
 
-(defn- read-dotenv [state-dir]
-  (let [path (when state-dir (str state-dir "/.env"))]
+(defn- read-dotenv [root]
+  (let [path (when root (str root "/.env"))]
     (if (and path (exists?* path))
       (let [props (doto (java.util.Properties.)
                     (.load (java.io.StringReader. (or (slurp* path) ""))))]
@@ -47,10 +47,10 @@
       {})))
 
 (defn- lock-dotenv!
-  "Snapshots <state-dir>/.env into dotenv*. Called once per load so ${VAR}
+  "Snapshots <root>/.env into dotenv*. Called once per load so ${VAR}
    substitution reads a locked map rather than re-reading the file."
-  [state-dir]
-  (reset! dotenv* (read-dotenv state-dir)))
+  [root]
+  (reset! dotenv* (read-dotenv root)))
 
 (defn clear-env-overrides! []
   (reset! env-overrides* {})
@@ -72,8 +72,8 @@
 (defn- source-path [relative]
   (str "config/" relative))
 
-(defn- missing-config-message [state-dir]
-  (str "no config found; run `isaac init` or create " state-dir "/config/isaac.edn"))
+(defn- missing-config-message [root]
+  (str "no config found; run `isaac init` or create " root "/config/isaac.edn"))
 
 (defn- warning [key value]
   {:key key :value value})
@@ -1045,35 +1045,35 @@
                          :cron      new-cron}
                         (cond-> cfg
                                 (contains? cfg :cron) (assoc :cron new-cron))
-                        [:acp :channels :command-paths :comms :cron :dev :gateway :hooks :module-index :modules :prefer-entity-files :prompt-dir-names :prompt-paths :server :sessions :skill-menu-threshold :skill-paths :slash-commands :state-dir :tools :tz])))
+                        [:acp :channels :command-paths :comms :cron :dev :gateway :hooks :module-index :modules :prefer-entity-files :prompt-dir-names :prompt-paths :server :sessions :skill-menu-threshold :skill-paths :slash-commands :root :tools :tz])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Loading -----
 
 (defn load-config-result
-  [& [{:keys [state-dir raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
+  [& [{:keys [root raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
        :or   {substitute-env? true}
        :as   opts}]]
   (let [fs*  (runtime-fs opts)
         opts (assoc opts :fs fs* :substitute-env? substitute-env?)]
     (nexus/-with-nested-nexus {:fs fs*}
-                              (lock-dotenv! state-dir)
-                              (let [root (paths/config-root state-dir)]
-                                (if-not (config-files-present? root opts)
-                                  {:config          {:state-dir state-dir}
-                                   :errors          [{:key "config" :value (missing-config-message state-dir)}]
+                              (lock-dotenv! root)
+                              (let [config-root (paths/config-root root)]
+                                (if-not (config-files-present? config-root opts)
+                                  {:config          {:root root}
+                                   :errors          [{:key "config" :value (missing-config-message root)}]
                                    :missing-config? true
                                    :warnings        []
                                    :sources         []}
-                                  (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
-                                        crew-files       (entity-files root "crew" opts)
-                                        cron-files       (entity-files root "cron" opts)
-                                        hail-files       (entity-files root "hail" opts)
-                                        hook-files       (entity-files root "hooks" opts)
-                                        model-files      (entity-files root "models" opts)
-                                        provider-files   (entity-files root "providers" opts)
-                                        md-warnings      (dangling-md-warnings root root-data opts)
+                                  (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config config-root opts)
+                                        crew-files       (entity-files config-root "crew" opts)
+                                        cron-files       (entity-files config-root "cron" opts)
+                                        hail-files       (entity-files config-root "hail" opts)
+                                        hook-files       (entity-files config-root "hooks" opts)
+                                        model-files      (entity-files config-root "models" opts)
+                                        provider-files   (entity-files config-root "providers" opts)
+                                        md-warnings      (dangling-md-warnings config-root root-data opts)
                                         base-config      (normalize-config (or root-data {}))
                                         result           {:config          base-config
                                                           :errors          root-errors
@@ -1091,21 +1091,21 @@
                                         result           (reduce merge-root-entity result [:crew :cron :hail :models :providers])
                                         result           (cond-> result
                                                                  (not skip-entity-files?)
-                                                                 (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :hail entity-file substitute-env? raw-parse-errors?)) r (:files hail-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
+                                                                 (as-> r (reduce (fn [acc entity-file] (load-entity-file acc config-root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :hail entity-file substitute-env? raw-parse-errors?)) r (:files hail-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
                                         config           (update (:config result) :defaults normalize-defaults)
                                         config           (if data-path-overlay
                                                            (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
                                                            config)
-                                        discovery        (module-loader/discover! config {:state-dir state-dir
+                                        discovery        (module-loader/discover! config {:root root
                                                                                           :cwd       (System/getProperty "user.dir")})
                                         config           (assoc config
                                                            :module-index (:index discovery)
-                                                           :state-dir state-dir)
+                                                           :root root)
                                         raw-providers    (merge (get-in result [:root :providers])
                                                                 (get-in result [:raw :providers]))
                                         comms-check      (check-comms config (:index discovery))
@@ -1116,7 +1116,7 @@
                                         providers-check  (check-provider-types config raw-providers (:index discovery))
                                         resolved-pcheck  (resolved-provider-errors config raw-providers)
                                         compaction-check (check-crew-compaction config)
-                                        errors           (into (:errors result) (concat (semantic-errors config root)
+                                        errors           (into (:errors result) (concat (semantic-errors config config-root)
                                                                                         (:errors discovery)
                                                                                         manifest-check
                                                                                         comm-type-check
@@ -1161,43 +1161,43 @@
   cfg)
 
 (defn load-config!
-  "THE loader: load config from `state-dir` (read via `fs`), validate it, commit
+  "THE loader: load config from `root` (read via `fs`), validate it, commit
    it as the process-wide snapshot, and return the value. Call once at an entry
    point, then thread the returned value onward (or read the snapshot). Throws
    ex-info {:errors [...]} carrying ALL validation/coercion errors when the
    config is invalid (a missing config is not an error — it commits the empty
    default). `reason` documents the call site."
-  [state-dir fs reason]
+  [root fs reason]
   (let [{:keys [config errors missing-config?]}
-        (load-config-result {:state-dir state-dir :fs fs})]
+        (load-config-result {:root root :fs fs})]
     (when (and (seq errors) (not missing-config?))
-      (throw (ex-info (str "invalid configuration in " state-dir)
-                      {:errors errors :state-dir state-dir})))
+      (throw (ex-info (str "invalid configuration in " root)
+                      {:errors errors :root root})))
     (set-snapshot! config reason)
     config))
 
-(defn state-dir
-  "Returns the resolved state directory. Test fixtures install an explicit
-   :state-dir on the nexus via -with-nested-nexus and that wins; otherwise the
-   loaded config carries :state-dir (derived from home). Production never
+(defn root
+  "Returns the resolved root. Test fixtures install an explicit
+   :root on the nexus via -with-nested-nexus and that wins; otherwise the
+   loaded config carries :root (derived from home). Production never
    installs the nexus slot, so the config snapshot is authoritative there."
   []
-  (or (nexus/get :state-dir)
-      (:state-dir (snapshot "state-dir resolution — ambient config fallback"))))
+  (or (nexus/get :root)
+      (:root (snapshot "root resolution — ambient config fallback"))))
 
 ;; endregion ^^^^^ Ambient Config Snapshot ^^^^^
 
 ;; region ----- Workspace -----
 
 (defn resolve-workspace
-  [crew-id & [{:keys [state-dir] :as opts}]]
+  [crew-id & [{:keys [root] :as opts}]]
   (let [fs*       (runtime-fs opts)
-        crew-dir  (str state-dir "/crew/" crew-id)
-        isaac-dir (str state-dir "/workspace-" crew-id)
+        crew-dir  (str root "/crew/" crew-id)
+        isaac-dir (str root "/workspace-" crew-id)
         ;; Legacy ~/.openclaw lives beside ~/.isaac, so it only applies when the
-        ;; state dir is a .isaac directory under a user home.
-        oc-dir    (when (str/ends-with? (str state-dir) "/.isaac")
-                    (str (subs state-dir 0 (- (count state-dir) (count "/.isaac")))
+        ;; root is a .isaac directory under a user home.
+        oc-dir    (when (str/ends-with? (str root) "/.isaac")
+                    (str (subs root 0 (- (count root) (count "/.isaac")))
                          "/.openclaw/workspace-" crew-id))]
     (nexus/-with-nested-nexus {:fs fs*}
                               (cond

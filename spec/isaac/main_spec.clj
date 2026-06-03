@@ -78,19 +78,6 @@
         (should= "/tmp/flag" (:root @received))
         (should= [] (:_raw-args @received))))
 
-    (it "legacy --home flag still works as an alias that appends /.isaac"
-      (let [received (atom nil)
-            mem      (fs/mem-fs)]
-        (registry/register! {:name   "home-flag-dispatch"
-                             :desc   "Test"
-                             :usage  "home-flag-dispatch"
-                             :option-spec []
-                             :run-fn (fn [opts] (reset! received opts) 0)})
-        (binding [root/*user-home* "/tmp/user"
-                  sut/*extra-opts* {:fs mem}]
-          (should= 0 (sut/run ["--home" "/tmp/legacy" "home-flag-dispatch"])))
-        (should= "/tmp/legacy/.isaac" (:root @received))))
-
     (it "returns exit code from command run-fn"
       (registry/register! {:name   "fail-cmd"
                            :desc   "Fails"
@@ -179,9 +166,9 @@
                              :usage       "extra-test"
                              :option-spec []
                              :run-fn      (fn [opts] (reset! received opts) 0)})
-        (binding [sut/*extra-opts* {:state-dir (str (System/getProperty "user.dir") "/target/test-state")}]
+        (binding [sut/*extra-opts* {:root (str (System/getProperty "user.dir") "/target/test-state")}]
           (sut/run ["extra-test"]))
-        (should= (str (System/getProperty "user.dir") "/target/test-state") (:state-dir @received)))))
+        (should= (str (System/getProperty "user.dir") "/target/test-state") (:root @received)))))
 
   (describe "substitute-env"
 
@@ -212,7 +199,7 @@
       (registry/register-module-command! {:name "stale-cmd" :desc "old" :usage "stale-cmd"
                                           :option-spec [] :run-fn (fn [_] 0)})
       (should-not-be-nil (registry/get-command "stale-cmd"))
-      (binding [sut/*extra-opts* {:state-dir (str (System/getProperty "user.dir") "/target/test-state")}]
+      (binding [sut/*extra-opts* {:root (str (System/getProperty "user.dir") "/target/test-state")}]
         (with-out-str (sut/run ["--help"])))
       (should-be-nil (registry/get-command "stale-cmd")))
 

@@ -18,8 +18,8 @@
 
 (defn- ensure-store! [config]
   (when-not (store/registered-store)
-    (when-let [state-dir (:state-dir config)]
-      (store/register! config state-dir))))
+    (when-let [root (:root config)]
+      (store/register! config root))))
 
 (defn install!
   "Reconcile an already-committed config into the nexus: ensure the session store,
@@ -97,13 +97,13 @@
     errors))
 
 (defn reload!
-  "Hot-reload coordinator (server only): re-load config from `state-dir`/`fs`,
+  "Hot-reload coordinator (server only): re-load config from `root`/`fs`,
    validate it (parse + semantic + comm-impl against `comm-registry`); on any
    error, log and KEEP the running config (returns nil); on success, commit the
    new snapshot and reconcile `registries` against `old-config`. Returns the new
    config on success, nil if rejected."
-  [{:keys [state-dir fs old-config comm-registry registries host path]}]
-  (let [load-result (config/load-config-result {:state-dir state-dir :fs fs :raw-parse-errors? true})
+  [{:keys [root fs old-config comm-registry registries host path]}]
+  (let [load-result (config/load-config-result {:root root :fs fs :raw-parse-errors? true})
         errors      (:errors load-result)
         new-cfg     (assoc (:config load-result) :module-index (:module-index host))]
     (cond

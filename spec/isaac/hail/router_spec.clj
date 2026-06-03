@@ -12,7 +12,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (nexus/-with-nested-nexus {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+    (nexus/-with-nested-nexus {:root "/test/isaac" :fs (fs/mem-fs)}
       (example)))
 
   (it "binds a reach-one band to the only matching session"

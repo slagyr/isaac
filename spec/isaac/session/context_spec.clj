@@ -44,7 +44,7 @@
       (example)))
 
   (it "returns global and project rules in stable name order"
-    (let [cfg {:state-dir test-root}]
+    (let [cfg {:root test-root}]
       (fs/spit (nexus/get :fs) (str test-root "/config/rules/quarantine.md")
                (str "---\n"
                     "type: rule\n"
@@ -69,7 +69,7 @@
                (sut/read-rules-text cfg test-root (str test-root "/project")))))
 
   (it "returns nil when no rules are discovered"
-    (should-be-nil (sut/read-rules-text {:state-dir test-root} test-root (str test-root "/missing-project")))))
+    (should-be-nil (sut/read-rules-text {:root test-root} test-root (str test-root "/missing-project")))))
 
 (describe "read-skill-disclosure"
 
@@ -89,7 +89,7 @@
                                "- greenhouse-protocol: Use when tending specimens\n\n"
                                "Use load_skill to load a skill body on demand.")
               :tool-names #{"load_skill"}}
-             (sut/read-skill-disclosure {:state-dir test-root} test-root (str test-root "/project"))))
+             (sut/read-skill-disclosure {:root test-root} test-root (str test-root "/project"))))
 
   (it "falls back to list_skills when the configured threshold is exceeded"
     (fs/spit (nexus/get :fs) (str test-root "/config/skills/a/SKILL.md")
@@ -113,7 +113,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (nexus/-with-nested-nexus {:state-dir test-root :fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:root test-root :fs (fs/mem-fs)}
         (example))))
 
   (it "resolves locked and cascade fields for an existing session"

@@ -4,7 +4,7 @@ Feature: Module-contributed CLI subcommands
   runs before command dispatch so the command is visible at invocation time.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: module-contributed command is dispatched
     Given the isaac file "isaac.edn" exists with:

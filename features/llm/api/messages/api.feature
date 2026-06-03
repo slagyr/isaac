@@ -5,7 +5,7 @@ Feature: Anthropic Messages API surface
   thinking-budget-max config field. Effort 0 omits the thinking block.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And config:
       | key        | value  |
       | log.output | memory |

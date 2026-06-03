@@ -6,7 +6,7 @@ Feature: Compaction Strategies
   :head config (defaults to 30% of the context window).
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: default compaction parameters are fixed percentages of context window
     Then the compaction defaults are:

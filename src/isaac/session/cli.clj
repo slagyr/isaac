@@ -190,22 +190,22 @@
 
 ;; endregion ^^^^^ Output ^^^^^
 
-(defn- resolve-state-dir [opts]
-  (config/default-state-dir opts))
+(defn- resolve-root [opts]
+  (config/default-root opts))
 
 (defn- install-cli!
   "Load config, resolve the state dir, and install it into the nexus (snapshot +
-   session store + tree). Returns {:config :state-dir :store}."
+   session store + tree). Returns {:config :root :store}."
   [opts]
-  (let [state-dir  (resolve-state-dir opts)
-        loaded-cfg (config/load-config! state-dir (fs/instance) "session cli command")]
+  (let [root  (resolve-root opts)
+        loaded-cfg (config/load-config! root (fs/instance) "session cli command")]
     (config/install! {:config loaded-cfg})
-    {:config loaded-cfg :state-dir state-dir :store (store/registered-store)}))
+    {:config loaded-cfg :root root :store (store/registered-store)}))
 
 (defn- run-show [opts session-id]
   (if (str/blank? session-id)
     (do (println "Usage: isaac sessions show <session-id>") 1)
-    (let [{:keys [state-dir store]} (install-cli! opts)
+    (let [{:keys [root store]} (install-cli! opts)
           session     (store/get-session store session-id)]
       (if (nil? session)
         (do (println (str "session not found: " session-id)) 1)
@@ -216,7 +216,7 @@
           (try
             (let [ctx    (assoc (session-ctx/resolve-behavior session-id {})
                                 :boot-files (session-ctx/read-boot-files (:cwd session))
-                                :state-dir state-dir)
+                                :root root)
                   status (bridge/status-data session-id ctx)]
               (println (bridge/format-status status))
               0)

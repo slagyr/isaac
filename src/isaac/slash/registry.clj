@@ -37,16 +37,16 @@
     (module-loader/activate! module-id module-index)))
 
 (defn- prompt-catalog-opts [opts]
-  (let [state-dir (or (:state-dir opts)
-                      (nexus/get :state-dir)
-                      (config/state-dir))
+  (let [root (or (:root opts)
+                      (nexus/get :root)
+                      (config/root))
         fs*       (or (:fs opts) (nexus/get :fs))]
-    (when (and state-dir fs*)
+    (when (and root fs*)
       {:config    (or (:config opts)
                       (config/snapshot "slash command advertisement resolves prompt-template commands"))
        :cwd       (:cwd opts)
        :fs        fs*
-       :state-dir state-dir})))
+       :root root})))
 
 (defn- prompt-template-commands [opts]
   (if-let [catalog-opts (prompt-catalog-opts opts)]

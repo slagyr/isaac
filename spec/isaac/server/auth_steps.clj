@@ -9,7 +9,7 @@
 (helper! isaac.server.auth-steps)
 
 (defn authenticated-credentials [provider]
-  (let [sdir      (or (g/get :state-dir) "/test/state")
+  (let [sdir      (or (g/get :root) "/test/state")
         auth-file (str sdir "/auth.json")
         mem-fs    (g/get :mem-fs)
         write-fn  (fn [fs*]
@@ -35,7 +35,7 @@
     (g/should (str/includes? output "Logged out"))))
 
 (defgiven "authenticated credentials exist for provider {provider:string}" isaac.server.auth-steps/authenticated-credentials
-  "Writes a minimal api-key credential to <state-dir>/auth.json under the
+  "Writes a minimal api-key credential to <root>/auth.json under the
    given provider. Creates or updates the file — does not touch provider
    EDN configs in ~/.isaac/config/providers/.")
 

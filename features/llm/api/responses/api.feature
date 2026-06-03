@@ -4,7 +4,7 @@ Feature: OpenAI Responses API — effort wire translation
   summary "auto". Effort 0 or absent :effort omits the reasoning block.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And config:
       | key        | value  |
       | log.output | memory |

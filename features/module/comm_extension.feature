@@ -7,7 +7,7 @@ Feature: Comm extension
   can coexist with distinct names.
 
   Scenario: Multiple comm instances of the same :type coexist
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:log    {:output :memory}

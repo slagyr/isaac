@@ -11,13 +11,13 @@
 (describe "tool fs bounds"
 
   (it "prefers the explicit state_dir arg over the installed runtime"
-    (nexus/-with-nexus {:state-dir "/test/runtime"}
+    (nexus/-with-nexus {:root "/test/runtime"}
       (should= "/test/explicit"
-               (sut/state-dir {"state_dir" "/test/explicit"}))))
+               (sut/root {"state_dir" "/test/explicit"}))))
 
   (it "uses the installed runtime session store when args omit it"
     (let [session-store (store/create nil :memory)]
-      (nexus/-with-nexus {:state-dir "/test/runtime" :sessions {:store session-store}}
+      (nexus/-with-nexus {:root "/test/runtime" :sessions {:store session-store}}
         (should= session-store
                  (sut/session-store {"session_key" "chat-1"})))))
 
@@ -31,7 +31,7 @@
     (let [mem           (fs/mem-fs)
           session-store (store/create nil :memory)]
       (store/open-session! session-store "chat-1" {:crew marigold/captain})
-      (nexus/-with-nexus {:state-dir "/test/runtime" :sessions {:store session-store} :fs mem}
+      (nexus/-with-nexus {:root "/test/runtime" :sessions {:store session-store} :fs mem}
         (config-loader/dangerously-install-config! {:crew {marigold/captain {:tools {:directories []}}}} "spec")
         (should= [(str "/test/runtime/crew/" marigold/captain)]
                  (sut/allowed-directories {"session_key" "chat-1"}))

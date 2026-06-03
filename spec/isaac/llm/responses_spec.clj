@@ -18,7 +18,7 @@
 (def oauth-device-config {:base-url  "https://chatgpt.com/backend-api/codex"
                           :auth      "oauth-device"
                           :name      "chatgpt"
-                          :state-dir "/tmp/isaac-home/.isaac"})
+                          :root "/tmp/isaac-home/.isaac"})
 
 (describe "OpenAI Responses Provider"
 
@@ -128,11 +128,11 @@
                                {:name      "chatgpt"
                                 :auth      "oauth-device"
                                 :base-url  "https://api.openai.com/v1"
-                                :state-dir "/tmp/isaac-home/.isaac"})]
+                                :root "/tmp/isaac-home/.isaac"})]
           (should= :auth-missing (:error result))
           (should-contain "isaac auth login --provider chatgpt" (:message result)))))
 
-    (it "does not fall back to user.home when oauth-device state-dir is missing"
+    (it "does not fall back to user.home when oauth-device root is missing"
       (let [captured-auth-dir (atom ::unset)]
         (with-redefs [auth-store/load-tokens (fn [auth-dir _ _]
                                                (reset! captured-auth-dir auth-dir)
@@ -161,7 +161,7 @@
                     {:name      "chatgpt"
                      :auth      "oauth-device"
                      :base-url  "https://api.openai.com/v1"
-                     :state-dir "/tmp/isaac-home/.isaac"})
+                     :root "/tmp/isaac-home/.isaac"})
           (should= "/tmp/isaac-home/.isaac" @captured-auth-dir))))
 
     (it "encodes role=tool messages as function_call_output in the responses-API wire body"
@@ -461,6 +461,6 @@
                                "chatgpt"
                                {:name      "chatgpt"
                                 :auth      "oauth-device"
-                                :state-dir "/tmp/.isaac"})]
+                                :root "/tmp/.isaac"})]
           (should (api/error? result))
           (should-not-throw (schema/conform! api/error-response result)))))))

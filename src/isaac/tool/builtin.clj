@@ -65,7 +65,7 @@
                      :description "List files matching a glob pattern"
                      :parameters  {:type       "object"
                                    :properties {"pattern"    {:type "string" :description "Glob pattern to match"}
-                                                "path"       {:type "string" :description "Directory to search; defaults to cwd or state-dir"}
+                                                "path"       {:type "string" :description "Directory to search; defaults to cwd or root"}
                                                 "head_limit" {:type "integer" :description "Maximum rows to return"}}
                                    :required   ["pattern"]}
                      :handler     #'glob/glob-tool}

@@ -5,7 +5,7 @@ Feature: Hail bands declared in config
   time.
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
+    Given an Isaac root at "isaac-state"
 
   Scenario: config validate accepts a valid band declaration
     Given config file "hail/bean-pickup.edn" containing:

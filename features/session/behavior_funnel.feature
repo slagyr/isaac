@@ -8,7 +8,7 @@ Feature: Canonical session-behavior resolution funnel
   Tracked by isaac-bv48.
 
   Background:
-    Given an empty Isaac state directory "/test"
+    Given an empty Isaac root at "/test"
     And the isaac config path "defaults.model" is "spark"
     And the isaac config path "providers.test.api" is "grover"
     And the isaac config path "models.spark.model" is "echo"

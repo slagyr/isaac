@@ -7,7 +7,7 @@
     [isaac.logs.cli :as sut]
     [speclj.core :refer :all]))
 
-(def ^:private test-state-dir "/tmp/marigold-state")
+(def ^:private test-root "/tmp/marigold-state")
 (def ^:private absolute-log "/tmp/marigold.log")
 (def ^:private relative-log "marigold.log")
 (def ^:private config-log "logs/bridge-watch.log")
@@ -19,15 +19,15 @@
   (describe "resolve-path"
 
     (it "returns nil for nil input"
-      (should= nil (#'sut/resolve-path nil test-state-dir)))
+      (should= nil (#'sut/resolve-path nil test-root)))
 
     (it "keeps absolute paths"
-      (should= absolute-log (#'sut/resolve-path absolute-log test-state-dir)))
+      (should= absolute-log (#'sut/resolve-path absolute-log test-root)))
 
-    (it "resolves relative paths under state-dir"
-      (should= (str test-state-dir "/" relative-log) (#'sut/resolve-path relative-log test-state-dir)))
+    (it "resolves relative paths under root"
+      (should= (str test-root "/" relative-log) (#'sut/resolve-path relative-log test-root)))
 
-    (it "returns the relative path when state-dir is unavailable"
+    (it "returns the relative path when root is unavailable"
       (should= relative-log (#'sut/resolve-path relative-log nil))))
 
   (describe "config-log-path"
@@ -53,13 +53,13 @@
       (let [captured (atom nil)]
         (with-redefs [viewer/tail! (fn [path opts] (reset! captured [path opts]))]
           (sut/run {:file      config-log
-                    :state-dir test-state-dir
+                    :root test-root
                     :follow    true
                     :limit     5
                     :zebra     true
                     :plain     true
                     :no-color  true})
-          (should= [(str test-state-dir "/" config-log)
+          (should= [(str test-root "/" config-log)
                     {:color? false :zebra? true :follow? true :plain? true :limit 5}]
                    @captured))))
 
@@ -67,8 +67,8 @@
       (let [captured (atom nil)]
         (with-redefs [sut/config-log-path (fn [_ _] config-log)
                       viewer/tail!        (fn [path opts] (reset! captured [path opts]))]
-          (sut/run {:home "/tmp/home" :state-dir test-state-dir :limit 20})
-          (should= [(str test-state-dir "/" config-log)
+          (sut/run {:home "/tmp/home" :root test-root :limit 20})
+          (should= [(str test-root "/" config-log)
                     {:color? true :zebra? false :follow? false :plain? false :limit 20}]
                    @captured))))
 
@@ -77,7 +77,7 @@
         (with-redefs [sut/config-log-path (fn [_ _]nil)
                       log/log-file        (fn [] default-log)
                       viewer/tail!        (fn [path opts] (reset! captured [path opts]))]
-          (sut/run {:home "/tmp/home" :state-dir test-state-dir :limit 20})
+          (sut/run {:home "/tmp/home" :root test-root :limit 20})
           (should= [default-log
                     {:color? true :zebra? false :follow? false :plain? false :limit 20}]
                    @captured)))))
@@ -99,9 +99,9 @@
         (with-redefs [sut/run (fn [opts] (reset! captured opts) 0)]
           (should= 0 (sut/run-fn {:_raw-args ["--file" run-log "--zebra"]
                                    :home      "/tmp/home"
-                                   :state-dir test-state-dir}))
+                                   :root test-root}))
           (should= {:home "/tmp/home"
-                    :state-dir test-state-dir
+                    :root test-root
                     :file run-log
                     :limit 20
                     :zebra true}

@@ -4,7 +4,7 @@ Feature: Scheduler per-task policies
   or handlers hang.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the scheduler is started with the clock at "2026-05-20T10:00:00Z"
 
   Scenario: coalesce :skip drops overlapping fires

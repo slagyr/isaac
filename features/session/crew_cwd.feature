@@ -5,7 +5,7 @@ Feature: Crew-level default cwd for new sessions
   is: explicit session override > crew > channel default.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
 
   Scenario: Crew :cwd seeds the new session's cwd
     Given the isaac EDN file "config/models/local.edn" exists with:
@@ -48,7 +48,7 @@ Feature: Crew-level default cwd for new sessions
       | cwd | /acme/haberdashery |
 
   Scenario: Crew :cwd must be an absolute path
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:crew {:pinky {:cwd "cheese-helmets"}}}

@@ -15,8 +15,8 @@ Feature: isaac init
     Given the user home directory is "/tmp/user"
 
   Scenario: isaac init output lists created files and setup instructions
-    Given an empty isaac home at "target/test-state"
-    When isaac is run with "--home target/test-state init"
+    Given an empty Isaac root at "target/test-state"
+    When isaac is run with "--root target/test-state init"
     Then the exit code is 0
     And the stdout lines match:
       | text                                             |
@@ -40,8 +40,8 @@ Feature: isaac init
       |   isaac prompt -m "hello"                        |
 
   Scenario: isaac init scaffolds each file with the expected content
-    Given an empty isaac home at "target/test-state"
-    When isaac is run with "--home target/test-state init"
+    Given an empty Isaac root at "target/test-state"
+    When isaac is run with "--root target/test-state init"
     Then the EDN isaac file "config/isaac.edn" contains:
       | path                 | value           |
       | defaults.crew        | main            |
@@ -81,33 +81,33 @@ Feature: isaac init
     And the exit code is 1
 
   Scenario: the scaffolded config validates successfully
-    Given an empty isaac home at "target/test-state"
-    And isaac is run with "--home target/test-state init"
-    When isaac is run with "--home target/test-state config validate"
+    Given an empty Isaac root at "target/test-state"
+    And isaac is run with "--root target/test-state init"
+    When isaac is run with "--root target/test-state config validate"
     Then the stdout contains "OK"
     And the exit code is 0
 
   # ----- 'no config found' counterpart of "refuses when a config already exists" -----
   #
-  # When --home points at an empty (or non-existent) directory and the user runs
+  # When --root points at an empty (or non-existent) directory and the user runs
   # a non-init command, isaac surfaces a single self-explanatory error pointing
   # them at `isaac init`. Same error reaches every entry point that loads config.
 
   Scenario: config get with no config points users at isaac init
-    Given an empty isaac home at "/tmp/no-config-home"
-    When isaac is run with "--home /tmp/no-config-home config get defaults.crew"
-    Then the stderr contains "no config found; run `isaac init` or create /tmp/no-config-home/.isaac/config/isaac.edn"
+    Given an empty Isaac root at "/tmp/no-config-home"
+    When isaac is run with "--root /tmp/no-config-home config get defaults.crew"
+    Then the stderr contains "no config found; run `isaac init` or create /tmp/no-config-home/config/isaac.edn"
     And the exit code is 1
 
   Scenario: config validate with no config points users at isaac init
-    Given an empty isaac home at "/tmp/no-config-home"
-    When isaac is run with "--home /tmp/no-config-home config validate"
-    Then the stderr contains "no config found; run `isaac init` or create /tmp/no-config-home/.isaac/config/isaac.edn"
+    Given an empty Isaac root at "/tmp/no-config-home"
+    When isaac is run with "--root /tmp/no-config-home config validate"
+    Then the stderr contains "no config found; run `isaac init` or create /tmp/no-config-home/config/isaac.edn"
     And the exit code is 1
 
-  Scenario: --home pointing at a non-existent directory still surfaces the no-config error
-    When isaac is run with "--home /tmp/does-not-exist config get defaults.crew"
-    Then the stderr contains "no config found; run `isaac init` or create /tmp/does-not-exist/.isaac/config/isaac.edn"
+  Scenario: --root pointing at a non-existent directory still surfaces the no-config error
+    When isaac is run with "--root /tmp/does-not-exist config get defaults.crew"
+    Then the stderr contains "no config found; run `isaac init` or create /tmp/does-not-exist/config/isaac.edn"
     And the exit code is 1
 
   Scenario: pointer file targeting a root with no config surfaces the no-config error

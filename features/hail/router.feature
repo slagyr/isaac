@@ -12,7 +12,7 @@ Feature: Hail router
   hail/deliveries/.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And default Grover setup
 
   Scenario: a reach-one band matching exactly one session binds immediately

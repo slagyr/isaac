@@ -13,7 +13,7 @@
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
-(def ctx {:state-dir "/state/.isaac" :cwd "/workspace"})
+(def ctx {:root "/state/.isaac" :cwd "/workspace"})
 
 (defn- mod-dir! [path]
   (fs/mkdirs (nexus/get :fs) path))

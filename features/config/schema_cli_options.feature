@@ -20,7 +20,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
   not present in any declared manifest do NOT appear in the output.
 
   Scenario: comm slot :type lists user-configurable comm kinds from manifests
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:defaults  {:crew :main :model :local}
@@ -43,7 +43,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     And the exit code is 0
 
   Scenario: config schema renders manifest-supplied comm fields with provenance prefix
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}}
@@ -57,7 +57,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     And the exit code is 0
 
   Scenario: config schema comms.value renders every manifest-supplied field inline
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}}
@@ -83,7 +83,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     And the exit code is 0
 
   Scenario: config schema comms.value with no modules shows only base fields
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {}
@@ -99,7 +99,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     And the exit code is 0
 
   Scenario: config schema for a manifest-supplied field errors when the module isn't declared
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {}
@@ -112,7 +112,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     And the exit code is 1
 
   Scenario: config schema renders manifest-supplied provider fields with provenance prefix
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}}
@@ -126,7 +126,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     And the exit code is 0
 
   Scenario: config schema renders manifest-supplied tool fields with provenance prefix
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {}
@@ -140,7 +140,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     And the exit code is 0
 
   Scenario: config schema renders manifest-supplied slash-command fields with provenance prefix
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}}

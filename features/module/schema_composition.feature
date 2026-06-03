@@ -18,7 +18,7 @@ Feature: Module schema composition
   :slash-commands.
 
   Scenario: Module :extends adds slot config keys for its impl
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
@@ -30,7 +30,7 @@ Feature: Module schema composition
       | comms.bert.loft | rooftop |
 
   Scenario: Extended slot fields enforce their schema
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
@@ -42,7 +42,7 @@ Feature: Module schema composition
       | comms.bert.loft | must be a string |
 
   Scenario: Without the module declared, extended keys are unknown
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:comms {:bert {:type :fictional :loft "rooftop"}}}
@@ -53,7 +53,7 @@ Feature: Module schema composition
       | comms.bert.loft | unknown key |
 
   Scenario: Manifest field marked [:present-when? :type X] errors when omitted
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
@@ -65,7 +65,7 @@ Feature: Module schema composition
       | comms.bert.loft | is required when type  |
 
   Scenario: Manifest [:one-of? ...] rejects values outside the enum
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
@@ -77,7 +77,7 @@ Feature: Module schema composition
       | comms.bert.mood | must be one of  |
 
   Scenario: Manifest [:one-of? ...] accepts values inside the enum
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
@@ -89,7 +89,7 @@ Feature: Module schema composition
       | comms.bert.mood | happy |
 
   Scenario: Manifest schema validation applies to provider fields
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules   {:isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}
@@ -101,7 +101,7 @@ Feature: Module schema composition
       | providers.tea.fizz-level  | must be an integer   |
 
   Scenario: Manifest schema validation applies to tool fields
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:tools {:web_search {:provider :brave}}}
@@ -112,7 +112,7 @@ Feature: Module schema composition
       | tools.web_search.api-key | is required |
 
   Scenario: Manifest schema validation applies to slash-command fields
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules        {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}
@@ -124,7 +124,7 @@ Feature: Module schema composition
       | slash-commands.echo.command-name | must be a string |
 
   Scenario: Manifest referencing an unregistered ref fails fast at module activation
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And a module manifest "modules/isaac.comm.broken/resources/isaac-manifest.edn":
       """
       {:id      :isaac.comm.broken
@@ -143,7 +143,7 @@ Feature: Module schema composition
       | modules.isaac.comm.broken    | unregistered ref :no-such-ref? |
 
   Scenario: Manifest declaring :type in its :schema fails to load
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And a module manifest at "/tmp/isaac/badmod/resources/isaac-manifest.edn":
       """
       {:id      :isaac.comm.badmod

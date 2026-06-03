@@ -9,7 +9,7 @@ Feature: Tool extension
   LLM-facing contract change together in code.
 
   Scenario: Tool config is rejected when a required :schema field is missing
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:tools {:web_search {:provider :brave}}}

@@ -3,7 +3,7 @@ Feature: Server Dev Reload
   request so developers don't need to restart for every edit.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And config:
       | key               | value  |
       | log.output        | memory |

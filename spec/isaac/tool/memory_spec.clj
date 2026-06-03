@@ -19,7 +19,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (nexus/-with-nested-nexus {:state-dir test-dir :fs (fs/mem-fs)}
+      (nexus/-with-nested-nexus {:root test-dir :fs (fs/mem-fs)}
         (seed-default-crew!)
         (example))))
 
@@ -74,7 +74,7 @@
   (it "uses the installed runtime fs without binding fs/*fs*"
     (let [mem (fs/mem-fs)]
       (helper/with-memory-store
-        (nexus/-with-nexus {:state-dir test-dir :fs mem}
+        (nexus/-with-nexus {:root test-dir :fs mem}
           (seed-default-crew!)
           (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
             (sut/memory-write-tool {"content" "runtime memory"})

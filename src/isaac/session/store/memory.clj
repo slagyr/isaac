@@ -41,7 +41,7 @@
 ;; specs using get-transcript can check :type, :message, :id etc. without
 ;; modification.
 
-(deftype MemorySessionStore [state-dir state]
+(deftype MemorySessionStore [root state]
   store/SessionStore
 
   (open-session! [_ name opts]
@@ -50,8 +50,8 @@
                                                       (or (:crew opts) "main")
                                                       (:history-retention opts))
           name      (or name
-                        (when state-dir
-                          (naming/generate (store/ensure-naming-strategy! state-dir (fs/instance)))))
+                        (when root
+                          (naming/generate (store/ensure-naming-strategy! root (fs/instance)))))
           id        (c/session-id (or name "session"))
           existing  (get-in @state [:sessions id])]
       (cond
@@ -304,8 +304,8 @@
 (defn create-store
   ([]
    (create-store nil))
-  ([state-dir]
-   (->MemorySessionStore state-dir (atom {:sessions {} :transcripts {}}))))
+  ([root]
+   (->MemorySessionStore root (atom {:sessions {} :transcripts {}}))))
 
 (defn store-state [^MemorySessionStore store]
   @(.-state store))

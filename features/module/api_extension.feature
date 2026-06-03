@@ -16,7 +16,7 @@ Feature: Api extension
   ollama, grover).
 
   Scenario: A module-shipped Api can serve a provider
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules   {:isaac.api.tin-can {:local/root "modules/isaac.api.tin-can"}}
@@ -29,7 +29,7 @@ Feature: Api extension
     Then the reply contains "tin-can heard: what is your purpose"
 
   Scenario: Module-shipped Api activation is logged
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:log       {:output :memory}
@@ -48,7 +48,7 @@ Feature: Api extension
       | :info | :api/registered | tin-can |
 
   Scenario: Provider validation fails when the api's module is not declared
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:tin-test {:api    "tin-can"
@@ -61,7 +61,7 @@ Feature: Api extension
       | providers.tin-test.api | unknown api |
 
   Scenario: Config validation fails for an unregistered api
-    Given an empty Isaac state directory "/tmp/isaac"
+    Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:bogus {:api    "carrier-pigeon"

@@ -11,16 +11,16 @@
 
  (describe "config cli mutate common"
 
-   (describe "target-state-dir+path!"
+   (describe "target-root+path!"
 
-     (it "returns derived state-dir and normalized path for a valid argument"
-       (should= {:state-dir "/tmp/home/.isaac" :path-str path-str}
-                (sut/target-state-dir+path! {:home "/tmp/home"} slash-path)))
+     (it "returns explicit root and normalized path for a valid argument"
+       (should= {:root "/tmp/home/.isaac" :path-str path-str}
+                (sut/target-root+path! {:root "/tmp/home/.isaac"} slash-path)))
 
      (it "prints missing path and returns nil for a blank argument"
        (let [err (java.io.StringWriter.)]
          (binding [*err* (java.io.PrintWriter. err)]
-           (should= nil (sut/target-state-dir+path! {:home "/tmp/home"} nil)))
+           (should= nil (sut/target-root+path! {:root "/tmp/home/.isaac"} nil)))
          (should (str/includes? (str err) "missing path")))))
 
    (describe "handle-mutate-result!"

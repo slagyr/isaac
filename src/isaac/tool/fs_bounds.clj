@@ -20,11 +20,11 @@
     (or (= parent child)
         (str/starts-with? child (str parent File/separator)))))
 
-(defn config-directories [state-dir]
-  #{(str state-dir "/config")})
+(defn config-directories [root]
+  #{(str root "/config")})
 
-(defn crew-quarters [state-dir crew-id]
-  (str state-dir "/crew/" crew-id))
+(defn crew-quarters [root crew-id]
+  (str root "/crew/" crew-id))
 
 (defn string-key-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
@@ -35,18 +35,18 @@
         (fs/instance)
         (throw (ex-info "fs-bounds requires :fs in args or system" {})))))
 
-(defn state-dir [args]
+(defn root [args]
   (let [args (string-key-map args)]
     (or (get args "state_dir")
-        (config/state-dir))))
+        (config/root))))
 
 (defn session-store [args]
   (let [args      (string-key-map args)
-        state-dir (state-dir args)]
+        root (root args)]
     (or (get args "session_store")
         (nexus/get-in [:sessions :store])
-        (when state-dir
-          (sidecar-store/create-store state-dir (filesystem args))))))
+        (when root
+          (sidecar-store/create-store root (filesystem args))))))
 
 (defn arg-bool [args k default]
   (let [value (get args k)]
@@ -95,12 +95,12 @@
   (let [args        (string-key-map args)
         fs*         (filesystem args)
         session-key (get args "session_key")
-        state-dir   (state-dir args)
+        root   (root args)
         store       (session-store args)]
-    (when (and session-key state-dir)
+    (when (and session-key root)
       (when-let [session (store/get-session store session-key)]
         (let [crew-id     (or (:crew session) "main")
-              quarters    (crew-quarters state-dir crew-id)
+              quarters    (crew-quarters root crew-id)
               _           (fs/mkdirs fs* quarters)
               cfg         (config/snapshot "tool fs-bounds: crew tool directories")
               directories (or (get-in cfg [:crew crew-id :tools :directories]) [])]
@@ -118,8 +118,8 @@
 
 (defn ensure-path-allowed [args file-path]
   (when-let [directories (seq (allowed-directories args))]
-    (let [state-dir      (state-dir args)
-          denied-config? (some #(path-inside? % file-path) (config-directories state-dir))]
+    (let [root      (root args)
+          denied-config? (some #(path-inside? % file-path) (config-directories root))]
       (when (or denied-config?
                 (not-any? #(path-inside? % file-path) directories))
         (path-outside-error file-path)))))

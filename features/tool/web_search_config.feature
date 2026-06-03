@@ -3,7 +3,7 @@ Feature: web_search tool config schema
   manifest-declared :schema for the built-in tool.
 
   Background:
-    Given an empty Isaac state directory "/tmp/isaac-wsconf"
+    Given an empty Isaac root at "/tmp/isaac-wsconf"
 
   Scenario: :tools key is accepted at root config level without triggering an unknown-key warning
     Given config file "isaac.edn" containing:

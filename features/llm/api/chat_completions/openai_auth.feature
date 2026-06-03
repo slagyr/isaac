@@ -2,7 +2,7 @@ Feature: OpenAI Authentication
   Isaac authenticates with the OpenAI API using an API key.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/gpt.edn" exists with:
       | path | value |
       | model | gpt-5 |

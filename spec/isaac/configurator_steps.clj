@@ -136,9 +136,9 @@
 ;; --- config update step (delta-merge with #delete sentinel) -------------
 
 (defn- isaac-edn-path []
-  (let [state-dir (or (g/get :runtime-state-dir)
-                      (g/get :state-dir))]
-    (str state-dir "/config/isaac.edn")))
+  (let [root (or (g/get :runtime-root)
+                      (g/get :root))]
+    (str root "/config/isaac.edn")))
 
 (defn- deep-merge [a b]
   (cond

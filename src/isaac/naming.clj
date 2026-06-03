@@ -55,10 +55,10 @@
   "An algorithm for producing fresh names."
   (generate [this]))
 
-(defrecord SequentialStrategy [state-dir counter-key prefix fs]
+(defrecord SequentialStrategy [root counter-key prefix fs]
   NameStrategy
   (generate [_]
-    (let [counter-file (str state-dir "/" counter-key "/.counter")
+    (let [counter-file (str root "/" counter-key "/.counter")
           n            (inc (or (when (fs/exists? fs counter-file)
                                   (some-> (fs/slurp fs counter-file) str/trim parse-long))
                                 0))]

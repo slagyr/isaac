@@ -13,11 +13,11 @@
 
 ;; region ----- Helpers -----
 
-(defn- state-dir []
-  (or (g/get :state-dir) "/isaac-state"))
+(defn- root []
+  (or (g/get :root) "/isaac-state"))
 
 (defn- config-root []
-  (str (state-dir) "/config"))
+  (str (root) "/config"))
 
 (defn- mem-fs []
   (or (g/get :mem-fs)
@@ -40,7 +40,7 @@
           (some #(when (path-exists? %) %)
                 [(str root "/resources/isaac-manifest.edn")
                  (str root "/src/isaac-manifest.edn")]))
-        [(str (state-dir) "/.isaac/modules/" (name id))
+        [(str (root) "/.isaac/modules/" (name id))
          (str (System/getProperty "user.dir") "/modules/" (name id))]))
 
 (defn- load-config-result []
@@ -59,7 +59,7 @@
                     module-loader/manifest-resource (fn [id]
                                                       (or (module-manifest-path id)
                                                           (real-manifest-resource id)))]
-        (loader/load-config-result {:state-dir (state-dir) :fs fs*}))
+        (loader/load-config-result {:root (root) :fs fs*}))
       (finally
         (System/setProperty "user.dir" base-cwd)))))
 
@@ -107,7 +107,7 @@
   (str (config-root) "/" path))
 
 (defn- isaac-env-path []
-  (str (state-dir) "/.env"))
+  (str (root) "/.env"))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -208,7 +208,7 @@
    :local/root \".\" module discovery (where the module root equals the cwd).")
 
 (defgiven "config file {path:string} containing:" isaac.config.config-steps/config-file-containing
-  "Writes the heredoc content to <state-dir>/.isaac/config/<path>. Uses
+  "Writes the heredoc content to <root>/.isaac/config/<path>. Uses
    the in-memory fs. Path is config-root-relative, e.g. 'isaac.edn' or
    'crew/atticus.edn'.")
 
@@ -220,18 +220,18 @@
 (defgiven #"the env var \"([^\"]+)\" is set to \"([^\"]+)\"" isaac.config.config-steps/environment-variable-is)
 
 (defgiven "the isaac .env file contains:" isaac.config.config-steps/isaac-env-file-contains
-  "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
+  "Writes the heredoc content to <root>/.isaac/.env. This is the
    file the loader reads for ${VAR} substitution.")
 
 (defwhen "the config is loaded" isaac.config.config-steps/config-is-loaded
-  "Triggers a fresh load-config-result against the state-dir and caches
+  "Triggers a fresh load-config-result against the root and caches
    the result so subsequent Then steps (loaded-config-has, validation
    errors) use the same load.")
 
 (defthen "the loaded config has:" isaac.config.config-steps/loaded-config-has
   "Prefers the running server's in-memory cfg (hot-reload-aware) via
    app/current-config; falls back to a fresh load-config against the
-   state-dir when no server is up. Rows use dot-path keys, e.g.
+   root when no server is up. Rows use dot-path keys, e.g.
    'crew.atticus.soul'.")
 
 (defthen "the config has validation errors matching:" isaac.config.config-steps/config-has-validation-errors)
@@ -239,7 +239,7 @@
 (defthen "the config has validation warnings matching:" isaac.config.config-steps/config-has-validation-warnings)
 
 (defthen "the config file {path:string} matches:" isaac.config.config-steps/config-file-matches
-  "Reads the on-disk config file content (state-dir-relative path under
+  "Reads the on-disk config file content (root-relative path under
    config-root). Each row is a regex pattern; all must match somewhere
    in the file. Order and structure are not enforced.")
 

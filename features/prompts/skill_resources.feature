@@ -6,7 +6,7 @@ Feature: Skill bundled resources via load_skill
   it must confine to that directory — a resource path that escapes is rejected.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/claude.edn" exists with:
       | path           | value            |
       | model          | claude           |

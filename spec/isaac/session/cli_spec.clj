@@ -14,7 +14,7 @@
 
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
   (around [it]
-    (nexus/-with-nested-nexus {:state-dir "/test/sessions"}
+    (nexus/-with-nested-nexus {:root "/test/sessions"}
       (helper/with-memory-store
         (it))))
 

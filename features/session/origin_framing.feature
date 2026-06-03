@@ -10,7 +10,7 @@ Feature: Per-turn origin framing
   breakpoint stays on the origin-free historical message.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given an Isaac root at "target/test-state"
     And the isaac EDN file "config/models/claude.edn" exists with:
       | path           | value            |
       | model          | claude           |
