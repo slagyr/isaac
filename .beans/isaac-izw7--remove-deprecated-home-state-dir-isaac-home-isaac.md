@@ -1,11 +1,11 @@
 ---
 # isaac-izw7
 title: Remove deprecated --home, :state-dir, :isaac-home, :isaac-state-dir, :home aliases
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-06-03T08:57:09Z
-updated_at: 2026-06-03T08:57:09Z
+updated_at: 2026-06-03T14:34:19Z
 ---
 
 Finish the isaac-root collapse by removing all backward-compat
@@ -64,24 +64,30 @@ The longer aliases live, the more new code is written against them.
 
 ## Acceptance
 
-Acceptance scenarios are NOT yet drafted — this bean stays in `draft`
-until `/plan-with-features` produces committed `@wip` scenarios. Likely
-needs:
+No new Gherkin needed. This bean removes vestigial names; the
+existing suite already exercises the surviving (`--root` / `:root` /
+`isaac.root`) paths, so a green suite after the rip IS the
+behavioural contract. Writing scenarios that assert the old names
+are gone would just be tests of dead code.
 
-- A scenario asserting `--home <dir>` is rejected as an unknown flag.
-- A scenario asserting an old `{:home "/x"}` pointer file is rejected
-  (or ignored, depending on chosen behavior).
-- A grep-based "no aliases remain" check encoded as a build / CI step
-  (not a Gherkin scenario, but worth nailing into the bean's DoD).
+Definition of done:
 
-Final greps that should come up clean:
+- Full spec/feature suite green: `bb spec` and `bb features`.
+- These greps return zero matches:
 
-```
-rg --no-config -- '--home\b'        src/ spec/ features/   # expect 0
-rg --no-config -- ':state-dir\b'    src/ spec/             # expect 0
-rg --no-config -- ':isaac-home\b'   src/ spec/             # expect 0
-rg --no-config -- ':display-home\b' src/ spec/             # expect 0
-```
+  ```
+  rg -- '--home\b'        src spec features
+  rg -- ':state-dir\b'    src spec
+  rg -- ':isaac-home\b'   src spec
+  rg -- ':display-home\b' src spec
+  ```
+
+- `isaac.root/extract-home-flag`, the `explicit-home` arity of
+  `resolve-root`, and the `--home` lookup branch are deleted (not
+  just unused).
+- `src/isaac/main.clj` no longer threads `:state-dir resolved-root`
+  as a synonym; the "legacy internal key kept as a synonym" comment
+  is gone.
 
 ## Related
 
