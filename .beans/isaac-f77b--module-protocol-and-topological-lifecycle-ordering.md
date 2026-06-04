@@ -1,13 +1,11 @@
 ---
 # isaac-f77b
 title: Module protocol and topological lifecycle ordering
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T11:10:29Z
-updated_at: 2026-06-04T15:01:41Z
+updated_at: 2026-06-04T18:35:31Z
 parent: isaac-brth
 ---
 
