@@ -87,6 +87,14 @@ Feature: Module berth declarations (phase 1 — shape only)
 
   Scenario: A consumer manifest's :deps map is preserved in the module-index
     Given an empty Isaac state directory "/tmp/marigold"
+    And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
+      """
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id :marigold.bridge :version "1.0.0" :factory marigold.bridge/create-module}
+      """
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
       {:paths ["resources"]}
@@ -96,8 +104,7 @@ Feature: Module berth declarations (phase 1 — shape only)
       {:id      :marigold.longwave
        :version "0.1.0"
        :factory marigold.longwave/create-module
-       :deps    {:marigold.bridge {:git/url "git@github.com:marigold/bridge.git"
-                                   :git/sha "abc123"}}}
+       :deps    {:marigold.bridge {:local/root "/tmp/modules/marigold.bridge"}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -105,8 +112,8 @@ Feature: Module berth declarations (phase 1 — shape only)
       """
     When the config is loaded
     Then the loaded config has:
-      | key                                                              | value                                                                |
-      | /module-index/marigold.longwave/manifest/deps/marigold.bridge    | {:git/url "git@github.com:marigold/bridge.git" :git/sha "abc123"}    |
+      | key                                                              | value                                                  |
+      | /module-index/marigold.longwave/manifest/deps/marigold.bridge    | {:local/root "/tmp/modules/marigold.bridge"}           |
     And the config has no validation errors
 
   Scenario: A :deps entry whose coordinate is not a map is a config-load error
@@ -120,7 +127,7 @@ Feature: Module berth declarations (phase 1 — shape only)
       {:id      :marigold.longwave
        :version "0.1.0"
        :factory marigold.longwave/create-module
-       :deps    {:marigold.bridge "git@github.com:marigold/bridge.git"}}
+       :deps    {:marigold.bridge "not-a-coordinate"}}
       """
     And the isaac file "isaac.edn" exists with:
       """
