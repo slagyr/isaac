@@ -1,11 +1,11 @@
 ---
 # isaac-8yxs
 title: 'Manifest-only berth processing: per-entry :factory invocation'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T14:40:17Z
-updated_at: 2026-06-04T14:40:37Z
+updated_at: 2026-06-04T19:26:13Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
@@ -96,3 +96,32 @@ per-entry factory.
   `[:marigold.bridge/signal-route]` in the fixture scenario. If a
   berth wants a different path, it should be able to declare one
   (open question — not blocking this bean).
+
+## Summary of Changes
+
+`isaac.module.loader` (new public fn `process-manifest-berths!`):
+
+- Walks each berth declared across the loaded `module-index`. For manifest-only berths (declare `:manifest` without `:config`), looks at the berth's `:manifest :schema` for an entry-level `:factory` (top-level, on `:spec` for `:type :seq`, or on `:value-spec` for `:type :map`). Resolves the symbol via `requiring-resolve` and invokes `(factory entry)` once per contribution entry across every consumer.
+- Entry shape per schema type: `:seq` → each element of the contribution vector; `:map` → each value; scalar → the contribution itself.
+- Failure to resolve a factory symbol surfaces as `module-index.berths[<berth-id>].factory` / "could not resolve factory symbol: …".
+- Berths without an entry-level `:factory` are left to the foundation default (intentionally deferred per bean's Out of Scope).
+- Binds `registered-in/*module-index*` for the pass so any `:registered-in?` validations the factories trigger see the closed transitive set.
+
+**Important integration note**: this runs OUTSIDE the loader's nested-nexus wrap. `config/load-config-result` brackets discover! in `nexus/-with-nested-nexus` to scope `:fs`; the wrap's `install! previous` discards any top-level keys factories register. So callers (the test harness, app boot) invoke `process-manifest-berths!` after load returns, against the result's `:module-index`. The function is deliberately public.
+
+`isaac.config.config-steps` harness (`load-result`):
+
+- After `load-config-result` returns and the wrap has exited, calls `module-loader/process-manifest-berths!` against the resulting module-index (when there are no errors). Registrations land in the ambient nexus where the scenario's Then step can read them.
+- The redundant `nexus/-with-nested-nexus {:fs mem}` wrapper at this layer is removed — `initialize-root!` (see `session-steps/empty-state-directory`) has already registered `:fs` in the global nexus.
+- New step: `Then the nexus has a route <route-key> with handler <handler>` — reads `[:marigold.bridge/signal-route <route-key>]` and asserts the registered value equals the expected handler symbol. Both args parsed as EDN.
+
+Fixtures (under `spec/marigold/`):
+
+- `marigold.bridge` declares `:marigold.bridge/signal-route` as a manifest-only berth; the berth's `:manifest :schema` is a `:type :seq` over per-element `:type :map` carrying a per-entry `:factory marigold.bridge.signal/register-route!`.
+- `marigold.bridge.signal/register-route!` installs the contribution at `[:marigold.bridge/signal-route [<method> <path>]]` in the nexus.
+- `marigold.longwave` declares a `:deps` on bridge and contributes one route entry `[:get "/longwave/ping"]` → `marigold.longwave/ping-handler`.
+- bb.edn picks up the fixtures' `src/` dirs so `requiring-resolve` finds the factory namespaces (the test stubs `add-module-deps!`, so tools.deps doesn't extend the classpath at runtime).
+
+`isaac.config.config-steps/coord-manifest-path` now returns a `java.io.File` (instead of a string path) when the fixture lives on real disk rather than in mem-fs, so `read-manifest`'s non-string branch uses `clojure.core/slurp` — needed for the on-disk `spec/marigold/...` modules that require a real classpath.
+
+bb features features/module/manifest_berth_processing.feature 1/0; bb spec 1833/0; bb features 739/0.

@@ -1,0 +1,7 @@
+{:id                          :marigold.longwave
+ :version                     "0.1.0"
+ :factory                     marigold.longwave/create-module
+ :deps                        {:marigold.bridge {:local/root "spec/marigold/bridge"}}
+ :marigold.bridge/signal-route [{:method  :get
+                                  :path    "/longwave/ping"
+                                  :handler marigold.longwave/ping-handler}]}

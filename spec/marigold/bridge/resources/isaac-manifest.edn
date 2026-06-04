@@ -1,0 +1,11 @@
+{:id      :marigold.bridge
+ :version "1.0.0"
+ :factory marigold.bridge/create-module
+ :berths  {:marigold.bridge/signal-route
+           {:description "Routes a signal to a handler — registered per entry."
+            :manifest    {:schema {:type :seq
+                                    :spec {:type    :map
+                                           :factory marigold.bridge.signal/register-route!
+                                           :schema  {:method  {:type :keyword}
+                                                     :path    {:type :string}
+                                                     :handler {:type :symbol}}}}}}}}

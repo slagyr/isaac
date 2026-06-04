@@ -1,4 +1,3 @@
-@wip
 Feature: Manifest-only berth processing
   Berths without a `:config` shape collect contributions purely from
   module manifests. For each contribution, the foundation walks the

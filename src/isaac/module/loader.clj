@@ -9,6 +9,7 @@
     [isaac.logger :as log]
     [isaac.module :as module]
     [isaac.module.manifest :as manifest]
+    [isaac.nexus :as nexus]
     [isaac.schema.lexicon :as lexicon]
     [isaac.schema.registered-in :as registered-in]))
 
@@ -624,6 +625,92 @@
   (reset! started-modules* [])
   :stopped)
 
+;; ----- Manifest-only berth processing (isaac-8yxs) -----
+
+(defn- collect-berth-declarations
+  "Walks `module-index` and returns a seq of [berth-id berth-decl] pairs
+   across all modules. Berth declarations live at
+   `[<provider-id> :manifest :berths <berth-id>]`."
+  [module-index]
+  (mapcat (fn [[_ entry]]
+            (seq (get-in entry [:manifest :berths] {})))
+          module-index))
+
+(defn- manifest-only-berth?
+  "A berth declares `:manifest` (the contribution shape) without a
+   `:config` shape — i.e., contributions come from manifests only, not
+   user config slots."
+  [berth-decl]
+  (and (contains? berth-decl :manifest)
+       (not (contains? berth-decl :config))))
+
+(defn- entry-factory-symbol
+  "Walks a berth's :manifest :schema looking for an entry-level
+   :factory. For :type :seq berths it lives on :spec; for :type :map on
+   :value-spec; for scalar/map berths it can live at the top of the
+   schema. Returns the unresolved symbol or nil."
+  [berth-schema]
+  (some :factory [berth-schema (:spec berth-schema) (:value-spec berth-schema)]))
+
+(defn- berth-contribution-entries
+  "Returns the entries `(factory entry)` should be called with, given
+   the schema shape and a contribution value. Seq → each element; map
+   → each value; scalar → the value itself."
+  [berth-schema contribution]
+  (case (:type berth-schema)
+    :seq contribution
+    :map (vals contribution)
+    [contribution]))
+
+(defn- contributions-to-berth
+  "All [consumer-id contribution-value] pairs in `module-index` for
+   `berth-id`."
+  [module-index berth-id]
+  (keep (fn [[consumer-id entry]]
+          (when-let [v (get-in entry [:manifest berth-id])]
+            [consumer-id v]))
+        module-index))
+
+(defn- process-manifest-berth!
+  "For one manifest-only berth: resolve its entry-factory and invoke it
+   once per contribution entry across all consumers. Returns a vec of
+   error rows (empty on success)."
+  [module-index berth-id berth-decl]
+  (let [berth-schema (get-in berth-decl [:manifest :schema])
+        factory-sym  (entry-factory-symbol berth-schema)]
+    (if-not factory-sym
+      ;; Foundation default for berths without an entry-level factory
+      ;; (the simple merge-to-[<berth-id>] form) is intentionally
+      ;; deferred — see bean's "Out of scope".
+      []
+      (if-let [factory (try (resolve-symbol! factory-sym) (catch Throwable _ nil))]
+        (do
+          (doseq [[_consumer-id contribution] (contributions-to-berth module-index berth-id)
+                  entry (berth-contribution-entries berth-schema contribution)]
+            (factory entry))
+          [])
+        [{:key   (str "module-index.berths[" berth-id "].factory")
+          :value (str "could not resolve factory symbol: " factory-sym)}]))))
+
+(defn process-manifest-berths!
+  "For each berth in `module-index` whose schema declares an entry-level
+   `:factory`, invokes `(factory entry)` once per contribution entry.
+   Factories typically register the entry in the nexus (routes are the
+   canonical case — the foundation hands each route map to its
+   registration factory; the entry lands at the conventional path so
+   the platform can find it later).
+
+   Run AFTER load-config-result has returned and its nested-nexus
+   wrap has exited — otherwise the wrap's `install! previous` rolls
+   back any new top-level keys the factories register. Returns a vec
+   of error rows (empty on success)."
+  [module-index]
+  (binding [registered-in/*module-index* module-index]
+    (vec (mapcat (fn [[berth-id berth-decl]]
+                   (when (manifest-only-berth? berth-decl)
+                     (process-manifest-berth! module-index berth-id berth-decl)))
+                 (collect-berth-declarations module-index)))))
+
 (defn- pending-deps
   "Pairs of [consumer-id dep-id coord] for deps not yet in `index`."
   [index]
@@ -703,6 +790,11 @@
                        {:index {} :errors []}
                        raw-modules)
             {:keys [index errors]} (resolve-deps! context init-index)]
+        ;; Note: manifest-only berth processing (per-entry :factory
+        ;; invocation, isaac-8yxs) must run OUTSIDE the load's
+        ;; nested-nexus wrap or the wrap's restore discards any
+        ;; nexus registrations the factories make. Callers invoke
+        ;; process-manifest-berths! after load returns.
         {:index  index
          :errors (into (into init-errors errors)
                        (concat (cycle-errors index)

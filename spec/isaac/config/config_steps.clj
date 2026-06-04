@@ -56,9 +56,25 @@
          fs*                    (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))
          coord-manifest-path    (fn [coord]
                                   (when-let [root (:local/root coord)]
-                                    (some #(when (path-exists? %) %)
-                                          [(str root "/resources/isaac-manifest.edn")
-                                           (str root "/src/isaac-manifest.edn")])))]
+                                    (some (fn [rel]
+                                            (let [p   (str root "/" rel)
+                                                  mem (g/get :mem-fs)]
+                                              (cond
+                                                ;; In-memory fixture (most scenarios) — return the
+                                                ;; path so read-manifest uses fs/slurp on mem-fs.
+                                                (and mem (fs/exists? mem p))
+                                                p
+
+                                                ;; On-disk fixture (modules living under spec/...
+                                                ;; for tests that need a real classpath, like
+                                                ;; manifest-only berth processing). Return a File
+                                                ;; so read-manifest's non-string branch uses
+                                                ;; clojure.core/slurp.
+                                                (.exists (java.io.File. p))
+                                                (java.io.File. p)
+
+                                                :else nil)))
+                                          ["resources/isaac-manifest.edn" "src/isaac-manifest.edn"])))]
     (try
       (when effective-cwd
         (System/setProperty "user.dir" effective-cwd))
@@ -78,10 +94,15 @@
 
 (defn- load-result []
   (or (g/get :loaded-config-result)
-      (if-let [mem (g/get :mem-fs)]
-        (nexus/-with-nested-nexus {:fs mem}
-          (load-config-result))
-        (load-config-result))))
+      (let [result       (load-config-result)
+            module-index (get-in result [:config :module-index])]
+        ;; Per-entry berth :factory invocation runs OUTSIDE the loader's
+        ;; nested-nexus wrap so its nexus registrations persist into the
+        ;; ambient nexus (the wrap's install!/restore would otherwise
+        ;; discard them). When no errors slipped through, fire the pass.
+        (when (and module-index (empty? (:errors result)))
+          (module-loader/process-manifest-berths! module-index))
+        result)))
 
 (defn- parse-expected [value]
   (cond
@@ -234,6 +255,12 @@
 (defn config-has-no-validation-errors []
   (g/should= [] (:errors (load-result))))
 
+(defn nexus-has-route [route-key-edn handler-edn]
+  (let [route-key (edn/read-string route-key-edn)
+        expected  (edn/read-string handler-edn)
+        actual    (nexus/get-in [:marigold.bridge/signal-route route-key])]
+    (g/should= expected actual)))
+
 (defn config-has-no-validation-warnings []
   (g/should= [] (:warnings (load-result))))
 
@@ -289,5 +316,12 @@
 (defthen "the config has no validation errors" isaac.config.config-steps/config-has-no-validation-errors)
 
 (defthen "the config has no validation warnings" isaac.config.config-steps/config-has-no-validation-warnings)
+
+(defthen #"the nexus has a route (.+) with handler (.+)" isaac.config.config-steps/nexus-has-route
+  "Reads the nexus at [:marigold.bridge/signal-route <route-key>] and
+   asserts the registered value equals the expected handler symbol.
+   <route-key> and <handler> are read as EDN; supply a vector literal
+   (e.g. [:get \"/path\"]) for the key and a qualified symbol for the
+   handler.")
 
 ;; endregion ^^^^^ Routing ^^^^^

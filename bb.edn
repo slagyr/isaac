@@ -1,4 +1,10 @@
-{:paths ["src" "spec"]
+{:paths ["src" "spec"
+         ;; Test fixtures masquerading as real modules — their factory
+         ;; symbols (marigold.bridge.signal/register-route!, etc.) need
+         ;; to be on the classpath because tests no-op add-module-deps!
+         ;; rather than letting tools.deps fetch + extend the path.
+         "spec/marigold/bridge/src"
+         "spec/marigold/longwave/src"]
 
  :deps  {clj-mutate/clj-mutate                 {:git/url "https://github.com/slagyr/clj-mutate"
                                                 :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
