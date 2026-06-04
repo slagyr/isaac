@@ -1,13 +1,11 @@
 ---
 # isaac-2yqb
 title: Apron meta-schema (validate-a-schema-spec) exposed via isaac wrapper
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T10:57:32Z
-updated_at: 2026-06-04T19:03:36Z
+updated_at: 2026-06-04T19:19:11Z
 parent: isaac-brth
 blocked_by:
     - isaac-c2g5
