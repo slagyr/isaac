@@ -1,4 +1,3 @@
-@wip
 Feature: :deps resolution via tools.deps / babashka internals
   A consumer manifest's `:deps` declares modules it requires. The
   foundation resolves them using `tools.deps`/babashka — if the

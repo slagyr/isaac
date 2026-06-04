@@ -1,11 +1,11 @@
 ---
 # isaac-fzsz
 title: :deps resolution via tools.deps / babashka internals
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T14:10:52Z
-updated_at: 2026-06-04T14:11:09Z
+updated_at: 2026-06-04T14:53:14Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
@@ -100,3 +100,15 @@ specs, we stub the resolver — never reach for real URLs in a test.
 - Cycles among `:deps` (A → B → A) should error explicitly with a
   named cycle, not loop forever or get masked as an unrelated
   resolution failure.
+
+## Summary of Changes
+
+`isaac.module.loader`:
+
+- New `resolve-deps!` iterative pass runs after the initial user-declared discovery. It walks each loaded manifest's `:deps` map and, for any module-id not yet in the index, delegates to the same `discover-one` path the user-declared modules use (`:local/root` direct read; coords go through `tools.deps`/bb internals via `ensure-module-deps!` → `manifest-resource`). The pass loops until the index closes — index membership doubles as a cycle guard (A → B → A stops once B sees A already resolved). When an iteration makes no forward progress, remaining errors fall through.
+- Each failed dep resolution is surfaced as `module-index["<consumer>"].deps[<dep-id>]` / "failed to resolve coordinate" so the user sees which consumer dragged the offending dep in (rather than the raw `modules["<dep>"]` shape `discover-one` would otherwise produce).
+- `discover!` chains `resolve-deps!` between the user-declared reduce and the post-discovery passes (`cycle-errors`, `validate-contributions!`), so the closed index is what cycle detection and contribution validation see.
+
+Test policy honored: scenarios use only `:local/root` coordinates; no remote git URLs. The git-fetch path lives behind `tools.deps`' own test suite.
+
+bb features features/module/deps_resolution.feature 2/0; bb spec 1811/0; bb features 738/0.

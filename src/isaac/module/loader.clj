@@ -619,6 +619,61 @@
   (reset! started-modules* [])
   :stopped)
 
+(defn- pending-deps
+  "Pairs of [consumer-id dep-id coord] for deps not yet in `index`."
+  [index]
+  (mapcat (fn [[consumer-id entry]]
+            (let [deps (get-in entry [:manifest :deps])]
+              (when (map? deps)
+                (keep (fn [[dep-id coord]]
+                        (when (and (not (contains? index dep-id))
+                                   (map? coord))
+                          [consumer-id dep-id coord]))
+                      deps))))
+          index))
+
+(defn- dep-resolution-error [consumer-id dep-id]
+  {:key   (str "module-index[\"" (id-str consumer-id) "\"].deps[" dep-id "]")
+   :value "failed to resolve coordinate"})
+
+(defn- resolve-deps!
+  "Iteratively walks each loaded manifest's `:deps` and resolves any
+   modules not already in `index` (delegating to discover-one, which
+   routes through `tools.deps`/bb internals for non-local-root coords).
+   Closes over the transitive set; reports each failed resolution as
+   `module-index[\"<consumer>\"].deps[<dep-id>]` so the user can see
+   which consumer dragged the offending dep in. Index membership
+   doubles as a cycle guard — A → B → A stops when B sees A already
+   resolved."
+  [context initial-index]
+  (loop [index  initial-index
+         errors []]
+    (let [pending (pending-deps index)]
+      (if (empty? pending)
+        {:index index :errors errors}
+        (let [{:keys [new-entries new-errors]}
+              (reduce
+                (fn [{:keys [new-entries new-errors]} [consumer-id dep-id coord]]
+                  (cond
+                    (contains? index dep-id)        {:new-entries new-entries
+                                                     :new-errors  new-errors}
+                    (contains? new-entries dep-id)  {:new-entries new-entries
+                                                     :new-errors  new-errors}
+                    :else
+                    (let [{:keys [entry] mod-errors :errors} (discover-one context dep-id coord)]
+                      (if (seq mod-errors)
+                        {:new-entries new-entries
+                         :new-errors  (conj new-errors (dep-resolution-error consumer-id dep-id))}
+                        {:new-entries (merge new-entries entry)
+                         :new-errors  new-errors}))))
+                {:new-entries {} :new-errors []}
+                pending)]
+          (if (empty? new-entries)
+            ;; No forward progress — stop. Any remaining unresolved deps
+            ;; landed in new-errors this pass.
+            {:index index :errors (into errors new-errors)}
+            (recur (merge index new-entries) (into errors new-errors))))))))
+
 (defn discover!
   "Resolves module coordinates from config :modules and returns
    {:index {...} :errors [...]}."
@@ -630,7 +685,7 @@
       {:index  (core-index)
        :errors [{:key "modules"
                  :value "must be a map of id to coordinate (legacy vector shape)"}]}
-      (let [{:keys [index errors]}
+      (let [{init-index :index init-errors :errors}
             (reduce-kv (fn [{:keys [index errors]} raw-id coord]
                          (let [id (->module-id raw-id)]
                            (if (or (nil? id) (not (map? coord)))
@@ -641,7 +696,9 @@
                                {:index  (merge index entry)
                                 :errors (into errors (or mod-errors []))}))))
                        {:index {} :errors []}
-                       raw-modules)]
+                       raw-modules)
+            {:keys [index errors]} (resolve-deps! context init-index)]
         {:index  index
-         :errors (into errors (concat (cycle-errors index)
-                                      (validate-contributions! index)))}))))
+         :errors (into (into init-errors errors)
+                       (concat (cycle-errors index)
+                               (validate-contributions! index)))}))))
