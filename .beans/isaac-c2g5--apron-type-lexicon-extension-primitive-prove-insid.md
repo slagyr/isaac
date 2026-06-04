@@ -1,13 +1,11 @@
 ---
 # isaac-c2g5
 title: Apron type lexicon extension primitive (prove inside isaac before upstreaming)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T10:52:15Z
-updated_at: 2026-06-04T11:05:05Z
+updated_at: 2026-06-04T14:01:41Z
 parent: isaac-brth
 ---
 
