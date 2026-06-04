@@ -1,13 +1,11 @@
 ---
 # isaac-2ecl
 title: Schema :dynamic-schema directive (gather + merge from manifest contributions)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:12:28Z
-updated_at: 2026-06-04T18:45:28Z
+updated_at: 2026-06-04T18:51:11Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
