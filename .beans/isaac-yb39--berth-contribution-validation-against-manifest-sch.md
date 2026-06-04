@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T11:08:43Z
-updated_at: 2026-06-04T14:19:35Z
+updated_at: 2026-06-04T14:36:27Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
