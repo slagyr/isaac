@@ -4,10 +4,8 @@ title: Module protocol and topological lifecycle ordering
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T11:10:29Z
-updated_at: 2026-06-04T14:41:04Z
+updated_at: 2026-06-04T14:54:42Z
 parent: isaac-brth
 ---
 
@@ -113,3 +111,9 @@ exercised against real-shaped modules.
   started modules) is worth doing even on first impl. Modules holding
   external handles (websockets, file handles, processes) need a chance
   to release them; otherwise startup failure leaks resources.
+
+
+
+## Verification
+
+Verifier note (2026-06-04): verification failed. The bean acceptance explicitly requires that defining a Module via `defrecord` / `extend-protocol` works and that both lifecycle methods are optional. The current implementation in `src/isaac/module.clj` only defines a bare protocol plus the `module` helper; it does not provide any protocol-level default implementation for `extend-protocol`, so callers only get optional hooks by going through `module/module`. The specs also never exercise `extend-protocol`: `spec/isaac/module_spec.clj` covers a `defrecord` with both methods present and the helper constructor, but has no direct `extend-protocol` example. Full test gates were green (`bb spec` 1823/0, targeted lifecycle specs 41/0, `bb features` 736/0), but the bean is not acceptable until the extend-protocol/optional-method requirement is implemented and directly specified.
