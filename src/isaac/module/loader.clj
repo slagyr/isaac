@@ -173,7 +173,7 @@
          [(str root "/resources/isaac-manifest.edn")
           (str root "/src/isaac-manifest.edn")]))
 
-(defn- resolve-manifest-resource [id coord]
+(defn resolve-manifest-resource [id coord]
   (let [fs* (runtime-fs)]
     (or (when-let [root (:local/root coord)]
           (when-not (fs/exists? fs* (str root "/deps.edn"))
@@ -210,8 +210,18 @@
                      :path     path}}}))
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
-        (if (cs/error? data)
+        (cond
+          ;; Custom manifest validators (see isaac.module.manifest) emit
+          ;; pre-formatted error rows under this key so they can carry the
+          ;; exact module-index["id"]... key shape c3kit's nested
+          ;; message-map can't reproduce cleanly.
+          (:isaac/manifest-errors data)
+          {:errors (:isaac/manifest-errors data)}
+
+          (cs/error? data)
           {:errors (manifest-errors id data)}
+
+          :else
           {:errors [{:key (mod-error-key id) :value (.getMessage e)}]})))
     (catch Exception e
       {:errors [{:key (mod-error-key id) :value (.getMessage e)}]})))

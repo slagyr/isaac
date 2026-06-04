@@ -489,6 +489,14 @@
                                     (= "/test" dir)
                                     (str/starts-with? dir "/test/")))))
 
+(defn empty-state-directory
+  "Like empty-state but always virtual / mem-fs. Useful when the scenario
+   writes module fixtures at sibling paths (e.g. /tmp/modules/...) that
+   wouldn't trigger the /test heuristic but still need to live in the
+   in-memory fs."
+  [path]
+  (initialize-root! path true))
+
 (defn in-memory-state [path]
   (initialize-root! path true)
   (with-feature-fs #(seed-minimal-config! (root-dir))))
@@ -1353,6 +1361,12 @@
    otherwise. Clean slate — deletes any existing content first. No
    config files are seeded. Use 'an Isaac root at' if the scenario
    needs a seeded minimal config.")
+
+(defgiven "an empty Isaac state directory {string}" isaac.session.session-steps/empty-state-directory
+  "Always virtual / mem-fs at the given path. Same intent as
+   'an empty Isaac root at' but bypasses the real-fs heuristic so a
+   scenario can put fixtures at arbitrary paths (e.g. /tmp/modules/...)
+   without touching disk.")
 
 (defgiven "an Isaac root at {string}" isaac.session.session-steps/in-memory-state
   "Virtual fs (mem-fs) rooted at the given path. Seeds a minimal

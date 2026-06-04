@@ -1,6 +1,7 @@
 (ns isaac.config.config-steps
   (:require
     [c3kit.apron.env :as c3env]
+    [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.config.loader :as loader]
@@ -45,20 +46,32 @@
 
 (defn- load-config-result []
   (let [real-manifest-resource @#'isaac.module.loader/manifest-resource
+         real-resolve           module-loader/resolve-manifest-resource
          base-cwd               (System/getProperty "user.dir")
          override               (g/get :effective-cwd)
          effective-cwd          (when override
                                    (if (str/starts-with? override "/")
                                      override
                                      (str base-cwd "/" override)))
-         fs*                    (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))]
+         fs*                    (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))
+         coord-manifest-path    (fn [coord]
+                                  (when-let [root (:local/root coord)]
+                                    (some #(when (path-exists? %) %)
+                                          [(str root "/resources/isaac-manifest.edn")
+                                           (str root "/src/isaac-manifest.edn")])))]
     (try
       (when effective-cwd
         (System/setProperty "user.dir" effective-cwd))
       (with-redefs [module-loader/add-module-deps! (fn [_ _])
                     module-loader/manifest-resource (fn [id]
                                                       (or (module-manifest-path id)
-                                                          (real-manifest-resource id)))]
+                                                          (real-manifest-resource id)))
+                    ;; Test envs don't have a real classpath, so always try
+                    ;; the coord's :local/root manifest first; only fall back
+                    ;; to the upstream resolver (id-based search) if it fails.
+                    module-loader/resolve-manifest-resource (fn [id coord]
+                                                              (or (coord-manifest-path coord)
+                                                                  (real-resolve id coord)))]
         (loader/load-config-result {:root (root) :fs fs*}))
       (finally
         (System/setProperty "user.dir" base-cwd)))))
@@ -80,9 +93,18 @@
     (keyword? value) (name value)
     :else            (str value)))
 
+(defn- unescape-pointer-segment
+  "JSON-Pointer (RFC 6901) escapes: ~1 → /, ~0 → ~. Order matters — ~0 last
+   so ~01 (literal '~1') doesn't get re-expanded into a slash."
+  [seg]
+  (-> seg
+      (str/replace "~1" "/")
+      (str/replace "~0" "~")))
+
 (defn- get-path [data path]
   (let [segments (if (str/starts-with? path "/")
-                   (remove str/blank? (str/split (subs path 1) #"/"))
+                   (mapv unescape-pointer-segment
+                         (remove str/blank? (str/split (subs path 1) #"/")))
                    (str/split path #"\."))]
     (reduce (fn [current segment]
               (cond
@@ -150,6 +172,14 @@
 
 ;; region ----- Then step bodies -----
 
+(defn- edn-shaped?
+  "Cheap heuristic: leading char hints the value is meant as EDN
+   (map / vector / keyword) rather than a plain string."
+  [s]
+  (and (string? s)
+       (let [c (when (seq s) (first s))]
+         (contains? #{\{ \[ \:} c))))
+
 (defn loaded-config-has [table]
   (let [config (or (app/current-config)
                    (:config (load-result)))]
@@ -157,8 +187,17 @@
       (let [m        (zipmap (:headers table) row)
             actual   (get-path config (get m "key"))
             expected (parse-expected (get m "value"))]
-        (if (string? expected)
+        (cond
+          ;; EDN-shaped expected values (maps, vectors, keywords) are
+          ;; compared structurally so commas/whitespace in the expected
+          ;; literal don't matter.
+          (edn-shaped? expected)
+          (g/should= (edn/read-string expected) actual)
+
+          (string? expected)
           (g/should= expected (actual->string actual))
+
+          :else
           (g/should= expected actual))))))
 
 (defn config-has-validation-errors [table]

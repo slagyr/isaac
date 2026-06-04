@@ -1,4 +1,3 @@
-@wip
 Feature: Module berth declarations (phase 1 — shape only)
   Module manifests may declare berths — named extension points other
   modules contribute to or users configure. Phase 1 is read-through:

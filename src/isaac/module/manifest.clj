@@ -2,6 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]
     [clojure.edn :as edn]
+    [clojure.string :as str]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.schema.lexicon :as lexicon]))
@@ -18,12 +19,18 @@
                             :validate schema/present?
                             :message  "is required"}
             :bootstrap     {:type :ignore}
-            :factory       {:type :symbol}
             :route         {:type :ignore}
             :version       {:type     :string
                             :validate schema/present?
                             :message  "must be present"}
             :description   {:type :string}
+            ;; :berths and :deps stay :ignore here because their nested
+            ;; error keys are easier to emit directly (see
+            ;; validate-berths-and-deps!) than to coax out of c3kit's
+            ;; message-map. :factory uses the lexicon's :symbol type.
+            :factory       {:type :symbol}
+            :berths        {:type :ignore}
+            :deps          {:type :ignore}
             :comm          kind-entry-spec
             :slash-commands kind-entry-spec
             :tools         kind-entry-spec
@@ -32,7 +39,7 @@
             :hook          kind-entry-spec
             :cli           kind-entry-spec}})
 
-(def ^:private known-meta-keys #{:bootstrap :description :factory :id :route :version})
+(def ^:private known-meta-keys #{:berths :bootstrap :deps :description :factory :id :route :version})
 (def ^:private known-extend-kinds #{:cli :comm :hook :llm/api :provider :slash-commands :tools})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
@@ -64,6 +71,66 @@
       (throw (ex-info ":sort-index is no longer supported"
                       {:field :sort-index :extension-id extension-id
                        :kind kind :path path})))))
+
+(defn- id-str [id]
+  (cond
+    (qualified-keyword? id) (str (namespace id) "/" (name id))
+    (keyword? id)           (name id)
+    :else                   (str id)))
+
+(defn- berths-key-prefix [id k]
+  (str "module-index[\"" (id-str id) "\"].berths[" k "]"))
+
+(defn- deps-key-prefix [id k]
+  (str "module-index[\"" (id-str id) "\"].deps[" k "]"))
+
+(defn- collect-berth-errors [id berths]
+  (cond
+    (not (map? berths))
+    [{:key   (str "module-index[\"" (id-str id) "\"].berths")
+      :value "must be a map"}]
+
+    :else
+    (vec
+      (mapcat
+        (fn [[k v]]
+          (cond-> []
+            (not (qualified-keyword? k))
+            (conj {:key   (berths-key-prefix id k)
+                   :value "berth key must be a namespaced keyword"})
+
+            (and (qualified-keyword? k)
+                 (or (not (map? v))
+                     (str/blank? (str (:description v)))))
+            (conj {:key   (str (berths-key-prefix id k) ".description")
+                   :value "must be present"})))
+        berths))))
+
+(defn- collect-deps-errors [id deps]
+  (cond
+    (not (map? deps))
+    [{:key   (str "module-index[\"" (id-str id) "\"].deps")
+      :value "must be a map"}]
+
+    :else
+    (vec
+      (keep
+        (fn [[k v]]
+          (when-not (map? v)
+            {:key   (deps-key-prefix id k)
+             :value "must be a coordinate map"}))
+        deps))))
+
+(defn- validate-berths-and-deps! [path manifest]
+  (let [id     (:id manifest)
+        errs   (concat (when (contains? manifest :berths)
+                         (collect-berth-errors id (:berths manifest)))
+                       (when (contains? manifest :deps)
+                         (collect-deps-errors id (:deps manifest))))]
+    (when (seq errs)
+      (throw (ex-info "manifest shape errors"
+                      {:isaac/manifest-errors (vec errs)
+                       :path                  path})))))
 
 (defn- valid-route-key? [route-key]
   (and (vector? route-key)
@@ -100,6 +167,7 @@
          :else    (log/warn :manifest/unknown-key :key k :path path)))
      (let [manifest (lexicon/conform! manifest-schema raw)]
        (validate-bootstrap! path manifest)
+       (validate-berths-and-deps! path manifest)
        (validate-v2-entries! path manifest)
        (validate-routes! path manifest)
        manifest)))

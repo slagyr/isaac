@@ -1,11 +1,11 @@
 ---
 # isaac-htkp
 title: 'Manifest schema phase 1: :berths, :deps, top-level :factory (read-through)'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T10:47:52Z
-updated_at: 2026-06-04T10:52:25Z
+updated_at: 2026-06-04T11:12:20Z
 parent: isaac-brth
 blocked_by:
     - isaac-c2g5
@@ -82,3 +82,39 @@ later beans.
   assertion table uses JSON-Pointer escaping (RFC 6901) for the `/`
   in the namespaced berth id. If the existing test step's path
   splitter doesn't honor `~1`, teach it to (one place to change).
+
+## Summary of Changes
+
+**Schema (`src/isaac/module/manifest.clj`)**
+
+- Extended apron's lexicon with a local `:symbol` type (validate-only,
+  no coercion) so a quoted factory name surfaces as a validation error
+  rather than being silently reshaped.
+- Added `:factory`, `:berths`, `:deps` to `manifest-schema` and to
+  `known-meta-keys`. `:factory` uses the new `:symbol` type;
+  `:berths`/`:deps` are `:ignore`d at the schema layer because their
+  errors need precise nested keys c3kit's message-map can't produce.
+- New `validate-berths-and-deps!` walks the two maps and throws
+  ex-info carrying pre-formatted error rows under
+  `:isaac/manifest-errors`:
+  - `:berths` not a map ⇒ `module-index["id"].berths` / "must be a map".
+  - berth key not namespaced ⇒ `module-index["id"].berths[:k]` / "berth key must be a namespaced keyword".
+  - berth `:description` missing/blank ⇒ `module-index["id"].berths[:k].description` / "must be present".
+  - `:deps` not a map / value not a map ⇒ same shape.
+
+**Loader (`src/isaac/module/loader.clj`)**
+
+- `resolve-manifest-resource` made public (no behavior change) so the
+  feature harness can swap it for a coord-aware variant.
+- `discover-resolved`'s catch now honors `:isaac/manifest-errors` data
+  before the c3kit error / generic fallback branches.
+
+**Test harness**
+
+- `config_steps.clj`:
+  - `loaded-config-has`: EDN-shaped expected values (starting `{`, `[`, `:`) are parsed and compared structurally so map literals like `{:type :map}` or `{:git/url "..." :git/sha "abc"}` don't break on `,`/whitespace.
+  - `get-path`: JSON-Pointer (RFC 6901) escapes — `~1` → `/`, `~0` → `~` — so namespaced berth ids like `:marigold.bridge/comm` can be expressed as path segments.
+  - `load-config-result` now also stubs `resolve-manifest-resource` to prefer the coord's `:local/root` manifest, so feature fixtures at e.g. `/tmp/modules/marigold.bridge/resources/isaac-manifest.edn` resolve without classpath plumbing.
+- `session_steps.clj`: new step `Given an empty Isaac state directory <string>` (always virtual mem-fs) so the scenarios can put fixtures under arbitrary paths (`/tmp/modules/...`) without triggering the `/test` heuristic.
+
+bb features features/module/berths.feature 7/0; bb spec 1804/0; bb features 733/0.
