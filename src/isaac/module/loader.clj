@@ -583,7 +583,7 @@
 (defn- rollback-started-modules! [started]
   (doseq [{:keys [id instance]} (reverse started)]
     (try
-      (module/on-shutdown instance)
+      (module/run-shutdown! instance)
       (catch Exception e
         (log/error :module/shutdown-failed
                    :error  (.getMessage e)
@@ -600,7 +600,7 @@
     (try
       (doseq [{:keys [id instance] :as started-module} instances]
         (try
-          (module/on-startup instance)
+          (module/run-startup! instance)
           (swap! started conj started-module)
           (catch Exception e
             (throw (lifecycle-error (str "module startup failed for " (id-str id))

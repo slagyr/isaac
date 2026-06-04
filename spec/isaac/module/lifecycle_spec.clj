@@ -52,8 +52,8 @@
 
   (it "supports contribution-only no-op modules"
     (let [noop (contribution-only-module)]
-      (module/on-startup noop)
-      (module/on-shutdown noop)
+      (module/run-startup! noop)
+      (module/run-shutdown! noop)
       (should (module/module? noop))
       (should= [] @*calls)))
 
