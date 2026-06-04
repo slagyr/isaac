@@ -140,6 +140,7 @@
       (with-redefs [httpkit/run-server                       (fn [_ _] (fn [] nil))
                     httpkit/server-port                      (fn [_] 7001)
                     httpkit/server-stop!                     (fn [_] nil)
+                    module-loader/start-modules!             (fn [_] :started)
                     module-loader/register-route-extensions! (fn [manifest]
                                                                (swap! registered conj manifest))]
         (sut/start! {:host "127.0.0.1"
@@ -157,6 +158,23 @@
                     (filter #(or (contains? (:route %) [:get "/pigeon"])
                                  (contains? (:route %) [:get "/crow"])))
                     set))))
+
+  (it "starts loaded modules during server boot"
+    (let [started (atom nil)]
+      (with-redefs [httpkit/run-server           (fn [_ _] (fn [] nil))
+                    httpkit/server-port          (fn [_] 7001)
+                    httpkit/server-stop!         (fn [_] nil)
+                    module-loader/start-modules! (fn [module-index]
+                                                   (reset! started module-index)
+                                                   :started)]
+        (sut/start! {:host "127.0.0.1"
+                     :port 0
+                     :cfg  {:module-index
+                            {:isaac.fake.pigeon
+                             {:manifest {:factory 'isaac.fake.pigeon/create-module}}}}})
+        (sut/stop!))
+      (should (contains? @started :isaac.core))
+      (should (contains? @started :isaac.fake.pigeon))))
 
   (it "stops the cron scheduler with the server"
     (let [stopped (atom nil)]
@@ -259,10 +277,9 @@
                      :root "/tmp/service-home/.isaac"
                      :cfg       {}})
         (sut/stop!))
-      (should= {:root "/tmp/service-home/.isaac"
-                :connect-ws! nil
-                :module-index nil}
-                @captured)))
+      (should= "/tmp/service-home/.isaac" (:root @captured))
+      (should= nil (:connect-ws! @captured))
+      (should (contains? (:module-index @captured) :isaac.core))))
 
   (it "returns nil and does not start services when config validation fails"
     (let [started (atom nil)]
@@ -358,6 +375,19 @@
                      :cfg       {}})
         (sut/stop!))
       (should= ::scheduler @stopped)))
+
+  (it "shuts down loaded modules with the server"
+    (let [stopped (atom 0)]
+      (with-redefs [httpkit/run-server              (fn [_ _] (fn [] nil))
+                    httpkit/server-port             (fn [_] 7001)
+                    httpkit/server-stop!            (fn [_] nil)
+                    module-loader/start-modules!    (fn [_] :started)
+                    module-loader/shutdown-modules! (fn []
+                                                     (swap! stopped inc)
+                                                     :stopped)]
+        (sut/start! {:host "127.0.0.1" :port 0 :cfg {}})
+        (sut/stop!))
+      (should= 1 @stopped)))
 
   (it "creates and starts a config change source from the state dir"
     (let [created (atom nil)

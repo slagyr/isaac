@@ -18,7 +18,6 @@
     [isaac.scheduler :as scheduler-core]
     [isaac.nexus :as nexus]
     [isaac.server.http :as http]
-    [isaac.server.routes :as routes]
     [org.httpkit.server :as httpkit]))
 
 (defonce state (atom nil))
@@ -163,17 +162,19 @@
       :else
       (let [_                       (nexus/init! {:fs fs})
             _                       (when root (root/init-root! root))
+            module-index            (merge (module-loader/core-index) (:module-index cfg))
             scheduler               (when root
-                                       (-> (scheduler-core/create {})
-                                           scheduler-core/start!))
+                                      (-> (scheduler-core/create {})
+                                          scheduler-core/start!))
             _                       (when scheduler
                                       (nexus/register! [:scheduler] scheduler))
-            host-ctx                (host-context cfg root connect-ws!)
+            host-ctx                (host-context (assoc cfg :module-index module-index) root connect-ws!)
             _                       (config/dangerously-install-config! cfg "server boot")
             _                       (config/install! {:config cfg :registries registries :host host-ctx})
             _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
             _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                       (module-loader/register-route-extensions! (:manifest entry)))
+            _                       (module-loader/start-modules! module-index)
             config-source           (start-config-source opts hot-reload? root)
             _                       (some-> config-source config/start!)
             reloader                (when (and config-source root)
@@ -194,6 +195,7 @@
       (hail-delivery-worker/stop! hail-delivery))
     (when hail-router
       (hail-router/stop! hail-router))
+    (module-loader/shutdown-modules!)
     (when scheduler
       (scheduler-core/shutdown! scheduler))
     (when registries

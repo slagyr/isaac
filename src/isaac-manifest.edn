@@ -1,5 +1,6 @@
 {:id             :isaac.core
  :version        "0.1.0"
+ :factory        isaac.core/create-module
  :route          {[:post "/hail/send"] isaac.hail.http/handler
                   [:post "/hooks/*"]   isaac.hooks/handler}
 

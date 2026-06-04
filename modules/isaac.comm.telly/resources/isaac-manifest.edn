@@ -1,5 +1,6 @@
 {:id      :isaac.comm.telly
  :version "0.1.0"
+ :factory isaac.module/module
  :comm    {:telly {:factory isaac.comm.telly/make
                    :schema  {:loft  {:type :string
                                      :validations [[:present-when? :type :telly]]}

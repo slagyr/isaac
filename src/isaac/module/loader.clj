@@ -7,12 +7,13 @@
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     [isaac.logger :as log]
+    [isaac.module :as module]
     [isaac.module.manifest :as manifest]
-    [isaac.nexus :as nexus]
     [isaac.schema.lexicon :as lexicon]))
 
 (defonce ^:private activated-modules* (atom #{}))
 (defonce ^:private loaded-module-coords* (atom #{}))
+(defonce ^:private started-modules* (atom []))
 
 ;; ----- Registry handler injection -----
 ;; module.loader needs to call into registries (isaac.api, tool.registry,
@@ -243,7 +244,7 @@
       (discover-resolved id (loadable-coord context coord) (:local/root coord)))))
 
 (defn- cycle-errors [index]
-  (let [id->requires (into {} (map (fn [[id e]] [id (get-in e [:manifest :requires] [])]) index))
+  (let [id->requires (into {} (map (fn [[id e]] [id (keys (get-in e [:manifest :deps] {}))]) index))
         white        (atom (set (keys id->requires)))
         gray         (atom #{})
         found        (atom [])]
@@ -255,7 +256,7 @@
                   (cond
                     (contains? @gray req)
                     (swap! found conj {:key   (str "modules[\"" (id-str req) "\"]")
-                                       :value (str "requires cycle detected involving " (id-str req))})
+                                       :value (str "dependency cycle detected involving " (id-str req))})
 
                     (contains? @white req)
                     (dfs req))))
@@ -284,6 +285,7 @@
 (defn clear-activations! []
   (reset! core-index-cache nil)
   (reset! activated-modules* #{})
+  (reset! started-modules* [])
   (api/clear-module-registrations!)
   (cli/clear-module-commands!))
 
@@ -503,6 +505,119 @@
               [(unknown-berth-error consumer-id berth-key)]))
           (collect-contributions (:manifest entry))))
       module-index)))
+
+(defn- lifecycle-error
+  [message data cause]
+  (ex-info message (assoc data :type :module/lifecycle-failed) cause))
+
+(defn- lifecycle-deps [module-index module-id]
+  (->> (keys (get-in module-index [module-id :manifest :deps] {}))
+       (filter #(contains? module-index %))
+       (sort-by id-str)))
+
+(defn- cycle-path [stack module-id]
+  (conj (vec (drop-while #(not= % module-id) stack)) module-id))
+
+(defn- topological-order [module-index]
+  (let [visiting (atom #{})
+        visited  (atom #{})
+        order    (atom [])]
+    (letfn [(visit [module-id stack]
+              (cond
+                (contains? @visited module-id)
+                nil
+
+                (contains? @visiting module-id)
+                (let [cycle   (cycle-path stack module-id)
+                      message (str "module dependency cycle detected: "
+                                   (str/join " -> " (map id-str cycle)))]
+                  (throw (lifecycle-error message
+                                          {:reason    :dependency-cycle
+                                           :module-id module-id
+                                           :cycle     cycle}
+                                          nil)))
+
+                :else
+                (do
+                  (swap! visiting conj module-id)
+                  (doseq [dep (lifecycle-deps module-index module-id)]
+                    (visit dep (conj stack module-id)))
+                  (swap! visiting disj module-id)
+                  (swap! visited conj module-id)
+                  (swap! order conj module-id))))]
+      (doseq [module-id (sort-by id-str (keys module-index))]
+        (visit module-id []))
+      @order)))
+
+(defn- resolve-module-factory! [module-id factory-sym]
+  (try
+    (resolve-symbol! factory-sym)
+    (catch Exception e
+      (throw (lifecycle-error (str "module factory resolution failed for " (id-str module-id)
+                                   ": " factory-sym)
+                              {:reason    :resolve-factory
+                               :module-id module-id
+                               :factory   factory-sym}
+                              e)))))
+
+(defn- instantiate-module! [module-id {:keys [manifest]}]
+  (let [factory-sym (:factory manifest)
+        factory     (resolve-module-factory! module-id factory-sym)
+        instance    (try
+                      (factory)
+                      (catch Exception e
+                        (throw (lifecycle-error (str "module factory threw for " (id-str module-id))
+                                                {:reason    :factory-threw
+                                                 :module-id module-id
+                                                 :factory   factory-sym}
+                                                e))))]
+    (when-not (module/module? instance)
+      (throw (lifecycle-error (str "module factory returned non-Module for " (id-str module-id))
+                              {:reason    :not-a-module
+                               :module-id module-id
+                               :factory   factory-sym
+                               :value-type (some-> instance class str)}
+                              nil)))
+    instance))
+
+(defn- rollback-started-modules! [started]
+  (doseq [{:keys [id instance]} (reverse started)]
+    (try
+      (module/on-shutdown instance)
+      (catch Exception e
+        (log/error :module/shutdown-failed
+                   :error  (.getMessage e)
+                   :module (id-str id))))))
+
+(defn start-modules! [module-index]
+  (let [order     (topological-order module-index)
+        instances (mapv (fn [module-id]
+                          {:id       module-id
+                           :instance (instantiate-module! module-id (get module-index module-id))})
+                        order)
+        started   (atom [])]
+    (reset! started-modules* [])
+    (try
+      (doseq [{:keys [id instance] :as started-module} instances]
+        (try
+          (module/on-startup instance)
+          (swap! started conj started-module)
+          (catch Exception e
+            (throw (lifecycle-error (str "module startup failed for " (id-str id))
+                                    {:reason    :startup-failed
+                                     :module-id id}
+                                    e)))))
+      (reset! started-modules* @started)
+      :started
+      (catch Exception e
+        (rollback-started-modules! @started)
+        (reset! started-modules* [])
+        (throw e)))))
+
+(defn shutdown-modules! []
+  (rollback-started-modules! @started-modules*)
+  (reset! started-modules* [])
+  :stopped)
 
 (defn discover!
   "Resolves module coordinates from config :modules and returns

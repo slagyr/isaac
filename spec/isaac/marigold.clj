@@ -209,6 +209,7 @@
    tool/slash-command/comm names are NOT vendor-specific."
   {:id      :isaac.core
    :version "0.1.0"
+   :factory 'isaac.core/create-module
 
    :llm/api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}
              (keyword sky-api)    {:factory 'isaac.llm.api.grover/make}

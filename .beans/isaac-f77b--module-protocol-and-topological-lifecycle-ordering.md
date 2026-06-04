@@ -4,11 +4,11 @@ title: Module protocol and topological lifecycle ordering
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T11:10:29Z
-updated_at: 2026-06-04T14:08:00Z
+updated_at: 2026-06-04T14:41:04Z
 parent: isaac-brth
-blocked_by:
-    - isaac-htkp
 ---
 
 Defines the foundation's `Module` protocol and the lifecycle the
