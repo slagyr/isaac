@@ -10,10 +10,10 @@
    hooks, cron)."
   (:require
     [clojure.string :as str]
+    [isaac.config.berths :as berth-config]
     [isaac.config.loader :as config]
     [isaac.config.configurator :as configurator]
     [isaac.logger :as log]
-    [isaac.nexus :as nexus]
     [isaac.session.store :as store]))
 
 (defn- ensure-store! [config]
@@ -37,6 +37,12 @@
   (ensure-store! config)
   (when (seq registries)
     (configurator/reconcile! host old-config config registries))
+  {:config config})
+
+(defn install-config-berths!
+  [{:keys [config module-index]}]
+  (when (seq module-index)
+    (berth-config/install! {:config config :module-index module-index}))
   {:config config})
 
 (defn load-and-install!
@@ -119,5 +125,6 @@
       (do
         (config/set-snapshot! new-cfg "config hot reload")
         (install! {:config new-cfg :old-config old-config :registries registries :host host})
+        (install-config-berths! {:config new-cfg :module-index (:module-index host)})
         (log/info :config/reloaded :path path)
         new-cfg))))

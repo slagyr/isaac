@@ -4,8 +4,10 @@ title: 'Config berth processing: walk user config, validate, build Nodes, regist
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T14:34:39Z
-updated_at: 2026-06-04T19:22:12Z
+updated_at: 2026-06-04T19:56:04Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp

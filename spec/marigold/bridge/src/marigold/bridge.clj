@@ -1,12 +1,8 @@
 (ns marigold.bridge
-  "Fixture module for manifest-only berth processing tests. Declares
-   the :marigold.bridge/signal-route berth; consumers contribute route
-   entries that get installed in the nexus via signal/register-route!."
+  "Fixture module shared by manifest-only and config-berth tests."
   (:require
-    [isaac.module :as module]))
+    [isaac.module :as module]
+    [marigold.bridge.comm]))
 
-(defn create-module
-  "Module-level :factory — no on-startup/on-shutdown needed for the
-   manifest-only berth processing scenario."
-  []
+(defn create-module []
   (module/module))

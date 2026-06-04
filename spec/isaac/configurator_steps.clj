@@ -5,9 +5,11 @@
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.api :as config]
+    [isaac.config.install :as config-install]
     [isaac.cron.service :as cron-service]
     [isaac.fs :as fs]
     [isaac.hooks :as hooks]
+    [isaac.module.loader :as module-loader]
     [isaac.server.app :as app]
     [isaac.spec-helper :as helper]
     [isaac.nexus :as nexus]))
@@ -133,6 +135,28 @@
             actual   (get-by-dotted-path state path)]
         (g/should= expected actual)))))
 
+(defn- node-type [node]
+  (cond
+    (map? node) (:type node)
+    (satisfies? clojure.lang.ILookup node) (:type node)
+    :else nil))
+
+(defn- ensure-config-berths-installed! []
+  (when-not (g/get :config-berths-installed?)
+    (when-let [loaded (g/get :loaded-config-result)]
+      (let [cfg          (:config loaded)
+            module-index (merge (module-loader/core-index) (:module-index cfg))]
+        (module-loader/start-modules! module-index)
+        (config-install/install-config-berths! {:config cfg :module-index module-index})
+        (g/assoc! :config-berths-installed? true)))))
+
+(defn nexus-has-node-at [expected-type path]
+  (ensure-config-berths-installed!)
+  (let [path* (edn/read-string path)
+        node  (live-node path*)]
+    (g/should-not-be-nil node)
+    (g/should= (keyword expected-type) (node-type node))))
+
 ;; --- config update step (delta-merge with #delete sentinel) -------------
 
 (defn- isaac-edn-path []
@@ -231,6 +255,8 @@
 (defthen "the hook {name:string} registry entry has:" isaac.configurator-steps/hook-registry-entry-has)
 
 (defthen "the cron job {name:string} has:" isaac.configurator-steps/cron-job-has)
+
+(defthen #"the nexus has a :([^ ]+) node at (.+)" isaac.configurator-steps/nexus-has-node-at)
 
 (defwhen "config is updated:" isaac.configurator-steps/config-updated
   "Delta-merges path/value rows into config/isaac.edn. A value of \"#delete\"

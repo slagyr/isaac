@@ -182,6 +182,7 @@
             ;; state on exit, which would discard the factories' writes.
             _                       (module-loader/process-manifest-berths! module-index)
             _                       (module-loader/start-modules! module-index)
+            _                       (config/install-config-berths! {:config cfg :module-index module-index})
             config-source           (start-config-source opts hot-reload? root)
             _                       (some-> config-source config/start!)
             reloader                (when (and config-source root)

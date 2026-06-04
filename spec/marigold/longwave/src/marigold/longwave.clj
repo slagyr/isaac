@@ -1,15 +1,18 @@
 (ns marigold.longwave
-  "Fixture consumer module: contributes a route entry to
-   :marigold.bridge/signal-route. The handler symbol below is the
-   value the per-entry factory installs in the nexus — its body is a
-   stand-in (no HTTP dispatch in these scenarios)."
+  "Fixture consumer module shared by manifest-only and config-berth tests."
   (:require
-    [isaac.module :as module]))
+    [isaac.module :as module]
+    [marigold.bridge.comm :as bridge.comm]))
 
-(defn create-module
-  []
+(defn create-module []
   (module/module))
 
-(defn ping-handler
-  [_request]
-  {:status 200 :body "pong"})
+(defmethod bridge.comm/create-comm-node! :longwave [path slice]
+  {:type      :longwave
+   :path      path
+   :crew      (:crew slice)
+   :helm/freq (:helm/freq slice)})
+
+(defn ping-handler [_request]
+  {:status 200
+   :body   "pong"})

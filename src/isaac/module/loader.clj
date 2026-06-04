@@ -566,8 +566,10 @@
                                :factory   factory-sym}
                               e)))))
 
-(defn- instantiate-module! [module-id {:keys [manifest]}]
+(defn- instantiate-module! [module-id {:keys [manifest coord path]}]
   (let [factory-sym (:factory manifest)
+        _           (when path
+                      (ensure-module-deps! module-id coord))
         factory     (resolve-module-factory! module-id factory-sym)
         instance    (try
                       (factory)

@@ -139,6 +139,12 @@
   [opts]
   (install/install! opts))
 
+(defn install-config-berths!
+  "Builds and registers live nodes for any berth-backed config slices after
+   module startup. opts keys: :config and :module-index. Returns {:config config}."
+  [opts]
+  (install/install-config-berths! opts))
+
 (defn reload!
   "Hot-reload coordinator (server only): re-load config from :root/:fs,
    validate it; on error log and keep the running config (returns nil); on

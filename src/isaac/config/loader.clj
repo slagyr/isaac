@@ -7,6 +7,7 @@
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
+    [isaac.config.berths :as berths]
     [isaac.config.companion :as companion]
     [isaac.config.paths :as paths]
     [isaac.config.schema :as schema]
@@ -15,7 +16,8 @@
     [isaac.llm.providers :as llm-providers]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
-    [isaac.nexus :as nexus]))
+    [isaac.nexus :as nexus]
+    [isaac.schema.registered-in :as registered-in]))
 
 ;; region ----- Helpers -----
 
@@ -665,6 +667,12 @@
 (defn- dotted-path [segments]
   (str/join "." segments))
 
+(defn- path-segment [segment]
+  (cond
+    (qualified-keyword? segment) (str (namespace segment) "/" (name segment))
+    (keyword? segment)           (name segment)
+    :else                        (->id segment)))
+
 (defn- validation-source-file [root key]
   (let [[head id] (str/split key #"\." 3)
         entity-file (when (and root id)
@@ -673,13 +681,16 @@
       (and entity-file (exists?* entity-file)) (str "config/" head "/" id ".edn")
       :else "config/isaac.edn")))
 
-(defn- validation-error-entry [root key ref-def value]
+(defn- validation-error-entry
+  ([root key ref-def value]
+   (validation-error-entry root key ref-def value nil))
+  ([root key ref-def value override-message]
   (let [known-fn (:known ref-def)]
     {:key          key
-     :value        (:message ref-def)
+     :value        (or override-message (:message ref-def))
      :file         (validation-source-file root key)
      :bad-value    (->id value)
-     :valid-values (when known-fn (known-fn))}))
+     :valid-values (when known-fn (known-fn))})))
 
 (defn- resolve-ref-def [validation]
   (let [[ref-key & args] (if (vector? validation) validation [validation])
@@ -693,19 +704,25 @@
         own-errors (->> (:validations spec)
                         (keep (fn [validation]
                                 (when-let [ref-def (resolve-ref-def validation)]
-                                  (let [run-on-nil? (or (= :present? validation)
-                                                        (and (vector? validation)
-                                                             (= :present? (first validation))))
-                                        invalid?    (case (:scope ref-def)
-                                                      :entity (not ((:validate ref-def) entity field-key))
-                                                      (and (or (some? value) run-on-nil?)
-                                                           (not ((:validate ref-def) value))))]
-                                    (when invalid?
-                                      (validation-error-entry root path-str ref-def value)))))))
+                                  (let [present-validation? (or (= :present? validation)
+                                                                (and (vector? validation)
+                                                                     (= :present? (first validation))))
+                                        run-on-nil?         present-validation?]
+                                    (try
+                                      (let [invalid? (case (:scope ref-def)
+                                                       :entity (not ((:validate ref-def) entity field-key))
+                                                       (and (or (some? value) run-on-nil?)
+                                                            (not ((:validate ref-def) value))))]
+                                        (when invalid?
+                                          (validation-error-entry root path-str ref-def value)))
+                                      (catch clojure.lang.ExceptionInfo e
+                                        (validation-error-entry root path-str ref-def value
+                                                                (or (:message (ex-data e))
+                                                                    (ex-message e))))))))))
         map-errors (when (and (= :map (:type spec)) (map? value))
                      (concat
                        (mapcat (fn [[field-key field-spec]]
-                                 (annotation-errors* root (conj path (name field-key)) field-spec (get value field-key) value field-key))
+                                 (annotation-errors* root (conj path (path-segment field-key)) field-spec (get value field-key) value field-key))
                                (:schema spec))
                        (when-let [value-spec (:value-spec spec)]
                          (mapcat (fn [[entity-id entity-value]]
@@ -716,10 +733,12 @@
                      (mapcat #(annotation-errors* root path (:spec spec) % % nil) value))]
     (vec (concat own-errors map-errors seq-errors))))
 (defn- semantic-errors
-  ([config] (semantic-errors config nil))
-  ([config root]
-   (binding [*config* (validation-context config)]
-     (annotation-errors* root [] schema/root config))))
+  ([config] (semantic-errors config nil schema/root))
+  ([config root] (semantic-errors config root schema/root))
+  ([config root schema-spec]
+   (binding [*config*                    (validation-context config)
+             registered-in/*module-index* (:module-index config)]
+     (annotation-errors* root [] schema-spec config))))
 
 ;; region ----- Tool config validation -----
 
@@ -1108,7 +1127,10 @@
                                                            :root root)
                                         raw-providers    (merge (get-in result [:root :providers])
                                                                 (get-in result [:raw :providers]))
-                                        comms-check      (check-comms config (:index discovery))
+                                        effective-schema (berths/effective-root-schema schema/root (:index discovery))
+                                        comms-check      (if (berths/claims-path? (:index discovery) [:comms])
+                                                           {:errors [] :warnings []}
+                                                           (check-comms config (:index discovery)))
                                         manifest-check   (manifest-ref-errors (:index discovery))
                                         comm-type-check  (comm-reserved-schema-errors (:index discovery))
                                         tools-check      (check-tools config)
@@ -1116,16 +1138,18 @@
                                         providers-check  (check-provider-types config raw-providers (:index discovery))
                                         resolved-pcheck  (resolved-provider-errors config raw-providers)
                                         compaction-check (check-crew-compaction config)
-                                        errors           (into (:errors result) (concat (semantic-errors config config-root)
-                                                                                        (:errors discovery)
-                                                                                        manifest-check
-                                                                                        comm-type-check
-                                                                                        (:errors comms-check)
-                                                                                        (:errors tools-check)
-                                                                                        (:errors slash-check)
-                                                                                        (:errors providers-check)
-                                                                                        resolved-pcheck
-                                                                                        (:errors compaction-check)))]
+                                        errors           (->> (concat (semantic-errors config config-root effective-schema)
+                                                                      (:errors discovery)
+                                                                      manifest-check
+                                                                      comm-type-check
+                                                                      (:errors comms-check)
+                                                                      (:errors tools-check)
+                                                                      (:errors slash-check)
+                                                                      (:errors providers-check)
+                                                                      resolved-pcheck
+                                                                      (:errors compaction-check))
+                                                            (into (:errors result))
+                                                            (berths/normalize-errors (:index discovery)))]
                                     {:config   config
                                      :errors   (vec (sort-by :key errors))
                                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))

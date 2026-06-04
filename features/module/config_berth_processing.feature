@@ -1,4 +1,3 @@
-@wip
 Feature: Config berth processing
   When a berth declares a `:config` shape, the foundation walks the
   user's config at the berth's `:path`, validates each slot against

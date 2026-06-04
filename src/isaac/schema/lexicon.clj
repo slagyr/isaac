@@ -28,8 +28,12 @@
   [type]
   (contains? (active-types) type))
 
+(defn- base-lexicon []
+  (or (some-> #'schema/*lexicon* var-get)
+      schema/default-lexicon))
+
 (defn- active-lexicon []
-  (assoc schema/default-lexicon :types (active-types)))
+  (assoc (base-lexicon) :types (active-types)))
 
 (defn- unknown-type-error [type]
   (ex-info (str "unknown schema type: " (pr-str type)) {:type type}))
