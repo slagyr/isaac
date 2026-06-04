@@ -1,13 +1,11 @@
 ---
 # isaac-izw7
 title: Remove deprecated --home, :state-dir, :isaac-home, :isaac-state-dir, :home aliases
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-03T08:57:09Z
-updated_at: 2026-06-03T16:49:02Z
+updated_at: 2026-06-04T10:46:51Z
 ---
 
 Finish the isaac-root collapse by removing all backward-compat
