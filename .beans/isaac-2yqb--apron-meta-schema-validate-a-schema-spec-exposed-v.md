@@ -4,8 +4,10 @@ title: Apron meta-schema (validate-a-schema-spec) exposed via isaac wrapper
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T10:57:32Z
-updated_at: 2026-06-04T18:53:49Z
+updated_at: 2026-06-04T19:03:36Z
 parent: isaac-brth
 blocked_by:
     - isaac-c2g5

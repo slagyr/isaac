@@ -24,6 +24,10 @@
 (defn- active-types []
   (merge (:types schema/default-lexicon) builtin-types @registry*))
 
+(defn known-type?
+  [type]
+  (contains? (active-types) type))
+
 (defn- active-lexicon []
   (assoc schema/default-lexicon :types (active-types)))
 
@@ -31,7 +35,7 @@
   (ex-info (str "unknown schema type: " (pr-str type)) {:type type}))
 
 (defn- assert-known-type! [spec]
-  (when-not (contains? (active-types) (:type spec))
+  (when-not (known-type? (:type spec))
     (throw (unknown-type-error (:type spec)))))
 
 (defn- assert-known-types! [schema-or-spec]

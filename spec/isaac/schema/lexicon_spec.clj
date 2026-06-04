@@ -39,4 +39,11 @@
     (should= 'bridge/factory (sut/conform! {:type :symbol} 'bridge/factory))
     (let [error (should-throw clojure.lang.ExceptionInfo
                               (sut/conform! {:type :bang} :bang))]
-      (should= "unknown schema type: :bang" (.getMessage error)))))
+      (should= "unknown schema type: :bang" (.getMessage error))))
+
+  (it "reports whether a type is known"
+    (should (sut/known-type? :string))
+    (should (sut/known-type? :symbol))
+    (should-not (sut/known-type? :bang))
+    (sut/register-type! {:name :bang :validate #(= :bang %)})
+    (should (sut/known-type? :bang))))
