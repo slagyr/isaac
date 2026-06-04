@@ -162,10 +162,24 @@
      (doseq [[k v] raw]
        (cond
          (contains? known-keys k) nil
+         ;; Namespaced top-level keys are berth contributions; the loader
+         ;; matches them against berth declarations in the module-index
+         ;; after all manifests are read. Don't flag them here as unknown.
+         (qualified-keyword? k) nil
          (map? v) (throw (ex-info (str "unknown extension kind: " k)
                                   {:kind k :path path}))
          :else    (log/warn :manifest/unknown-key :key k :path path)))
-     (let [manifest (lexicon/conform! manifest-schema raw)]
+     (let [conformed     (lexicon/conform! manifest-schema raw)
+           ;; lexicon/conform! drops keys the schema doesn't name. Namespaced
+           ;; top-level keys not in known-keys are berth contributions —
+           ;; preserve them so the post-discovery contribution-validation
+           ;; pass (isaac.module.loader/validate-contributions!) can find
+           ;; them.
+           contributions (into {} (filter (fn [[k _]]
+                                            (and (qualified-keyword? k)
+                                                 (not (contains? known-keys k))))
+                                          raw))
+           manifest      (merge conformed contributions)]
        (validate-bootstrap! path manifest)
        (validate-berths-and-deps! path manifest)
        (validate-v2-entries! path manifest)

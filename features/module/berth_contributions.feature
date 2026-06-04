@@ -1,4 +1,3 @@
-@wip
 Feature: Contribution validation against a berth's :manifest :schema
   When a consumer module's manifest carries a top-level namespaced
   key, that key is treated as a berth contribution. The foundation

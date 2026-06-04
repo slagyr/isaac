@@ -8,7 +8,8 @@
     [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.module.manifest :as manifest]
-    [isaac.nexus :as nexus]))
+    [isaac.nexus :as nexus]
+    [isaac.schema.lexicon :as lexicon]))
 
 (defonce ^:private activated-modules* (atom #{}))
 (defonce ^:private loaded-module-coords* (atom #{}))
@@ -421,6 +422,88 @@
                        :module (id-str id))
             (throw error)))))))
 
+;; Top-level manifest keys that are NOT berth contributions: the
+;; existing reserved + extension-kind set carried by manifest.clj. Any
+;; OTHER namespaced top-level key in a consumer manifest is treated
+;; as a contribution and validated against the matching berth's
+;; :manifest :schema (see validate-contributions!).
+(def ^:private reserved-top-level-keys
+  (into @#'manifest/known-meta-keys @#'manifest/known-extend-kinds))
+
+(defn- contribution-key? [k]
+  (and (qualified-keyword? k)
+       (not (contains? reserved-top-level-keys k))))
+
+(defn- collect-contributions [manifest-map]
+  (keep (fn [[k v]]
+          (when (contribution-key? k) [k v]))
+        manifest-map))
+
+(defn- find-berth-decl [module-index berth-key]
+  (some (fn [[_provider-id entry]]
+          (get-in entry [:manifest :berths berth-key]))
+        module-index))
+
+(defn- ns-keyword->str [kw]
+  (str (namespace kw) "/" (name kw)))
+
+(defn- unknown-berth-error [consumer-id berth-key]
+  {:key   (str "module-index[\"" (id-str consumer-id) "\"][" berth-key "]")
+   :value "berth not declared by any installed module"})
+
+(defn- flatten-error-paths
+  "Walk a c3kit message-map (nested keywords → message strings) producing
+   flat [path-vec message-string] pairs."
+  ([m] (flatten-error-paths m []))
+  ([m prefix]
+   (cond
+     (map? m) (mapcat (fn [[k v]] (flatten-error-paths v (conj prefix k))) m)
+     :else    [[prefix (str m)]])))
+
+(defn- format-contribution-suffix
+  "First path segment is the contribution-map's outer key (rendered as
+   [<kw>]); subsequent segments are dot-prefixed field names. Matches
+   the bean's expected shape: berth[:key].field..."
+  [path]
+  (let [[head & tail] path]
+    (str (when head (str "[" head "]"))
+         (apply str (map #(str "." (name %)) tail)))))
+
+(defn- berth-lexicon
+  "Active lexicon with `:present?` re-messaged for berth contributions —
+   apron's default 'is required' becomes 'must be present', which is
+   the wording ISAAC surfaces consistently for missing berth fields."
+  []
+  (-> (@#'lexicon/active-lexicon)
+      (assoc-in [:validations :present?]
+                {:validate cs/present? :message "must be present"})))
+
+(defn- contribution-validation-errors [consumer-id berth-key value berth-schema]
+  (let [prefix (str "module-index[\"" (id-str consumer-id) "\"]."
+                    (ns-keyword->str berth-key))
+        result (try (binding [cs/*lexicon* (berth-lexicon)]
+                      (cs/conform berth-schema value))
+                    (catch Throwable _ nil))]
+    (when (and result (cs/error? result))
+      (->> (cs/message-map result)
+           flatten-error-paths
+           (mapv (fn [[path msg]]
+                   {:key   (str prefix (format-contribution-suffix path))
+                    :value msg}))))))
+
+(defn- validate-contributions! [module-index]
+  (vec
+    (mapcat
+      (fn [[consumer-id entry]]
+        (mapcat
+          (fn [[berth-key value]]
+            (if-let [berth-decl (find-berth-decl module-index berth-key)]
+              (contribution-validation-errors consumer-id berth-key value
+                                              (get-in berth-decl [:manifest :schema]))
+              [(unknown-berth-error consumer-id berth-key)]))
+          (collect-contributions (:manifest entry))))
+      module-index)))
+
 (defn discover!
   "Resolves module coordinates from config :modules and returns
    {:index {...} :errors [...]}."
@@ -445,4 +528,5 @@
                        {:index {} :errors []}
                        raw-modules)]
         {:index  index
-         :errors (into errors (cycle-errors index))}))))
+         :errors (into errors (concat (cycle-errors index)
+                                      (validate-contributions! index)))}))))

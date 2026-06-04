@@ -1,11 +1,11 @@
 ---
 # isaac-yb39
 title: Berth contribution validation against :manifest :schema
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T11:08:43Z
-updated_at: 2026-06-04T11:08:59Z
+updated_at: 2026-06-04T14:19:35Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
@@ -78,3 +78,18 @@ contributions.
   own berths. Provider berth declarations live in `:berths`, not as
   top-level namespaced keys. The contribution-matching pass operates
   on a manifest's top-level keys minus the reserved set.
+
+## Summary of Changes
+
+`isaac.module.manifest`:
+
+- `read-manifest` now tolerates namespaced top-level keys (no longer throws `unknown extension kind` for them) — they're potential berth contributions.
+- After `lexicon/conform!` strips them (the schema doesn't name them), namespaced top-level keys not in `known-keys` are merged back so the post-discovery validator can find them.
+
+`isaac.module.loader`:
+
+- New post-discovery pass `validate-contributions!` walks each manifest's namespaced top-level keys (skipping `known-meta-keys` ∪ `known-extend-kinds`), looks the berth up across all loaded modules, and validates the contribution value against the berth's `:manifest :schema` via `isaac.schema.lexicon`.
+- Error shapes match the bean: unknown berth → `module-index["<consumer>"][<berth-key>]` / "berth not declared by any installed module"; validation errors → `module-index["<consumer>"].<berth-key>[<contribution-outer-key>].<field>` / "...".
+- A scoped `berth-lexicon` rebinds apron's `:present?` validation to surface "must be present" (the ISAAC wording for berth missing-field errors; apron's default is "is required").
+
+bb features features/module/berth_contributions.feature 3/0; bb spec 1811/0; bb features 736/0.
