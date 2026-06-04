@@ -68,6 +68,43 @@
 (defn- reset-cli-registry! []
   (cli-registry/clear-module-commands!))
 
+;; ----- process-manifest-berths! helpers -----
+;; The loader's `resolve-symbol!` is `requiring-resolve`, so test
+;; factories need to be real namespaced fns. These live at the spec
+;; namespace's top level so symbols like
+;; isaac.module.loader-spec/record-route! resolve cleanly during tests.
+
+(def ^:dynamic *factory-calls* nil)
+
+(defn record-route!
+  "Test factory: records the contribution entry into a per-example atom
+   and registers it in the nexus at [::test-berth [<method> <path>]]
+   so the spec can also assert the nexus side effect."
+  [{:keys [method path handler] :as entry}]
+  (when *factory-calls* (swap! *factory-calls* conj entry))
+  (when (and method path)
+    (nexus/register! [::test-berth [method path]] handler)))
+
+(defn- berth-decl-with-factory [factory-sym]
+  {:description "test berth"
+   :manifest    {:schema {:type :seq
+                           :spec {:type    :map
+                                  :factory factory-sym
+                                  :schema  {:method  {:type :keyword}
+                                            :path    {:type :string}
+                                            :handler {:type :symbol}}}}}})
+
+(defn- index-with-berth+contributions
+  "Build a module-index where `:provider` declares a berth with a
+   per-entry factory and each consumer in `consumers` contributes the
+   listed routes."
+  [berth-id factory-sym consumers]
+  (reduce-kv
+    (fn [acc consumer-id routes]
+      (assoc acc consumer-id {:manifest {berth-id (vec routes)}}))
+    {:provider {:manifest {:berths {berth-id (berth-decl-with-factory factory-sym)}}}}
+    consumers))
+
 (def valid-comm-manifest
   {:id      :isaac.comm.pigeon
    :version "0.1.0"
@@ -200,6 +237,65 @@
       (let [{:keys [index errors]} (discover-local! [:mod.a :mod.b])]
         (should= [] errors)
         (should= #{:mod.a :mod.b :isaac.core} (set (keys index))))))
+
+  (describe "process-manifest-berths!"
+
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
+      (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
+        (binding [*factory-calls* (atom [])]
+          (example))))
+
+    (it "invokes the entry-level factory once per contribution entry"
+      (let [module-index (index-with-berth+contributions
+                           :provider/routes
+                           'isaac.module.loader-spec/record-route!
+                           {:consumer-a [{:method :get  :path "/a" :handler 'consumer-a/a-handler}]
+                            :consumer-b [{:method :post :path "/b" :handler 'consumer-b/b-handler}
+                                         {:method :put  :path "/c" :handler 'consumer-b/c-handler}]})]
+        (should= [] (sut/process-manifest-berths! module-index))
+        (should= 3 (count @*factory-calls*))
+        (should= #{:get :post :put} (set (map :method @*factory-calls*)))))
+
+    (it "writes each entry's registration into the ambient nexus"
+      (let [module-index (index-with-berth+contributions
+                           :provider/routes
+                           'isaac.module.loader-spec/record-route!
+                           {:consumer-a [{:method :get :path "/a" :handler 'consumer-a/a-handler}]})]
+        (sut/process-manifest-berths! module-index)
+        (should= 'consumer-a/a-handler (nexus/get-in [::test-berth [:get "/a"]]))))
+
+    (it "skips berths whose schema declares no entry-level :factory"
+      (let [module-index {:provider {:manifest {:berths {:provider/silent
+                                                          {:description "no factory"
+                                                           :manifest    {:schema {:type :seq
+                                                                                   :spec {:type :map}}}}}}}
+                          :consumer {:manifest {:provider/silent [{:k :v}]}}}]
+        (should= [] (sut/process-manifest-berths! module-index))
+        (should= [] @*factory-calls*)))
+
+    (it "skips berths that also declare a :config slot (not manifest-only)"
+      (let [module-index (-> (index-with-berth+contributions
+                               :provider/routes
+                               'isaac.module.loader-spec/record-route!
+                               {:consumer-a [{:method :get :path "/a"}]})
+                             (assoc-in [:provider :manifest :berths :provider/routes :config]
+                                       {:path [:routes]}))]
+        (should= [] (sut/process-manifest-berths! module-index))
+        (should= [] @*factory-calls*)))
+
+    (it "returns an error row when the factory symbol cannot be resolved"
+      (let [module-index (index-with-berth+contributions
+                           :provider/routes
+                           'isaac.module.loader-spec.nope/missing-factory!
+                           {:consumer-a [{:method :get :path "/a"}]})
+            errors       (sut/process-manifest-berths! module-index)]
+        (should= 1 (count errors))
+        (should= "module-index.berths[:provider/routes].factory"
+                 (:key (first errors)))
+        (should= "could not resolve factory symbol: isaac.module.loader-spec.nope/missing-factory!"
+                 (:value (first errors)))
+        (should= [] @*factory-calls*))))
 
   (describe "activate!"
 

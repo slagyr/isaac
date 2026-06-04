@@ -174,6 +174,13 @@
             _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
             _                       (doseq [[_mod-id entry] (:module-index cfg)]
                                       (module-loader/register-route-extensions! (:manifest entry)))
+            ;; isaac-8yxs: per-entry berth :factory invocation. Runs
+            ;; here (after config commit, before module on-startup) so
+            ;; the berth registrations are in the nexus by the time
+            ;; modules boot. Must run OUTSIDE config/load-config-result's
+            ;; nested-nexus wrap — that wrap restores the prior nexus
+            ;; state on exit, which would discard the factories' writes.
+            _                       (module-loader/process-manifest-berths! module-index)
             _                       (module-loader/start-modules! module-index)
             config-source           (start-config-source opts hot-reload? root)
             _                       (some-> config-source config/start!)

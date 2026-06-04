@@ -1,11 +1,11 @@
 ---
 # isaac-8yxs
 title: 'Manifest-only berth processing: per-entry :factory invocation'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T14:40:17Z
-updated_at: 2026-06-04T19:32:20Z
+updated_at: 2026-06-04T19:40:53Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
@@ -141,3 +141,20 @@ Verifier checks run:
 - `bb features`: 739 examples, 0 failures, 1637 assertions
 - `bb features features/module/manifest_berth_processing.feature`: 1 example, 0 failures, 2 assertions
 - `bb spec spec/isaac/module/loader_spec.clj`: 23 examples, 0 failures, 49 assertions
+
+## Verifier follow-ups
+
+The first pass had no production wiring and no speclj coverage. Addressed both:
+
+- `src/isaac/server/app.clj`: `start!` now calls `module-loader/process-manifest-berths!` right between `register-route-extensions!` and `start-modules!`. That puts the berth registrations in the nexus before module `on-startup` runs, and crucially it sits OUTSIDE the loader's nested-nexus wrap — `load-config-result` has already returned by the time we reach this line, so the wrap's `install! previous` no longer threatens to discard the factories' writes. Comment at the call-site documents the constraint.
+
+- `spec/isaac/module/loader_spec.clj`: new `process-manifest-berths!` describe block with 5 examples:
+  - invokes the entry-level factory once per contribution entry across multiple consumers;
+  - writes each entry's registration into the ambient nexus;
+  - skips berths whose schema declares no entry-level `:factory` (foundation-default fall-through — intentionally a no-op per this bean's Out of Scope);
+  - skips berths that also carry a `:config` slot (not manifest-only);
+  - returns the documented `module-index.berths[<berth-id>].factory` / 'could not resolve factory symbol …' error row when the symbol can't be resolved.
+
+A `record-route!` test factory and an `index-with-berth+contributions` builder live at the spec namespace's top level so `requiring-resolve` finds them.
+
+bb spec 1853/0; bb features 739/0; bb spec spec/isaac/module/loader_spec.clj 28/0.
