@@ -4,8 +4,10 @@ title: Schema :dynamic-schema directive (gather + merge from manifest contributi
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T14:12:28Z
-updated_at: 2026-06-04T18:36:44Z
+updated_at: 2026-06-04T18:45:28Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
