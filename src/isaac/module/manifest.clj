@@ -3,7 +3,8 @@
     [c3kit.apron.schema :as schema]
     [clojure.edn :as edn]
     [isaac.fs :as fs]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.schema.lexicon :as lexicon]))
 
 (def ^:private kind-entry-spec
   {:type       :map
@@ -17,6 +18,7 @@
                             :validate schema/present?
                             :message  "is required"}
             :bootstrap     {:type :ignore}
+            :factory       {:type :symbol}
             :route         {:type :ignore}
             :version       {:type     :string
                             :validate schema/present?
@@ -30,7 +32,7 @@
             :hook          kind-entry-spec
             :cli           kind-entry-spec}})
 
-(def ^:private known-meta-keys #{:id :version :description :bootstrap :route})
+(def ^:private known-meta-keys #{:bootstrap :description :factory :id :route :version})
 (def ^:private known-extend-kinds #{:cli :comm :hook :llm/api :provider :slash-commands :tools})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
@@ -96,7 +98,7 @@
          (map? v) (throw (ex-info (str "unknown extension kind: " k)
                                   {:kind k :path path}))
          :else    (log/warn :manifest/unknown-key :key k :path path)))
-     (let [manifest (schema/conform! manifest-schema raw)]
+     (let [manifest (lexicon/conform! manifest-schema raw)]
        (validate-bootstrap! path manifest)
        (validate-v2-entries! path manifest)
        (validate-routes! path manifest)

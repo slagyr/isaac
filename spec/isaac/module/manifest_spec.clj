@@ -50,6 +50,11 @@
    :cli     {:greet {:factory     'isaac.cli.greeter/make-command
                      :description "Print a greeting"}}})
 
+(def berth-manifest
+  {:id      :marigold.bridge
+   :version "1.0.0"
+   :factory 'marigold.bridge/create-module})
+
 (describe "module manifest"
 
   (describe "manifest-schema"
@@ -88,6 +93,10 @@
     (it "parses a manifest with :cli extensions"
       (spit (.getPath @tmp-file) (pr-str cli-manifest))
       (should= cli-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
+
+    (it "parses a manifest with a top-level :factory symbol"
+      (spit (.getPath @tmp-file) (pr-str berth-manifest))
+      (should= berth-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "reads string paths from an explicit fs"
       (let [mem  (fs/mem-fs)
@@ -168,6 +177,13 @@
       (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :version)))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
+    (it "rejects a top-level :factory that is not a symbol"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id      :marigold.bridge
+                     :version "1.0.0"
+                     :factory "marigold.bridge/create-module"}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
+
     (it "rejects legacy :entry"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :entry 'isaac.comm.pigeon)))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
@@ -188,7 +204,7 @@
 
   (describe "verify-schema-lexes on :comm :schema fragments"
 
-    #_{:clj-kondo/ignore [:invalid-arity]}
+    #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
     (around [example]
       (binding [schema/*lexicon* schema/default-lexicon]
         (example)))

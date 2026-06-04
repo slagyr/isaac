@@ -4,8 +4,10 @@ title: Apron type lexicon extension primitive (prove inside isaac before upstrea
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T10:52:15Z
-updated_at: 2026-06-04T10:56:34Z
+updated_at: 2026-06-04T11:05:05Z
 parent: isaac-brth
 ---
 
