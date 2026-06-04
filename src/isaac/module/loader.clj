@@ -9,7 +9,8 @@
     [isaac.logger :as log]
     [isaac.module :as module]
     [isaac.module.manifest :as manifest]
-    [isaac.schema.lexicon :as lexicon]))
+    [isaac.schema.lexicon :as lexicon]
+    [isaac.schema.registered-in :as registered-in]))
 
 (defonce ^:private activated-modules* (atom #{}))
 (defonce ^:private loaded-module-coords* (atom #{}))
@@ -494,17 +495,21 @@
                     :value msg}))))))
 
 (defn- validate-contributions! [module-index]
-  (vec
-    (mapcat
-      (fn [[consumer-id entry]]
-        (mapcat
-          (fn [[berth-key value]]
-            (if-let [berth-decl (find-berth-decl module-index berth-key)]
-              (contribution-validation-errors consumer-id berth-key value
-                                              (get-in berth-decl [:manifest :schema]))
-              [(unknown-berth-error consumer-id berth-key)]))
-          (collect-contributions (:manifest entry))))
-      module-index)))
+  ;; Bind *module-index* so berth schemas using the :registered-in?
+  ;; primitive can resolve sibling contributions across the loaded set
+  ;; (the validator is data-only; the foundation supplies the view).
+  (binding [registered-in/*module-index* module-index]
+    (vec
+      (mapcat
+        (fn [[consumer-id entry]]
+          (mapcat
+            (fn [[berth-key value]]
+              (if-let [berth-decl (find-berth-decl module-index berth-key)]
+                (contribution-validation-errors consumer-id berth-key value
+                                                (get-in berth-decl [:manifest :schema]))
+                [(unknown-berth-error consumer-id berth-key)]))
+            (collect-contributions (:manifest entry))))
+        module-index))))
 
 (defn- lifecycle-error
   [message data cause]

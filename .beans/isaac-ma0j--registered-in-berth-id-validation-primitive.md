@@ -1,11 +1,11 @@
 ---
 # isaac-ma0j
 title: '[:registered-in? :berth-id] validation primitive'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T14:14:00Z
-updated_at: 2026-06-04T14:14:12Z
+updated_at: 2026-06-04T18:42:14Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
@@ -94,3 +94,32 @@ where a user's `:type` field gets validated against the
 - Make the validator composable with other validations.
   `[:present? [:registered-in? :foo]]` should work as a normal apron
   validation chain.
+
+## Summary of Changes
+
+New `isaac.schema.registered-in` namespace:
+
+- `registered-in?` validation **factory** — vector form `[:registered-in? :berth-id]` resolves at apron load time via the `:validations` lex.
+- Reads the live module-index from a dynvar `*module-index*` (nil ⇒ treated as empty).
+- Distinct failure messages:
+  - **unknown berth** — `unknown berth: :foo/bar` (the schema author named a berth no installed module declares).
+  - **empty contribution set** — `no registered impls for berth :foo/bar`.
+  - **bad value, small set (≤ 5)** — `must be one of [:a :b :c]` (sorted for stability).
+  - **bad value, large set** — `must be a registered contribution to :foo/bar`.
+- Wired into apron's `:validations` lexicon at load time via `schema/update-lexicon!`, so schemas can use it without per-call setup.
+
+Loader wiring (`isaac.module.loader`):
+
+- `validate-contributions!` now binds `registered-in/*module-index*` to the current module-index. Any berth schema using `[:registered-in? ...]` automatically resolves against the loaded set during contribution validation; no per-caller boilerplate.
+
+Spec coverage (`spec/isaac/schema/registered_in_spec.clj`, 8 examples):
+
+- Single contribution: accepts the lone id; rejects others.
+- Multiple contributions: accepts any registered id.
+- Empty contribution set: `no registered impls`.
+- Unknown berth: `unknown berth`.
+- Small set lists accepted ids; large set just names the berth.
+- nil `*module-index*` treated as empty (still produces `unknown berth`).
+- Composes with `:present?` in a single validations chain.
+
+bb spec 1833/0; bb features 738/0.
