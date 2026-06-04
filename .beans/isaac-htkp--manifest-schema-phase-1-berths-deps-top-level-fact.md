@@ -5,8 +5,10 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-06-04T10:47:52Z
-updated_at: 2026-06-04T10:48:30Z
+updated_at: 2026-06-04T10:52:25Z
 parent: isaac-brth
+blocked_by:
+    - isaac-c2g5
 ---
 
 First child bean for the berth epic (isaac-brth). Phase 1 is the
