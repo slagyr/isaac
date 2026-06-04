@@ -4,8 +4,10 @@ title: Module protocol and topological lifecycle ordering
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T11:10:29Z
-updated_at: 2026-06-04T14:54:42Z
+updated_at: 2026-06-04T15:01:41Z
 parent: isaac-brth
 ---
 
