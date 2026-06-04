@@ -1,11 +1,11 @@
 ---
 # isaac-8yxs
 title: 'Manifest-only berth processing: per-entry :factory invocation'
-status: completed
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-04T14:40:17Z
-updated_at: 2026-06-04T19:26:13Z
+updated_at: 2026-06-04T19:32:20Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
@@ -125,3 +125,19 @@ Fixtures (under `spec/marigold/`):
 `isaac.config.config-steps/coord-manifest-path` now returns a `java.io.File` (instead of a string path) when the fixture lives on real disk rather than in mem-fs, so `read-manifest`'s non-string branch uses `clojure.core/slurp` — needed for the on-disk `spec/marigold/...` modules that require a real classpath.
 
 bb features features/module/manifest_berth_processing.feature 1/0; bb spec 1833/0; bb features 739/0.
+
+
+
+## Verification
+
+Verifier reopened this bean on 2026-06-04.
+
+Finding 1: the new manifest-only berth pass is only wired into the test harness, not production. `process-manifest-berths!` is called from `spec/isaac/config/config_steps.clj:104`, but a repo-wide search shows no production caller under `src/` beyond the function definition/comment in `src/isaac/module/loader.clj`. In particular, the runtime boot path in `src/isaac/server/app.clj` still loads config and starts modules without invoking the new pass, so route registrations produced by per-entry berth factories never happen in the actual app. The feature passes because the harness manually calls the pass after `load-config-result`.
+
+Finding 2: there is no direct speclj coverage for the new loader behavior. `src/isaac/module/loader.clj` gained `process-manifest-berths!` and its helper pipeline, but `spec/isaac/module/loader_spec.clj` adds no examples covering per-entry factory invocation or the `module-index.berths[<berth-id>].factory` resolution failure. Under this repo's testing rules, the feature scenario is not a substitute for unit specs for new `src/` behavior.
+
+Verifier checks run:
+- `bb spec`: 1848 examples, 0 failures, 3540 assertions
+- `bb features`: 739 examples, 0 failures, 1637 assertions
+- `bb features features/module/manifest_berth_processing.feature`: 1 example, 0 failures, 2 assertions
+- `bb spec spec/isaac/module/loader_spec.clj`: 23 examples, 0 failures, 49 assertions
