@@ -4,10 +4,8 @@ title: Migrate :tools to a foundation-declared berth (phase 6 of berth epic)
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:51:00Z
-updated_at: 2026-06-05T07:49:45Z
+updated_at: 2026-06-05T07:55:14Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
@@ -151,3 +149,9 @@ No new Gherkin. Existing tool-related tests are the safety net.
 ## Verification
 
 2026-06-05: Verification failed. Acceptance check 1 failed before the test gate. The bean says 'No new Gherkin' and has no top-level Exceptions section, but features/config/cli.feature was edited after the worker handoff in ways beyond @wip removal. The scenario 'validate reports unknown tool refs with file and valid set' gained explanatory comments and rewrote every stderr expectation line to the new validator wording. That substantive feature-file edit needs an explicit bean exception before re-handoff.
+
+
+
+## Verification
+
+2026-06-05: Verification failed again after the test gate passed. Full tests are green, but the bean still misses a literal acceptance grep: rg ':tool-exists\?' src/ is not zero-hit because src/isaac/config/loader.clj still contains a removal comment mentioning :tool-exists? at the existence-refs table. Acceptance explicitly requires zero hits, not zero functional references, so the stale comment blocks verification. Other checks passed on this rerun: bb spec 1849 examples / 0 failures / 3549 assertions; bb features 743 examples / 0 failures / 1644 assertions; rg 'register-handler!.*:tools' src/ was zero-hit; and rg ':tools\s*\{' src/ only hit the user-facing config :tools slot in config/schema.clj, not a manifest extension form.
