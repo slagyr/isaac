@@ -28,10 +28,12 @@
                            :schema  {:command-name {:type :string}}}}})
 
 (def tool-manifest
-  {:id      :isaac.tool.doodad
-   :version "0.1.0"
-   :tools   {:doodad {:factory 'isaac.tool.doodad/doodad-tool
-                      :schema  {:api-key {:type :string}}}}})
+  ;; Phase 6 (isaac-w7o5): tools contribute to the :isaac.server/tools
+  ;; berth, not a hardcoded top-level :tools kind.
+  {:id                 :isaac.tool.doodad
+   :version            "0.1.0"
+   :isaac.server/tools {:doodad {:factory 'isaac.tool.doodad/doodad-tool
+                                 :schema  {:api-key {:type :string}}}}})
 
 (def provider-only-manifest
   {:id       :isaac.providers.kombucha

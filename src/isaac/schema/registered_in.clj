@@ -47,7 +47,12 @@
 (defn registered-in?
   "Validation factory: pass when `value` is a contribution id registered
    to `berth-id` across `*module-index*`. Distinct failure messages for
-   unknown berth, empty contribution set, and bad value."
+   unknown berth, empty contribution set, and bad value.
+
+   Returns a validation map with a `:known` thunk so the CLI renderer
+   (isaac.config.cli.validate) can list the accepted ids alongside the
+   failure (mirrors how exists-ref-based validators surface the valid
+   set)."
   [berth-id]
   {:validate (fn [value]
                (let [mi (or *module-index* {})]
@@ -69,7 +74,13 @@
 
                        :else
                        (fail! (str "must be a registered contribution to " berth-id)))))))
-   :message  (str "must be a registered contribution to " berth-id)})
+   :message  (str "must be a registered contribution to " berth-id)
+   :known    (fn []
+               (let [mi (or *module-index* {})]
+                 (->> (contributions-for-berth mi berth-id)
+                      (map name)
+                      sort
+                      vec)))})
 
 ;; Wire into apron's validation lexicon so any schema can reference the
 ;; factory by name: `:validations [[:registered-in? :foo/berth]]`.

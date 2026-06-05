@@ -32,13 +32,13 @@
 
    Known kinds:
      :comm           (fn [comm-id factory])             — registers a comm impl
-     :tools          (fn [spec])                        — registers a tool spec
      :slash-commands (fn [spec])                        — registers a slash command
      :user-config    (fn [root-key entry-id] => map)    — reads user config for an extension
 
    :route / :route-prefix used to live here too — phase 5 of the berth
    epic (isaac-8v1n) replaced them with the :isaac.server/route and
-   :isaac.server/route-prefix berths."
+   :isaac.server/route-prefix berths. :tools likewise moved to the
+   :isaac.server/tools berth in phase 6 (isaac-w7o5)."
   [kind handler-fn]
   (swap! handlers* assoc kind handler-fn))
 
@@ -55,7 +55,7 @@
 
 (declare activate!)
 (declare core-index)
-(declare register-tool-extension!)
+(declare resolve-symbol!)
 
 (defn- ->module-id [raw]
   (cond
@@ -274,9 +274,15 @@
   (let [cap-key (cond
                   (keyword? capability) capability
                   (string? capability)  (keyword capability)
-                  :else                 (keyword (str capability)))]
+                  :else                 (keyword (str capability)))
+        ;; :tools moved to the :isaac.server/tools berth in phase 6
+        ;; (isaac-w7o5). Callers still pass the legacy :tools kind for
+        ;; backwards compat at this seam — translate.
+        manifest-key (case kind
+                       :tools :isaac.server/tools
+                       kind)]
     (some (fn [[module-id entry]]
-            (when (get-in entry [:manifest kind cap-key])
+            (when (get-in entry [:manifest manifest-key cap-key])
               module-id))
           module-index)))
 
@@ -326,14 +332,33 @@
 (defn deactivate-core! []
   (swap! activated-modules* disj core-module-id))
 
-(defn register-core-tool! [tool-id]
-  (when-let [extension (get-in (core-index) [core-module-id :manifest :tools (keyword tool-id)])]
-    (register-tool-extension! (keyword tool-id) extension)))
+(defn register-core-tool!
+  "Look up `tool-id` in the core manifest's :isaac.server/tools berth
+   contribution and install it via the berth's per-entry factory.
+   Called by isaac.tool.builtin to lazily register a single built-in
+   tool (e.g. when an availability check passes). Returns nil if the
+   tool isn't declared in core."
+  [tool-id]
+  (let [tool-kw       (keyword tool-id)
+        core-manifest (get-in (core-index) [core-module-id :manifest])
+        entry         (get-in core-manifest [:isaac.server/tools tool-kw])
+        factory-sym   (get-in core-manifest [:berths :isaac.server/tools
+                                              :manifest :schema
+                                              :value-spec :factory])]
+    (when (and entry factory-sym)
+      (binding [registered-in/*module-index* (core-index)]
+        ((resolve-symbol! factory-sym) [tool-kw entry])))))
 
 (defn- resolve-symbol! [sym]
   (requiring-resolve sym))
 
-(defn- user-config [root-key entry-id]
+(defn user-config
+  "Reads the user-supplied config slot at `[root-key entry-id]` from
+   the live config snapshot. Returns {} when nothing is configured.
+   Public so berth factories (e.g. tool.registry/register-tool-entry!
+   for the :isaac.server/tools berth) can read their per-entry
+   user config without re-implementing the lookup."
+  [root-key entry-id]
   (or ((handler-for :user-config) root-key entry-id) {}))
 
 (defn- register-api-extension! [api-id extension]
@@ -341,12 +366,6 @@
 
 (defn- register-comm-extension! [comm-id extension]
   ((handler-for :comm) (name comm-id) (resolve-symbol! (:factory extension))))
-
-(defn- register-tool-extension! [tool-id extension]
-  (let [tool-name (name tool-id)
-        factory   (resolve-symbol! (:factory extension))
-        spec      (factory (user-config :tools tool-name))]
-    ((handler-for :tools) (assoc spec :name tool-name))))
 
 (defn- register-slash-extension! [command-id extension]
   (let [command-id (name command-id)
@@ -358,15 +377,14 @@
       :handler     (:handler spec)})))
 
 (defn- register-extensions! [manifest]
-  ;; :cli and :route/:route-prefix are no longer here — phases 4 and 5
-  ;; of the berth epic moved CLI and HTTP route installation into the
-  ;; berth pass (process-manifest-berths!).
-  (doseq [kind [:llm/api :comm :tools :slash-commands :hook]
+  ;; :cli, :route/:route-prefix and :tools are no longer here —
+  ;; phases 4, 5 and 6 of the berth epic moved them into the berth
+  ;; pass (process-manifest-berths!).
+  (doseq [kind [:llm/api :comm :slash-commands :hook]
           [extension-id extension] (get manifest kind)]
     (case kind
       :llm/api        (register-api-extension! extension-id extension)
       :comm           (register-comm-extension! extension-id extension)
-      :tools          (register-tool-extension! extension-id extension)
       :slash-commands (register-slash-extension! extension-id extension)
       :hook           nil)))
 
@@ -644,12 +662,14 @@
 
 (defn- berth-contribution-entries
   "Returns the entries `(factory entry)` should be called with, given
-   the schema shape and a contribution value. Seq → each element; map
-   → each value; scalar → the value itself."
+   the schema shape and a contribution value. Seq → each element;
+   map → each `[id entry]` MapEntry so factories can read both the
+   contribution id and value (matters for the :tools case where the
+   id is the tool's name); scalar → the value itself."
   [berth-schema contribution]
   (case (:type berth-schema)
     :seq contribution
-    :map (vals contribution)
+    :map (seq contribution)
     [contribution]))
 
 (defn- contributions-to-berth

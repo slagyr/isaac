@@ -182,6 +182,11 @@ Feature: Config Command
     And the exit code is 1
 
   Scenario: validate reports unknown tool refs with file and valid set
+    # Phase 6 of the berth epic (isaac-w7o5) replaced the legacy
+    # :tool-exists? validator with [:registered-in? :isaac.server/tools].
+    # The new validator says "must be a registered contribution to
+    # :isaac.server/tools" rather than "references undefined tool", but
+    # still reports the bad value, source file, and known-set.
     Given config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :local}
@@ -194,14 +199,14 @@ Feature: Config Command
       """
     When isaac is run with "config validate"
     Then the stderr matches:
-      | pattern                             |
-      | crew\.main\.tools\.allow          |
-      | references undefined tool          |
-      | bad value: bogus-tool              |
-      | file: config/crew/main\.edn        |
-      | valid: .*read.*                    |
-      | valid: .*write.*                   |
-      | valid: .*exec.*                    |
+      | pattern                                                  |
+      | crew\.main\.tools\.allow                                |
+      | must be a registered contribution to :isaac.server/tools |
+      | bad value: bogus-tool                                    |
+      | file: config/crew/main\.edn                              |
+      | valid: .*read.*                                          |
+      | valid: .*write.*                                         |
+      | valid: .*exec.*                                          |
     And the exit code is 1
 
   Scenario: validate reports unknown provider refs with file and valid set

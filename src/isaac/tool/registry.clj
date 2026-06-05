@@ -36,6 +36,20 @@
 (defn register! [{:keys [name] :as tool}]
   (swap! (registry-atom) assoc name tool))
 
+(defn register-tool-entry!
+  "Per-entry factory for the :isaac.server/tools berth (phase 6 of
+   the berth epic). The berth processor passes `[tool-id entry-map]`
+   for :map-shaped contributions; this fn resolves the entry's
+   :factory symbol, applies the user-config slot for the tool, and
+   installs the resulting spec into the registry (with :name set
+   from tool-id)."
+  [[tool-id entry]]
+  (let [tool-name (name tool-id)
+        factory   (some-> (:factory entry) requiring-resolve var-get)
+        user-cfg  (or (module-loader/user-config :tools tool-name) {})
+        spec      (factory user-cfg)]
+    (register! (assoc spec :name tool-name))))
+
 (defn unregister! [name]
   (swap! (registry-atom) dissoc name))
 
@@ -46,8 +60,18 @@
   (get @(registry-atom) name))
 
 (defn- activate-missing-tool! [module-index name]
+  ;; Phase 6 (isaac-w7o5): tool installation is a berth-side concern.
+  ;; supporting-module-id already translates :tools → :isaac.server/tools.
+  ;; After activating the providing module (for its bootstrap + non-tool
+  ;; extensions), call the berth's per-entry factory directly so the
+  ;; single tool lands in the registry without paying for a full
+  ;; process-manifest-berths! sweep.
   (when-let [module-id (module-loader/supporting-module-id module-index :tools name)]
     (module-loader/activate! module-id module-index)
+    (let [tool-kw (keyword name)
+          entry   (get-in module-index [module-id :manifest :isaac.server/tools tool-kw])]
+      (when entry
+        (register-tool-entry! [tool-kw entry])))
     (lookup name)))
 
 (defn all-tools
@@ -188,7 +212,3 @@
    (mapv #(dissoc % :handler) (all-tools allowed-tools))))
 
 ;; endregion ^^^^^ Prompt Definitions ^^^^^
-
-;; Module-loader registration: dispatched by module.loader when activating a
-;; manifest's :tools extension.
-(module-loader/register-handler! :tools #'register!)

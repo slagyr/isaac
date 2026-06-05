@@ -47,5 +47,8 @@
   (-> root
       (update-in [:schema :comms]          merge-into-value-spec  (variants module-index :comm))
       (update-in [:schema :providers]      merge-into-value-spec  (variants module-index :provider))
-      (update-in [:schema :tools]          keyed-variant-schema   (variants module-index :tools))
+      ;; Phase 6 (isaac-w7o5): tool contributions live under the
+      ;; :isaac.server/tools berth, not the deleted top-level :tools
+      ;; extension kind.
+      (update-in [:schema :tools]          keyed-variant-schema   (variants module-index :isaac.server/tools))
       (update-in [:schema :slash-commands] keyed-variant-schema   (variants module-index :slash-commands))))

@@ -586,11 +586,6 @@
        sort
        vec))
 
-(defn- known-tool-ids [config]
-  (->> (manifest-capability-ids config :tools)
-       sort
-       vec))
-
 (defn- find-manifest-entry [config section name]
   (let [kw (keyword (->id name))]
     (some (fn [[_ entry]]
@@ -598,7 +593,9 @@
           (merge (module-loader/core-index) (:module-index config)))))
 
 (defn- find-tool-manifest-entry [config tool-name]
-  (find-manifest-entry config :tools tool-name))
+  ;; Phase 6 (isaac-w7o5): tool contributions live at :isaac.server/tools
+  ;; (the berth), not under :tools.
+  (find-manifest-entry config :isaac.server/tools tool-name))
 
 (defn- find-slash-command-manifest-entry [config command-name]
   (find-manifest-entry config :slash-commands command-name))
@@ -628,8 +625,9 @@
                    (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
+  ;; :tool-exists? removed in phase 6 (isaac-w7o5); replaced by the
+  ;; berth-aware `[:registered-in? :isaac.server/tools]` primitive.
   {:llm-api-exists?           (exists-ref :llm-api-exists? known-llm-api-ids "unknown api")
-   :tool-exists?              (exists-ref :tool-exists? known-tool-ids "references undefined tool")
    :provider-exists?          (exists-ref :provider-exists? known-provider-ids "references undefined provider")
    :manifest-provider-exists? (exists-ref :manifest-provider-exists? manifest-provider-ids "references provider not defined in any manifest")
    :comm-exists?              (exists-ref :comm-exists? known-comm-ids "references undefined comm")
@@ -654,7 +652,6 @@
 
 (defn- validation-context [config]
   (let [known-values {:llm-api-exists?           (known-llm-api-ids config)
-                      :tool-exists?              (known-tool-ids config)
                       :provider-exists?          (known-provider-ids config)
                       :manifest-provider-exists? (vec (manifest-provider-ids config))
                       :comm-exists?              (known-comm-ids config)
@@ -737,7 +734,11 @@
   ([config root] (semantic-errors config root schema/root))
   ([config root schema-spec]
    (binding [*config*                    (validation-context config)
-             registered-in/*module-index* (:module-index config)]
+             ;; Merge core in so :registered-in? sees foundation-declared
+             ;; berths (e.g. :isaac.server/tools) and their contributions
+             ;; from the platform manifest, not just user modules.
+             registered-in/*module-index* (merge (module-loader/core-index)
+                                                 (:module-index config))]
      (annotation-errors* root [] schema-spec config))))
 
 ;; region ----- Tool config validation -----

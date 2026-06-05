@@ -38,13 +38,12 @@
             :cli           {:type :ignore}
             :comm          kind-entry-spec
             :slash-commands kind-entry-spec
-            :tools         kind-entry-spec
             :llm/api       kind-entry-spec
             :provider      kind-entry-spec
             :hook          kind-entry-spec}})
 
 (def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :version})
-(def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-commands :tools})
+(def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-commands})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
 (defn- validate-bootstrap! [path manifest]
@@ -61,7 +60,7 @@
       (throw (ex-info ":isaac/factory is no longer supported; use :factory"
                       {:field :isaac/factory :extension-id extension-id
                        :kind kind :path path})))
-    (when (contains? #{:cli :comm :llm/api :slash-commands :tools :hook} kind)
+    (when (contains? #{:cli :comm :llm/api :slash-commands :hook} kind)
       (when-not (symbol? (:factory extension))
         (throw (ex-info ":factory is required and must be a symbol"
                         {:field :factory :extension-id extension-id
@@ -95,8 +94,8 @@
       :value "must be a map"}]
 
     :else
-    ;; Foundational berths declared by isaac.core (e.g., :cli,
-    ;; :tools — the well-known names that ship with the platform) are
+    ;; Foundational berths declared by isaac.core (e.g., :cli — the
+    ;; well-known un-namespaced names that ship with the platform) are
     ;; permitted as un-namespaced keywords. Third-party modules must
     ;; namespace their berth ids so two modules can't accidentally
     ;; collide on a generic name.

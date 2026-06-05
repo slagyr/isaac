@@ -66,7 +66,7 @@
    :description "Tool configuration"
    :schema      {:allow       {:type        :seq
                                :spec        {:type        :keyword
-                                             :validations [:tool-exists?]}
+                                             :validations [[:registered-in? :isaac.server/tools]]}
                                :description "Allowed tool names"}
                  :directories {:type        :seq
                                :spec        {:type     :ignore

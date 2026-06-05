@@ -294,16 +294,19 @@
   (describe "semantic-errors"
 
     (it "builds known-id sets once per validation pass"
+      ;; Phase 6 (isaac-w7o5): :tool-exists? / known-tool-ids no longer
+      ;; live in existence-refs — crew :tools :allow validates via
+      ;; [:registered-in? :isaac.server/tools] against the live
+      ;; module-index, which short-circuits the known-set memoization
+      ;; this test covers for the other capabilities.
       (let [provider-calls (atom 0)
             crew-calls     (atom 0)
             model-calls    (atom 0)
             comm-calls     (atom 0)
-            tool-calls     (atom 0)
             api-calls      (atom 0)
             config         {:defaults  {:crew "main" :model "llama"}
                             :crew      {"main" {:model    "llama"
-                                                :provider marigold/starcore
-                                                :tools    {:allow [:grep :glob]}}}
+                                                :provider marigold/starcore}}
                             :models    {"llama" {:provider marigold/starcore}}
                             :providers {marigold/starcore {:api marigold/sky-api}}
                             :comms     {"cli" {:type "console" :crew "main"}}}]
@@ -319,9 +322,6 @@
                          #'isaac.config.loader/known-comm-ids     (fn [_]
                                                                     (swap! comm-calls inc)
                                                                     ["console"])
-                         #'isaac.config.loader/known-tool-ids     (fn [_]
-                                                                    (swap! tool-calls inc)
-                                                                    ["grep" "glob"])
                          #'isaac.config.loader/known-llm-api-ids  (fn [_]
                                                                     (swap! api-calls inc)
                                                                     [marigold/sky-api])}
@@ -330,7 +330,6 @@
         (should= 1 @crew-calls)
         (should= 1 @model-calls)
         (should= 1 @comm-calls)
-        (should= 1 @tool-calls)
         (should= 1 @api-calls))))
 
   (describe "load-entity-file"
