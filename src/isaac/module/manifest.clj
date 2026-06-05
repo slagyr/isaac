@@ -19,12 +19,6 @@
                             :validate schema/present?
                             :message  "is required"}
             :bootstrap     {:type :ignore}
-            ;; :route is no longer a hardcoded extension kind — phase 5
-            ;; of the berth epic split it into :isaac.server/route and
-            ;; :isaac.server/route-prefix berths. Kept ignored so older
-            ;; manifests with a top-level :route still parse (the entry
-            ;; is dropped at conform time).
-            :route         {:type :ignore}
             :version       {:type     :string
                             :validate schema/present?
                             :message  "must be present"}
@@ -49,12 +43,7 @@
             :provider      kind-entry-spec
             :hook          kind-entry-spec}})
 
-(def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :route :version})
-;; :route stays in known-meta-keys (not in known-extend-kinds) so that
-;; a legacy top-level :route map doesn't trigger the "unknown extension
-;; kind" error path during the v2 walk — it parses, conform! drops it,
-;; and only contributions to the new :isaac.server/route* berths
-;; actually install handlers.
+(def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :version})
 (def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-commands :tools})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
@@ -106,7 +95,7 @@
       :value "must be a map"}]
 
     :else
-    ;; Foundational berths declared by isaac.core (e.g., :cli, :route,
+    ;; Foundational berths declared by isaac.core (e.g., :cli,
     ;; :tools — the well-known names that ship with the platform) are
     ;; permitted as un-namespaced keywords. Third-party modules must
     ;; namespace their berth ids so two modules can't accidentally

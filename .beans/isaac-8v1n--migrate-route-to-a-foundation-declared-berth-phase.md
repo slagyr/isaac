@@ -4,8 +4,10 @@ title: Migrate :route to a foundation-declared berth (phase 5 of berth epic)
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T14:49:22Z
-updated_at: 2026-06-05T07:01:28Z
+updated_at: 2026-06-05T07:05:15Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
@@ -160,3 +162,18 @@ targeted greps close the loop.
 ## Verification
 
 2026-06-05: Verification failed. Acceptance requires top-level :route / :route-prefix removal from manifest-schema and known-meta-keys, and requires rg ':route\s*\{' src/ to return zero hits. Current main still keeps :route {:type :ignore} in src/isaac/module/manifest.clj and still includes :route in known-meta-keys as a legacy parse hook, so the hardcoded top-level key has not actually been removed. The route behavior and tests are green (bb spec, bb features, bb features features/hail/http.feature, targeted route specs, and the ACP route spec on a clean pulled main ACP checkout), but this acceptance mismatch blocks verification.
+
+## Verifier-fix (abe3a609 reopen)
+
+Verifier flagged that the bean's acceptance explicitly required removal of `:route` / `:route-prefix` from `manifest-schema` and `known-meta-keys`, but the first push softened the schema entry to `:route {:type :ignore}` and kept `:route` in `known-meta-keys` as a legacy parse hook. Fixed:
+
+- **`src/isaac/module/manifest.clj`**: deleted the `:route {:type :ignore}` entry from the manifest schema. Removed `:route` from `known-meta-keys` (now `#{:berths :bootstrap :cli :deps :description :factory :id :version}`). Updated the foundational-berth comment to drop the stale `:route` example.
+
+Effect on legacy top-level `:route` maps: the existing `read-manifest` walk over top-level keys already tolerates anything keyword-valued (warns on unknown scalars, ignores unknown maps unless they would shadow a known kind). With `:route` no longer in `known-keys`, a legacy `:route {...}` payload now hits the "unknown extension kind" branch — which throws. That's the intended behavior post-phase-5: every consumer manifest must use the `:isaac.server/route` / `:isaac.server/route-prefix` berth contributions. isaac-acp and isaac core already migrated in this bean's PR; no other repo references `:route` (verified via cross-repo grep).
+
+### Re-acceptance checks
+
+- `bb spec`: 1849 examples, 0 failures.
+- `bb features`: 743 examples, 0 failures.
+- `rg ':route\s*\{' src/`: zero hits.
+- `rg ':route\b' src/`: only the literal map key in routes.clj's `{:route "/error"}` ex-info and two backreference comments in module/loader.clj — no functional dispatch.
