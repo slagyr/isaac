@@ -1,13 +1,11 @@
 ---
 # isaac-jr64
 title: 'Config berth processing: walk user config, validate, build Nodes, register in nexus'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:34:39Z
-updated_at: 2026-06-04T19:56:04Z
+updated_at: 2026-06-05T05:30:16Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
