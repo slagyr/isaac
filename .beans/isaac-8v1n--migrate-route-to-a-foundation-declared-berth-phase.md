@@ -1,13 +1,11 @@
 ---
 # isaac-8v1n
 title: Migrate :route to a foundation-declared berth (phase 5 of berth epic)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:49:22Z
-updated_at: 2026-06-05T07:05:15Z
+updated_at: 2026-06-05T07:18:55Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
