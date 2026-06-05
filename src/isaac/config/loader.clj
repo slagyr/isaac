@@ -629,11 +629,6 @@
                    (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
-  ;; Phase 7 (isaac-ho18) removed :llm-api-exists?, :provider-exists?,
-  ;; and :manifest-provider-exists? — they are now expressed as
-  ;; `[:registered-in? :isaac.server/llm-api]`,
-  ;; `[:registered-in? :isaac.server/provider]`, and
-  ;; `[:registered-in? :isaac.server/provider-template]`.
   {:comm-exists?  (exists-ref :comm-exists? known-comm-ids "references undefined comm")
    :model-exists? (exists-ref :model-exists? known-model-ids "references undefined model")
    :crew-exists?  (exists-ref :crew-exists? known-crew-ids "references undefined crew")})
