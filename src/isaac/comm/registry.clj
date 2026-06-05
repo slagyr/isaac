@@ -1,6 +1,4 @@
-(ns isaac.comm.registry
-  (:require
-    [isaac.module.loader :as module-loader]))
+(ns isaac.comm.registry)
 
 (def ^:dynamic *registry*
   (atom {:path  [:comms]
@@ -18,6 +16,14 @@
   (let [n (->name impl-name)]
     (swap! *registry* assoc-in [:impls n] factory)
     n))
+
+(defn register-comm-entry!
+  "Per-entry factory for the :isaac.server/comm berth (phase 8 of the
+   berth epic). Receives `[impl-id entry]`; resolves the entry's
+   symbol-valued :factory and installs it under impl-id."
+  [[impl-id entry]]
+  (let [factory (some-> (:factory entry) requiring-resolve var-get)]
+    (register-factory! impl-id factory)))
 
 (defn registered? [impl-name]
   (let [n (->name impl-name)]
@@ -56,8 +62,3 @@
   "Return the live Comm instance registered for `impl-name`, or nil."
   [impl-name]
   (get-in @*registry* [:instances (->name impl-name)]))
-
-;; Module-loader registration: dispatched by module.loader when activating a
-;; manifest's :comm extension. Self-registers at load time so configurator
-;; doesn't need to require isaac.api.
-(module-loader/register-handler! :comm #'register-factory!)

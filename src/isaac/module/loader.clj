@@ -31,15 +31,13 @@
    Called by registry namespaces at their load time.
 
    Known kinds:
-     :comm           (fn [comm-id factory])             — registers a comm impl
      :user-config    (fn [root-key entry-id] => map)    — reads user config for an extension
 
-   :route / :route-prefix used to live here too — phase 5 of the berth
-   epic (isaac-8v1n) replaced them with the :isaac.server/route and
-   :isaac.server/route-prefix berths. :tools likewise moved to the
-   :isaac.server/tools berth in phase 6 (isaac-w7o5). :slash-commands /
-   :llm/api / :hook / :provider migrated to their :isaac.server/*
-   berths in phase 7 (isaac-ho18)."
+   Every other extension kind has migrated to a :isaac.server/* berth
+   processed by `process-manifest-berths!` (phases 4–8 of brth):
+   :cli (phase 4), :route / :route-prefix (phase 5), :tools (phase 6),
+   :slash-commands / :llm/api / :hook / :provider (phase 7), :comm
+   (phase 8)."
   [kind handler-fn]
   (swap! handlers* assoc kind handler-fn))
 
@@ -276,14 +274,15 @@
                   (keyword? capability) capability
                   (string? capability)  (keyword capability)
                   :else                 (keyword (str capability)))
-        ;; Phase 6 (isaac-w7o5) and phase 7 (isaac-ho18) moved several
-        ;; legacy extension kinds into :isaac.server/* berths. Callers
-        ;; pass the legacy kind kw at this seam; translate.
+        ;; Phases 6–8 moved several legacy extension kinds into
+        ;; :isaac.server/* berths. Callers pass the legacy kind kw at
+        ;; this seam; translate.
         manifest-key (case kind
                        :tools          :isaac.server/tools
                        :llm/api        :isaac.server/llm-api
                        :slash-commands :isaac.server/slash-commands
                        :hook           :isaac.server/hook
+                       :comm           :isaac.server/comm
                        kind)]
     (some (fn [[module-id entry]]
             (when (get-in entry [:manifest manifest-key cap-key])
@@ -319,11 +318,13 @@
 (defn comm-kinds
   "Returns sorted user-configurable comm kind names from the given module index.
    Filters out entries where :configurable? is false. With no args, falls back
-   to the core manifest index."
+   to the core manifest index. Phase 8 of brth: reads from the
+   :isaac.server/comm berth contributions instead of the legacy
+   top-level :comm extension kind."
   ([] (comm-kinds (core-index)))
   ([module-index]
    (->> (vals module-index)
-        (mapcat #(get-in % [:manifest :comm]))
+        (mapcat #(get-in % [:manifest :isaac.server/comm]))
         (remove (fn [[_ v]] (false? (:configurable? v))))
         (map (fn [[k _]] (name k)))
         sort
@@ -365,14 +366,12 @@
   [root-key entry-id]
   (or ((handler-for :user-config) root-key entry-id) {}))
 
-(defn- register-comm-extension! [comm-id extension]
-  ((handler-for :comm) (name comm-id) (resolve-symbol! (:factory extension))))
-
-(defn- register-extensions! [manifest]
-  ;; Phases 4–7 of the berth epic moved every extension kind except
-  ;; :comm into berths processed by process-manifest-berths!.
-  (doseq [[extension-id extension] (get manifest :comm)]
-    (register-comm-extension! extension-id extension)))
+(defn- register-extensions! [_manifest]
+  ;; Phases 4–8 of the berth epic moved every extension kind into
+  ;; :isaac.server/* berths processed by process-manifest-berths!.
+  ;; activate! still runs this for backwards compat with old call
+  ;; sites; it's now a no-op.
+  nil)
 
 (defn- call-bootstrap! [bootstrap]
   (when bootstrap
@@ -680,11 +679,27 @@
       ;; deferred — see bean's "Out of scope".
       []
       (if-let [factory (try (resolve-symbol! factory-sym) (catch Throwable _ nil))]
-        (do
-          (doseq [[_consumer-id contribution] (contributions-to-berth module-index berth-id)
-                  entry (berth-contribution-entries berth-schema contribution)]
-            (factory entry))
-          [])
+        (vec
+          (mapcat
+            (fn [[consumer-id contribution]]
+              (keep
+                (fn [entry]
+                  (try
+                    (factory entry)
+                    nil
+                    (catch Throwable t
+                      ;; Don't let one consumer's broken factory abort
+                      ;; the whole berth pass. Log the activation
+                      ;; failure (mirrors activate!'s legacy error
+                      ;; channel) and collect a structured error row.
+                      (log/error :module/activation-failed
+                                 :module (when consumer-id (id-str consumer-id))
+                                 :berth  (str berth-id)
+                                 :error  (.getMessage t))
+                      {:key   (str "module-index[\"" (id-str consumer-id) "\"].berths[" berth-id "]")
+                       :value (.getMessage t)})))
+                (berth-contribution-entries berth-schema contribution)))
+            (contributions-to-berth module-index berth-id)))
         [{:key   (str "module-index.berths[" berth-id "].factory")
           :value (str "could not resolve factory symbol: " factory-sym)}]))))
 

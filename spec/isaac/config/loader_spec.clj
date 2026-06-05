@@ -299,28 +299,26 @@
       ;; [:registered-in? :isaac.server/tools] against the live
       ;; module-index, which short-circuits the known-set memoization
       ;; this test covers for the other capabilities.
+      ;; Phase 8 (isaac-qqgv): :comm-exists? no longer lives in
+      ;; existence-refs — comm validation goes through
+      ;; [:registered-in? :isaac.server/comm [:comms]] which reads
+      ;; the live module-index instead of a memoized known-set.
       (let [crew-calls     (atom 0)
             model-calls    (atom 0)
-            comm-calls     (atom 0)
             config         {:defaults  {:crew "main" :model "llama"}
                             :crew      {"main" {:model    "llama"
                                                 :provider marigold/starcore}}
                             :models    {"llama" {:provider marigold/starcore}}
-                            :providers {marigold/starcore {:api marigold/sky-api}}
-                            :comms     {"cli" {:type "console" :crew "main"}}}]
+                            :providers {marigold/starcore {:api marigold/sky-api}}}]
         (with-redefs-fn {#'isaac.config.loader/known-crew-ids  (fn [_]
                                                                   (swap! crew-calls inc)
                                                                   ["main"])
                          #'isaac.config.loader/known-model-ids (fn [_]
                                                                   (swap! model-calls inc)
-                                                                  ["llama"])
-                         #'isaac.config.loader/known-comm-ids  (fn [_]
-                                                                  (swap! comm-calls inc)
-                                                                  ["console"])}
+                                                                  ["llama"])}
           #(should= [] (#'sut/semantic-errors config)))
         (should= 1 @crew-calls)
-        (should= 1 @model-calls)
-        (should= 1 @comm-calls))))
+        (should= 1 @model-calls))))
 
   (describe "load-entity-file"
 
@@ -1092,7 +1090,7 @@
     (def telly-manifest
       (pr-str {:id      :isaac.comm.telly
                 :version "0.1.0"
-                 :comm    {:telly {:factory 'isaac.comm.telly/make
+                 :isaac.server/comm    {:telly {:factory 'isaac.comm.telly/make
                                   :schema  {:loft  {:type :string
                                                    :validations [[:present-when? :type :telly]]}
                                            :color {:type :string}
@@ -1108,7 +1106,7 @@
     (def crow-manifest
       (pr-str {:id      :isaac.comm.crow
                :version "0.1.0"
-               :comm    {:crow {:factory 'isaac.comm.crow/make
+               :isaac.server/comm    {:crow {:factory 'isaac.comm.crow/make
                                 :schema  {:token       {:type :string}
                                           :crew        {:type :string}
                                           :message-cap {:type :int}
@@ -1174,7 +1172,7 @@
       ;; Manifest validation must bind *config* so refs see the known-crew set.
       (let [crew-aware (pr-str {:id      :isaac.comm.telly
                                 :version "0.1.0"
-                                :comm    {:telly {:factory 'isaac.comm.telly/make
+                                :isaac.server/comm    {:telly {:factory 'isaac.comm.telly/make
                                                   :schema  {:override-crew {:type :string
                                                                             :validations [[:crew-exists?]]}}}}})]
         (fs/mkdirs (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly"))
@@ -1216,7 +1214,7 @@
       (fs/spit   (nexus/get :fs) "/marigold/.isaac/modules/isaac.comm.broken/resources/isaac-manifest.edn"
                (pr-str {:id      :isaac.comm.broken
                         :version "0.1.0"
-                        :comm    {:broken {:factory 'isaac.comm.broken/make
+                        :isaac.server/comm    {:broken {:factory 'isaac.comm.broken/make
                                            :schema  {:thing {:type :string
                                                              :validations [:no-such-ref?]}}}}}))
       (marigold/write-config!

@@ -77,6 +77,7 @@
   (str/join "." (map configurator/->name path)))
 
 (defn- comm-validation-errors [cfg registry]
+  ;; Phase 8 (isaac-qqgv): comm contributions live at :isaac.server/comm.
   (let [path      (:path registry)
         impls     (:impls registry)
         mod-index (:module-index cfg)
@@ -85,7 +86,7 @@
          (keep (fn [[slot slice]]
                  (when (map? slice)
                    (let [impl     (configurator/slot-impl slot slice)
-                         lazy?    (some #(get-in % [:manifest :comm (keyword (configurator/->name impl))])
+                         lazy?    (some #(get-in % [:manifest :isaac.server/comm (keyword (configurator/->name impl))])
                                         (vals mod-index))
                          slot-pth (dotted-path (conj (vec path) slot))]
                      (when (and impl (not lazy?) (not (contains? impls (configurator/->name impl))))

@@ -242,6 +242,10 @@ Feature: Config Command
     And the exit code is 1
 
   Scenario: validate reports unknown comm type refs with file and valid set
+    # Phase 8 of brth (isaac-qqgv) replaced :comm-exists? with
+    # [:registered-in? :isaac.server/comm [:comms]]. The validator's
+    # identity message shifted accordingly; bad-value / file / valid-set
+    # rendering is preserved.
     Given config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :local}
@@ -255,7 +259,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                                   |
       | comms\.relay\.type                        |
-      | references undefined comm                 |
+      | must be one of                            |
       | file: config/isaac\.edn                   |
       | bad value: smoke-signals                  |
       | valid: .*telly.*                          |

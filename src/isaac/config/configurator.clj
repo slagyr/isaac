@@ -22,16 +22,34 @@
 (defn- activating-module-id [module-index impl]
   (let [impl-key (keyword (->name impl))]
     (some (fn [[module-id entry]]
-            (when (get-in entry [:manifest :comm impl-key])
+            (when (get-in entry [:manifest :isaac.server/comm impl-key])
               module-id))
           module-index)))
 
 (defn- resolve-factory [_registry host impl]
-  (let [module-id (activating-module-id (:module-index host) impl)]
+  ;; Phase 8 of brth (isaac-qqgv): comm impl registration moved into
+  ;; the :isaac.server/comm berth's per-entry factory. If the impl
+  ;; isn't already registered, look up its entry in the providing
+  ;; module's manifest and install it directly via register-comm-entry!.
+  ;; Then activate the module for its bootstrap. Both calls catch
+  ;; load failures and log :module/activation-failed so the slot
+  ;; stays inert (matches the legacy behavior).
+  (let [impl-key  (keyword (->name impl))
+        module-id (activating-module-id (:module-index host) impl)]
     (when module-id
       (try
         (module-loader/activate! module-id (:module-index host))
-        (catch clojure.lang.ExceptionInfo _ nil)))
+        (catch clojure.lang.ExceptionInfo _ nil))
+      (when-not (comm-registry/factory-for impl)
+        (when-let [entry (get-in (:module-index host)
+                                 [module-id :manifest :isaac.server/comm impl-key])]
+          (try
+            (comm-registry/register-comm-entry! [impl-key entry])
+            (catch Throwable t
+              (log/error :module/activation-failed
+                         :error  (.getMessage t)
+                         :impl   (->name impl)
+                         :module (name module-id)))))))
     (or (comm-registry/factory-for impl)
         (when module-id
           (log/error :module/activation-failed

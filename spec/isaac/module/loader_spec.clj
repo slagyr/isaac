@@ -106,9 +106,10 @@
     consumers))
 
 (def valid-comm-manifest
-  {:id      :isaac.comm.pigeon
-   :version "0.1.0"
-   :comm    {:pigeon {:factory 'isaac.comm.pigeon/make}}})
+  ;; Phase 8 (isaac-qqgv): comm contributions live at :isaac.server/comm.
+  {:id                :isaac.comm.pigeon
+   :version           "0.1.0"
+   :isaac.server/comm {:pigeon {:factory 'isaac.comm.pigeon/make}}})
 
 (describe "module loader"
 
@@ -316,22 +317,31 @@
         (reset-cli-registry!)
         (unload-telly!)))
 
-    (it "registers comm factories from manifest factories and logs activation once"
+    (it "logs activation once"
+      ;; Phase 8 (isaac-qqgv): comm factory registration moved into
+      ;; the :isaac.server/comm berth's per-entry factory; activate!
+      ;; only logs the activation now. Coverage for the registration
+      ;; itself lives under process-manifest-berths! and the comm
+      ;; registry spec.
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:dir telly-dir
-                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
+                                             :manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
         (log/capture-logs
           (sut/activate! :isaac.comm.telly module-index)
           (sut/activate! :isaac.comm.telly module-index)
           (let [events (filter #(= :module/activated (:event %)) @log/captured-logs)]
             (should= 1 (count events))
-            (should= "isaac.comm.telly" (:module (first events)))))
-        (should (comm-registry/registered? "telly"))))
+            (should= "isaac.comm.telly" (:module (first events)))))))
 
-    (it "wraps namespace load failures in structured error data and logs them"
+    (it "wraps bootstrap namespace load failures in structured error data and logs them"
+      ;; Phase 8 of brth (isaac-qqgv): activate! no longer eagerly
+      ;; resolves :comm factory symbols (those flow through the
+      ;; :isaac.server/comm berth's per-entry factory). The remaining
+      ;; activate!-side failure path is :bootstrap symbol resolution.
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:dir telly-dir
-                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
+                                             :manifest {:bootstrap         'isaac.comm.telly/bootstrap-load
+                                                        :isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
         (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
         (log/capture-logs
           (let [error (try
@@ -341,7 +351,6 @@
                 event (first (filter #(= :module/activation-failed (:event %)) @log/captured-logs))]
             (should= :module/activation-failed (:type (ex-data error)))
             (should= :isaac.comm.telly (:module-id (ex-data error)))
-            (should= nil (:bootstrap (ex-data error)))
             (should-not-be-nil event)
             (should= "isaac.comm.telly" (:module event))))))
 
@@ -349,7 +358,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}
+                                             :manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
@@ -374,7 +383,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}
+                                             :manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
@@ -389,21 +398,21 @@
       (should= [] (sut/comm-kinds {})))
 
     (it "returns sorted comm kind name from a module"
-      (let [index {:my.mod {:manifest {:comm {:telly {:factory 'foo/make}}}}}]
+      (let [index {:my.mod {:manifest {:isaac.server/comm {:telly {:factory 'foo/make}}}}}]
         (should= ["telly"] (sut/comm-kinds index))))
 
     (it "filters out entries with :configurable? false"
-      (let [index {:my.mod {:manifest {:comm {:internal {:factory 'foo/make :configurable? false}
+      (let [index {:my.mod {:manifest {:isaac.server/comm {:internal {:factory 'foo/make :configurable? false}
                                               :external {:factory 'bar/make}}}}}]
         (should= ["external"] (sut/comm-kinds index))))
 
     (it "aggregates and sorts kinds from multiple modules"
-      (let [index {:mod-a {:manifest {:comm {:bravo {:factory 'a/make}}}}
-                   :mod-b {:manifest {:comm {:alpha {:factory 'b/make}}}}}]
+      (let [index {:mod-a {:manifest {:isaac.server/comm {:bravo {:factory 'a/make}}}}
+                   :mod-b {:manifest {:isaac.server/comm {:alpha {:factory 'b/make}}}}}]
         (should= ["alpha" "bravo"] (sut/comm-kinds index))))
 
     (it "with no args falls back to core-index"
       (let [index {:isaac.core {:coord {} :manifest {:id :isaac.core :version "1"
-                                                      :comm {:widget {:factory 'foo/make}}}}}]
+                                                      :isaac.server/comm {:widget {:factory 'foo/make}}}}}]
         (binding [sut/*core-index-override* index]
           (should= ["widget"] (sut/comm-kinds)))))))

@@ -34,7 +34,7 @@
         (unload-telly!))))
 
   (it "activates a declared module when a comm impl is first needed"
-    (let [host     {:module-index {:isaac.comm.telly {:manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
+    (let [host     {:module-index {:isaac.comm.telly {:manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
           registry @comm-registry/*registry*]
       (log/capture-logs
         (sut/reconcile! host nil {:comms {:bert {:type :telly}}} registry)
@@ -45,7 +45,7 @@
                       @log/captured-logs)))))
 
   (it "logs activation failure and leaves the slot inert when the module load fails"
-    (let [host     {:module-index {:isaac.comm.telly {:manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
+    (let [host     {:module-index {:isaac.comm.telly {:manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
           registry @comm-registry/*registry*]
       (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
       (log/capture-logs

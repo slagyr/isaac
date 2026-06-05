@@ -8,24 +8,30 @@
   (:import (java.io File)))
 
 (def pigeon-manifest
-  {:id          :isaac.comm/pigeon
-   :version     "0.1.0"
-   :bootstrap   'isaac.comm.pigeon/bootstrap
-   :description "Carrier pigeon comm"
-   :comm        {:pigeon {:factory 'isaac.comm.pigeon/make
-                           :schema  {:loft      {:type :string :validations [:present?]}
-                                     :max-bytes {:type :int :coercions [[:default 140]]}}}}})
+  ;; Phase 8 (isaac-qqgv): comm contributions live at :isaac.server/comm,
+  ;; not the deleted :comm extension kind.
+  {:id                :isaac.comm/pigeon
+   :version           "0.1.0"
+   :bootstrap         'isaac.comm.pigeon/bootstrap
+   :description       "Carrier pigeon comm"
+   :isaac.server/comm {:pigeon {:factory 'isaac.comm.pigeon/make
+                                :schema  {:loft      {:type :string :validations [:present?]}
+                                          :max-bytes {:type :int :coercions [[:default 140]]}}}}})
 
 (def api-manifest
-  {:id      :isaac.api.tin-can
-   :version "0.1.0"
-   :llm/api {:tin-can {:factory 'isaac.api.tin-can/make}}})
+  ;; Phase 7 (isaac-ho18): llm/api contributions live at
+  ;; :isaac.server/llm-api.
+  {:id                   :isaac.api.tin-can
+   :version              "0.1.0"
+   :isaac.server/llm-api {:tin-can {:factory 'isaac.api.tin-can/make}}})
 
 (def slash-echo-manifest
-  {:id             :isaac.slash.echo
-   :version        "0.1.0"
-   :slash-commands {:echo {:factory 'isaac.slash.echo/echo-command
-                           :schema  {:command-name {:type :string}}}}})
+  ;; Phase 7 (isaac-ho18): slash-command contributions live at
+  ;; :isaac.server/slash-commands.
+  {:id                          :isaac.slash.echo
+   :version                     "0.1.0"
+   :isaac.server/slash-commands {:echo {:factory 'isaac.slash.echo/echo-command
+                                        :schema  {:command-name {:type :string}}}}})
 
 (def tool-manifest
   ;; Phase 6 (isaac-w7o5): tools contribute to the :isaac.server/tools

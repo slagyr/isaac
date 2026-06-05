@@ -583,8 +583,10 @@
   (->> (keys (:models config)) (map ->id) distinct sort vec))
 
 (defn- known-comm-ids [config]
+  ;; Phase 8 (isaac-qqgv): comm contributions live at
+  ;; :isaac.server/comm instead of the deleted :comm extension kind.
   (->> (concat (keys (:comms config))
-               (manifest-capability-ids config :comm))
+               (manifest-capability-ids config :isaac.server/comm))
        (map ->id)
        distinct
        sort
@@ -629,8 +631,7 @@
                    (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
-  {:comm-exists?  (exists-ref :comm-exists? known-comm-ids "references undefined comm")
-   :model-exists? (exists-ref :model-exists? known-model-ids "references undefined model")
+  {:model-exists? (exists-ref :model-exists? known-model-ids "references undefined model")
    :crew-exists?  (exists-ref :crew-exists? known-crew-ids "references undefined crew")})
 
 (defn- present-when-ref [other-key expected]
@@ -650,8 +651,7 @@
            true))
 
 (defn- validation-context [config]
-  (let [known-values {:comm-exists?  (known-comm-ids config)
-                      :model-exists? (known-model-ids config)
+  (let [known-values {:model-exists? (known-model-ids config)
                       :crew-exists?  (known-crew-ids config)}]
     {:raw          config
      :known-values known-values
@@ -806,9 +806,9 @@
                [])})
 
 (def ^:private manifest-schema-kinds
-  ;; Phase 7 (isaac-ho18) — every kind except :comm has moved to a
-  ;; :isaac.server/* berth. Comm migration is phase 8 (isaac-qqgv).
-  [:comm :isaac.server/provider-template :isaac.server/slash-commands :isaac.server/tools])
+  ;; Phase 8 (isaac-qqgv) finished the migration — every extension
+  ;; kind now lives under a :isaac.server/* berth.
+  [:isaac.server/comm :isaac.server/provider-template :isaac.server/slash-commands :isaac.server/tools])
 
 (defn- verify-manifest-schema-fragment [module-id field-schema]
   (try
@@ -838,7 +838,7 @@
                       {:key   (str "modules." (->id module-id))
                        :value (str ":type is the slot discriminator, not a field"
                                    " (comm " (name extension-id) ")")}))
-                  (get-in entry [:manifest :comm])))
+                  (get-in entry [:manifest :isaac.server/comm])))
           module-index))
 
 (defn- one-of-values [field-spec]
@@ -906,9 +906,11 @@
     (string? impl-val) (keyword impl-val)
     :else nil))
 
-(defn- find-comm-extension [module-index impl-kw]
+(defn- find-comm-extension
+  ;; Phase 8 (isaac-qqgv): comm contributions moved to :isaac.server/comm.
+  [module-index impl-kw]
   (some (fn [[_id entry]]
-          (get-in entry [:manifest :comm impl-kw]))
+          (get-in entry [:manifest :isaac.server/comm impl-kw]))
         module-index))
 
 (def ^:private comm-base-fields

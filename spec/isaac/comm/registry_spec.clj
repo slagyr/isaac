@@ -1,7 +1,6 @@
 (ns isaac.comm.registry-spec
   (:require
     [isaac.comm.registry :as sut]
-    [isaac.module.loader :as module-loader]
     [speclj.core :refer :all]))
 
 (describe "comm registry"
@@ -15,12 +14,9 @@
       (sut/register-factory! "telly" factory)
       (should= factory (sut/factory-for :telly))))
 
-  (it "self-registers the :comm module-loader handler at load time"
-    ;; module-loader requires a handler for :comm before activate! can
-    ;; register a comm module's :comm extension. comm.registry installs
-    ;; the handler at load time so callers don't need to require isaac.api.
-    (let [handler (#'module-loader/handler-for :comm)
-          factory (fn [_] ::instance)]
-      (should-not-be-nil handler)
-      (handler "telly" factory)
-      (should= factory (sut/factory-for "telly")))))
+  (it "installs a comm via the berth's per-entry factory"
+    ;; Phase 8 (isaac-qqgv): comm registration moved from the legacy
+    ;; module-loader handler into the :isaac.server/comm berth's
+    ;; per-entry factory.
+    (sut/register-comm-entry! [:telly {:factory 'isaac.comm.cli/make}])
+    (should-not-be-nil (sut/factory-for "telly"))))

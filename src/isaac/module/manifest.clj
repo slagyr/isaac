@@ -7,11 +7,6 @@
     [isaac.logger :as log]
     [isaac.schema.lexicon :as lexicon]))
 
-(def ^:private kind-entry-spec
-  {:type       :map
-   :key-spec   {:type :keyword}
-   :value-spec {:type :any}})
-
 (def manifest-schema
   {:name   :module/manifest
    :type   :map
@@ -35,11 +30,10 @@
             ;; contributions flow through process-manifest-berths!. Stays
             ;; ignored at the schema layer so existing manifests that put
             ;; :cli at the top level still parse.
-            :cli           {:type :ignore}
-            :comm          kind-entry-spec}})
+            :cli           {:type :ignore}}})
 
 (def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :version})
-(def ^:private known-extend-kinds #{:comm})
+(def ^:private known-extend-kinds #{})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
 (defn- validate-bootstrap! [path manifest]
@@ -56,7 +50,7 @@
       (throw (ex-info ":isaac/factory is no longer supported; use :factory"
                       {:field :isaac/factory :extension-id extension-id
                        :kind kind :path path})))
-    (when (contains? #{:cli :comm} kind)
+    (when (= :cli kind)
       (when-not (symbol? (:factory extension))
         (throw (ex-info ":factory is required and must be a symbol"
                         {:field :factory :extension-id extension-id

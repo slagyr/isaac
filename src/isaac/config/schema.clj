@@ -234,7 +234,7 @@
    :schema {:type {:type        :string
                    :coerce      [->id]
                    :description "Manifest comm kind to instantiate"
-                   :validations [:comm-exists?]
+                   :validations [[:registered-in? :isaac.server/comm [:comms]]]
                    :options-from :comms}
             :crew {:type        :string
                    :coerce      [->id]

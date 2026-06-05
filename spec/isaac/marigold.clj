@@ -238,7 +238,15 @@
              :isaac.server/provider          {:description "Materialized providers."
                                               :manifest    {:schema {:type       :map
                                                                      :key-spec   {:type :keyword}
-                                                                     :value-spec {:type :map}}}}}
+                                                                     :value-spec {:type :map}}}}
+             :isaac.server/comm              {:description "Communication channels."
+                                              :manifest    {:schema {:type       :map
+                                                                     :key-spec   {:type :keyword}
+                                                                     :value-spec {:type    :map
+                                                                                  :factory 'isaac.comm.registry/register-comm-entry!
+                                                                                  :schema  {:factory       {:type :symbol :validations [:present?]}
+                                                                                            :schema        {:type :any}
+                                                                                            :configurable? {:type :boolean}}}}}}}
 
    :isaac.server/llm-api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}
                           (keyword sky-api)    {:factory 'isaac.llm.api.grover/make}
@@ -262,9 +270,9 @@
                                  (keyword bearing-command) {:factory 'isaac.marigold/bearing-slash-factory}
                                  (keyword muster-command)  {:factory 'isaac.marigold/muster-slash-factory}}
 
-   :comm    {(keyword longwave) {:factory 'isaac.comm.cli/make}     ;; broadcast / cli-like
-             (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
-             (keyword logbook)  {:factory 'isaac.comm.memory/make}}}) ;; persisted / memory-like
+   :isaac.server/comm {(keyword longwave) {:factory 'isaac.comm.cli/make}     ;; broadcast / cli-like
+                       (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
+                       (keyword logbook)  {:factory 'isaac.comm.memory/make}}}) ;; persisted / memory-like
 
 (def ^:private baseline-core-index
   {:isaac.core {:coord {} :manifest baseline-manifest :path nil}})

@@ -62,7 +62,15 @@
                   :isaac.server/provider          {:description "Materialized LLM providers — instances usable by models. Manifest contributions are third-party modules shipping a ready-to-use provider; user-instantiated providers in the [:providers] config slot also count toward this berth (see `[:registered-in? :isaac.server/provider [:providers]]` use sites)."
                                                    :manifest    {:schema {:type       :map
                                                                           :key-spec   {:type :keyword}
-                                                                          :value-spec {:type :map}}}}}
+                                                                          :value-spec {:type :map}}}}
+                  :isaac.server/comm              {:description "Communication channels (Discord, iMessage, ACP, …). Manifest contributions name available impls and carry the per-impl factory plus user-config :schema. User-instantiated comm slots in the [:comms] config slot also count toward this berth, so `[:registered-in? :isaac.server/comm [:comms]]` accepts both manifest impl ids (the common :type values) and slot ids."
+                                                   :manifest    {:schema {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type    :map
+                                                                                       :factory isaac.comm.registry/register-comm-entry!
+                                                                                       :schema  {:factory       {:type :symbol :validations [:present?]}
+                                                                                                 :schema        {:type :any}
+                                                                                                 :configurable? {:type :boolean}}}}}}}
 
  :cli            [{:name      "init"
                    :usage     "init"
