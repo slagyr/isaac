@@ -1,11 +1,11 @@
 ---
 # isaac-qqgv
 title: Migrate :comm to a foundation-declared berth (phase 8 of berth epic)
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-04T14:53:56Z
-updated_at: 2026-06-04T14:54:15Z
+updated_at: 2026-06-05T13:52:28Z
 parent: isaac-brth
 blocked_by:
     - isaac-jr64
