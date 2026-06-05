@@ -1,11 +1,11 @@
 ---
 # isaac-8v1n
 title: Migrate :route to a foundation-declared berth (phase 5 of berth epic)
-status: completed
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-04T14:49:22Z
-updated_at: 2026-06-05T06:49:37Z
+updated_at: 2026-06-05T07:01:28Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
@@ -154,3 +154,9 @@ targeted greps close the loop.
 ### Out of scope (caught en route)
 
 - isaac-acp's spec suite has a pre-existing failure unrelated to this bean: `paths/default-state-dir` referenced in `isaac.comm.acp.chat_cli` no longer exists in isaac core (renamed/removed by an earlier state-dir bean). The route-specific test in `acp_spec.clj` passes; the rest of the acp suite is blocked on that stale symbol. Filing as a follow-up.
+
+
+
+## Verification
+
+2026-06-05: Verification failed. Acceptance requires top-level :route / :route-prefix removal from manifest-schema and known-meta-keys, and requires rg ':route\s*\{' src/ to return zero hits. Current main still keeps :route {:type :ignore} in src/isaac/module/manifest.clj and still includes :route in known-meta-keys as a legacy parse hook, so the hardcoded top-level key has not actually been removed. The route behavior and tests are green (bb spec, bb features, bb features features/hail/http.feature, targeted route specs, and the ACP route spec on a clean pulled main ACP checkout), but this acceptance mismatch blocks verification.
