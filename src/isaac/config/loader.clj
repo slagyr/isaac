@@ -625,8 +625,6 @@
                    (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
-  ;; :tool-exists? removed in phase 6 (isaac-w7o5); replaced by the
-  ;; berth-aware `[:registered-in? :isaac.server/tools]` primitive.
   {:llm-api-exists?           (exists-ref :llm-api-exists? known-llm-api-ids "unknown api")
    :provider-exists?          (exists-ref :provider-exists? known-provider-ids "references undefined provider")
    :manifest-provider-exists? (exists-ref :manifest-provider-exists? manifest-provider-ids "references provider not defined in any manifest")
