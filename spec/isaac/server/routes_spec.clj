@@ -40,13 +40,16 @@
     (let [response (sut/handler {:request-method :get :uri "/status"})]
       (should= 200 (:status response))))
 
-  (it "registers the hooks route from core manifest activation"
+  (it "registers the hooks route from the core manifest's route-prefix berth"
+    ;; Phase 5 of brth (isaac-8v1n): routes flow through
+    ;; process-manifest-berths! instead of activate!'s
+    ;; register-extensions! pass.
     (with-redefs [isaac.hooks/handler (fn [request]
                                         {:status 204 :body request})]
       (module-loader/clear-activations!)
       (let [request {:request-method :post :uri "/hooks/bibelot"}
             opts    {:cfg {:mode :test}}]
-        (module-loader/activate-core!)
+        (module-loader/process-manifest-berths! (module-loader/core-index))
         (should= {:status 204 :body (assoc request :config {:mode :test})}
                  (sut/handler opts request)))))
 

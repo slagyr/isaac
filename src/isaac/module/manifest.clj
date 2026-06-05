@@ -19,6 +19,11 @@
                             :validate schema/present?
                             :message  "is required"}
             :bootstrap     {:type :ignore}
+            ;; :route is no longer a hardcoded extension kind — phase 5
+            ;; of the berth epic split it into :isaac.server/route and
+            ;; :isaac.server/route-prefix berths. Kept ignored so older
+            ;; manifests with a top-level :route still parse (the entry
+            ;; is dropped at conform time).
             :route         {:type :ignore}
             :version       {:type     :string
                             :validate schema/present?
@@ -45,6 +50,11 @@
             :hook          kind-entry-spec}})
 
 (def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :route :version})
+;; :route stays in known-meta-keys (not in known-extend-kinds) so that
+;; a legacy top-level :route map doesn't trigger the "unknown extension
+;; kind" error path during the v2 walk — it parses, conform! drops it,
+;; and only contributions to the new :isaac.server/route* berths
+;; actually install handlers.
 (def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-commands :tools})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
@@ -145,21 +155,6 @@
                       {:isaac/manifest-errors (vec errs)
                        :path                  path})))))
 
-(defn- valid-route-key? [route-key]
-  (and (vector? route-key)
-       (= 2 (count route-key))
-       (keyword? (first route-key))
-       (string? (second route-key))))
-
-(defn- validate-routes! [path manifest]
-  (doseq [[route-key handler] (:route manifest)]
-    (when-not (valid-route-key? route-key)
-      (throw (ex-info "route key must be [method path]"
-                      {:field :route :path path :route-key route-key})))
-    (when-not (symbol? handler)
-      (throw (ex-info "route handler must be a symbol"
-                      {:field :route :path path :route-key route-key :handler handler})))))
-
 (defn read-manifest
   [path fs*]
   (let [raw (edn/read-string (if (string? path) (fs/slurp fs* path) (slurp path)))]
@@ -196,5 +191,4 @@
        (validate-bootstrap! path manifest)
        (validate-berths-and-deps! path manifest)
        (validate-v2-entries! path manifest)
-       (validate-routes! path manifest)
        manifest)))

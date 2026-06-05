@@ -356,23 +356,13 @@
           (sut/activate! :isaac.comm.telly module-index)
             (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
 
-    (it "registers exact and prefix routes declared in the manifest"
-      (let [module-index {:isaac.routes.bibelot {:manifest {:route {[:get "/status"]   'isaac.server.status/handle
-                                                                   [:post "/hooks/*"] 'isaac.hooks/handler}}}}
-            calls       (atom [])]
-        (with-redefs [isaac.server.routes/register-route!        (fn [method path handler]
-                                                                   (swap! calls conj [:exact method path handler]))
-                      isaac.server.routes/register-prefix-route! (fn [path handler]
-                                                                   (swap! calls conj [:prefix path handler]))]
-          (sut/activate! :isaac.routes.bibelot module-index)
-          (should= [[:exact :get "/status" #'isaac.server.status/handle]
-                    [:prefix "/hooks/" #'isaac.hooks/handler]]
-                   @calls))))
-
-    (it "fails activation when a declarative route handler cannot be resolved"
-      (let [module-index {:isaac.routes.bibelot {:manifest {:route {[:get "/bogus"] 'isaac.missing/handler}}}}]
-        (should-throw clojure.lang.ExceptionInfo
-                      (sut/activate! :isaac.routes.bibelot module-index))))
+    ;; Phase 5 of the berth epic (isaac-8v1n): route registration moved
+    ;; out of activate! entirely. The :isaac.server/route and
+    ;; :isaac.server/route-prefix berths flow through
+    ;; process-manifest-berths! (covered in that describe block above),
+    ;; and the per-entry factory (isaac.server.routes/register-route-entry!)
+    ;; is a thin shim around register-route!. The activate!-side tests
+    ;; that lived here are gone with the dispatch they tested.
 
     ;; activate! used to register manifest :cli entries via
     ;; register-cli-extension!. Phase 4 of the berth epic moved :cli

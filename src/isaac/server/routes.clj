@@ -3,8 +3,7 @@
   (:refer-clojure :exclude [error-handler])
   (:require
     [c3kit.apron.util :as util]
-    [clojure.string :as str]
-    [isaac.module.loader :as module-loader]))
+    [clojure.string :as str]))
 
 (def ^:dynamic *registry* (atom {}))
 
@@ -15,17 +14,30 @@
    (swap! *registry* assoc [method uri] {:handler handler})
    [method uri]))
 
-(defn- register-prefix-route!
+(defn register-prefix-route!
   "Register a handler for all requests whose URI begins with uri-prefix."
   ([uri-prefix handler]
    (swap! *registry* assoc [:prefix uri-prefix] {:handler    handler
                                                  :uri-prefix uri-prefix})
    [:prefix uri-prefix]))
 
-;; Module-loader registrations: dispatched by module.loader when activating a
-;; manifest's :route extensions. Vars (not values) so test with-redefs is honored.
-(module-loader/register-handler! :route        #'register-route!)
-(module-loader/register-handler! :route-prefix #'register-prefix-route!)
+(defn- maybe-resolve [sym]
+  (when (symbol? sym) (util/resolve-var sym)))
+
+(defn register-route-entry!
+  "Per-entry factory for the :isaac.server/route berth. Each entry is
+   `{:method :get :path \"/x\" :handler isaac.foo/handler}`; resolves
+   the symbol-valued :handler and installs the route. Phase 5 of the
+   berth epic replaced the old module-loader/register-handler!
+   dispatch with this direct factory."
+  [{:keys [method path handler]}]
+  (register-route! method path (maybe-resolve handler)))
+
+(defn register-prefix-route-entry!
+  "Per-entry factory for the :isaac.server/route-prefix berth. Each
+   entry is `{:prefix \"/foo/\" :handler isaac.foo/handler}`."
+  [{:keys [prefix handler]}]
+  (register-prefix-route! prefix (maybe-resolve handler)))
 
 (defn route-registered? [method uri]
   (contains? @*registry* [method uri]))

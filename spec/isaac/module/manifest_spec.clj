@@ -39,10 +39,13 @@
    :provider {:kombucha {:template {:api "chat-completions"}}}})
 
 (def route-manifest
-  {:id      :isaac.routes.bibelot
-   :version "0.1.0"
-   :route   {[:get "/status"]   'isaac.server.status/handle
-             [:post "/hooks/*"] 'isaac.hooks/handler}})
+  ;; Phase 5 of the berth epic (isaac-8v1n): routes are now berth
+  ;; contributions, not a top-level extension kind. Per-entry shape
+  ;; validation moved to the berth's :manifest :schema.
+  {:id                         :isaac.routes.bibelot
+   :version                    "0.1.0"
+   :isaac.server/route         [{:method :get :path "/status" :handler 'isaac.server.status/handle}]
+   :isaac.server/route-prefix  [{:prefix "/hooks/" :handler 'isaac.hooks/handler}]})
 
 (def cli-manifest
   {:id      :isaac.cli.greeter
@@ -187,13 +190,12 @@
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :entry 'isaac.comm.pigeon)))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
-    (it "rejects malformed route keys"
-      (spit (.getPath @tmp-file) (pr-str (assoc route-manifest :route {[:get] 'isaac.hooks/handler})))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
-
-    (it "rejects route handlers that are not symbols"
-      (spit (.getPath @tmp-file) (pr-str (assoc route-manifest :route {[:get "/acp"] {:handler 'isaac.hooks/handler}})))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
+    ;; Phase 5 of the berth epic: per-entry shape rejection for routes
+    ;; (malformed [method path] keys, non-symbol handlers, etc.) is now
+    ;; handled by the :isaac.server/route berth's :manifest :schema
+    ;; rather than by read-manifest. The old "rejects malformed route
+    ;; keys" / "rejects route handlers that are not symbols" tests
+    ;; covered the deleted validate-routes! pass.
 
     (it "strips unknown scalar top-level keys and warns"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :unknown-field "oops")))

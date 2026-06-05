@@ -6,15 +6,29 @@
  ;; contributions ride the same shape — each entry carries the command
  ;; spec; the entry-level factory resolves the symbol-valued :run-fn /
  ;; :help-text and registers the command with isaac.cli's registry.
- :berths         {:cli {:description "CLI commands installed into the top-level isaac command registry."
-                        :manifest    {:schema {:type :seq
-                                                 :spec {:type    :map
-                                                        :factory isaac.cli/register-cli-command!
-                                                        :schema  {:name      {:type :string :validations [:present?]}
-                                                                  :desc      {:type :string}
-                                                                  :usage     {:type :string}
-                                                                  :run-fn    {:type :symbol}
-                                                                  :help-text {:type :symbol}}}}}}}
+ :berths         {:cli                       {:description "CLI commands installed into the top-level isaac command registry."
+                                              :manifest    {:schema {:type :seq
+                                                                     :spec {:type    :map
+                                                                            :factory isaac.cli/register-cli-command!
+                                                                            :schema  {:name        {:type :string :validations [:present?]}
+                                                                                      :desc        {:type :string}
+                                                                                      :usage       {:type :string}
+                                                                                      :option-spec {:type :any}
+                                                                                      :run-fn      {:type :symbol}
+                                                                                      :help-text   {:type :symbol}}}}}}
+                  :isaac.server/route        {:description "Exact-match HTTP routes (method + uri)."
+                                              :manifest    {:schema {:type :seq
+                                                                     :spec {:type    :map
+                                                                            :factory isaac.server.routes/register-route-entry!
+                                                                            :schema  {:method  {:type :keyword :validations [:present?]}
+                                                                                      :path    {:type :string  :validations [:present?]}
+                                                                                      :handler {:type :symbol  :validations [:present?]}}}}}}
+                  :isaac.server/route-prefix {:description "Prefix-match HTTP routes (uri prefix)."
+                                              :manifest    {:schema {:type :seq
+                                                                     :spec {:type    :map
+                                                                            :factory isaac.server.routes/register-prefix-route-entry!
+                                                                            :schema  {:prefix  {:type :string :validations [:present?]}
+                                                                                      :handler {:type :symbol :validations [:present?]}}}}}}}
 
  :cli            [{:name      "init"
                    :usage     "init"
@@ -22,8 +36,8 @@
                    :run-fn    isaac.cli/init-run-fn
                    :help-text isaac.cli/init-help}]
 
- :route          {[:post "/hail/send"] isaac.hail.http/handler
-                  [:post "/hooks/*"]   isaac.hooks/handler}
+ :isaac.server/route        [{:method :post :path "/hail/send" :handler isaac.hail.http/handler}]
+ :isaac.server/route-prefix [{:prefix "/hooks/" :handler isaac.hooks/handler}]
 
  :llm/api        {:messages         {:factory isaac.llm.api.messages/make}
                   :grover           {:factory isaac.llm.api.grover/make}

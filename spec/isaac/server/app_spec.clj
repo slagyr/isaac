@@ -135,29 +135,28 @@
                 :root "/tmp/isaac"}
                @started)))
 
-  (it "registers route extensions from every declared module at startup"
-    (let [registered (atom [])]
-      (with-redefs [httpkit/run-server                       (fn [_ _] (fn [] nil))
-                    httpkit/server-port                      (fn [_] 7001)
-                    httpkit/server-stop!                     (fn [_] nil)
-                    module-loader/start-modules!             (fn [_] :started)
-                    module-loader/register-route-extensions! (fn [manifest]
-                                                               (swap! registered conj manifest))]
+  (it "processes route berth contributions from every declared module at startup"
+    (let [seen-indexes (atom [])]
+      (with-redefs [httpkit/run-server                  (fn [_ _] (fn [] nil))
+                    httpkit/server-port                 (fn [_] 7001)
+                    httpkit/server-stop!                (fn [_] nil)
+                    module-loader/start-modules!        (fn [_] :started)
+                    module-loader/process-manifest-berths! (fn [module-index]
+                                                             (swap! seen-indexes conj module-index)
+                                                             [])]
         (sut/start! {:host "127.0.0.1"
                      :port 0
                      :cfg  {:module-index
                             {:isaac.fake.pigeon
-                             {:manifest {:route {[:get "/pigeon"] 'isaac.fake.pigeon/handler}}}
+                             {:manifest {:isaac.server/route [{:method :get :path "/pigeon"
+                                                               :handler 'isaac.fake.pigeon/handler}]}}
                              :isaac.fake.crow
-                             {:manifest {:route {[:get "/crow"] 'isaac.fake.crow/handler}}}}}})
+                             {:manifest {:isaac.server/route [{:method :get :path "/crow"
+                                                               :handler 'isaac.fake.crow/handler}]}}}}})
         (sut/stop!))
-      ;; called once for the core manifest plus once per declared module
-      (should= #{{:route {[:get "/pigeon"] 'isaac.fake.pigeon/handler}}
-                 {:route {[:get "/crow"] 'isaac.fake.crow/handler}}}
-               (->> @registered
-                    (filter #(or (contains? (:route %) [:get "/pigeon"])
-                                 (contains? (:route %) [:get "/crow"])))
-                    set))))
+      (let [combined (apply merge @seen-indexes)]
+        (should-not-be-nil (get combined :isaac.fake.pigeon))
+        (should-not-be-nil (get combined :isaac.fake.crow)))))
 
   (it "starts loaded modules during server boot"
     (let [started (atom nil)]

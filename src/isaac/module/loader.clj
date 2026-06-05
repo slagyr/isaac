@@ -34,9 +34,11 @@
      :comm           (fn [comm-id factory])             — registers a comm impl
      :tools          (fn [spec])                        — registers a tool spec
      :slash-commands (fn [spec])                        — registers a slash command
-     :route          (fn [method path handler])         — registers an HTTP route
-     :route-prefix   (fn [prefix handler])              — registers an HTTP prefix route
-     :user-config    (fn [root-key entry-id] => map)    — reads user config for an extension"
+     :user-config    (fn [root-key entry-id] => map)    — reads user config for an extension
+
+   :route / :route-prefix used to live here too — phase 5 of the berth
+   epic (isaac-8v1n) replaced them with the :isaac.server/route and
+   :isaac.server/route-prefix berths."
   [kind handler-fn]
   (swap! handlers* assoc kind handler-fn))
 
@@ -355,18 +357,10 @@
       :description (:description spec)
       :handler     (:handler spec)})))
 
-(defn register-route-extensions! [manifest]
-  (doseq [[[method path] handler] (:route manifest)]
-    (let [resolved-handler (resolve-symbol! handler)]
-      (if (str/ends-with? path "/*")
-        ((handler-for :route-prefix)
-         (subs path 0 (dec (count path)))
-         resolved-handler)
-        ((handler-for :route) method path resolved-handler)))))
-
 (defn- register-extensions! [manifest]
-  ;; :cli is no longer here — phase 4 of the berth epic moved CLI
-  ;; installation into the berth pass (process-manifest-berths!).
+  ;; :cli and :route/:route-prefix are no longer here — phases 4 and 5
+  ;; of the berth epic moved CLI and HTTP route installation into the
+  ;; berth pass (process-manifest-berths!).
   (doseq [kind [:llm/api :comm :tools :slash-commands :hook]
           [extension-id extension] (get manifest kind)]
     (case kind
@@ -374,8 +368,7 @@
       :comm           (register-comm-extension! extension-id extension)
       :tools          (register-tool-extension! extension-id extension)
       :slash-commands (register-slash-extension! extension-id extension)
-      :hook           nil))
-  (register-route-extensions! manifest))
+      :hook           nil)))
 
 (defn- call-bootstrap! [bootstrap]
   (when bootstrap

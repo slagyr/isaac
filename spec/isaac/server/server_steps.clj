@@ -492,9 +492,8 @@
 
 (defn- register-direct-routes! [cfg]
   (reset! routes/*registry* (routes/fresh-registry))
-  (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
-  (doseq [[_ entry] (:module-index cfg)]
-    (module-loader/register-route-extensions! (:manifest entry))))
+  (let [module-index (merge (module-loader/core-index) (:module-index cfg))]
+    (module-loader/process-manifest-berths! module-index)))
 
 (defn- direct-response [request]
   (let [handler-opts (current-handler-opts)

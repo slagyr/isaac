@@ -185,18 +185,23 @@
 
 (defn register-cli-command!
   "Per-entry factory for the :cli berth. Each contribution entry is a
-   map describing a CLI command — name + desc + (symbol-valued)
-   run-fn / help-text. Resolves the symbols and registers the
-   command, leaving the existing register! semantics intact. Wraps
-   the run-fn in --help handling so module-supplied commands get a
-   per-command help page for free (matches the old
+   map describing a CLI command — name + desc + option-spec +
+   (symbol-valued) run-fn / help-text. Resolves the symbols and
+   registers the command, leaving the existing register! semantics
+   intact. Wraps the run-fn in --help handling so module-supplied
+   commands get a per-command help page for free (matches the old
    register-module-command! shape)."
-  [{:keys [name desc usage run-fn help-text]}]
+  [{:keys [name desc usage option-spec run-fn help-text]}]
   (let [resolved-run-fn   (maybe-resolve run-fn)
         resolved-help-fn  (maybe-resolve help-text)
+        ;; option-spec may arrive as a symbol (pointing at a defed var
+        ;; — the EDN manifest can't inline tools.cli specs cleanly when
+        ;; they include fns) or as inline data.
+        resolved-options  (if (symbol? option-spec) (maybe-resolve option-spec) option-spec)
         cmd               (cond-> {:name name}
                             desc             (assoc :desc desc)
                             usage            (assoc :usage usage)
+                            resolved-options (assoc :option-spec resolved-options)
                             resolved-run-fn  (assoc :run-fn  resolved-run-fn)
                             resolved-help-fn (assoc :help-text resolved-help-fn))
         wrapped-run-fn    (when resolved-run-fn
