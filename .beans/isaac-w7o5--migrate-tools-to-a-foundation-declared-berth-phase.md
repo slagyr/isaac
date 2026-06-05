@@ -1,13 +1,11 @@
 ---
 # isaac-w7o5
 title: Migrate :tools to a foundation-declared berth (phase 6 of berth epic)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:51:00Z
-updated_at: 2026-06-05T07:58:09Z
+updated_at: 2026-06-05T08:03:53Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
