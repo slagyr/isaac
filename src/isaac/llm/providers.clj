@@ -25,10 +25,12 @@
         (or providers {})))
 
 (defn- core-catalog
-  "Provider templates declared in the core manifest."
+  "Provider templates declared in the core manifest. Phase 7 of the
+   berth epic moved the templates from the legacy top-level :provider
+   key to the :isaac.server/provider-template berth contribution."
   []
   (let [core-entry (get (module-loader/core-index) :isaac.core)]
-    (normalize-manifest-providers (get-in core-entry [:manifest :provider]))))
+    (normalize-manifest-providers (get-in core-entry [:manifest :isaac.server/provider-template]))))
 
 ;; Overlay for dynamically-registered providers (tests / future plugins).
 ;; Manifest providers come from core-catalog above.
@@ -40,16 +42,21 @@
 (def ^:private core-module-id :isaac.core)
 
 (defn module-providers
-  "Provider entries declared by third-party modules. The core manifest's
-   provider entries are templates accessible via `template`; they do not
-   materialize through this path."
+  "Provider entries visible from third-party modules. Phase 7 of brth:
+   includes both the :isaac.server/provider berth (materialized
+   providers a module ships ready-to-use) and the
+   :isaac.server/provider-template berth (additional templates a
+   module contributes, inheritable by user-config providers via
+   :type). Core is excluded — its templates flow through `core-catalog`."
   [module-index]
   (reduce-kv (fn [providers module-id module]
                (if (= core-module-id module-id)
                  providers
                  (merge providers
                         (normalize-manifest-providers
-                          (get-in module [:manifest :provider])))))
+                          (get-in module [:manifest :isaac.server/provider]))
+                        (normalize-manifest-providers
+                          (get-in module [:manifest :isaac.server/provider-template])))))
              {}
              (or module-index {})))
 

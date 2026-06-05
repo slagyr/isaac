@@ -211,25 +211,46 @@
    :version "0.1.0"
    :factory 'isaac.core/create-module
 
-   :llm/api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}
-             (keyword sky-api)    {:factory 'isaac.llm.api.grover/make}
-             (keyword groves-api) {:factory 'isaac.llm.api.grover/make}
-             (keyword anvil-api)  {:factory 'isaac.llm.api.grover/make}
-             (keyword grover-api) {:factory 'isaac.llm.api.grover/make}}
+   :berths  {:isaac.server/tools             {:description "LLM tool factories."
+                                              :manifest    {:schema {:type       :map
+                                                                     :key-spec   {:type :keyword}
+                                                                     :value-spec {:type    :map
+                                                                                  :factory 'isaac.tool.registry/register-tool-entry!
+                                                                                  :schema  {:factory {:type :symbol :validations [:present?]}
+                                                                                            :schema  {:type :any}}}}}}
+             :isaac.server/llm-api           {:description "LLM API factories."
+                                              :manifest    {:schema {:type       :map
+                                                                     :key-spec   {:type :keyword}
+                                                                     :value-spec {:type    :map
+                                                                                  :factory 'isaac.llm.api/register-api-entry!
+                                                                                  :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+             :isaac.server/slash-commands    {:description "Slash commands."
+                                              :manifest    {:schema {:type       :map
+                                                                     :key-spec   {:type :keyword}
+                                                                     :value-spec {:type    :map
+                                                                                  :factory 'isaac.slash.registry/register-slash-entry!
+                                                                                  :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+             :isaac.server/provider-template {:description "Provider templates."
+                                              :manifest    {:schema {:type       :map
+                                                                     :key-spec   {:type :keyword}
+                                                                     :value-spec {:type   :map
+                                                                                  :schema {:template {:type :map}}}}}}
+             :isaac.server/provider          {:description "Materialized providers."
+                                              :manifest    {:schema {:type       :map
+                                                                     :key-spec   {:type :keyword}
+                                                                     :value-spec {:type :map}}}}}
 
-   :provider {(keyword helm-systems)   {:template (dissoc helm-provider :api-key)}
-              (keyword starcore)       {:template (dissoc starcore-provider :api-key)}
-              (keyword flicker-labs)   {:template flicker-provider}
-              (keyword quantum-anvil)  {:template quantum-provider}
-              (keyword grover-stub)    {:template {:api grover-api :auth "none"}}}
+   :isaac.server/llm-api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}
+                          (keyword sky-api)    {:factory 'isaac.llm.api.grover/make}
+                          (keyword groves-api) {:factory 'isaac.llm.api.grover/make}
+                          (keyword anvil-api)  {:factory 'isaac.llm.api.grover/make}
+                          (keyword grover-api) {:factory 'isaac.llm.api.grover/make}}
 
-    :berths  {:isaac.server/tools {:description "LLM tool factories."
-                                   :manifest    {:schema {:type       :map
-                                                          :key-spec   {:type :keyword}
-                                                          :value-spec {:type    :map
-                                                                       :factory 'isaac.tool.registry/register-tool-entry!
-                                                                       :schema  {:factory {:type :symbol :validations [:present?]}
-                                                                                 :schema  {:type :any}}}}}}}
+   :isaac.server/provider-template {(keyword helm-systems)  {:template (dissoc helm-provider :api-key)}
+                                    (keyword starcore)      {:template (dissoc starcore-provider :api-key)}
+                                    (keyword flicker-labs)  {:template flicker-provider}
+                                    (keyword quantum-anvil) {:template quantum-provider}
+                                    (keyword grover-stub)   {:template {:api grover-api :auth "none"}}}
 
    :isaac.server/tools {(keyword spyglass-tool) {:factory 'isaac.tool.builtin/read-tool-factory}
                         (keyword sextant-tool)  {:factory 'isaac.tool.builtin/grep-tool-factory}
@@ -237,9 +258,9 @@
                                                  :schema  {:provider {:type :keyword :validations [[:one-of? :brave]]}
                                                            :api-key  {:type :string :validations [:present?]}}}}
 
-   :slash-commands {(keyword heading-command) {:factory 'isaac.marigold/heading-slash-factory}
-                    (keyword bearing-command) {:factory 'isaac.marigold/bearing-slash-factory}
-                    (keyword muster-command)  {:factory 'isaac.marigold/muster-slash-factory}}
+   :isaac.server/slash-commands {(keyword heading-command) {:factory 'isaac.marigold/heading-slash-factory}
+                                 (keyword bearing-command) {:factory 'isaac.marigold/bearing-slash-factory}
+                                 (keyword muster-command)  {:factory 'isaac.marigold/muster-slash-factory}}
 
    :comm    {(keyword longwave) {:factory 'isaac.comm.cli/make}     ;; broadcast / cli-like
              (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like

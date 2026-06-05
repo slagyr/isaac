@@ -180,6 +180,13 @@
     (log/info :api/registered :api (clojure.core/name provider-key))
     provider-key))
 
+(defn register-api-entry!
+  "Per-entry factory for the :isaac.server/llm-api berth (phase 7 of
+   the berth epic). Receives `[api-id entry]`; resolves the entry's
+   symbol-valued :factory and registers it under api-id."
+  [[api-id entry]]
+  (register! api-id (some-> (:factory entry) requiring-resolve var-get)))
+
 (defn mark-built-ins!
   "Snapshot the current registry as the built-in set. Called once after all
    built-in providers have registered so module registrations can be cleared

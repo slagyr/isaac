@@ -32,13 +32,14 @@
 
    Known kinds:
      :comm           (fn [comm-id factory])             — registers a comm impl
-     :slash-commands (fn [spec])                        — registers a slash command
      :user-config    (fn [root-key entry-id] => map)    — reads user config for an extension
 
    :route / :route-prefix used to live here too — phase 5 of the berth
    epic (isaac-8v1n) replaced them with the :isaac.server/route and
    :isaac.server/route-prefix berths. :tools likewise moved to the
-   :isaac.server/tools berth in phase 6 (isaac-w7o5)."
+   :isaac.server/tools berth in phase 6 (isaac-w7o5). :slash-commands /
+   :llm/api / :hook / :provider migrated to their :isaac.server/*
+   berths in phase 7 (isaac-ho18)."
   [kind handler-fn]
   (swap! handlers* assoc kind handler-fn))
 
@@ -275,11 +276,14 @@
                   (keyword? capability) capability
                   (string? capability)  (keyword capability)
                   :else                 (keyword (str capability)))
-        ;; :tools moved to the :isaac.server/tools berth in phase 6
-        ;; (isaac-w7o5). Callers still pass the legacy :tools kind for
-        ;; backwards compat at this seam — translate.
+        ;; Phase 6 (isaac-w7o5) and phase 7 (isaac-ho18) moved several
+        ;; legacy extension kinds into :isaac.server/* berths. Callers
+        ;; pass the legacy kind kw at this seam; translate.
         manifest-key (case kind
-                       :tools :isaac.server/tools
+                       :tools          :isaac.server/tools
+                       :llm/api        :isaac.server/llm-api
+                       :slash-commands :isaac.server/slash-commands
+                       :hook           :isaac.server/hook
                        kind)]
     (some (fn [[module-id entry]]
             (when (get-in entry [:manifest manifest-key cap-key])
@@ -361,32 +365,14 @@
   [root-key entry-id]
   (or ((handler-for :user-config) root-key entry-id) {}))
 
-(defn- register-api-extension! [api-id extension]
-  (api/register! api-id (resolve-symbol! (:factory extension))))
-
 (defn- register-comm-extension! [comm-id extension]
   ((handler-for :comm) (name comm-id) (resolve-symbol! (:factory extension))))
 
-(defn- register-slash-extension! [command-id extension]
-  (let [command-id (name command-id)
-        factory    (resolve-symbol! (:factory extension))
-        spec       (factory (user-config :slash-commands command-id))]
-    ((handler-for :slash-commands)
-     {:name        (:command-name spec)
-      :description (:description spec)
-      :handler     (:handler spec)})))
-
 (defn- register-extensions! [manifest]
-  ;; :cli, :route/:route-prefix and :tools are no longer here —
-  ;; phases 4, 5 and 6 of the berth epic moved them into the berth
-  ;; pass (process-manifest-berths!).
-  (doseq [kind [:llm/api :comm :slash-commands :hook]
-          [extension-id extension] (get manifest kind)]
-    (case kind
-      :llm/api        (register-api-extension! extension-id extension)
-      :comm           (register-comm-extension! extension-id extension)
-      :slash-commands (register-slash-extension! extension-id extension)
-      :hook           nil)))
+  ;; Phases 4–7 of the berth epic moved every extension kind except
+  ;; :comm into berths processed by process-manifest-berths!.
+  (doseq [[extension-id extension] (get manifest :comm)]
+    (register-comm-extension! extension-id extension)))
 
 (defn- call-bootstrap! [bootstrap]
   (when bootstrap

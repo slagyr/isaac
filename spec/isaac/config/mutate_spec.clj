@@ -155,7 +155,7 @@
       (let [result (sut/set-config marigold/root "models.sparky.provider" :helm-systems)]
         (should= :ok (:status result))
         (should= :helm-systems (get-in (read-edn "isaac.edn") [:models :sparky :provider]))
-        (should-contain {:key "models.embery.provider" :value "pre-existing: references undefined provider"}
+        (should-contain {:key "models.embery.provider" :value "pre-existing: must be one of [\"helm-systems\"]"}
                         (mapv #(select-keys % [:key :value]) (:warnings result)))))
 
     (it "rejects a mutation that introduces a new error even when other errors already exist"
@@ -166,7 +166,7 @@
                                :providers {:helm-systems {}}})
       (let [result (sut/set-config marigold/root "models.sparky.provider" :nonexistent)]
         (should= :invalid (:status result))
-        (should= [{:key "models.sparky.provider" :value "references undefined provider" :bad-value "nonexistent" :valid-values ["helm-systems"]}]
+        (should= [{:key "models.sparky.provider" :value "must be one of [\"helm-systems\"]" :bad-value "nonexistent" :valid-values ["helm-systems"]}]
                  (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result)))))
 
   (describe "unset-config"

@@ -130,10 +130,10 @@
 
     (it "resolves a user provider inheriting from a module-declared provider"
       (let [cfg          {:providers {:fizzy-staging {:type :kombucha :api-key "staging-key"}}}
-            module-index {:isaac.providers.kombucha {:manifest {:provider {:kombucha {:template {:api      "chat-completions"
-                                                                                                  :base-url "https://api.kombucha.test/v1"
-                                                                                                  :auth     "api-key"
-                                                                                                  :models   ["kombucha-large" "kombucha-small"]}}}}}}
+            module-index {:isaac.providers.kombucha {:manifest {:isaac.server/provider-template {:kombucha {:template {:api      "chat-completions"
+                                                                                                                       :base-url "https://api.kombucha.test/v1"
+                                                                                                                       :auth     "api-key"
+                                                                                                                       :models   ["kombucha-large" "kombucha-small"]}}}}}}
             p            (sut/lookup cfg module-index "fizzy-staging")]
         (should= "chat-completions" (:api p))
         (should= "https://api.kombucha.test/v1" (:base-url p))

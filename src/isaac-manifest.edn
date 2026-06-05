@@ -2,40 +2,67 @@
  :version        "0.1.0"
  :factory        isaac.core/create-module
 
- ;; :cli is a berth (phase 4 of the berth epic). Built-ins and module
- ;; contributions ride the same shape — each entry carries the command
- ;; spec; the entry-level factory resolves the symbol-valued :run-fn /
- ;; :help-text and registers the command with isaac.cli's registry.
- :berths         {:cli                       {:description "CLI commands installed into the top-level isaac command registry."
-                                              :manifest    {:schema {:type :seq
-                                                                     :spec {:type    :map
-                                                                            :factory isaac.cli/register-cli-command!
-                                                                            :schema  {:name        {:type :string :validations [:present?]}
-                                                                                      :desc        {:type :string}
-                                                                                      :usage       {:type :string}
-                                                                                      :option-spec {:type :any}
-                                                                                      :run-fn      {:type :symbol}
-                                                                                      :help-text   {:type :symbol}}}}}}
-                  :isaac.server/route        {:description "Exact-match HTTP routes (method + uri)."
-                                              :manifest    {:schema {:type :seq
-                                                                     :spec {:type    :map
-                                                                            :factory isaac.server.routes/register-route-entry!
-                                                                            :schema  {:method  {:type :keyword :validations [:present?]}
-                                                                                      :path    {:type :string  :validations [:present?]}
-                                                                                      :handler {:type :symbol  :validations [:present?]}}}}}}
-                  :isaac.server/route-prefix {:description "Prefix-match HTTP routes (uri prefix)."
-                                              :manifest    {:schema {:type :seq
-                                                                     :spec {:type    :map
-                                                                            :factory isaac.server.routes/register-prefix-route-entry!
-                                                                            :schema  {:prefix  {:type :string :validations [:present?]}
-                                                                                      :handler {:type :symbol :validations [:present?]}}}}}}
-                  :isaac.server/tools        {:description "LLM tool factories. Contributions land at the top-level :isaac.server/tools key as a map of `<tool-id> -> {:factory <sym> :schema <map>}`; the per-entry factory resolves :factory, applies the user-config slot, and installs the tool spec into the tool registry."
-                                              :manifest    {:schema {:type       :map
-                                                                     :key-spec   {:type :keyword}
-                                                                     :value-spec {:type    :map
-                                                                                  :factory isaac.tool.registry/register-tool-entry!
-                                                                                  :schema  {:factory {:type :symbol :validations [:present?]}
-                                                                                            :schema  {:type :any}}}}}}}
+ ;; Phase 7 of the berth epic (isaac-ho18) collapsed the old top-level
+ ;; :provider / :llm/api / :slash-commands / :hook extension kinds into
+ ;; foundation-declared berths. Phase 4–6 did the same for :cli /
+ ;; :route* / :tools.
+ :berths         {:cli                            {:description "CLI commands installed into the top-level isaac command registry."
+                                                   :manifest    {:schema {:type :seq
+                                                                          :spec {:type    :map
+                                                                                 :factory isaac.cli/register-cli-command!
+                                                                                 :schema  {:name        {:type :string :validations [:present?]}
+                                                                                           :desc        {:type :string}
+                                                                                           :usage       {:type :string}
+                                                                                           :option-spec {:type :any}
+                                                                                           :run-fn      {:type :symbol}
+                                                                                           :help-text   {:type :symbol}}}}}}
+                  :isaac.server/route             {:description "Exact-match HTTP routes (method + uri)."
+                                                   :manifest    {:schema {:type :seq
+                                                                          :spec {:type    :map
+                                                                                 :factory isaac.server.routes/register-route-entry!
+                                                                                 :schema  {:method  {:type :keyword :validations [:present?]}
+                                                                                           :path    {:type :string  :validations [:present?]}
+                                                                                           :handler {:type :symbol  :validations [:present?]}}}}}}
+                  :isaac.server/route-prefix      {:description "Prefix-match HTTP routes (uri prefix)."
+                                                   :manifest    {:schema {:type :seq
+                                                                          :spec {:type    :map
+                                                                                 :factory isaac.server.routes/register-prefix-route-entry!
+                                                                                 :schema  {:prefix  {:type :string :validations [:present?]}
+                                                                                           :handler {:type :symbol :validations [:present?]}}}}}}
+                  :isaac.server/tools             {:description "LLM tool factories."
+                                                   :manifest    {:schema {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type    :map
+                                                                                       :factory isaac.tool.registry/register-tool-entry!
+                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}
+                                                                                                 :schema  {:type :any}}}}}}
+                  :isaac.server/llm-api           {:description "LLM API factories — adapters per provider API (messages, chat-completions, ollama, ...)."
+                                                   :manifest    {:schema {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type    :map
+                                                                                       :factory isaac.llm.api/register-api-entry!
+                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                  :isaac.server/slash-commands    {:description "Slash commands installed into the bridge slash registry."
+                                                   :manifest    {:schema {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type    :map
+                                                                                       :factory isaac.slash.registry/register-slash-entry!
+                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                  :isaac.server/hook              {:description "Event hooks installed into the hook registry. Per-entry factory resolves :factory and registers the returned spec via isaac.hooks/register-hook!."
+                                                   :manifest    {:schema {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type    :map
+                                                                                       :factory isaac.hooks/register-hook-entry!
+                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                  :isaac.server/provider-template {:description "Provider templates — partial provider configs that user-config :providers entries can inherit from via :type."
+                                                   :manifest    {:schema {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type   :map
+                                                                                       :schema {:template {:type :map}}}}}}
+                  :isaac.server/provider          {:description "Materialized LLM providers — instances usable by models. Manifest contributions are third-party modules shipping a ready-to-use provider; user-instantiated providers in the [:providers] config slot also count toward this berth (see `[:registered-in? :isaac.server/provider [:providers]]` use sites)."
+                                                   :manifest    {:schema {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type :map}}}}}
 
  :cli            [{:name      "init"
                    :usage     "init"
@@ -46,11 +73,11 @@
  :isaac.server/route        [{:method :post :path "/hail/send" :handler isaac.hail.http/handler}]
  :isaac.server/route-prefix [{:prefix "/hooks/" :handler isaac.hooks/handler}]
 
- :llm/api        {:messages         {:factory isaac.llm.api.messages/make}
-                  :grover           {:factory isaac.llm.api.grover/make}
-                  :ollama           {:factory isaac.llm.api.ollama/make}
-                  :chat-completions {:factory isaac.llm.api.chat-completions/make}
-                  :responses        {:factory isaac.llm.api.responses/make}}
+ :isaac.server/llm-api {:messages         {:factory isaac.llm.api.messages/make}
+                        :grover           {:factory isaac.llm.api.grover/make}
+                        :ollama           {:factory isaac.llm.api.ollama/make}
+                        :chat-completions {:factory isaac.llm.api.chat-completions/make}
+                        :responses        {:factory isaac.llm.api.responses/make}}
 
  :isaac.server/tools {:edit          {:factory isaac.tool.builtin/edit-tool-factory}
                       :exec          {:factory isaac.tool.builtin/exec-tool-factory}
@@ -71,26 +98,26 @@
                                                 :api-key  {:type :string :validations [:present?]}}}
                       :write         {:factory isaac.tool.builtin/write-tool-factory :schema {}}}
 
- :provider       {:anthropic      {:template {:api      "messages"
-                                              :base-url "https://api.anthropic.com"
-                                              :auth     "api-key"}}
-                  :xai            {:template {:api      "chat-completions"
-                                              :base-url "https://api.x.ai/v1"
-                                              :auth     "api-key"}}
-                  :grover         {:template {:api  "grover"
-                                              :auth "none"}}
-                  :ollama         {:template {:api      "ollama"
-                                              :base-url "http://localhost:11434"
-                                              :auth     "none"}}
-                  :openai         {:template {:api      "chat-completions"
-                                              :base-url "https://api.openai.com/v1"
-                                              :auth     "api-key"}}
-                  :chatgpt        {:template {:api      "responses"
-                                              :base-url "https://chatgpt.com/backend-api/codex"
-                                              :auth     "oauth-device"}}}
+ :isaac.server/provider-template {:anthropic {:template {:api      "messages"
+                                                         :base-url "https://api.anthropic.com"
+                                                         :auth     "api-key"}}
+                                  :xai       {:template {:api      "chat-completions"
+                                                         :base-url "https://api.x.ai/v1"
+                                                         :auth     "api-key"}}
+                                  :grover    {:template {:api  "grover"
+                                                         :auth "none"}}
+                                  :ollama    {:template {:api      "ollama"
+                                                         :base-url "http://localhost:11434"
+                                                         :auth     "none"}}
+                                  :openai    {:template {:api      "chat-completions"
+                                                         :base-url "https://api.openai.com/v1"
+                                                         :auth     "api-key"}}
+                                  :chatgpt   {:template {:api      "responses"
+                                                         :base-url "https://chatgpt.com/backend-api/codex"
+                                                         :auth     "oauth-device"}}}
 
- :slash-commands {:crew   {:factory isaac.slash.builtin/crew-command}
-                  :cwd    {:factory isaac.slash.builtin/cwd-command}
-                  :effort {:factory isaac.slash.builtin/effort-command}
-                  :model  {:factory isaac.slash.builtin/model-command}
-                  :status {:factory isaac.slash.builtin/status-command}}}
+ :isaac.server/slash-commands {:crew   {:factory isaac.slash.builtin/crew-command}
+                               :cwd    {:factory isaac.slash.builtin/cwd-command}
+                               :effort {:factory isaac.slash.builtin/effort-command}
+                               :model  {:factory isaac.slash.builtin/model-command}
+                               :status {:factory isaac.slash.builtin/status-command}}}

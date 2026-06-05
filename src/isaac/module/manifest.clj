@@ -36,14 +36,10 @@
             ;; ignored at the schema layer so existing manifests that put
             ;; :cli at the top level still parse.
             :cli           {:type :ignore}
-            :comm          kind-entry-spec
-            :slash-commands kind-entry-spec
-            :llm/api       kind-entry-spec
-            :provider      kind-entry-spec
-            :hook          kind-entry-spec}})
+            :comm          kind-entry-spec}})
 
 (def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :version})
-(def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-commands})
+(def ^:private known-extend-kinds #{:comm})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
 (defn- validate-bootstrap! [path manifest]
@@ -60,16 +56,11 @@
       (throw (ex-info ":isaac/factory is no longer supported; use :factory"
                       {:field :isaac/factory :extension-id extension-id
                        :kind kind :path path})))
-    (when (contains? #{:cli :comm :llm/api :slash-commands :hook} kind)
+    (when (contains? #{:cli :comm} kind)
       (when-not (symbol? (:factory extension))
         (throw (ex-info ":factory is required and must be a symbol"
                         {:field :factory :extension-id extension-id
                           :kind kind :path path}))))
-    (when (= :provider kind)
-      (when-not (map? (:template extension))
-        (throw (ex-info ":template is required for provider entries"
-                        {:field :template :extension-id extension-id
-                         :kind kind :path path}))))
     (when (contains? extension :sort-index)
       (throw (ex-info ":sort-index is no longer supported"
                       {:field :sort-index :extension-id extension-id

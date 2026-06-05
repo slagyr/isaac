@@ -87,7 +87,7 @@
             :provider   {:type        :string
                          :coerce      [->id]
                          :description "Provider id for direct provider/model crews"
-                         :validations [:provider-exists?]}
+                         :validations [[:registered-in? :isaac.server/provider [:providers]]]}
             :soul       {:type        :string
                          :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
             :context-mode {:type        :keyword
@@ -133,7 +133,7 @@
                                   :required?   true
                                   :validate    schema/present?
                                   :message     "must be present"
-                                  :validations [:provider-exists?]}
+                                  :validations [[:registered-in? :isaac.server/provider [:providers]]]}
              :context-window      {:type        :int
                                    :description "Context window size in tokens"}
             :compaction          {:type        :map
@@ -158,7 +158,7 @@
    :schema {:api                        {:type        :string
                                          :coerce      [->id]
                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
-                                         :validations [:llm-api-exists?]}
+                                         :validations [[:registered-in? :isaac.server/llm-api]]}
              :auth                       {:type        :string
                                           :description "Authentication mode (e.g. \"oauth-device\")"}
              :api-key                    {:type        :string
@@ -173,7 +173,7 @@
             :type                       {:type        :string
                                          :coerce      [->id]
                                          :description "Manifest provider id to inherit template from"
-                                         :validations [:manifest-provider-exists?]}
+                                         :validations [[:registered-in? :isaac.server/provider-template]]}
             :headers                    {:type        :map
                                          :key-spec    {:type :string}
                                          :value-spec  {:type :string}

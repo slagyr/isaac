@@ -529,7 +529,7 @@
     (if (and (some? modules) (not (map? modules)))
       (->> [:isaac.core]
            (keep #(get module-index %))
-           (mapcat #(keys (get-in % [:manifest :llm/api])))
+           (mapcat #(keys (get-in % [:manifest :isaac.server/llm-api])))
            (map clojure.core/name)
            set)
       (let [declared-ids (conj (->> (keys modules)
@@ -539,7 +539,7 @@
                                :isaac.core)]
         (->> declared-ids
              (keep #(get module-index %))
-             (mapcat #(keys (get-in % [:manifest :llm/api])))
+             (mapcat #(keys (get-in % [:manifest :isaac.server/llm-api])))
              (map clojure.core/name)
              set)))))
 
@@ -551,16 +551,20 @@
        set))
 
 (defn- manifest-provider-ids [config]
-  (->> (manifest-capability-ids config :provider) sort vec))
+  ;; Phase 7 (isaac-ho18): provider templates moved to the
+  ;; :isaac.server/provider-template berth.
+  (->> (manifest-capability-ids config :isaac.server/provider-template) sort vec))
 
 (defn- module-instantiated-provider-ids
-  "Provider ids declared by third-party modules. Excludes the core manifest,
-   whose :provider entries are templates and do not materialize unless
-   instantiated in user config."
+  "Materialized provider ids contributed by third-party modules to
+   :isaac.server/provider. Core's contributions to that berth ship
+   ready-to-use providers; the user's instantiated providers live in
+   the :providers config slot and are picked up separately by
+   :registered-in?'s config-side read."
   [config]
   (->> (or (:module-index config) {})
        (remove (fn [[id _]] (= id :isaac.core)))
-       (mapcat (fn [[_ entry]] (keys (get-in entry [:manifest :provider]))))
+       (mapcat (fn [[_ entry]] (keys (get-in entry [:manifest :isaac.server/provider]))))
        (map ->id)
        set))
 
@@ -598,7 +602,7 @@
   (find-manifest-entry config :isaac.server/tools tool-name))
 
 (defn- find-slash-command-manifest-entry [config command-name]
-  (find-manifest-entry config :slash-commands command-name))
+  (find-manifest-entry config :isaac.server/slash-commands command-name))
 
 (defn- known-llm-api-ids [config]
   (->> (declared-module-api-ids config)
@@ -625,12 +629,14 @@
                    (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
-  {:llm-api-exists?           (exists-ref :llm-api-exists? known-llm-api-ids "unknown api")
-   :provider-exists?          (exists-ref :provider-exists? known-provider-ids "references undefined provider")
-   :manifest-provider-exists? (exists-ref :manifest-provider-exists? manifest-provider-ids "references provider not defined in any manifest")
-   :comm-exists?              (exists-ref :comm-exists? known-comm-ids "references undefined comm")
-   :model-exists?             (exists-ref :model-exists? known-model-ids "references undefined model")
-   :crew-exists?              (exists-ref :crew-exists? known-crew-ids "references undefined crew")})
+  ;; Phase 7 (isaac-ho18) removed :llm-api-exists?, :provider-exists?,
+  ;; and :manifest-provider-exists? — they are now expressed as
+  ;; `[:registered-in? :isaac.server/llm-api]`,
+  ;; `[:registered-in? :isaac.server/provider]`, and
+  ;; `[:registered-in? :isaac.server/provider-template]`.
+  {:comm-exists?  (exists-ref :comm-exists? known-comm-ids "references undefined comm")
+   :model-exists? (exists-ref :model-exists? known-model-ids "references undefined model")
+   :crew-exists?  (exists-ref :crew-exists? known-crew-ids "references undefined crew")})
 
 (defn- present-when-ref [other-key expected]
   {:scope    :entity
@@ -649,12 +655,9 @@
            true))
 
 (defn- validation-context [config]
-  (let [known-values {:llm-api-exists?           (known-llm-api-ids config)
-                      :provider-exists?          (known-provider-ids config)
-                      :manifest-provider-exists? (vec (manifest-provider-ids config))
-                      :comm-exists?              (known-comm-ids config)
-                      :model-exists?             (known-model-ids config)
-                      :crew-exists?              (known-crew-ids config)}]
+  (let [known-values {:comm-exists?  (known-comm-ids config)
+                      :model-exists? (known-model-ids config)
+                      :crew-exists?  (known-crew-ids config)}]
     {:raw          config
      :known-values known-values
      :known-sets   (into {} (map (fn [[predicate values]] [predicate (set values)])) known-values)}))
@@ -736,7 +739,12 @@
              ;; berths (e.g. :isaac.server/tools) and their contributions
              ;; from the platform manifest, not just user modules.
              registered-in/*module-index* (merge (module-loader/core-index)
-                                                 (:module-index config))]
+                                                 (:module-index config))
+             ;; The :registered-in? primitive also checks config-side
+             ;; contributions (user-config keys at the berth's :config
+             ;; :path) — e.g. user-instantiated providers under [:providers]
+             ;; register as contributions to :isaac.server/provider.
+             registered-in/*config*       (or (:raw config) config)]
      (annotation-errors* root [] schema-spec config))))
 
 ;; region ----- Tool config validation -----
@@ -803,7 +811,9 @@
                [])})
 
 (def ^:private manifest-schema-kinds
-  [:comm :provider :slash-commands :tools])
+  ;; Phase 7 (isaac-ho18) — every kind except :comm has moved to a
+  ;; :isaac.server/* berth. Comm migration is phase 8 (isaac-qqgv).
+  [:comm :isaac.server/provider-template :isaac.server/slash-commands :isaac.server/tools])
 
 (defn- verify-manifest-schema-fragment [module-id field-schema]
   (try
@@ -936,7 +946,7 @@
 (defn- find-provider-manifest-entry [module-index type-name]
   (let [type-kw (keyword (->id type-name))]
     (some (fn [[_id entry]]
-            (get-in entry [:manifest :provider type-kw]))
+            (get-in entry [:manifest :isaac.server/provider-template type-kw]))
           module-index)))
 
 (defn- check-provider-types [config raw-providers module-index]

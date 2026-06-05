@@ -84,6 +84,9 @@ Feature: Provider extension
       | body.model            | kombucha-small                                |
 
   Scenario: A provider with an unknown :api is rejected at config-load
+    # Phase 7 of brth (isaac-ho18) replaced :llm-api-exists? with
+    # [:registered-in? :isaac.server/llm-api]. The error name shifted
+    # accordingly.
     Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
@@ -95,9 +98,11 @@ Feature: Provider extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                 | value       |
-      | providers.bogus.api | unknown api |
+      | providers.bogus.api | must be one of |
 
   Scenario: A provider with an unknown :type target is rejected
+    # Phase 7 of brth (isaac-ho18) replaced :manifest-provider-exists?
+    # with [:registered-in? :isaac.server/provider-template].
     Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
@@ -107,7 +112,7 @@ Feature: Provider extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                   | value                                           |
-      | providers.dreamy.type | references provider not defined in any manifest |
+      | providers.dreamy.type | must be a registered contribution to :isaac.server/provider-template |
 
   Scenario: User-supplied extra field is rejected when it violates the manifest :schema
     Given an empty Isaac root at "/tmp/isaac"
@@ -124,6 +129,8 @@ Feature: Provider extension
       | providers.my-kombucha.fizz-level | must be an integer.* |
 
   Scenario: :type referencing a user-only provider is rejected
+    # Phase 7 of brth: user-only providers aren't manifest templates, so
+    # :registered-in? :isaac.server/provider-template rejects them.
     Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
@@ -137,7 +144,7 @@ Feature: Provider extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                           | value                                           |
-      | providers.work-anthropic.type | references provider not defined in any manifest |
+      | providers.work-anthropic.type | must be a registered contribution to :isaac.server/provider-template |
 
   Scenario: Self-defined provider with auth api-key but no api key is rejected
     Given an empty Isaac root at "/tmp/isaac"

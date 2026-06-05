@@ -33,7 +33,7 @@
                                               :marigold.bridge/comm
                                               {:marigold.longwave {:longwave {:label "lw"}}})]
       (should-be-nil (error-message-of :marigold.bridge/comm :longwave))
-      (should= "must be one of [:longwave]"
+      (should= "must be one of [\"longwave\"]"
                (error-message-of :marigold.bridge/comm :unknown))))
 
   (it "accepts any of multiple registered ids"
@@ -53,7 +53,7 @@
                                                :marigold.skybeam  {:skybeam {}}})]
       (let [msg (error-message-of :marigold.bridge/comm :unknown)]
         ;; Sorted for stability.
-        (should= "must be one of [:longwave :skybeam]" msg))))
+        (should= "must be one of [\"longwave\" \"skybeam\"]" msg))))
 
   (it "omits the list and names the berth when the set is large"
     (let [many (into {} (for [n (range 10)]
@@ -92,7 +92,7 @@
         (should= "is required"
                  (-> (schema/conform schema-spec {:value nil})
                      :value schema/error-message))
-        (should= "must be one of [:longwave]"
+        (should= "must be one of [\"longwave\"]"
                  (-> (schema/conform schema-spec {:value :other})
                      :value schema/error-message))
         (should-be-nil

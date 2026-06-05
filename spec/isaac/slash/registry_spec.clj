@@ -78,8 +78,8 @@
         (should= "echo" (:name (sut/lookup "echo" module-index))))))
 
   (it "registers the factory-returned command-name from user-config"
-    (let [module-index {:isaac.slash.echo {:manifest {:slash-commands {:echo {:factory 'isaac.slash.registry-spec/echo-command
-                                                                               :schema  {:command-name {:type :string}}}}}}}]
+    (let [module-index {:isaac.slash.echo {:manifest {:isaac.server/slash-commands {:echo {:factory 'isaac.slash.registry-spec/echo-command
+                                                                                            :schema  {:command-name {:type :string}}}}}}}]
       (nexus/-with-nexus {:config (atom {:slash-commands {:echo {:command-name "beep"}}})
                            :fs (fs/mem-fs)}
         (module-loader/clear-activations!)

@@ -36,9 +36,12 @@
                                  :schema  {:api-key {:type :string}}}}})
 
 (def provider-only-manifest
-  {:id       :isaac.providers.kombucha
-   :version  "0.1.0"
-   :provider {:kombucha {:template {:api "chat-completions"}}}})
+  ;; Phase 7 (isaac-ho18): provider templates contribute to the
+  ;; :isaac.server/provider-template berth, not a hardcoded :provider
+  ;; extension kind.
+  {:id                              :isaac.providers.kombucha
+   :version                         "0.1.0"
+   :isaac.server/provider-template  {:kombucha {:template {:api "chat-completions"}}}})
 
 (def route-manifest
   ;; Phase 5 of the berth epic (isaac-8v1n): routes are now berth

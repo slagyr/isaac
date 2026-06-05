@@ -31,10 +31,32 @@
   (reset! commands* {})
   (module-loader/deactivate-core!))
 
+(declare register-slash-entry!)
+
 (defn- activate-all! [module-index]
+  ;; Phase 7 (isaac-ho18): slash-command registration moved from
+  ;; activate!'s register-extensions! pass into the berth's per-entry
+  ;; factory. Activate each module for its bootstrap + non-slash
+  ;; extensions, then install slash entries directly.
   (doseq [[module-id entry] module-index
-          :when (seq (get-in entry [:manifest :slash-commands]))]
-    (module-loader/activate! module-id module-index)))
+          :let [contribs (get-in entry [:manifest :isaac.server/slash-commands])]
+          :when (seq contribs)]
+    (module-loader/activate! module-id module-index)
+    (doseq [pair contribs]
+      (register-slash-entry! pair))))
+
+(defn register-slash-entry!
+  "Per-entry factory for the :isaac.server/slash-commands berth (phase 7
+   of the berth epic). Receives `[command-id entry]`; resolves the
+   entry's symbol-valued :factory, applies the user-config slot, and
+   registers the resulting spec."
+  [[command-id entry]]
+  (let [command-id (clojure.core/name command-id)
+        factory    (some-> (:factory entry) requiring-resolve var-get)
+        spec       (factory (module-loader/user-config :slash-commands command-id))]
+    (register! {:name        (:command-name spec)
+                :description (:description spec)
+                :handler     (:handler spec)})))
 
 (defn- prompt-catalog-opts [opts]
   (let [root (or (:root opts)
@@ -84,7 +106,3 @@
    (ensure-builtins!)
    (activate-all! module-index)
    (advertised-commands opts)))
-
-;; Module-loader registration: dispatched by module.loader when activating a
-;; manifest's :slash-commands extension.
-(module-loader/register-handler! :slash-commands #'register!)

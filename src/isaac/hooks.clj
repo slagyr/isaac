@@ -51,6 +51,17 @@
   (swap! registry* assoc name {:source source :entry entry})
   (log/info :hook/registered :name name :source source))
 
+(defn register-hook-entry!
+  "Per-entry factory for the :isaac.server/hook berth (phase 7 of the
+   berth epic). Receives `[hook-id entry]`; resolves the entry's
+   symbol-valued :factory and registers the returned spec as a module-
+   sourced hook."
+  [[hook-id entry]]
+  (let [hook-name (clojure.core/name hook-id)
+        factory   (some-> (:factory entry) requiring-resolve var-get)
+        spec      (factory)]
+    (register-hook! hook-name spec :module)))
+
 (defn deregister-hook!
   "Remove a hook by name from the registry."
   [name]

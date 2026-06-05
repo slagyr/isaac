@@ -167,6 +167,10 @@ Feature: Config Command
     And the exit code is 1
 
   Scenario: validate reports unknown llm api refs with file and valid set
+    # Phase 7 of brth (isaac-ho18): :llm-api-exists? was replaced by
+    # [:registered-in? :isaac.server/llm-api]. The validator's failure
+    # message changed from "unknown api" to the berth-namespaced form,
+    # but bad-value / file / valid-set rendering is preserved.
     Given config file "providers/bogus.edn" containing:
       """
       {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}
@@ -175,7 +179,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                              |
       | providers\.bogus\.api              |
-      | unknown api                         |
+      | must be one of                      |
       | file: config/providers/bogus\.edn   |
       | bad value: carrier-pigeon           |
       | valid: .*chat-completions.*       |
@@ -210,6 +214,11 @@ Feature: Config Command
     And the exit code is 1
 
   Scenario: validate reports unknown provider refs with file and valid set
+    # Phase 7 of brth (isaac-ho18): :provider-exists? was replaced by
+    # [:registered-in? :isaac.server/provider [:providers]]. Wording
+    # shifted from "references undefined provider" to the validator's
+    # "must be one of …" (small accepted set), with valid-set rendering
+    # preserved.
     Given config file "models/grover.edn" containing:
       """
       {:model "claude-opus-4-7" :provider :foo :context-window 200000}
@@ -226,7 +235,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                               |
       | models\.grover\.provider            |
-      | references undefined provider       |
+      | must be one of                        |
       | file: config/models/grover\.edn      |
       | bad value: foo                       |
       | valid: .*anthropic.*grover.*         |

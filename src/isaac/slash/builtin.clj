@@ -153,5 +153,17 @@
    :description  "Show or set session effort (0-10)"
    :handler      handle-effort})
 
-(defn ensure-registered! []
-  (module-loader/activate-core!))
+(defn ensure-registered!
+  "Make sure isaac.core's slash commands are installed in the slash
+   registry. Phase 7 of the berth epic (isaac-ho18) moved slash-command
+   registration into the :isaac.server/slash-commands berth, so the
+   built-ins now flow through the berth's per-entry factory the same
+   way third-party contributions do."
+  []
+  (module-loader/activate-core!)
+  (let [core-entry (get (module-loader/core-index) :isaac.core)
+        contribs   (get-in core-entry [:manifest :isaac.server/slash-commands])
+        register   (some-> 'isaac.slash.registry/register-slash-entry!
+                           requiring-resolve var-get)]
+    (doseq [entry contribs]
+      (register entry))))

@@ -299,38 +299,28 @@
       ;; [:registered-in? :isaac.server/tools] against the live
       ;; module-index, which short-circuits the known-set memoization
       ;; this test covers for the other capabilities.
-      (let [provider-calls (atom 0)
-            crew-calls     (atom 0)
+      (let [crew-calls     (atom 0)
             model-calls    (atom 0)
             comm-calls     (atom 0)
-            api-calls      (atom 0)
             config         {:defaults  {:crew "main" :model "llama"}
                             :crew      {"main" {:model    "llama"
                                                 :provider marigold/starcore}}
                             :models    {"llama" {:provider marigold/starcore}}
                             :providers {marigold/starcore {:api marigold/sky-api}}
                             :comms     {"cli" {:type "console" :crew "main"}}}]
-        (with-redefs-fn {#'isaac.config.loader/known-provider-ids (fn [_]
-                                                                    (swap! provider-calls inc)
-                                                                    [marigold/starcore])
-                         #'isaac.config.loader/known-crew-ids     (fn [_]
-                                                                    (swap! crew-calls inc)
-                                                                    ["main"])
-                         #'isaac.config.loader/known-model-ids    (fn [_]
-                                                                    (swap! model-calls inc)
-                                                                    ["llama"])
-                         #'isaac.config.loader/known-comm-ids     (fn [_]
-                                                                    (swap! comm-calls inc)
-                                                                    ["console"])
-                         #'isaac.config.loader/known-llm-api-ids  (fn [_]
-                                                                    (swap! api-calls inc)
-                                                                    [marigold/sky-api])}
+        (with-redefs-fn {#'isaac.config.loader/known-crew-ids  (fn [_]
+                                                                  (swap! crew-calls inc)
+                                                                  ["main"])
+                         #'isaac.config.loader/known-model-ids (fn [_]
+                                                                  (swap! model-calls inc)
+                                                                  ["llama"])
+                         #'isaac.config.loader/known-comm-ids  (fn [_]
+                                                                  (swap! comm-calls inc)
+                                                                  ["console"])}
           #(should= [] (#'sut/semantic-errors config)))
-        (should= 1 @provider-calls)
         (should= 1 @crew-calls)
         (should= 1 @model-calls)
-        (should= 1 @comm-calls)
-        (should= 1 @api-calls))))
+        (should= 1 @comm-calls))))
 
   (describe "load-entity-file"
 
@@ -596,12 +586,16 @@
                  (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result)))))
 
     (it "rejects model references to a manifest template that is not instantiated in user config"
+      ;; Phase 7 (isaac-ho18): :provider-exists? was replaced by
+      ;; [:registered-in? :isaac.server/provider]. When no providers
+      ;; are instantiated at all, the validator reports an empty-impl
+      ;; berth.
       (marigold/write-config!
                      {:models {(keyword marigold/helm-mark-iii)
                                (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
       (let [result (marigold/load-config)]
         (should= [{:key      (str "models." marigold/helm-mark-iii ".provider")
-                   :value    "references undefined provider"
+                   :value    "no registered impls for berth :isaac.server/provider"
                    :bad-value marigold/helm-systems}]
                  (mapv #(select-keys % [:key :value :bad-value]) (:errors result)))))
 
@@ -627,37 +621,48 @@
         (should= "sk-test" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
     (it "reports unknown providers with the configured provider list"
+      ;; Phase 7 (isaac-ho18): :registered-in? message form when the
+      ;; accepted set is small (≤5 ids).
       (marigold/write-config! {:models    {:mystery {:model           "enigmatic-1"
                                                                       :provider        :foo
                                                                       :context-window  1024}}
                                                 :providers {(keyword marigold/helm-systems) {}
                                                             (keyword marigold/starcore)     {}}})
-      (let [result (marigold/load-config)]
+      (let [result (marigold/load-config)
+            valid  (vec (sort [marigold/helm-systems marigold/starcore]))]
         (should= [{:key          "models.mystery.provider"
-                   :value        "references undefined provider"
+                   :value        (str "must be one of " valid)
                    :bad-value    "foo"
                    :valid-values [marigold/helm-systems marigold/starcore]}]
                  (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
+      ;; Phase 7 (isaac-ho18): :llm-api-exists? was replaced by
+      ;; [:registered-in? :isaac.server/llm-api]. Error wording shifted
+      ;; from "unknown api" to the validator's "must be one of …"
+      ;; (small set) failure; valid-values list is preserved.
       (marigold/write-config!
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
       (let [result     (marigold/load-config)
-            known-apis (->> marigold/baseline-manifest :llm/api keys (map name) sort vec)]
+            known-apis (->> marigold/baseline-manifest :isaac.server/llm-api keys (map name) sort vec)
+            expected-msg (str "must be one of " (vec (sort known-apis)))]
         (should= [{:key          "providers.bogus.api"
-                   :value        "unknown api"
+                   :value        expected-msg
                    :bad-value    "carrier-pigeon"
                    :valid-values known-apis}]
                  (mapv #(select-keys % [:key :value :bad-value :valid-values])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
     (it "rejects providers with an unknown :type target"
+      ;; Phase 7 (isaac-ho18): :manifest-provider-exists? was replaced
+      ;; by [:registered-in? :isaac.server/provider-template].
       (marigold/write-config!
                      {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
       (let [result          (marigold/load-config)
-            known-providers (->> marigold/baseline-manifest :provider keys (map name) sort vec)]
+            known-providers (->> marigold/baseline-manifest :isaac.server/provider-template keys (map name) sort vec)
+            expected-msg    (str "must be one of " (vec (sort known-providers)))]
         (should= [{:key          "providers.dreamy.type"
-                   :value        "references provider not defined in any manifest"
+                   :value        expected-msg
                    :bad-value    "ghost-provider"
                    :valid-values known-providers}]
                  (mapv #(select-keys % [:key :value :bad-value :valid-values])
@@ -922,7 +927,7 @@
                  {:key "defaults.model"      :value "references undefined model"    :bad-value "llama"   :valid-values [marigold/anvil-x]}
                 {:key "cron.nightly.crew"   :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
                  {:key (str "models." marigold/anvil-x ".provider")
-                  :value "references undefined provider" :bad-value "imaginarium" :valid-values []}]
+                  :value "no registered impls for berth :isaac.server/provider" :bad-value "imaginarium" :valid-values []}]
                (mapv #(select-keys % [:key :value :bad-value :valid-values])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {test-crew {:model "phantom"}}
@@ -1026,13 +1031,14 @@
     (marigold/aboard)
 
     (def kombucha-manifest
-      (pr-str {:id       :isaac.providers.kombucha
-               :version  "0.1.0"
-               :provider {:kombucha {:template {:api      "chat-completions"
-                                                :base-url "https://api.kombucha.test/v1"
-                                                :auth     "api-key"
-                                                :models   ["kombucha-large"]}
-                                     :schema   {:fizz-level {:type :int}}}}}))
+      (pr-str {:id      :isaac.providers.kombucha
+               :version "0.1.0"
+               :isaac.server/provider-template
+               {:kombucha {:template {:api      "chat-completions"
+                                      :base-url "https://api.kombucha.test/v1"
+                                      :auth     "api-key"
+                                      :models   ["kombucha-large"]}
+                           :schema   {:fizz-level {:type :int}}}}}))
 
     (defn- write-kombucha-module! []
       (fs/mkdirs (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.providers.kombucha"))
@@ -1241,11 +1247,12 @@
     (marigold/aboard)
 
     (def echo-manifest
-      (pr-str {:id             :isaac.slash.echo
-               :version        "0.1.0"
-               :slash-commands {:echo {:factory 'isaac.slash.echo/echo-command
-                                       :schema  {:command-name {:type :string
-                                                                :coercions [[:default "echo"]]}}}}}))
+      (pr-str {:id      :isaac.slash.echo
+               :version "0.1.0"
+               :isaac.server/slash-commands
+               {:echo {:factory 'isaac.slash.echo/echo-command
+                       :schema  {:command-name {:type :string
+                                                :coercions [[:default "echo"]]}}}}}))
 
     (defn- write-echo-module! []
       (fs/mkdirs (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo"))
