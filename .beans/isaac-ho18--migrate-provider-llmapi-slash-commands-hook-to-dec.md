@@ -1,13 +1,11 @@
 ---
 # isaac-ho18
 title: Migrate :provider, :llm/api, :slash-commands, :hook to declared berths (phase 7)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:52:21Z
-updated_at: 2026-06-05T13:38:25Z
+updated_at: 2026-06-05T13:46:13Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
