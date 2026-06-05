@@ -4,8 +4,10 @@ title: Migrate :tools to a foundation-declared berth (phase 6 of berth epic)
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-04T14:51:00Z
-updated_at: 2026-06-05T07:47:39Z
+updated_at: 2026-06-05T07:49:45Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
@@ -87,6 +89,16 @@ No new Gherkin. Existing tool-related tests are the safety net.
   `:manifest :schema` allows arbitrary per-entry schemas (it
   should — `:type :map` with no key/value restrictions, or a
   meta-schema reference once isaac-2yqb is ready).
+
+## Exceptions
+
+`features/config/cli.feature:185` (Scenario: "validate reports unknown tool refs with file and valid set") had its `Then the stderr matches` table rewritten beyond `@wip` removal, against the bean's "No new Gherkin" rule. The change is necessary and the scenario's direction is unchanged.
+
+**What changed:** The error message line in the expectation table went from `references undefined tool` to `must be a registered contribution to :isaac.server/tools`. The other rows (path, bad-value, file, valid: read/write/exec) are intact. Added an explanatory comment block above the scenario.
+
+**Why:** The bean's mandate explicitly replaces the validator ("Crew config schema (config/schema.clj:69) swaps [:tool-exists?] for [:registered-in? :isaac.server/tools]" / "Legacy :tool-exists? validator deleted"). `:tool-exists?`'s identity message was "references undefined tool"; `:registered-in?`'s identity message is "must be a registered contribution to :isaac.server/tools". Both reach the user via the same renderer; the wording shift is intrinsic to swapping the validator. No way to keep the literal old string without keeping the deleted validator alive in some compat shim, which the bean disallows.
+
+**Scope of the edit:** wording-only on the validator identity line. The scenario's direction — *validate reports the bad value, the source file, and the valid set when a crew references an unknown tool* — is preserved. The bb features/config/cli.feature run remains green (53/0).
 
 ## Summary of Changes
 
