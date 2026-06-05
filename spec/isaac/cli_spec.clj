@@ -4,6 +4,7 @@
     [isaac.cli :as sut]
     [isaac.main :as main]
     [isaac.fs :as fs]
+    [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
@@ -144,6 +145,12 @@
         (binding [*out* (StringWriter.)
                   *err* (StringWriter.)
                   *fs*  mem]
+          ;; Phase 4 of the berth epic: init no longer side-effect-
+          ;; registers at isaac.cli load time — it's a foundation
+          ;; manifest :cli contribution. Process core's berths so
+          ;; tests see init in the registry without going through
+          ;; main/run first.
+          (module-loader/process-manifest-berths! (module-loader/core-index))
           (example)))))
 
   (it "registers the init command"

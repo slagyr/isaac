@@ -9,4 +9,7 @@
                               :validations [:present?]}}}}
  :marigold.bridge/signal-route [{:method  :get
                                   :path    "/longwave/ping"
-                                  :handler marigold.longwave/ping-handler}]}
+                                  :handler marigold.longwave/ping-handler}]
+ :marigold.bridge/cli         [{:name   "longwave-ping"
+                                  :desc   "Print pong."
+                                  :run-fn marigold.longwave/longwave-ping-run-fn}]}

@@ -156,14 +156,61 @@
       0)
     (init-run {:display-root display-root :root root :fs fs})))
 
-(register!
-  {:name      "init"
-   :usage     "init"
-   :desc      "Scaffold a default Isaac config"
-   :help-text init-help
-   :run-fn    init-run-fn})
-
 ;; endregion ^^^^^ Init Command ^^^^^
+
+;; region ----- Berth registration factory -----
+;;
+;; Phase 4 of the berth epic: `:cli` is now a berth declared by
+;; isaac.core's manifest. The berth's per-entry factory (called by
+;; isaac.module.loader/process-manifest-berths!) is this fn. It
+;; resolves the entry's symbol-valued :run-fn / :help-text and
+;; registers a command spec with the registry above.
+
+(defn- maybe-resolve [sym]
+  (when (symbol? sym) (some-> sym requiring-resolve var-get)))
+
+(defonce ^:private berth-command-names* (atom #{}))
+
+(defn clear-berth-commands!
+  "Drop every command previously installed by register-cli-command!.
+   Called by register-module-cli-commands! at the start of each
+   invocation so stale contributions (modules removed from user
+   config since the last run) don't survive in the registry. Commands
+   registered statically (e.g., isaac.llm.auth.cli at namespace load)
+   are unaffected."
+  []
+  (let [names @berth-command-names*]
+    (swap! commands #(apply dissoc % names))
+    (reset! berth-command-names* #{})))
+
+(defn register-cli-command!
+  "Per-entry factory for the :cli berth. Each contribution entry is a
+   map describing a CLI command — name + desc + (symbol-valued)
+   run-fn / help-text. Resolves the symbols and registers the
+   command, leaving the existing register! semantics intact. Wraps
+   the run-fn in --help handling so module-supplied commands get a
+   per-command help page for free (matches the old
+   register-module-command! shape)."
+  [{:keys [name desc usage run-fn help-text]}]
+  (let [resolved-run-fn   (maybe-resolve run-fn)
+        resolved-help-fn  (maybe-resolve help-text)
+        cmd               (cond-> {:name name}
+                            desc             (assoc :desc desc)
+                            usage            (assoc :usage usage)
+                            resolved-run-fn  (assoc :run-fn  resolved-run-fn)
+                            resolved-help-fn (assoc :help-text resolved-help-fn))
+        wrapped-run-fn    (when resolved-run-fn
+                            (let [help-cmd (dissoc cmd :run-fn)]
+                              (fn [{:keys [_raw-args] :as opts}]
+                                (if (some #{"--help" "-h"} (or _raw-args []))
+                                  (do (println (command-help help-cmd)) 0)
+                                  (resolved-run-fn opts)))))
+        final-cmd         (cond-> cmd
+                            wrapped-run-fn (assoc :run-fn wrapped-run-fn))]
+    (swap! berth-command-names* conj name)
+    (register! final-cmd)))
+
+;; endregion ^^^^^ Berth registration factory -----
 
 ;; region ----- Module Command Management -----
 

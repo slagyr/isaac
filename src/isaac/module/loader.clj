@@ -346,12 +346,6 @@
         spec      (factory (user-config :tools tool-name))]
     ((handler-for :tools) (assoc spec :name tool-name))))
 
-(defn register-cli-extension! [_cli-id extension]
-  (let [factory (resolve-symbol! (:factory extension))
-        spec    (cond-> (factory)
-                  (:description extension) (assoc :desc (:description extension)))]
-    (cli/register-module-command! spec)))
-
 (defn- register-slash-extension! [command-id extension]
   (let [command-id (name command-id)
         factory    (resolve-symbol! (:factory extension))
@@ -371,15 +365,16 @@
         ((handler-for :route) method path resolved-handler)))))
 
 (defn- register-extensions! [manifest]
-  (doseq [kind [:llm/api :comm :tools :slash-commands :hook :cli]
+  ;; :cli is no longer here — phase 4 of the berth epic moved CLI
+  ;; installation into the berth pass (process-manifest-berths!).
+  (doseq [kind [:llm/api :comm :tools :slash-commands :hook]
           [extension-id extension] (get manifest kind)]
     (case kind
       :llm/api        (register-api-extension! extension-id extension)
       :comm           (register-comm-extension! extension-id extension)
       :tools          (register-tool-extension! extension-id extension)
       :slash-commands (register-slash-extension! extension-id extension)
-      :hook           nil
-      :cli            (register-cli-extension! extension-id extension)))
+      :hook           nil))
   (register-route-extensions! manifest))
 
 (defn- call-bootstrap! [bootstrap]

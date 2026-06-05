@@ -374,16 +374,11 @@
         (should-throw clojure.lang.ExceptionInfo
                       (sut/activate! :isaac.routes.bibelot module-index))))
 
-    (it "registers cli commands from manifest :cli entries"
-      (let [greeter-dir  (str (System/getProperty "user.dir") "/modules/isaac.cli.greeter")
-             module-index {:isaac.cli.greeter {:coord {:local/root greeter-dir}
-                                               :path greeter-dir
-                                               :manifest {:cli {:greet {:factory 'isaac.cli.greeter/make-command
-                                                                        :description "Print a greeting"}}}}}]
-        (sut/activate! :isaac.cli.greeter module-index)
-        (let [cmd (cli-registry/get-command "greet")]
-          (should-not-be-nil cmd)
-          (should= "Print a greeting" (:desc cmd)))))
+    ;; activate! used to register manifest :cli entries via
+    ;; register-cli-extension!. Phase 4 of the berth epic moved :cli
+    ;; into the berth pass (process-manifest-berths!), so the
+    ;; activate!-side handling is gone. Coverage for the new path
+    ;; lives under the "process-manifest-berths!" describe above.
 
     (it "does not add the same local/root deps twice across activation resets"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")

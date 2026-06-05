@@ -31,16 +31,21 @@
             :factory       {:type :symbol}
             :berths        {:type :ignore}
             :deps          {:type :ignore}
+            ;; :cli is no longer a hardcoded extension kind — it's a berth
+            ;; (declared by isaac.core's manifest under :berths) and
+            ;; contributions flow through process-manifest-berths!. Stays
+            ;; ignored at the schema layer so existing manifests that put
+            ;; :cli at the top level still parse.
+            :cli           {:type :ignore}
             :comm          kind-entry-spec
             :slash-commands kind-entry-spec
             :tools         kind-entry-spec
             :llm/api       kind-entry-spec
             :provider      kind-entry-spec
-            :hook          kind-entry-spec
-            :cli           kind-entry-spec}})
+            :hook          kind-entry-spec}})
 
-(def ^:private known-meta-keys #{:berths :bootstrap :deps :description :factory :id :route :version})
-(def ^:private known-extend-kinds #{:cli :comm :hook :llm/api :provider :slash-commands :tools})
+(def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :route :version})
+(def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-commands :tools})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
 (defn- validate-bootstrap! [path manifest]
@@ -91,20 +96,28 @@
       :value "must be a map"}]
 
     :else
-    (vec
-      (mapcat
-        (fn [[k v]]
-          (cond-> []
-            (not (qualified-keyword? k))
-            (conj {:key   (berths-key-prefix id k)
-                   :value "berth key must be a namespaced keyword"})
+    ;; Foundational berths declared by isaac.core (e.g., :cli, :route,
+    ;; :tools — the well-known names that ship with the platform) are
+    ;; permitted as un-namespaced keywords. Third-party modules must
+    ;; namespace their berth ids so two modules can't accidentally
+    ;; collide on a generic name.
+    (let [core?     (= :isaac.core id)
+          allowed?  (fn [k] (or (qualified-keyword? k)
+                                 (and core? (keyword? k))))]
+      (vec
+        (mapcat
+          (fn [[k v]]
+            (cond-> []
+              (not (allowed? k))
+              (conj {:key   (berths-key-prefix id k)
+                     :value "berth key must be a namespaced keyword"})
 
-            (and (qualified-keyword? k)
-                 (or (not (map? v))
-                     (str/blank? (str (:description v)))))
-            (conj {:key   (str (berths-key-prefix id k) ".description")
-                   :value "must be present"})))
-        berths))))
+              (and (allowed? k)
+                   (or (not (map? v))
+                       (str/blank? (str (:description v)))))
+              (conj {:key   (str (berths-key-prefix id k) ".description")
+                     :value "must be present"})))
+          berths)))))
 
 (defn- collect-deps-errors [id deps]
   (cond

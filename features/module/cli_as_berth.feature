@@ -1,4 +1,3 @@
-@wip
 Feature: :cli declared as a berth (phase 4 of the berth epic)
   Phase 4 of isaac-brth: re-declare `:cli` as a normal berth so the
   same mechanism third-party modules use can host isaac's own

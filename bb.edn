@@ -4,7 +4,13 @@
          ;; to be on the classpath because tests no-op add-module-deps!
          ;; rather than letting tools.deps fetch + extend the path.
          "spec/marigold/bridge/src"
-         "spec/marigold/longwave/src"]
+         "spec/marigold/longwave/src"
+         ;; resources/isaac-manifest.edn for each fixture — needed for
+         ;; classpath-based manifest discovery from main's CLI dispatch
+         ;; path (the test stubs the loader's resolve-manifest-resource
+         ;; only inside config_steps).
+         "spec/marigold/bridge/resources"
+         "spec/marigold/longwave/resources"]
 
  :deps  {clj-mutate/clj-mutate                 {:git/url "https://github.com/slagyr/clj-mutate"
                                                 :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}

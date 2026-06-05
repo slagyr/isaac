@@ -16,3 +16,10 @@
 (defn ping-handler [_request]
   {:status 200
    :body   "pong"})
+
+(defn longwave-ping-run-fn
+  "Run-fn for the longwave-ping CLI command (contributed via the
+   :marigold.bridge/cli berth). Prints \"pong\" and returns exit 0."
+  [_opts]
+  (println "pong")
+  0)

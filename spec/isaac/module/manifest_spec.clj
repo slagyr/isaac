@@ -104,11 +104,10 @@
         (fs/spit mem path (pr-str pigeon-manifest))
         (should= pigeon-manifest (sut/read-manifest path mem))))
 
-    (it "rejects cli manifest entry missing :factory"
-      (spit (.getPath @tmp-file)
-            (pr-str {:id :foo :version "1.0"
-                     :cli {:greet {:description "no factory here"}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
+    ;; Phase 4 of the berth epic: :cli is now a berth, not a hardcoded
+    ;; extension kind. Per-entry :factory presence is enforced by the
+    ;; berth's :manifest :schema rather than by read-manifest itself,
+    ;; so the manifest reader no longer rejects this shape outright.
 
     (it "rejects v1 manifests that use :extends"
       (spit (.getPath @tmp-file)

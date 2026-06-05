@@ -16,6 +16,8 @@
    :option-spec []
    :run-fn      (fn [_] 0)})
 
+(defn greet-run-fn [_opts] 0)
+
 (describe "Main CLI"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
@@ -195,24 +197,28 @@
         (example)
         (registry/clear-module-commands!)))
 
-    (it "clears stale module commands before re-discovery"
-      (registry/register-module-command! {:name "stale-cmd" :desc "old" :usage "stale-cmd"
-                                          :option-spec [] :run-fn (fn [_] 0)})
-      (should-not-be-nil (registry/get-command "stale-cmd"))
-      (binding [sut/*extra-opts* {:root (str (System/getProperty "user.dir") "/target/test-state")}]
-        (with-out-str (sut/run ["--help"])))
-      (should-be-nil (registry/get-command "stale-cmd")))
-
-    (it "reads module cli config from an explicit fs"
+    (it "reads module cli config from an explicit fs and registers berth contributions"
       (let [mem         (fs/mem-fs)
             config-path "/tmp/home/.isaac/config/isaac.edn"]
         (fs/mkdirs mem "/tmp/home/.isaac/config")
         (fs/spit mem config-path "{:modules {:hello {}}}")
-        (with-redefs [module-loader/discover! (fn [config context]
-                                                (should= {:modules {:hello {}}} config)
-                                                (should= {:cwd (System/getProperty "user.dir")} context)
-                                                {:index {:hello {:manifest {:cli {:greet {:factory 'isaac.main-spec/make-greet-command
-                                                                                          :description "Greets"}}}}}})]
+        (with-redefs [module-loader/discover!
+                      (fn [config context]
+                        (should= {:modules {:hello {}}} config)
+                        (should= {:cwd (System/getProperty "user.dir")} context)
+                        ;; Mock both the berth declaration (on core) and a
+                        ;; contribution from the user module.
+                        {:index {:isaac.core {:manifest {:id      :isaac.core
+                                                         :version "1"
+                                                         :berths  {:cli {:description "CLI commands"
+                                                                         :manifest     {:schema {:type :seq
+                                                                                                 :spec {:type    :map
+                                                                                                        :factory 'isaac.cli/register-cli-command!}}}}}}}
+                                 :hello      {:manifest {:id      :hello
+                                                         :version "1"
+                                                         :cli     [{:name "greet" :desc "Greets"
+                                                                    :usage "greet"
+                                                                    :run-fn 'isaac.main-spec/greet-run-fn}]}}}})]
           (@#'sut/register-module-cli-commands! "/tmp/home/.isaac" mem))
         (should-not-be-nil (registry/get-command "greet"))
         (should= "Greets" (:desc (registry/get-command "greet")))))

@@ -1,11 +1,11 @@
 ---
 # isaac-qpgy
 title: :cli re-declared as a berth (phase 4 of berth epic)
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-04T14:43:34Z
-updated_at: 2026-06-04T14:43:48Z
+updated_at: 2026-06-05T06:13:30Z
 parent: isaac-brth
 blocked_by:
     - isaac-htkp
@@ -120,3 +120,36 @@ isaac-jr64 / isaac-8yxs, extended:
 - Touch `isaac.main/register-module-cli-commands!` too — it has its
   own discovery pass that pre-dates berths. Decide if it still
   earns its keep or if the berth pass subsumes it.
+
+## Summary of Changes
+
+### Phase 4a — `:cli` declared as a berth in core
+
+- **`src/isaac-manifest.edn`**: `:berths {:cli {:description …  :manifest {:schema {:type :seq :spec {:type :map :factory isaac.cli/register-cli-command! :schema {…}}}}}}`. The berth's entry-level factory wires each contribution into the registry.
+- **`src/isaac/module/manifest.clj`**: removed `:cli` from `known-extend-kinds`, kept it as a known meta-key with `{:type :ignore}` so legacy manifests with top-level `:cli` still parse. Relaxed `collect-berth-errors` so isaac.core may declare un-namespaced foundational berths (`:cli`/`:route`/`:tools`); third-party modules still must namespace their berths.
+- **`src/isaac/module/loader.clj`**: dropped `register-cli-extension!` and the `:cli` case from `register-extensions!`. CLI contributions now flow exclusively through `process-manifest-berths!`.
+- **`src/isaac/main.clj`**: `register-module-cli-commands!` rewritten to (a) read user config opportunistically, (b) call `discover!` inside a nested-nexus wrap so it sees `mem-fs`, (c) exit the wrap before invoking `process-manifest-berths!` (so the berth's registry writes survive the wrap's `install! previous` restore), and (d) call `clear-berth-commands!` first so stale module contributions don't survive a re-run.
+
+### Phase 4b — `init` as a manifest contribution
+
+- **`src/isaac/cli.clj`**: removed the static `(register! {:name "init" …})` side effect. Added `register-cli-command!` (the berth's per-entry factory) which resolves symbol-valued `:run-fn`/`:help-text` and registers a command spec. The run-fn is wrapped with generic `--help` handling so module-supplied commands get a per-command help page the same way `register-module-command!` did. Added `clear-berth-commands!` that drops only commands previously installed by `register-cli-command!` (statically-registered commands are unaffected).
+- **`src/isaac-manifest.edn`**: `:cli [{:name "init" :usage "init" :desc "…" :run-fn isaac.cli/init-run-fn :help-text isaac.cli/init-help}]`. The foundation manifest's :cli vector is the source of truth.
+
+### Tests / fixtures
+
+- **`features/module/cli_as_berth.feature`**: `@wip` removed. The longwave-ping scenario now passes.
+- **`spec/marigold/bridge`**: declares its own `:marigold.bridge/cli` manifest-only berth + factory `marigold.bridge.cli/register-cli-command!` (mirror of core's, with a namespaced berth id so it exercises the htkp-validated path).
+- **`spec/marigold/longwave`**: contributes `longwave-ping` to that berth via `marigold.longwave/longwave-ping-run-fn`.
+- **`bb.edn`**: `spec/marigold/{bridge,longwave}/resources` added to `:paths` so the fixture manifests are discoverable on the classpath when main runs in-process.
+- **`modules/isaac.cli.greeter`**: updated to the new `:cli [{…}]` seq shape (was the old `{:cli {<id> {:factory …}}}` map). Run-fn is the existing `isaac.cli.greeter/run-fn` (no factory layer needed — register-cli-command! does the work).
+- **`spec/isaac/cli_spec.clj`** (CLI Init): the (around) block now calls `process-manifest-berths!` over `core-index` so the registry is seeded with init before each test (replaces the old auto-registration via namespace load).
+- **`spec/isaac/main_spec.clj`**: "reads module cli config from an explicit fs" updated to mock the discover! result with both the berth declaration (on `:isaac.core`) and a contribution from `:hello`. The obsolete "clears stale module commands before re-discovery" test removed — clearing is now handled by `clear-berth-commands!`, which gets coverage via the integration path.
+- **`spec/isaac/module/loader_spec.clj`** and **`spec/isaac/module/manifest_spec.clj`**: removed obsolete tests covering the activate-time `:cli` path and the strict `read-manifest`-level `:cli` validation (now delegated to the berth's manifest schema).
+
+### Acceptance checks
+
+- `bb spec`: 1853 examples, 0 failures.
+- `bb features`: 743 examples, 0 failures.
+- `grep :cli src/isaac/module/manifest.clj`: not in `known-extend-kinds`.
+- `grep 'register!.*"init"' src/isaac/cli.clj`: none (static registration gone).
+- `grep register-cli-extension src/isaac/module/loader.clj`: none.

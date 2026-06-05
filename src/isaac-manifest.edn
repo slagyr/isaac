@@ -1,6 +1,27 @@
 {:id             :isaac.core
  :version        "0.1.0"
  :factory        isaac.core/create-module
+
+ ;; :cli is a berth (phase 4 of the berth epic). Built-ins and module
+ ;; contributions ride the same shape — each entry carries the command
+ ;; spec; the entry-level factory resolves the symbol-valued :run-fn /
+ ;; :help-text and registers the command with isaac.cli's registry.
+ :berths         {:cli {:description "CLI commands installed into the top-level isaac command registry."
+                        :manifest    {:schema {:type :seq
+                                                 :spec {:type    :map
+                                                        :factory isaac.cli/register-cli-command!
+                                                        :schema  {:name      {:type :string :validations [:present?]}
+                                                                  :desc      {:type :string}
+                                                                  :usage     {:type :string}
+                                                                  :run-fn    {:type :symbol}
+                                                                  :help-text {:type :symbol}}}}}}}
+
+ :cli            [{:name      "init"
+                   :usage     "init"
+                   :desc      "Scaffold a default Isaac config"
+                   :run-fn    isaac.cli/init-run-fn
+                   :help-text isaac.cli/init-help}]
+
  :route          {[:post "/hail/send"] isaac.hail.http/handler
                   [:post "/hooks/*"]   isaac.hooks/handler}
 

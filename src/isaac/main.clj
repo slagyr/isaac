@@ -34,21 +34,34 @@
     (coll? x)   (mapv substitute-env x)
     :else        x))
 
-(defn- register-module-cli-commands! [root fs*]
-  (registry/clear-module-commands!)
+(defn- read-user-config [root fs*]
   (when root
     (let [config-file (paths/root-config-file root)]
       (when (fs/exists? fs* config-file)
-        (try
+        (try (substitute-env (edn/read-string (fs/slurp fs* config-file)))
+             (catch Exception _ nil))))))
+
+(defn- register-module-cli-commands!
+  "Phase 4 of the berth epic: `:cli` is now a berth, so all CLI
+   contributions — built-in (core's `:cli [...]`) and module-supplied
+   alike — flow through process-manifest-berths!. discover! always
+   merges :isaac.core into the index, so core's :cli contributions
+   (the built-in commands) register on every invocation, even when
+   no user config exists. We bracket discover! in -with-nested-nexus
+   so it sees mem-fs (when set), but process-manifest-berths! has to
+   run AFTER the wrap exits or its side-effects (CLI registry
+   installations) would be inside the wrap's restore scope."
+  [root fs*]
+  (try
+    (let [config  (or (read-user-config root fs*) {})
+          context {:cwd (System/getProperty "user.dir")}
+          {:keys [index]}
           (nexus/-with-nested-nexus {:fs fs*}
-            (let [config  (substitute-env (edn/read-string (fs/slurp fs* config-file)))
-                  context {:cwd (System/getProperty "user.dir")}
-                  {:keys [index]} (module-loader/discover! config context)]
-              (doseq [[_mod-id entry] index
-                      [cli-id cli-ext] (get-in entry [:manifest :cli])]
-                (module-loader/register-cli-extension! cli-id cli-ext))))
-          (catch Exception _
-            nil))))))
+            (module-loader/discover! config context))]
+      (registry/clear-berth-commands!)
+      (module-loader/process-manifest-berths! index))
+    (catch Exception _
+      nil)))
 
 (defn- usage []
   (let [cmds (registry/all-commands)
