@@ -4,10 +4,8 @@ title: Migrate :provider, :llm/api, :slash-commands, :hook to declared berths (p
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:52:21Z
-updated_at: 2026-06-05T09:00:37Z
+updated_at: 2026-06-05T13:36:52Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
@@ -214,3 +212,9 @@ Used for the `:provider` swap: `[[:registered-in? :isaac.server/provider [:provi
 - `bb features`: 743 examples, 0 failures.
 - `rg 'register-handler!.*:provider|register-handler!.*:llm/api|register-handler!.*:slash-commands|register-handler!.*:hook' src/` — zero hits.
 - Every isaac-* repo's manifest is free of the legacy four extension kinds.
+
+
+
+## Verification
+
+2026-06-05: Verification failed after the test gate passed. Full tests are green, but acceptance still misses a literal grep: rg ':provider-exists\?|:llm-api-exists\?' src/ is not zero-hit because src/isaac/config/loader.clj still contains a migration comment mentioning :llm-api-exists? and :provider-exists? at the existence-refs table. Acceptance explicitly requires zero hits, not zero functional references, so that stale comment blocks verification. Other checks passed on this rerun: bb spec 1849 examples / 0 failures / 3547 assertions; bb features 743 examples / 0 failures / 1644 assertions; and rg 'register-handler!.*:provider|register-handler!.*:llm/api|register-handler!.*:slash-commands|register-handler!.*:hook' src/ was zero-hit.
