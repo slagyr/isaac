@@ -4,10 +4,8 @@ title: Migrate :tools to a foundation-declared berth (phase 6 of berth epic)
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-04T14:51:00Z
-updated_at: 2026-06-05T07:43:23Z
+updated_at: 2026-06-05T07:47:39Z
 parent: isaac-brth
 blocked_by:
     - isaac-8yxs
@@ -135,3 +133,9 @@ No new Gherkin. Existing tool-related tests are the safety net.
 ### Out of scope
 
 - The user-config `:tools` slot at `config/schema.clj:431` (governs `:allow` / `:directories` / `:defaults`) keeps its top-level key — that's the user surface, not a manifest extension. Renaming it would be a UX change.
+
+
+
+## Verification
+
+2026-06-05: Verification failed. Acceptance check 1 failed before the test gate. The bean says 'No new Gherkin' and has no top-level Exceptions section, but features/config/cli.feature was edited after the worker handoff in ways beyond @wip removal. The scenario 'validate reports unknown tool refs with file and valid set' gained explanatory comments and rewrote every stderr expectation line to the new validator wording. That substantive feature-file edit needs an explicit bean exception before re-handoff.
