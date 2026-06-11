@@ -3,44 +3,62 @@
   (:refer-clojure :exclude [error-handler])
   (:require
     [c3kit.apron.util :as util]
-    [clojure.string :as str]))
+    [clout.core :as clout]))
 
-(def ^:dynamic *registry* (atom {}))
+;; The registry holds two collections. Exact routes — keyed by
+;; [method uri] — stay an O(1) hash lookup on the hot path. Pattern
+;; routes — clout-compiled — fall back as a linear scan when the
+;; exact map misses.
+(def ^:dynamic *registry* (atom {:exact {} :patterns []}))
 
-(defn fresh-registry [] {})
+(defn fresh-registry [] {:exact {} :patterns []})
+
+(defn- pattern-string? [uri]
+  (or (re-find #":[A-Za-z_][A-Za-z0-9_-]*" uri)
+      (.contains ^String uri "*")))
 
 (defn register-route!
-  ([method uri handler]
-   (swap! *registry* assoc [method uri] {:handler handler})
-   [method uri]))
-
-(defn register-prefix-route!
-  "Register a handler for all requests whose URI begins with uri-prefix."
-  ([uri-prefix handler]
-   (swap! *registry* assoc [:prefix uri-prefix] {:handler    handler
-                                                 :uri-prefix uri-prefix})
-   [:prefix uri-prefix]))
+  "Register a handler at `[method uri]`. `uri` may be a literal path
+   (lands in the exact-match map) or a clout pattern with `:name`
+   params and/or `*` wildcards (lands in the pattern list). `method`
+   may be a keyword (`:get`, `:post`, …) or `:*` for any-method.
+   Returns the registration key for chaining."
+  [method uri handler]
+  (if (pattern-string? uri)
+    (let [pattern (clout/route-compile uri)
+          entry   {:method  method
+                   :uri     uri
+                   :pattern pattern
+                   :handler handler}]
+      (swap! *registry*
+             (fn [reg]
+               (update reg :patterns
+                       (fn [patterns]
+                         (-> (remove #(and (= method (:method %))
+                                           (= uri (:uri %)))
+                                     patterns)
+                              (concat [entry])
+                              vec)))))
+      [method uri])
+    (do
+      (swap! *registry* assoc-in [:exact [method uri]] {:handler handler})
+      [method uri])))
 
 (defn- maybe-resolve [sym]
   (when (symbol? sym) (util/resolve-var sym)))
 
 (defn register-route-entry!
   "Per-entry factory for the :isaac.server/route berth. Each entry is
-   `{:method :get :path \"/x\" :handler isaac.foo/handler}`; resolves
-   the symbol-valued :handler and installs the route. Phase 5 of the
-   berth epic replaced the old module-loader/register-handler!
-   dispatch with this direct factory."
+   `{:method :get :path \"/x\" :handler isaac.foo/handler}`. Both
+   literal paths and clout patterns (`/foo/:bar`, `/hooks/*`) flow
+   through register-route!. `:method` may be `:*` for any-method."
   [{:keys [method path handler]}]
   (register-route! method path (maybe-resolve handler)))
 
-(defn register-prefix-route-entry!
-  "Per-entry factory for the :isaac.server/route-prefix berth. Each
-   entry is `{:prefix \"/foo/\" :handler isaac.foo/handler}`."
-  [{:keys [prefix handler]}]
-  (register-prefix-route! prefix (maybe-resolve handler)))
-
 (defn route-registered? [method uri]
-  (contains? @*registry* [method uri]))
+  (let [{:keys [exact patterns]} @*registry*]
+    (or (contains? exact [method uri])
+        (boolean (some #(and (= method (:method %)) (= uri (:uri %))) patterns)))))
 
 (def ^:private not-found
   {:status 404 :headers {"Content-Type" "text/plain"} :body "Not found"})
@@ -62,22 +80,26 @@
   (let [handler (resolve-handler handler)]
     (handler request)))
 
-(defn- dispatch-exact-route [table request]
+(defn- method-matches? [route-method request-method]
+  (or (= :* route-method) (= route-method request-method)))
+
+(defn- dispatch-exact [table request]
   (some-> (get table [(:request-method request) (:uri request)])
           (invoke-route request)))
 
-(defn- dispatch-prefix-routes [registry request]
-  (some (fn [[key route]]
-          (when (and (= :prefix (first key))
-                     (str/starts-with? (:uri request) (:uri-prefix route)))
-            (invoke-route route request)))
-        registry))
+(defn- dispatch-pattern [patterns request]
+  (some (fn [{:keys [pattern method] :as entry}]
+          (when (method-matches? method (:request-method request))
+            (when-let [params (clout/route-matches pattern request)]
+              (invoke-route entry (assoc request :route-params params)))))
+        patterns))
 
 (defn- dispatch-request [request]
-  (or (dispatch-exact-route @*registry* request)
-      (dispatch-exact-route built-in-routes request)
-      (dispatch-prefix-routes @*registry* request)
-      not-found))
+  (let [{:keys [exact patterns]} @*registry*]
+    (or (dispatch-exact exact request)
+        (dispatch-exact built-in-routes request)
+        (dispatch-pattern patterns request)
+        not-found)))
 
 (defn handler
   ([request]

@@ -53,10 +53,10 @@
   ;; Phase 5 of the berth epic (isaac-8v1n): routes are now berth
   ;; contributions, not a top-level extension kind. Per-entry shape
   ;; validation moved to the berth's :manifest :schema.
-  {:id                         :isaac.routes.bibelot
-   :version                    "0.1.0"
-   :isaac.server/route         [{:method :get :path "/status" :handler 'isaac.server.status/handle}]
-   :isaac.server/route-prefix  [{:prefix "/hooks/" :handler 'isaac.hooks/handler}]})
+  {:id                 :isaac.routes.bibelot
+   :version            "0.1.0"
+   :isaac.server/route [{:method :get :path "/status"  :handler 'isaac.server.status/handle}
+                        {:method :*   :path "/hooks/*" :handler 'isaac.hooks/handler}]})
 
 (def cli-manifest
   {:id      :isaac.cli.greeter

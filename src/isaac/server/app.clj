@@ -178,9 +178,9 @@
             ;; nested-nexus wrap — that wrap restores the prior nexus
             ;; state on exit, which would discard the factories' writes.
             ;;
-            ;; Phase 5 of brth (isaac-8v1n): the :isaac.server/route and
-            ;; :isaac.server/route-prefix berths also flow through here,
-            ;; replacing the explicit register-route-extensions! pass.
+            ;; Phase 5 of brth (isaac-8v1n): the :isaac.server/route
+            ;; berth also flows through here, replacing the explicit
+            ;; register-route-extensions! pass.
             _                       (module-loader/process-manifest-berths! module-index)
             _                       (module-loader/start-modules! module-index)
             _                       (config/install-config-berths! {:config cfg :module-index module-index})

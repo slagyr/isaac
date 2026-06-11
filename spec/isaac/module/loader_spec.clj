@@ -366,12 +366,12 @@
             (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
 
     ;; Phase 5 of the berth epic (isaac-8v1n): route registration moved
-    ;; out of activate! entirely. The :isaac.server/route and
-    ;; :isaac.server/route-prefix berths flow through
-    ;; process-manifest-berths! (covered in that describe block above),
-    ;; and the per-entry factory (isaac.server.routes/register-route-entry!)
-    ;; is a thin shim around register-route!. The activate!-side tests
-    ;; that lived here are gone with the dispatch they tested.
+    ;; out of activate! entirely. The :isaac.server/route berth flows
+    ;; through process-manifest-berths! (covered in that describe
+    ;; block above), and the per-entry factory
+    ;; (isaac.server.routes/register-route-entry!) is a thin shim around
+    ;; register-route!. The activate!-side tests that lived here are
+    ;; gone with the dispatch they tested.
 
     ;; activate! used to register manifest :cli entries via
     ;; register-cli-extension!. Phase 4 of the berth epic moved :cli

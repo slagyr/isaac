@@ -40,17 +40,20 @@
     (let [response (sut/handler {:request-method :get :uri "/status"})]
       (should= 200 (:status response))))
 
-  (it "registers the hooks route from the core manifest's route-prefix berth"
+  (it "registers the hooks route from the core manifest's :isaac.server/route berth"
     ;; Phase 5 of brth (isaac-8v1n): routes flow through
-    ;; process-manifest-berths! instead of activate!'s
-    ;; register-extensions! pass.
+    ;; process-manifest-berths!. Phase 5b (isaac-v5js) folded
+    ;; route-prefix into route — the hooks contribution is now a
+    ;; clout `/hooks/*` pattern with :method :*, so the matched
+    ;; suffix lands at :route-params {:* "bibelot"}.
     (with-redefs [isaac.hooks/handler (fn [request]
                                         {:status 204 :body request})]
       (module-loader/clear-activations!)
       (let [request {:request-method :post :uri "/hooks/bibelot"}
             opts    {:cfg {:mode :test}}]
         (module-loader/process-manifest-berths! (module-loader/core-index))
-        (should= {:status 204 :body (assoc request :config {:mode :test})}
+        (should= {:status 204
+                  :body   (assoc request :config {:mode :test} :route-params {:* "bibelot"})}
                  (sut/handler opts request)))))
 
   (it "returns 404 for unknown paths"

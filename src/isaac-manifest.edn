@@ -16,19 +16,13 @@
                                                                                            :option-spec {:type :any}
                                                                                            :run-fn      {:type :symbol}
                                                                                            :help-text   {:type :symbol}}}}}}
-                  :isaac.server/route             {:description "Exact-match HTTP routes (method + uri)."
+                  :isaac.server/route             {:description "HTTP routes. :path is a clout pattern (literal segments, :name params, * wildcards). :method is :get/:post/... or :* for any-method. Prefix matching is just a trailing wildcard in the path."
                                                    :manifest    {:schema {:type :seq
                                                                           :spec {:type    :map
                                                                                  :factory isaac.server.routes/register-route-entry!
                                                                                  :schema  {:method  {:type :keyword :validations [:present?]}
                                                                                            :path    {:type :string  :validations [:present?]}
                                                                                            :handler {:type :symbol  :validations [:present?]}}}}}}
-                  :isaac.server/route-prefix      {:description "Prefix-match HTTP routes (uri prefix)."
-                                                   :manifest    {:schema {:type :seq
-                                                                          :spec {:type    :map
-                                                                                 :factory isaac.server.routes/register-prefix-route-entry!
-                                                                                 :schema  {:prefix  {:type :string :validations [:present?]}
-                                                                                           :handler {:type :symbol :validations [:present?]}}}}}}
                   :isaac.server/tools             {:description "LLM tool factories."
                                                    :manifest    {:schema {:type       :map
                                                                           :key-spec   {:type :keyword}
@@ -78,8 +72,8 @@
                    :run-fn    isaac.cli/init-run-fn
                    :help-text isaac.cli/init-help}]
 
- :isaac.server/route        [{:method :post :path "/hail/send" :handler isaac.hail.http/handler}]
- :isaac.server/route-prefix [{:prefix "/hooks/" :handler isaac.hooks/handler}]
+ :isaac.server/route [{:method :post :path "/hail/send" :handler isaac.hail.http/handler}
+                      {:method :*    :path "/hooks/*"  :handler isaac.hooks/handler}]
 
  :isaac.server/llm-api {:messages         {:factory isaac.llm.api.messages/make}
                         :grover           {:factory isaac.llm.api.grover/make}

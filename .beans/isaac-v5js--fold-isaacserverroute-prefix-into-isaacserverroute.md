@@ -4,8 +4,10 @@ title: Fold :isaac.server/route-prefix into :isaac.server/route via clout-based 
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-11T13:24:17Z
-updated_at: 2026-06-11T13:26:12Z
+updated_at: 2026-06-11T13:34:51Z
 parent: isaac-brth
 blocked_by:
     - isaac-8v1n
@@ -101,3 +103,39 @@ No new Gherkin. Existing tests are the safety net.
   decodes path-params. Confirm hook tests still see the expected
   param values; if they don't, decide whether isaac wants to
   expose raw vs decoded params and document the call.
+
+## Summary of Changes
+
+### Dependency
+
+- **`bb.edn`**: added `clout/clout {:mvn/version "1.1.0"}` to `:deps`. (1.1.0 specifically — 2.1.x pulls in instaparse, which doesn't analyze cleanly under babashka's SCI.)
+
+### `src/isaac/server/routes.clj` rewrite
+
+- `*registry*` is now a map of `{:exact <map> :patterns <vec>}`. Exact routes (literal paths) stay an O(1) hash lookup on `[method uri]`; pattern routes (clout) get a linear scan. The legacy `[:prefix uri]` key shape is gone.
+- `register-route!` now detects whether the uri is a pattern (`:name` segments or `*` wildcard) and routes it to the right collection. Clout patterns are compiled once at registration time and cached on the entry — no per-request `route-compile`.
+- `register-route-entry!` is unchanged in shape; the berth schema also unchanged.
+- Deleted `register-prefix-route!`, `register-prefix-route-entry!`, and `dispatch-prefix-routes`. Their behavior is subsumed by clout patterns ending in `*`.
+- `dispatch-pattern` checks `:method` first (with `:*` meaning any-method), then asks clout for a match, then merges `:route-params` into the request before invoking the handler. Matched wildcard segments land at `{:* "suffix"}` per clout's convention.
+- Dispatch order unchanged: user-registered exact → built-in exact → user-registered patterns → 404.
+
+### Core manifest (`src/isaac-manifest.edn`)
+
+- Removed the `:isaac.server/route-prefix` berth declaration under `:berths` (its description, schema, and factory pointer).
+- Migrated the hooks contribution from the prefix berth to the route berth: `{:method :* :path "/hooks/*" :handler isaac.hooks/handler}`. Same dispatch behavior — any-method, any suffix.
+- Route berth description updated to mention the clout pattern syntax and the `:*` any-method convention.
+
+### Tests / fixtures
+
+- **`spec/isaac/server/routes_spec.clj`** ("registers the hooks route from the core manifest…"): updated to expect `:route-params {:* "bibelot"}` merged into the request when the pattern matches.
+- **`spec/isaac/module/manifest_spec.clj`** `route-manifest` fixture: migrated from two separate berths to a single `:isaac.server/route` vec with the hooks entry now an `:*`/`*`-path pattern.
+- **`spec/isaac/module/loader_spec.clj`** + **`src/isaac/module/loader.clj`** + **`src/isaac/server/app.clj`** docstring/comment references to the gone `:isaac.server/route-prefix` berth removed (so the literal acceptance grep is zero-hit).
+
+### Acceptance checks
+
+- `bb spec`: 1849 examples, 0 failures.
+- `bb features`: 743 examples, 0 failures.
+- `rg ':route-prefix\b|:isaac\.server/route-prefix\b' src/ spec/ features/`: zero hits.
+- `rg 'register-prefix-route|register-prefix-route-entry' src/ spec/`: zero hits.
+- Exact-match hot path preserved — `register-route!` only puts non-pattern uris in the `:exact` hash; `dispatch-request` checks `:exact` first.
+- Cross-repo: isaac-acp / discord / imessage have no `:route-prefix` references; no migration needed there.
