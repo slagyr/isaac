@@ -1,11 +1,11 @@
 ---
 # isaac-owrh
 title: 'Foundation/platform split: extract isaac-server into its own module (phase 9)'
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-06-05T06:33:32Z
-updated_at: 2026-06-05T06:33:42Z
+updated_at: 2026-06-11T13:31:00Z
 parent: isaac-brth
 blocked_by:
     - isaac-qpgy
@@ -139,3 +139,12 @@ hardcoded top-level manifest position.
   requires explicit opt-in (true "thin foundation"). The brth bean
   acknowledges this depends on the size-measurement work
   (phase 3 — still open).
+
+
+## Reasons for Scrapping
+
+Reshaping phase 9 (2026-06-11 conversation): instead of extracting `isaac-server` while leaving the foundation in the `isaac` repo, the new plan extracts `isaac-foundation` first, then `isaac-server`, then pivots the `isaac` repo to a brew/cask + module catalog role. Each functional piece becomes its own module repo; `isaac` becomes the distribution gateway.
+
+The work will be done together off-board rather than via beans — at least for the initial extractions — so this bean's premise (one cross-repo split as a single task) no longer matches the plan. Closing here so workers don't pick up stale guidance.
+
+If we later want bean tracking for individual extractions (isaac-foundation, isaac-server, isaac as catalog, then isaac-hail / isaac-cron / etc.), they'll get filed as separate beans at the time they're ready to land.
