@@ -1,13 +1,11 @@
 ---
 # isaac-8i8z
 title: Collapse isaac-manifest.edn into deps.edn :isaac/manifest
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-11T14:44:59Z
-updated_at: 2026-06-11T16:46:48Z
+updated_at: 2026-06-11T16:55:49Z
 parent: isaac-brth
 ---
 
