@@ -1,13 +1,11 @@
 ---
 # isaac-n58u
 title: 'isaac-acp proxy: client-side prompt queue with thought-chunk feedback'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-11T16:21:36Z
-updated_at: 2026-06-11T16:52:23Z
+updated_at: 2026-06-11T17:02:10Z
 ---
 
 When a session has a turn in flight, the isaac-acp proxy (the
