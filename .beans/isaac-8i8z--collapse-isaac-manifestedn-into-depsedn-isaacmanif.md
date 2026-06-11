@@ -1,11 +1,11 @@
 ---
 # isaac-8i8z
 title: Collapse isaac-manifest.edn into deps.edn :isaac/manifest
-status: in-progress
+status: todo
 type: task
 priority: normal
 created_at: 2026-06-11T14:44:59Z
-updated_at: 2026-06-11T14:47:05Z
+updated_at: 2026-06-11T17:54:35Z
 parent: isaac-brth
 ---
 
@@ -123,3 +123,21 @@ No new Gherkin. Existing module + berth tests are the safety net.
 - `:isaac/manifest` is a top-level key on deps.edn; tools.deps
   silently ignores it. Confirm by running `clj -X:deps tree` and
   checking it doesn't error.
+
+
+## ROLLED BACK 2026-06-11
+
+Discovered during a zanebot deploy: the manifest-collapse work broke module discovery for any non-`:local/root` coord. `manifest-resource` enumerates `getResources("deps.edn")` on the JVM context classloader — but `deps.edn` is project metadata, not a classpath resource. tools.deps puts each dep's `:paths` (typically `src/`, `resources/`) on the classpath, NOT the project root where `deps.edn` lives. So fetched git-coord modules never showed up in the module-index; their `:isaac.server/comm` (and other berth) contributions were invisible; user config `:type :discord`/`:imessage` then failed `:registered-in?` validation with "unknown :type".
+
+The in-repo tests passed because they use `:local/root` coords, which hit `resolve-manifest-resource`'s local branch and read `<root>/deps.edn` from disk directly. The git path (which is the production path) was never exercised by the test surface, so the gap went unnoticed.
+
+Reverts pushed:
+
+- isaac core (765cbda1): restored `src/isaac-manifest.edn` everywhere (core, fixtures, modules) and reverted loader changes.
+- isaac-acp (9f7aacb): restored `src/isaac-manifest.edn`, deps.edn back to pre-collapse.
+- isaac-discord (babf0a8): restored `src/isaac-manifest.edn`, deps.edn back to pre-collapse. (Also reverts the brace-fix commit `d87c6fe` that I'd pushed on top — needed if anyone wanted to retry the collapse later.)
+- isaac-imessage (f470125): restored `src/isaac-manifest.edn`, deps.edn back to pre-collapse.
+
+Reset to `todo`. If retried, the new acceptance must include: a production-shape test with a non-`:local/root` coord (e.g. a marigold fixture loaded via `:git/url` against a local tracking branch, or whatever the test harness can simulate), so the git-coord discovery path is genuinely exercised.
+
+The "single source of truth for module deps" win is still desirable. Path forward is either (a) read `deps.edn` directly from each dep's resolved on-disk root (asking tools.deps where the dep landed) instead of via `getResources`, or (b) keep the manifest at `resources/isaac-manifest.edn` and accept the dual-file shape.
