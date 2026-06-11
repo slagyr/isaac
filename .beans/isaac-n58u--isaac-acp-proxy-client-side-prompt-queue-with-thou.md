@@ -4,8 +4,10 @@ title: 'isaac-acp proxy: client-side prompt queue with thought-chunk feedback'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-11T16:21:36Z
-updated_at: 2026-06-11T16:43:52Z
+updated_at: 2026-06-11T16:52:23Z
 ---
 
 When a session has a turn in flight, the isaac-acp proxy (the
@@ -116,3 +118,55 @@ Add:
 - The `session/cancel` is currently forwarded blindly; the new logic
   inspects a small bit of proxy state to decide. Keep that decision
   local to the proxy; don't add bridge-level coordination.
+
+## Exceptions
+
+### `@wip` left on `features/proxy/queue.feature`; no step definitions added
+
+The bean's acceptance specifies removing `@wip` from `features/proxy/queue.feature` and getting `bb features features/proxy/queue.feature` green. Both are blocked by the **same pre-existing isaac-acp ↔ isaac SHA drift documented under isaac-zlx4 and tracked by isaac-lyg0:** the wider acp spec/feature suites abort at load time (`Protocol not found: clojure.lang.IHashEq` in `instaparse/auto_flatten_seq.clj`, plus stale namespace refs against the pinned isaac SHA). The `bb features` runner doesn't reach scenario execution today regardless of any changes I make to this feature file.
+
+Rather than:
+- (a) remove `@wip` (creates a scenario that's red for a known-pre-existing reason), or
+- (b) hand-write step definitions I can't run end-to-end (likely to ship with subtle bugs),
+
+I'm leaving the feature `@wip`-tagged with the queue logic + proxy wiring landed. When isaac-lyg0 lands and the acp suite comes back, removing `@wip` and writing the step definitions should be a focused follow-up (the proxy already exposes `:acp-proxy-queue-state*` as an opts seam so tests can pre-populate state, and the loopback transport in `isaac.util.ws-client` already gives the acp_steps file what it needs).
+
+The bean's behavioral contract is exercised today by the **focused unit spec** at `isaac-acp/spec/isaac/comm/acp/cli/queue_spec.clj` (13/13, 38 assertions) which covers all four feature scenarios at the state-transition level.
+
+## Summary of Changes
+
+### `isaac-acp/src/isaac/comm/acp/cli/queue.clj` (new)
+
+Per-session prompt queue state machine, isolated from the proxy's threading model so it's trivially testable:
+
+- `fresh-state` / `session-state` / `pending-count` / `in-flight?` — read views.
+- `handle-prompt` — decides `:forward` (no in-flight turn for this session), `:queue` (in-flight + under cap), or `:reject` (in-flight + at cap). Mutates the queue atom and returns the decision + the original line.
+- `handle-cancel` — decides `:forward` (first cancel of a round, OR queue empty) or `:clear-queue` (>= 2nd consecutive cancel with non-empty queue). Resets the cancel counter on clear.
+- `handle-turn-end` — called when the server returns `stopReason: end_turn`. Returns `[:idle]` (no queued prompts; session goes idle) or `[:drain next-line]` (head of FIFO popped, session stays in-flight).
+- Frame predicates: `prompt-line?`, `cancel-line?`, `turn-end?`, `message-session-id`.
+- `queue-cap` (= 10) plus the canonical thought-chunk text strings (`queued: held until the current turn finishes`, `queue full: prompt dropped (cap is 10)`, `queue cleared`).
+
+### `isaac-acp/spec/isaac/comm/acp/cli/queue_spec.clj` (new)
+
+13 examples, 38 assertions, all green. Covers all four feature scenarios at the state-transition level:
+
+- **happy path** — first prompt forwards + sets in-flight; subsequent prompts queue in FIFO.
+- **multi-drain** — handle-turn-end pops the FIFO head each call and stays in-flight until empty, then goes idle.
+- **cap** — 11th prompt returns `:reject` and the queue stays at 10 (over-cap prompts aren't queued).
+- **double-cancel** — first cancel `:forward`s + leaves queue intact; second cancel with non-empty queue `:clear-queue`s without forwarding; second cancel with empty queue `:forward`s as a normal cancel.
+- Plus per-session isolation, frame-predicate edge cases, and session-id extraction from both `params` and `result`.
+
+### `isaac-acp/src/isaac/comm/acp/cli.clj` (wired)
+
+- Required the new `isaac.comm.acp.cli.queue` ns.
+- Added `write-thought-chunk!` — direct session-id'd thought-chunk emit (the existing `write-status-notification!` resolves session-id from a cached atom, which is the wrong shape for queue callbacks that know exactly which session the message is for).
+- Added `handle-stdin-line!` — pre-forward interceptor for `session/prompt` and `session/cancel` frames. Anything else (initialize, session/new, …) flows straight through to the original `forward-input-line!` path. Prompts dispatch via `queue/handle-prompt`; cancels via `queue/handle-cancel`. Non-forward decisions emit the canonical thought-chunk via stdout.
+- Added `drain-queue-on-turn-end!` — called from the remote-thread for every inbound frame. Checks `queue/turn-end?`, looks up the session id (preferring the explicit one in the response, falling back to `session-id*` for the common single-session case), signals the queue, and forwards the popped line if any.
+- `run-stdin-thread!` / `run-remote-thread!` / `run-remote` now thread `queue-state*` through their arglists. `run-remote` seeds the atom (or uses `opts :acp-proxy-queue-state*` when tests inject one).
+- The remote-thread continues to write inbound frames straight to stdout BEFORE consulting the queue — the user sees the `end_turn` response unchanged, and the queued prompt fires immediately after.
+
+### Acceptance checks
+
+- `bb spec spec/isaac/comm/acp/cli/queue_spec.clj`: 13 examples, 0 failures, 38 assertions.
+- The queue ns + proxy wiring compile cleanly under bb (verified standalone `require`).
+- Feature scenario acceptance: deferred to the isaac-lyg0 unblock (see Exceptions). Documented for re-handoff once the suite is runnable.
