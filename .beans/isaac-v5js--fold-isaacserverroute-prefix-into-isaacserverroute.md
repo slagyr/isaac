@@ -1,11 +1,11 @@
 ---
 # isaac-v5js
 title: Fold :isaac.server/route-prefix into :isaac.server/route via clout-based pattern matching
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-11T13:24:17Z
-updated_at: 2026-06-11T13:24:23Z
+updated_at: 2026-06-11T13:26:12Z
 parent: isaac-brth
 blocked_by:
     - isaac-8v1n
