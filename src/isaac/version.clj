@@ -1,13 +1,12 @@
 (ns isaac.version
   (:require
     [clojure.edn :as edn]
-    [clojure.java.io :as io]
     [clojure.string :as str]))
 
-(defn- manifest-version []
+(defn- deps-manifest-version []
   (try
-    (when-let [resource (io/resource "isaac-manifest.edn")]
-      (:version (edn/read-string (slurp resource))))
+    (or (some-> "deps.edn" slurp edn/read-string :isaac/manifest :version)
+        (some-> (clojure.java.io/resource "deps.edn") slurp edn/read-string :isaac/manifest :version))
     (catch Exception _ nil)))
 
 (defn read-git-sha []
@@ -21,7 +20,7 @@
     (catch Exception _ nil)))
 
 (defn version-string []
-  (let [v   (or (manifest-version) "unknown")
+  (let [v   (or (deps-manifest-version) "unknown")
         sha (read-git-sha)]
     (if sha
       (str "isaac " v " (" sha ")")

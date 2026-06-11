@@ -15,30 +15,26 @@ Feature: Contribution validation against a berth's :manifest :schema
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
-      """
-      {:id      :marigold.bridge
-       :version "1.0.0"
-       :factory marigold.bridge/create-module
-       :berths  {:marigold.bridge/comm
-                 {:description "Comm channels."
-                  :manifest {:schema {:type       :map
-                                      :key-spec   {:type :keyword}
-                                      :value-spec {:type :map
-                                                   :schema {:label {:type :string :validations [:present?]}}}}}}}}
+      {:paths ["resources"]
+       :isaac/manifest
+       {:id      :marigold.bridge
+        :version "1.0.0"
+        :factory marigold.bridge/create-module
+        :berths  {:marigold.bridge/comm
+                  {:description "Comm channels."
+                   :manifest {:schema {:type       :map
+                                       :key-spec   {:type :keyword}
+                                       :value-spec {:type :map
+                                                    :schema {:label {:type :string :validations [:present?]}}}}}}}}}
       """
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
-      """
-      {:id                   :marigold.longwave
-       :version              "0.1.0"
-       :factory              marigold.longwave/create-module
-       :marigold.bridge/comm {:longwave {:label "long-wave radio"}}}
+      {:paths ["resources"]
+       :isaac/manifest
+       {:id                   :marigold.longwave
+        :version              "0.1.0"
+        :factory              marigold.longwave/create-module
+        :marigold.bridge/comm {:longwave {:label "long-wave radio"}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -55,30 +51,26 @@ Feature: Contribution validation against a berth's :manifest :schema
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
-      """
-      {:id      :marigold.bridge
-       :version "1.0.0"
-       :factory marigold.bridge/create-module
-       :berths  {:marigold.bridge/comm
-                 {:description "Comm channels."
-                  :manifest {:schema {:type       :map
-                                      :key-spec   {:type :keyword}
-                                      :value-spec {:type :map
-                                                   :schema {:label {:type :string :validations [:present?]}}}}}}}}
+      {:paths ["resources"]
+       :isaac/manifest
+       {:id      :marigold.bridge
+        :version "1.0.0"
+        :factory marigold.bridge/create-module
+        :berths  {:marigold.bridge/comm
+                  {:description "Comm channels."
+                   :manifest {:schema {:type       :map
+                                       :key-spec   {:type :keyword}
+                                       :value-spec {:type :map
+                                                    :schema {:label {:type :string :validations [:present?]}}}}}}}}}
       """
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
-      """
-      {:id                   :marigold.longwave
-       :version              "0.1.0"
-       :factory              marigold.longwave/create-module
-       :marigold.bridge/comm {:longwave {}}}
+      {:paths ["resources"]
+       :isaac/manifest
+       {:id                   :marigold.longwave
+        :version              "0.1.0"
+        :factory              marigold.longwave/create-module
+        :marigold.bridge/comm {:longwave {}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -94,14 +86,12 @@ Feature: Contribution validation against a berth's :manifest :schema
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
-      """
-      {:id                   :marigold.longwave
-       :version              "0.1.0"
-       :factory              marigold.longwave/create-module
-       :marigold.bridge/comm {:longwave {:label "long-wave radio"}}}
+      {:paths ["resources"]
+       :isaac/manifest
+       {:id                   :marigold.longwave
+        :version              "0.1.0"
+        :factory              marigold.longwave/create-module
+        :marigold.bridge/comm {:longwave {:label "long-wave radio"}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """

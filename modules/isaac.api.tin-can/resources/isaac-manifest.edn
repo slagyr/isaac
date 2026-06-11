@@ -1,7 +1,0 @@
-{:id      :isaac.api.tin-can
- :version "0.1.0"
- :factory isaac.module/module
-
- ;; Phase 7 of the berth epic moved LLM API factory contributions to
- ;; the :isaac.server/llm-api berth declared by isaac.core.
- :isaac.server/llm-api {:tin-can {:factory isaac.api.tin-can/make}}}

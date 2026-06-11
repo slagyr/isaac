@@ -1,2 +1,11 @@
 {:paths ["src" "resources"]
- :deps  {io.github.slagyr/isaac {:local/root "../.."}}}
+ :deps  {io.github.slagyr/isaac {:local/root "../.."}}
+ :isaac/manifest
+ {:id          :isaac.cli.greeter
+  :version     "0.1.0"
+  :factory     isaac.module/module
+  :description "A sample module that contributes a CLI subcommand"
+  :cli         [{:name   "greet"
+                 :desc   "Print a greeting"
+                 :usage  "greet"
+                 :run-fn isaac.cli.greeter/run-fn}]}}

@@ -12,6 +12,11 @@
 
 (helper! isaac.config.config-steps)
 
+(g/before-scenario g/reset!)
+(g/before-scenario loader/clear-env-overrides!)
+(g/before-scenario module-loader/clear-activations!)
+(g/before-scenario module-loader/clear-caches!)
+
 ;; region ----- Helpers -----
 
 (defn- root []
@@ -36,11 +41,10 @@
   (or (fs/exists? (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs)) path)
       (.exists (java.io.File. path))))
 
-(defn- module-manifest-path [id]
+(defn- module-deps-path [id]
   (some (fn [root]
           (some #(when (path-exists? %) %)
-                [(str root "/resources/isaac-manifest.edn")
-                 (str root "/src/isaac-manifest.edn")]))
+                [(str root "/deps.edn")]))
         [(str (root) "/.isaac/modules/" (name id))
          (str (System/getProperty "user.dir") "/modules/" (name id))]))
 
@@ -68,25 +72,24 @@
                                   (if (str/starts-with? path "/")
                                     path
                                     (str (or effective-cwd base-cwd) "/" path)))
-         coord-manifest-path    (fn [coord]
+         coord-deps-path        (fn [coord]
                                   (when-let [root (:local/root coord)]
                                     (let [root (absolutize-root root)]
                                       (some-> (some #(when (path-exists? %) %)
-                                                    [(str root "/resources/isaac-manifest.edn")
-                                                     (str root "/src/isaac-manifest.edn")])
+                                                    [(str root "/deps.edn")])
                                               manifest-reference))))]
     (try
       (when effective-cwd
         (System/setProperty "user.dir" effective-cwd))
 	      (with-redefs [module-loader/add-module-deps! (fn [_ _])
 	                    module-loader/manifest-resource (fn [id]
-	                                                      (or (some-> (module-manifest-path id) manifest-reference)
+	                                                      (or (some-> (module-deps-path id) manifest-reference)
 	                                                          (real-manifest-resource id)))
                     ;; Test envs don't have a real classpath, so always try
-                    ;; the coord's :local/root manifest first; only fall back
+                    ;; the coord's :local/root deps.edn first; only fall back
                     ;; to the upstream resolver (id-based search) if it fails.
                     module-loader/resolve-manifest-resource (fn [id coord]
-                                                              (or (coord-manifest-path coord)
+                                                              (or (coord-deps-path coord)
                                                                   (real-resolve id coord)))]
         (loader/load-config-result {:root (root) :fs fs*}))
       (finally

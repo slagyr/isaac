@@ -5,10 +5,9 @@
          ;; rather than letting tools.deps fetch + extend the path.
          "spec/marigold/bridge/src"
          "spec/marigold/longwave/src"
-         ;; resources/isaac-manifest.edn for each fixture — needed for
-         ;; classpath-based manifest discovery from main's CLI dispatch
-         ;; path (the test stubs the loader's resolve-manifest-resource
-         ;; only inside config_steps).
+         ;; Fixture deps.edn files carry :isaac/manifest for the local
+         ;; module-discovery tests and need to remain visible on the
+         ;; classpath.
          "spec/marigold/bridge/resources"
          "spec/marigold/longwave/resources"]
 

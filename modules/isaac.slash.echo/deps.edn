@@ -1,2 +1,9 @@
 {:paths ["src" "resources"]
- :deps  {io.github.slagyr/isaac {:local/root "../.."}}}
+ :deps  {io.github.slagyr/isaac {:local/root "../.."}}
+ :isaac/manifest
+ {:id      :isaac.slash.echo
+  :version "0.1.0"
+  :factory isaac.module/module
+  :isaac.server/slash-commands
+  {:echo {:factory isaac.slash.echo/echo-command
+          :schema  {:command-name {:type :string :default "echo"}}}}}}

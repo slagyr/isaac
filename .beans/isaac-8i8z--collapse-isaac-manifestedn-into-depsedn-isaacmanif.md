@@ -4,8 +4,10 @@ title: Collapse isaac-manifest.edn into deps.edn :isaac/manifest
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-11T14:44:59Z
-updated_at: 2026-06-11T14:47:05Z
+updated_at: 2026-06-11T15:39:54Z
 parent: isaac-brth
 ---
 
@@ -20,6 +22,15 @@ Collapse the isaac-specific content into `deps.edn` under a
 namespaced `:isaac/manifest` key. tools.deps already ignores
 unknown top-level keys; nothing in the bb / clj toolchain needs
 to know about isaac to keep working.
+
+## Exceptions
+
+- Feature files under `features/cli/` and `features/module/` may be
+  edited beyond `@wip` removal to replace
+  `resources/isaac-manifest.edn` / `src/isaac-manifest.edn` fixture
+  paths and prose with the new single-file `deps.edn` +
+  `:isaac/manifest` contract, as long as the behavioral assertions do
+  not change.
 
 ## Surface change
 

@@ -1,0 +1,4 @@
+{:paths ["src" "resources"]
+ :isaac/manifest
+ {:id      :isaac.comm.noop
+  :version "0.1.0"}}

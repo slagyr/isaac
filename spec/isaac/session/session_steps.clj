@@ -988,9 +988,20 @@
       (let [abs-path (if (str/starts-with? path "/")
                        path
                        (str (System/getProperty "user.dir") "/" path))
-            module-root (some-> abs-path io/file .getParentFile .getParentFile .getPath)
+            file        (io/file abs-path)
+            parent      (.getParentFile file)
+            module-root (cond
+                          (= "deps.edn" (.getName file))
+                          (some-> parent .getPath)
+
+                          :else
+                          (some-> parent .getParentFile .getPath))
+            repo-module-root (str (System/getProperty "user.dir") "/modules/")
+            existing-module? (and module-root (.exists (io/file module-root)))
             fs*         (mem-fs)]
-        (when module-root
+        (when (and module-root
+                   (or (not (str/starts-with? module-root repo-module-root))
+                       (not existing-module?)))
           (swap! real-module-roots* conj module-root))
         (fs/mkdirs fs* (fs/parent abs-path))
         (fs/spit   fs* abs-path content)))))

@@ -6,6 +6,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.drive.dispatch :as drive-dispatch]
+    [isaac.config.loader :as config-loader]
     [isaac.fs :as fs]
     [isaac.root :as root]
     [isaac.bridge.status :as bridge]
@@ -18,6 +19,12 @@
     [isaac.util.shell :as shell]))
 
 (helper! isaac.server.cli.cli-steps)
+
+(g/before-scenario g/reset!)
+(g/before-scenario config-loader/clear-env-overrides!)
+(g/before-scenario #(alter-var-root #'root/*user-home* (constantly nil)))
+(g/before-scenario #(alter-var-root #'shell/*sh* (constantly nil)))
+(g/before-scenario #(alter-var-root #'shell/*os-name* (constantly nil)))
 
 ;; Modules' step namespaces register preflight fns here. They run right
 ;; before `main/run` inside isaac-run, after Background steps have set up

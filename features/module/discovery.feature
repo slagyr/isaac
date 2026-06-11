@@ -7,19 +7,13 @@ Feature: Module discovery
     Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.pigeon/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn" exists with:
-      """
-      {:id :isaac.comm.pigeon :version "0.1.0" :bootstrap isaac.comm.pigeon/init}
+      {:paths ["resources"]
+       :isaac/manifest {:id :isaac.comm.pigeon :version "0.1.0" :bootstrap isaac.comm.pigeon/init}}
       """
     And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.crow/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.crow/resources/isaac-manifest.edn" exists with:
-      """
-      {:id :isaac.comm.crow :version "0.1.0" :bootstrap isaac.comm.crow/init}
+      {:paths ["resources"]
+       :isaac/manifest {:id :isaac.comm.crow :version "0.1.0" :bootstrap isaac.comm.crow/init}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -38,11 +32,8 @@ Feature: Module discovery
     Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.pigeon/deps.edn" exists with:
       """
-      {:paths ["resources"]}
-      """
-    And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn" exists with:
-      """
-      {:id :isaac.comm.pigeon :bootstrap isaac.comm.pigeon/init}
+      {:paths ["resources"]
+       :isaac/manifest {:id :isaac.comm.pigeon :bootstrap isaac.comm.pigeon/init}}
       """
     And the isaac file "isaac.edn" exists with:
       """

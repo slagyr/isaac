@@ -10,7 +10,7 @@ Feature: Config berth processing
 
   These scenarios use the marigold.bridge and marigold.longwave
   fixture modules under `spec/marigold/...`. Each fixture is a real
-  module on disk (deps.edn + resources/isaac-manifest.edn + src/)
+  module on disk (deps.edn + src/)
   and is the SAME across every scenario in this file. Tests vary
   only the user `isaac.edn` to exercise different cases.
 

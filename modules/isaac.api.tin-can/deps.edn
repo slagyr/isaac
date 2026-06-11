@@ -1,2 +1,7 @@
 {:paths ["src" "resources"]
- :deps  {io.github.slagyr/isaac {:local/root "../.."}}}
+ :deps  {io.github.slagyr/isaac {:local/root "../.."}}
+ :isaac/manifest
+ {:id      :isaac.api.tin-can
+  :version "0.1.0"
+  :factory isaac.module/module
+  :isaac.server/llm-api {:tin-can {:factory isaac.api.tin-can/make}}}}

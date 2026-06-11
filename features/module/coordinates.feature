@@ -2,8 +2,8 @@ Feature: Module coordinates
   isaac.edn declares :modules as a map of module-id to a tools.deps
   coordinate. At config-load time, every coordinate is resolved (via
   babashka.deps in bb context, clojure.tools.deps in clj), the
-  resolved classpath is added, each module's isaac-manifest.edn is read from
-  the classpath, and the module index is built. Resolution is
+  resolved classpath is added, each module's deps.edn is inspected for
+  :isaac/manifest, and the module index is built. Resolution is
   load-time so manifest schema fragments are available before cfg
   validation.
 

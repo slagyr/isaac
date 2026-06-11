@@ -199,7 +199,7 @@
 ;; ----- Themed core manifest ----------------------------------------
 
 (def baseline-manifest
-  "A stand-in for src/isaac-manifest.edn. The shape mirrors the real
+  "A stand-in for core deps.edn's :isaac/manifest. The shape mirrors the real
    manifest one-to-one — :llm/api, :provider, :tools, :slash-commands,
    :comm — so a describe that calls (marigold/with-manifest) gets a
    complete world: themed providers/apis (the vendor IRL names — helm
@@ -360,11 +360,10 @@
           (config-loader/clear-env-overrides!)
           (example))))))
 
-(defn- local-module-manifest-path [id]
+(defn- local-module-deps-path [id]
   (let [root (str home "/.isaac/modules/" (name id))]
     (some #(when (fs/exists? (nexus/get :fs) %) %)
-          [(str root "/resources/isaac-manifest.edn")
-           (str root "/src/isaac-manifest.edn")])))
+          [(str root "/deps.edn")])))
 
 (defn load-config
   "Load the configuration from the Marigold's home. Optional opts merge
@@ -374,7 +373,7 @@
    ;; Marigold module fixtures live on mem-fs, so emulate the classpath lookup
    ;; seam instead of trying to add an in-memory local/root to the real JVM classpath.
    (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _])
-                 isaac.module.loader/manifest-resource local-module-manifest-path]
+                 isaac.module.loader/manifest-resource local-module-deps-path]
      (config-loader/load-config-result (merge {:root root} opts)))))
 
 (defn write-config!
