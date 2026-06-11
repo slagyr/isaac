@@ -4,8 +4,10 @@ title: 'isaac-acp: send WebSocket PINGs to keep idle ACP connections alive'
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-11T15:31:49Z
-updated_at: 2026-06-11T15:38:59Z
+updated_at: 2026-06-11T16:26:47Z
 ---
 
 ACP WebSocket connections drop every ~60 seconds when idle.
@@ -99,3 +101,63 @@ later. Optional for v1.
   close code, so we can't tell from logs alone whether the client
   or the server initiated. Doesn't matter for the fix — pinging
   the channel keeps either side from giving up.
+
+## Exceptions
+
+### Implementation diverges from bean's WebSocket-PING approach
+
+Bean's stated fix is server-initiated WebSocket PING control frames. After investigation, **WebSocket protocol PINGs cannot be sent from this codebase under babashka.** Specifically:
+
+- httpkit 2.8.0's only PING send path is `(httpkit/send! channel (Frame$PingFrame. ...))` — `send!` dispatches on `instanceof Frame.PingFrame`.
+- The JAR contains `org.httpkit.server.Frame$PingFrame` (and the other inner Frame classes), and the JAR is on the classpath.
+- Babashka's SCI allowlist exposes `org.httpkit.server.Frame` and `AsyncChannel` but **not the inner classes**. `Class/forName "org.httpkit.server.Frame$PingFrame"` throws `ClassNotFoundException`. `.getDeclaredClasses` / `.getClasses` on the outer `Frame` return empty (bb loads a compiled-in stripped `Frame` from `/opt/homebrew/Cellar/babashka/...`, not the jar). Jetty's WS API classes have the same wall.
+- httpkit's server has **no idle-timeout knob** — no Reaper, no timer. So bumping httpkit config wouldn't help (and wasn't an option anyway).
+
+### Pivot
+
+Confirmed with user → switch to an app-layer JSON-RPC `$/heartbeat` notification. The LSP `$/` namespace convention is reserved for utility notifications that receivers ignore (JSON-RPC 2.0 §4.1 — unknown methods MUST be silently dropped by spec-compliant peers). Bytes-on-the-wire have the same NAT / reverse-proxy / Tailscale keepalive effect as a protocol PING.
+
+The architecture stays exactly as discussed (shared scheduled task, channel registry, snapshot-per-tick, per-channel try/catch). Only the per-channel send swaps from a PingFrame to a small JSON string.
+
+### Config slot renamed
+
+`:acp :ping-interval-ms` (bean's name) → `:acp :heartbeat-interval-ms` (matches the actual frame shape). Default still 30000 ms.
+
+## Summary of Changes
+
+### `isaac-acp/src/isaac/comm/acp/websocket/heartbeat.clj` (new)
+
+- Shared open-channel registry (`open-channels*` atom).
+- `register-channel!` / `deregister-channel!` — called from `:on-open` / `:on-close`.
+- `beat-all!` — snapshots the registry and writes a precomputed canonical `{"jsonrpc":"2.0","method":"$/heartbeat"}` string to each channel via `httpkit/send!`, isolating per-channel failures in try/catch (logged at `:debug` because closed-channel writes are normal during the close-detect race window).
+- `ensure-started!` — idempotent: schedules the recurring `beat-all!` task via `isaac.scheduler/every!` once, reading `[:acp :heartbeat-interval-ms]` from the cfg with a 30s default. Compare-and-set on `task-id*` to defend against a concurrent on-open race scheduling twice. No-op if no scheduler is registered in the nexus (stdio-only mode).
+- `stop!` — cancels the task and clears the registry. For test isolation and shutdown.
+
+### `isaac-acp/src/isaac/comm/acp/websocket.clj`
+
+- Required the new heartbeat ns.
+- `:on-open` now calls `heartbeat/register-channel!` and `heartbeat/ensure-started! cfg` (lazy start — task only spins up on the first connection of the server's lifetime, then survives across reconnects).
+- `:on-close` (both 2- and 3-arity branches) calls `heartbeat/deregister-channel!`.
+- Inline comment explains why app-layer instead of WebSocket PING (babashka SCI inner-class allowlist constraint).
+
+### `isaac-acp/spec/isaac/comm/acp/websocket/heartbeat_spec.clj` (new)
+
+10 examples, 16 assertions, all green:
+
+- Channel registry tracks/removes correctly; deregistering an unknown channel is a no-op.
+- `beat-all!` sends the canonical JSON-RPC string to every registered channel; payload parses back to `{:jsonrpc "2.0" :method "$/heartbeat"}`; the same precomputed string is reused across channels (not re-rendered per tick).
+- Per-channel send! failures are isolated — one throwing channel doesn't abort the rest.
+- `beat-all!` is a no-op when no channels are registered.
+- `ensure-started!` schedules via `scheduler/every!` with the correct interval; falls back to default when config omits it; is idempotent across repeat calls; is a no-op when no scheduler is in the nexus.
+
+### Acceptance checks
+
+- `bb spec spec/isaac/comm/acp/websocket/heartbeat_spec.clj`: 10 examples, 0 failures.
+- `isaac.comm.acp.websocket` namespace requires cleanly (verified via `bb -e "(require 'isaac.comm.acp.websocket)"`).
+- Manual verification (the bean's long-running-tool-call scenario) is on the user to confirm in their actual zanebot setup — automated reproduction of a 60s+ idle scenario isn't feasible in CI.
+- Wider `bb spec` in isaac-acp does not run today due to pre-existing isaac-SHA drift (e.g. `isaac.bridge.cancellation` not in the pinned SHA) — covered by isaac-lyg0. Not caused by this bean; not in scope to fix here.
+
+### Out of scope (deferred)
+
+- Detecting dead peers via missing client traffic. The current design only sends keepalives; failure-to-receive cleanup is left to httpkit's normal close-detect. Easy follow-up — track `last-received-at` per registered channel and reap stale entries in the same tick.
+- Client-side heartbeat. The bean lists this OOS; still OOS.
