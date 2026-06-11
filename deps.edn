@@ -2,13 +2,15 @@
 
  :deps  {cheshire/cheshire                 {:mvn/version "5.13.0"}
          clj-commons/clj-yaml             {:mvn/version "1.0.29"}
+         io.github.slagyr/gherclj         {:git/tag "v1.3.0" :git/sha "9c3bb1d"}
          org.babashka/http-client          {:mvn/version "0.4.22"}
          org.clojure/tools.cli             {:mvn/version "1.1.230"}
          org.clojure/tools.deps.alpha      {:mvn/version "0.15.1254"}
          http-kit/http-kit                 {:mvn/version "2.8.0"}
          com.cleancoders.c3kit/apron       {:mvn/version "3.0.0"}
          io.github.cleancoders/c3kit-wire  {:git/tag "2.5.1" :git/sha "1fae444"}
-         isaac.comm.telly/isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
+         isaac.comm.telly/isaac.comm.telly {:local/root "modules/isaac.comm.telly"}
+         speclj/speclj                     {:mvn/version "3.13.0"}}
 
  :aliases
  {:isaac            {:main-opts ["-m" "isaac.main"]}
