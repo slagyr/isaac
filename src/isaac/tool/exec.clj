@@ -11,30 +11,40 @@
 (def ^:private default-timeout 30000)
 
 (defn start-process [args]
+  ;; Spawn the process AND immediately start draining its merged
+  ;; stdout+stderr in a background thread. Without the concurrent drain
+  ;; any process that emits more than ~64KB of output before exit
+  ;; (xcodebuild, large test runs) fills the OS pipe buffer, blocks
+  ;; writing, and Process.waitFor never returns — the whole tool call
+  ;; hangs forever. Return shape is {:proc java.lang.Process :output future}
+  ;; so the rest of the exec-tool pipeline can wait on the process and
+  ;; deref the captured output.
   (let [command (get args "command")
         workdir (get args "workdir")
         pb      (doto (ProcessBuilder. ["/bin/sh" "-c" command])
                   (.redirectErrorStream true))]
     (when workdir
       (.directory pb (io/file workdir)))
-    (.start pb)))
+    (let [proc (.start pb)]
+      {:proc   proc
+       :output (future (slurp (.getInputStream proc)))})))
 
 (defn process-finished? [proc timeout-ms]
-  (.waitFor proc timeout-ms TimeUnit/MILLISECONDS))
+  (.waitFor (:proc proc) timeout-ms TimeUnit/MILLISECONDS))
 
 (defn destroy-process!
   ([proc]
    (destroy-process! proc 100))
   ([proc grace-ms]
-   (.destroy proc)
+   (.destroy (:proc proc))
    (when-not (process-finished? proc grace-ms)
-     (.destroyForcibly proc))))
+     (.destroyForcibly (:proc proc)))))
 
 (defn read-process-output [proc]
-  (slurp (.getInputStream proc)))
+  @(:output proc))
 
 (defn process-exit-value [proc]
-  (.exitValue proc))
+  (.exitValue (:proc proc)))
 
 (defn- resolve-exec-args [args]
   (let [resolved (bounds/resolve-path
