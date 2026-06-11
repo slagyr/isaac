@@ -1206,6 +1206,12 @@
     (set-snapshot! config reason)
     config))
 
+(defn load-config
+  "Compatibility wrapper for older module repos. Loads config and returns only
+   the config value without committing it as the process snapshot."
+  ([] (:config (load-config-result)))
+  ([opts] (:config (load-config-result opts))))
+
 (defn root
   "Returns the resolved root. Test fixtures install an explicit
    :root on the nexus via -with-nested-nexus and that wins; otherwise the

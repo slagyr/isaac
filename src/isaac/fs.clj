@@ -125,10 +125,12 @@
 
 (defn real-fs [] (->RealFs))
 
+(def ^:dynamic *fs* nil)
+
 (defn instance
   "Returns the active Fs instance. Reads from source map when provided, otherwise reads from the live nexus."
-  ([]       (nexus/get :fs))
-  ([source] (or (:fs source) (nexus/get :fs))))
+  ([]       (or *fs* (nexus/get :fs)))
+  ([source] (or *fs* (:fs source) (nexus/get :fs))))
 
 (defn- assert-absolute! [path]
   (when-not (str/starts-with? path "/")
