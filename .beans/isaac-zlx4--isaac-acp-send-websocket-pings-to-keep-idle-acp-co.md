@@ -1,11 +1,11 @@
 ---
 # isaac-zlx4
 title: 'isaac-acp: send WebSocket PINGs to keep idle ACP connections alive'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-06-11T15:31:49Z
-updated_at: 2026-06-11T15:31:49Z
+updated_at: 2026-06-11T15:38:59Z
 ---
 
 ACP WebSocket connections drop every ~60 seconds when idle.
