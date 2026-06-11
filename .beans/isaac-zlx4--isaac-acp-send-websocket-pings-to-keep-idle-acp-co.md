@@ -4,10 +4,8 @@ title: 'isaac-acp: send WebSocket PINGs to keep idle ACP connections alive'
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-11T15:31:49Z
-updated_at: 2026-06-11T16:26:47Z
+updated_at: 2026-06-11T16:34:18Z
 ---
 
 ACP WebSocket connections drop every ~60 seconds when idle.
@@ -161,3 +159,5 @@ The architecture stays exactly as discussed (shared scheduled task, channel regi
 
 - Detecting dead peers via missing client traffic. The current design only sends keepalives; failure-to-receive cleanup is left to httpkit's normal close-detect. Easy follow-up — track `last-received-at` per registered channel and reap stale entries in the same tick.
 - Client-side heartbeat. The bean lists this OOS; still OOS.
+
+\n\n## Verification\n\nFailed verification on 2026-06-11.\n\nWhat passed:\n- /Users/micahmartin/agents/verify/isaac: bb spec -> 1853 examples, 0 failures, 3597 assertions\n- /Users/micahmartin/agents/verify/isaac: bb features -> 743 examples, 0 failures, 1644 assertions\n- /Users/micahmartin/agents/work-2/isaac-acp: bb spec spec/isaac/comm/acp/websocket/heartbeat_spec.clj -> 10 examples, 0 failures, 16 assertions\n\nBlocking acceptance miss:\n- The bean requires existing ACP scenarios to keep passing and claims no ACP-wide feature exception. I could not verify that gate. In the clean ACP checkout at /Users/micahmartin/agents/work-2/isaac-acp, ACP feature execution fails before scenarios run: bb features features/server/acp_websocket.feature and bb features features/comm/acp/reconnect.feature both abort during gherclj/instaparse load with a SCI error (Protocol not found: clojure.lang.IHashEq in instaparse/auto_flatten_seq.clj).\n- An alternate ACP checkout at /Users/micahmartin/agents/verify/isaac-acp also fails before scenarios run, there on missing isaac namespaces from ACP/isaac drift.\n- The bean documents a pre-existing ACP full-spec drift exception, but it does not document ACP feature-suite drift. Because the required ACP scenario safety net is not passing or exception-authorized, I cannot close the bean.\n\nNotes:\n- The ACP heartbeat implementation itself appears coherent on inspection: shared scheduler task, per-channel registry, idempotent startup, deregistration on close, and default/configurable interval.\n- Manual zanebot verification (>90s idle without :going-away churn) was not performed here.
