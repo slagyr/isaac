@@ -16,18 +16,24 @@ Feature: :deps resolution via tools.deps / babashka internals
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :isaac/manifest {:id      :marigold.bridge
-                        :version "1.0.0"
-                        :factory marigold.bridge/create-module}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.bridge
+       :version "1.0.0"
+       :factory marigold.bridge/create-module}
       """
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :deps {marigold.bridge/marigold.bridge {:local/root "/tmp/modules/marigold.bridge"}}
-       :isaac/manifest {:id      :marigold.longwave
-                        :version "0.1.0"
-                        :factory marigold.longwave/create-module}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.longwave
+       :version "0.1.0"
+       :factory marigold.longwave/create-module
+       :deps    {:marigold.bridge {:local/root "/tmp/modules/marigold.bridge"}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -44,11 +50,14 @@ Feature: :deps resolution via tools.deps / babashka internals
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :deps {marigold.bridge/marigold.bridge {:local/root "/nonexistent/path"}}
-       :isaac/manifest {:id      :marigold.longwave
-                        :version "0.1.0"
-                        :factory marigold.longwave/create-module}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.longwave
+       :version "0.1.0"
+       :factory marigold.longwave/create-module
+       :deps    {:marigold.bridge {:local/root "/nonexistent/path"}}}
       """
     And the isaac file "isaac.edn" exists with:
       """

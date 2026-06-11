@@ -1,11 +1,1 @@
-{:paths ["resources"]
- :isaac/manifest
- {:id      :isaac.providers.kombucha
-  :version "0.1.0"
-  :factory isaac.module/module
-  :isaac.server/provider-template
-  {:kombucha {:template {:api      "chat-completions"
-                         :base-url "https://api.kombucha.test/v1"
-                         :auth     "api-key"
-                         :models   ["kombucha-large" "kombucha-small"]}
-              :schema   {:fizz-level {:type :int}}}}}}
+{:paths ["resources"]}

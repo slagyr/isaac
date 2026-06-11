@@ -23,12 +23,10 @@
     (fs/mkdirs fs* (fs/parent path))
     (fs/spit   fs* path content)))
 
-(defn- mod-deps!
-  ([path] (mod-deps! path {:paths ["src" "resources"]}))
-  ([path content]
+(defn- mod-deps! [path]
   (let [fs* (nexus/get :fs)]
     (fs/mkdirs fs* (fs/parent path))
-    (fs/spit   fs* path (pr-str content)))))
+    (fs/spit   fs* path "{:paths [\"src\" \"resources\"]}")))
 
 (defn- mod-root [id]
   (str "/state/.isaac/modules/" (name id)))
@@ -36,24 +34,24 @@
 (defn- mod-coord [id]
   {:local/root (mod-root id)})
 
-(defn- write-local-module!
-  ([id manifest] (write-local-module! id manifest nil))
-  ([id manifest deps]
+(defn- write-local-module! [id manifest]
   (let [root (mod-root id)]
     (mod-dir! root)
-    (mod-deps! (str root "/deps.edn")
-               (cond-> {:paths          ["src" "resources"]
-                        :isaac/manifest manifest}
-                 deps (assoc :deps deps))))))
+    (mod-deps! (str root "/deps.edn"))
+    (mod-manifest! (str root "/resources/isaac-manifest.edn") (pr-str manifest))))
 
-(defn- local-deps-path [id]
-  (let [path (str (mod-root id) "/deps.edn")]
-    (when (fs/exists? (nexus/get :fs) path)
-      path)))
+(defn- local-manifest-path [id]
+  (let [root           (mod-root id)
+        resources-path (str root "/resources/isaac-manifest.edn")
+        src-path       (str root "/src/isaac-manifest.edn")]
+    (cond
+      (fs/exists? (nexus/get :fs) resources-path) resources-path
+      (fs/exists? (nexus/get :fs) src-path) src-path
+      :else nil)))
 
 (defn- discover-local! [ids]
   (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _])
-                isaac.module.loader/manifest-resource local-deps-path]
+                isaac.module.loader/manifest-resource local-manifest-path]
     (sut/discover! {:modules (into {} (map (fn [id] [id (mod-coord id)]) ids))} ctx)))
 
 (defn- unload-telly! []
@@ -127,12 +125,12 @@
       (sut/clear-caches!))
 
     (it "reads the core manifest only once"
-      (let [deps-calls (atom 0)
-            read-calls (atom 0)]
-        (with-redefs-fn {#'isaac.module.loader/manifest-in-deps   (fn [_]
-                                                                    (swap! deps-calls inc)
-                                                                    {:id :isaac.core})
-                         #'isaac.module.manifest/read-manifest     (fn [_ _]
+      (let [resource-calls (atom 0)
+            read-calls     (atom 0)]
+        (with-redefs-fn {#'isaac.module.loader/manifest-resource (fn [_]
+                                                                   (swap! resource-calls inc)
+                                                                   :core-resource)
+                         #'isaac.module.manifest/read-manifest    (fn [_ _]
                                                                     (swap! read-calls inc)
                                                                     {:id :isaac.core :version "1.0.0"})}
           #(do
@@ -141,7 +139,7 @@
                                     :path nil}}
                       (sut/core-index))
              (should= (sut/core-index) (sut/core-index))))
-        (should= 1 @deps-calls)
+        (should= 1 @resource-calls)
         (should= 1 @read-calls))))
 
   (describe "discover!"
@@ -164,18 +162,6 @@
         (should= [] errors)
         (should= :isaac.comm.pigeon (get-in index [:isaac.comm.pigeon :manifest :id]))
         (should= (mod-root :isaac.comm.pigeon) (get-in index [:isaac.comm.pigeon :path]))))
-
-    (it "reads the local/root manifest from deps.edn :isaac/manifest"
-      (let [root (mod-root :isaac.comm.starling)]
-        (mod-dir! root)
-        (mod-deps! (str root "/deps.edn")
-                   {:paths          ["src" "resources"]
-                    :isaac/manifest {:id      :isaac.comm.starling
-                                     :version "0.1.0"}})
-        (let [{:keys [index errors]} (discover-local! [:isaac.comm.starling])]
-          (should= [] errors)
-          (should= :isaac.comm.starling (get-in index [:isaac.comm.starling :manifest :id]))
-          (should= root (get-in index [:isaac.comm.starling :path])))))
 
     (it "discovers local/root manifests via classpath loading"
       (let [cwd         (System/getProperty "user.dir")
@@ -200,36 +186,45 @@
         (should= "modules[\"isaac.comm.ghost\"]" (:key (first errors)))
         (should= "manifest: could not read" (:value (first errors)))))
 
-    (it "adds an error when a local/root module has no deps.edn manifest"
+    (it "reads a local/root manifest directly when no deps.edn is present"
       (let [root (mod-root :isaac.comm.broken)]
         (mod-dir! root)
-        (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.broken {:local/root root}}} ctx)]
-          (should= nil (get index :isaac.comm.broken))
-          (should= "modules[\"isaac.comm.broken\"]" (:key (first errors)))
-          (should= "manifest: could not read" (:value (first errors))))))
+        (mod-manifest! (str root "/resources/isaac-manifest.edn") (pr-str {:id :isaac.comm.broken :version "0.1.0"}))
+        (let [calls (atom [])]
+          (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
+                                                               (swap! calls conj [id coord]))]
+            (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.broken {:local/root root}}} ctx)]
+              (should= [] errors)
+              (should= :isaac.comm.broken (get-in index [:isaac.comm.broken :manifest :id]))
+              (should= [] @calls))))))
 
     (it "uses the installed runtime fs for local manifest discovery"
       (let [mem  (fs/mem-fs)
             root (mod-root :isaac.comm.runtime)]
         (fs/mkdirs mem root)
-        (fs/spit mem (str root "/deps.edn")
-                 (pr-str {:paths          ["src" "resources"]
-                          :isaac/manifest {:id :isaac.comm.runtime :version "0.1.0"}}))
+        (fs/mkdirs mem (str root "/resources"))
+        (fs/spit mem (str root "/resources/isaac-manifest.edn") (pr-str {:id :isaac.comm.runtime :version "0.1.0"}))
         (nexus/-with-nexus {:fs mem}
           (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.runtime {:local/root root}}} ctx)]
             (should= [] errors)
             (should= :isaac.comm.runtime (get-in index [:isaac.comm.runtime :manifest :id]))))))
 
-    (it "does not add module deps for repeated direct local/root discovery"
+    (it "adds module deps only once per coordinate across repeated discovery"
       (write-local-module! :isaac.comm.pigeon valid-comm-manifest)
-      (let [calls (atom [])]
-        (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
-                                                             (swap! calls conj [id coord]))]
+      (let [calls            (atom [])
+            classpath-ready? (atom false)]
+        (with-redefs [isaac.module.loader/manifest-resource (fn [id]
+                                                              (when (and @classpath-ready?
+                                                                         (= id :isaac.comm.pigeon))
+                                                                (str (mod-root :isaac.comm.pigeon) "/resources/isaac-manifest.edn")))
+                      isaac.module.loader/add-module-deps!   (fn [id coord]
+                                                              (swap! calls conj [id coord])
+                                                              (reset! classpath-ready? true))]
           (let [first-result  (sut/discover! {:modules {:isaac.comm.pigeon (mod-coord :isaac.comm.pigeon)}} ctx)
                 second-result (sut/discover! {:modules {:isaac.comm.pigeon (mod-coord :isaac.comm.pigeon)}} ctx)]
             (should= [] (:errors first-result))
             (should= [] (:errors second-result))
-            (should= [] @calls)))))
+            (should= [[:isaac.comm.pigeon (mod-coord :isaac.comm.pigeon)]] @calls)))))
 
     (it "adds errors when a manifest fails schema validation"
       (write-local-module! :isaac.comm.pigeon {:id :isaac.comm.pigeon})
@@ -242,28 +237,7 @@
       (write-local-module! :mod.b {:id :mod.b :version "1"})
       (let [{:keys [index errors]} (discover-local! [:mod.a :mod.b])]
         (should= [] errors)
-        (should= #{:mod.a :mod.b :isaac.core} (set (keys index)))))
-
-    (it "derives module deps from deps.edn and auto-resolves them"
-      (write-local-module! :marigold.bridge
-                           {:id :marigold.bridge :version "1.0.0"})
-      (write-local-module! :marigold.longwave
-                           {:id :marigold.longwave :version "0.1.0"}
-                           {'marigold.bridge/marigold.bridge {:local/root (mod-root :marigold.bridge)}})
-      (let [{:keys [index errors]} (discover-local! [:marigold.longwave])]
-        (should= [] errors)
-        (should= {:local/root (mod-root :marigold.bridge)}
-                 (get-in index [:marigold.longwave :manifest :deps :marigold.bridge]))
-        (should= :marigold.bridge (get-in index [:marigold.bridge :manifest :id]))))
-
-    (it "normalizes invalid deps error keys to fallback module ids"
-      (write-local-module! :marigold.longwave
-                           {:id :marigold.longwave :version "0.1.0"}
-                           {'marigold.bridge/marigold.bridge "not-a-coordinate"})
-      (let [{:keys [errors]} (discover-local! [:marigold.longwave])]
-        (should= [{:key   "module-index[\"marigold.longwave\"].deps[:marigold.bridge]"
-                   :value "must be a coordinate map"}]
-                 errors))))
+        (should= #{:mod.a :mod.b :isaac.core} (set (keys index))))))
 
   (describe "process-manifest-berths!"
 

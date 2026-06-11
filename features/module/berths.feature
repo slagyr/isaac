@@ -11,19 +11,21 @@ Feature: Module berth declarations (phase 1 — shape only)
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :isaac/manifest
-       {:id      :marigold.bridge
-        :version "1.0.0"
-        :factory marigold.bridge/create-module
-        :berths  {:marigold.bridge/comm
-                  {:description "Comm channels (longwave, skybeam, logbook, ...)."
-                   :manifest    {:schema {:type :map}}
-                   :config      {:path   [:comms]
-                                 :schema {:type :map}}}
-                  :marigold.bridge/signal-route
-                  {:description "Signal route handlers."
-                   :manifest    {:schema {:type :seq}}}}}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.bridge
+       :version "1.0.0"
+       :factory marigold.bridge/create-module
+       :berths  {:marigold.bridge/comm
+                 {:description "Comm channels (longwave, skybeam, logbook, ...)."
+                  :manifest    {:schema {:type :map}}
+                  :config      {:path   [:comms]
+                                :schema {:type :map}}}
+                 :marigold.bridge/signal-route
+                 {:description "Signal route handlers."
+                  :manifest    {:schema {:type :seq}}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -42,12 +44,14 @@ Feature: Module berth declarations (phase 1 — shape only)
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :isaac/manifest
-       {:id      :marigold.bridge
-        :version "1.0.0"
-        :factory marigold.bridge/create-module
-        :berths  {:marigold.bridge/comm {:manifest {:schema {:type :map}}}}}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.bridge
+       :version "1.0.0"
+       :factory marigold.bridge/create-module
+       :berths  {:marigold.bridge/comm {:manifest {:schema {:type :map}}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -62,13 +66,15 @@ Feature: Module berth declarations (phase 1 — shape only)
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :isaac/manifest
-       {:id      :marigold.bridge
-        :version "1.0.0"
-        :factory marigold.bridge/create-module
-        :berths  {:comm {:description "Comm channels."
-                         :manifest    {:schema {:type :map}}}}}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.bridge
+       :version "1.0.0"
+       :factory marigold.bridge/create-module
+       :berths  {:comm {:description "Comm channels."
+                        :manifest    {:schema {:type :map}}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -83,17 +89,22 @@ Feature: Module berth declarations (phase 1 — shape only)
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :isaac/manifest {:id :marigold.bridge :version "1.0.0" :factory marigold.bridge/create-module}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id :marigold.bridge :version "1.0.0" :factory marigold.bridge/create-module}
       """
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :deps {marigold.bridge/marigold.bridge {:local/root "/tmp/modules/marigold.bridge"}}
-       :isaac/manifest
-       {:id      :marigold.longwave
-        :version "0.1.0"
-        :factory marigold.longwave/create-module}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.longwave
+       :version "0.1.0"
+       :factory marigold.longwave/create-module
+       :deps    {:marigold.bridge {:local/root "/tmp/modules/marigold.bridge"}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -109,12 +120,14 @@ Feature: Module berth declarations (phase 1 — shape only)
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :deps {marigold.bridge/marigold.bridge "not-a-coordinate"}
-       :isaac/manifest
-       {:id      :marigold.longwave
-        :version "0.1.0"
-        :factory marigold.longwave/create-module}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.longwave
+       :version "0.1.0"
+       :factory marigold.longwave/create-module
+       :deps    {:marigold.bridge "not-a-coordinate"}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -129,11 +142,13 @@ Feature: Module berth declarations (phase 1 — shape only)
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :isaac/manifest
-       {:id      :marigold.bridge
-        :version "1.0.0"
-        :factory "marigold.bridge/create-module"}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.bridge
+       :version "1.0.0"
+       :factory "marigold.bridge/create-module"}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -148,12 +163,14 @@ Feature: Module berth declarations (phase 1 — shape only)
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
       """
-      {:paths ["resources"]
-       :isaac/manifest
-       {:id      :marigold.bridge
-        :version "1.0.0"
-        :factory marigold.bridge/create-module
-        :berths  [:marigold.bridge/comm :marigold.bridge/signal-route]}}
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.bridge
+       :version "1.0.0"
+       :factory marigold.bridge/create-module
+       :berths  [:marigold.bridge/comm :marigold.bridge/signal-route]}
       """
     And the isaac file "isaac.edn" exists with:
       """

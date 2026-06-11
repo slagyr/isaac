@@ -88,83 +88,13 @@
            :value msg})
         (cs/message-map result)))
 
-(defn- deps-error-key [id dep-id]
-  (str "module-index[\"" (id-str id) "\"].deps[" dep-id "]"))
-
-(defn- read-deps-edn [path]
+(defn- read-manifest-edn [path]
   (let [fs* (runtime-fs)]
     (try
-      (edn/read-string (if (string? path)
-                         (cond
-                           (.exists (java.io.File. path)) (slurp path)
-                           (fs/exists? fs* path)          (fs/slurp fs* path)
-                           :else                          (slurp path))
+      (edn/read-string (if (and (string? path) (fs/exists? fs* path))
+                         (fs/slurp fs* path)
                          (slurp path)))
       (catch Exception _ nil))))
-
-(defn- manifest-in-deps [path]
-  (:isaac/manifest (read-deps-edn path)))
-
-(defn- candidate-module-coord? [coord]
-  (or (:local/root coord)
-      (:git/url coord)))
-
-(defn- relative-path? [path]
-  (and (string? path)
-       (not (str/starts-with? path "/"))
-       (not (re-matches #"[A-Za-z]:.*" path))))
-
-(defn- resource-dir [resource]
-  (when (string? resource)
-    (some-> resource java.io.File. .getParent)))
-
-(defn- fallback-dep-id [dep-id]
-  (cond
-    (keyword? dep-id) dep-id
-    (symbol? dep-id)  (let [ns (namespace dep-id)
-                            nm (name dep-id)]
-                        (if (= ns nm)
-                          (keyword ns)
-                          dep-id))
-    :else             dep-id))
-
-(defn- resolve-dep-root [resource root]
-  (if (relative-path? root)
-    (str (resource-dir resource) "/" root)
-    root))
-
-(defn- derived-module-dep-entry [resource dep-id coord]
-  (cond
-    (not (map? coord))
-    [dep-id coord]
-
-    (:local/root coord)
-    (let [resolved-root (resolve-dep-root resource (:local/root coord))
-          resolved-path (str resolved-root "/deps.edn")
-          manifest-id   (:id (manifest-in-deps resolved-path))]
-      [(or manifest-id (fallback-dep-id dep-id)) (assoc coord :local/root resolved-root)])
-
-    :else
-    [dep-id coord]))
-
-(defn- derived-manifest-deps [resource deps-edn]
-  (let [deps (:deps deps-edn)]
-    (when (map? deps)
-      (into {}
-            (keep (fn [[dep-id coord]]
-                    (when (or (not (map? coord))
-                              (candidate-module-coord? coord))
-                      (derived-module-dep-entry resource dep-id coord))))
-            deps))))
-
-(defn- derived-deps-errors [id deps]
-  (when (map? deps)
-    (vec
-      (keep (fn [[dep-id coord]]
-              (when-not (map? coord)
-                {:key   (deps-error-key id (fallback-dep-id dep-id))
-                 :value "must be a coordinate map"}))
-            deps))))
 
 (defn- abs-path [cwd path]
   (if (or (str/starts-with? path "/")
@@ -178,10 +108,6 @@
 
 (defn- real-dir? [path]
   (.isDirectory (java.io.File. path)))
-
-(defn- path-exists? [fs* path]
-  (or (fs/exists? fs* path)
-      (.exists (java.io.File. path))))
 
 (defn- ensure-dynamic-classloader!
   "`clojure.repl.deps/add-libs` requires a `DynamicClassLoader` on the
@@ -243,24 +169,24 @@
 
 (defn- manifest-resource [id]
   (some (fn [url]
-          (when (= id (:id (manifest-in-deps url)))
+          (when (= id (:id (read-manifest-edn url)))
             url))
-        (resource-urls "deps.edn")))
+        (resource-urls "isaac-manifest.edn")))
 
-(defn- local-deps-path [root fs*]
-  (let [path (str root "/deps.edn")]
-    (when (and (path-exists? fs* path)
-               (:id (manifest-in-deps path)))
-      path)))
+(defn- local-manifest-path [root fs*]
+  (some #(when (fs/exists? fs* %) %)
+         [(str root "/resources/isaac-manifest.edn")
+          (str root "/src/isaac-manifest.edn")]))
 
 (defn resolve-manifest-resource [id coord]
   (let [fs* (runtime-fs)]
-    (if-let [root (:local/root coord)]
-      (local-deps-path root fs*)
-      (do
-        (when (seq coord)
-          (ensure-module-deps! id coord))
-        (manifest-resource id)))))
+    (or (when-let [root (:local/root coord)]
+          (when-not (fs/exists? fs* (str root "/deps.edn"))
+            (local-manifest-path root fs*)))
+        (do
+          (when (seq coord)
+            (ensure-module-deps! id coord))
+          (manifest-resource id)))))
 
 (defn- loadable-coord [context coord]
   (if-let [root (local-root-path context coord)]
@@ -284,16 +210,9 @@
           resource (resolve-manifest-resource id coord)]
       (if (nil? resource)
         {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
-        (let [deps-edn  (read-deps-edn resource)
-              deps     (derived-manifest-deps resource deps-edn)
-              errors   (derived-deps-errors id deps)
-              manifest (cond-> (manifest/read-manifest resource fs*)
-                         (seq deps) (assoc :deps deps))]
-          (if (seq errors)
-            {:errors errors}
-            {:entry {id {:coord    coord
-                         :manifest manifest
-                         :path     path}}}))))
+        {:entry {id {:coord    coord
+                     :manifest (manifest/read-manifest resource fs*)
+                     :path     path}}}))
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
         (cond
@@ -316,7 +235,7 @@
   (cond
     ;; Route the core module through `core-index` so the override seam
     ;; (`*core-index-override*`) is the single source of truth — instead
-    ;; of having `discover!` re-resolve the core deps manifest from disk.
+    ;; of having `discover!` re-resolve isaac-manifest.edn from disk.
     (= core-module-id id)
     (if-let [entry (get (core-index) core-module-id)]
       {:entry {core-module-id entry}}
@@ -389,10 +308,7 @@
 (defn core-index []
   (or *core-index-override*
       @core-index-cache
-      (let [root-deps "deps.edn"
-            result (if-let [resource (or (when (= core-module-id (:id (manifest-in-deps root-deps)))
-                                           root-deps)
-                                         (manifest-resource core-module-id))]
+      (let [result (if-let [resource (manifest-resource core-module-id)]
                      (let [manifest (manifest/read-manifest resource (runtime-fs))]
                         {core-module-id {:coord {} :manifest manifest :path nil}})
                       {})]
@@ -820,7 +736,7 @@
           index))
 
 (defn- dep-resolution-error [consumer-id dep-id]
-  {:key   (deps-error-key consumer-id dep-id)
+  {:key   (str "module-index[\"" (id-str consumer-id) "\"].deps[" dep-id "]")
    :value "failed to resolve coordinate"})
 
 (defn- resolve-deps!

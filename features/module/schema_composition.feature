@@ -127,15 +127,13 @@ Feature: Module schema composition
     # Phase 8 (isaac-qqgv): comm contributions moved to the
     # :isaac.server/comm berth (key change only; validation is unchanged).
     Given an empty Isaac root at "/tmp/isaac"
-    And a module manifest "modules/isaac.comm.broken/deps.edn":
+    And a module manifest "modules/isaac.comm.broken/resources/isaac-manifest.edn":
       """
-      {:paths ["resources"]
-       :isaac/manifest
-       {:id                :isaac.comm.broken
-        :version           "0.1.0"
-        :isaac.server/comm {:broken {:factory isaac.comm.broken/make
-                                     :schema  {:thing {:type :string
-                                                       :validations [:no-such-ref?]}}}}}}
+      {:id                :isaac.comm.broken
+       :version           "0.1.0"
+       :isaac.server/comm {:broken {:factory isaac.comm.broken/make
+                                    :schema  {:thing {:type :string
+                                                      :validations [:no-such-ref?]}}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """
@@ -151,14 +149,12 @@ Feature: Module schema composition
     # :isaac.server/comm berth (key change only; the :type-as-slot-
     # discriminator rule is unchanged).
     Given an empty Isaac root at "/tmp/isaac"
-    And a module manifest at "/tmp/isaac/badmod/deps.edn":
+    And a module manifest at "/tmp/isaac/badmod/resources/isaac-manifest.edn":
       """
-      {:paths ["resources"]
-       :isaac/manifest
-       {:id                :isaac.comm.badmod
-        :version           "0.1.0"
-        :isaac.server/comm {:badmod {:factory isaac.comm.null/make
-                                     :schema  {:type {:type :string}}}}}}
+      {:id                :isaac.comm.badmod
+       :version           "0.1.0"
+       :isaac.server/comm {:badmod {:factory isaac.comm.null/make
+                                    :schema  {:type {:type :string}}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """

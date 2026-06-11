@@ -1,11 +1,11 @@
 ---
 # isaac-8i8z
 title: Collapse isaac-manifest.edn into deps.edn :isaac/manifest
-status: completed
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-11T14:44:59Z
-updated_at: 2026-06-11T16:55:49Z
+updated_at: 2026-06-11T14:47:05Z
 parent: isaac-brth
 ---
 
@@ -20,15 +20,6 @@ Collapse the isaac-specific content into `deps.edn` under a
 namespaced `:isaac/manifest` key. tools.deps already ignores
 unknown top-level keys; nothing in the bb / clj toolchain needs
 to know about isaac to keep working.
-
-## Exceptions
-
-- Feature files under `features/cli/` and `features/module/` may be
-  edited beyond `@wip` removal to replace
-  `resources/isaac-manifest.edn` / `src/isaac-manifest.edn` fixture
-  paths and prose with the new single-file `deps.edn` +
-  `:isaac/manifest` contract, as long as the behavioral assertions do
-  not change.
 
 ## Surface change
 
@@ -132,5 +123,3 @@ No new Gherkin. Existing module + berth tests are the safety net.
 - `:isaac/manifest` is a top-level key on deps.edn; tools.deps
   silently ignores it. Confirm by running `clj -X:deps tree` and
   checking it doesn't error.
-
-\n\n## Verification\n\nFailed verification on 2026-06-11.\n\nLocal foundation checks passed:\n- bb spec: 1853 examples, 0 failures, 3597 assertions\n- bb features: 743 examples, 0 failures, 1644 assertions\n- rg 'isaac-manifest\.edn' src/ spec/ features/ modules/: zero hits\n- find . -path '*/isaac-manifest.edn': zero hits in this repo tree\n\nBlocking acceptance miss:\n- Cross-repo migration is incomplete. The sibling module checkouts I inspected still ship manifest files at:\n  - /Users/micahmartin/agents/work-2/isaac-acp/src/isaac-manifest.edn\n  - /Users/micahmartin/agents/work-2/isaac-discord/src/isaac-manifest.edn\n  - /Users/micahmartin/agents/work-2/isaac-imessage/src/isaac-manifest.edn\n\nThe bean explicitly says isaac-acp, isaac-discord, and isaac-imessage should fold their manifests into deps.edn under :isaac/manifest and delete the old file, and acceptance requires that no isaac module ships an isaac-manifest.edn file anymore. That cross-repo condition is not met yet, so the bean cannot be closed.

@@ -1,7 +1,7 @@
 Feature: CLI version
   Isaac reports its version via the --version flag, -V short flag,
   or the `version` subcommand. The version string is read from
-  deps.edn's :isaac/manifest. When the working directory is a git
+  src/isaac-manifest.edn. When the working directory is a git
   repository, the short (8-char) commit SHA is appended in parens;
   otherwise the SHA is omitted.
 

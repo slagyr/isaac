@@ -18,12 +18,13 @@
                             :validate schema/present?
                             :message  "must be present"}
             :description   {:type :string}
-            ;; :berths stays :ignore here because its nested
+            ;; :berths and :deps stay :ignore here because their nested
             ;; error keys are easier to emit directly (see
-            ;; validate-berths!) than to coax out of c3kit's
+            ;; validate-berths-and-deps!) than to coax out of c3kit's
             ;; message-map. :factory uses the lexicon's :symbol type.
             :factory       {:type :symbol}
             :berths        {:type :ignore}
+            :deps          {:type :ignore}
             ;; :cli is no longer a hardcoded extension kind — it's a berth
             ;; (declared by isaac.core's manifest under :berths) and
             ;; contributions flow through process-manifest-berths!. Stays
@@ -31,7 +32,7 @@
             ;; :cli at the top level still parse.
             :cli           {:type :ignore}}})
 
-(def ^:private known-meta-keys #{:berths :bootstrap :cli :description :factory :id :version})
+(def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :version})
 (def ^:private known-extend-kinds #{})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
@@ -68,6 +69,9 @@
 (defn- berths-key-prefix [id k]
   (str "module-index[\"" (id-str id) "\"].berths[" k "]"))
 
+(defn- deps-key-prefix [id k]
+  (str "module-index[\"" (id-str id) "\"].deps[" k "]"))
+
 (defn- collect-berth-errors [id berths]
   (cond
     (not (map? berths))
@@ -98,10 +102,27 @@
                      :value "must be present"})))
           berths)))))
 
-(defn- validate-berths! [path manifest]
+(defn- collect-deps-errors [id deps]
+  (cond
+    (not (map? deps))
+    [{:key   (str "module-index[\"" (id-str id) "\"].deps")
+      :value "must be a map"}]
+
+    :else
+    (vec
+      (keep
+        (fn [[k v]]
+          (when-not (map? v)
+            {:key   (deps-key-prefix id k)
+             :value "must be a coordinate map"}))
+        deps))))
+
+(defn- validate-berths-and-deps! [path manifest]
   (let [id     (:id manifest)
-        errs   (when (contains? manifest :berths)
-                 (collect-berth-errors id (:berths manifest)))]
+        errs   (concat (when (contains? manifest :berths)
+                         (collect-berth-errors id (:berths manifest)))
+                       (when (contains? manifest :deps)
+                         (collect-deps-errors id (:deps manifest))))]
     (when (seq errs)
       (throw (ex-info "manifest shape errors"
                       {:isaac/manifest-errors (vec errs)
@@ -109,13 +130,7 @@
 
 (defn read-manifest
   [path fs*]
-  (let [raw      (edn/read-string (if (string? path)
-                                    (cond
-                                      (.exists (java.io.File. path)) (slurp path)
-                                      (fs/exists? fs* path)          (fs/slurp fs* path)
-                                      :else                          (slurp path))
-                                    (slurp path)))
-        raw      (or (:isaac/manifest raw) raw)]
+  (let [raw (edn/read-string (if (string? path) (fs/slurp fs* path) (slurp path)))]
      (when (contains? raw :entry)
        (throw (ex-info "entry is not supported; use :bootstrap"
                        {:field :entry :path path})))
@@ -147,6 +162,6 @@
                                           raw))
            manifest      (merge conformed contributions)]
        (validate-bootstrap! path manifest)
-       (validate-berths! path manifest)
+       (validate-berths-and-deps! path manifest)
        (validate-v2-entries! path manifest)
        manifest)))

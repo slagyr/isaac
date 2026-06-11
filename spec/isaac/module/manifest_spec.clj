@@ -84,13 +84,6 @@
     (with tmp-file (File/createTempFile "manifest" ".edn"))
     (after (.delete @tmp-file))
 
-    (it "reads the manifest from deps.edn :isaac/manifest"
-      (spit (.getPath @tmp-file)
-            (pr-str {:paths           ["src" "resources"]
-                     :deps            {}
-                     :isaac/manifest  pigeon-manifest}))
-      (should= pigeon-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
-
     (it "parses a v2 manifest with :comm and :factory"
       (spit (.getPath @tmp-file) (pr-str pigeon-manifest))
       (should= pigeon-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
