@@ -4,10 +4,8 @@ title: Collapse isaac-manifest.edn into deps.edn :isaac/manifest
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-11T14:44:59Z
-updated_at: 2026-06-11T15:39:54Z
+updated_at: 2026-06-11T15:46:46Z
 parent: isaac-brth
 ---
 
@@ -134,3 +132,5 @@ No new Gherkin. Existing module + berth tests are the safety net.
 - `:isaac/manifest` is a top-level key on deps.edn; tools.deps
   silently ignores it. Confirm by running `clj -X:deps tree` and
   checking it doesn't error.
+
+\n\n## Verification\n\nFailed verification on 2026-06-11.\n\nLocal foundation checks passed:\n- bb spec: 1853 examples, 0 failures, 3597 assertions\n- bb features: 743 examples, 0 failures, 1644 assertions\n- rg 'isaac-manifest\.edn' src/ spec/ features/ modules/: zero hits\n- find . -path '*/isaac-manifest.edn': zero hits in this repo tree\n\nBlocking acceptance miss:\n- Cross-repo migration is incomplete. The sibling module checkouts I inspected still ship manifest files at:\n  - /Users/micahmartin/agents/work-2/isaac-acp/src/isaac-manifest.edn\n  - /Users/micahmartin/agents/work-2/isaac-discord/src/isaac-manifest.edn\n  - /Users/micahmartin/agents/work-2/isaac-imessage/src/isaac-manifest.edn\n\nThe bean explicitly says isaac-acp, isaac-discord, and isaac-imessage should fold their manifests into deps.edn under :isaac/manifest and delete the old file, and acceptance requires that no isaac module ships an isaac-manifest.edn file anymore. That cross-repo condition is not met yet, so the bean cannot be closed.
