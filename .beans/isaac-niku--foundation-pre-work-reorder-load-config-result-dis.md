@@ -4,8 +4,10 @@ title: 'Foundation pre-work: reorder load-config-result — discovery before sch
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:49:58Z
-updated_at: 2026-06-12T14:01:19Z
+updated_at: 2026-06-12T14:11:21Z
 parent: isaac-brth
 ---
 

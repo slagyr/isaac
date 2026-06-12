@@ -12,6 +12,7 @@
     [isaac.config.loader :as sut]
     [isaac.fs :as fs]
     [isaac.llm.provider :as llm-provider]
+    [isaac.module.loader :as module-loader]
     [speclj.core :refer :all]))
 
 (defn- with-config-slot [f]
@@ -448,6 +449,24 @@
           (should= [(#'sut/source-path "hooks/webhook.md")] (:sources result))))))
 
   (describe "load-config-result"
+
+    (it "discovers declared modules before conforming the config schema"
+      (let [mem     (fs/mem-fs)
+            root    (paths/config-root marigold/root)
+            path    (str root "/" paths/root-filename)
+            modules {:isaac.comm.pigeon {:local/root "/marigold/.isaac/modules/isaac.comm.pigeon"}}
+            events  (atom [])]
+        (fs/mkdirs mem root)
+        (fs/spit mem path (pr-str {:modules modules}))
+        (with-redefs [module-loader/discover! (fn [config _context]
+                                                (swap! events conj [:discover (:modules config)])
+                                                {:index {} :errors []})
+                      cs/conform              (fn [_ data]
+                                                (swap! events conj [:conform data])
+                                                data)
+                      cs/error?               (constantly false)]
+          (sut/load-config-result {:root marigold/root :fs mem :skip-entity-files? true})
+          (should= [:discover modules] (first @events)))))
 
     (it "returns an honest empty config when no files exist"
       (let [result (marigold/load-config)]

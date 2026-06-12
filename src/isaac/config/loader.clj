@@ -128,17 +128,25 @@
 (defn- assoc-error [result key value]
   (update result :errors conj {:key key :value value}))
 
-(defn- normalize-defaults [defaults]
-  (let [result (cs/conform (runtime-schema schema/defaults) defaults)]
-    (if (cs/error? result) {} result)))
+(declare schema-for)
 
-(defn- normalize-crew [crew]
-  (let [result (cs/conform (runtime-schema schema/crew) crew)]
-    (if (cs/error? result) {} result)))
+(defn- normalize-defaults
+  ([defaults] (normalize-defaults schema/root defaults))
+  ([root-schema defaults]
+   (let [result (cs/conform (runtime-schema (schema-for root-schema :defaults)) defaults)]
+     (if (cs/error? result) {} result))))
 
-(defn- normalize-model [model]
-  (let [result (cs/conform (runtime-schema schema/model) model)]
-    (if (cs/error? result) {} result)))
+(defn- normalize-crew
+  ([crew] (normalize-crew schema/root crew))
+  ([root-schema crew]
+   (let [result (cs/conform (runtime-schema (schema-for root-schema :crew)) crew)]
+     (if (cs/error? result) {} result))))
+
+(defn- normalize-model
+  ([model] (normalize-model schema/root model))
+  ([root-schema model]
+   (let [result (cs/conform (runtime-schema (schema-for root-schema :models)) model)]
+     (if (cs/error? result) {} result))))
 
 (defn- collect-unknown-key-warnings [warnings kind id entity entity-schema]
   (let [entity-fields (schema/schema-fields entity-schema)]
@@ -213,15 +221,17 @@
       (seq (read-md-files root "providers"))
       (seq (read-md-files root "cron"))))
 
-(defn- schema-for [kind]
-  (case kind
-    :cron schema/cron-job
-    :crew schema/crew
-    :defaults schema/defaults
-    :hail schema/hail-band
-    :hooks schema/hook
-    :models schema/model
-    :providers schema/provider))
+(defn- schema-for
+  ([kind] (schema-for schema/root kind))
+  ([root-schema kind]
+   (case kind
+     :defaults (get-in root-schema [:schema :defaults])
+     :cron     (get-in root-schema [:schema :cron :value-spec])
+     :crew     (get-in root-schema [:schema :crew :value-spec])
+     :hail     (get-in root-schema [:schema :hail :value-spec])
+     :hooks    (get-in root-schema [:schema :hooks :value-spec])
+     :models   (get-in root-schema [:schema :models :value-spec])
+     :providers (get-in root-schema [:schema :providers :value-spec]))))
 
 (defn- schema-error-entries [prefix result]
   (letfn [(segment-name [segment]
@@ -296,27 +306,82 @@
                      (:value result) (assoc :prompt (:value result)))
      :errors []}))
 
-(defn- top-level-warnings [data]
-  (reduce (fn [acc key]
-            (if (contains? (schema/schema-fields schema/root) key)
-              acc
-              (conj acc (warning (name key) "unknown key"))))
-          []
-          (keys data)))
+(defn- top-level-warnings
+  ([data] (top-level-warnings schema/root data))
+  ([root-schema data]
+   (reduce (fn [acc key]
+             (if (contains? (schema/schema-fields root-schema) key)
+               acc
+               (conj acc (warning (name key) "unknown key"))))
+           []
+           (keys data))))
 
-(defn- root-entity-warnings [raw-data]
-  (reduce (fn [warnings [kind entity-schema]]
-            (reduce-kv (fn [acc id entity]
-                         (if (map? entity)
-                           (collect-unknown-key-warnings acc (name kind) (->id id) entity entity-schema)
-                           acc))
-                       warnings
-                       (get raw-data kind {})))
-          []
-          [[:crew (schema-for :crew)]
-           [:hail (schema-for :hail)]
-           [:models (schema-for :models)]
-           [:providers (schema-for :providers)]]))
+(defn- root-entity-warnings
+  ([raw-data] (root-entity-warnings schema/root raw-data))
+  ([root-schema raw-data]
+   (reduce (fn [warnings kind]
+             (reduce-kv (fn [acc id entity]
+                          (if (map? entity)
+                            (collect-unknown-key-warnings acc (name kind) (->id id) entity (schema-for root-schema kind))
+                            acc))
+                        warnings
+                        (get raw-data kind {})))
+           []
+           [:crew :hail :models :providers])))
+
+(defn- root-config-warnings
+  ([raw-data] (root-config-warnings schema/root raw-data))
+  ([root-schema raw-data]
+   (concat (top-level-warnings root-schema raw-data)
+           (root-entity-warnings root-schema raw-data))))
+
+(defn- read-root-config [root {:keys [raw-parse-errors? substitute-env?] :as opts}]
+  (let [overlay (overlay-for opts paths/root-filename)
+        path    (str root "/" paths/root-filename)]
+    (cond
+      overlay
+      (let [{:keys [content relative]} overlay]
+        (try
+          (let [raw-data             (read-edn-string content substitute-env?)
+                {:keys [cron errors]} (resolve-cron-prompts root raw-data)
+                data                 (cond-> raw-data
+                                             (:cron raw-data) (assoc :cron cron))]
+            {:data     data
+             :errors   (vec errors)
+             :warnings []
+             :sources  [(source-path relative)]})
+          (catch Exception _
+            {:data nil :errors [{:key paths/root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
+
+      (exists?* path)
+      (let [{raw-data :data error :error} (read-edn-file path substitute-env? raw-parse-errors?)]
+        (if error
+          {:data nil :errors [{:key paths/root-filename :value error}] :warnings [] :sources []}
+          (let [{:keys [cron errors]} (resolve-cron-prompts root raw-data)
+                data                  (cond-> raw-data
+                                              (:cron raw-data) (assoc :cron cron))]
+            {:data     data
+             :errors   (vec errors)
+             :warnings []
+             :sources  [(source-path paths/root-filename)]})))
+
+      :else
+      {:data nil :errors [] :warnings [] :sources []})))
+
+(defn- validate-root-config
+  ([result] (validate-root-config schema/root result))
+  ([root-schema {:keys [data] :as result}]
+   (if-not data
+     result
+     (let [root-result     (cs/conform (runtime-schema root-schema) data)
+           defaults-result (when-let [defaults (:defaults data)]
+                             (cs/conform (runtime-schema (schema-for root-schema :defaults)) defaults))]
+       (-> result
+           (update :errors into (concat
+                                  (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                  (when (and defaults-result (cs/error? defaults-result))
+                                    (schema-error-entries "defaults" defaults-result))))
+           (assoc :warnings (root-config-warnings root-schema data)))))))
 
 (defn- load-root-config [root {:keys [raw-parse-errors? substitute-env?] :as opts}]
   (let [overlay (overlay-for opts paths/root-filename)
@@ -365,11 +430,11 @@
       :else
       {:data nil :errors [] :warnings [] :sources []})))
 
-(defn- merge-root-entity [result kind]
+(defn- merge-root-entity-with-schema [entity-schema result kind]
   (reduce (fn [acc [id entity]]
             (let [id       (->id id)
-                  warnings (collect-unknown-key-warnings [] (name kind) id entity (schema-for kind))
-                  entity   (cs/conform (runtime-schema (schema-for kind)) entity)
+                  warnings (collect-unknown-key-warnings [] (name kind) id entity entity-schema)
+                  entity   (cs/conform (runtime-schema entity-schema) entity)
                   explicit (:id entity)]
               (-> acc
                   (update :warnings into warnings)
@@ -381,6 +446,12 @@
                           (assoc-in [:config kind id] (dissoc entity :id))))))
           result
           (get-in result [:root kind])))
+
+(defn- merge-root-entity
+  ([result kind]
+   (merge-root-entity-with-schema (schema-for kind) result kind))
+  ([root-schema result kind]
+   (merge-root-entity-with-schema (schema-for root-schema kind) result kind)))
 
 (defn- read-frontmatter-file [{:keys [relative] :as entry} substitute-env? raw-parse-errors?]
   (try
@@ -460,9 +531,9 @@
     :else
     {:data raw-data :error nil :extra-errors []}))
 
-(defn- finalize-entity-load [result kind id relative data extra-errors]
-  (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
-        entity      (cs/conform (runtime-schema (schema-for kind)) data)
+(defn- finalize-entity-load-with-schema [entity-schema result kind id relative data extra-errors]
+  (let [warnings    (collect-unknown-key-warnings [] (name kind) id data entity-schema)
+        entity      (cs/conform (runtime-schema entity-schema) data)
         explicit-id (:id entity)
         result      (-> result
                         (update :warnings into warnings)
@@ -485,23 +556,48 @@
           (assoc-in [:raw kind id] (dissoc data :id))
           (update :sources conj (source-path relative))))))
 
-(defn- load-entity-file [result root kind {:keys [format id relative] :as entry} substitute-env? raw-parse-errors?]
-  (let [{raw-data :data error :error body :body} (read-entity-entry entry substitute-env? raw-parse-errors?)
-        {data :data error :error extra-errors :extra-errors}
-        (if error
-          {:data raw-data :error error :extra-errors []}
-          (resolve-entity-data root kind id format raw-data body))]
-    (cond
-      error
-      (if (map? error)
-        (update result :errors conj error)
-        (assoc-error result relative error))
+(defn- finalize-entity-load
+  ([result kind id relative data extra-errors]
+   (finalize-entity-load-with-schema (schema-for kind) result kind id relative data extra-errors))
+  ([root-schema result kind id relative data extra-errors]
+   (finalize-entity-load-with-schema (schema-for root-schema kind) result kind id relative data extra-errors)))
 
-      (not (map? data))
-      (assoc-error result relative "must contain a map")
+(defn- load-entity-file
+  ([result root kind entry substitute-env? raw-parse-errors?]
+   (let [{:keys [format id relative]} entry
+         {raw-data :data error :error body :body} (read-entity-entry entry substitute-env? raw-parse-errors?)
+         {data :data error :error extra-errors :extra-errors}
+         (if error
+           {:data raw-data :error error :extra-errors []}
+           (resolve-entity-data root kind id format raw-data body))]
+     (cond
+       error
+       (if (map? error)
+         (update result :errors conj error)
+         (assoc-error result relative error))
 
-      :else
-      (finalize-entity-load result kind id relative data extra-errors))))
+       (not (map? data))
+       (assoc-error result relative "must contain a map")
+
+       :else
+       (finalize-entity-load result kind id relative data extra-errors))))
+  ([root-schema result root kind {:keys [format id relative] :as entry} substitute-env? raw-parse-errors?]
+   (let [{raw-data :data error :error body :body} (read-entity-entry entry substitute-env? raw-parse-errors?)
+         {data :data error :error extra-errors :extra-errors}
+         (if error
+           {:data raw-data :error error :extra-errors []}
+           (resolve-entity-data root kind id format raw-data body))]
+     (cond
+       error
+       (if (map? error)
+         (update result :errors conj error)
+         (assoc-error result relative error))
+
+       (not (map? data))
+       (assoc-error result relative "must contain a map")
+
+       :else
+       (finalize-entity-load root-schema result kind id relative data extra-errors)))))
 
 (defn- dangling-md-warnings [root root-data opts]
   (let [root-data       (or root-data {})
@@ -1010,34 +1106,40 @@
   (and (map? crew-block)
        (empty? (set/intersection #{:defaults :list :models} (set (keys crew-block))))))
 
-(defn- normalize-crew-config [crew-block]
-  (let [old-crew-list (or (:list crew-block) [])]
+(defn- normalize-crew-config
+  ([crew-block] (normalize-crew-config schema/root crew-block))
+  ([root-schema crew-block]
+   (let [old-crew-list (or (:list crew-block) [])]
     (cond
       (modern-crew-map? crew-block)
-      (into {} (map (fn [[id entity]] [(->id id) (normalize-crew entity)])) crew-block)
+      (into {} (map (fn [[id entity]] [(->id id) (normalize-crew root-schema entity)])) crew-block)
 
       (seq old-crew-list)
-      (into {} (map (fn [entity] [(->id (:id entity)) (normalize-crew entity)])) old-crew-list)
+      (into {} (map (fn [entity] [(->id (:id entity)) (normalize-crew root-schema entity)])) old-crew-list)
 
       :else
-      {})))
+      {}))))
 
-(defn- normalize-model-config [cfg crew-block]
-  (let [old-models (or (:models crew-block) {})]
+(defn- normalize-model-config
+  ([cfg crew-block] (normalize-model-config schema/root cfg crew-block))
+  ([root-schema cfg crew-block]
+   (let [old-models (or (:models crew-block) {})]
     (cond
       (and (map? (:models cfg))
            (not (vector? (:models cfg)))
            (not (:providers (:models cfg))))
-      (into {} (map (fn [[id entity]] [(->id id) (normalize-model entity)])) (:models cfg))
+      (into {} (map (fn [[id entity]] [(->id id) (normalize-model root-schema entity)])) (:models cfg))
 
       (seq old-models)
-      (into {} (map (fn [[id entity]] [(->id id) (normalize-model entity)])) old-models)
+      (into {} (map (fn [[id entity]] [(->id id) (normalize-model root-schema entity)])) old-models)
 
       :else
-      {})))
+      {}))))
 
-(defn- normalize-provider-config [cfg]
-  (let [old-providers (or (get-in cfg [:models :providers]) [])]
+(defn- normalize-provider-config
+  ([cfg] (normalize-provider-config schema/root cfg))
+  ([_root-schema cfg]
+   (let [old-providers (or (get-in cfg [:models :providers]) [])]
     (cond
       (map? (:providers cfg))
       (into {} (map (fn [[id entity]] [(->id id) entity])) (:providers cfg))
@@ -1046,7 +1148,7 @@
       (into {} (map (fn [entity] [(->id (or (:id entity) (:name entity))) (dissoc entity :name)])) old-providers)
 
       :else
-      {})))
+      {}))))
 
 (defn- assoc-present-keys [result source keys]
   (reduce (fn [acc k]
@@ -1056,21 +1158,30 @@
           result
           keys))
 
-(defn normalize-config [cfg]
-  (let [crew-block    (or (:crew cfg) {})
+(def ^:private normalized-config-keys #{:cron :crew :defaults :hail :models :providers})
+(def ^:private extra-present-config-keys [:dev :module-index :root])
+
+(defn- present-config-keys [root-schema]
+  (concat extra-present-config-keys
+          (remove normalized-config-keys (keys (schema/schema-fields root-schema)))))
+
+(defn normalize-config
+  ([cfg] (normalize-config schema/root cfg))
+  ([root-schema cfg]
+   (let [crew-block    (or (:crew cfg) {})
         defaults      (or (:defaults cfg) (:defaults crew-block) {})
         new-cron      (normalize-cron-config cfg)
-        new-crew      (normalize-crew-config crew-block)
-        new-models    (normalize-model-config cfg crew-block)
-        new-providers (normalize-provider-config cfg)]
-    (assoc-present-keys {:defaults  (normalize-defaults defaults)
+        new-crew      (normalize-crew-config root-schema crew-block)
+        new-models    (normalize-model-config root-schema cfg crew-block)
+        new-providers (normalize-provider-config root-schema cfg)]
+    (assoc-present-keys {:defaults  (normalize-defaults root-schema defaults)
                          :crew      new-crew
                          :models    new-models
                          :providers new-providers
                          :cron      new-cron}
                         (cond-> cfg
                                 (contains? cfg :cron) (assoc :cron new-cron))
-                        [:acp :channels :command-paths :comms :cron :dev :gateway :hooks :module-index :modules :prefer-entity-files :prompt-dir-names :prompt-paths :server :sessions :skill-menu-threshold :skill-paths :slash-commands :root :tools :tz])))
+                        (present-config-keys root-schema)))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -1091,7 +1202,14 @@
                                    :missing-config? true
                                    :warnings        []
                                    :sources         []}
-                                  (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config config-root opts)
+                                  (let [root-read       (read-root-config config-root opts)
+                                        root-data       (:data root-read)
+                                        discovery-input (cond-> {}
+                                                          (contains? root-data :modules) (assoc :modules (:modules root-data)))
+                                        discovery       (module-loader/discover! discovery-input {:root root
+                                                                                                  :cwd  (System/getProperty "user.dir")})
+                                        effective-schema (berths/effective-root-schema schema/root (:index discovery))
+                                        {root-errors :errors root-warnings :warnings root-sources :sources} (validate-root-config effective-schema root-read)
                                         crew-files       (entity-files config-root "crew" opts)
                                         cron-files       (entity-files config-root "cron" opts)
                                         hail-files       (entity-files config-root "hail" opts)
@@ -1099,7 +1217,7 @@
                                         model-files      (entity-files config-root "models" opts)
                                         provider-files   (entity-files config-root "providers" opts)
                                         md-warnings      (dangling-md-warnings config-root root-data opts)
-                                        base-config      (normalize-config (or root-data {}))
+                                        base-config      (normalize-config effective-schema (or root-data {}))
                                         result           {:config          base-config
                                                           :errors          root-errors
                                                           :missing-config? false
@@ -1112,28 +1230,28 @@
                                                                                         (:warnings provider-files)
                                                                                         md-warnings))
                                                           :sources         root-sources
-                                                          :root            (normalize-config (or root-data {}))}
-                                        result           (reduce merge-root-entity result [:crew :cron :hail :models :providers])
+                                                          :root            (normalize-config effective-schema (or root-data {}))}
+                                        result           (reduce (fn [acc kind]
+                                                                   (merge-root-entity effective-schema acc kind))
+                                                                 result
+                                                                 [:crew :cron :hail :models :providers])
                                         result           (cond-> result
                                                                  (not skip-entity-files?)
-                                                                 (as-> r (reduce (fn [acc entity-file] (load-entity-file acc config-root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :hail entity-file substitute-env? raw-parse-errors?)) r (:files hail-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
-                                                                       (reduce (fn [acc entity-file] (load-entity-file acc config-root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
-                                        config           (update (:config result) :defaults normalize-defaults)
+                                                                 (as-> r (reduce (fn [acc entity-file] (load-entity-file effective-schema acc config-root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file effective-schema acc config-root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file effective-schema acc config-root :hail entity-file substitute-env? raw-parse-errors?)) r (:files hail-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file effective-schema acc config-root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file effective-schema acc config-root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
+                                                                       (reduce (fn [acc entity-file] (load-entity-file effective-schema acc config-root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
+                                        config           (update (:config result) :defaults #(normalize-defaults effective-schema %))
                                         config           (if data-path-overlay
                                                            (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
                                                            config)
-                                        discovery        (module-loader/discover! config {:root root
-                                                                                          :cwd       (System/getProperty "user.dir")})
                                         config           (assoc config
                                                            :module-index (:index discovery)
                                                            :root root)
                                         raw-providers    (merge (get-in result [:root :providers])
                                                                 (get-in result [:raw :providers]))
-                                        effective-schema (berths/effective-root-schema schema/root (:index discovery))
                                         comms-check      (if (berths/claims-path? (:index discovery) [:comms])
                                                            {:errors [] :warnings []}
                                                            (check-comms config (:index discovery)))
