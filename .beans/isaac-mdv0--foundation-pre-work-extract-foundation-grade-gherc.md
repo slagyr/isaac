@@ -4,10 +4,8 @@ title: 'Foundation pre-work: extract foundation-grade gherclj steps and split sp
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T15:58:29Z
+updated_at: 2026-06-12T16:01:39Z
 parent: isaac-brth
 ---
 
@@ -223,3 +221,30 @@ content' in tools_steps) was moved to foundation.
 
 No .feature scenarios were edited — only step namespaces. Final: bb spec 1897,
 bb features 744, gherclj ambiguity clean.
+
+
+
+## Verification failed
+
+HEAD: aacef2c79d532412a7225400ead92dc93480f2b1
+Working tree: clean
+
+### Failed: Acceptance — foundation specs require only foundation namespaces
+
+Bean acceptance: "Foundation features and the foundation specs listed above require only foundation namespaces + the new step layer."
+
+`spec/isaac/main_spec.clj` still has a top-level require of `[isaac.session.store :as store]` (line 10). It is used only to stub `store/register!` in the "installs the active fs into runtime init" test (line 252), but the namespace coupling remains. The bean body and summary both claim main_spec was re-themed to drop stray server requires; `module/loader_spec.clj` is clean, but main_spec is not.
+
+**Fix:** Drop the `isaac.session.store` require; stub via `requiring-resolve` (or similar) inside that one `it` block so main_spec requires only foundation namespaces.
+
+### Passed checks (for worker context)
+
+- `bb spec` — 1897 examples, 0 failures
+- `bb features` — 744 examples, 0 failures (clean re-run)
+- `bb gherclj ambiguity` — no ambiguous phrases
+- Foundation step layer present: `cli-steps`, `log-steps`, `fs-steps`, `root-steps`; server/session/config steps delegate
+- `isaac.spec-helper` foundation-only; `session/spec_helper` holds store helpers
+- `config_steps` — foundation requires only
+- No `features/cli/` or `features/module/` edits in bean commits (5489eb37..aacef2c7)
+- Pass A smell scan on foundation/server step specs — clean
+- Speed within baseline gates
