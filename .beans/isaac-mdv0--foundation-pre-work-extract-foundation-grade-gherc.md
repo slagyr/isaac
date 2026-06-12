@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T15:18:01Z
+updated_at: 2026-06-12T15:40:45Z
 parent: isaac-brth
 ---
 
@@ -144,3 +144,29 @@ REMAINING = the deeply-entangled core (each a careful sub-extraction, not a clea
 Recommended: do #1+#2 together (uniform notify seam + the closure repoint) as one focused
 pass, then #3 (global-mutation untangle) as another, then #4. All four checkboxes (1,2,5)
 remain open until these land.
+
+## Progress update 4 (#1 file-writes + EDN done)
+
+Done + pushed (each green + ambiguity-clean):
+- f3ba4dd5 server isaac/EDN-file write steps -> isaac.foundation.fs-steps (duplicated
+  write closure; config-change notify -> post-write hook registered by server_steps;
+  5 file-write tests -> foundation/fs_steps_spec; dropped now-dead helpers).
+- fd2c4e77 session file-exists-with -> foundation.fs-steps (feature-fs helpers); notify
+  test relocated to server_steps_spec (where loading server-steps registers the hook),
+  config-caching test repointed to foundation.
+
+The notify seam: foundation isaac-file writes call notify-write! (g/dissoc :feature-config
++ run post-write hooks). server_steps registers (when :config-change-source) runtime/
+notify-path!. Verified end-to-end in server_steps_spec.
+
+Foundation step layer now: cli-steps, log-steps, fs-steps (file fixture/assert + isaac/EDN
+file writes); config_steps clean in place. bb spec 1897 + bb features 744 green.
+
+REMAINING:
+- #3 root-setup: "an empty Isaac root at" x46, "an Isaac root at", "an empty Isaac state
+  directory", "a module manifest ...:" — initialize-root! global-mutation untangle
+  (alter-var-root sidecar-store, remove-ns telly, comm/tool/single-turn/memory-store
+  resets) via a root-setup hook (foundation-minimal reset + server-registered teardown).
+  Highest blast radius; the linchpin for foundation features.
+- #4 (checkbox 5): per-feature audit of features/{cli,module}/* (bb match-step per phrase)
+  to confirm the foundation subset routes only to the foundation layer.
