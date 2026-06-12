@@ -8,15 +8,16 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [isaac.config.berths :as berths]
+    [isaac.config.check-compose :as check-compose]
     [isaac.config.companion :as companion]
     [isaac.config.paths :as paths]
     [isaac.config.schema-base :as schema-base]
     [isaac.config.schema-compose :as schema-compose]
+    [isaac.config.validation :as validation]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
-    [isaac.nexus :as nexus]
-    [isaac.schema.registered-in :as registered-in]))
+    [isaac.nexus :as nexus]))
 
 ;; region ----- Helpers -----
 
@@ -220,24 +221,6 @@
   ([root-schema kind]
    (schema-compose/schema-for-kind root-schema kind)))
 
-(defn- schema-error-entries [prefix result]
-  (letfn [(segment-name [segment]
-            (cond
-              (keyword? segment) (name segment)
-              (string? segment) (str/replace-first segment #"^:" "")
-              :else (str segment)))
-          (join-path [path segment]
-            (if path (str path "." segment) segment))
-          (entries [path value]
-            (if (map? value)
-              (mapcat (fn [[field message]]
-                        (entries (join-path path (segment-name field)) message))
-                      value)
-              [{:key path :value value}]))]
-    (vec (mapcat (fn [[field message]]
-                   (entries (join-path prefix (segment-name field)) message))
-                 (cs/message-map result)))))
-
 (defn- load-companion-text [path]
   (when path
     {:exists? (exists?* path)
@@ -368,9 +351,9 @@
                              (cs/conform (runtime-schema (schema-for root-schema :defaults)) defaults))]
        (-> result
            (update :errors into (concat
-                                  (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                  (when (cs/error? root-result) (validation/schema-error-entries nil root-result))
                                   (when (and defaults-result (cs/error? defaults-result))
-                                    (schema-error-entries "defaults" defaults-result))))
+                                    (validation/schema-error-entries "defaults" defaults-result))))
            (assoc :warnings (root-config-warnings root-schema data)))))))
 
 (defn- load-root-config [root {:keys [raw-parse-errors? substitute-env?] :as opts}]
@@ -390,9 +373,9 @@
                                   (cs/conform (runtime-schema (schema-for root-schema :defaults)) defaults))]
             {:data     data
              :errors   (vec (concat errors
-                                    (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                    (when (cs/error? root-result) (validation/schema-error-entries nil root-result))
                                     (when (and defaults-result (cs/error? defaults-result))
-                                      (schema-error-entries "defaults" defaults-result))))
+                                      (validation/schema-error-entries "defaults" defaults-result))))
              :warnings (concat (top-level-warnings raw-data)
                                (root-entity-warnings raw-data))
              :sources  [(source-path relative)]})
@@ -412,9 +395,9 @@
                                   (cs/conform (runtime-schema (schema-for root-schema :defaults)) defaults))]
             {:data     data
              :errors   (vec (concat errors
-                                    (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                    (when (cs/error? root-result) (validation/schema-error-entries nil root-result))
                                     (when (and defaults-result (cs/error? defaults-result))
-                                      (schema-error-entries "defaults" defaults-result))))
+                                      (validation/schema-error-entries "defaults" defaults-result))))
              :warnings (concat (top-level-warnings raw-data)
                                (root-entity-warnings raw-data))
              :sources  [(source-path paths/root-filename)]})))
@@ -431,7 +414,7 @@
               (-> acc
                   (update :warnings into warnings)
                   (cond-> (cs/error? entity)
-                          (update :errors into (schema-error-entries (str (name kind) "." id) entity)))
+                          (update :errors into (validation/schema-error-entries (str (name kind) "." id) entity)))
                   (cond-> (and explicit (not= explicit id))
                           (assoc-error (str (name kind) "." id ".id") (str "must match filename (got \"" explicit "\")")))
                   (cond-> (not (cs/error? entity))
@@ -533,7 +516,7 @@
                         (update :warnings into warnings)
                         (update :errors into extra-errors))
         result      (if (cs/error? entity)
-                      (update result :errors into (schema-error-entries (str (name kind) "." id) entity))
+                      (update result :errors into (validation/schema-error-entries (str (name kind) "." id) entity))
                       result)
         result      (if (and explicit-id (not= explicit-id id))
                       (assoc-error result (str (name kind) "." id ".id") (str "must match filename (got \"" explicit-id "\")"))
@@ -619,473 +602,6 @@
                    (when entity-dir
                      (warn-for kind entity-dir)))
                  (schema-compose/descriptors)))))
-
-(defn- declared-module-api-ids [config]
-  (let [builtin-index (module-loader/builtin-index)
-        module-index  (merge builtin-index (:module-index config))
-        modules      (:modules config)]
-    (if (and (some? modules) (not (map? modules)))
-      (->> (keys builtin-index)
-           (keep #(get module-index %))
-           (mapcat #(keys (get-in % [:manifest :isaac.server/llm-api])))
-           (map clojure.core/name)
-           set)
-      (let [declared-ids (into (set (keys builtin-index))
-                               (->> (keys modules)
-                                    (map ->id)
-                                    (map keyword)))]
-        (->> declared-ids
-             (keep #(get module-index %))
-             (mapcat #(keys (get-in % [:manifest :isaac.server/llm-api])))
-             (map clojure.core/name)
-             set)))))
-
-(defn- manifest-capability-ids [config kind]
-  (->> (merge (module-loader/builtin-index) (:module-index config))
-       vals
-       (mapcat #(keys (get-in % [:manifest kind])))
-       (map ->id)
-       set))
-
-(defn- manifest-provider-ids [config]
-  ;; Phase 7 (isaac-ho18): provider templates moved to the
-  ;; :isaac.server/provider-template berth.
-  (->> (manifest-capability-ids config :isaac.server/provider-template) sort vec))
-
-(defn- module-instantiated-provider-ids
-  "Materialized provider ids contributed by third-party modules to
-   :isaac.server/provider. Core's contributions to that berth ship
-   ready-to-use providers; the user's instantiated providers live in
-   the :providers config slot and are picked up separately by
-   :registered-in?'s config-side read."
-  [config]
-  (->> (or (:module-index config) {})
-       (remove (fn [[id _]] (= id :isaac.core)))
-       (mapcat (fn [[_ entry]] (keys (get-in entry [:manifest :isaac.server/provider]))))
-       (map ->id)
-       set))
-
-(defn- known-provider-ids [config]
-  (->> (concat (keys (:providers config))
-               (module-instantiated-provider-ids config))
-       (map ->id)
-       distinct
-       sort
-       vec))
-
-(defn- known-crew-ids [config]
-  (->> (keys (:crew config)) (map ->id) distinct sort vec))
-
-(defn- known-model-ids [config]
-  (->> (keys (:models config)) (map ->id) distinct sort vec))
-
-(defn- known-comm-ids [config]
-  ;; Phase 8 (isaac-qqgv): comm contributions live at
-  ;; :isaac.server/comm instead of the deleted :comm extension kind.
-  (->> (concat (keys (:comms config))
-               (manifest-capability-ids config :isaac.server/comm))
-       (map ->id)
-       distinct
-       sort
-       vec))
-
-(defn- find-manifest-entry [config section name]
-  (let [kw (keyword (->id name))]
-    (some (fn [[_ entry]]
-            (get-in entry [:manifest section kw]))
-          (merge (module-loader/builtin-index) (:module-index config)))))
-
-(defn- find-tool-manifest-entry [config tool-name]
-  ;; Phase 6 (isaac-w7o5): tool contributions live at :isaac.server/tools
-  ;; (the berth), not under :tools.
-  (find-manifest-entry config :isaac.server/tools tool-name))
-
-(defn- find-slash-command-manifest-entry [config command-name]
-  (find-manifest-entry config :isaac.server/slash-commands command-name))
-
-;; Validation refs registered in c3kit.apron.schema's ref registry.
-;; Each carries :validate, :message, and :known (rich-error enrichment).
-;; All read the document under validation from the *config* dynvar bound
-;; at the semantic-errors entry point — apron's standard ref shape is
-;; value-local; this is how we give doc-aware refs access to the full
-;; config without forking apron.
-
-(def ^:dynamic *config* nil)
-
-(defn- exists-ref [ref-key known-fn message]
-  {:validate (fn [value]
-               (contains? (or (get-in *config* [:known-sets ref-key])
-                              (set (known-fn (or (:raw *config*) *config*))))
-                          (->id value)))
-   :message  message
-   :known    (fn []
-               (or (get-in *config* [:known-values ref-key])
-                   (known-fn (or (:raw *config*) *config*))))})
-
-(def ^:private existence-refs
-  {:model-exists? (exists-ref :model-exists? known-model-ids "references undefined model")
-   :crew-exists?  (exists-ref :crew-exists? known-crew-ids "references undefined crew")})
-
-(defn- present-when-ref [other-key expected]
-  {:scope    :entity
-   :validate (fn [entity field-key]
-               (or (not= expected (get entity other-key))
-                   (cs/present? (get entity field-key))))
-   :message  (str "is required when " (name other-key) " is " (->id expected))})
-
-(defonce ^:private _refs-registered
-         (do
-           (when-let [one-of-ref (try (cs/lex! :validations :one-of) (catch Throwable _ nil))]
-             (cs/update-lexicon! :validations assoc :one-of? one-of-ref))
-           (doseq [[k v] existence-refs]
-             (cs/update-lexicon! :validations assoc k v))
-           (cs/update-lexicon! :validations assoc :present-when? present-when-ref)
-           true))
-
-(defn- validation-context [config]
-  (let [known-values {:model-exists? (known-model-ids config)
-                      :crew-exists?  (known-crew-ids config)}]
-    {:raw          config
-     :known-values known-values
-     :known-sets   (into {} (map (fn [[predicate values]] [predicate (set values)])) known-values)}))
-
-(defn- dotted-path [segments]
-  (str/join "." segments))
-
-(defn- path-segment [segment]
-  (cond
-    (qualified-keyword? segment) (str (namespace segment) "/" (name segment))
-    (keyword? segment)           (name segment)
-    :else                        (->id segment)))
-
-(defn- validation-source-file [root key]
-  (let [[head id] (str/split key #"\." 3)
-        entity-file (when (and root id)
-                      (str root "/" head "/" id ".edn"))]
-    (cond
-      (and entity-file (exists?* entity-file)) (str "config/" head "/" id ".edn")
-      :else "config/isaac.edn")))
-
-(defn- validation-error-entry
-  ([root key ref-def value]
-   (validation-error-entry root key ref-def value nil))
-  ([root key ref-def value override-message]
-  (let [known-fn (:known ref-def)]
-    {:key          key
-     :value        (or override-message (:message ref-def))
-     :file         (validation-source-file root key)
-     :bad-value    (->id value)
-     :valid-values (when known-fn (known-fn))})))
-
-(defn- resolve-ref-def [validation]
-  (let [[ref-key & args] (if (vector? validation) validation [validation])
-        ref-def (try (cs/lex! :validations ref-key) (catch Throwable _ nil))]
-    (cond
-      (and (fn? ref-def) (seq args)) (apply ref-def args)
-      :else ref-def)))
-
-(defn- annotation-errors* [root path spec value & [entity field-key]]
-  (let [path-str   (dotted-path path)
-        own-errors (->> (:validations spec)
-                        (keep (fn [validation]
-                                (when-let [ref-def (resolve-ref-def validation)]
-                                  (let [present-validation? (or (= :present? validation)
-                                                                (and (vector? validation)
-                                                                     (= :present? (first validation))))
-                                        run-on-nil?         present-validation?]
-                                    (try
-                                      (let [invalid? (case (:scope ref-def)
-                                                       :entity (not ((:validate ref-def) entity field-key))
-                                                       (and (or (some? value) run-on-nil?)
-                                                            (not ((:validate ref-def) value))))]
-                                        (when invalid?
-                                          (validation-error-entry root path-str ref-def value)))
-                                      (catch clojure.lang.ExceptionInfo e
-                                        (validation-error-entry root path-str ref-def value
-                                                                (or (:message (ex-data e))
-                                                                    (ex-message e))))))))))
-        map-errors (when (and (= :map (:type spec)) (map? value))
-                     (concat
-                       (mapcat (fn [[field-key field-spec]]
-                                 (annotation-errors* root (conj path (path-segment field-key)) field-spec (get value field-key) value field-key))
-                               (:schema spec))
-                       (when-let [value-spec (:value-spec spec)]
-                         (mapcat (fn [[entity-id entity-value]]
-                                   (when-not (contains? (:schema spec) entity-id)
-                                     (annotation-errors* root (conj path (->id entity-id)) value-spec entity-value entity-value nil)))
-                                 value))))
-        seq-errors (when (and (= :seq (:type spec)) (sequential? value) (:spec spec))
-                     (mapcat #(annotation-errors* root path (:spec spec) % % nil) value))]
-    (vec (concat own-errors map-errors seq-errors))))
-(defn- semantic-errors
-  ([config] (semantic-errors config nil (cached-root-schema)))
-  ([config root] (semantic-errors config root (cached-root-schema)))
-  ([config root schema-spec]
-   (binding [*config*                    (validation-context config)
-             ;; Merge core in so :registered-in? sees foundation-declared
-             ;; berths (e.g. :isaac.server/tools) and their contributions
-             ;; from the platform manifest, not just user modules.
-             registered-in/*module-index* (merge (module-loader/builtin-index)
-                                                 (:module-index config))
-             ;; The :registered-in? primitive also checks config-side
-             ;; contributions (user-config keys at the berth's :config
-             ;; :path) — e.g. user-instantiated providers under [:providers]
-             ;; register as contributions to :isaac.server/provider.
-             registered-in/*config*       (or (:raw config) config)]
-     (annotation-errors* root [] schema-spec config))))
-
-;; region ----- Tool config validation -----
-
-(defn- type-message [field-spec]
-  (or (:message field-spec)
-      (when-let [field-type (:type field-spec)]
-        (case field-type
-          :boolean "must be a boolean"
-          :int "must be an integer"
-          :keyword "must be a keyword"
-          :map "must be a map"
-          :seq "must be a seq"
-          :string "must be a string"
-          (str "must be a " (name field-type))))))
-
-(defn- apply-type-messages [field-spec]
-  (cond-> (assoc field-spec :message (type-message field-spec))
-          (:schema field-spec)
-          (update :schema (fn [schema-map]
-                            (into {}
-                                  (map (fn [[field-key nested-spec]] [field-key (apply-type-messages nested-spec)]))
-                                  schema-map)))
-
-          (:spec field-spec)
-          (update :spec apply-type-messages)
-
-          (:value-spec field-spec)
-          (update :value-spec apply-type-messages)))
-
-(defn- manifest-schema-spec [field-schema]
-  {:type   :map
-   :schema (into {}
-                 (map (fn [[field-key field-spec]] [field-key (apply-type-messages field-spec)]))
-                 field-schema)})
-
-(defn- prefix-entry-key [prefix entry]
-  (update entry :key #(str prefix "." %)))
-
-(defn- unknown-field-warnings [prefix config field-schema ignored-keys]
-  (reduce-kv (fn [warnings field-key _]
-               (if (or (contains? field-schema field-key)
-                       (contains? ignored-keys field-key))
-                 warnings
-                 (conj warnings {:key (str prefix "." (name field-key)) :value "unknown key"})))
-             []
-             config))
-
-(defn- manifest-schema-errors [prefix config field-schema]
-  (let [schema-spec       (manifest-schema-spec field-schema)
-        type-result       (cs/validate (runtime-schema schema-spec) config)
-        type-errors       (schema-error-entries prefix type-result)
-        type-error-keys   (into #{} (map :key) type-errors)
-        validation-errors (->> (annotation-errors* nil [] schema-spec config)
-                               (map #(prefix-entry-key prefix %))
-                               (remove #(contains? type-error-keys (:key %)))
-                               vec)]
-    (into type-errors validation-errors)))
-
-(defn- validate-manifest-config [prefix config field-schema & {:keys [ignore-keys warn-unknown?] :or {ignore-keys #{} warn-unknown? true}}]
-  {:errors   (manifest-schema-errors prefix config field-schema)
-   :warnings (if warn-unknown?
-               (unknown-field-warnings prefix config field-schema ignore-keys)
-               [])})
-
-(def ^:private manifest-schema-kinds
-  ;; Phase 8 (isaac-qqgv) finished the migration — every extension
-  ;; kind now lives under a :isaac.server/* berth.
-  [:isaac.server/comm :isaac.server/provider-template :isaac.server/slash-commands :isaac.server/tools])
-
-(defn- verify-manifest-schema-fragment [module-id field-schema]
-  (try
-    (cs/verify-schema-lexes field-schema)
-    []
-    (catch Throwable t
-      [{:key   (str "modules." (->id module-id))
-        :value (if-let [ref (or (:ref (ex-data t))
-                                (:lex (ex-data t)))]
-                 (str "unregistered ref " ref)
-                 (.getMessage t))}])))
-
-(defn- manifest-ref-errors [module-index]
-  (mapcat (fn [[module-id entry]]
-            (mapcat (fn [kind]
-                      (mapcat (fn [[_ extension]]
-                                (when-let [field-schema (:schema extension)]
-                                  (verify-manifest-schema-fragment module-id field-schema)))
-                              (get-in entry [:manifest kind])))
-                    manifest-schema-kinds))
-          module-index))
-
-(defn- comm-reserved-schema-errors [module-index]
-  (mapcat (fn [[module-id entry]]
-            (keep (fn [[extension-id extension]]
-                    (when (contains? (:schema extension) :type)
-                      {:key   (str "modules." (->id module-id))
-                       :value (str ":type is the slot discriminator, not a field"
-                                   " (comm " (name extension-id) ")")}))
-                  (get-in entry [:manifest :isaac.server/comm])))
-          module-index))
-
-(defn- one-of-values [field-spec]
-  (some (fn [validation]
-          (when (and (vector? validation)
-                     (contains? #{:one-of :one-of?} (first validation)))
-            (into #{} (map ->id) (rest validation))))
-        (:validations field-spec)))
-
-(defn- tool-provider-warning [prefix tool-cfg field-schema result]
-  (let [provider-key   (str prefix ".provider")
-        provider-spec  (:provider field-schema)
-        known-values   (one-of-values provider-spec)
-        provider-value (some-> (:provider tool-cfg) ->id)]
-    (if (and (seq known-values)
-             provider-value
-             (not (contains? known-values provider-value)))
-      {:errors   (remove #(= provider-key (:key %)) (:errors result))
-       :warnings (conj (vec (:warnings result)) {:key provider-key :value "unknown provider"})}
-      result)))
-
-(defn- check-tools [config]
-  (let [tools-config (:tools config)]
-    (if (empty? tools-config)
-      {:errors [] :warnings []}
-      (binding [*config* (validation-context config)]
-        (reduce
-          (fn [{:keys [errors warnings]} [tool-kw tool-cfg]]
-            (let [tool-name   (name tool-kw)
-                  tool-fields (:schema (find-tool-manifest-entry config tool-name))]
-              (if (nil? tool-fields)
-                {:errors errors :warnings warnings}
-                (let [prefix (str "tools." tool-name)
-                      check  (->> (validate-manifest-config prefix tool-cfg tool-fields)
-                                  (tool-provider-warning prefix tool-cfg tool-fields))]
-                  {:errors   (into errors (:errors check))
-                   :warnings (into warnings (:warnings check))}))))
-          {:errors [] :warnings []}
-          tools-config)))))
-
-(defn- check-slash-commands [config]
-  (let [commands-config (:slash-commands config)]
-    (if (empty? commands-config)
-      {:errors [] :warnings []}
-      (binding [*config* (validation-context config)]
-        (reduce (fn [{:keys [errors warnings]} [command-kw command-cfg]]
-                  (let [command-name (name command-kw)
-                        known-fields (:schema (find-slash-command-manifest-entry config command-name))]
-                    (if (nil? known-fields)
-                      {:errors errors :warnings warnings}
-                      (let [prefix (str "slash-commands." command-name)
-                            check  (validate-manifest-config prefix command-cfg known-fields)]
-                        {:errors   (into errors (:errors check))
-                         :warnings (into warnings (:warnings check))}))))
-                {:errors [] :warnings []}
-                commands-config)))))
-
-;; endregion ^^^^^ Tool config validation ^^^^^
-
-;; region ----- Comm slot validation -----
-
-(defn- impl->kw [impl-val]
-  (cond
-    (keyword? impl-val) impl-val
-    (string? impl-val) (keyword impl-val)
-    :else nil))
-
-(defn- find-comm-extension
-  ;; Phase 8 (isaac-qqgv): comm contributions moved to :isaac.server/comm.
-  [module-index impl-kw]
-  (some (fn [[_id entry]]
-          (get-in entry [:manifest :isaac.server/comm impl-kw]))
-        module-index))
-
-(defn- check-comms [config module-index root-schema]
-  (let [comms (:comms config)]
-    (if (empty? comms)
-      {:errors [] :warnings []}
-      (binding [*config* (validation-context config)]
-        (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
-                  (let [type-kw (or (impl->kw (:type slot-cfg))
-                                    (impl->kw slot-id))]
-                    (if (nil? type-kw)
-                      {:errors errors :warnings warnings}
-                      (let [entry       (find-comm-extension module-index type-kw)
-                            schema-flds (or (:schema entry) {})
-                            prefix      (str "comms." (name slot-id))
-                            result      (validate-manifest-config prefix slot-cfg schema-flds
-                                                                  :ignore-keys (schema-compose/comm-base-fields root-schema))]
-                        {:errors   (into errors (:errors result))
-                         :warnings (into warnings (:warnings result))}))))
-                {:errors [] :warnings []}
-                comms)))))
-
-;; endregion ^^^^^ Comm slot validation ^^^^^
-
-;; region ----- Provider type schema validation -----
-
-(defn- find-provider-manifest-entry [module-index type-name]
-  (let [type-kw (keyword (->id type-name))]
-    (some (fn [[_id entry]]
-            (get-in entry [:manifest :isaac.server/provider-template type-kw]))
-          module-index)))
-
-(defn- check-provider-types [config raw-providers module-index]
-  (if (empty? raw-providers)
-    {:errors [] :warnings []}
-    (binding [*config* (validation-context config)]
-      (reduce (fn [{:keys [errors warnings]} [provider-id provider-cfg]]
-                (let [type-name (->id (or (:type provider-cfg) (:from provider-cfg)))]
-                  (if (nil? type-name)
-                    {:errors errors :warnings warnings}
-                    (let [entry  (find-provider-manifest-entry
-                                   (merge (module-loader/builtin-index) module-index) type-name)
-                          schema (:schema entry)
-                          prefix (str "providers." (->id provider-id))]
-                      (if (nil? schema)
-                        {:errors errors :warnings warnings}
-                        (let [result (validate-manifest-config prefix provider-cfg schema :ignore-keys #{:from :type} :warn-unknown? false)]
-                          {:errors   (into errors (:errors result))
-                           :warnings (into warnings (:warnings result))}))))))
-              {:errors [] :warnings []}
-              raw-providers))))
-
-(defn- resolved-provider-errors [config raw-providers root-schema]
-  (let [resolve-provider (requiring-resolve 'isaac.config.resolve/resolve-provider)
-        provider-schema  (schema-compose/provider-entity-schema root-schema)]
-    (mapcat (fn [[provider-id provider-cfg]]
-              (when (or (:type provider-cfg) (:from provider-cfg))
-                (when-let [resolved (resolve-provider config provider-id)]
-                  (annotation-errors* nil ["providers" (->id provider-id)] provider-schema resolved resolved nil))))
-            raw-providers)))
-
-;; endregion ^^^^^ Provider type schema validation ^^^^^
-
-;; region ----- Crew compaction validation -----
-
-(def ^:private valid-compaction-strategies #{:rubberband :slinky})
-
-(defn- check-crew-compaction [config]
-  (let [crew (:crew config)]
-    (if (empty? crew)
-      {:errors [] :warnings []}
-      (reduce (fn [{:keys [errors warnings]} [crew-id crew-cfg]]
-                (let [strategy (:strategy (:compaction crew-cfg))]
-                  (if (and (some? strategy) (not (valid-compaction-strategies (keyword strategy))))
-                    {:errors   (conj errors {:key   (str "crew." (->id crew-id) ".compaction.strategy")
-                                             :value (str "must be one of: "
-                                                         (str/join ", " (sort (map name valid-compaction-strategies))))})
-                     :warnings warnings}
-                    {:errors errors :warnings warnings})))
-              {:errors [] :warnings []}
-              crew))))
-
-;; endregion ^^^^^ Crew compaction validation ^^^^^
 
 (defn- normalize-cron-config [cfg]
   (if (map? (:cron cfg))
@@ -1245,31 +761,21 @@
                                                            :root root)
                                         raw-providers    (merge (get-in result [:root :providers])
                                                                 (get-in result [:raw :providers]))
-                                        comms-check      (if (berths/claims-path? (:index discovery) [:comms])
-                                                           {:errors [] :warnings []}
-                                                           (check-comms config (:index discovery) effective-schema))
-                                        manifest-check   (manifest-ref-errors (:index discovery))
-                                        comm-type-check  (comm-reserved-schema-errors (:index discovery))
-                                        tools-check      (check-tools config)
-                                        slash-check      (check-slash-commands config)
-                                        providers-check  (check-provider-types config raw-providers (:index discovery))
-                                        resolved-pcheck  (resolved-provider-errors config raw-providers effective-schema)
-                                        compaction-check (check-crew-compaction config)
-                                        errors           (->> (concat (semantic-errors config config-root effective-schema)
+                                        check-ctx        {:config           config
+                                                            :raw-providers    raw-providers
+                                                            :module-index     (:index discovery)
+                                                            :root             config-root
+                                                            :result           result
+                                                            :effective-schema effective-schema}
+                                        contributed      (check-compose/run-checks (:index discovery) check-ctx)
+                                        errors           (->> (concat (validation/semantic-errors config config-root effective-schema)
                                                                       (:errors discovery)
-                                                                      manifest-check
-                                                                      comm-type-check
-                                                                      (:errors comms-check)
-                                                                      (:errors tools-check)
-                                                                      (:errors slash-check)
-                                                                      (:errors providers-check)
-                                                                      resolved-pcheck
-                                                                      (:errors compaction-check))
+                                                                      (:errors contributed))
                                                             (into (:errors result))
                                                             (berths/normalize-errors (:index discovery)))]
                                     {:config   config
                                      :errors   (vec (sort-by :key errors))
-                                     :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
+                                     :warnings (vec (sort-by :key (concat (:warnings result) (:warnings contributed))))
                                      :sources  (vec (sort (:sources result)))}))))))
 
 ;; endregion ^^^^^ Loading ^^^^^

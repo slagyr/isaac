@@ -20,6 +20,7 @@
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
     [isaac.config.api :as config-loader]
+    [isaac.config.check-contributions :as check-contributions]
     [isaac.config.schema-compose :as schema-compose]
     [isaac.config.schema-contributions :as schema-contributions]
     [isaac.fs :as fs]
@@ -220,7 +221,12 @@
                                                                                 :merge-root-entity? {:type :boolean}
                                                                                 :companion {:type :map
                                                                                             :schema {:field {:type :keyword}
-                                                                                                     :mode {:type :keyword}}}}}}}}}})
+                                                                                                     :mode {:type :keyword}}}}}}}}
+             :isaac.config/check {:description "Post-load config validation checks."
+                                 :manifest    {:schema {:type       :map
+                                                        :key-spec   {:type :keyword}
+                                                        :value-spec {:type :map
+                                                                     :schema {:fn {:type :symbol :validations [:present?]}}}}}}}})
 
 (def baseline-server-manifest
   "A stand-in for resources/isaac-manifest.edn. Themed server
@@ -295,7 +301,8 @@
                        (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
                        (keyword logbook)  {:factory 'isaac.comm.memory/make}}  ;; persisted / memory-like
 
-   :isaac.config/schema schema-contributions/server})
+   :isaac.config/schema schema-contributions/server
+   :isaac.config/check  check-contributions/server})
 
 (def baseline-manifest baseline-server-manifest)
 

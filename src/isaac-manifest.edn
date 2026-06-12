@@ -23,7 +23,12 @@
                                                                                :merge-root-entity? {:type :boolean}
                                                                                :companion          {:type   :map
                                                                                                     :schema {:field {:type :keyword}
-                                                                                                             :mode  {:type :keyword}}}}}}}}}
+                                                                                                             :mode  {:type :keyword}}}}}}}}
+           :isaac.config/check    {:description "Post-load config validation checks contributed by modules."
+                                  :manifest    {:schema {:type       :map
+                                                         :key-spec   {:type :keyword}
+                                                         :value-spec {:type :map
+                                                                      :schema {:fn {:type :symbol :validations [:present?]}}}}}}}
 
  :cli     [{:name      "init"
             :usage     "init"

@@ -10,6 +10,7 @@
     [isaac.config.paths :as paths]
     [isaac.spec-helper :as helper]
     [isaac.config.loader :as sut]
+    [isaac.config.validation :as validation]
     [isaac.fs :as fs]
     [isaac.module.loader :as module-loader]
     [speclj.core :refer :all]))
@@ -130,7 +131,7 @@
                                                    {:defaults-error true}
                                                    :ok))
                       cs/error?                map?
-                      sut/schema-error-entries (fn [prefix _]
+                      validation/schema-error-entries (fn [prefix _]
                                                  [{:key prefix :value "invalid"}])]
           (nexus/-with-nexus {:fs mem}
             (let [result (#'sut/load-root-config marigold/home {:raw-parse-errors? true :substitute-env? true})]
@@ -214,13 +215,13 @@
                                                 :provider marigold/starcore}}
                             :models    {"llama" {:provider marigold/starcore}}
                             :providers {marigold/starcore {:api marigold/sky-api}}}]
-        (with-redefs-fn {#'isaac.config.loader/known-crew-ids  (fn [_]
-                                                                  (swap! crew-calls inc)
-                                                                  ["main"])
-                         #'isaac.config.loader/known-model-ids (fn [_]
-                                                                  (swap! model-calls inc)
-                                                                  ["llama"])}
-          #(should= [] (#'sut/semantic-errors config)))
+        (with-redefs-fn {#'isaac.config.validation/known-crew-ids  (fn [_]
+                                                                     (swap! crew-calls inc)
+                                                                     ["main"])
+                         #'isaac.config.validation/known-model-ids (fn [_]
+                                                                      (swap! model-calls inc)
+                                                                      ["llama"])}
+          #(should= [] (validation/semantic-errors config)))
         (should= 1 @crew-calls)
         (should= 1 @model-calls))))
 
@@ -304,7 +305,7 @@
                     sut/schema-for                   (fn [_] ::crew)
                     cs/conform                       (fn [_ _] {:error :invalid})
                     cs/error?                        map?
-                    sut/schema-error-entries         (fn [prefix _] [{:key prefix :value "invalid schema"}])]
+                    validation/schema-error-entries    (fn [prefix _] [{:key prefix :value "invalid schema"}])]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
                                              marigold/home
                                              :crew
@@ -812,7 +813,7 @@
                  {:key (str "models." marigold/anvil-x ".provider")
                   :value "no registered impls for berth :isaac.server/provider" :bad-value "imaginarium" :valid-values []}]
                (mapv #(select-keys % [:key :value :bad-value :valid-values])
-                     (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
+                     (validation/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {test-crew {:model "phantom"}}
                                              :models    {marigold/anvil-x {:provider "imaginarium"}}
                                              :providers {}
@@ -822,7 +823,7 @@
 
     (it "returns no semantic errors when all references resolve"
       (should= []
-               (#'sut/semantic-errors {:defaults  {:crew "main" :model "llama"}
+               (validation/semantic-errors {:defaults  {:crew "main" :model "llama"}
                                        :crew      {"main" {:model "llama"}}
                                        :models    {"llama" {:provider marigold/helm-systems}}
                                        :providers {marigold/helm-systems {}}
