@@ -1,10 +1,11 @@
 ---
 # isaac-6q8c
 title: 'Foundation pre-work: add :subcommands to the :cli berth'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-06-12T12:48:52Z
-updated_at: 2026-06-12T12:48:52Z
+updated_at: 2026-06-12T12:57:48Z
 parent: isaac-brth
 ---
 
