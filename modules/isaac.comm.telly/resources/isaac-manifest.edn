@@ -8,7 +8,7 @@
  ;; legacy :schema field on the old :comm extension).
  :isaac.server/comm
  {:telly {:factory      isaac.comm.telly/make
-          :schema {:loft  {:type :string
+          :extra-schema {:loft  {:type :string
                                  :validations [[:present-when? :type :telly]]}
                          :color {:type :string}
                          :mood  {:type :string

@@ -133,7 +133,7 @@ Feature: Module schema composition
       {:id                :isaac.comm.broken
        :version           "0.1.0"
        :isaac.server/comm {:broken {:factory isaac.comm.broken/make
-                                    :schema  {:thing {:type :string
+                                    :extra-schema {:thing {:type :string
                                                       :validations [:no-such-ref?]}}}}}
       """
     And the isaac file "isaac.edn" exists with:
@@ -155,7 +155,7 @@ Feature: Module schema composition
       {:id                :isaac.comm.badmod
        :version           "0.1.0"
        :isaac.server/comm {:badmod {:factory isaac.comm.null/make
-                                    :schema  {:type {:type :string}}}}}
+                                    :extra-schema {:type {:type :string}}}}}
       """
     And the isaac file "isaac.edn" exists with:
       """

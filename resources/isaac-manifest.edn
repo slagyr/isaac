@@ -50,7 +50,7 @@
                                                                                           :value-spec {:type    :map
                                                                                                        :factory isaac.comm.registry/register-comm-entry!
                                                                                                        :schema  {:factory       {:type :symbol :validations [:present?]}
-                                                                                                                 :schema        {:type :any} ;; TODO - MDM: We need to pull in the apron.schema/spec-schema here.
+                                                                                                                 :extra-schema  {:type :any} ;; TODO - MDM: We need to pull in the apron.schema/spec-schema here.
                                                                                                                  :configurable? {:type :boolean}}}}}
                                                                    ;; Config berth: claims [:comms] so the composed root schema
                                                                    ;; validates slots in one pass — base fields plus every impl's
@@ -63,7 +63,7 @@
                                                                                           :key-spec    {:type :id}
                                                                                           :value-spec  {:name           :comm
                                                                                                         :type           :map
-                                                                                                        :dynamic-schema [:schema]
+                                                                                                        :dynamic-schema [:extra-schema]
                                                                                                         :schema         {:type {:type         :id
                                                                                                                                 :options-from :comms
                                                                                                                                 :description  "Manifest comm kind to instantiate"

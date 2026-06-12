@@ -977,7 +977,7 @@
       (pr-str {:id      :isaac.comm.telly
                 :version "0.1.0"
                  :isaac.server/comm    {:telly {:factory 'isaac.comm.telly/make
-                                  :schema  {:loft  {:type :string
+                                  :extra-schema {:loft  {:type :string
                                                    :validations [[:present-when? :type :telly]]}
                                            :color {:type :string}
                                            :mood  {:type :string
@@ -993,7 +993,7 @@
       (pr-str {:id      :isaac.comm.crow
                :version "0.1.0"
                :isaac.server/comm    {:crow {:factory 'isaac.comm.crow/make
-                                :schema  {:token       {:type :string}
+                                :extra-schema {:token       {:type :string}
                                           :message-cap {:type :int}
                                           :allow-from  {:type :map}}}}}))
 

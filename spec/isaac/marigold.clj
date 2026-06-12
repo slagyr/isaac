@@ -273,7 +273,7 @@
                                                                      :value-spec {:type    :map
                                                                                   :factory 'isaac.comm.registry/register-comm-entry!
                                                                                   :schema  {:factory       {:type :symbol :validations [:present?]}
-                                                                                            :schema        {:type :any}
+                                                                                            :extra-schema  {:type :any}
                                                                                             :configurable? {:type :boolean}}}}}
                                               ;; mirrors the real manifest: the comm berth claims [:comms]
                                               ;; and composes impl :schema fields into the load-time tree.
@@ -284,7 +284,7 @@
                                                                      :key-spec    {:type :id}
                                                                      :value-spec  {:name           :comm
                                                                                    :type           :map
-                                                                                   :dynamic-schema [:schema]
+                                                                                   :dynamic-schema [:extra-schema]
                                                                                    :schema         {:type {:type         :id
                                                                                                            :options-from :comms
                                                                                                            :description  "Manifest comm kind to instantiate"
