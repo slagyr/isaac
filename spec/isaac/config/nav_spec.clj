@@ -1,7 +1,7 @@
 (ns isaac.config.nav-spec
   (:require
     [isaac.config.nav :as sut]
-    [isaac.config.schema :as schema]
+    [isaac.config.schema.root :as schema]
     [speclj.core :refer :all]))
 
 (def root schema/root)

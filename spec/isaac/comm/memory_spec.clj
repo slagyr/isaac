@@ -1,6 +1,6 @@
 (ns isaac.comm.memory-spec
   (:require
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.comm.memory :as sut]
     [speclj.core :refer :all]))
 

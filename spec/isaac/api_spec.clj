@@ -2,11 +2,11 @@
   (:require
     [isaac.api :as sut]
     [isaac.bridge.core]
-    [isaac.comm :as comm-impl]
+    [isaac.comm.protocol :as comm-impl]
     [isaac.comm.registry :as registry]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory]
     [isaac.nexus :as nexus]

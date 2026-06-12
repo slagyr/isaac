@@ -10,7 +10,7 @@
     [isaac.step-tables :as match]
     [isaac.fs :as isaac-fs]
     [isaac.session.session-steps :as session-steps]
-    [isaac.session.store :as session-store-proto]
+    [isaac.session.store.spi :as session-store-proto]
     [isaac.nexus :as nexus]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.file :as file]

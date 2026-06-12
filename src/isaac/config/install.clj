@@ -14,7 +14,7 @@
     [isaac.config.loader :as config]
     [isaac.config.configurator :as configurator]
     [isaac.logger :as log]
-    [isaac.session.store :as store]))
+    [isaac.session.store.spi :as store]))
 
 (defn- ensure-store! [config]
   (when-not (store/registered-store)

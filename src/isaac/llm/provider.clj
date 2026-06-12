@@ -5,7 +5,7 @@
    without forming a cycle."
   (:require
     [clojure.string :as str]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.providers :as providers]
     [isaac.module.loader :as module-loader]))
 

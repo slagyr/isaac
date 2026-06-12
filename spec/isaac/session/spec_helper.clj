@@ -5,7 +5,7 @@
   (:require
     [isaac.config.api :as config]
     [isaac.fs :as fs]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory]
     [isaac.nexus :as nexus]))

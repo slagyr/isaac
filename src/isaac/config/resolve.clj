@@ -4,7 +4,7 @@
   (:require
     [clojure.string :as str]
     [isaac.config.loader :as loader]
-    [isaac.config.schema :as schema]
+    [isaac.config.schema.root :as schema]
     [isaac.llm.provider :as llm-provider]
     [isaac.llm.providers :as llm-providers]))
 

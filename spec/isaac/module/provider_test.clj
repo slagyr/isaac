@@ -1,6 +1,6 @@
 (ns isaac.module.provider-test
   (:require
-    [isaac.llm.api :as llm-api]))
+    [isaac.llm.api.protocol :as llm-api]))
 
 (deftype TestProvider [name cfg]
   llm-api/Api

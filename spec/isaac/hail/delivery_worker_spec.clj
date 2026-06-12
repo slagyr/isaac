@@ -10,8 +10,8 @@
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
     [isaac.nexus :as nexus]
-    [isaac.scheduler :as scheduler]
-    [isaac.session.store :as store]
+    [isaac.scheduler.runtime :as scheduler]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.memory :as memory-store]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all])

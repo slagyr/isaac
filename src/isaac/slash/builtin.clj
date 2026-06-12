@@ -8,7 +8,7 @@
      [isaac.root :as root]
      [isaac.logger :as log]
      [isaac.module.loader :as module-loader]
-     [isaac.session.store :as store]
+     [isaac.session.store.spi :as store]
      [isaac.nexus :as nexus]))
 
 (defn parse-command [input]

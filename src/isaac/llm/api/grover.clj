@@ -6,7 +6,7 @@
     [isaac.bridge.cancellation :as bridge]
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.followup :as followup]
     [isaac.llm.prompt.builder :as prompt]))
 

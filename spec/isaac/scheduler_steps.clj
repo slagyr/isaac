@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.logger :as log]
-    [isaac.scheduler :as scheduler]
+    [isaac.scheduler.runtime :as scheduler]
     [isaac.server.app :as app]
     [isaac.server.server-steps :as server-steps]
     [isaac.spec-helper :as helper]

@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [isaac.bridge.status :as status]
     [isaac.charge :as charge]
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.config.api :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
@@ -11,7 +11,7 @@
     [isaac.nexus :as nexus]
     [isaac.prompt.catalog :as prompt-catalog]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.slash.builtin :as slash-builtin]
     [isaac.slash.registry :as slash-registry]))
 

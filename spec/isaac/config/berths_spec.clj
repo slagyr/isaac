@@ -1,7 +1,7 @@
 (ns isaac.config.berths-spec
   (:require
     [isaac.config.berths :as sut]
-    [isaac.config.schema :as config-schema]
+    [isaac.config.schema.root :as config-schema]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
     [isaac.schema.lexicon :as lexicon]

@@ -17,7 +17,7 @@
     [isaac.hooks :as hooks]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
-    [isaac.scheduler :as scheduler-core]
+    [isaac.scheduler.runtime :as scheduler-core]
     [isaac.nexus :as nexus]
     [isaac.server.http :as http]
     [org.httpkit.server :as httpkit]))

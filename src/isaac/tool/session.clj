@@ -4,7 +4,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.config.api :as config]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.fs-bounds :as bounds]))
 
 (defn- ->z [ts]

@@ -1,7 +1,7 @@
 (ns isaac.config.schema.manifest
   "Build a schema-tree augmented with manifest-supplied fields.
 
-   The static config schema in `isaac.config.schema` knows about :comms,
+   The static config schema in `isaac.config.schema.root` knows about :comms,
    :tools, :providers, and :slash-commands as map-of surfaces, but their
    field-level shapes live in module manifests. This namespace folds the
    manifest schemas into the static tree so that path resolution and

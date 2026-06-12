@@ -1,7 +1,7 @@
 (ns isaac.scheduler-steps-spec
   (:require
     [gherclj.core :as g]
-    [isaac.scheduler :as scheduler]
+    [isaac.scheduler.runtime :as scheduler]
     [isaac.scheduler-steps :as sut]
     [speclj.core :refer [around describe it should]])
   (:import

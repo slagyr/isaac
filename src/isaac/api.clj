@@ -1,17 +1,17 @@
 (ns isaac.api
   (:require
     [isaac.bridge.core :as bridge-impl]
-    [isaac.comm :as comm-impl]
+    [isaac.comm.protocol :as comm-impl]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.runtime :as runtime]
-    [isaac.llm.api :as api-impl]
+    [isaac.llm.api.protocol :as api-impl]
     [isaac.nexus :as nexus]
-    [isaac.session.store :as session-store]))
+    [isaac.session.store.spi :as session-store]))
 
 (def Comm
   "Protocol implemented by comm integrations (Discord, Telly, etc.).
    Implement to receive lifecycle callbacks for turns, tool calls, compaction,
-   and errors. See isaac.comm/Comm for the full method list."
+   and errors. See isaac.comm.protocol/Comm for the full method list."
   comm-impl/Comm)
 
 (def Reconfigurable

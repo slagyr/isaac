@@ -1,6 +1,6 @@
 (ns isaac.comm.null
   (:require
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.config.runtime :as runtime]))
 
 (deftype NullComm []

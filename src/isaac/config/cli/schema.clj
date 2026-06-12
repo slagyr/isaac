@@ -4,7 +4,7 @@
     [c3kit.apron.schema.path :as schema-path]
     [clojure.string :as str]
     [isaac.config.cli.common :as common]
-    [isaac.config.schema :as config-schema]
+    [isaac.config.schema.root :as config-schema]
     [isaac.config.schema.manifest :as manifest-schema]
     [isaac.config.schema.term :as schema-term]
     [isaac.module.loader :as module-loader]

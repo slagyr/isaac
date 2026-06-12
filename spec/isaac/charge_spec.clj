@@ -5,7 +5,7 @@
     [isaac.marigold :as marigold]
     [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [speclj.core :refer :all]))
 
 (def stub-comm (reify Object))

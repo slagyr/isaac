@@ -3,7 +3,7 @@
     [c3kit.apron.schema :as schema]
     [isaac.bridge.cancellation :as bridge]
     [isaac.llm.api.grover :as sut]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 

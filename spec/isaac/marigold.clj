@@ -22,9 +22,9 @@
     [isaac.config.api :as config-loader]
     [isaac.config.check-contributions :as check-contributions]
     [isaac.config.schema-compose :as schema-compose]
-    [isaac.config.schema :as config-schema]
+    [isaac.config.schema.root :as config-schema]
     [isaac.fs :as fs]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     ;; Grover is the only impl namespace we need — all themed apis
     ;; route to its factory.
     [isaac.llm.api.grover]
@@ -249,7 +249,7 @@
                                               :manifest    {:schema {:type       :map
                                                                      :key-spec   {:type :keyword}
                                                                      :value-spec {:type    :map
-                                                                                  :factory 'isaac.llm.api/register-api-entry!
+                                                                                  :factory 'isaac.llm.api.protocol/register-api-entry!
                                                                                   :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
              :isaac.server/slash-commands    {:description "Slash commands."
                                               :manifest    {:schema {:type       :map

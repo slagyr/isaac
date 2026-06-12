@@ -3,7 +3,7 @@
     [isaac.config.api :as config-loader]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.nexus :as nexus]
     [isaac.tool.fs-bounds :as sut]
     [speclj.core :refer [describe it should should=]]))

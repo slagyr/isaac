@@ -2,7 +2,7 @@
   (:require
     [isaac.config.api :as config]
     [isaac.prompt.catalog :as prompt-catalog]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.fs-bounds :as bounds]))
 
 (defn- session-entry [args]

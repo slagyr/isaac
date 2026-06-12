@@ -1,6 +1,6 @@
 (ns isaac.server.module
   (:require
-    [isaac.module :as module]
+    [isaac.module.protocol :as module]
     [isaac.module.loader :as module-loader]))
 
 (defn create-module []

@@ -28,7 +28,7 @@
     [isaac.comm.memory :as memory-comm]
     [isaac.comm.registry :as comm-registry]
     [isaac.slash.registry :as slash-registry]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory-store]
     [isaac.module.loader :as module-loader]

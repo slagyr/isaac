@@ -1,7 +1,7 @@
 (ns isaac.llm.prompt.builder
   (:require [cheshire.core :as json]
             [clojure.string :as str]
-            [isaac.llm.api :as llm-api]
+            [isaac.llm.api.protocol :as llm-api]
             [isaac.session.transcript :as message-content]))
 
 ;; region ----- Tool Result Truncation -----

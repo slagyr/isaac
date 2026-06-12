@@ -1,13 +1,13 @@
 (ns isaac.comm.delivery.worker-spec
   (:require
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.comm.delivery.queue :as queue]
     [isaac.comm.delivery.worker :as sut]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
     [isaac.root :as root]
     [isaac.logger :as log]
-    [isaac.scheduler :as scheduler]
+    [isaac.scheduler.runtime :as scheduler]
     [isaac.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all])

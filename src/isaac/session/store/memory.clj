@@ -6,7 +6,7 @@
     [isaac.logger :as log]
     [isaac.naming :as naming]
     [isaac.session.schema :as session-schema]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.impl-common :as c]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus])

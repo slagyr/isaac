@@ -1,6 +1,6 @@
 {:id      :isaac.slash.echo
  :version "0.1.0"
- :factory isaac.module/module
+ :factory isaac.module.protocol/module
 
  ;; Phase 7 of the berth epic moved slash command contributions to the
  ;; :isaac.server/slash-commands berth declared by isaac.core.

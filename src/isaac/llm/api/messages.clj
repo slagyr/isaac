@@ -1,7 +1,7 @@
 (ns isaac.llm.api.messages
   (:require
     [clojure.string :as str]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]

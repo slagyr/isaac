@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.env :as c3env]
     [isaac.api]
-    [isaac.config.schema :as schema]
+    [isaac.config.schema.root :as schema]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
     [isaac.config.configurator :as sut]

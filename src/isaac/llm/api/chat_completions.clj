@@ -5,7 +5,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.effort :as effort]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
     [isaac.llm.prompt.builder :as prompt]))

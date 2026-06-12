@@ -10,7 +10,7 @@
     [isaac.logger :as log]
     [isaac.naming :as naming]
     [isaac.session.schema :as session-schema]
-    [isaac.session.store :as session-store])
+    [isaac.session.store.spi :as session-store])
   (:import
     (java.nio.charset StandardCharsets)
     (java.time Instant ZoneOffset)

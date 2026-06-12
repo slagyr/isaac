@@ -5,7 +5,7 @@
     [isaac.llm.provider :as llm-provider]
     [isaac.module.loader :as module-loader]
     [isaac.llm.api.responses :as responses]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.providers :as providers]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))

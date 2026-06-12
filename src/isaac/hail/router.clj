@@ -8,8 +8,8 @@
     [isaac.fs :as fs]
     [isaac.naming :as naming]
     [isaac.nexus :as nexus]
-    [isaac.scheduler :as scheduler]
-    [isaac.session.store :as session-store]))
+    [isaac.scheduler.runtime :as scheduler]
+    [isaac.session.store.spi :as session-store]))
 
 (def default-tick-ms 1000)
 

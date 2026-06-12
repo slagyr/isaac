@@ -1,6 +1,6 @@
 (ns isaac.comm.memory
   (:require
-    [isaac.comm :as comm]))
+    [isaac.comm.protocol :as comm]))
 
 (defn- append! [events event]
   (swap! events conj event))

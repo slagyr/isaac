@@ -6,7 +6,7 @@
    the config change source that drives hot reload.
 
    This surface exists so server callers requiring lifecycle behavior don't
-   drag isaac.comm.registry / isaac.session.store (pulled in transitively by
+   drag isaac.comm.registry / isaac.session.store.spi (pulled in transitively by
    install / configurator) into read-only foundation code that only needs
    config.api. Everything outside the isaac.config.* namespaces requires
    *only* config.api and/or config.runtime — never install / configurator /

@@ -6,7 +6,7 @@
     [isaac.config.configurator :as configurator]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
-    [isaac.session.store :as store]))
+    [isaac.session.store.spi :as store]))
 
 (defn- fake-component [started]
   (reify configurator/Reconfigurable

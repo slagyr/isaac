@@ -11,9 +11,9 @@
     [isaac.logger :as log]
     [isaac.naming :as naming]
     [isaac.nexus :as nexus]
-    [isaac.scheduler :as scheduler]
+    [isaac.scheduler.runtime :as scheduler]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.memory :as memory])
   (:import
     (java.time Instant)))

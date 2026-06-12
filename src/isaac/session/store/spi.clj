@@ -1,4 +1,4 @@
-(ns isaac.session.store
+(ns isaac.session.store.spi
   (:require
     [clojure.string :as str]
     [isaac.naming :as naming]

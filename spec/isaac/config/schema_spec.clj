@@ -3,7 +3,7 @@
     [c3kit.apron.schema :as schema]
     [isaac.schema.lexicon :as lexicon]
     [isaac.marigold :as marigold]
-    [isaac.config.schema :as sut]
+    [isaac.config.schema.root :as sut]
     [speclj.core :refer :all]))
 
 (def test-model-id marigold/helm-mark-iii)

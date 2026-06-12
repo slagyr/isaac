@@ -2,7 +2,7 @@
   (:require
     [isaac.bridge.core :as bridge]
     [isaac.bridge.prompt-cli :as sut]
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.config.api :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.marigold :as marigold]

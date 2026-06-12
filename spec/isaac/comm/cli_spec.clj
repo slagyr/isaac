@@ -1,6 +1,6 @@
 (ns isaac.comm.cli-spec
   (:require
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.comm.cli :as sut]
     [speclj.core :refer :all]))
 

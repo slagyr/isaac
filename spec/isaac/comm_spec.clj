@@ -1,7 +1,7 @@
 (ns isaac.comm-spec
   (:require
     [isaac.bridge.prompt-cli :as prompt-cli]
-    [isaac.comm :as sut]
+    [isaac.comm.protocol :as sut]
     [isaac.comm.cli :as cli-comm]
     [isaac.comm.memory :as memory-comm]
     [isaac.comm.null :as null-comm]

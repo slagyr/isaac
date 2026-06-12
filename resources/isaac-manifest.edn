@@ -21,7 +21,7 @@
                                                    :manifest    {:schema {:type       :map
                                                                           :key-spec   {:type :keyword}
                                                                           :value-spec {:type    :map
-                                                                                       :factory isaac.llm.api/register-api-entry!
+                                                                                       :factory isaac.llm.api.protocol/register-api-entry!
                                                                                        :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
                   :isaac.server/slash-commands    {:description "Slash commands installed into the bridge slash registry."
                                                    :manifest    {:schema {:type       :map

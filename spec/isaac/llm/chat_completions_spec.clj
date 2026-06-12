@@ -4,7 +4,7 @@
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.config.api :as config]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.api.chat-completions :as sut]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]

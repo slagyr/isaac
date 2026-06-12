@@ -1,8 +1,8 @@
-(ns isaac.llm.api
+(ns isaac.llm.api.protocol
   "Protocol for an Api adapter — the gateway to a thinking-engine
    (Anthropic, OpenAI, Ollama, Grover test stub).
 
-   Implementations live alongside their wire code in isaac.llm.api.<name>.
+   Implementations live alongside their wire code in isaac.llm.api.<name> namespaces.
    The `make` factory in isaac.llm.provider resolves a (name, config)
    pair to an Api instance — it lives there to avoid a cycle, since
    the impl namespaces all require this one for the protocol."

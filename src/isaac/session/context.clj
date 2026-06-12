@@ -10,7 +10,7 @@
     [isaac.prompt.catalog :as prompt-catalog]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.schema :as session-schema]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.impl-common :as store-common]
     [isaac.nexus :as nexus]))
 

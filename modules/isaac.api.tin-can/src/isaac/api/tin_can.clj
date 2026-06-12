@@ -1,6 +1,6 @@
 (ns isaac.api.tin-can
   (:require
-    [isaac.llm.api :as api]))
+    [isaac.llm.api.protocol :as api]))
 
 (defn- content-text [content]
   (cond

@@ -8,7 +8,7 @@
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sut]
     [isaac.session.store.impl-common :as c]
     [isaac.spec-helper :as helper]

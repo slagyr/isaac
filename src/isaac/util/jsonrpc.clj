@@ -1,11 +1,10 @@
 (ns isaac.util.jsonrpc
-  "Generic JSON-RPC 2.0 message builders, predicates, and stream I/O.
-   Use this for both clients and servers; no transport or dispatch
-   assumptions baked in. Server-side handler dispatch (envelope
-   normalization, ArityException-tolerant invocation) lives in
-   isaac.util.jsonrpc.dispatch."
+  "Generic JSON-RPC 2.0 message builders, predicates, stream I/O,
+   and server-side handler dispatch."
   (:require
-    [cheshire.core :as json]))
+    [cheshire.core :as json])
+  (:import
+    (clojure.lang ArityException ExceptionInfo)))
 
 (def VERSION "2.0")
 
@@ -74,6 +73,9 @@
 
 ;; endregion
 
+;; region ----- Dispatch -----
+
+
 ;; region ----- Newline-delimited line builders -----
 
 (defn request-line
@@ -138,3 +140,75 @@
         (.flush writer)))))
 
 ;; endregion
+
+;; region ----- Dispatch -----
+
+(defn- envelope? [value]
+  (and (map? value)
+       (or (contains? value :response)
+           (contains? value :notifications))))
+
+(defn- normalize-envelope [id notify? envelope]
+  (let [response      (when-not notify?
+                        (or (:response envelope)
+                            (when (contains? envelope :result)
+                              (result id (:result envelope)))))
+        notifications (vec (or (:notifications envelope) []))]
+    (cond
+      (and response (seq notifications)) {:response response :notifications notifications}
+      response response
+      (seq notifications) {:notifications notifications}
+      :else nil)))
+
+(defn- invoke-handler [handler params message]
+  (try
+    (handler params message)
+    (catch ArityException _
+      (handler params))))
+
+(defn- invalid-params-exception? [error]
+  (= :invalid-params (:type (ex-data error))))
+
+(defn- maybe-normalize-envelope [result message]
+  (when (envelope? result)
+    (normalize-envelope (:id message) (notification? message) result)))
+
+(defn maybe-result [message handler-result]
+  (when-not (notification? message)
+    (result (:id message) handler-result)))
+
+(defn dispatch [handlers message]
+  (let [handler (get handlers (:method message))]
+    (cond
+      (not (map? message))
+      (invalid-request nil)
+
+      (nil? handler)
+      (when-not (notification? message)
+        (method-not-found (:id message)))
+
+      :else
+      (let [handler-result (try
+                              (invoke-handler handler (:params message) message)
+                              (catch IllegalArgumentException _
+                                (invalid-params (:id message))))]
+        (or (maybe-normalize-envelope handler-result message)
+            (when (result? handler-result) handler-result)
+            (when (error? handler-result) handler-result)
+            (maybe-result message handler-result))))))
+
+(defn handle-line [handlers line]
+  (let [message (parse-message line)]
+    (if (parse-error? message)
+      (parse-error)
+      (try
+        (dispatch handlers message)
+        (catch ExceptionInfo e
+          (if (invalid-params-exception? e)
+            {:jsonrpc VERSION
+             :id      (:id message)
+             :error   {:code    INVALID_PARAMS
+                       :message (or (ex-message e) "Invalid params")}}
+            (internal-error (:id message))))
+        (catch Exception _
+          (internal-error (:id message)))))))

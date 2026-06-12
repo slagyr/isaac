@@ -1,9 +1,9 @@
 (ns isaac.bridge.status
   (:require
     [clojure.string :as str]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.nexus :as nexus]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Helpers -----

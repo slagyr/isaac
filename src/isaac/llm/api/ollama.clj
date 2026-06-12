@@ -1,6 +1,6 @@
 (ns isaac.llm.api.ollama
   (:require
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
     [isaac.llm.prompt.builder :as prompt]))

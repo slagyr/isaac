@@ -1,6 +1,6 @@
 {:id      :isaac.providers.kombucha
  :version "0.1.0"
- :factory isaac.module/module
+ :factory isaac.module.protocol/module
 
  ;; Provider templates contribute to isaac.core's
  ;; :isaac.server/provider-template berth (phase 7 of the berth epic).

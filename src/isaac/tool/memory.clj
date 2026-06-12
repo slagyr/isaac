@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.fs-bounds :as bounds]))
 
 (def ^:dynamic *now* nil)

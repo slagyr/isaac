@@ -1,6 +1,6 @@
 (ns isaac.server.module-spec
   (:require
-    [isaac.module]
+    [isaac.module.protocol]
     [isaac.module.loader :as module-loader]
     [isaac.server.module :as sut]
     [speclj.core :refer :all]))
@@ -34,4 +34,4 @@
 
   (describe "create-module"
     (it "returns a module record"
-      (should (satisfies? isaac.module/Module (sut/create-module))))))
+      (should (satisfies? isaac.module.protocol/Module (sut/create-module))))))

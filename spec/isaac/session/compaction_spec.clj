@@ -2,7 +2,7 @@
   (:require
     [clojure.set :as set]
     [clojure.java.io :as io]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.provider :as llm-provider]
     ;; Loading this registers the :responses factory so make-provider
     ;; can construct a real ResponsesAPI when callers pass `:api "responses"`.
@@ -10,7 +10,7 @@
      [isaac.logger :as log]
      [isaac.fs :as fs]
      [isaac.session.compaction :as sut]
-     [isaac.session.store :as store]
+     [isaac.session.store.spi :as store]
      [isaac.session.spec-helper :as storage]
      [isaac.nexus :as nexus]
      [isaac.tool.registry :as tool-registry]

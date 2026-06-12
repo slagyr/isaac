@@ -8,7 +8,7 @@
     [isaac.llm.provider :as llm-provider]
     [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]))
+    [isaac.session.store.spi :as store]))
 
 (def charge-schema
   {:name   :charge

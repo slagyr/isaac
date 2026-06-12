@@ -1,6 +1,6 @@
 (ns isaac.drive.dispatch
   (:require
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.registry :as registry]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]))

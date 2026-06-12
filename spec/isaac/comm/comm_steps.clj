@@ -12,7 +12,7 @@
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory]))

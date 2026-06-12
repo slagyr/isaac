@@ -5,7 +5,7 @@
     [clojure.string :as str]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.impl-common :as c]
     [isaac.session.store.index :as sut]
     [isaac.nexus :as nexus]

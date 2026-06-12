@@ -2,7 +2,7 @@
   (:require
     [clojure.walk :as walk]
     [isaac.hail.queue :as queue]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.fs-bounds :as bounds]))
 
 (defn- session-crew [args]

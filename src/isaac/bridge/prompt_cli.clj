@@ -6,13 +6,13 @@
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
     [isaac.cli.registry :as cli]
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.config.api :as config]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.drive.turn :as single-turn]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.builtin :as builtin]))
 
 (defn- option-tags [opts]

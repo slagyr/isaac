@@ -11,7 +11,7 @@
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
     [isaac.nexus :as nexus]))
 

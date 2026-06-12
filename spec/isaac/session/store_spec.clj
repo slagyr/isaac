@@ -1,12 +1,12 @@
 (ns isaac.session.store-spec
   (:require
     [isaac.marigold :as marigold]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.memory :as memory]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
-(describe "isaac.session.store"
+(describe "isaac.session.store.spi"
 
   (it "defines a SessionStore protocol"
     (should-not-be-nil store/SessionStore))

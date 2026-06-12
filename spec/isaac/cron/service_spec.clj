@@ -7,7 +7,7 @@
     [isaac.config.runtime :as runtime]
     [isaac.cron.service :as sut]
     [isaac.fs :as fs]
-    [isaac.scheduler :as scheduler-core]
+    [isaac.scheduler.runtime :as scheduler-core]
     [isaac.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]

@@ -5,7 +5,7 @@
     [isaac.fs :as fs]
     [isaac.tool.memory :as memory]
     [isaac.session.cli :as sut]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))

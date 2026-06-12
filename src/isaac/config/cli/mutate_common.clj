@@ -8,7 +8,7 @@
     [isaac.config.loader :as loader]
     [isaac.config.mutate :as mutate]
     [isaac.config.nav :as nav]
-    [isaac.config.schema :as config-schema]
+    [isaac.config.schema.root :as config-schema]
     [isaac.logger :as log]))
 
 (defn target-spec-for [path-str]

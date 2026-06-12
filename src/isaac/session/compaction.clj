@@ -2,12 +2,12 @@
   (:require
     [clojure.string :as str]
     [isaac.config.api :as config]
-    [isaac.llm.api :as llm]
+    [isaac.llm.api.protocol :as llm]
     [isaac.logger :as log]
     [isaac.session.context :as session-ctx]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.nexus :as nexus]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.transcript :as transcript]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))

@@ -9,7 +9,7 @@
     [isaac.scheduler.cron :as cron]
      [isaac.cron.state :as state]
      [isaac.logger :as log]
-     [isaac.scheduler :as scheduler]
+     [isaac.scheduler.runtime :as scheduler]
      [isaac.session.context :as session-ctx]
      [isaac.nexus :as nexus]
      [isaac.tool.memory :as memory])

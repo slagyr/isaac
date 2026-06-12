@@ -1,4 +1,4 @@
-(ns isaac.config.schema
+(ns isaac.config.schema.root
   "Server-side views over the :isaac.config/schema contributions. The
    module manifest (resources/isaac-manifest.edn) is the single source
    of truth for every config table; the defs here are read from it."

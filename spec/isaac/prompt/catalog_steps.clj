@@ -5,7 +5,7 @@
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
     [isaac.prompt.catalog :as catalog]
-    [isaac.session.store :as store]))
+    [isaac.session.store.spi :as store]))
 
 (helper! isaac.prompt.catalog-steps)
 

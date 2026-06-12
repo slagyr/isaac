@@ -4,7 +4,7 @@
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.server.routes]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.spec-helper :as helper]
     [isaac.session.context :as sut]
     [isaac.nexus :as nexus]

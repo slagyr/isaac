@@ -4,14 +4,14 @@
     [isaac.marigold :as marigold]
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.bridge.prompt-cli :as sut]
     [isaac.config.api :as config]
     [isaac.config.runtime :as runtime]
     [isaac.server.routes]
     [isaac.session.spec-helper :as helper]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.tool.builtin :as builtin]
     [speclj.core :refer :all]))
 

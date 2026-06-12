@@ -7,12 +7,12 @@
     [isaac.llm.api.ollama :as ollama]
     [isaac.llm.api.chat-completions :as chat-completions]
     [isaac.llm.api.responses :as responses]
-    [isaac.llm.api :as sut]
+    [isaac.llm.api.protocol :as sut]
     [isaac.llm.provider :as llm-provider]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
-(describe "isaac.llm.api"
+(describe "isaac.llm.api.protocol"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]

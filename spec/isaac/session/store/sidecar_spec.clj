@@ -1,7 +1,7 @@
 (ns isaac.session.store.sidecar-spec
   (:require
     [isaac.fs :as fs]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sut]
     [isaac.nexus :as nexus]
     [speclj.core :refer [describe it should should=]]))

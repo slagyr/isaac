@@ -15,7 +15,7 @@
      [clojure.edn :as edn]
      [isaac.config.loader :as loader]
      [isaac.config.paths :as paths]
-     [isaac.config.schema :as config-schema]
+     [isaac.config.schema.root :as config-schema]
      [isaac.fs :as fs]
      [isaac.nexus :as nexus]))
 

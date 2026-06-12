@@ -1,6 +1,6 @@
 (ns isaac.comm.cli
   (:require
-    [isaac.comm :as comm]))
+    [isaac.comm.protocol :as comm]))
 
 (deftype CliComm []
   comm/Comm

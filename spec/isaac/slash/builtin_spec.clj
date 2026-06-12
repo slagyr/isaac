@@ -5,7 +5,7 @@
     [isaac.fs :as fs]
     [isaac.root :as root]
     [isaac.nexus :as nexus]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.memory :as memory]
     [isaac.slash.builtin :as sut]
     [speclj.core :refer :all]))

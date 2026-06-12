@@ -1,4 +1,4 @@
-(ns isaac.comm)
+(ns isaac.comm.protocol)
 
 (defprotocol Comm
   "Pluggable interface for surfacing Isaac output and turn events to a

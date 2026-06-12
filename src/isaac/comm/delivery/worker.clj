@@ -1,10 +1,10 @@
 (ns isaac.comm.delivery.worker
   (:require
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.comm.delivery.queue :as queue]
     [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
-    [isaac.scheduler :as scheduler]
+    [isaac.scheduler.runtime :as scheduler]
     [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory])
   (:import

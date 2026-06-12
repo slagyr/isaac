@@ -7,7 +7,7 @@
     [isaac.llm.api.messages :as sut]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [speclj.core :refer :all]))
 
 (defn- mock-response [body]

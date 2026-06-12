@@ -3,8 +3,8 @@
     [isaac.fs :as fs]
     [isaac.hail.router :as sut]
     [isaac.nexus :as nexus]
-    [isaac.scheduler :as scheduler]
-    [isaac.session.store :as store]
+    [isaac.scheduler.runtime :as scheduler]
+    [isaac.session.store.spi :as store]
     [isaac.session.store.memory :as memory]
     [speclj.core :refer :all]))
 

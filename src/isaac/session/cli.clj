@@ -14,7 +14,7 @@
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.schema :as session-schema]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.nexus :as nexus]
     [isaac.tool.memory :as memory])
   (:import

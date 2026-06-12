@@ -9,7 +9,7 @@
     [isaac.hooks :as sut]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
-    [isaac.session.store :as store]
+    [isaac.session.store.spi :as store]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 

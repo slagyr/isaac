@@ -3,7 +3,7 @@
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.auth.store :as auth-store]
-    [isaac.llm.api :as api]
+    [isaac.llm.api.protocol :as api]
     [isaac.llm.api.responses :as sut]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]

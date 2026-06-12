@@ -1,6 +1,6 @@
 (ns isaac.config.schema.term-spec
   (:require [clojure.string :as s]
-            [isaac.config.schema :as config-schema]
+            [isaac.config.schema.root :as config-schema]
             [isaac.config.schema.term :as sut]
             [speclj.core :refer [context describe it should should-contain should-not-contain should=]]))
 

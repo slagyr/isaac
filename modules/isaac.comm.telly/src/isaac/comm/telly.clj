@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.env :as c3env]
     [isaac.api :as api]
-    [isaac.comm :as comm]
+    [isaac.comm.protocol :as comm]
     [isaac.logger :as log]))
 
 (when (= "true" (c3env/env "ISAAC_TELLY_FAIL_ON_LOAD"))

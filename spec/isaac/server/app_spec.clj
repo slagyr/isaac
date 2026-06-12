@@ -10,7 +10,7 @@
      [isaac.logger :as log]
      [isaac.marigold :as marigold]
      [isaac.module.loader :as module-loader]
-     [isaac.scheduler :as scheduler-core]
+     [isaac.scheduler.runtime :as scheduler-core]
      [isaac.server.app :as sut]
      [isaac.nexus :as nexus]
      [isaac.spec-helper :as helper]
