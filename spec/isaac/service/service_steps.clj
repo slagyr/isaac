@@ -1,6 +1,5 @@
 (ns isaac.service.service-steps
   (:require
-    [clojure.java.io :as io]
     [clojure.string :as str]
     [clojure.data.xml :as xml]
     [gherclj.core :as g :refer [defgiven defthen helper!]]
@@ -22,11 +21,6 @@
     (str/starts-with? path "/")   path
     :else                         (str (or (g/get :root) (System/getProperty "user.dir")) "/" path)))
 
-
-(defn- check-file-exists [path]
-  (let [expanded (expand-path path)
-        fs*      (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))]
-    (fs/exists? fs* expanded)))
 
 ;; region ----- Plist parsing -----
 
@@ -127,22 +121,6 @@
   (when-not (g/get :sh-fn)
     (g/assoc! :sh-fn (sh-fn))))
 
-(defn file-with-content [path content]
-  (let [expanded (expand-path path)]
-    (if-let [mem-fs (g/get :mem-fs)]
-      (do
-        (fs/mkdirs mem-fs (fs/parent expanded))
-        (fs/spit   mem-fs expanded (str/trim content)))
-      (do
-        (clojure.java.io/make-parents expanded)
-        (spit expanded (str/trim content))))))
-
-(defn file-exists [path]
-  (g/should (check-file-exists path)))
-
-(defn file-does-not-exist [path]
-  (g/should-not (check-file-exists path)))
-
 (defn sh-was-called-with [expected]
   (let [calls   (or (g/get :sh-calls) [])
         pattern (str/trim expected)]
@@ -183,14 +161,8 @@
 (defgiven "{cmd:string} is not on PATH" isaac.service.service-steps/bb-not-on-path
   "Stubs 'which <cmd>' to fail (not found).")
 
-(defgiven "the file {path:string} contains:" isaac.service.service-steps/file-with-content
-  "Writes heredoc content to the given path (tilde-expanded) in mem-fs or real fs.")
-
-(defthen "the file {path:string} exists" isaac.service.service-steps/file-exists
-  "Asserts the file at the given path (tilde-expanded) exists in mem-fs or real fs.")
-
-(defthen "the file {path:string} does not exist" isaac.service.service-steps/file-does-not-exist
-  "Asserts the file at the given path (tilde-expanded) does not exist.")
+;; "the file ..." contains:/exists/does not exist moved to
+;; isaac.foundation.fs-steps (foundation-grade fs fixture/assertions).
 
 (defthen "the plist contains:" isaac.service.service-steps/plist-contains
   "Parses the installed plist and asserts path|value table rows match.")
