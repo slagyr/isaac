@@ -172,12 +172,6 @@
      {:type :int,
       :description
       "Maximum reconnect delay in milliseconds for ACP proxy"}}}},
-  :channels
-  {:schema
-   {:name :channels,
-    :type :map,
-    :description "Legacy communication channel configuration",
-    :schema {}}},
   :command-paths
   {:schema
    {:type :seq,

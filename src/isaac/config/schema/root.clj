@@ -33,7 +33,6 @@
 (def defaults (table :defaults))
 (def acp (table :acp))
 (def server (table :server))
-(def channels (table :channels))
 (def sessions (table :sessions))
 (def gateway (table :gateway))
 (def hail (table :hail))

@@ -754,7 +754,6 @@
                        :models              {:grover {:model "echo" :provider helm-kw}}
                        :providers           {helm-kw {:api-key "sk-test"}}
                        :cron                {:nightly {:expr "0 0 * * *" :crew :main}}
-                       :channels            {:web {:name "web"}}
                        :comms               {(keyword marigold/longwave) {:token "abc"}}
                        :hooks               {(keyword marigold/lettuce-hook) {:token "secret"}}
                        :server              {:port 6674}
@@ -770,7 +769,6 @@
           (should= {"grover" {:model "echo" :provider helm-kw}} (:models result))
           (should= {marigold/helm-systems {:api-key "sk-test"}} (:providers result))
           (should= {"nightly" {:expr "0 0 * * *" :crew "main"}} (:cron result))
-          (should= (:channels cfg) (:channels result))
           (should= (:comms cfg) (:comms result))
           (should= (:hooks cfg) (:hooks result))
           (should= (:server cfg) (:server result))
