@@ -94,9 +94,10 @@
               :cancelled
 
               :else
-              (do
-                (Thread/sleep 10)
-                (recur)))))
+              (let [result (deref release 1 ::timeout)]
+                (if (= ::timeout result)
+                  (recur)
+                  result)))))
       (deliver complete true)
       (when (bridge/cancelled? session-key)
         {:error :cancelled}))))
@@ -114,9 +115,10 @@
           :cancelled
 
           :else
-          (do
-            (Thread/sleep 10)
-            (recur))))
+          (let [result (deref release 1 ::timeout)]
+            (if (= ::timeout result)
+              (recur)
+              result))))
       (finally
         (swap! wait-gates* dissoc session-key)))
     (when (bridge/cancelled? session-key)

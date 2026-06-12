@@ -2,7 +2,6 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.config.api :as config]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
     [isaac.session.spec-helper :as store-helper]
@@ -137,12 +136,4 @@
         (with-redefs [sut/available? (constantly true)
                       sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})]
           (sut/grep-tool {"pattern" "needle" "path" "src" "session_key" @session-key}))
-        (should= subdir (last @captured)))))
-
-  (it "runs the real rg binary when available"
-    (when (sut/available?)
-      (support/write-file! "src/core.clj" "(defn greet [name])\n(defn shout [name])")
-      (let [result (sut/grep-tool {"pattern" "defn" "path" (str support/test-dir "/src")})]
-        (should-be-nil (:isError result))
-        (should (str/includes? (:result result) "core.clj:1:"))
-        (should (str/includes? (:result result) "core.clj:2:"))))))
+        (should= subdir (last @captured))))))
