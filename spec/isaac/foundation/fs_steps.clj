@@ -121,6 +121,47 @@
   (nexus/-with-nested-nexus {:fs (feature-fs)}
     (f)))
 
+;; "a file X exists with content Y" writes a root-relative (or absolute) file
+;; and registers the fs so a following run sees it. resolve-path resolves
+;; against :root, tolerating a leading root-name segment.
+(defn- ensure-feature-fs! []
+  (let [fs* (feature-fs)]
+    (nexus/register! [:fs] fs*)
+    fs*))
+
+(defn- with-ensured-fs [f]
+  (let [fs* (ensure-feature-fs!)]
+    (nexus/-with-nested-nexus {:fs fs*}
+      (f))))
+
+(defn- resolve-path [p]
+  (if (str/starts-with? p "/")
+    p
+    (let [root      (g/get :root)
+          root-name (.getName (io/file root))]
+      (if (str/starts-with? p (str root-name "/"))
+        (str root "/" (subs p (inc (count root-name))))
+        (str root "/" p)))))
+
+(defn- unescape-content [s]
+  (-> s (str/replace "\\\"" "\"") (str/replace "\\n" "\n")))
+
+(defn file-at-with-content [name content]
+  (let [path   (resolve-path name)
+        actual (unescape-content content)]
+    (with-ensured-fs
+      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))]
+         (fs/mkdirs fs* (fs/parent path))
+         (fs/spit   fs* path actual)))))
+
+(defn file-at-with-docstring-content [name doc-string]
+  (let [path   (resolve-path name)
+        actual (str/trim doc-string)]
+    (with-ensured-fs
+      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))]
+         (fs/mkdirs fs* (fs/parent path))
+         (fs/spit   fs* path actual)))))
+
 (defn- parse-state-value [value]
   (cond
     (re-matches #"-?\d+" value) (parse-long value)
@@ -319,5 +360,9 @@
 (defthen "the isaac file \"{path}\" does not exist" isaac.foundation.fs-steps/edn-isaac-file-does-not-exist)
 
 (defgiven #"the file \"([^\"]+)\" exists with:$" isaac.foundation.fs-steps/file-exists-with)
+
+(defgiven "a file {name:string} exists with content {content:string}" isaac.foundation.fs-steps/file-at-with-content)
+
+(defgiven "a file {name:string} exists with content:" isaac.foundation.fs-steps/file-at-with-docstring-content)
 
 ;; endregion ^^^^^ Routing ^^^^^

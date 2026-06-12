@@ -232,13 +232,8 @@
 (defn- unescape-content [s]
   (-> s (str/replace "\\\"" "\"") (str/replace "\\n" "\n")))
 
-(defn file-with-content [name content]
-  (let [path   (resolve-path name)
-        actual (unescape-content content)]
-    (with-feature-fs
-      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
-         (isaac-fs/mkdirs fs* (isaac-fs/parent path))
-         (isaac-fs/spit   fs* path actual)))))
+;; "a file X exists with content Y" / "... content:" moved to
+;; isaac.foundation.fs-steps (foundation-grade file fixtures).
 
 (defn file-appended-with [name content]
   (let [path   (resolve-path name)
@@ -246,14 +241,6 @@
     (with-feature-fs
       #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
          (isaac-fs/spit fs* path (str actual "\n") :append true)))))
-
-(defn file-with-docstring-content [name doc-string]
-  (let [path   (resolve-path name)
-        actual (str/trim doc-string)]
-    (with-feature-fs
-      #(let [fs* (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))]
-         (isaac-fs/mkdirs fs* (isaac-fs/parent path))
-         (isaac-fs/spit   fs* path actual)))))
 
 (defn file-with-lines [name n]
   (let [path  (resolve-path name)
@@ -523,10 +510,6 @@
   "Wipes the directory on the REAL filesystem and recreates it, then
    binds :root. Use for tool tests that need real files (exec,
    glob with mtimes, etc.) — not compatible with mem-fs.")
-
-(defgiven "a file {name:string} exists with content {content:string}" isaac.tool.tools-steps/file-with-content)
-
-(defgiven "a file {name:string} exists with content:" isaac.tool.tools-steps/file-with-docstring-content)
 
 (defwhen "the file {name:string} is appended with {content:string}" isaac.tool.tools-steps/file-appended-with)
 
