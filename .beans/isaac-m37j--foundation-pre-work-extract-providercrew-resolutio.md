@@ -1,10 +1,11 @@
 ---
 # isaac-m37j
 title: 'Foundation pre-work: extract provider/crew resolution into isaac.config.resolve'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-06-12T12:49:31Z
-updated_at: 2026-06-12T12:49:31Z
+updated_at: 2026-06-12T15:03:35Z
 parent: isaac-brth
 blocked_by:
     - isaac-ptkg
