@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T14:27:25Z
+updated_at: 2026-06-12T14:55:19Z
 parent: isaac-brth
 ---
 
@@ -44,3 +44,42 @@ the same phrase).
 - bb spec and bb features green; gherclj ambiguity check clean.
 - Foundation features and the foundation specs listed above require only
   foundation namespaces + the new step layer.
+
+## Progress (banked 2026-06-12)
+
+Done + pushed (green at each step): checkboxes 3 and 4 complete. Checkboxes 1
+and 2 are partially done — the cli portion is fully extracted; checkbox 5 not
+started.
+
+Commits (all on main, bb spec + bb features + gherclj ambiguity green):
+- b65def91 spec_helper split (checkbox 3)
+- 5d2d96bf foundation specs drop server requires (checkbox 4)
+- d8422e7d isaac-run postflight registry; LLM/HTTP/drive capture -> preflight(clears)+postflight(harvest)
+- adbeb9af isaac-run clock binding -> register-isaac-run-wrapper! (memory-tool seam)
+- 96114930 extract isaac.foundation.cli-steps (run wrapper + stdout/stderr/exit + stdin/command/clock + Isaac-root-config + isaac-file-contains); server/cli/cli_steps delegates (reply-*, background run, LLM/clock hook registrations); cli_steps_spec moved to foundation
+
+The isaac-run wrapper is now foundation-clean: its three couplings (LLM/HTTP/
+drive capture, memory-tool clock) attach via three foundation hook registries
+(register-isaac-run-preflight!/postflight!/wrapper!). Server layers extend the
+run without the foundation ns depending on isaac.llm.* / isaac.drive.* /
+isaac.tool.memory.
+
+Remaining (each: move phrases to a foundation ns, server requires+delegate,
+keep gherclj ambiguity clean):
+- session_steps: "an (empty )Isaac root at", "an empty Isaac state directory",
+  "the file ... exists with:", "a module manifest ...:". RISK: initialize-root!
+  mixes foundation resets with server/LLM teardown AND global mutation
+  (alter-var-root on sidecar-store/create-store; remove-ns of isaac.comm.telly;
+  comm-registry/tool-registry/single-turn resets). Needs a setup-hook untangle
+  (foundation-minimal reset + server-registered hook), and backs 46 scenarios.
+- server_steps: "the isaac file ... exists with:", "the EDN isaac file ...
+  contains:", "the log has entries matching:" (confirm log helper is
+  isaac.logger-only before moving).
+- config_steps: config load/validation steps, dropping the isaac.server.app require.
+- service_steps: the generic "the file ..." fs assertions (service_steps then
+  requires+delegates for its own macOS use).
+- Checkbox 5: per-feature audit of features/{cli,module}/* (bb match-step per phrase).
+
+Approved decisions: incremental green sub-steps; isaac-run capture/clock/setup
+relocated via hook registries (no phrase registered twice). Foundation/server
+phrase divide approved (see the move list discussed on the bean's work session).
