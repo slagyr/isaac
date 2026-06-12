@@ -6,7 +6,6 @@
     [isaac.root :as root]
     [isaac.module.loader :as module-loader]
     [isaac.main :as sut]
-    [isaac.session.store :as store]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
@@ -235,7 +234,6 @@
                                            ([] (reset! init-opts {}))
                                            ([opts] (reset! init-opts opts)))
                       nexus/register!   (fn [& _])
-                      store/register!    (fn [& _])
                       root/resolve-root  (fn [& _] "/tmp/home")]
           (binding [sut/*extra-opts* {:fs mem}]
             (should= 0 (sut/run ["fs-init"]))))

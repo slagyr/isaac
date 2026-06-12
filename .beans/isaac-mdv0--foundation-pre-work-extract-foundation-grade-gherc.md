@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T14:21:49Z
+updated_at: 2026-06-12T14:27:25Z
 parent: isaac-brth
 ---
 
@@ -32,7 +32,7 @@ the same phrase).
       gherclj ambiguity check.
 - [x] Split src/isaac/spec_helper.clj: foundation scaffolding vs server store
       helpers (it currently requires isaac.session.store*).
-- [ ] Re-theme stray server requires in foundation specs so they can move
+- [x] Re-theme stray server requires in foundation specs so they can move
       later: main_spec requires isaac.session.store; module/loader_spec
       requires isaac.server.routes, isaac.comm.registry, isaac.hooks (use
       marigold berths instead).

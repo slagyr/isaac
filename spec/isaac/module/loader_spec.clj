@@ -3,14 +3,10 @@
     [c3kit.apron.env :as c3env]
     [clojure.java.io :as io]
     [isaac.cli :as cli-registry]
-    [isaac.server.status]
-    [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
-    [isaac.hooks]
     [isaac.logger :as log]
     [isaac.module.manifest]
     [isaac.module.loader :as sut]
-    [isaac.server.routes]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
@@ -70,9 +66,6 @@
   ;; reloading the module and miss load-time failures on later examples.
   (let [loaded-libs (var-get #'clojure.core/*loaded-libs*)]
     (dosync (alter loaded-libs disj 'isaac.comm.telly))))
-
-(defn- reset-comm-registry! []
-  (reset! comm-registry/*registry* (comm-registry/fresh-registry)))
 
 (defn- reset-cli-registry! []
   (cli-registry/clear-module-commands!))
@@ -349,7 +342,6 @@
     (around [example]
       (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
-        (reset-comm-registry!)
         (reset-cli-registry!)
         (sut/clear-activations!)
         (reset! c3env/-overrides {})
@@ -358,7 +350,6 @@
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset! c3env/-overrides {})
         (sut/clear-activations!)
-        (reset-comm-registry!)
         (reset-cli-registry!)
         (unload-telly!)))
 
