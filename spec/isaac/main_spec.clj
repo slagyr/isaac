@@ -20,8 +20,8 @@
 
 (defn- core-manifest-cli-command-names []
   (->> ["src/isaac-manifest.edn" "resources/isaac-manifest.edn"]
-       (mapcat (fn [path] (:isaac/cli (edn/read-string (slurp path)))))
-       (map :name)
+       (mapcat (fn [path] (keys (:isaac/cli (edn/read-string (slurp path))))))
+       (map name)
        set))
 
 (describe "Main CLI"
@@ -219,14 +219,15 @@
                         {:index {:isaac.core {:manifest {:id      :isaac.core
                                                          :version "1"
                                                          :berths  {:isaac/cli {:description "CLI commands"
-                                                                         :manifest     {:schema {:type :seq
-                                                                                                 :spec {:type    :map
-                                                                                                        :factory 'isaac.cli.registry/register-cli-command!}}}}}}}
+                                                                         :manifest     {:schema {:type       :map
+                                                                                                 :key-spec   {:type :keyword}
+                                                                                                 :value-spec {:type    :map
+                                                                                                              :factory 'isaac.cli.registry/register-cli-command!}}}}}}}
                                  :hello      {:manifest {:id      :hello
                                                          :version "1"
-                                                         :isaac/cli [{:name "greet" :desc "Greets"
-                                                                    :usage "greet"
-                                                                    :run-fn 'isaac.main-spec/greet-run-fn}]}}}})]
+                                                         :isaac/cli {:greet {:desc "Greets"
+                                                                             :usage "greet"
+                                                                             :run-fn 'isaac.main-spec/greet-run-fn}}}}}})]
           (@#'sut/register-module-cli-commands! "/tmp/home/.isaac" mem))
         (should-not-be-nil (registry/get-command "greet"))
         (should= "Greets" (:desc (registry/get-command "greet")))))

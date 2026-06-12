@@ -53,54 +53,45 @@
                                                                                                                  :schema        {:type :any}
                                                                                                                  :configurable? {:type :boolean}}}}}}}
 
- :isaac/cli                      [{:name        "auth"
-                                   :usage       "auth <subcommand> [options]"
-                                   :desc        "Manage authentication credentials"
-                                   :option-spec isaac.llm.auth.cli/option-spec
-                                   :help-text   isaac.llm.auth.cli/help-text
-                                   :run-fn      isaac.llm.auth.cli/run-fn}
-                                  {:name        "config"
-                                   :usage       "config <subcommand> [options]"
-                                   :desc        "Inspect and validate Isaac configuration"
-                                   :option-spec isaac.config.cli.command/option-spec
-                                   :help-text   isaac.config.cli.command/config-help
-                                   :run-fn      isaac.config.cli.command/run-fn}
-                                  {:name        "crew"
-                                   :usage       "crew"
-                                   :desc        "List configured crew members"
-                                   :option-spec isaac.crew.cli/option-spec
-                                   :run-fn      isaac.crew.cli/run-fn}
-                                  {:name        "hail"
-                                   :usage       "hail <subcommand> [options]"
-                                   :desc        "Produce hail records"
-                                   :option-spec isaac.hail.cli/hail-option-spec
-                                   :help-text   isaac.hail.cli/hail-help
-                                   :run-fn      isaac.hail.cli/run-fn}
-                                  {:name        "prompt"
-                                   :usage       "prompt -m <message> [options]"
-                                   :desc        "Run a single prompt turn and exit"
-                                   :option-spec isaac.bridge.prompt-cli/option-spec
-                                   :run-fn      isaac.bridge.prompt-cli/run-fn}
-                                  {:name        "logs"
-                                   :usage       "logs [options]"
-                                   :desc        "Tail and colorize the Isaac log file"
-                                   :option-spec isaac.logs.cli/option-spec
-                                   :run-fn      isaac.logs.cli/run-fn}
-                                  {:name        "server"
-                                   :usage       "server [options]"
-                                   :desc        "Start the Isaac HTTP server"
-                                   :option-spec isaac.server.cli/option-spec
-                                   :run-fn      isaac.server.cli/run-fn}
-                                  {:name        "service"
-                                   :usage       "service [options] <subcommand>"
-                                   :desc        "Manage Isaac as a background service"
-                                   :subcommands isaac.service.cli/subcommands
-                                   :run-fn      isaac.service.cli/run-fn}
-                                  {:name        "sessions"
-                                   :usage       "sessions [options]"
-                                   :desc        "List stored conversation sessions"
-                                   :option-spec isaac.session.cli/option-spec
-                                   :run-fn      isaac.session.cli/run-fn}]
+ :isaac/cli {:auth    {:usage       "auth <subcommand> [options]"
+                        :desc        "Manage authentication credentials"
+                        :option-spec isaac.llm.auth.cli/option-spec
+                        :help-text   isaac.llm.auth.cli/help-text
+                        :run-fn      isaac.llm.auth.cli/run-fn}
+             :config  {:usage       "config <subcommand> [options]"
+                        :desc        "Inspect and validate Isaac configuration"
+                        :option-spec isaac.config.cli.command/option-spec
+                        :help-text   isaac.config.cli.command/config-help
+                        :run-fn      isaac.config.cli.command/run-fn}
+             :crew    {:usage       "crew"
+                        :desc        "List configured crew members"
+                        :option-spec isaac.crew.cli/option-spec
+                        :run-fn      isaac.crew.cli/run-fn}
+             :hail    {:usage       "hail <subcommand> [options]"
+                        :desc        "Produce hail records"
+                        :option-spec isaac.hail.cli/hail-option-spec
+                        :help-text   isaac.hail.cli/hail-help
+                        :run-fn      isaac.hail.cli/run-fn}
+             :prompt  {:usage       "prompt -m <message> [options]"
+                        :desc        "Run a single prompt turn and exit"
+                        :option-spec isaac.bridge.prompt-cli/option-spec
+                        :run-fn      isaac.bridge.prompt-cli/run-fn}
+             :logs    {:usage       "logs [options]"
+                        :desc        "Tail and colorize the Isaac log file"
+                        :option-spec isaac.logs.cli/option-spec
+                        :run-fn      isaac.logs.cli/run-fn}
+             :server  {:usage       "server [options]"
+                        :desc        "Start the Isaac HTTP server"
+                        :option-spec isaac.server.cli/option-spec
+                        :run-fn      isaac.server.cli/run-fn}
+             :service {:usage       "service [options] <subcommand>"
+                        :desc        "Manage Isaac as a background service"
+                        :run-fn      isaac.service.cli/run-fn
+                        :subcommands isaac.service.cli/subcommands}
+             :sessions{:usage       "sessions [options]"
+                        :desc        "List stored conversation sessions"
+                        :option-spec isaac.session.cli/option-spec
+                        :run-fn      isaac.session.cli/run-fn}}
 
  :isaac.server/route             [{:method :post :path "/hail/send" :handler isaac.hail.http/handler}
                                   {:method :* :path "/hooks/*" :handler isaac.hooks/handler}]
