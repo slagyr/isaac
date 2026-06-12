@@ -7,6 +7,7 @@
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.context :as session-ctx]
@@ -27,7 +28,7 @@
   (into {}
         (keep (fn [[name entry]]
                 (when (and (not= :auth name) (map? entry))
-                  [(config/->name name) entry])))
+                  [(runtime/->name name) entry])))
         hooks))
 
 (defn reset-registry!
@@ -94,7 +95,7 @@
 ;; Reconfigurable implementation
 
 (deftype HooksModule []
-  config/Reconfigurable
+  runtime/Reconfigurable
   (on-startup! [_ slice]
     (reconcile-config-hooks nil slice))
   (on-config-change! [_ old-slice new-slice]

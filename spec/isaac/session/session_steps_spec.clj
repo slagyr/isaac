@@ -1,7 +1,7 @@
 (ns isaac.session.session-steps-spec
   (:require
     [gherclj.core :as g]
-    [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.session.session-steps :as sut]
@@ -18,10 +18,10 @@
     (g/reset!))
 
   (it "fires the config change source when a file is written"
-    (let [source (config/memory-source "/target/test-state")]
-      (config/start! source)
+    (let [source (runtime/memory-source "/target/test-state")]
+      (runtime/start! source)
       (g/assoc! :mem-fs (nexus/get :fs))
       (g/assoc! :config-change-source source)
       (sut/file-exists-with (str "/target/test-state/config/crew/" marigold/captain ".edn") "{:model :llama}")
-      (should= (str "crew/" marigold/captain ".edn") (config/poll! source 0))
-      (config/stop! source))))
+      (should= (str "crew/" marigold/captain ".edn") (runtime/poll! source 0))
+      (runtime/stop! source))))

@@ -5,6 +5,7 @@
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.scheduler.cron :as cron]
      [isaac.cron.state :as state]
      [isaac.logger :as log]
@@ -26,7 +27,7 @@
 (declare start! stop!)
 
 (deftype CronModule [root config* runner*]
-  config/Reconfigurable
+  runtime/Reconfigurable
   (on-startup! [_ slice]
     (reset! config* (or slice {}))
     (when (seq slice)

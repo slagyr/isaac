@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.cron.service :as cron-service]
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
@@ -48,12 +49,12 @@
     (http/wrap-logging (http/wrap-auth handler-opts scanning))))
 
 (defn- start-config-reloader! [source root host comm-registry registries]
-  ;; The reloader manages the live runtime: config/reload! reconciles components
+  ;; The reloader manages the live runtime: runtime/reload! reconciles components
   ;; directly into the (global) nexus, so we must NOT capture+restore a runtime
   ;; snapshot the way bound-runtime-fn does for one-shot deferred work — that
   ;; would discard the reconcile. bound-fn still propagates dynamic var bindings.
   (let [reload! (bound-fn [path]
-                  (config/reload! {:root     root
+                  (runtime/reload! {:root     root
                                    :fs            (fs/instance)
                                    :old-config    (config/snapshot "reload: previous config for the reconcile diff")
                                    :comm-registry comm-registry
@@ -62,7 +63,7 @@
                                    :path          path}))]
     (future
       (loop []
-        (when-let [path (config/poll! source 5000)]
+        (when-let [path (runtime/poll! source 5000)]
           (reload! path))
         (recur)))))
 
@@ -74,7 +75,7 @@
 (defn- start-config-source [opts hot-reload? root]
   (or (:config-change-source opts)
       (when (and hot-reload? root)
-        (config/watch-service-source root))))
+        (runtime/watch-service-source root))))
 
 (defn- build-handler-opts [opts config-home root]
   (cond-> (dissoc opts :home)
@@ -150,7 +151,7 @@
       (and load-result (seq (:errors load-result)) (not (:missing-config? load-result)))
       (do (log/error :config/invalid :root root :errors (:errors load-result)) nil)
 
-      (seq (config/validate-config! cfg comm-registry))
+      (seq (runtime/validate-config! cfg comm-registry))
       nil
 
       (auth-required? cfg host start-http-server?)
@@ -170,7 +171,7 @@
                                       (nexus/register! [:scheduler] scheduler))
             host-ctx                (host-context (assoc cfg :module-index module-index) root connect-ws!)
             _                       (config/dangerously-install-config! cfg "server boot")
-            _                       (config/install! {:config cfg :registries registries :host host-ctx})
+            _                       (runtime/install! {:config cfg :registries registries :host host-ctx})
             ;; isaac-8yxs: per-entry berth :factory invocation. Runs
             ;; here (after config commit, before module on-startup) so
             ;; the berth registrations are in the nexus by the time
@@ -183,9 +184,9 @@
             ;; register-route-extensions! pass.
             _                       (module-loader/process-manifest-berths! module-index)
             _                       (module-loader/start-modules! module-index)
-            _                       (config/install-config-berths! {:config cfg :module-index module-index})
+            _                       (runtime/install-config-berths! {:config cfg :module-index module-index})
             config-source           (start-config-source opts hot-reload? root)
-            _                       (some-> config-source config/start!)
+            _                       (some-> config-source runtime/start!)
             reloader                (when (and config-source root)
                                       (start-config-reloader! config-source root host-ctx comm-registry registries))
             handler-opts            (build-handler-opts opts config-home root)
@@ -208,10 +209,10 @@
     (when scheduler
       (scheduler-core/shutdown! scheduler))
     (when registries
-      (config/reconcile! host-ctx (config/snapshot "shutdown: current config for teardown reconcile") nil registries))
+      (runtime/reconcile! host-ctx (config/snapshot "shutdown: current config for teardown reconcile") nil registries))
     (some-> reloader future-cancel)
     (when config-source
-      (config/stop! config-source))
+      (runtime/stop! config-source))
     (when server
       (if (fn? server)
         (server)

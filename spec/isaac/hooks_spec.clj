@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.charge :as charge]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.hooks :as sut]
     [isaac.logger :as log]
@@ -33,7 +34,7 @@
 (describe "Webhook handler"
 
   (defn- startup-hooks! [slice]
-    (config/on-startup! (sut/make nil) slice))
+    (runtime/on-startup! (sut/make nil) slice))
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
@@ -52,8 +53,8 @@
     (it "updates hook content when the slice changes"
       (sut/reset-registry!)
       (let [module (sut/make nil)]
-        (config/on-startup! module {marigold/lettuce-hook {:template "A"}})
-        (config/on-config-change! module
+        (runtime/on-startup! module {marigold/lettuce-hook {:template "A"}})
+        (runtime/on-config-change! module
                                         {marigold/lettuce-hook {:template "A"}}
                                         {marigold/lettuce-hook {:template "B"}})
         (should= "B" (get-in (sut/lookup-hook marigold/lettuce-hook) [:entry :template]))))
@@ -61,8 +62,8 @@
     (it "deregisters removed hooks when the slice changes"
       (sut/reset-registry!)
       (let [module (sut/make nil)]
-        (config/on-startup! module {marigold/lettuce-hook {:template "A"}})
-        (config/on-config-change! module
+        (runtime/on-startup! module {marigold/lettuce-hook {:template "A"}})
+        (runtime/on-config-change! module
                                         {marigold/lettuce-hook {:template "A"}}
                                         {})
         (should-be-nil (sut/lookup-hook marigold/lettuce-hook))))
@@ -72,9 +73,9 @@
       (let [module  (sut/make nil)
             before  (atom nil)
             payload {marigold/lettuce-hook {:template "A"}}]
-        (config/on-startup! module payload)
+        (runtime/on-startup! module payload)
         (reset! before (sut/lookup-hook marigold/lettuce-hook))
-        (config/on-config-change! module payload payload)
+        (runtime/on-config-change! module payload payload)
         (should= @before (sut/lookup-hook marigold/lettuce-hook)))))
 
   (describe "render-template"

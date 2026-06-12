@@ -4,7 +4,7 @@
     [isaac.bridge.core]
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as registry]
-    [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
@@ -37,8 +37,8 @@
   (describe "Reconfigurable"
 
     (it "re-exports the same named protocol"
-      (should= (:name config/Reconfigurable) (:name sut/Reconfigurable))
-      (should= (set (keys (:sigs config/Reconfigurable))) (set (keys (:sigs sut/Reconfigurable)))))
+      (should= (:name runtime/Reconfigurable) (:name sut/Reconfigurable))
+      (should= (set (keys (:sigs runtime/Reconfigurable))) (set (keys (:sigs sut/Reconfigurable)))))
 
     (it "a type implementing api/Reconfigurable satisfies api/Reconfigurable"
       (let [r (reify sut/Reconfigurable

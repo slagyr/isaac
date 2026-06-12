@@ -8,6 +8,7 @@
     [isaac.cli :as registry]
     [isaac.comm :as comm]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.drive.turn :as single-turn]
     [isaac.session.context :as session-ctx]
@@ -96,7 +97,7 @@
       1
       (let [root     (root-of opts)
             cfg           (config/load-config! root (fs/instance) "prompt-cli")
-            _             (config/install! {:config cfg})
+            _             (runtime/install! {:config cfg})
             session-store (store/registered-store)
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))

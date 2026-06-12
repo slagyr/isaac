@@ -1,6 +1,6 @@
 (ns isaac.hail.bands
   (:require
-    [isaac.config.api :as config]))
+    [isaac.config.runtime :as runtime]))
 
 (defprotocol BandRegistry
   (lookup [this band-name])
@@ -17,7 +17,7 @@
   (all-bands [_]
     @bands*)
 
-  config/Reconfigurable
+  runtime/Reconfigurable
   (on-startup! [_ slice]
     (reset! bands* (into {} (map (fn [[band-name band]] [band-name (with-band-defaults band)])) (or slice {}))))
   (on-config-change! [_ _old-slice new-slice]

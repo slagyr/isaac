@@ -9,6 +9,7 @@
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
@@ -199,7 +200,7 @@
   [opts]
   (let [root  (resolve-root opts)
         loaded-cfg (config/load-config! root (fs/instance) "session cli command")]
-    (config/install! {:config loaded-cfg})
+    (runtime/install! {:config loaded-cfg})
     {:config loaded-cfg :root root :store (store/registered-store)}))
 
 (defn- run-show [opts session-id]

@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.server.cli :as server]
     [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
@@ -104,7 +105,7 @@
 
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]
-    (config/notify-path! source path)))
+    (runtime/notify-path! source path)))
 
 (defn- parse-state-value [value]
   (cond
@@ -381,8 +382,8 @@
         ;; is enabled; no watcher is needed for pure startup-only scenarios.
         config-source  (when (:hot-reload cfg)
                          (if (or mem (not explicit-home?))
-                           (config/memory-source home)
-                           (config/watch-service-source home)))
+                           (runtime/memory-source home)
+                           (runtime/watch-service-source home)))
         _              (g/assoc! :config-change-source config-source)
         run-server?    (not (false? (g/get :bind-server-port?)))
         start-opts     {:cfg                  server-config

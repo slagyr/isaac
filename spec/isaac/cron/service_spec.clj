@@ -4,6 +4,7 @@
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.cron.service :as sut]
     [isaac.fs :as fs]
     [isaac.scheduler :as scheduler-core]
@@ -29,7 +30,7 @@
         (with-redefs [sut/start! (fn [opts]
                                    (reset! started opts)
                                    ::runner)]
-          (config/on-startup! module {"health-check" {:expr "0 9 * * *"}})
+          (runtime/on-startup! module {"health-check" {:expr "0 9 * * *"}})
           (should= {:cfg (or (config/snapshot "spec") {}) :root "/test/isaac"}
                    @started))))
 
@@ -42,8 +43,8 @@
                                    (keyword (str "runner-" (count @started))))
                       sut/stop!  (fn [runner]
                                    (swap! stopped conj runner))]
-          (config/on-startup! module {"alpha" {:expr "0 9 * * *"}})
-          (config/on-config-change! module
+          (runtime/on-startup! module {"alpha" {:expr "0 9 * * *"}})
+          (runtime/on-config-change! module
            {"alpha" {:expr "0 9 * * *"}}
            {"alpha" {:expr "0 10 * * *"}})
           (should= [:runner-1] @stopped)
@@ -55,8 +56,8 @@
         (with-redefs [sut/start! (fn [_] ::runner)
                       sut/stop!  (fn [runner]
                                    (reset! stopped runner))]
-          (config/on-startup! module {"alpha" {:expr "0 9 * * *"}})
-          (config/on-config-change! module
+          (runtime/on-startup! module {"alpha" {:expr "0 9 * * *"}})
+          (runtime/on-config-change! module
            {"alpha" {:expr "0 9 * * *"}}
            nil)
           (should= ::runner @stopped))))
@@ -71,8 +72,8 @@
                                    ::runner)
                       sut/stop!  (fn [_]
                                    (swap! stopped inc))]
-          (config/on-startup! module slice)
-           (config/on-config-change! module slice slice)
+          (runtime/on-startup! module slice)
+           (runtime/on-config-change! module slice slice)
            (should= 1 @started)
            (should= 0 @stopped)))))
 

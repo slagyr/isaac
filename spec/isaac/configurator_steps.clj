@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.comm.registry :as comm-registry]
-    [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.config.install :as config-install]
     [isaac.cron.service :as cron-service]
     [isaac.fs :as fs]
@@ -218,7 +218,7 @@
 
 (defn- notify-change! [path]
   (when-let [source (g/get :config-change-source)]
-    (config/notify-path! source path)))
+    (runtime/notify-path! source path)))
 
 (defn config-updated [table]
   (with-server-fs

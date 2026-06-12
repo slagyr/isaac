@@ -8,6 +8,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.drive.dispatch :as drive-dispatch]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
@@ -102,7 +103,7 @@
 
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]
-    (config/notify-path! source path)))
+    (runtime/notify-path! source path)))
 
 (defn- with-current-time [f]
   (if-let [current-time (g/get :current-time)]

@@ -1,7 +1,7 @@
 (ns isaac.server.app-spec
   (:require
      [c3kit.apron.refresh :as refresh]
-     [isaac.config.api :as config]
+     [isaac.config.runtime :as runtime]
      [isaac.fs :as fs]
      [isaac.cron.service :as cron-service]
      [isaac.comm.delivery.worker :as worker]
@@ -23,13 +23,13 @@
   (helper/with-captured-logs)
 
   ;; Default stubs so each test boots in microseconds, not seconds. The
-  ;; main offender was config/watch-service-source — it starts a real
+  ;; main offender was runtime/watch-service-source — it starts a real
   ;; FSwatcher and sleeps 1s for FSEvents to settle (change_source_bb.clj).
   ;; httpkit / scheduler / workers are stubbed so the suite doesn't bind
   ;; real ports, spawn real thread pools, or start real polling workers.
   ;; Tests that need to capture or assert against a specific stub re-stub
   ;; it locally.
-  (redefs-around [config/watch-service-source (fn [_] nil)
+  (redefs-around [runtime/watch-service-source (fn [_] nil)
                   httpkit/run-server          (fn [_ _] (fn [] nil))
                   httpkit/server-port         (fn [_] 7001)
                   httpkit/server-stop!        (fn [_] nil)
@@ -268,7 +268,7 @@
       (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                     httpkit/server-port  (fn [_] 7001)
                     httpkit/server-stop! (fn [_] nil)
-                    config/reconcile! (fn [host _old _new _registry]
+                    runtime/reconcile! (fn [host _old _new _registry]
                                            (reset! captured host))]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
@@ -282,7 +282,7 @@
 
   (it "returns nil and does not start services when config validation fails"
     (let [started (atom nil)]
-      (with-redefs [config/validate-config! (fn [_ _] [{:key "server.port" :value "bad"}])
+      (with-redefs [runtime/validate-config! (fn [_ _] [{:key "server.port" :value "bad"}])
                     httpkit/run-server    (fn [& _] (reset! started :http))
                     worker/start!         (fn [& _] (reset! started :worker))
                     cron-service/start!   (fn [& _] (reset! started :cron))]
@@ -391,13 +391,13 @@
   (it "creates and starts a config change source from the state dir"
     (let [created (atom nil)
           started (atom nil)]
-      (with-redefs [config/watch-service-source (fn [home]
+      (with-redefs [runtime/watch-service-source (fn [home]
                                                          (reset! created home)
                                                          ::source)
-                    config/start!               (fn [source]
+                    runtime/start!               (fn [source]
                                                          (reset! started source)
                                                          source)
-                    config/stop!                (fn [_] nil)
+                    runtime/stop!                (fn [_] nil)
                     httpkit/run-server                 (fn [_ _] (fn [] nil))
                     httpkit/server-port                (fn [_] 7001)
                     httpkit/server-stop!               (fn [_] nil)]
@@ -409,13 +409,13 @@
   (it "does not create a config change source when hot reload is disabled"
     (let [created (atom nil)
           started (atom nil)]
-      (with-redefs [config/watch-service-source (fn [home]
+      (with-redefs [runtime/watch-service-source (fn [home]
                                                          (reset! created home)
                                                          ::source)
-                    config/start!               (fn [source]
+                    runtime/start!               (fn [source]
                                                          (reset! started source)
                                                          source)
-                    config/stop!                (fn [_] nil)
+                    runtime/stop!                (fn [_] nil)
                     httpkit/run-server                 (fn [_ _] (fn [] nil))
                     httpkit/server-port                (fn [_] 7001)
                     httpkit/server-stop!               (fn [_] nil)]
@@ -426,8 +426,8 @@
 
   (it "stops the config change source with the server"
     (let [stopped (atom nil)]
-      (with-redefs [config/start!     identity
-                    config/stop!      (fn [source]
+      (with-redefs [runtime/start!     identity
+                    runtime/stop!      (fn [source]
                                                (reset! stopped source))
                     httpkit/run-server       (fn [_ _] (fn [] nil))
                     httpkit/server-port      (fn [_] 7001)
@@ -437,7 +437,7 @@
       (should= ::source @stopped)))
 
   (it "reloads the in-memory config when the config source publishes a change"
-    (let [source (config/memory-source marigold/root)
+    (let [source (runtime/memory-source marigold/root)
           helm   (keyword marigold/helm-systems)
           crew   marigold/captain]
       (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
@@ -455,14 +455,14 @@
                         :root            (str marigold/home "/.isaac")
                         :port                 0})
           (marigold/write-crew! crew {:model :grover :soul "new"})
-          (config/notify-path! source (str marigold/home "/.isaac/config/crew/" crew ".edn"))
+          (runtime/notify-path! source (str marigold/home "/.isaac/config/crew/" crew ".edn"))
           (helper/await-condition #(= "new" (get-in (sut/current-config) [:crew crew :soul])))
           (should= "new" (get-in (sut/current-config) [:crew crew :soul]))
           (sut/stop!)))))
 
   (it "preserves the previous config when reload fails validation"
-    (let [source     (config/memory-source marigold/root)
-          orig-poll  config/poll!
+    (let [source     (runtime/memory-source marigold/root)
+          orig-poll  runtime/poll!
           poll-count (atom 0)
           poll-ready (promise)]
       (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
@@ -471,7 +471,7 @@
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                       httpkit/server-port  (fn [_] 7001)
                       httpkit/server-stop! (fn [_] nil)
-                      config/poll!  (fn [s t]
+                      runtime/poll!  (fn [s t]
                                              (when (= 2 (swap! poll-count inc))
                                                (deliver poll-ready true))
                                              (orig-poll s t))]
@@ -482,7 +482,7 @@
                        :root            (str marigold/home "/.isaac")
                        :port                 0})
           (marigold/write-model! :grover (marigold/model-cfg marigold/grover-api "" :context-window 32768))
-          (config/notify-path! source (str marigold/home "/.isaac/config/models/grover.edn"))
+          (runtime/notify-path! source (str marigold/home "/.isaac/config/models/grover.edn"))
           (deref poll-ready 1000 ::timeout)
           (should= "echo" (get-in (sut/current-config) [:models "grover" :model]))
           (sut/stop!)))))
