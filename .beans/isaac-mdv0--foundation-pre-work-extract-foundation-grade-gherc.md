@@ -4,8 +4,10 @@ title: 'Foundation pre-work: extract foundation-grade gherclj steps and split sp
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T15:40:45Z
+updated_at: 2026-06-12T15:58:29Z
 parent: isaac-brth
 ---
 
@@ -16,7 +18,7 @@ foundation-grade steps layer so those features can move at cut time; server
 steps require + delegate (gherclj reports ambiguity if both repos later define
 the same phrase).
 
-- [ ] New foundation step namespaces (matching the isaac.**-steps selector,
+- [x] New foundation step namespaces (matching the isaac.**-steps selector,
       e.g. spec/isaac/foundation/cli_steps.clj) holding exactly the steps the
       foundation features use:
       "isaac is run with {args}" (server-free main/run wrapper — the existing
@@ -28,7 +30,7 @@ the same phrase).
       "the config is loaded" (from config_steps.clj, sans the
       isaac.server.app require),
       stdout/exit-code assertions, step_tables helpers if used.
-- [ ] Server step namespaces require + delegate instead of redefining; run the
+- [x] Server step namespaces require + delegate instead of redefining; run the
       gherclj ambiguity check.
 - [x] Split src/isaac/spec_helper.clj: foundation scaffolding vs server store
       helpers (it currently requires isaac.session.store*).
@@ -36,7 +38,7 @@ the same phrase).
       later: main_spec requires isaac.session.store; module/loader_spec
       requires isaac.server.routes, isaac.comm.registry, isaac.hooks (use
       marigold berths instead).
-- [ ] Per-feature audit of features/{cli,module}/* for stray server-step usage
+- [x] Per-feature audit of features/{cli,module}/* for stray server-step usage
       (bb match-step per phrase).
 
 ## Acceptance
@@ -170,3 +172,54 @@ REMAINING:
   Highest blast radius; the linchpin for foundation features.
 - #4 (checkbox 5): per-feature audit of features/{cli,module}/* (bb match-step per phrase)
   to confirm the foundation subset routes only to the foundation layer.
+
+## Summary of Changes
+
+Extracted a foundation-grade gherclj step layer so the foundation features
+(features/cli/*, foundation subset of features/module/*) route only to
+foundation namespaces, and split spec_helper — making the eventual isaac-
+foundation cut a pure file move. All work landed in green sub-steps (bb spec +
+bb features + gherclj ambiguity green at each commit).
+
+New foundation step namespaces (spec/isaac/foundation/):
+- cli-steps — isaac-run wrapper + stdout/stderr/exit + stdin/command/clock +
+  Isaac-root-config + isaac-file-contains. The wrapper is foundation-clean via
+  three hook registries: register-isaac-run-preflight!/postflight! (LLM/HTTP/
+  drive capture) and register-isaac-run-wrapper! (memory-tool clock).
+- log-steps — the log has entries/no entries matching:.
+- fs-steps — file fixtures/assertions (the file X contains:/exists/does not
+  exist, a file X exists with content), all isaac/EDN-file writes (the isaac
+  file X exists with:, the (EDN )isaac file ... contains:/exists with:, the
+  isaac file X does not exist), and the session file write (the file X exists
+  with:). Config-change notify is a post-write hook.
+- root-steps — an (empty) Isaac root at, an empty Isaac state directory, a
+  module manifest ...:. initialize-root! does the foundation reset + runs a
+  root-setup hook.
+
+Seams (server layer registers; foundation stays server-free):
+- server_steps registers the post-write config-change hook (runtime/notify-path!).
+- session_steps registers the root-setup teardown hook (grover/drive/bridge-
+  cancel/comm-registry resets, remove-ns telly, tool-registry/single-turn
+  clears, memory-store install + sidecar alter-var-root).
+- config_steps made foundation-clean in place (app/current-config -> config/snapshot,
+  dropped isaac.server.app).
+
+Server delegation + ambiguity: server/cli/cli_steps, server_steps, service_steps,
+tools_steps, session_steps drop the moved steps + routing (keeping server-only
+steps) and require + delegate to the foundation layer. gherclj ambiguity clean
+(no phrase registered twice). Dead helpers removed from each.
+
+spec_helper split: foundation isaac.spec-helper (logs/config/await, requires only
+config.api) vs new spec/isaac/session/spec_helper.clj (store helpers); 16 requirers
+re-pointed. Foundation specs (main_spec, module/loader_spec) dropped stray server
+requires. Spec splits accompanied the moved steps (foundation/cli_steps_spec,
+log_steps_spec, fs_steps_spec; notify-seam test relocated to server_steps_spec).
+
+Checkbox 5 audit (bb gherclj steps -> route every features/{cli,module} phrase to
+its ns): 0 strays. 159 foundation step lines route to isaac.foundation.* /
+config_steps; 28 are the genuine server-scenario subset (reply/provider/server-
+started/comm/service). The one stray found (init.feature's 'a file exists with
+content' in tools_steps) was moved to foundation.
+
+No .feature scenarios were edited — only step namespaces. Final: bb spec 1897,
+bb features 744, gherclj ambiguity clean.
