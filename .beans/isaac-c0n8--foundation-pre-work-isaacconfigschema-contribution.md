@@ -1,13 +1,11 @@
 ---
 # isaac-c0n8
 title: 'Foundation pre-work: :isaac.config/schema contribution berth'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:50:15Z
-updated_at: 2026-06-12T15:24:42Z
+updated_at: 2026-06-12T15:27:08Z
 parent: isaac-brth
 blocked_by:
     - isaac-niku
