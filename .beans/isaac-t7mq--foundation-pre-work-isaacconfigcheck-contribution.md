@@ -1,10 +1,11 @@
 ---
 # isaac-t7mq
 title: 'Foundation pre-work: :isaac.config/check contribution berth'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-06-12T12:50:29Z
-updated_at: 2026-06-12T12:50:29Z
+updated_at: 2026-06-12T15:28:24Z
 parent: isaac-brth
 blocked_by:
     - isaac-c0n8
