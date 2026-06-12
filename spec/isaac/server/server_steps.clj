@@ -822,15 +822,20 @@
           direct))))
 
 (defn log-entries-match [table]
-  (when-let [turn-future (g/get :turn-future)]
-    (deref turn-future 30000 nil))
-  (let [result* (atom nil)]
+  (let [turn-future (g/get :turn-future)
+        result*     (atom nil)
+        matched?    (fn []
+                      (let [result (log-match-result table (log/get-entries))]
+                        (reset! result* result)
+                        (empty? (:failures result))))]
     (helper/await-condition
-      (fn []
-        (let [result (log-match-result table (log/get-entries))]
-          (reset! result* result)
-          (empty? (:failures result))))
-      2000)
+      #(or (matched?)
+           (some-> turn-future realized?))
+      100)
+    (when (and (seq (:failures @result*)) turn-future (not (realized? turn-future)))
+      (deref turn-future 30000 nil))
+    (when (seq (:failures @result*))
+      (helper/await-condition matched? 2000))
     (g/should= [] (:failures @result*))))
 
 (defn log-entries-dont-match [table]
