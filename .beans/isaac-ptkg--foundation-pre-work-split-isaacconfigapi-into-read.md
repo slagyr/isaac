@@ -1,13 +1,11 @@
 ---
 # isaac-ptkg
 title: 'Foundation pre-work: split isaac.config.api into read-side and isaac.config.runtime'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:49:21Z
-updated_at: 2026-06-12T13:50:22Z
+updated_at: 2026-06-12T14:03:36Z
 parent: isaac-brth
 ---
 
