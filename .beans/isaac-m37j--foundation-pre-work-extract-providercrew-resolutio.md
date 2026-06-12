@@ -4,8 +4,10 @@ title: 'Foundation pre-work: extract provider/crew resolution into isaac.config.
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:49:31Z
-updated_at: 2026-06-12T15:03:35Z
+updated_at: 2026-06-12T15:05:40Z
 parent: isaac-brth
 blocked_by:
     - isaac-ptkg
