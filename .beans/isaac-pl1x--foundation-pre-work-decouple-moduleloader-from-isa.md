@@ -1,10 +1,11 @@
 ---
 # isaac-pl1x
 title: 'Foundation pre-work: decouple module.loader from isaac.llm.api'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-06-12T12:48:48Z
-updated_at: 2026-06-12T12:48:48Z
+updated_at: 2026-06-12T12:55:54Z
 parent: isaac-brth
 ---
 
