@@ -1,13 +1,11 @@
 ---
 # isaac-niku
 title: 'Foundation pre-work: reorder load-config-result — discovery before schema use'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:49:58Z
-updated_at: 2026-06-12T14:11:21Z
+updated_at: 2026-06-12T14:18:27Z
 parent: isaac-brth
 ---
 
