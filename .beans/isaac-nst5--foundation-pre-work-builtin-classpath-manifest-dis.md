@@ -1,13 +1,11 @@
 ---
 # isaac-nst5
 title: 'Foundation pre-work: builtin classpath-manifest discovery (:builtin? + builtin-index)'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:49:38Z
-updated_at: 2026-06-12T13:41:52Z
+updated_at: 2026-06-12T13:50:29Z
 parent: isaac-brth
 ---
 
