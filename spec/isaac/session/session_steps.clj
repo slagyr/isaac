@@ -101,7 +101,11 @@
       (:config (config/load-config-result {:root root :fs (mem-fs)}))
       "feature: session behavior config")))
 
+(defn- invalidate-feature-config! []
+  (g/dissoc! :feature-config))
+
 (defn- notify-config-change! [path]
+  (invalidate-feature-config!)
   (when-let [source (g/get :config-change-source)]
     (runtime/notify-path! source path)))
 
@@ -186,16 +190,19 @@
         value))))
 
 (defn- loaded-config []
-  (let [fs*         (mem-fs)
-        load!       #(with-feature-fs (fn [] (:config (config/load-config-result {:root (root-dir) :fs fs*}))))
-        entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (root-dir) "/config/" %)))))
-        cfg         (load!)]
-    (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
-             (empty? (or (:crew cfg) {}))
-             (empty? (or (:models cfg) {}))
-             (empty? (or (:providers cfg) {})))
-      (load!)
-      cfg)))
+  (or (g/get :feature-config)
+      (let [fs*         (mem-fs)
+            load!       #(with-feature-fs (fn [] (:config (config/load-config-result {:root (root-dir) :fs fs*}))))
+            entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (root-dir) "/config/" %)))))
+            cfg         (load!)
+            cfg         (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
+                                 (empty? (or (:crew cfg) {}))
+                                 (empty? (or (:models cfg) {}))
+                                 (empty? (or (:providers cfg) {})))
+                          (load!)
+                          cfg)]
+        (g/assoc! :feature-config cfg)
+        cfg)))
 
 (defn- merged-agents []
   (or (:crew (loaded-config)) {}))
@@ -246,7 +253,8 @@
             current (if (fs/exists? fs* path) (edn/read-string (fs/slurp fs* path)) {})
             updated (f current)]
         (fs/mkdirs fs* (fs/parent path))
-        (fs/spit   fs* path (pr-str updated))))))
+        (fs/spit   fs* path (pr-str updated))
+        (invalidate-feature-config!)))))
 
 (defn- current-model-config []
   (let [models    (loaded-models)
@@ -441,7 +449,8 @@
   (let [config-path (str root "/config/isaac.edn")
         fs*         (mem-fs)]
     (fs/mkdirs fs* (fs/parent config-path))
-    (fs/spit   fs* config-path (pr-str minimal-config))))
+    (fs/spit   fs* config-path (pr-str minimal-config))
+    (invalidate-feature-config!)))
 
 (defn- initialize-root! [path virtual?]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
@@ -516,7 +525,8 @@
     (fs/spit   fs* (str root "/providers/grover.edn")
                     (pr-str {}))
     (fs/spit   fs* (str root "/crew/main.edn")
-                    (pr-str {:model :grover :soul "You are Atticus."}))))
+                    (pr-str {:model :grover :soul "You are Atticus."}))
+    (invalidate-feature-config!)))
 
 (defn default-grover-setup []
   (initialize-root! "target/test-state" true)

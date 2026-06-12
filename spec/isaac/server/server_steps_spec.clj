@@ -78,6 +78,15 @@
     (should= (marigold/crew-cfg test-crew-id :model test-model-id)
              (read-string (fs/slurp (nexus/get :fs) (str test-root "/config/crew/" test-crew-id ".edn")))))
 
+  (it "invalidates cached feature config when writing isaac EDN files"
+    (g/assoc! :mem-fs (nexus/get :fs))
+    (g/assoc! :root test-root)
+    (g/assoc! :feature-config {:crew {"stale" {}}})
+    (sut/isaac-edn-file-exists (str "config/crew/" test-crew-id ".edn")
+                               {:headers ["path" "value"]
+                                :rows    [["model" marigold/helm-mark-iii]]})
+    (should-be-nil (g/get :feature-config)))
+
   (it "writes bare isaac.edn under the config directory"
     (g/assoc! :mem-fs (nexus/get :fs))
     (g/assoc! :root test-root)

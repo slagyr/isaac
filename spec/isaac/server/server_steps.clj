@@ -104,6 +104,7 @@
       (f))))
 
 (defn- notify-config-change! [path]
+  (g/dissoc! :feature-config)
   (when-let [source (g/get :config-change-source)]
     (runtime/notify-path! source path)))
 

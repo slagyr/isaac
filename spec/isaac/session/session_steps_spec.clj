@@ -1,5 +1,6 @@
 (ns isaac.session.session-steps-spec
   (:require
+    [isaac.config.api :as config]
     [gherclj.core :as g]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
@@ -37,4 +38,22 @@
       (sut/turn-ends-on-session "bridge")
       (should (< (/ (- (System/nanoTime) started-at) 1000000.0)
                  500.0)))
-    (should= {:ok true} (g/get :llm-result))))
+    (should= {:ok true} (g/get :llm-result)))
+
+  (it "reuses loaded config until a feature fixture changes it"
+    (let [loads* (atom 0)
+          cfg    {:defaults {:crew "main"}
+                  :crew     {"main" {}}
+                  :models   {}
+                  :providers {}}]
+      (g/assoc! :root "/target/test-state")
+      (g/assoc! :mem-fs (nexus/get :fs))
+      (with-redefs [config/load-config-result (fn [_]
+                                                (swap! loads* inc)
+                                                {:config cfg})]
+        (should= cfg (#'sut/loaded-config))
+        (should= cfg (#'sut/loaded-config))
+        (should= 1 @loads*)
+        (sut/file-exists-with "config/crew/main.edn" "{:model :grover}")
+        (should= cfg (#'sut/loaded-config))
+        (should= 2 @loads*)))))
