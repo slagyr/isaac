@@ -11,7 +11,7 @@
      [isaac.fs :as fs]
      [isaac.session.compaction :as sut]
      [isaac.session.store :as store]
-     [isaac.spec-helper :as storage]
+     [isaac.session.spec-helper :as storage]
      [isaac.nexus :as nexus]
      [isaac.tool.registry :as tool-registry]
      [speclj.core :refer :all]))

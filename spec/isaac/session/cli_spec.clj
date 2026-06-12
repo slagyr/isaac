@@ -6,7 +6,7 @@
     [isaac.tool.memory :as memory]
     [isaac.session.cli :as sut]
     [isaac.session.store :as store]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 

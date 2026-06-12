@@ -13,7 +13,7 @@
     [isaac.marigold :as marigold]
     [isaac.server.routes]
     [isaac.session.store :as store]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))

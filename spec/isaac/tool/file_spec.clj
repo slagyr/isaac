@@ -6,6 +6,7 @@
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as store-helper]
     [isaac.nexus :as nexus]
     [isaac.tool.file :as sut]
     [isaac.tool.support :as support]
@@ -20,7 +21,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (helper/with-memory-store
+    (store-helper/with-memory-store
       (nexus/-with-nested-nexus {:root support/test-dir :fs (fs/real-fs)}
         (config/dangerously-install-config! nil "spec")
         (example))))
@@ -77,7 +78,7 @@
       (let [root   support/test-dir
             quarters    (str root "/crew/" crew-name)
             session-key default-session-key]
-        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (.mkdirs (io/file quarters))
         (spit (str quarters "/notes.txt") "hello")
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
@@ -89,7 +90,7 @@
       (let [root   support/test-dir
             session-key default-session-key
             whitelisted (str support/test-dir "/playground")]
-        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (.mkdirs (io/file whitelisted))
         (spit (str whitelisted "/data.txt") "hello")
         (config/dangerously-install-config! {:defaults {}
@@ -104,7 +105,7 @@
     (it "rejects reading outside allowed directories"
       (let [root   support/test-dir
             session-key default-session-key]
-        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   "/etc/passwd"
                                         "session_key" session-key}))]
@@ -115,7 +116,7 @@
       (let [root   support/test-dir
             session-key default-session-key
             cwd         (str support/test-dir "/project")]
-        (helper/create-session! root session-key {:crew crew-name :cwd cwd})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
         (config/dangerously-install-config! {:defaults {}
@@ -131,7 +132,7 @@
       (let [root   support/test-dir
             session-key default-session-key
             cwd         (str support/test-dir "/project")]
-        (helper/create-session! root session-key {:crew crew-name :cwd cwd})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
@@ -144,7 +145,7 @@
       (let [root   support/test-dir
             session-key default-session-key
             quarters    (str root "/crew/" crew-name)]
-        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   (str quarters "/../../etc/passwd")
                                         "session_key" session-key}))]
@@ -154,7 +155,7 @@
     (it "rejects reading the config directory"
       (let [root   support/test-dir
             session-key default-session-key]
-        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["read"]}}} :models {} :providers {}}
                        (sut/read-tool {"file_path"   (str root "/config/crew/" crew-name ".edn")
                                        "session_key" session-key}))]
@@ -188,7 +189,7 @@
       (let [root   support/test-dir
             session-key default-session-key
             path        (str root "/crew/" crew-name "/new.txt")]
-        (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
+        (store-helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
         (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}}
                        (sut/write-tool {"file_path"   path
                                         "content"     "hello"
@@ -201,7 +202,7 @@
             session-key default-session-key
             result      (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["write"]}}} :models {} :providers {}}
                           (do
-                            (helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
+                            (store-helper/create-session! root session-key {:crew crew-name :cwd "/work/project"})
                             (sut/write-tool {"file_path"   "/tmp/evil.txt"
                                              "content"     "evil"
                                              "session_key" session-key
@@ -258,7 +259,7 @@
 
     (before
       (.mkdirs (io/file @cwd))
-      (helper/create-session! support/test-dir @session-key {:crew crew-name :cwd @cwd}))
+      (store-helper/create-session! support/test-dir @session-key {:crew crew-name :cwd @cwd}))
 
     (it "read resolves '.' to session cwd"
       (spit (str @cwd "/marker.txt") "found")

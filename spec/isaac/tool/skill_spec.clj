@@ -3,7 +3,7 @@
   (:require
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.tool.skill :as sut]
     [speclj.core :refer :all]))
 

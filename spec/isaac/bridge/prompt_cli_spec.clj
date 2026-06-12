@@ -7,7 +7,7 @@
     [isaac.bridge.prompt-cli :as sut]
     [isaac.config.api :as config]
     [isaac.server.routes]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [speclj.core :refer :all]))
 
 (def crew-name marigold/captain)

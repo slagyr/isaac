@@ -5,6 +5,7 @@
     [isaac.config.api :as config]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as store-helper]
     [isaac.nexus :as nexus]
     [isaac.tool.grep :as sut]
     [isaac.tool.support :as support]
@@ -18,7 +19,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (helper/with-memory-store
+    (store-helper/with-memory-store
       (nexus/-with-nested-nexus {:root support/test-dir}
         (example))))
 
@@ -98,7 +99,7 @@
 
   (it "rejects grep outside allowed directories"
     (let [session-key session-key]
-      (helper/create-session! support/test-dir session-key {:crew crew-name :cwd "/work/project"})
+      (store-helper/create-session! support/test-dir session-key {:crew crew-name :cwd "/work/project"})
       (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["grep"]}}} :models {} :providers {}}
                      (sut/grep-tool {"pattern"     "hunter"
                                       "path"        "/tmp/secret-stash"
@@ -113,7 +114,7 @@
 
     (before
       (.mkdirs (io/file @cwd))
-      (helper/create-session! support/test-dir @session-key {:crew crew-name :cwd @cwd}))
+      (store-helper/create-session! support/test-dir @session-key {:crew crew-name :cwd @cwd}))
 
     (it "resolves '.' to session cwd"
       (let [captured (atom nil)]

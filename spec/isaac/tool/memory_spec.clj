@@ -3,7 +3,7 @@
     [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [isaac.tool.memory :as sut]
     [speclj.core :refer :all]))

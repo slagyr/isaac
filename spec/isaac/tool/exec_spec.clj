@@ -3,7 +3,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.bridge.cancellation :as bridge]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [isaac.tool.exec :as sut]
     [isaac.tool.support :as support]

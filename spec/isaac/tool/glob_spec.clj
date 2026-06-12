@@ -4,6 +4,7 @@
     [isaac.config.api :as config]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as store-helper]
     [isaac.nexus :as nexus]
     [isaac.tool.glob :as sut]
     [isaac.tool.support :as support]
@@ -17,7 +18,7 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (helper/with-memory-store
+    (store-helper/with-memory-store
       (nexus/-with-nested-nexus {:root support/test-dir}
         (example))))
 
@@ -67,7 +68,7 @@
   (it "defaults the search path to the session cwd"
     (let [cwd         (str support/test-dir "/workspace")
           session-key session-key]
-      (helper/create-session! support/test-dir session-key {:crew crew-name :cwd cwd})
+      (store-helper/create-session! support/test-dir session-key {:crew crew-name :cwd cwd})
       (support/write-file! "workspace/src/core.clj" "")
       (config/dangerously-install-config! {:defaults {}
                                            :crew {crew-name {:tools {:allow ["glob"]
@@ -81,7 +82,7 @@
 
   (it "rejects glob outside allowed directories"
     (let [session-key session-key]
-      (helper/create-session! support/test-dir session-key {:crew crew-name :cwd "/work/project"})
+      (store-helper/create-session! support/test-dir session-key {:crew crew-name :cwd "/work/project"})
       (let [result (helper/with-config {:defaults {} :crew {crew-name {:tools {:allow ["glob"]}}} :models {} :providers {}}
                      (sut/glob-tool {"pattern" "*.clj"
                                       "path" "/tmp/secret-stash"
@@ -96,7 +97,7 @@
 
     (before
       (.mkdirs (io/file @cwd))
-      (helper/create-session! support/test-dir @session-key {:crew crew-name :cwd @cwd}))
+      (store-helper/create-session! support/test-dir @session-key {:crew crew-name :cwd @cwd}))
 
     (it "resolves '.' to session cwd"
       (spit (str @cwd "/dot.clj") "(ns dot)")

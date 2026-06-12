@@ -3,7 +3,7 @@
     [isaac.fs :as fs]
     [isaac.hail.queue :as queue]
     [isaac.nexus :as nexus]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.tool.hail :as sut]
     [speclj.core :refer :all]))
 

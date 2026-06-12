@@ -17,7 +17,7 @@
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.sidecar :as sidecar-store]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))

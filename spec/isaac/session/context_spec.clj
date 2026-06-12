@@ -5,7 +5,7 @@
     [isaac.marigold :as marigold]
     [isaac.server.routes]
     [isaac.session.store :as store]
-    [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as helper]
     [isaac.session.context :as sut]
     [isaac.nexus :as nexus]
     [speclj.core :refer [around describe it should should-be-nil should=]]))

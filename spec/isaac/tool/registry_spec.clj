@@ -5,6 +5,7 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.spec-helper :as helper]
+    [isaac.session.spec-helper :as store-helper]
     [isaac.nexus :as nexus]
     [isaac.tool.registry :as sut]
     [speclj.core :refer :all]))
@@ -284,11 +285,11 @@
 
       #_{:clj-kondo/ignore [:invalid-arity]}
       (around [it]
-        (helper/with-memory-store (it)))
+        (store-helper/with-memory-store (it)))
 
       (it "includes :cwd on :tool/start when session_key is present"
         (let [root "/test/registry-cwd"
-              _         (helper/create-session! root "s1" {:cwd "/tmp"})]
+              _         (store-helper/create-session! root "s1" {:cwd "/tmp"})]
           (nexus/-with-nested-nexus {:root root}
             (sut/register! {:name "echo" :handler (fn [_] "ok")})
             (sut/execute "echo" {"session_key" "s1"})
@@ -297,7 +298,7 @@
 
       (it "includes :cwd on :tool/result when session_key is present"
         (let [root "/test/registry-cwd-result"
-              _         (helper/create-session! root "s1" {:cwd "/tmp"})]
+              _         (store-helper/create-session! root "s1" {:cwd "/tmp"})]
           (nexus/-with-nested-nexus {:root root}
             (sut/register! {:name "echo" :handler (fn [_] "ok")})
             (sut/execute "echo" {"session_key" "s1"})
@@ -306,7 +307,7 @@
 
       (it "includes :cwd on :tool/execute-failed when session_key is present"
         (let [root "/test/registry-cwd-fail"
-              _         (helper/create-session! root "s1" {:cwd "/tmp"})]
+              _         (store-helper/create-session! root "s1" {:cwd "/tmp"})]
           (nexus/-with-nested-nexus {:root root}
             (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "oops")))})
             (sut/execute "boom" {"session_key" "s1"})
