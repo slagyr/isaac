@@ -123,7 +123,6 @@
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             config/normalize-config)]
       (config/dangerously-install-config! cfg "spec")
-      (grover/enqueue! [{:type "text" :content "On the coil." :model "grover"}])
       (write-delivery! {:id       "delivery-1"
                         :hail     {:id "hail-1"
                                    :prompt "Resonance climbing."
@@ -132,7 +131,8 @@
                                                :reach :one
                                                :spawn true}}
                         :attempts 0})
-      @(first (sut/tick! {:cfg cfg :session-store session-store}))
+      (with-redefs [isaac.drive.turn/run-turn! (fn [_] {})]
+        @(first (sut/tick! {:cfg cfg :session-store session-store})))
       (should= {:crew "bartholomew"
                 :tags #{:project/warp-coil}
                 :origin {:kind :hail :hail-id "hail-1"}}
