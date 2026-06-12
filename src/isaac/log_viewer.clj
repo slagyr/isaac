@@ -1,7 +1,6 @@
 (ns isaac.log-viewer
   (:require
     [clojure.edn :as edn]
-    [clojure.java.io :as io]
     [clojure.string :as str]))
 
 ;; region ----- ANSI helpers -----
@@ -132,15 +131,20 @@
                    out))
         true))))
 
-(defn- read-all-lines [file]
-  (with-open [rdr (io/reader file)]
-    (doall (line-seq rdr))))
-
-(defn- head-lines [file limit]
-  (let [all (read-all-lines file)]
-    (if (and limit (pos? limit))
-      (drop (max 0 (- (count all) limit)) all)
-      all)))
+(defn- read-initial-lines [raf limit]
+  (if (and limit (pos? limit))
+    (loop [lines clojure.lang.PersistentQueue/EMPTY]
+      (if-let [line (.readLine raf)]
+        (let [next-lines (conj lines line)
+              next-lines (if (> (count next-lines) limit)
+                           (pop next-lines)
+                           next-lines)]
+          (recur next-lines))
+        lines))
+    (loop [lines []]
+      (if-let [line (.readLine raf)]
+        (recur (conj lines line))
+        lines))))
 
 (defn tail!
   "Print formatted log entries from `path`.
@@ -160,11 +164,10 @@
         emit (fn [line]
                (when (print-line! line @row opts)
                  (swap! row inc)))]
-    (doseq [line (head-lines file limit)]
-      (emit line))
-    (when follow?
-      (with-open [raf (java.io.RandomAccessFile. file "r")]
-        (.seek raf (.length file))
+    (with-open [raf (java.io.RandomAccessFile. file "r")]
+      (doseq [line (read-initial-lines raf limit)]
+        (emit line))
+      (when follow?
         (loop []
           (if-let [line (.readLine raf)]
             (do (emit line) (recur))

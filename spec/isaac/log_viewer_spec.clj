@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [isaac.marigold :as marigold]
     [isaac.log-viewer :as sut]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
 (def ^:private bridge-event :bridge/started)
@@ -232,4 +233,33 @@
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? false :follow? false :zebra? true}))]
             (should-not (str/includes? result dim2)))
-          (finally (.delete f)))))))
+          (finally (.delete f)))))
+
+    (it "does not skip a line appended between the initial dump and follow seek"
+      (let [f             (java.io.File/createTempFile "test-log" ".log")
+            first-line    "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :first}\n"
+            second-line   "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :second}\n"
+            writer        (java.io.StringWriter.)
+            original-print @#'sut/print-line!
+            run*          (future
+                            (binding [*out* writer]
+                              (with-redefs [sut/print-line!
+                                            (fn [line row opts]
+                                              (let [printed? (original-print line row opts)]
+                                                (when (and printed? (zero? row))
+                                                  (spit (.getAbsolutePath f) second-line :append true)
+                                                  ;; Hold the transition open so the append happens
+                                                  ;; before tail! establishes its follow cursor.
+                                                  (Thread/sleep 150))
+                                                printed?))]
+                                (sut/tail! (.getAbsolutePath f) {:color? false
+                                                                 :follow? true
+                                                                 :limit   20}))))]
+        (try
+          (spit (.getAbsolutePath f) first-line)
+          (helper/await-condition #(str/includes? (str writer) ":first"))
+          (helper/await-condition #(str/includes? (str writer) ":second"))
+          (should (str/includes? (str writer) ":second"))
+          (finally
+            (future-cancel run*)
+            (.delete f)))))))
