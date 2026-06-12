@@ -1,13 +1,11 @@
 ---
 # isaac-mdv0
 title: 'Foundation pre-work: extract foundation-grade gherclj steps and split spec_helper'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T16:04:33Z
+updated_at: 2026-06-12T16:09:38Z
 parent: isaac-brth
 ---
 
