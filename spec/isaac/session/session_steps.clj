@@ -986,16 +986,7 @@
                                  :transcript (get-transcript key-str)})]
         (g/assoc! :built-prompt prompt-msg)))))
 
-(defn file-exists-with [path content]
-  (with-feature-fs
-    (fn []
-      (let [abs-path (if (str/starts-with? path "/")
-                       path
-                       (str (root-dir) "/" path))
-            fs*      (mem-fs)]
-        (fs/mkdirs fs* (fs/parent abs-path))
-        (fs/spit   fs* abs-path content)
-        (notify-config-change! abs-path)))))
+;; file-exists-with ("the file X exists with:") moved to isaac.foundation.fs-steps.
 
 (defn module-manifest-exists [path content]
   (with-feature-fs
@@ -1510,7 +1501,6 @@
    Does NOT actually run a turn — no LLM is called, no transcript is
    mutated. Use for asserting prompt shape on its own.")
 
-(defgiven #"the file \"([^\"]+)\" exists with:$" isaac.session.session-steps/file-exists-with)
 
 (defgiven #"a module manifest \"([^\"]+)\":$" isaac.session.session-steps/module-manifest-exists)
 

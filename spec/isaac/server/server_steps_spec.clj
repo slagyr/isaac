@@ -1,6 +1,8 @@
 (ns isaac.server.server-steps-spec
   (:require
     [gherclj.core :as g]
+    [isaac.config.runtime :as runtime]
+    [isaac.foundation.fs-steps :as ffs]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.server.app :as app]
@@ -18,6 +20,18 @@
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
       (it))
     (g/reset!))
+
+  ;; Loading isaac.server.server-steps (the sut require above) registers the
+  ;; foundation post-write hook, so a foundation isaac-file write notifies the
+  ;; running config-change source — the server side of the notify seam.
+  (it "fires the config change source when an isaac file is written"
+    (let [source (runtime/memory-source "/target/test-state")]
+      (runtime/start! source)
+      (g/assoc! :mem-fs (nexus/get :fs))
+      (g/assoc! :config-change-source source)
+      (ffs/file-exists-with (str "/target/test-state/config/crew/" marigold/captain ".edn") "{:model :llama}")
+      (should= (str "crew/" marigold/captain ".edn") (runtime/poll! source 0))
+      (runtime/stop! source)))
 
   (it "loads config from the in-memory fs at the virtual home"
     (let [started      (atom nil)

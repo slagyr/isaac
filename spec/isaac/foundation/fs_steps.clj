@@ -114,6 +114,13 @@
     (nexus/-with-nested-nexus {:fs fs*}
       (f))))
 
+(defn- feature-fs []
+  (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs)))
+
+(defn- with-feature-fs [f]
+  (nexus/-with-nested-nexus {:fs (feature-fs)}
+    (f)))
+
 (defn- parse-state-value [value]
   (cond
     (re-matches #"-?\d+" value) (parse-long value)
@@ -263,6 +270,17 @@
 (defn edn-isaac-file-does-not-exist [path]
   (g/should-not (with-server-fs #(fs/exists? (server-fs) (isaac-file-path path)))))
 
+(defn file-exists-with [path content]
+  (with-feature-fs
+    (fn []
+      (let [abs-path (if (str/starts-with? path "/")
+                       path
+                       (str (runtime-root-dir) "/" path))
+            fs*      (feature-fs)]
+        (fs/mkdirs fs* (fs/parent abs-path))
+        (fs/spit   fs* abs-path content)
+        (notify-write! abs-path)))))
+
 ;; endregion ^^^^^ isaac-file step bodies ^^^^^
 
 ;; region ----- Routing -----
@@ -299,5 +317,7 @@
     from the current file before write.")
 
 (defthen "the isaac file \"{path}\" does not exist" isaac.foundation.fs-steps/edn-isaac-file-does-not-exist)
+
+(defgiven #"the file \"([^\"]+)\" exists with:$" isaac.foundation.fs-steps/file-exists-with)
 
 ;; endregion ^^^^^ Routing ^^^^^

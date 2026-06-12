@@ -2,10 +2,9 @@
   (:require
     [isaac.config.api :as config]
     [gherclj.core :as g]
-    [isaac.config.runtime :as runtime]
+    [isaac.foundation.fs-steps :as ffs]
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
-    [isaac.marigold :as marigold]
     [isaac.session.session-steps :as sut]
     [isaac.nexus :as nexus]
     [speclj.core :refer [around describe it should should=]]))
@@ -20,15 +19,6 @@
       (it))
     (grover/reset-queue!)
     (g/reset!))
-
-  (it "fires the config change source when a file is written"
-    (let [source (runtime/memory-source "/target/test-state")]
-      (runtime/start! source)
-      (g/assoc! :mem-fs (nexus/get :fs))
-      (g/assoc! :config-change-source source)
-      (sut/file-exists-with (str "/target/test-state/config/crew/" marigold/captain ".edn") "{:model :llama}")
-      (should= (str "crew/" marigold/captain ".edn") (runtime/poll! source 0))
-      (runtime/stop! source)))
 
   (it "does not wait for a Grover gate after a turn already completed"
     (g/assoc! :turn-future (future {:output "done"
@@ -54,6 +44,6 @@
         (should= cfg (#'sut/loaded-config))
         (should= cfg (#'sut/loaded-config))
         (should= 1 @loads*)
-        (sut/file-exists-with "config/crew/main.edn" "{:model :grover}")
+        (ffs/file-exists-with "config/crew/main.edn" "{:model :grover}")
         (should= cfg (#'sut/loaded-config))
         (should= 2 @loads*)))))
