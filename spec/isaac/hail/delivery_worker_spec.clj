@@ -276,15 +276,15 @@
   (it "reschedules a failed turn with the next backoff and clears in-flight"
     (let [session-store (nexus/get-in [:sessions :store])]
       (store/open-session! session-store "engine-room" {:crew "bartholomew"})
-      (grover/enqueue! [{:type "error" :content "boom" :model "grover"}])
       (write-delivery! {:id       "delivery-1"
                         :hail     {:id "hail-1" :prompt "Seal the leak."}
                         :crew     :bartholomew
                         :session  :engine-room
                         :attempts 0})
-      @(first (sut/tick! {:cfg           test-config
-                          :now           (Instant/parse "2026-04-21T10:00:00Z")
-                          :session-store session-store}))
+      (with-redefs [isaac.drive.turn/run-turn! (fn [_] {:error :api-error})]
+        @(first (sut/tick! {:cfg           test-config
+                            :now           (Instant/parse "2026-04-21T10:00:00Z")
+                            :session-store session-store})))
       (should= {:attempts        1
                 :next-attempt-at "2026-04-21T10:00:01Z"}
                (select-keys (read-edn "/test/isaac/hail/deliveries/delivery-1.edn")
@@ -295,15 +295,15 @@
   (it "moves exhausted deliveries to failed and logs dead-lettering"
     (let [session-store (nexus/get-in [:sessions :store])]
       (store/open-session! session-store "engine-room" {:crew "bartholomew"})
-      (grover/enqueue! [{:type "error" :content "boom" :model "grover"}])
       (write-delivery! {:id       "delivery-1"
                         :hail     {:id "hail-1" :prompt "Seal the leak."}
                         :crew     :bartholomew
                         :session  :engine-room
                         :attempts 4})
-      @(first (sut/tick! {:cfg           test-config
-                          :now           (Instant/parse "2026-04-21T10:00:00Z")
-                          :session-store session-store}))
+      (with-redefs [isaac.drive.turn/run-turn! (fn [_] {:error :api-error})]
+        @(first (sut/tick! {:cfg           test-config
+                            :now           (Instant/parse "2026-04-21T10:00:00Z")
+                            :session-store session-store})))
       (should-not (fs/exists? (nexus/get :fs) "/test/isaac/hail/deliveries/delivery-1.edn"))
       (should= {:attempts 5}
                (select-keys (read-edn "/test/isaac/hail/failed/delivery-1.edn") [:attempts]))

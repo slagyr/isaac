@@ -4,8 +4,7 @@
     [clojure.edn :as edn]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.impl-common :as c]
-    [isaac.nexus :as nexus])
+    [isaac.session.store.impl-common :as c])
   (:import
     (java.time Instant ZoneOffset)
     (java.time.format DateTimeFormatter)))
@@ -70,12 +69,7 @@
 
 (defn- read-session-store [root fs]
   (migrate-legacy-index! root fs)
-  (let [store (read-sidecar-store root fs)]
-    (doseq [entry (vals store)
-            :when (and (:session-file entry)
-                       (c/exists?* fs (c/transcript-path root (:session-file entry))))]
-      (migrate-transcript! root (:session-file entry) fs))
-    store))
+  (read-sidecar-store root fs))
 
 (defn- update-sidecar-entry! [root identifier updater fs]
   (let [store (read-session-store root fs)]
@@ -158,13 +152,13 @@
   (update-session! [_ name updates]
     (c/update-session! update-sidecar-entry! normalize-timestamp root name updates fs))
   (append-message! [_ name message]
-    (c/append-message! get-session get-transcript update-sidecar-entry! now-iso root name message fs))
+    (c/append-message! get-session migrate-transcript! update-sidecar-entry! now-iso root name message fs))
   (append-error! [_ name error]
-    (c/append-error! get-session get-transcript update-sidecar-entry! now-iso root name error fs))
+    (c/append-error! get-session migrate-transcript! update-sidecar-entry! now-iso root name error fs))
   (append-compaction! [_ name compaction]
-    (c/append-compaction! get-session get-transcript update-sidecar-entry! now-iso root name compaction fs))
+    (c/append-compaction! get-session migrate-transcript! update-sidecar-entry! now-iso root name compaction fs))
   (splice-compaction! [_ name compaction]
-    (c/splice-compaction! get-session get-transcript update-sidecar-entry! now-iso root name compaction fs))
+    (c/splice-compaction! get-session migrate-transcript! update-sidecar-entry! now-iso root name compaction fs))
   (truncate-after-compaction! [_ name]
     (c/truncate-after-compaction! get-session root name fs)))
 

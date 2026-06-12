@@ -2,6 +2,7 @@
   (:require
      [c3kit.apron.env :as c3env]
      [clojure.string :as str]
+     [isaac.config.cli.common :as common]
      [isaac.config.cli.command :as sut]
      [isaac.config.cli.spec-support :as support]
      [isaac.fs :as fs]
@@ -15,6 +16,9 @@
 (def ^:private test-provider (keyword marigold/helm-systems))
 (def ^:private test-model (keyword marigold/helm-mark-iii))
 (def ^:private test-crew (keyword marigold/first-mate))
+
+(defn- api-key-load-result []
+  {:config {:providers {test-provider {:api-key "${CONFIG_TEST_API_KEY}"}}}})
 
 (defn- write-config! [path data]
   (let [fs* (nexus/get :fs)]
@@ -30,25 +34,21 @@
 
   (describe "whole config"
 
+    (redefs-around [common/load-raw-result (fn [_] (api-key-load-result))])
+
     (it "prints the resolved config when no path is given, redacting env values"
-      (write-config! (str test-root "/config/isaac.edn")
-                     {:providers {test-provider {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 0 (sut/run {:root test-root} ["get"]))
       (should-contain "<CONFIG_TEST_API_KEY:redacted>" (str *out*))
       (should-not-contain "sk-test-123" (str *out*)))
 
     (it "prints raw config without substitution when --raw is set"
-      (write-config! (str test-root "/config/isaac.edn")
-                     {:providers {test-provider {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 0 (sut/run {:root test-root} ["get" "--raw"]))
       (should-contain "${CONFIG_TEST_API_KEY}" (str *out*))
       (should-not-contain "redacted" (str *out*)))
 
     (it "reveals actual values only after typed confirmation"
-      (write-config! (str test-root "/config/isaac.edn")
-                     {:providers {test-provider {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (binding [*in* (BufferedReader. (StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:root test-root} ["get" "--reveal"])))
@@ -56,8 +56,6 @@
       (should-contain "sk-test-123" (str *out*)))
 
     (it "refuses reveal without typed confirmation"
-      (write-config! (str test-root "/config/isaac.edn")
-                     {:providers {test-provider {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 1 (sut/run {:root test-root} ["get" "--reveal"]))
       (should-contain "Refusing to reveal config." (str *err*))

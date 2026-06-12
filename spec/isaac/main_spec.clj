@@ -7,6 +7,7 @@
     [isaac.root :as root]
     [isaac.module.loader :as module-loader]
     [isaac.main :as sut]
+    [isaac.session.store :as store]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
@@ -31,6 +32,9 @@
       (example)))
 
   (describe "run"
+
+    #_{:clj-kondo/ignore [:private-call]}
+    (redefs-around [sut/register-module-cli-commands! (fn [& _] nil)])
 
     (it "prints usage and returns 0 when no args"
       (should= 0 (sut/run [])))
@@ -141,6 +145,9 @@
 
   (describe "alias resolution"
 
+    #_{:clj-kondo/ignore [:private-call]}
+    (redefs-around [sut/register-module-cli-commands! (fn [& _] nil)])
+
     (it "resolves 'models auth' to 'auth'"
       (should= ["auth"] (vec (@#'sut/resolve-alias ["models" "auth"]))))
 
@@ -148,6 +155,9 @@
       (should= 1 (sut/run ["models" "something-else"]))))
 
   (describe "dispatch payload"
+
+    #_{:clj-kondo/ignore [:private-call]}
+    (redefs-around [sut/register-module-cli-commands! (fn [& _] nil)])
 
     (it "includes _raw-args"
       (let [received (atom nil)]
@@ -233,10 +243,13 @@
                              :usage       "fs-init"
                              :option-spec []
                              :run-fn      (fn [_] 0)})
+        #_{:clj-kondo/ignore [:private-call]}
         (with-redefs [nexus/init!       (fn
                                            ([] (reset! init-opts {}))
                                            ([opts] (reset! init-opts opts)))
                       nexus/register!   (fn [& _])
+                      store/register!    (fn [& _])
+                      sut/register-module-cli-commands! (fn [& _] nil)
                       root/resolve-root  (fn [& _] "/tmp/home")]
           (binding [sut/*extra-opts* {:fs mem}]
             (should= 0 (sut/run ["fs-init"]))))

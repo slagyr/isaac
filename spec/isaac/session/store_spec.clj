@@ -1,6 +1,5 @@
 (ns isaac.session.store-spec
   (:require
-    [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.session.store.memory :as memory]
@@ -103,18 +102,15 @@
         (store/clear-in-flight! s "k1")
         (should= false (store/in-flight? s "k1"))))
 
-    (it "tracks in-flight counts by crew across store implementations"
-      (doseq [impl [:memory :jsonl-edn-sidecar :jsonl-edn-index]]
-        (nexus/-with-nexus {:fs (fs/mem-fs)}
-          (let [root (str (System/getProperty "user.dir") "/target/test-state/store-spec-" (name impl))
-                s         (store/create root impl)]
-            (store/open-session! s "k1" {:crew "main"})
-            (store/open-session! s "k2" {:crew "main"})
-            (store/open-session! s "k3" {:crew "other"})
-            (store/mark-in-flight! s "k1")
-            (store/mark-in-flight! s "k3")
-            (should= 1 (store/in-flight-count s "main"))
-            (should= 1 (store/in-flight-count s "other"))))))
+    (it "tracks in-flight counts by crew"
+      (let [s (memory/create-store)]
+        (store/open-session! s "k1" {:crew "main"})
+        (store/open-session! s "k2" {:crew "main"})
+        (store/open-session! s "k3" {:crew "other"})
+        (store/mark-in-flight! s "k1")
+        (store/mark-in-flight! s "k3")
+        (should= 1 (store/in-flight-count s "main"))
+        (should= 1 (store/in-flight-count s "other"))))
 
     (it "can-dispatch? defaults crew capacity to one"
       (let [s (memory/create-store)]

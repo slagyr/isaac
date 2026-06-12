@@ -2,7 +2,6 @@
   (:require
     [cheshire.core :as json]
     [clojure.edn :as edn]
-    [clojure.pprint :as pprint]
     [clojure.set :as set]
     [clojure.string :as str]
     [isaac.config.api :as config]
@@ -10,8 +9,7 @@
     [isaac.logger :as log]
     [isaac.naming :as naming]
     [isaac.session.schema :as session-schema]
-    [isaac.session.store :as session-store]
-    [isaac.nexus :as nexus])
+    [isaac.session.store :as session-store])
   (:import
     (java.nio.charset StandardCharsets)
     (java.time Instant ZoneOffset)
@@ -42,7 +40,7 @@
 
 (defn write-edn [v]
   (binding [*print-namespace-maps* false]
-    (with-out-str (pprint/pprint v))))
+    (str (pr-str v) "\n")))
 
 (defn keywordize-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) m)))
@@ -496,9 +494,9 @@
                            (update :updated-at normalize-ts-fn))))
                    fs))
 
-(defn append-message! [get-session-fn get-transcript-fn update-entry-fn now-fn root identifier message fs]
+(defn append-message! [get-session-fn migrate-fn update-entry-fn now-fn root identifier message fs]
   (let [entry            (get-session-fn root identifier fs)
-        transcript       (get-transcript-fn root identifier fs)
+        transcript       (migrate-fn root (:session-file entry) fs)
         parent-id        (last-entry-id transcript)
         msg-id           (new-id)
         now              (now-fn)
@@ -523,9 +521,9 @@
                      fs)
     transcript-entry))
 
-(defn append-error! [get-session-fn get-transcript-fn update-entry-fn now-fn root identifier error-entry fs]
+(defn append-error! [get-session-fn migrate-fn update-entry-fn now-fn root identifier error-entry fs]
   (let [entry            (get-session-fn root identifier fs)
-        transcript       (get-transcript-fn root identifier fs)
+        transcript       (migrate-fn root (:session-file entry) fs)
         parent-id        (last-entry-id transcript)
         error-id         (new-id)
         now              (now-fn)
@@ -542,9 +540,9 @@
     (update-entry-fn root identifier #(assoc % :updated-at now) fs)
     transcript-entry))
 
-(defn append-compaction! [get-session-fn get-transcript-fn update-entry-fn now-fn root identifier {:keys [summary firstKeptEntryId tokensBefore]} fs]
+(defn append-compaction! [get-session-fn migrate-fn update-entry-fn now-fn root identifier {:keys [summary firstKeptEntryId tokensBefore]} fs]
   (let [entry         (get-session-fn root identifier fs)
-        transcript    (get-transcript-fn root identifier fs)
+        transcript    (migrate-fn root (:session-file entry) fs)
         parent-id     (last-entry-id transcript)
         compaction-id (new-id)
         now           (now-fn)
@@ -564,9 +562,9 @@
                      fs)
     compaction))
 
-(defn splice-compaction! [get-session-fn get-transcript-fn update-entry-fn now-fn root identifier {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]} fs]
+(defn splice-compaction! [get-session-fn migrate-fn update-entry-fn now-fn root identifier {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]} fs]
   (let [entry            (get-session-fn root identifier fs)
-        transcript       (get-transcript-fn root identifier fs)
+        transcript       (migrate-fn root (:session-file entry) fs)
         retention        (or (:history-retention entry) config/default-history-retention)
         compacted-ids    (set compactedEntryIds)
         removable-ids    (->> transcript

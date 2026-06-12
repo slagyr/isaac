@@ -3,11 +3,16 @@
     [clojure.string :as str]
     [isaac.marigold :as marigold]
     [isaac.bridge.core :as bridge]
+    [isaac.charge :as charge]
     [isaac.comm :as comm]
     [isaac.bridge.prompt-cli :as sut]
     [isaac.config.api :as config]
+    [isaac.config.runtime :as runtime]
     [isaac.server.routes]
     [isaac.session.spec-helper :as helper]
+    [isaac.session.context :as session-ctx]
+    [isaac.session.store :as store]
+    [isaac.tool.builtin :as builtin]
     [speclj.core :refer :all]))
 
 (def crew-name marigold/captain)
@@ -33,6 +38,16 @@
   (fn [charge]
     (comm/on-text-chunk (:comm charge) (:session-key charge) text)
     {}))
+
+(defn- fake-charge [request]
+  (let [cfg       (:config request)
+        crew-id   (or (:crew request) crew-name)
+        crew-cfg  (get-in cfg [:crew crew-id])
+        model-id  (:model crew-cfg)
+        model-cfg (get-in cfg [:models model-id])]
+    (merge request
+           {:model (:model model-cfg)
+            :soul  (:soul crew-cfg)})))
 
 (describe "CLI Prompt"
 
@@ -82,7 +97,15 @@
 
     (before (reset! loader-stub {:config synthetic-config}))
     (redefs-around [config/load-config!        (fn [& _] (:config @loader-stub))
-                    config/load-config-result  (fn [& _] @loader-stub)])
+                    config/load-config-result  (fn [& _] @loader-stub)
+                    runtime/install!           (fn [_] nil)
+                    builtin/register-all!      (fn [] nil)
+                    charge/build               fake-charge
+                    session-ctx/create-with-resolved-behavior!
+                    (fn [session-key opts]
+                      (store/open-session! (:session-store opts)
+                                           session-key
+                                           (select-keys opts [:crew :tags :cwd :origin])))])
 
     (it "returns 1 and mentions 'required' when --message is missing"
       (let [output (with-out-str

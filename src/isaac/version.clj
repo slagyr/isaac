@@ -10,6 +10,8 @@
       (:version (edn/read-string (slurp resource))))
     (catch Exception _ nil)))
 
+(def ^:private manifest-version* (delay (manifest-version)))
+
 (defn read-git-sha []
   (try
     (let [head (str/trim (slurp ".git/HEAD"))]
@@ -21,7 +23,7 @@
     (catch Exception _ nil)))
 
 (defn version-string []
-  (let [v   (or (manifest-version) "unknown")
+  (let [v   (or @manifest-version* "unknown")
         sha (read-git-sha)]
     (if sha
       (str "isaac " v " (" sha ")")
