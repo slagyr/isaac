@@ -1,7 +1,7 @@
 (ns isaac.main-spec
   (:require
     [clojure.edn :as edn]
-    [isaac.cli :as registry]
+    [isaac.cli.registry :as registry]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.root :as root]
@@ -221,7 +221,7 @@
                                                          :berths  {:cli {:description "CLI commands"
                                                                          :manifest     {:schema {:type :seq
                                                                                                  :spec {:type    :map
-                                                                                                        :factory 'isaac.cli/register-cli-command!}}}}}}}
+                                                                                                        :factory 'isaac.cli.registry/register-cli-command!}}}}}}}
                                  :hello      {:manifest {:id      :hello
                                                          :version "1"
                                                          :cli     [{:name "greet" :desc "Greets"

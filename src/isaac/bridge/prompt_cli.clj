@@ -5,7 +5,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
-    [isaac.cli :as cli]
+    [isaac.cli.registry :as cli]
     [isaac.comm :as comm]
     [isaac.config.api :as config]
     [isaac.config.runtime :as runtime]

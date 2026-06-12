@@ -4,7 +4,7 @@
     [cheshire.core :as json]
     [clojure.pprint :as pprint]
     [clojure.walk :as walk]
-    [isaac.cli :as registry]))
+    [isaac.cli.registry :as registry]))
 
 (defn- json-ready [value]
   (walk/postwalk

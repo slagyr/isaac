@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as cli]
+    [isaac.cli.registry :as cli]
     [isaac.service.macos :as macos]
     [isaac.util.shell :as shell]))
 

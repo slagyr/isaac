@@ -1,6 +1,6 @@
 (ns isaac.config.cli.command-spec
   (:require
-    [isaac.cli :as registry]
+    [isaac.cli.registry :as registry]
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
     [isaac.module.loader :as module-loader]

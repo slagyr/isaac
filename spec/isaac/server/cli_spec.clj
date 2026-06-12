@@ -1,6 +1,6 @@
 (ns isaac.server.cli-spec
   (:require
-    [isaac.cli :as registry]
+    [isaac.cli.registry :as registry]
     [isaac.config.api :as config]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]

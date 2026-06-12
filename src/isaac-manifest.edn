@@ -5,7 +5,7 @@
  :berths  {:cli                   {:description "CLI commands installed into the top-level isaac command registry."
                                     :manifest    {:schema {:type :seq
                                                            :spec {:type    :map
-                                                                  :factory isaac.cli/register-cli-command!
+                                                                  :factory isaac.cli.registry/register-cli-command!
                                                                   :schema  {:name        {:type :string :validations [:present?]}
                                                                             :desc        {:type :string}
                                                                             :usage       {:type :string}
@@ -33,5 +33,5 @@
  :cli     [{:name      "init"
             :usage     "init"
             :desc      "Scaffold a default Isaac config"
-            :run-fn    isaac.cli/init-run-fn
-            :help-text isaac.cli/init-help}]}
+            :run-fn    isaac.cli.registry/init-run-fn
+            :help-text isaac.cli.registry/init-help}]}

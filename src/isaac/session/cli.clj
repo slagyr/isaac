@@ -4,7 +4,7 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as cli]
+    [isaac.cli.registry :as cli]
     [isaac.cli.common :as cli-common]
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]

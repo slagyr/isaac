@@ -5,7 +5,7 @@
     [isaac.llm.auth.device-code :as device-code]
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.auth.cli :as sut]
-    [isaac.cli :as registry]
+    [isaac.cli.registry :as registry]
     [isaac.config.api :as config]
     [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
