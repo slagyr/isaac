@@ -20,6 +20,8 @@
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
     [isaac.config.api :as config-loader]
+    [isaac.config.schema-compose :as schema-compose]
+    [isaac.config.schema-contributions :as schema-contributions]
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     ;; Grover is the only impl namespace we need — all themed apis
@@ -207,7 +209,18 @@
                    :manifest    {:schema {:type :seq
                                           :spec {:type    :map
                                                  :factory 'isaac.cli/register-cli-command!
-                                                 :schema  {:name {:type :string}}}}}}}})
+                                                 :schema  {:name {:type :string}}}}}}
+             :isaac.config/schema {:description "Top-level config schema fragments."
+                                   :manifest    {:schema {:type :map
+                                                          :key-spec {:type :keyword}
+                                                          :value-spec {:type :map
+                                                                       :schema {:fragment {:type :symbol :validations [:present?]}
+                                                                                :entity-dir {:type :string}
+                                                                                :frontmatter? {:type :boolean}
+                                                                                :merge-root-entity? {:type :boolean}
+                                                                                :companion {:type :map
+                                                                                            :schema {:field {:type :keyword}
+                                                                                                     :mode {:type :keyword}}}}}}}}}})
 
 (def baseline-server-manifest
   "A stand-in for resources/isaac-manifest.edn. Themed server
@@ -280,7 +293,9 @@
 
    :isaac.server/comm {(keyword longwave) {:factory 'isaac.comm.cli/make}     ;; broadcast / cli-like
                        (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
-                       (keyword logbook)  {:factory 'isaac.comm.memory/make}}}) ;; persisted / memory-like
+                       (keyword logbook)  {:factory 'isaac.comm.memory/make}}  ;; persisted / memory-like
+
+   :isaac.config/schema schema-contributions/server})
 
 (def baseline-manifest baseline-server-manifest)
 
@@ -314,10 +329,12 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (speclj/around [example]
     (binding [module-loader/*core-index-override* baseline-core-index]
+      (schema-compose/clear-cache!)
       (reset-extension-registries!)
       (try
         (example)
         (finally
+          (schema-compose/clear-cache!)
           (reset-extension-registries!))))))
 
 (defn with-real-manifest*
@@ -369,6 +386,7 @@
         (binding [module-loader/*core-index-override* baseline-core-index]
           (reset! c3env/-overrides {})
           (config-loader/clear-env-overrides!)
+          (schema-compose/clear-cache!)
           (example))))))
 
 (defn- local-module-manifest-path [id]

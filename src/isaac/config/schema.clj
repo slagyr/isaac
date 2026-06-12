@@ -3,32 +3,15 @@
     [c3kit.apron.schema :as schema]
     [c3kit.apron.schema.path :as path]
     [clojure.string :as str]
+    [isaac.config.schema-base :as schema-base]
     [isaac.session.compaction-schema :as compaction-schema]))
 
-(defn ->id [value]
-  (cond
-    (keyword? value) (name value)
-    (string? value) value
-    (nil? value) nil
-    :else (str value)))
-
-(defn schema-fields [spec]
-  (:schema spec))
+(def ->id schema-base/->id)
+(def schema-fields schema-base/schema-fields)
+(def strip-validation-annotations schema-base/strip-validation-annotations)
 
 (defn- addressed-band? [band]
   (some (comp seq band) [:crew :crew-tags :session :session-tags]))
-
-(defn strip-validation-annotations [node]
-  (cond
-    (map? node)
-    (let [node (dissoc node :validations)]
-      (into {} (map (fn [[k v]] [k (strip-validation-annotations v)])) node))
-
-    (vector? node)
-    (mapv strip-validation-annotations node)
-
-    :else
-    node))
 
 ;; region ----- Entity Schemas -----
 
@@ -362,78 +345,111 @@
    :schema      {:host {:type :string :description "Bind host"}
                  :port {:type :int :description "Bind port"}}})
 
-(def root
-  {:name        :isaac
+(def field-comms
+  {:description "Communication channel configurations (map of name -> comm config)"
    :type        :map
-   :description "Isaac's root level schema"
-   :schema      {:acp                 acp
+   :name        "comms table"
+   :key-spec    {:type :string}
+   :value-spec  comm-instance})
+
+(def field-crew
+  {:description "Crew member configurations (map of id -> crew config)"
+   :type        :map
+   :name        "crew table"
+   :snapshot-only? true
+   :key-spec    {:type :string}
+   :value-spec  crew})
+
+(def field-models
+  {:description "Model configurations (map of id -> model config)"
+   :type        :map
+   :name        "model table"
+   :snapshot-only? true
+   :key-spec    {:type :string}
+   :value-spec  model})
+
+(def field-prompt-dir-names
+  {:type        :map
+   :key-spec    {:type :string}
+   :value-spec  {:type :string}
+   :description "Directory-name to prompt-type mapping for prepared prompts"})
+
+(def field-prompt-paths
+  {:type        :seq
+   :spec        {:type :string}
+   :description "Extra roots to scan for prepared prompts"})
+
+(def field-prefer-entity-files
+  {:type        :boolean
+   :default     false
+   :description "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"})
+
+(def field-providers
+  {:description "Provider configurations (map of id -> provider config)"
+   :type        :map
+   :name        "provider table"
+   :snapshot-only? true
+   :key-spec    {:type :string}
+   :value-spec  provider})
+
+(def field-command-paths
+  {:type        :seq
+   :spec        {:type :string}
+   :description "Extra typed roots to scan for prepared commands"})
+
+(def field-cron
+  {:description "Cron job configurations (map of job name -> cron job config)"
+   :type        :map
+   :name        "cron table"
+   :key-spec    {:type :string}
+   :value-spec  cron-job})
+
+(def field-skill-paths
+  {:type        :seq
+   :spec        {:type :string}
+   :description "Extra typed roots to scan for prepared skills"})
+
+(def field-skill-menu-threshold
+  {:type        :int
+   :validate    #(or (nil? %) (<= 0 %))
+   :message     "must be a non-negative integer"
+   :description "Max skill count to inject into the cached prompt before falling back to list_skills"})
+
+(def field-tools
+  {:description "Tool configurations (map of tool name -> config)"
+   :type        :map
+   :key-spec    {:type :keyword}
+   :value-spec  {:type :map}})
+
+(def field-tz
+  {:type        :string
+   :description "IANA timezone name for cron evaluation"})
+
+(def root
+  (assoc schema-base/base-root :schema
+         (merge (schema-fields schema-base/base-root)
+                {:acp                 acp
                  :channels            channels
-                 :comms               {:description "Communication channel configurations (map of name -> comm config)"
-                                       :type        :map
-                                       :name        "comms table"
-                                       :key-spec    {:type :string}
-                                       :value-spec  comm-instance}
-                 :crew                {:description "Crew member configurations (map of id -> crew config)"
-                                        :type        :map
-                                        :name        "crew table"
-                                        :snapshot-only? true
-                                        :key-spec    {:type :string}
-                                        :value-spec  crew}
+                 :comms               field-comms
+                 :crew                field-crew
                  :defaults            defaults
                  :gateway             gateway
                  :hail                hail
                  :hooks               hooks
-                 :modules             {:type        :map
-                                       :key-spec    {:type :keyword}
-                                       :value-spec  {:type :map}
-                                       :message     "must be a map of id to coordinate (legacy vector shape)"
-                                       :description "Declared modules as a map of module id to tools.deps coordinate"}
-                 :models              {:description "Model configurations (map of id -> model config)"
-                                        :type        :map
-                                        :name        "model table"
-                                        :snapshot-only? true
-                                        :key-spec    {:type :string}
-                                        :value-spec  model}
-                 :prompt-dir-names    {:type        :map
-                                       :key-spec    {:type :string}
-                                       :value-spec  {:type :string}
-                                       :description "Directory-name to prompt-type mapping for prepared prompts"}
-                 :prompt-paths        {:type        :seq
-                                       :spec        {:type :string}
-                                       :description "Extra roots to scan for prepared prompts"}
-                 :prefer-entity-files {:type        :boolean
-                                       :default     false
-                                       :description "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
-                 :providers           {:description "Provider configurations (map of id -> provider config)"
-                                        :type        :map
-                                        :name        "provider table"
-                                        :snapshot-only? true
-                                        :key-spec    {:type :string}
-                                        :value-spec  provider}
-                 :command-paths       {:type        :seq
-                                       :spec        {:type :string}
-                                       :description "Extra typed roots to scan for prepared commands"}
-                 :cron                {:description "Cron job configurations (map of job name -> cron job config)"
-                                       :type        :map
-                                       :name        "cron table"
-                                       :key-spec    {:type :string}
-                                       :value-spec  cron-job}
-                 :skill-paths         {:type        :seq
-                                       :spec        {:type :string}
-                                       :description "Extra typed roots to scan for prepared skills"}
-                 :skill-menu-threshold {:type        :int
-                                        :validate    #(or (nil? %) (<= 0 %))
-                                        :message     "must be a non-negative integer"
-                                        :description "Max skill count to inject into the cached prompt before falling back to list_skills"}
+                 :models              field-models
+                 :prompt-dir-names    field-prompt-dir-names
+                 :prompt-paths        field-prompt-paths
+                 :prefer-entity-files field-prefer-entity-files
+                 :providers           field-providers
+                 :command-paths       field-command-paths
+                 :cron                field-cron
+                 :skill-paths         field-skill-paths
+                 :skill-menu-threshold field-skill-menu-threshold
                  :slash-commands      slash-commands
                  :sessions            sessions
                  :server              server
-                 :tools               {:description "Tool configurations (map of tool name -> config)"
-                                       :type        :map
-                                       :key-spec    {:type :keyword}
-                                       :value-spec  {:type :map}}
-                 :tz                  {:type        :string
-                                       :description "IANA timezone name for cron evaluation"}}})
+                 :tools               field-tools
+                 :tz                  field-tz})))
 
 ;; endregion ^^^^^ Entity Schemas ^^^^^
 
