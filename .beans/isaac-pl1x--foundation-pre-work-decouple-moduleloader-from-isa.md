@@ -4,8 +4,10 @@ title: 'Foundation pre-work: decouple module.loader from isaac.llm.api'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:48:48Z
-updated_at: 2026-06-12T12:55:54Z
+updated_at: 2026-06-12T13:03:35Z
 parent: isaac-brth
 ---
 

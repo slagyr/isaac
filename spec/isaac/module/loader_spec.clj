@@ -298,6 +298,28 @@
                  (:value (first errors)))
         (should= [] @*factory-calls*))))
 
+  (describe "clear-activations!"
+
+    (around [example]
+      (let [handlers* @#'isaac.module.loader/handlers*
+            handlers  @handlers*]
+        (reset! handlers* {})
+        (try
+          (example)
+          (finally
+            (reset! handlers* handlers)))))
+
+    (it "invokes registered clear-registration handlers"
+      (let [calls (atom [])]
+        (sut/register-handler! :clear-registrations #(swap! calls conj :api))
+        (sut/register-handler! :clear-registrations #(swap! calls conj :commands))
+        (sut/clear-activations!)
+        (should= [:api :commands] @calls)))
+
+    (it "does nothing when no clear-registration handlers are registered"
+      (should-not-throw
+        (sut/clear-activations!))))
+
   (describe "activate!"
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}

@@ -200,6 +200,9 @@
   []
   (swap! -registry #(select-keys % (seq @-built-in-keys))))
 
+((requiring-resolve 'isaac.module.loader/register-handler!)
+ :clear-registrations clear-module-registrations!)
+
 (defn unregister!
   "Remove the factory registered for `provider-key`."
   [provider-key]

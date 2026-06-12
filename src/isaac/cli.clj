@@ -250,4 +250,7 @@
     (swap! commands #(apply dissoc % names))
     (reset! module-command-names* #{})))
 
+((requiring-resolve 'isaac.module.loader/register-handler!)
+ :clear-registrations clear-module-commands!)
+
 ;; endregion ^^^^^ Module Command Management ^^^^^

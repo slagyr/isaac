@@ -1,6 +1,7 @@
 (ns isaac.llm.api-spec
   (:require
     [c3kit.apron.schema :as schema]
+    [isaac.fs :as fs]
     [isaac.llm.api.messages :as messages]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.api.ollama :as ollama]
@@ -8,9 +9,15 @@
     [isaac.llm.api.responses :as responses]
     [isaac.llm.api :as sut]
     [isaac.llm.provider :as llm-provider]
+    [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "isaac.llm.api"
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
+      (example)))
 
   (describe "error?"
 

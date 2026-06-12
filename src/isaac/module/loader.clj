@@ -3,13 +3,10 @@
     [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
     [clojure.string :as str]
-    [isaac.cli :as cli]
     [isaac.fs :as fs]
-    [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.module :as module]
     [isaac.module.manifest :as manifest]
-    [isaac.nexus :as nexus]
     [isaac.schema.lexicon :as lexicon]
     [isaac.schema.registered-in :as registered-in]))
 
@@ -26,12 +23,15 @@
 ;; requires.
 (defonce ^:private handlers* (atom {}))
 
+(def ^:private multi-handler-kinds #{:clear-registrations})
+
 (defn register-handler!
   "Registers a handler fn that module.loader will invoke during activation.
    Called by registry namespaces at their load time.
 
    Known kinds:
-     :user-config    (fn [root-key entry-id] => map)    — reads user config for an extension
+     :clear-registrations (fn [] => any)                  — clears module-contributed registrations
+     :user-config         (fn [root-key entry-id] => map) — reads user config for an extension
 
    Every other extension kind has migrated to a :isaac.server/* berth
    processed by `process-manifest-berths!` (phases 4–8 of brth):
@@ -39,13 +39,20 @@
    :slash-commands / :llm/api / :hook / :provider (phase 7), :comm
    (phase 8)."
   [kind handler-fn]
-  (swap! handlers* assoc kind handler-fn))
+  (swap! handlers*
+         (fn [handlers]
+           (if (contains? multi-handler-kinds kind)
+             (update handlers kind (fnil conj []) handler-fn)
+             (assoc handlers kind handler-fn)))))
 
 (defn- handler-for [kind]
   (or (get @handlers* kind)
       (throw (ex-info (str "no module-loader handler registered for kind " kind
                            " (registry namespace must self-register at load time)")
                       {:kind kind :registered-kinds (vec (sort (keys @handlers*)))}))))
+
+(defn- handlers-for [kind]
+  (get @handlers* kind []))
 
 (def ^:private core-module-id :isaac.core)
 
@@ -299,8 +306,8 @@
   (reset! core-index-cache nil)
   (reset! activated-modules* #{})
   (reset! started-modules* [])
-  (api/clear-module-registrations!)
-  (cli/clear-module-commands!))
+  (doseq [handler (handlers-for :clear-registrations)]
+    (handler)))
 
 (defn clear-caches! []
   (reset! core-index-cache nil))
