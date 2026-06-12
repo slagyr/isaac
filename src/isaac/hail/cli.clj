@@ -1,5 +1,6 @@
 (ns isaac.hail.cli
   (:require
+    [isaac.cli.api :as cli-api]
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -207,3 +208,14 @@
 
 (defn read-pending [id]
   (queue/read-pending id))
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :hail [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :hail [_id]
+  hail-option-spec)
+
+(defmethod cli-api/help :hail [_id]
+  (hail-help))

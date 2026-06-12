@@ -1,6 +1,7 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.llm.auth.cli
   (:require
+    [isaac.cli.api :as cli-api]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.config.api :as config]
@@ -248,3 +249,14 @@
       (run arguments))))
 
 ;; endregion ^^^^^ Entry Point ^^^^^
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :auth [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :auth [_id]
+  option-spec)
+
+(defmethod cli-api/help :auth [_id]
+  (help-text))

@@ -1,5 +1,6 @@
 (ns isaac.crew.cli
   (:require
+    [isaac.cli.api :as cli-api]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as cli]
@@ -126,3 +127,11 @@
           :else
           (run-show (merge (dissoc opts :_raw-args) options) (second raw-args))))
       (cli-common/standard-run-fn "crew" parse-option-map run opts))))
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :crew [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :crew [_id]
+  option-spec)

@@ -1,6 +1,7 @@
 (ns isaac.main-spec
   (:require
     [clojure.edn :as edn]
+    [isaac.cli.api :as cli-api]
     [isaac.cli.registry :as registry]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
@@ -16,7 +17,7 @@
    :option-spec []
    :run-fn      (fn [_] 0)})
 
-(defn greet-run-fn [_opts] 0)
+(defmethod cli-api/run :greet [_id _opts] 0)
 
 (defn- core-manifest-cli-command-names []
   (->> ["src/isaac-manifest.edn" "resources/isaac-manifest.edn"]
@@ -225,12 +226,12 @@
                                                                                                               :factory 'isaac.cli.registry/register-cli-command!}}}}}}}
                                  :hello      {:manifest {:id      :hello
                                                          :version "1"
-                                                         :isaac/cli {:greet {:desc "Greets"
+                                                         :isaac/cli {:greet {:summary "Greets"
                                                                              :usage "greet"
-                                                                             :run-fn 'isaac.main-spec/greet-run-fn}}}}}})]
+                                                                             :namespace 'isaac.main-spec}}}}}})]
           (@#'sut/register-module-cli-commands! "/tmp/home/.isaac" mem))
         (should-not-be-nil (registry/get-command "greet"))
-        (should= "Greets" (:desc (registry/get-command "greet")))))
+        (should= "Greets" (:summary (registry/get-command "greet")))))
 
     (it "declares core command cli contributions in the manifest"
       (should= #{"auth" "config" "crew" "hail" "init" "logs" "prompt" "server" "service" "sessions"}

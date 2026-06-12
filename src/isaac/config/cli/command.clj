@@ -1,6 +1,7 @@
 (ns isaac.config.cli.command
   "Dispatcher for isaac config — routes to per-subcommand namespaces."
   (:require
+    [isaac.cli.api :as cli-api]
     [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.cli.get :as get-cmd]
@@ -88,3 +89,14 @@
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (run opts (or _raw-args [])))
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :config [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :config [_id]
+  option-spec)
+
+(defmethod cli-api/help :config [_id]
+  (config-help))

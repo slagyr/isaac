@@ -1,6 +1,7 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.server.cli
   (:require
+    [isaac.cli.api :as cli-api]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.common :as cli-common]
@@ -87,3 +88,11 @@
 
 (defn run-fn [opts]
   (cli-common/standard-run-fn "server" parse-option-map run opts))
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :server [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :server [_id]
+  option-spec)

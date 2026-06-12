@@ -1,5 +1,6 @@
 (ns isaac.service.cli
   (:require
+    [isaac.cli.api :as cli-api]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as cli]
@@ -91,13 +92,13 @@
       :else             (do (binding [*out* *err*] (println "log file not found")) 1))))
 
 (def subcommands
-  [{:name "install" :desc "Install Isaac as a launchd service" :run run-install}
-   {:name "uninstall" :desc "Remove the Isaac launchd service" :run run-uninstall}
-   {:name "start" :desc "Start the Isaac service" :run run-start}
-   {:name "stop" :desc "Stop the Isaac service" :run run-stop}
-   {:name "restart" :desc "Restart the Isaac service" :run run-restart}
-   {:name "status" :desc "Show the Isaac service status" :run run-status}
-   {:name "logs" :desc "Tail Isaac service logs" :run run-logs}])
+  [{:name "install" :summary "Install Isaac as a launchd service" :run run-install}
+   {:name "uninstall" :summary "Remove the Isaac launchd service" :run run-uninstall}
+   {:name "start" :summary "Start the Isaac service" :run run-start}
+   {:name "stop" :summary "Stop the Isaac service" :run run-stop}
+   {:name "restart" :summary "Restart the Isaac service" :run run-restart}
+   {:name "status" :summary "Show the Isaac service status" :run run-status}
+   {:name "logs" :summary "Tail Isaac service logs" :run run-logs}])
 
 (def ^:private subcommands-by-name
   (into {} (map (juxt :name identity) subcommands)))
@@ -115,3 +116,11 @@
     (if (or (empty? args) (#{"--help" "-h"} (first args)))
       (do (println (cli/command-help (cli/get-command "service"))) 0)
       (dispatch (first args) (assoc opts :_raw-args (vec (rest args)))))))
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :service [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/subcommands :service [_id]
+  subcommands)

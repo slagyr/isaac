@@ -1,5 +1,6 @@
 (ns isaac.session.cli
   (:require
+    [isaac.cli.api :as cli-api]
     [c3kit.apron.schema :as schema]
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -397,3 +398,11 @@
           (run (merge (dissoc opts :_raw-args) options)))))))
 
 ;; endregion ^^^^^ Command ^^^^^
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :sessions [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :sessions [_id]
+  option-spec)

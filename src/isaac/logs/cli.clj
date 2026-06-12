@@ -1,5 +1,6 @@
 (ns isaac.logs.cli
   (:require
+    [isaac.cli.api :as cli-api]
     [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
@@ -52,3 +53,11 @@
                                #(tools-cli/parse-opts % option-spec)
                                run
                                opts))
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :logs [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :logs [_id]
+  option-spec)

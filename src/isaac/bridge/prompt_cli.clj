@@ -1,5 +1,6 @@
 (ns isaac.bridge.prompt-cli
   (:require
+    [isaac.cli.api :as cli-api]
     [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
@@ -173,3 +174,11 @@
 
       :else
       (run (merge (dissoc opts :_raw-args) options)))))
+
+;; ----- :isaac/cli berth implementation -----
+
+(defmethod cli-api/run :prompt [_id opts]
+  (run-fn opts))
+
+(defmethod cli-api/option-spec :prompt [_id]
+  option-spec)
