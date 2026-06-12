@@ -20,7 +20,7 @@
 
 (defn- core-manifest-cli-command-names []
   (->> ["src/isaac-manifest.edn" "resources/isaac-manifest.edn"]
-       (mapcat (fn [path] (:cli (edn/read-string (slurp path)))))
+       (mapcat (fn [path] (:isaac/cli (edn/read-string (slurp path)))))
        (map :name)
        set))
 
@@ -218,13 +218,13 @@
                         ;; contribution from the user module.
                         {:index {:isaac.core {:manifest {:id      :isaac.core
                                                          :version "1"
-                                                         :berths  {:cli {:description "CLI commands"
+                                                         :berths  {:isaac/cli {:description "CLI commands"
                                                                          :manifest     {:schema {:type :seq
                                                                                                  :spec {:type    :map
                                                                                                         :factory 'isaac.cli.registry/register-cli-command!}}}}}}}
                                  :hello      {:manifest {:id      :hello
                                                          :version "1"
-                                                         :cli     [{:name "greet" :desc "Greets"
+                                                         :isaac/cli [{:name "greet" :desc "Greets"
                                                                     :usage "greet"
                                                                     :run-fn 'isaac.main-spec/greet-run-fn}]}}}})]
           (@#'sut/register-module-cli-commands! "/tmp/home/.isaac" mem))

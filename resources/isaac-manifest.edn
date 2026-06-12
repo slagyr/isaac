@@ -53,7 +53,7 @@
                                                                                                                  :schema        {:type :any}
                                                                                                                  :configurable? {:type :boolean}}}}}}}
 
- :cli                            [{:name        "auth"
+ :isaac/cli                      [{:name        "auth"
                                    :usage       "auth <subcommand> [options]"
                                    :desc        "Manage authentication credentials"
                                    :option-spec isaac.llm.auth.cli/option-spec

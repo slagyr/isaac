@@ -410,8 +410,8 @@
     ;; register-route!. The activate!-side tests that lived here are
     ;; gone with the dispatch they tested.
 
-    ;; activate! used to register manifest :cli entries via
-    ;; register-cli-extension!. Phase 4 of the berth epic moved :cli
+    ;; activate! used to register manifest cli entries via
+    ;; register-cli-extension!. The berth epic moved :isaac/cli
     ;; into the berth pass (process-manifest-berths!), so the
     ;; activate!-side handling is gone. Coverage for the new path
     ;; lives under the "process-manifest-berths!" describe above.
