@@ -23,7 +23,15 @@
            (should= nil (sut/target-root+path! {:root "/tmp/home/.isaac"} nil)))
          (should (str/includes? (str err) "missing path")))))
 
-   (describe "handle-mutate-result!"
+   (describe "parse-set-value"
+
+    (it "keywordizes a bare word when the target field is an id"
+      (should= :gpt (sut/parse-set-value {:type :id} "gpt")))
+
+    (it "leaves a bare word as a string when the target field is a plain string"
+      (should= "gpt" (sut/parse-set-value {:type :string} "gpt"))))
+
+  (describe "handle-mutate-result!"
 
      (it "logs successful set and unset operations"
         (let [logged (atom [])]

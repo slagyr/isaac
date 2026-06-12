@@ -10,6 +10,7 @@
     [isaac.config.paths :as paths]
     [isaac.spec-helper :as helper]
     [isaac.config.loader :as sut]
+    [isaac.schema.lexicon :as lexicon]
     [isaac.config.validation :as validation]
     [isaac.fs :as fs]
     [isaac.module.loader :as module-loader]
@@ -97,7 +98,7 @@
                     sut/read-edn-string      (fn [_ _] {:crew {:main {}}})
                     sut/resolve-cron-prompts (fn [_ _] {:cron nil :errors []})
                     sut/top-level-warnings   (fn [_] [{:key "overlay" :value "warning"}])
-                    cs/conform               (fn [_ _] :ok)
+                    lexicon/conform               (fn [_ _] :ok)
                     cs/error?                (constantly false)]
         (let [result (#'sut/load-root-config marigold/home {:substitute-env? true})]
           (should= {:crew {:main {}}} (:data result))
@@ -126,7 +127,7 @@
                                                  {:cron   {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}
                                                   :errors [{:key "cron.health-check.prompt" :value "bad prompt"}]})
                       sut/top-level-warnings   (fn [_] [{:key "root" :value "warning"}])
-                      cs/conform               (fn [_ data]
+                      lexicon/conform               (fn [_ data]
                                                  (if (= data {:model :llama})
                                                    {:defaults-error true}
                                                    :ok))
@@ -176,7 +177,7 @@
         (with-redefs [sut/overlay-for          (constantly nil)
                       sut/resolve-cron-prompts (fn [_ data] {:cron (:cron data) :errors []})
                       sut/top-level-warnings   (constantly [])
-                      cs/conform               (fn [_ _] :ok)
+                      lexicon/conform               (fn [_ _] :ok)
                       cs/error?                (constantly false)]
           (nexus/-with-nexus {:fs mem}
             (let [result (#'sut/load-root-config root {:substitute-env? true})]
@@ -262,7 +263,7 @@
                     sut/resolve-crew-soul            (fn [_ data _] {:data data :error nil})
                     sut/collect-unknown-key-warnings (fn [& _] [{:key (str test-crew-path ".extra") :value "unknown key"}])
                     sut/schema-for                   (fn [_] ::crew)
-                    cs/conform                       (fn [_ data] data)
+                    lexicon/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
         (let [result (#'sut/load-entity-file {:config {:crew {test-crew {:model "echo"}}}
                                               :root   {:crew {test-crew {:model "echo"}}}
@@ -286,7 +287,7 @@
                     sut/resolve-crew-soul            (fn [_ data _] {:data (assoc data :soul "You are Cordelia.") :error nil})
                     sut/collect-unknown-key-warnings (fn [& _] [])
                     sut/schema-for                   (fn [_] ::crew)
-                    cs/conform                       (fn [_ data] data)
+                    lexicon/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
                                              marigold/home
@@ -303,7 +304,7 @@
                     sut/resolve-crew-soul            (fn [_ data _] {:data data :error nil})
                     sut/collect-unknown-key-warnings (fn [& _] [])
                     sut/schema-for                   (fn [_] ::crew)
-                    cs/conform                       (fn [_ _] {:error :invalid})
+                    lexicon/conform                       (fn [_ _] {:error :invalid})
                     cs/error?                        map?
                     validation/schema-error-entries    (fn [prefix _] [{:key prefix :value "invalid schema"}])]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
@@ -321,7 +322,7 @@
                     sut/resolve-crew-soul            (fn [_ data _] {:data (assoc data :soul "Overlay soul") :error nil})
                     sut/collect-unknown-key-warnings (fn [& _] [])
                     sut/schema-for                   (fn [_] ::crew)
-                    cs/conform                       (fn [_ data] data)
+                    lexicon/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
                                              marigold/home
@@ -339,7 +340,7 @@
                                                                          :errors [{:key "hooks.webhook.template" :value "warn"}]})
                     sut/collect-unknown-key-warnings (fn [& _] [])
                     sut/schema-for                   (fn [_] ::hook)
-                    cs/conform                       (fn [_ data] data)
+                    lexicon/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
                                              marigold/home
@@ -365,7 +366,7 @@
         (with-redefs [module-loader/discover! (fn [config _context]
                                                 (swap! events conj [:discover (:modules config)])
                                                 {:index {} :errors []})
-                      cs/conform              (fn [_ data]
+                      lexicon/conform              (fn [_ data]
                                                 (swap! events conj [:conform data])
                                                 data)
                       cs/error?               (constantly false)]
@@ -745,7 +746,7 @@
   (describe "normalize-config"
 
     (it "normalizes modern map-based sections and preserves optional top-level config"
-      (with-redefs [cs/conform (fn [_ value] value)
+      (with-redefs [lexicon/conform (fn [_ value] value)
                     cs/error?  (constantly false)]
         (let [helm-kw (keyword marigold/helm-systems)
               cfg     {:defaults            {:crew :main :model :grover}
@@ -781,7 +782,7 @@
           (should= (:modules cfg) (:modules result)))))
 
     (it "normalizes legacy crew lists nested models and provider vectors"
-      (with-redefs [cs/conform (fn [_ value] value)
+      (with-redefs [lexicon/conform (fn [_ value] value)
                     cs/error?  (constantly false)]
         (let [helm-kw (keyword marigold/helm-systems)
               cfg     {:crew   {:defaults {:crew :main :model :grover}

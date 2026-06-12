@@ -13,12 +13,12 @@
     (it "returns ok with spec for a known scalar path"
       (let [result (sut/path->spec root "defaults.crew")]
         (should (:ok? result))
-        (should= :string (:type (:spec result)))))
+        (should= :id (:type (:spec result)))))
 
     (it "returns ok with spec for a crew entity path"
       (let [result (sut/path->spec root "crew.joe.model")]
         (should (:ok? result))
-        (should= :string (:type (:spec result)))))
+        (should= :id (:type (:spec result)))))
 
     (it "returns ok for an effort path (int type)"
       (let [result (sut/path->spec root "crew.joe.effort")]

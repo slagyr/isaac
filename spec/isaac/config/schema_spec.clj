@@ -1,6 +1,7 @@
 (ns isaac.config.schema-spec
   (:require
     [c3kit.apron.schema :as schema]
+    [isaac.schema.lexicon :as lexicon]
     [isaac.marigold :as marigold]
     [isaac.config.schema :as sut]
     [speclj.core :refer :all]))
@@ -33,7 +34,7 @@
 
     (it "defaults conforms keyword ids to strings"
       (should= {:crew "main" :model test-model-id}
-               (schema/conform (runtime-spec sut/defaults) {:crew :main :model (keyword test-model-id)})))
+               (lexicon/conform (runtime-spec sut/defaults) {:crew :main :model (keyword test-model-id)})))
 
     (it "crew conforms with tools nested"
       (should= {:id    marigold/first-mate
@@ -41,7 +42,7 @@
                  :soul  "You are Cordelia."
                  :tools {:allow       [:read :write]
                           :directories [:cwd "/tmp/playground"]}}
-               (schema/conform (runtime-spec sut/crew)
+               (lexicon/conform (runtime-spec sut/crew)
                                 {:id    (keyword marigold/first-mate)
                                  :model (keyword test-model-id)
                                  :soul  "You are Cordelia."
@@ -51,23 +52,23 @@
     (it "crew conforms with context-mode"
       (should= {:context-mode :reset
                 :model        test-model-id}
-               (schema/conform (runtime-spec sut/crew)
+               (lexicon/conform (runtime-spec sut/crew)
                                 {:context-mode :reset
                                  :model        (keyword test-model-id)})))
 
     (it "crew conforms with max-in-flight"
       (should= {:max-in-flight 3}
-               (schema/conform (runtime-spec sut/crew)
+               (lexicon/conform (runtime-spec sut/crew)
                                {:max-in-flight 3})))
 
     (it "crew conforms with tags"
       (should= {:tags #{:project/chess :role/worker}}
-               (schema/conform (runtime-spec sut/crew)
+               (lexicon/conform (runtime-spec sut/crew)
                                {:tags #{:role/worker :project/chess}})))
 
     (it "model conforms with all required + optional fields"
       (should= {:id test-model-id :model marigold/helm-mark-iii :provider test-provider-id :context-window 128000}
-               (schema/conform (runtime-spec sut/model)
+               (lexicon/conform (runtime-spec sut/model)
                                 {:id             (keyword test-model-id)
                                  :model          marigold/helm-mark-iii
                                  :provider       (keyword test-provider-id)
@@ -75,7 +76,7 @@
 
     (it "provider conforms including string→string headers"
       (should= {:base-url "https://api" :api marigold/helm-api :auth "oauth-device" :headers {"X-Foo" "bar"}}
-               (schema/conform (runtime-spec sut/provider)
+               (lexicon/conform (runtime-spec sut/provider)
                                 {:base-url "https://api"
                                  :api      marigold/helm-api
                                  :auth     "oauth-device"
@@ -85,21 +86,21 @@
       (should= {:proxy-max-reconnects 5
                 :proxy-reconnect-delay-ms 1000
                 :proxy-reconnect-max-delay-ms 5000}
-               (schema/conform sut/acp {:proxy-max-reconnects 5
+               (lexicon/conform sut/acp {:proxy-max-reconnects 5
                                         :proxy-reconnect-delay-ms 1000
                                         :proxy-reconnect-max-delay-ms 5000})))
 
     (it "server conforms"
       (should= {:host "localhost" :port 8080}
-               (schema/conform sut/server {:host "localhost" :port 8080})))
+               (lexicon/conform sut/server {:host "localhost" :port 8080})))
 
     (it "server conforms with nested auth token"
       (should= {:host "localhost" :auth {:token "s3cr3t"}}
-               (schema/conform sut/server {:host "localhost" :auth {:token "s3cr3t"}})))
+               (lexicon/conform sut/server {:host "localhost" :auth {:token "s3cr3t"}})))
 
     (it "gateway ignores retired auth keys during conformance"
       (should= {:host "0.0.0.0" :port 6674}
-               (schema/conform sut/gateway
+               (lexicon/conform sut/gateway
                                 {:host "0.0.0.0" :port 6674
                                  :auth {:mode :token :token "secret"}})))
 
@@ -109,7 +110,7 @@
                  :models    {test-model-id {:model marigold/helm-mark-iii :provider test-provider-id}}
                  :providers {test-provider-id {:base-url "http://localhost:11434"}}
                  :prefer-entity-files false}
-               (schema/conform (runtime-spec sut/root)
+               (lexicon/conform (runtime-spec sut/root)
                                 {:defaults  {:crew :main :model (keyword test-model-id)}
                                  :crew      {"main" {:soul "You are Isaac."}}
                                  :models    {test-model-id {:model marigold/helm-mark-iii :provider (keyword test-provider-id)}}
@@ -121,7 +122,7 @@
                 :cron {"health-check" {:expr  "0 9 * * *"
                                         :crew  "main"
                                         :prompt "Run the health checkin."}}}
-               (schema/conform (runtime-spec sut/root)
+               (lexicon/conform (runtime-spec sut/root)
                                  {:tz   "America/Chicago"
                                   :cron {"health-check" {:expr  "0 9 * * *"
                                                           :crew  :main
@@ -130,49 +131,49 @@
   (describe "custom validation"
 
     (it "tools.:directories rejects a non-:cwd keyword"
-      (let [result (schema/conform (runtime-spec sut/tools) {:directories [:not-cwd]})]
+      (let [result (lexicon/conform (runtime-spec sut/tools) {:directories [:not-cwd]})]
         (should (schema/error? result))))
 
     (it "tools.:directories rejects non-keyword non-string entries"
-      (let [result (schema/conform (runtime-spec sut/tools) {:directories [42]})]
+      (let [result (lexicon/conform (runtime-spec sut/tools) {:directories [42]})]
         (should (schema/error? result))))
 
     (it "crew accepts an absolute :cwd path"
-      (let [result (schema/conform (runtime-spec sut/crew) {:cwd "/lab/world-domination"})]
+      (let [result (lexicon/conform (runtime-spec sut/crew) {:cwd "/lab/world-domination"})]
         (should-not (schema/error? result))
         (should= "/lab/world-domination" (:cwd result))))
 
     (it "crew rejects a relative :cwd path"
-      (let [result (schema/conform (runtime-spec sut/crew) {:cwd "cheese-helmets"})]
+      (let [result (lexicon/conform (runtime-spec sut/crew) {:cwd "cheese-helmets"})]
         (should (schema/error? result))
         (should= "must be an absolute path"
                  (get-in (schema/message-map result) [:cwd]))))
 
     (it "crew allows nil :cwd"
-      (let [result (schema/conform (runtime-spec sut/crew) {})]
+      (let [result (lexicon/conform (runtime-spec sut/crew) {})]
         (should-not (schema/error? result))
         (should-be-nil (:cwd result))))
 
     (it "crew rejects unknown context-mode values"
-      (let [result (schema/conform sut/crew {:context-mode :ponder})]
+      (let [result (lexicon/conform sut/crew {:context-mode :ponder})]
         (should (schema/error? result))
         (should= "must be one of :full, :reset"
                  (get-in (schema/message-map result) [:context-mode]))))
 
     (it "crew rejects non-positive max-in-flight"
-      (let [result (schema/conform sut/crew {:max-in-flight 0})]
+      (let [result (lexicon/conform sut/crew {:max-in-flight 0})]
         (should (schema/error? result))
         (should= "must be a positive integer"
                  (get-in (schema/message-map result) [:max-in-flight]))))
 
     (it "crew rejects non-keyword tags"
-      (let [result (schema/conform sut/crew {:tags #{"worker"}})]
+      (let [result (lexicon/conform sut/crew {:tags #{"worker"}})]
         (should (schema/error? result))
         (should= "must be a set of keywords"
                  (get-in (schema/message-map result) [:tags]))))
 
     (it "root rejects invalid types with per-field errors"
-       (let [result (schema/conform (runtime-spec sut/root)
+       (let [result (lexicon/conform (runtime-spec sut/root)
                                     {:providers {test-provider-id {:headers 42}}
                                      :server    {:port "not-a-number"}})]
         (should (schema/error? result))

@@ -524,7 +524,7 @@ Feature: Config Command
     Then the stdout matches:
       | pattern                                           |
       | \[crew\.value\] crew schema                          |
-      | model\s+string\s+\[crew\.value\.model\]               |
+      | model\s+id\s+\[crew\.value\.model\]                   |
       | soul\s+string\s+\[crew\.value\.soul\]                 |
     And the exit code is 0
 
@@ -550,7 +550,7 @@ Feature: Config Command
     Then the stdout matches:
       | pattern                                           |
       | \[crew\.value\.id\] schema                            |
-      | string\s+\[crew\.value\.id\]                          |
+      | id\s+\[crew\.value\.id\]                              |
       | Crew member id; must match filename when present  |
     And the exit code is 0
 

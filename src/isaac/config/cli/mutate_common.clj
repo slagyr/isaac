@@ -25,7 +25,7 @@
     (str/starts-with? raw-value ":")
     (edn/read-string raw-value)
 
-    (and spec (:coerce spec) (re-matches #"[A-Za-z_][A-Za-z0-9_-]*" raw-value))
+    (and spec (= :id (:type spec)) (re-matches #"[A-Za-z_][A-Za-z0-9_-]*" raw-value))
     (keyword raw-value)
 
     :else

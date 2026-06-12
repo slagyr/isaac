@@ -19,13 +19,11 @@
   {:name        :defaults
    :type        :map
    :description "Default crew and model selections"
-   :schema      {:crew   {:type        :string
-                          :coerce      [->id]
+   :schema      {:crew   {:type        :id
                           :default     "main"
                           :description "Default crew member id"
                           :validations [:crew-exists?]}
-                 :model  {:type        :string
-                          :coerce      [->id]
+                 :model  {:type        :id
                           :default     "llama"
                           :description "Default model alias"
                           :validations [:model-exists?]}
@@ -60,15 +58,12 @@
 (def crew
   {:name   :crew
    :type   :map
-   :schema {:id         {:type        :string
-                         :coerce      [->id]
+   :schema {:id         {:type        :id
                          :description "Crew member id; must match filename when present"}
-            :model      {:type        :string
-                         :coerce      [->id]
+            :model      {:type        :id
                          :description "ID of the model this crew member uses."
                          :validations [:model-exists?]}
-            :provider   {:type        :string
-                         :coerce      [->id]
+            :provider   {:type        :id
                          :description "Provider id for direct provider/model crews"
                          :validations [[:registered-in? :isaac.server/provider [:providers]]]}
             :soul       {:type        :string
@@ -102,16 +97,14 @@
 (def model
   {:name   :model
    :type   :map
-   :schema {:id                  {:type        :string
-                                  :coerce      [->id]
+   :schema {:id                  {:type        :id
                                   :description "Model alias; must match filename when present"}
             :model               {:type        :string
                                   :description "Provider-specific model name or id"
                                   :required?   true
                                   :validate    schema/present?
                                   :message     "must be present"}
-            :provider            {:type        :string
-                                  :coerce      [->id]
+            :provider            {:type        :id
                                   :description "Provider alias"
                                   :required?   true
                                   :validate    schema/present?
@@ -138,8 +131,7 @@
 (def provider
   {:name   :provider
    :type   :map
-   :schema {:api                        {:type        :string
-                                         :coerce      [->id]
+   :schema {:api                        {:type        :id
                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
                                          :validations [[:registered-in? :isaac.server/llm-api]]}
              :auth                       {:type        :string
@@ -153,16 +145,14 @@
                                          :description "Base URL for assistant endpoints"}
             :base-url                   {:type        :string
                                          :description "API base URL"}
-            :type                       {:type        :string
-                                         :coerce      [->id]
+            :type                       {:type        :id
                                          :description "Manifest provider id to inherit template from"
                                          :validations [[:registered-in? :isaac.server/provider-template]]}
             :headers                    {:type        :map
                                          :key-spec    {:type :string}
                                          :value-spec  {:type :string}
                                          :description "Extra HTTP headers to include in requests"}
-            :id                         {:type        :string
-                                         :coerce      [->id]
+            :id                         {:type        :id
                                          :description "Provider id; must match filename when present"}
             :models                     {:type        :seq
                                          :spec        {:type :string}
@@ -214,13 +204,11 @@
 (def comm-instance
   {:name   :comm
    :type   :map
-   :schema {:type {:type        :string
-                   :coerce      [->id]
+   :schema {:type {:type        :id
                    :description "Manifest comm kind to instantiate"
                    :validations [[:registered-in? :isaac.server/comm [:comms]]]
                    :options-from :comms}
-            :crew {:type        :string
-                   :coerce      [->id]
+            :crew {:type        :id
                    :description "Crew id this comm routes into"
                    :validations [:crew-exists?]}}})
 
@@ -295,8 +283,7 @@
    :description "Cron job configuration"
    :schema      {:expr   {:type        :string
                           :description "5-field cron expression"}
-                 :crew   {:type        :string
-                          :coerce      [->id]
+                 :crew   {:type        :id
                           :description "Crew id to run the job as"
                           :validations [:crew-exists?]}
                  :prompt {:type        :string
@@ -314,15 +301,12 @@
   {:name        :hook
    :type        :map
    :description "Webhook receiver configuration"
-   :schema      {:crew        {:type        :string
-                               :coerce      [->id]
+   :schema      {:crew        {:type        :id
                                :description "Crew id to run the hook as"
                                :validations [:crew-exists?]}
-                 :id          {:type        :string
-                               :coerce      [->id]
+                 :id          {:type        :id
                                :description "Hook id; must match filename when present"}
-                 :model       {:type        :string
-                               :coerce      [->id]
+                 :model       {:type        :id
                                :description "Optional model override for the hook session"
                                :validations [:model-exists?]}
                  :session-key {:type        :string
