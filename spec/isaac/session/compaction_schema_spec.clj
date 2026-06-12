@@ -31,4 +31,10 @@
 
   (it "rejects threshold >= 1.0"
     (let [result (schema/conform sut/config-schema {:threshold 1.0 :head 0.3})]
-      (should (schema/error? result)))))
+      (should (schema/error? result))))
+
+  (it "rejects unknown compaction strategies"
+    (let [result (schema/conform sut/config-schema {:strategy :rainbow})]
+      (should (schema/error? result))
+      (should= {:strategy "must be one of :rubberband, :slinky"}
+               (schema/message-map result)))))

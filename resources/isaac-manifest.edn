@@ -201,7 +201,8 @@
                                                                                                      :head-threshold {:type        :ignore
                                                                                                                       :description "Derived: head must stay below threshold"
                                                                                                                       :validations [[:less-than? :head :threshold]]}
-                                                                                                     :strategy       {:type :keyword}
+                                                                                                     :strategy       {:type        :keyword
+                                                                                                                      :validations [[:one-of? :rubberband :slinky]]}
                                                                                                      :threshold      {:type        :double
                                                                                                                       :validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}}}
                                                                         :context-mode      {:type        :keyword
@@ -274,7 +275,8 @@
                                                                                   :head-threshold {:type        :ignore
                                                                                                    :description "Derived: head must stay below threshold"
                                                                                                    :validations [[:less-than? :head :threshold]]}
-                                                                                  :strategy       {:type :keyword}
+                                                                                  :strategy       {:type        :keyword
+                                                                                                   :validations [[:one-of? :rubberband :slinky]]}
                                                                                   :threshold      {:type        :double
                                                                                                    :validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}}}
                                                 :context-mode      {:type        :keyword
@@ -379,7 +381,8 @@
                                                                                                             :head-threshold {:type        :ignore
                                                                                                                              :description "Derived: head must stay below threshold"
                                                                                                                              :validations [[:less-than? :head :threshold]]}
-                                                                                                            :strategy       {:type :keyword}
+                                                                                                            :strategy       {:type        :keyword
+                                                                                                                             :validations [[:one-of? :rubberband :slinky]]}
                                                                                                             :threshold      {:type        :double
                                                                                                                              :validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}}}
                                                                         :context-window      {:type        :int
@@ -453,7 +456,8 @@
                                                                                                                    :head-threshold {:type        :ignore
                                                                                                                                     :description "Derived: head must stay below threshold"
                                                                                                                                     :validations [[:less-than? :head :threshold]]}
-                                                                                                                   :strategy       {:type :keyword}
+                                                                                                                   :strategy       {:type        :keyword
+                                                                                                                                    :validations [[:one-of? :rubberband :slinky]]}
                                                                                                                    :threshold      {:type        :double
                                                                                                                                     :validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}}}
                                                                         :effort                     {:type        :int
@@ -530,7 +534,6 @@
 
  :isaac.config/check             {:comm-reserved-schema {:fn isaac.config.checks/check-comm-reserved-schema}
                                   :comms                {:fn isaac.config.checks/check-comms}
-                                  :crew-compaction      {:fn isaac.config.checks/check-crew-compaction}
                                   :manifest-refs        {:fn isaac.config.checks/check-manifest-refs}
                                   :provider-types       {:fn isaac.config.checks/check-provider-types}
                                   :resolved-providers   {:fn isaac.config.checks/check-resolved-providers}

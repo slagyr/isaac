@@ -1,7 +1,8 @@
 (ns isaac.session.compaction-schema)
 
 (def config-schema
-  {:strategy       {:type :keyword}
+  {:strategy       {:type        :keyword
+                    :validations [[:one-of? :rubberband :slinky]]}
    :threshold      {:type        :double
                     :validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}
    :head           {:type        :double

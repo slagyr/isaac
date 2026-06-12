@@ -1,7 +1,6 @@
 (ns isaac.config.checks
   (:require
     [c3kit.apron.schema :as cs]
-    [clojure.string :as str]
     [isaac.config.berths :as berths]
     [isaac.config.schema-base :as schema-base]
     [isaac.config.schema-compose :as schema-compose]
@@ -188,24 +187,6 @@
                              (validation/annotation-errors* nil ["providers" (->id provider-id)] provider-schema resolved resolved nil))))
                        raw-providers))
      :warnings []}))
-
-(def ^:private valid-compaction-strategies #{:rubberband :slinky})
-
-(defn check-crew-compaction
-  [{:keys [config]}]
-  (let [crew (:crew config)]
-    (if (empty? crew)
-      {:errors [] :warnings []}
-      (reduce (fn [{:keys [errors warnings]} [crew-id crew-cfg]]
-                (let [strategy (:strategy (:compaction crew-cfg))]
-                  (if (and (some? strategy) (not (valid-compaction-strategies (keyword strategy))))
-                    {:errors   (conj errors {:key   (str "crew." (->id crew-id) ".compaction.strategy")
-                                             :value (str "must be one of: "
-                                                         (str/join ", " (sort (map name valid-compaction-strategies))))})
-                     :warnings warnings}
-                    {:errors errors :warnings warnings})))
-              {:errors [] :warnings []}
-              crew))))
 
 (defn check-manifest-refs
   [{:keys [module-index]}]
