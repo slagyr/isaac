@@ -46,6 +46,22 @@
   [f]
   (swap! isaac-run-postflights* conj f))
 
+;; Run-wrappers wrap the actual main/run call (innermost, inside the
+;; mem-fs nexus). Each is (fn [thunk] ... (thunk) ...); they compose so a
+;; server/LLM layer can inject dynamic bindings (e.g. the memory-tool
+;; clock) without the foundation-grade run wrapper depending on those vars.
+(defonce ^:private isaac-run-wrappers* (atom []))
+
+(defn register-isaac-run-wrapper!
+  "Register a wrapper (fn [thunk]) invoked around main/run. Wrappers
+   registered earlier end up outermost. Use to bind dynamic vars for the
+   duration of the run."
+  [f]
+  (swap! isaac-run-wrappers* conj f))
+
+(defn- apply-run-wrappers [thunk]
+  (reduce (fn [t wrap] (fn [] (wrap t))) thunk @isaac-run-wrappers*))
+
 (defn- interpolate-args [args]
   (cond-> args
           (g/get :server-port) (str/replace "${server.port}" (str (g/get :server-port)))
@@ -275,8 +291,8 @@
                                              (run-with-stubs))))]
                              (if-let [mem-fs (g/get :mem-fs)]
                                 (nexus/-with-nested-nexus {:fs mem-fs}
-                                  (with-current-time #(run* (assoc extra-opts :fs mem-fs))))
-                                (with-current-time #(run* extra-opts)))))
+                                  ((apply-run-wrappers #(run* (assoc extra-opts :fs mem-fs)))))
+                                ((apply-run-wrappers #(run* extra-opts))))))
          run-with-stdin   (fn []
                             (if stdin-content
                               (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
@@ -319,6 +335,14 @@
                                            grover-request)))
     (g/assoc! :llm-request (or (drive-dispatch/last-request)
                                (grover/last-request)))))
+
+;; The memory-tool clock binding is a server/tool concern, injected as a
+;; run-wrapper so the foundation run path doesn't reference isaac.tool.memory.
+(register-isaac-run-wrapper!
+  (fn [thunk]
+    (if-let [ct (g/get :current-time)]
+      (binding [memory/*now* ct] (thunk))
+      (thunk))))
 
 (defn isaac-run-background [args]
   (let [argv          (parse-argv args)
