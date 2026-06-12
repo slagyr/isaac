@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-05-21T20:58:30Z
-updated_at: 2026-06-04T10:48:20Z
+updated_at: 2026-06-12T12:51:07Z
 ---
 
 ## Motivation
@@ -381,3 +381,43 @@ Nothing existing maps cleanly to our constraints (bb-native, small, both
 CLI-and-server, Clojure end-to-end). The synthesis above is largely
 theft from the references plus the small twist of symmetric berth
 declarations.
+
+## Reshaped 2026-06-11: phases 9–10 superseded
+
+The phase 9 plan above (create an `isaac-server` module repo; the
+shrunken `isaac` repo becomes the foundation) no longer reflects the
+plan — isaac-owrh was scrapped accordingly. The new sequence:
+
+1. Extract `isaac-foundation` into its own repo FIRST. The repo now
+   exists at `~/agents/plan/isaac-foundation` (fresh, README only as
+   of 2026-06-12).
+2. Extract `isaac-server` as its own module repo.
+3. Pivot the `isaac` repo to a brew/cask distribution + module
+   catalog role — the gateway, not the foundation.
+
+Each functional piece eventually becomes its own module repo
+(isaac-hail, isaac-cron, etc. as follow-ups IF/WHEN wanted).
+
+Planned in detail 2026-06-12. The in-repo decoupling pre-work (zero
+foundation→server requires, so the cut becomes a pure file move) is
+filed as child beans, each independently green:
+
+- isaac-pl1x — decouple module.loader from isaac.llm.api
+- isaac-6q8c — add :subcommands to the :cli berth
+- isaac-0cc4 — migrate the 9 server CLI commands to manifest :cli
+  contributions
+- isaac-ptkg — split isaac.config.api (read-side vs config.runtime)
+- isaac-m37j — extract provider/crew resolution into config.resolve
+- isaac-nst5 — builtin classpath-manifest discovery (:builtin?)
+- isaac-wop6 — manifest split (:isaac.server manifest, berth by berth)
+- isaac-niku — reorder load-config-result (discovery before schema)
+- isaac-c0n8 — :isaac.config/schema contribution berth
+- isaac-t7mq — :isaac.config/check contribution berth
+- isaac-mdv0 — extract foundation-grade gherclj steps + spec_helper
+  split
+- isaac-youm — foundation boundary gate spec (the acceptance test;
+  blocked by the rest)
+
+The cut itself (populate isaac-foundation, flip isaac to the
+:isaac.server module manifest, bump consumer repos) is multi-repo and
+coordinated — done off-board, not via beans.
