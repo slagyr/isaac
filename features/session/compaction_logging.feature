@@ -140,11 +140,14 @@ Feature: Context Compaction Logging
       | model | claude-opus-4-6 |
       | provider | grover |
       | context-window | 96 |
+    # context-window kept well inside the "needs 2 compactions" plateau (≤32),
+    # not at its 33-token upper edge, so small token-count differences across
+    # environments can't tip the loop down to a single compaction (CI flake).
     And the isaac EDN file "config/models/qwen3-coder.edn" exists with:
       | path | value |
       | model | qwen3-coder:30b |
       | provider | grover |
-      | context-window | 32 |
+      | context-window | 20 |
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | qwen3-coder |
