@@ -1,10 +1,11 @@
 ---
 # isaac-wop6
 title: 'Foundation pre-work: manifest split — :isaac.server manifest, berth-by-berth move'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-06-12T12:49:54Z
-updated_at: 2026-06-12T12:49:54Z
+updated_at: 2026-06-12T15:10:50Z
 parent: isaac-brth
 blocked_by:
     - isaac-nst5
