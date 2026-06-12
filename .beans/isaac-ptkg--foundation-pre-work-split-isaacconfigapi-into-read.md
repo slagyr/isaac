@@ -4,10 +4,8 @@ title: 'Foundation pre-work: split isaac.config.api into read-side and isaac.con
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:49:21Z
-updated_at: 2026-06-12T13:42:03Z
+updated_at: 2026-06-12T13:44:08Z
 parent: isaac-brth
 ---
 
@@ -50,3 +48,14 @@ The bean's caller list named context.clj, session/store/*, charge.clj, spec_help
 - bb spec green: 1858 examples, 0 failures.
 - bb features green: 744 examples, 0 failures (the isaac-6q8c flaky --follow logs test passed this run too).
 - rg 'config.install|config.configurator|change.source' src/isaac/config/api.clj -> zero hits. (Had to reword the new ns docstring to avoid the literal phrase "change source", which the regex dot matched.)
+
+
+
+## Verification failed
+
+HEAD: 38d30486049053f3a8aa324fda55264bb3b064ed
+Working tree: clean
+
+Missing required unit spec for new production namespace `src/isaac/config/runtime.clj`. Project testing discipline in AGENTS.md requires every namespace in `src/` to have a corresponding spec in `spec/`, and says a bean is not complete if new `src/` namespaces lack corresponding `spec/` files. This bean adds `src/isaac/config/runtime.clj` but `spec/isaac/config/runtime_spec.clj` does not exist (`find spec -path "*runtime_spec.clj" -print` returned no files).
+
+The explicit grep acceptance check passed: `rg 'config\\.install|config\\.configurator|change\\.source' src/isaac/config/api.clj` returned zero hits. I did not continue to full suite closure after this blocking spec-coverage failure.
