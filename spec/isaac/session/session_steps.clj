@@ -1,6 +1,5 @@
 (ns isaac.session.session-steps
   (:require
-    [c3kit.apron.env :as c3env]
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
@@ -9,6 +8,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
     [isaac.config.runtime :as runtime]
+    [isaac.foundation.root-steps :as froot]
     [isaac.drive.dispatch :as drive-dispatch]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
@@ -51,28 +51,30 @@
 (defonce ^:private real-sidecar-create-store
   (var-get #'sidecar-store/create-store))
 
-(defonce ^:private real-module-roots* (atom #{}))
-
 (g/after-scenario
   (fn []
     (alter-var-root #'sidecar-store/create-store (constantly real-sidecar-create-store))))
 
-(g/after-scenario
-  (fn []
-    (doseq [path @real-module-roots*]
-      (let [dir (io/file path)]
-        (when (.exists dir)
-          (doseq [f (reverse (file-seq dir))]
-            (.delete f)))))
-    (reset! real-module-roots* #{})))
+;; The foundation root setup (isaac.foundation.root-steps/initialize-root!)
+;; runs the foundation-grade reset; register the server-side teardown so
+;; 'an empty Isaac root at' still resets runtime state and installs the
+;; in-memory session store.
+(froot/register-root-setup-hook!
+  (fn [abs-dir]
+    (grover/reset-queue!)
+    (drive-dispatch/clear-last-request!)
+    (bridge-cancel/clear!)
+    (reset! comm-registry/*registry* (comm-registry/fresh-registry))
+    (when-let [ns-obj (find-ns 'isaac.comm.telly)]
+      (remove-ns (ns-name ns-obj)))
+    (tool-registry/clear!)
+    (single-turn/clear-async-compactions!)
+    (let [mem-store (memory-store/create-store abs-dir)]
+      (store/register-store! mem-store)
+      (alter-var-root #'sidecar-store/create-store (constantly (fn [& _] mem-store))))))
 
 ;; region ----- Helpers -----
 
-(defn- clean-dir! [path]
-  (let [dir (io/file path)]
-    (when (.exists dir)
-      (doseq [f (-> dir file-seq reverse butlast)]
-        (.delete f)))))
 
 (defn- root-dir []
   (or (g/get :runtime-root-dir)
@@ -422,94 +424,11 @@
 
 ;; region ----- Given: Infrastructure -----
 
-(defn- seed-cwd-files! [mem]
-  (let [cwd (System/getProperty "user.dir")
-        agents-md (str cwd "/AGENTS.md")]
-    (when (.exists (io/file agents-md))
-      (fs/spit mem agents-md (slurp agents-md)))))
 
-(defn- ->root [dir virtual?]
-  (if (str/starts-with? dir "/")
-    dir
-    (if (or virtual? (not (str/includes? dir "/")))
-      (str "/" dir)
-      (str (System/getProperty "user.dir") "/" dir))))
-
-(def ^:private minimal-config
-  {:defaults  {:crew "main"
-               :model "llama"}
-   :crew      {"main" {}}
-   :models    {"llama" {:model          "llama3.3:1b"
-                         :provider       "ollama"
-                          :context-window 32768}}
-   :providers {"ollama" {:api      "ollama"
-                          :base-url "http://localhost:11434"}}})
-
-(defn- seed-minimal-config! [root]
-  (let [config-path (str root "/config/isaac.edn")
-        fs*         (mem-fs)]
-    (fs/mkdirs fs* (fs/parent config-path))
-    (fs/spit   fs* config-path (pr-str minimal-config))
-    (invalidate-feature-config!)))
-
-(defn- initialize-root! [path virtual?]
-  (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
-              (subs path 1 (dec (count path)))
-              path)
-        abs-dir  (->root dir virtual?)
-        mem      (when virtual? (fs/mem-fs))]
-    (g/reset!)
-    (grover/reset-queue!)
-    (reset! c3env/-overrides {})
-    (config/clear-env-overrides!)
-    (nexus/reset!)
-    (drive-dispatch/clear-last-request!)
-    (bridge-cancel/clear!)
-    (module-loader/clear-activations!)
-    (reset! comm-registry/*registry* (comm-registry/fresh-registry))
-    (when-let [ns-obj (find-ns 'isaac.comm.telly)]
-      (remove-ns (ns-name ns-obj)))
-    (tool-registry/clear!)
-    (single-turn/clear-async-compactions!)
-    (log/set-output! :memory)
-    (log/clear-entries!)
-    (if virtual?
-      (do
-        (seed-cwd-files! mem)
-        (fs/mkdirs mem abs-dir)
-        (g/assoc! :mem-fs mem))
-      (do
-        (clean-dir! abs-dir)
-        (g/dissoc! :mem-fs)))
-    (let [mem-store (memory-store/create-store abs-dir)]
-      (nexus/register! [:fs] (or mem (fs/real-fs)))
-      (nexus/register! [:root] abs-dir)
-      (store/register-store! mem-store)
-      ;; Stub must accept all real arities — session/context calls with
-       ;; (root nil fs*) (3 args), other callers with 1 or 2.
-       (alter-var-root #'sidecar-store/create-store (constantly (fn [& _] mem-store)))
-      (g/assoc! :root abs-dir))))
-
-(defn empty-state [path]
-  (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
-              (subs path 1 (dec (count path)))
-              path)]
-    (initialize-root! path (or (not (or (str/starts-with? dir "/")
-                                             (str/includes? dir "/")))
-                                    (= "/test" dir)
-                                    (str/starts-with? dir "/test/")))))
-
-(defn empty-state-directory
-  "Like empty-state but always virtual / mem-fs. Useful when the scenario
-   writes module fixtures at sibling paths (e.g. /tmp/modules/...) that
-   wouldn't trigger the /test heuristic but still need to live in the
-   in-memory fs."
-  [path]
-  (initialize-root! path true))
-
-(defn in-memory-state [path]
-  (initialize-root! path true)
-  (with-feature-fs #(seed-minimal-config! (root-dir))))
+;; initialize-root! ("an empty Isaac root at" etc.), empty-state,
+;; empty-state-directory, in-memory-state moved to
+;; isaac.foundation.root-steps. The server-side teardown that initialize-root!
+;; runs is registered via froot/register-root-setup-hook! above.
 
 (defn- write-grover-defaults! []
   (let [root (str (root-dir) "/config")
@@ -529,11 +448,11 @@
     (invalidate-feature-config!)))
 
 (defn default-grover-setup []
-  (initialize-root! "target/test-state" true)
+  (froot/initialize-root! "target/test-state" true)
   (with-feature-fs write-grover-defaults!))
 
 (defn default-grover-setup-in [dir]
-  (initialize-root! dir true)
+  (froot/initialize-root! dir true)
   (with-feature-fs write-grover-defaults!))
 
 (defn crew-has-tools [table]
@@ -988,18 +907,8 @@
 
 ;; file-exists-with ("the file X exists with:") moved to isaac.foundation.fs-steps.
 
-(defn module-manifest-exists [path content]
-  (with-feature-fs
-    (fn []
-      (let [abs-path (if (str/starts-with? path "/")
-                       path
-                       (str (System/getProperty "user.dir") "/" path))
-            module-root (some-> abs-path io/file .getParentFile .getParentFile .getPath)
-            fs*         (mem-fs)]
-        (when module-root
-          (swap! real-module-roots* conj module-root))
-        (fs/mkdirs fs* (fs/parent abs-path))
-        (fs/spit   fs* abs-path content)))))
+;; module-manifest-exists ("a module manifest ...:") moved to
+;; isaac.foundation.root-steps.
 
 (defn given-file-contains [path content]
   (with-feature-fs
@@ -1362,23 +1271,8 @@
 
 ;; region ----- Routing -----
 
-(defgiven "an empty Isaac root at {string}" isaac.session.session-steps/empty-state
-  "Real-fs root when path is absolute or contains '/'; in-memory
-   otherwise. Clean slate — deletes any existing content first. No
-   config files are seeded. Use 'an Isaac root at' if the scenario
-   needs a seeded minimal config.")
-
-(defgiven "an empty Isaac state directory {string}" isaac.session.session-steps/empty-state-directory
-  "Always virtual / mem-fs at the given path. Same intent as
-   'an empty Isaac root at' but bypasses the real-fs heuristic so a
-   scenario can put fixtures at arbitrary paths (e.g. /tmp/modules/...)
-   without touching disk.")
-
-(defgiven "an Isaac root at {string}" isaac.session.session-steps/in-memory-state
-  "Virtual fs (mem-fs) rooted at the given path. Seeds a minimal
-   isaac.edn at <path>/.isaac/config/isaac.edn so config loaders have
-   something to parse. For a bare root without the seed, use
-   'an empty Isaac root at'.")
+;; "an (empty) Isaac root at" / "an empty Isaac state directory" routing
+;; moved to isaac.foundation.root-steps.
 
 (defgiven "default Grover setup" isaac.session.session-steps/default-grover-setup
   "One-line Background: in-memory state dir at target/test-state plus
@@ -1501,10 +1395,6 @@
    Does NOT actually run a turn — no LLM is called, no transcript is
    mutated. Use for asserting prompt shape on its own.")
 
-
-(defgiven #"a module manifest \"([^\"]+)\":$" isaac.session.session-steps/module-manifest-exists)
-
-(defgiven #"a module manifest at \"([^\"]+)\":$" isaac.session.session-steps/module-manifest-exists)
 
 (defgiven #"file \"([^\"]+)\" contains \"([^\"]*)\"" isaac.session.session-steps/given-file-contains)
 
