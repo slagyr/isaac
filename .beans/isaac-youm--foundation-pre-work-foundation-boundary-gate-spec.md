@@ -1,13 +1,11 @@
 ---
 # isaac-youm
 title: 'Foundation pre-work: foundation boundary gate spec'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:50:49Z
-updated_at: 2026-06-12T16:29:48Z
+updated_at: 2026-06-12T16:35:45Z
 parent: isaac-brth
 blocked_by:
     - isaac-0cc4
