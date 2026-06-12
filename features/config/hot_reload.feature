@@ -69,7 +69,7 @@ Feature: Config hot-reload
       | context-window | 32768  |
     Then the log has entries matching:
       | level  | event                 | path              | reason      | error                               |
-      | :error | :config/reload-failed | models/grover.edn | :validation | models.grover.model must be present |
+      | :error | :config/reload-failed | models/grover.edn | :validation | models.grover.model is required |
     And the loaded config has:
       | key                 | value |
       | models.grover.model | echo  |

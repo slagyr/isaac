@@ -131,11 +131,11 @@
   (describe "custom validation"
 
     (it "tools.:directories rejects a non-:cwd keyword"
-      (let [result (lexicon/conform (runtime-spec sut/tools) {:directories [:not-cwd]})]
+      (let [result (lexicon/conform sut/tools {:directories [:not-cwd]})]
         (should (schema/error? result))))
 
     (it "tools.:directories rejects non-keyword non-string entries"
-      (let [result (lexicon/conform (runtime-spec sut/tools) {:directories [42]})]
+      (let [result (lexicon/conform sut/tools {:directories [42]})]
         (should (schema/error? result))))
 
     (it "crew accepts an absolute :cwd path"
@@ -144,7 +144,7 @@
         (should= "/lab/world-domination" (:cwd result))))
 
     (it "crew rejects a relative :cwd path"
-      (let [result (lexicon/conform (runtime-spec sut/crew) {:cwd "cheese-helmets"})]
+      (let [result (lexicon/conform sut/crew {:cwd "cheese-helmets"})]
         (should (schema/error? result))
         (should= "must be an absolute path"
                  (get-in (schema/message-map result) [:cwd]))))

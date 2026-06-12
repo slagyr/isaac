@@ -10,9 +10,6 @@
 (def schema-fields schema-base/schema-fields)
 (def strip-validation-annotations schema-base/strip-validation-annotations)
 
-(defn- addressed-band? [band]
-  (some (comp seq band) [:crew :crew-tags :session :session-tags]))
-
 ;; region ----- Entity Schemas -----
 
 (def defaults
@@ -28,15 +25,13 @@
                           :description "Default model alias"
                           :validations [:model-exists?]}
                  :context-mode {:type        :keyword
-                                :validate    #(or (nil? %) (contains? #{:full :reset} %))
-                                :message     "must be one of :full, :reset"
+                                :validations [[:one-of? :full :reset]]
                                 :description "Default transcript replay mode for new turns"}
                  :compaction {:type        :map
                               :schema      compaction-schema/config-schema
                               :description "Default compaction policy for sessions"}
                  :history-retention {:type        :keyword
-                                     :validate    #(or (nil? %) (contains? #{:prune :retain} %))
-                                     :message     "must be one of :prune, :retain"
+                                     :validations [[:one-of? :prune :retain]]
                                      :description "Default transcript history retention policy for new sessions"}
                   :effort {:type        :int
                            :description "Default effort level (0-10) when not overridden by provider/model/crew/session"}}})
@@ -51,8 +46,7 @@
                                :description "Allowed tool names"}
                  :directories {:type        :seq
                                :spec        {:type     :ignore
-                                             :validate #(or (= :cwd %) (string? %))
-                                             :message  "must be :cwd or an absolute path string"}
+                                             :validations [:cwd-or-path?]}
                                :description "Allowed directories; :cwd expands to session cwd, strings are absolute paths"}}})
 
 (def crew
@@ -69,29 +63,24 @@
             :soul       {:type        :string
                          :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
             :context-mode {:type        :keyword
-                           :validate    #(or (nil? %) (contains? #{:full :reset} %))
-                           :message     "must be one of :full, :reset"
+                           :validations [[:one-of? :full :reset]]
                            :description "How much transcript history to replay each turn"}
             :history-retention {:type        :keyword
-                                :validate    #(or (nil? %) (contains? #{:prune :retain} %))
-                                :message     "must be one of :prune, :retain"
+                                :validations [[:one-of? :prune :retain]]
                                 :description "Transcript history retention policy for new sessions"}
              :effort     {:type        :int
                           :description "Effort level override for this crew member (0-10)"}
              :max-in-flight {:type        :int
-                             :validate    #(or (nil? %) (pos-int? %))
-                             :message     "must be a positive integer"
+                             :validations [:positive?]
                              :description "Maximum concurrent in-flight turns for this crew member"}
              :cwd        {:type        :string
-                          :validate    #(or (nil? %) (and (string? %) (str/starts-with? % "/")))
-                          :message     "must be an absolute path"
+                          :validations [:absolute-path?]
                           :description "Default workdir for new sessions on this crew"}
             :tools      tools
             :compaction {:type :map :schema compaction-schema/config-schema}
             :tags       {:type        :ignore
                          :set-type?   true
-                         :validate    #(or (nil? %) (and (set? %) (every? keyword? %)))
-                         :message     "must be a set of keywords"
+                         :validations [:keyword-set?]
                          :description "Flat set of keyword tags for discovery and routing"}}})
 
 (def model
@@ -102,22 +91,18 @@
             :model               {:type        :string
                                   :description "Provider-specific model name or id"
                                   :required?   true
-                                  :validate    schema/present?
-                                  :message     "must be present"}
+                                  :validations [:present?]}
             :provider            {:type        :id
                                   :description "Provider alias"
                                   :required?   true
-                                  :validate    schema/present?
-                                  :message     "must be present"
-                                  :validations [[:registered-in? :isaac.server/provider [:providers]]]}
+                                  :validations [:present? [:registered-in? :isaac.server/provider [:providers]]]}
              :context-window      {:type        :int
                                    :description "Context window size in tokens"}
             :compaction          {:type        :map
                                   :schema      compaction-schema/config-schema
                                   :description "Compaction policy override for this model"}
              :history-retention   {:type        :keyword
-                                   :validate    #(or (nil? %) (contains? #{:prune :retain} %))
-                                   :message     "must be one of :prune, :retain"
+                                   :validations [[:one-of? :prune :retain]]
                                   :description "Transcript history retention policy for sessions created against this model"}
             :effort              {:type        :int
                                   :description "Effort level override for this model (0-10)"}
@@ -175,8 +160,7 @@
             :token                      {:type        :string
                                          :description "Authentication token (alias for api-key)"}
             :history-retention          {:type        :keyword
-                                         :validate    #(or (nil? %) (contains? #{:prune :retain} %))
-                                         :message     "must be one of :prune, :retain"
+                                         :validations [[:one-of? :prune :retain]]
                                          :description "Transcript history retention policy for sessions created against this provider"}}})
 
 (def acp
@@ -225,8 +209,7 @@
    :schema      {:store           {:type        :keyword
                                    :description "Session store implementation: :memory, :jsonl-edn-sidecar (default), :jsonl-edn-index"}
                  :naming-strategy {:type        :ignore
-                                   :validate    #(or (keyword? %) (string? %))
-                                    :message     "must be a keyword or string"
+                                   :validations [:keyword-or-string?]
                                     :description "Session naming strategy"}}})
 
 (def hail-band
@@ -246,13 +229,13 @@
                                 :spec        {:type :keyword}
                                 :description "Tags sessions must carry"}
                  :reach        {:type        :keyword
-                                :validate    #(or (nil? %) (contains? #{:one :all} %))
-                                :message     "must be one of :one, :all"
+                                :validations [[:one-of? :one :all]]
                                 :description "How many listeners receive the hail"}
                  :prompt       {:type        :string
                                 :description "Optional companion markdown prompt for the band"}
-                 :*            {:addressing {:validate addressed-band?
-                                             :message  "must include at least one of :crew, :crew-tags, :session, :session-tags"}}}})
+                 :addressing   {:type        :ignore
+                                :validations [[:requires-any? :crew :crew-tags :session :session-tags]]
+                                :description "Derived: bands must address crews or sessions"}}})
 
 (def hail
   {:name        :hail
@@ -294,8 +277,7 @@
    :type        :map
    :description "Retired webhook auth configuration"
    :schema      {:token {:type     :string
-                         :validate (constantly false)
-                         :message  "retired; use :server :auth :token"}}})
+                         :validations [[:retired? "use :server :auth :token"]]}}})
 
 (def hook
   {:name        :hook
@@ -395,8 +377,7 @@
 
 (def field-skill-menu-threshold
   {:type        :int
-   :validate    #(or (nil? %) (<= 0 %))
-   :message     "must be a non-negative integer"
+   :validations [:non-negative?]
    :description "Max skill count to inject into the cached prompt before falling back to list_skills"})
 
 (def field-tools

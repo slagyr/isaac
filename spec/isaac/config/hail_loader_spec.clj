@@ -42,5 +42,8 @@
         (let [result (sut/load-config-result {:root root :fs mem})]
           (should= [{:key "hail.empty.addressing"
                      :value "must include at least one of :crew, :crew-tags, :session, :session-tags"}]
-                   (:errors result))
-          (should= nil (get-in result [:config :hail "empty"])))))))
+                   (mapv #(select-keys % [:key :value]) (:errors result)))
+          ;; the band is still present in the (rejected) config — the
+          ;; addressing rule reports through the annotation layer now,
+          ;; and any load error already invalidates the whole config.
+          (should= {} (get-in result [:config :hail "empty"])))))))

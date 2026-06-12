@@ -214,7 +214,7 @@
             config         {:defaults  {:crew "main" :model "llama"}
                             :crew      {"main" {:model    "llama"
                                                 :provider marigold/starcore}}
-                            :models    {"llama" {:provider marigold/starcore}}
+                            :models    {"llama" {:model "llama3" :provider marigold/starcore}}
                             :providers {marigold/starcore {:api marigold/sky-api}}}]
         (with-redefs-fn {#'isaac.config.validation/known-crew-ids  (fn [_]
                                                                      (swap! crew-calls inc)
@@ -805,14 +805,16 @@
   (describe "semantic-errors"
 
     (it "reports undefined defaults crew models provider cron crew and hook refs"
-      (should= [{:key "hooks.webhook.crew"  :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
+      (should= [{:key "hooks.auth.token"    :value "retired; use :server :auth :token" :bad-value "secret" :valid-values nil}
+                {:key "hooks.webhook.crew"  :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
                  {:key "hooks.webhook.model" :value "references undefined model"    :bad-value "phantom" :valid-values [marigold/anvil-x]}
                 {:key (str test-crew-path ".model") :value "references undefined model" :bad-value "phantom" :valid-values [marigold/anvil-x]}
                 {:key "defaults.crew"       :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
                  {:key "defaults.model"      :value "references undefined model"    :bad-value "llama"   :valid-values [marigold/anvil-x]}
                 {:key "cron.nightly.crew"   :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
                  {:key (str "models." marigold/anvil-x ".provider")
-                  :value "no registered impls for berth :isaac.server/provider" :bad-value "imaginarium" :valid-values []}]
+                  :value "no registered impls for berth :isaac.server/provider" :bad-value "imaginarium" :valid-values []}
+                {:key (str "models." marigold/anvil-x ".model") :value "is required" :bad-value nil :valid-values nil}]
                (mapv #(select-keys % [:key :value :bad-value :valid-values])
                      (validation/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {test-crew {:model "phantom"}}
@@ -826,11 +828,10 @@
       (should= []
                (validation/semantic-errors {:defaults  {:crew "main" :model "llama"}
                                        :crew      {"main" {:model "llama"}}
-                                       :models    {"llama" {:provider marigold/helm-systems}}
+                                       :models    {"llama" {:model "llama3" :provider marigold/helm-systems}}
                                        :providers {marigold/helm-systems {}}
                                        :cron      {"nightly" {:crew "main"}}
-                                       :hooks     {"webhook" {:crew "main" :model "llama"}
-                                                   :auth      {:token "secret"}}})))
+                                       :hooks     {"webhook" {:crew "main" :model "llama"}}})))
 
     )
 
