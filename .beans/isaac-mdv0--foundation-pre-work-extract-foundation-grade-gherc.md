@@ -4,8 +4,10 @@ title: 'Foundation pre-work: extract foundation-grade gherclj steps and split sp
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T16:01:39Z
+updated_at: 2026-06-12T16:04:33Z
 parent: isaac-brth
 ---
 
@@ -248,3 +250,18 @@ Bean acceptance: "Foundation features and the foundation specs listed above requ
 - No `features/cli/` or `features/module/` edits in bean commits (5489eb37..aacef2c7)
 - Pass A smell scan on foundation/server step specs — clean
 - Speed within baseline gates
+
+## Verification fix (main_spec server require)
+
+The isaac.session.store require + store/register! stub had been re-added to
+main_spec's "fs-init" test by a concurrent edit (which also added a
+register-module-cli-commands! no-op stub), reverting the checkbox-4 removal.
+
+main.clj has zero session.store references, and the test passes without the
+stub (the register-module-cli-commands! no-op cuts the only path that could
+reach store/register!), so the stub was dead — removed it and the
+[isaac.session.store :as store] require entirely (cleaner than the suggested
+requiring-resolve, since there is no live coupling). Both foundation specs
+(main_spec, module/loader_spec) now require only foundation namespaces;
+loader_spec's :isaac.server/comm occurrences are keyword literals in test data,
+not requires. bb spec 1897 + bb features 744 green.
