@@ -4,6 +4,7 @@
     [isaac.config.api :as config]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
+    [isaac.module.loader :as module-loader]
     [isaac.server.app :as app]
     [isaac.server.cli :as sut]
     [isaac.spec-helper :as helper]
@@ -22,6 +23,7 @@
   (describe "command registration"
 
     (it "registers the server command"
+      (module-loader/process-manifest-berths! (module-loader/core-index))
       (should-not-be-nil (registry/get-command "server")))
 
     (it "registers gateway as an alias for server via main resolve-alias"

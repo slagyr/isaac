@@ -4,7 +4,7 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as registry]
+    [isaac.cli :as cli]
     [isaac.cli.common :as cli-common]
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
@@ -385,7 +385,7 @@
         (cond
           (:help options)
           (do
-            (println (registry/command-help (registry/get-command "sessions")))
+            (println (cli/command-help (cli/get-command "sessions")))
             0)
 
           (seq errors)
@@ -395,12 +395,5 @@
 
           :else
           (run (merge (dissoc opts :_raw-args) options)))))))
-
-(registry/register!
-  {:name        "sessions"
-   :usage       "sessions [options]"
-   :desc        "List stored conversation sessions"
-   :option-spec option-spec
-   :run-fn      run-fn})
 
 ;; endregion ^^^^^ Command ^^^^^

@@ -3,12 +3,11 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
+    [isaac.config.api :as config]
+    [isaac.fs :as fs]
     [isaac.llm.auth.device-code :as device-code]
     [isaac.llm.auth.store :as auth-store]
-    [isaac.cli :as registry]
-    [isaac.config.api :as config]
-    [isaac.root :as root]
-    [isaac.fs :as fs]))
+    [isaac.root :as root]))
 
 ;; region ----- Login -----
 
@@ -160,13 +159,15 @@
      :arguments arguments
      :errors    errors}))
 
+(defn help-text []
+  (str "Usage: isaac auth <subcommand> [options]\n\n"
+       "Subcommands:\n"
+       "  login   Authenticate with a provider\n"
+       "  status  Show authentication status\n"
+       "  logout  Remove stored credentials"))
+
 (defn- print-auth-help []
-  (println "Usage: isaac auth <subcommand> [options]")
-  (println)
-  (println "Subcommands:")
-  (println "  login   Authenticate with a provider")
-  (println "  status  Show authentication status")
-  (println "  logout  Remove stored credentials"))
+  (println (help-text)))
 
 (defn run [args]
   (let [subcmd   (first args)
@@ -245,12 +246,5 @@
 
       :else
       (run arguments))))
-
-(registry/register!
-  {:name    "auth"
-   :usage   "auth <subcommand> [options]"
-   :desc    "Manage authentication credentials"
-   :option-spec option-spec
-   :run-fn  run-fn})
 
 ;; endregion ^^^^^ Entry Point ^^^^^

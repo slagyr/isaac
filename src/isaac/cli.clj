@@ -212,7 +212,7 @@
         wrapped-run-fn    (when resolved-run-fn
                             (let [help-cmd (dissoc cmd :run-fn)]
                               (fn [{:keys [_raw-args] :as opts}]
-                                (if (some #{"--help" "-h"} (or _raw-args []))
+                                (if (#{"--help" "-h"} (first (or _raw-args [])))
                                   (do (println (command-help help-cmd)) 0)
                                   (resolved-run-fn opts)))))
         final-cmd         (cond-> cmd
@@ -229,7 +229,7 @@
 (defn- wrap-module-run-fn [{:keys [run-fn] :as cmd}]
   (let [help-cmd (dissoc cmd :run-fn)]
     (fn [{:keys [_raw-args] :as opts}]
-      (if (some #{"--help" "-h"} (or _raw-args []))
+      (if (#{"--help" "-h"} (first (or _raw-args [])))
         (do
           (println (command-help help-cmd))
           0)

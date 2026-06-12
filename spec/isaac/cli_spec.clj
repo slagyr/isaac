@@ -17,6 +17,12 @@
 
 (defn sample-run-fn [_opts] 0)
 
+(def sample-received-args (atom nil))
+
+(defn sample-recording-run-fn [opts]
+  (reset! sample-received-args (:_raw-args opts))
+  0)
+
 ;; region ----- Registry -----
 
 (describe "CLI Registry"
@@ -89,7 +95,16 @@
       (let [help (sut/command-help (sut/get-command "svc"))]
         (should-contain "Subcommands:" help)
         (should-contain "install" help)
-        (should-contain "Tail the logs" help))))
+        (should-contain "Tail the logs" help)))
+
+    (it "lets command run-fn handle subcommand help"
+      (reset! sample-received-args nil)
+      (sut/register-cli-command! {:name   "svc"
+                                  :usage  "svc <subcommand>"
+                                  :desc   "Manage a service"
+                                  :run-fn 'isaac.cli-spec/sample-recording-run-fn})
+      (should= 0 ((:run-fn (sut/get-command "svc")) {:_raw-args ["install" "--help"]}))
+      (should= ["install" "--help"] @sample-received-args)))
 
   (describe "get-command"
 

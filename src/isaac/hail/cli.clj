@@ -4,11 +4,10 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
     [isaac.hail.queue :as queue]))
 
-(def ^:private hail-option-spec
+(def hail-option-spec
   [["-h" "--help" "Show help"]])
 
 (def ^:private send-option-spec
@@ -29,7 +28,7 @@
    [nil "--json" "Print the full hail record as JSON"]
    [nil "--edn" "Print the full hail record as EDN"]])
 
-(defn- hail-help []
+(defn hail-help []
   (str "Usage: isaac hail <subcommand> [options]\n\n"
        "Send and inspect hail records.\n\n"
        "Subcommands:\n"
@@ -208,11 +207,3 @@
 
 (defn read-pending [id]
   (queue/read-pending id))
-
-(registry/register!
-  {:name        "hail"
-   :usage       "hail <subcommand> [options]"
-   :desc        "Produce hail records"
-   :help-text   hail-help
-   :option-spec hail-option-spec
-   :run-fn      run-fn})

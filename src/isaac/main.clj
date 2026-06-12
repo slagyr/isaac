@@ -7,19 +7,11 @@
     [isaac.config.api :as config]
     [isaac.config.paths :as paths]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
     [isaac.root :as root]
-    [isaac.version :as version]
-    isaac.llm.auth.cli
-    isaac.config.cli.command
-     isaac.crew.cli
-     isaac.hail.cli
-     isaac.bridge.prompt-cli
-     isaac.logs.cli
-    isaac.server.cli
-    isaac.service.cli
-    isaac.session.cli))
+    [isaac.version :as version]))
 
 (def ^:dynamic *extra-opts* nil)
 
@@ -53,13 +45,14 @@
    installations) would be inside the wrap's restore scope."
   [root fs*]
   (try
-    (let [config  (or (read-user-config root fs*) {})
-          context {:cwd (System/getProperty "user.dir")}
-          {:keys [index]}
-          (nexus/-with-nested-nexus {:fs fs*}
-            (module-loader/discover! config context))]
-      (registry/clear-berth-commands!)
-      (module-loader/process-manifest-berths! index))
+    (with-redefs [log/log* (fn [& _])]
+      (let [config  (or (read-user-config root fs*) {})
+            context {:cwd (System/getProperty "user.dir")}
+            {:keys [index]}
+            (nexus/-with-nested-nexus {:fs fs*}
+              (module-loader/discover! config context))]
+        (registry/clear-berth-commands!)
+        (module-loader/process-manifest-berths! index)))
     (catch Exception _
       nil)))
 

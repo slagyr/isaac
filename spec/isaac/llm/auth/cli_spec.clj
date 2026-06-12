@@ -1,20 +1,23 @@
 (ns isaac.llm.auth.cli-spec
   (:require
+    [clojure.string]
     [isaac.fs :as fs]
     [isaac.llm.auth.device-code :as device-code]
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.auth.cli :as sut]
     [isaac.cli :as registry]
     [isaac.config.api :as config]
+    [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
 
 (describe "CLI Auth"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
       (binding [*out* (java.io.StringWriter.)]
-        (it))))
+        (example))))
 
   (describe "run"
 
@@ -209,8 +212,10 @@
   (describe "registry integration"
 
     (it "registers 'auth' command"
+      (module-loader/process-manifest-berths! (module-loader/core-index))
       (should-not-be-nil (registry/get-command "auth")))
 
     (it "registered run-fn delegates to auth/run"
+      (module-loader/process-manifest-berths! (module-loader/core-index))
       (let [cmd (registry/get-command "auth")]
         (should= 0 ((:run-fn cmd) {:_raw-args ["--help"]}))))))

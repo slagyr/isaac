@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as registry]
+    [isaac.cli :as cli]
     [isaac.cli.common :as cli-common]
     [isaac.config.api :as config]
     [isaac.crew.store :as store]
@@ -118,7 +118,7 @@
       (let [{:keys [options errors]} (parse-option-map (drop 2 raw-args))]
         (cond
           (:help options)
-          (do (println (registry/command-help (registry/get-command "crew"))) 0)
+          (do (println (cli/command-help (cli/get-command "crew"))) 0)
 
           (seq errors)
           (do (doseq [error errors] (println error)) 1)
@@ -126,10 +126,3 @@
           :else
           (run-show (merge (dissoc opts :_raw-args) options) (second raw-args))))
       (cli-common/standard-run-fn "crew" parse-option-map run opts))))
-
-(registry/register!
-  {:name        "crew"
-   :usage       "crew"
-   :desc        "List configured crew members"
-   :option-spec option-spec
-   :run-fn      run-fn})

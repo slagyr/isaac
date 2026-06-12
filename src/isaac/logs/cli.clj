@@ -3,7 +3,6 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
     [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
@@ -53,10 +52,3 @@
                                #(tools-cli/parse-opts % option-spec)
                                run
                                opts))
-
-(registry/register!
-  {:name        "logs"
-   :usage       "logs [options]"
-   :desc        "Tail and colorize the Isaac log file"
-   :option-spec option-spec
-   :run-fn      run-fn})

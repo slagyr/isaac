@@ -5,7 +5,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
-    [isaac.cli :as registry]
+    [isaac.cli :as cli]
     [isaac.comm :as comm]
     [isaac.config.api :as config]
     [isaac.config.runtime :as runtime]
@@ -162,7 +162,7 @@
     (cond
       (:help options)
       (do
-        (println (registry/command-help (registry/get-command "prompt")))
+        (println (cli/command-help (cli/get-command "prompt")))
         0)
 
       (seq errors)
@@ -173,10 +173,3 @@
 
       :else
       (run (merge (dissoc opts :_raw-args) options)))))
-
-(registry/register!
-  {:name        "prompt"
-   :usage       "prompt -m <message> [options]"
-   :desc        "Run a single prompt turn and exit"
-   :option-spec option-spec
-   :run-fn      run-fn})

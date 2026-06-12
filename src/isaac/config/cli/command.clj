@@ -2,7 +2,6 @@
   "Dispatcher for isaac config — routes to per-subcommand namespaces."
   (:require
     [clojure.string :as str]
-    [isaac.cli :as registry]
     [isaac.config.cli.common :as common]
     [isaac.config.cli.get :as get-cmd]
     [isaac.config.cli.schema :as schema-cmd]
@@ -11,7 +10,7 @@
     [isaac.config.cli.unset :as unset-cmd]
     [isaac.config.cli.validate :as validate-cmd]))
 
-(def ^:private option-spec
+(def option-spec
   [["-h" "--help" "Show help"]])
 
 (def ^:private subcommands
@@ -43,7 +42,7 @@
        "    slash-mode   Lead with a / for the shell-friendly / separator.\n"
        "                 e.g. /crew/Almighty Bob/model"))
 
-(defn- config-help []
+(defn config-help []
   (common/render-help
     {:command       "isaac config"
      :params        "[subcommand] [options]"
@@ -89,11 +88,3 @@
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (run opts (or _raw-args [])))
-
-(registry/register!
-  {:name        "config"
-   :usage       "config <subcommand> [options]"
-   :desc        "Inspect and validate Isaac configuration"
-   :help-text   config-help
-   :option-spec option-spec
-   :run-fn      run-fn})

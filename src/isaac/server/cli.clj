@@ -3,7 +3,6 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
@@ -88,10 +87,3 @@
 
 (defn run-fn [opts]
   (cli-common/standard-run-fn "server" parse-option-map run opts))
-
-(registry/register!
-  {:name        "server"
-   :usage       "server [options]"
-   :desc        "Start the Isaac HTTP server"
-   :option-spec option-spec
-   :run-fn      run-fn})

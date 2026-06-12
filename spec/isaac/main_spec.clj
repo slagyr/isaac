@@ -1,5 +1,6 @@
 (ns isaac.main-spec
   (:require
+    [clojure.edn :as edn]
     [isaac.cli :as registry]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
@@ -16,6 +17,11 @@
    :run-fn      (fn [_] 0)})
 
 (defn greet-run-fn [_opts] 0)
+
+(defn- core-manifest-cli-command-names []
+  (->> (:cli (edn/read-string (slurp "src/isaac-manifest.edn")))
+       (map :name)
+       set))
 
 (describe "Main CLI"
 
@@ -136,14 +142,7 @@
   (describe "alias resolution"
 
     (it "resolves 'models auth' to 'auth'"
-      (let [received (atom nil)]
-        (registry/register! {:name   "auth"
-                             :desc   "Auth"
-                             :usage  "auth"
-                             :option-spec []
-                             :run-fn (fn [opts] (reset! received opts) 0)})
-        (should= 0 (sut/run ["models" "auth"]))
-        (should-not-be-nil @received)))
+      (should= ["auth"] (vec (@#'sut/resolve-alias ["models" "auth"]))))
 
     (it "does not resolve non-alias prefixes"
       (should= 1 (sut/run ["models" "something-else"]))))
@@ -221,6 +220,10 @@
           (@#'sut/register-module-cli-commands! "/tmp/home/.isaac" mem))
         (should-not-be-nil (registry/get-command "greet"))
         (should= "Greets" (:desc (registry/get-command "greet")))))
+
+    (it "declares core command cli contributions in the manifest"
+      (should= #{"auth" "config" "crew" "hail" "init" "logs" "prompt" "server" "service" "sessions"}
+               (core-manifest-cli-command-names)))
 
     (it "installs the active fs into runtime init"
       (let [mem       (fs/mem-fs)

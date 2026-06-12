@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli :as registry]
+    [isaac.cli :as cli]
     [isaac.service.macos :as macos]
     [isaac.util.shell :as shell]))
 
@@ -90,7 +90,7 @@
       (:content result) (do (print (:content result)) 0)
       :else             (do (binding [*out* *err*] (println "log file not found")) 1))))
 
-(def ^:private subcommands
+(def subcommands
   [{:name "install" :desc "Install Isaac as a launchd service" :run run-install}
    {:name "uninstall" :desc "Remove the Isaac launchd service" :run run-uninstall}
    {:name "start" :desc "Start the Isaac service" :run run-start}
@@ -113,12 +113,5 @@
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [args (or _raw-args [])]
     (if (or (empty? args) (#{"--help" "-h"} (first args)))
-      (do (println (registry/command-help (registry/get-command "service"))) 0)
+      (do (println (cli/command-help (cli/get-command "service"))) 0)
       (dispatch (first args) (assoc opts :_raw-args (vec (rest args)))))))
-
-(registry/register!
-  {:name        "service"
-   :usage       "service [options] <subcommand>"
-   :desc        "Manage Isaac as a background service"
-   :subcommands subcommands
-   :run-fn      run-fn})

@@ -4,8 +4,10 @@ title: 'Foundation pre-work: migrate 9 server CLI commands to manifest :cli cont
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:49:14Z
-updated_at: 2026-06-12T14:23:22Z
+updated_at: 2026-06-12T14:43:28Z
 parent: isaac-brth
 blocked_by:
     - isaac-pl1x

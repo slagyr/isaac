@@ -3,6 +3,7 @@
     [isaac.cli :as registry]
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
+    [isaac.module.loader :as module-loader]
     [speclj.core :refer :all]))
 
 (def ^:private test-home "/test/config-cli")
@@ -52,4 +53,5 @@
   (describe "registry integration"
 
     (it "registers the config command"
+      (module-loader/process-manifest-berths! (module-loader/core-index))
       (should-not-be-nil (registry/get-command "config")))))
