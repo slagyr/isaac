@@ -83,7 +83,7 @@
    be found."
   [name provider-config]
   (let [[name cfg]   (normalize-pair name provider-config)
-        module-index (merge (module-loader/core-index) (:module-index cfg))
+        module-index (merge (module-loader/builtin-index) (:module-index cfg))
         user-keys    (->> (or (:providers cfg) {})
                           keys
                           (map (fn [k] (if (keyword? k) (clojure.core/name k) (str k)))))

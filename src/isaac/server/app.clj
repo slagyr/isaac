@@ -163,7 +163,7 @@
       :else
       (let [_                       (nexus/init! {:fs fs})
             _                       (when root (root/init-root! root))
-            module-index            (merge (module-loader/core-index) (:module-index cfg))
+            module-index            (merge (module-loader/builtin-index) (:module-index cfg))
             scheduler               (when root
                                       (-> (scheduler-core/create {})
                                           scheduler-core/start!))

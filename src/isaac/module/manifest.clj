@@ -17,6 +17,7 @@
             :version       {:type     :string
                             :validate schema/present?
                             :message  "must be present"}
+            :builtin?      {:type :boolean}
             :description   {:type :string}
             ;; :berths and :deps stay :ignore here because their nested
             ;; error keys are easier to emit directly (see
@@ -32,7 +33,7 @@
             ;; :cli at the top level still parse.
             :cli           {:type :ignore}}})
 
-(def ^:private known-meta-keys #{:berths :bootstrap :cli :deps :description :factory :id :version})
+(def ^:private known-meta-keys #{:berths :bootstrap :builtin? :cli :deps :description :factory :id :version})
 (def ^:private known-extend-kinds #{})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 

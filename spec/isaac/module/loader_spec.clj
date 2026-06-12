@@ -1,6 +1,7 @@
 (ns isaac.module.loader-spec
   (:require
     [c3kit.apron.env :as c3env]
+    [clojure.java.io :as io]
     [isaac.cli :as cli-registry]
     [isaac.server.status]
     [isaac.comm.registry :as comm-registry]
@@ -53,6 +54,14 @@
   (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _])
                 isaac.module.loader/manifest-resource local-manifest-path]
     (sut/discover! {:modules (into {} (map (fn [id] [id (mod-coord id)]) ids))} ctx)))
+
+(defn- fixture-url [path]
+  (io/as-url (io/file path)))
+
+(defn- builtin-fixture-resources [real-resource-urls resource-name]
+  (concat (real-resource-urls resource-name)
+          [(fixture-url "spec/isaac/module/fixtures/builtin/resources/isaac-manifest.edn")
+           (fixture-url "spec/isaac/module/fixtures/unflagged/resources/isaac-manifest.edn")]))
 
 (defn- unload-telly! []
   (when-let [ns-obj (find-ns 'isaac.comm.telly)]
@@ -225,6 +234,20 @@
             (should= [] (:errors first-result))
             (should= [] (:errors second-result))
             (should= [[:isaac.comm.pigeon (mod-coord :isaac.comm.pigeon)]] @calls)))))
+
+    (it "discovers builtin classpath manifests and ignores unflagged manifests"
+      (let [real-resource-urls @#'isaac.module.loader/resource-urls]
+        (with-redefs [isaac.module.loader/resource-urls
+                      #(builtin-fixture-resources real-resource-urls %)]
+          (try
+            (sut/clear-caches!)
+            (let [{:keys [index errors]} (sut/discover! {} ctx)]
+              (should= [] errors)
+              (should (contains? index :isaac.fixture.builtin))
+              (should-not (contains? index :isaac.fixture.unflagged)))
+            (finally
+              (sut/clear-caches!)
+              (sut/core-index))))))
 
     (it "adds errors when a manifest fails schema validation"
       (write-local-module! :isaac.comm.pigeon {:id :isaac.comm.pigeon})

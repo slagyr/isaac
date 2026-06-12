@@ -69,6 +69,11 @@
    :version "1.0.0"
    :factory 'marigold.bridge/create-module})
 
+(def builtin-manifest
+  {:id       :isaac.server
+   :version  "1.0.0"
+   :builtin? true})
+
 (describe "module manifest"
 
   (describe "manifest-schema"
@@ -111,6 +116,10 @@
     (it "parses a manifest with a top-level :factory symbol"
       (spit (.getPath @tmp-file) (pr-str berth-manifest))
       (should= berth-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
+
+    (it "preserves the builtin classpath discovery flag"
+      (spit (.getPath @tmp-file) (pr-str builtin-manifest))
+      (should= builtin-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "reads string paths from an explicit fs"
       (let [mem  (fs/mem-fs)

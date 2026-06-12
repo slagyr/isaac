@@ -35,20 +35,19 @@
 (defn- guidance []
   (str "\nTry:\n" examples))
 
-(def ^:private core-module-id :isaac.core)
-
 (defn- schema-context [opts]
   (let [result              (common/load-result opts)
         config              (:config result)
-        declared-module-ids (set (cons core-module-id (keys (or (:modules config) {}))))
-        discovered-index    (or (get-in result [:config :module-index]) (module-loader/core-index))
+        builtin-index       (module-loader/builtin-index)
+        declared-module-ids (into (set (keys builtin-index)) (keys (or (:modules config) {})))
+        discovered-index    (or (get-in result [:config :module-index]) builtin-index)
         module-index        (select-keys discovered-index declared-module-ids)]
     {:config        config
      :module-index  module-index
      :root          (manifest-schema/enrich-root config-schema/root module-index)}))
 
 (defn- comm-resolver [module-index]
-  (let [module-index (or module-index (module-loader/core-index))]
+  (let [module-index (or module-index (module-loader/builtin-index))]
     (if module-index
       #(module-loader/comm-kinds module-index)
       module-loader/comm-kinds)))

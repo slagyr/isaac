@@ -524,19 +524,19 @@
            (warn-for "cron" "cron" (into (inline-ids :cron) (file-ids "cron")))))))
 
 (defn- declared-module-api-ids [config]
-  (let [module-index (merge (module-loader/core-index) (:module-index config))
+  (let [builtin-index (module-loader/builtin-index)
+        module-index  (merge builtin-index (:module-index config))
         modules      (:modules config)]
     (if (and (some? modules) (not (map? modules)))
-      (->> [:isaac.core]
+      (->> (keys builtin-index)
            (keep #(get module-index %))
            (mapcat #(keys (get-in % [:manifest :isaac.server/llm-api])))
            (map clojure.core/name)
            set)
-      (let [declared-ids (conj (->> (keys modules)
+      (let [declared-ids (into (set (keys builtin-index))
+                               (->> (keys modules)
                                     (map ->id)
-                                    (map keyword)
-                                    set)
-                               :isaac.core)]
+                                    (map keyword)))]
         (->> declared-ids
              (keep #(get module-index %))
              (mapcat #(keys (get-in % [:manifest :isaac.server/llm-api])))
@@ -544,7 +544,7 @@
              set)))))
 
 (defn- manifest-capability-ids [config kind]
-  (->> (merge (module-loader/core-index) (:module-index config))
+  (->> (merge (module-loader/builtin-index) (:module-index config))
        vals
        (mapcat #(keys (get-in % [:manifest kind])))
        (map ->id)
@@ -596,7 +596,7 @@
   (let [kw (keyword (->id name))]
     (some (fn [[_ entry]]
             (get-in entry [:manifest section kw]))
-          (merge (module-loader/core-index) (:module-index config)))))
+          (merge (module-loader/builtin-index) (:module-index config)))))
 
 (defn- find-tool-manifest-entry [config tool-name]
   ;; Phase 6 (isaac-w7o5): tool contributions live at :isaac.server/tools
@@ -733,7 +733,7 @@
              ;; Merge core in so :registered-in? sees foundation-declared
              ;; berths (e.g. :isaac.server/tools) and their contributions
              ;; from the platform manifest, not just user modules.
-             registered-in/*module-index* (merge (module-loader/core-index)
+             registered-in/*module-index* (merge (module-loader/builtin-index)
                                                  (:module-index config))
              ;; The :registered-in? primitive also checks config-side
              ;; contributions (user-config keys at the berth's :config
@@ -955,7 +955,7 @@
                   (if (nil? type-name)
                     {:errors errors :warnings warnings}
                     (let [entry  (find-provider-manifest-entry
-                                   (merge (module-loader/core-index) module-index) type-name)
+                                   (merge (module-loader/builtin-index) module-index) type-name)
                           schema (:schema entry)
                           prefix (str "providers." (->id provider-id))]
                       (if (nil? schema)

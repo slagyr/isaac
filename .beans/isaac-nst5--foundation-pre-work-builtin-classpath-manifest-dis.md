@@ -4,8 +4,10 @@ title: 'Foundation pre-work: builtin classpath-manifest discovery (:builtin? + b
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:49:38Z
-updated_at: 2026-06-12T13:31:54Z
+updated_at: 2026-06-12T13:41:52Z
 parent: isaac-brth
 ---
 

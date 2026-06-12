@@ -60,6 +60,7 @@
   (or (fs/instance) (throw (ex-info "module.loader requires :fs in system" {}))))
 
 (declare activate!)
+(declare builtin-index)
 (declare core-index)
 (declare resolve-symbol!)
 
@@ -96,12 +97,13 @@
         (cs/message-map result)))
 
 (defn- read-manifest-edn [path]
-  (let [fs* (runtime-fs)]
-    (try
-      (edn/read-string (if (and (string? path) (fs/exists? fs* path))
+  (try
+    (edn/read-string (if-let [fs* (and (string? path) (fs/instance))]
+                       (if (fs/exists? fs* path)
                          (fs/slurp fs* path)
-                         (slurp path)))
-      (catch Exception _ nil))))
+                         (slurp path))
+                       (slurp path)))
+    (catch Exception _ nil)))
 
 (defn- abs-path [cwd path]
   (if (or (str/starts-with? path "/")
@@ -297,6 +299,7 @@
           module-index)))
 
 (defonce ^:private core-index-cache (atom nil))
+(defonce ^:private builtin-index-cache (atom nil))
 
 ;; When bound, replaces the resource-loaded core manifest index.
 ;; Tests use this to swap in a themed manifest; see spec/isaac/marigold.clj.
@@ -304,22 +307,44 @@
 
 (defn clear-activations! []
   (reset! core-index-cache nil)
+  (reset! builtin-index-cache nil)
   (reset! activated-modules* #{})
   (reset! started-modules* [])
   (doseq [handler (handlers-for :clear-registrations)]
     (handler)))
 
 (defn clear-caches! []
-  (reset! core-index-cache nil))
+  (reset! core-index-cache nil)
+  (reset! builtin-index-cache nil))
+
+(defn- index-entry [resource]
+  (let [manifest (manifest/read-manifest resource (fs/instance))]
+    [(:id manifest) {:coord {} :manifest manifest :path nil}]))
 
 (defn core-index []
   (or *core-index-override*
       @core-index-cache
       (let [result (if-let [resource (manifest-resource core-module-id)]
-                     (let [manifest (manifest/read-manifest resource (runtime-fs))]
+                     (let [manifest (manifest/read-manifest resource (fs/instance))]
                         {core-module-id {:coord {} :manifest manifest :path nil}})
                       {})]
         (reset! core-index-cache result)
+        result)))
+
+(defn- builtin-manifest-resource? [resource]
+  (true? (:builtin? (read-manifest-edn resource))))
+
+(defn- classpath-builtin-index []
+  (->> (resource-urls "isaac-manifest.edn")
+       (filter builtin-manifest-resource?)
+       (map index-entry)
+       (into {})))
+
+(defn builtin-index []
+  (or *core-index-override*
+      @builtin-index-cache
+      (let [result (merge (core-index) (classpath-builtin-index))]
+        (reset! builtin-index-cache result)
         result)))
 
 (defn comm-kinds
@@ -789,10 +814,9 @@
    {:index {...} :errors [...]}."
   [config context]
   (let [declared    (get config :modules {})
-        raw-modules (merge {core-module-id {}}
-                           (when (map? declared) declared))]
+        raw-modules (when (map? declared) declared)]
     (if (and (some? declared) (not (map? declared)))
-      {:index  (core-index)
+      {:index  (builtin-index)
        :errors [{:key "modules"
                  :value "must be a map of id to coordinate (legacy vector shape)"}]}
       (let [{init-index :index init-errors :errors}
@@ -805,7 +829,7 @@
                              (let [{entry :entry mod-errors :errors} (discover-one context id coord)]
                                {:index  (merge index entry)
                                 :errors (into errors (or mod-errors []))}))))
-                       {:index {} :errors []}
+                       {:index (builtin-index) :errors []}
                        raw-modules)
             {:keys [index errors]} (resolve-deps! context init-index)]
         ;; Note: manifest-only berth processing (per-entry :factory
