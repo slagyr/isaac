@@ -29,8 +29,8 @@
    berth epic moved the templates from the legacy top-level :provider
    key to the :isaac.server/provider-template berth contribution."
   []
-  (let [core-entry (get (module-loader/core-index) :isaac.core)]
-    (normalize-manifest-providers (get-in core-entry [:manifest :isaac.server/provider-template]))))
+  (let [server-entry (get (module-loader/builtin-index) :isaac.server)]
+    (normalize-manifest-providers (get-in server-entry [:manifest :isaac.server/provider-template]))))
 
 ;; Overlay for dynamically-registered providers (tests / future plugins).
 ;; Manifest providers come from core-catalog above.
@@ -39,7 +39,7 @@
 (defn- effective-registry []
   (merge (core-catalog) @registry*))
 
-(def ^:private core-module-id :isaac.core)
+(def ^:private builtin-module-ids #{:isaac.core :isaac.server})
 
 (defn module-providers
   "Provider entries visible from third-party modules. Phase 7 of brth:
@@ -50,7 +50,7 @@
    :type). Core is excluded — its templates flow through `core-catalog`."
   [module-index]
   (reduce-kv (fn [providers module-id module]
-               (if (= core-module-id module-id)
+               (if (contains? builtin-module-ids module-id)
                  providers
                  (merge providers
                         (normalize-manifest-providers

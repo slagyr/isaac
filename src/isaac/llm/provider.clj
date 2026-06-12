@@ -99,7 +99,7 @@
                          ;; pass. Activate the providing module (for its
                          ;; bootstrap), then invoke the berth's per-entry
                          ;; factory directly so the api lands in api/-registry.
-                         (when-let [module-id (module-loader/supporting-module-id module-index :llm/api api-id)]
+                         (when-let [module-id (module-loader/supporting-module-id module-index :isaac.server/llm-api api-id)]
                            (module-loader/activate! module-id module-index)
                            (let [entry (get-in module-index [module-id :manifest :isaac.server/llm-api (keyword api-id)])]
                              (when entry

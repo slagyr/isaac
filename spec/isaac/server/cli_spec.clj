@@ -23,7 +23,7 @@
   (describe "command registration"
 
     (it "registers the server command"
-      (module-loader/process-manifest-berths! (module-loader/core-index))
+      (module-loader/process-manifest-berths! (module-loader/builtin-index))
       (should-not-be-nil (registry/get-command "server")))
 
     (it "registers gateway as an alias for server via main resolve-alias"

@@ -4,8 +4,10 @@ title: 'Foundation pre-work: manifest split — :isaac.server manifest, berth-by
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:49:54Z
-updated_at: 2026-06-12T15:10:50Z
+updated_at: 2026-06-12T15:13:57Z
 parent: isaac-brth
 blocked_by:
     - isaac-nst5

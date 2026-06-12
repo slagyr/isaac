@@ -212,10 +212,10 @@
   (describe "registry integration"
 
     (it "registers 'auth' command"
-      (module-loader/process-manifest-berths! (module-loader/core-index))
+      (module-loader/process-manifest-berths! (module-loader/builtin-index))
       (should-not-be-nil (registry/get-command "auth")))
 
     (it "registered run-fn delegates to auth/run"
-      (module-loader/process-manifest-berths! (module-loader/core-index))
+      (module-loader/process-manifest-berths! (module-loader/builtin-index))
       (let [cmd (registry/get-command "auth")]
         (should= 0 ((:run-fn cmd) {:_raw-args ["--help"]}))))))

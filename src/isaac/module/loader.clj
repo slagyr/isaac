@@ -278,23 +278,13 @@
           (dfs node)))
       @found)))
 
-(defn supporting-module-id [module-index kind capability]
+(defn supporting-module-id [module-index berth-id capability]
   (let [cap-key (cond
                   (keyword? capability) capability
                   (string? capability)  (keyword capability)
-                  :else                 (keyword (str capability)))
-        ;; Phases 6–8 moved several legacy extension kinds into
-        ;; :isaac.server/* berths. Callers pass the legacy kind kw at
-        ;; this seam; translate.
-        manifest-key (case kind
-                       :tools          :isaac.server/tools
-                       :llm/api        :isaac.server/llm-api
-                       :slash-commands :isaac.server/slash-commands
-                       :hook           :isaac.server/hook
-                       :comm           :isaac.server/comm
-                       kind)]
+                  :else                 (keyword (str capability)))]
     (some (fn [[module-id entry]]
-            (when (get-in entry [:manifest manifest-key cap-key])
+            (when (get-in entry [:manifest berth-id cap-key])
               module-id))
           module-index)))
 
@@ -347,21 +337,7 @@
         (reset! builtin-index-cache result)
         result)))
 
-(defn comm-kinds
-  "Returns sorted user-configurable comm kind names from the given module index.
-   Filters out entries where :configurable? is false. With no args, falls back
-   to the core manifest index. Phase 8 of brth: reads from the
-   :isaac.server/comm berth contributions instead of the legacy
-   top-level :comm extension kind."
-  ([] (comm-kinds (core-index)))
-  ([module-index]
-   (->> (vals module-index)
-        (mapcat #(get-in % [:manifest :isaac.server/comm]))
-        (remove (fn [[_ v]] (false? (:configurable? v))))
-        (map (fn [[k _]] (name k)))
-        sort
-        distinct
-        vec)))
+(def server-module-id :isaac.server)
 
 (defn activate-core! []
   (activate! core-module-id (core-index)))
@@ -369,22 +345,29 @@
 (defn deactivate-core! []
   (swap! activated-modules* disj core-module-id))
 
-(defn register-core-tool!
-  "Look up `tool-id` in the core manifest's :isaac.server/tools berth
-   contribution and install it via the berth's per-entry factory.
-   Called by isaac.tool.builtin to lazily register a single built-in
-   tool (e.g. when an availability check passes). Returns nil if the
-   tool isn't declared in core."
-  [tool-id]
-  (let [tool-kw       (keyword tool-id)
-        core-manifest (get-in (core-index) [core-module-id :manifest])
-        entry         (get-in core-manifest [:isaac.server/tools tool-kw])
-        factory-sym   (get-in core-manifest [:berths :isaac.server/tools
-                                              :manifest :schema
-                                              :value-spec :factory])]
+(defn activate-server! []
+  (activate! server-module-id (builtin-index)))
+
+(defn- berth-entry-factory-sym [module-index berth-id]
+  (some (fn [[_ entry]]
+          (get-in entry [:manifest :berths berth-id :manifest :schema :value-spec :factory]))
+        module-index))
+
+(defn register-builtin-berth-entry!
+  "Look up `entry-id` in `berth-id` across builtin manifests and install
+   it via the berth's per-entry factory. Called by isaac.tool.builtin to
+   lazily register a single built-in tool. Returns nil when the entry is
+   not declared in any builtin manifest."
+  [berth-id entry-id]
+  (let [entry-kw    (keyword entry-id)
+        builtin     (builtin-index)
+        factory-sym (berth-entry-factory-sym builtin berth-id)
+        entry       (some (fn [[_ mod-entry]]
+                            (get-in mod-entry [:manifest berth-id entry-kw]))
+                          builtin)]
     (when (and entry factory-sym)
-      (binding [registered-in/*module-index* (core-index)]
-        ((resolve-symbol! factory-sym) [tool-kw entry])))))
+      (binding [registered-in/*module-index* builtin]
+        ((resolve-symbol! factory-sym) [entry-kw entry])))))
 
 (defn- resolve-symbol! [sym]
   (requiring-resolve sym))

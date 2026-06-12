@@ -20,12 +20,13 @@
         (add-deps {:deps {(symbol module-root) {:local/root module-root}}})))))
 
 (defn- manifest-paths []
-  (cons "src/isaac-manifest.edn"
-        (->> (file-seq (io/file "modules"))
-             (filter #(.isFile %))
-             (map #(.getPath %))
-             (filter #(str/ends-with? % "resources/isaac-manifest.edn"))
-             sort)))
+  (cons "resources/isaac-manifest.edn"
+        (cons "src/isaac-manifest.edn"
+              (->> (file-seq (io/file "modules"))
+                   (filter #(.isFile %))
+                   (map #(.getPath %))
+                   (filter #(str/ends-with? % "resources/isaac-manifest.edn"))
+                   sort))))
 
 (defn- factory-symbols [manifest]
   (->> (:extends manifest)

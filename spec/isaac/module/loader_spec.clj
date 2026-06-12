@@ -153,10 +153,11 @@
         (example)
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})))
 
-    (it "includes the core manifest even when :modules is absent"
+    (it "includes builtin manifests even when :modules is absent"
       (let [{:keys [index errors]} (sut/discover! {} ctx)]
         (should= [] errors)
-        (should= :isaac.core (get-in index [:isaac.core :manifest :id]))))
+        (should= :isaac.core (get-in index [:isaac.core :manifest :id]))
+        (should= :isaac.server (get-in index [:isaac.server :manifest :id]))))
 
     (it "builds an index entry for a valid local module"
       (write-local-module! :isaac.comm.pigeon valid-comm-manifest)
@@ -253,7 +254,7 @@
       (write-local-module! :mod.b {:id :mod.b :version "1"})
       (let [{:keys [index errors]} (discover-local! [:mod.a :mod.b])]
         (should= [] errors)
-        (should= #{:mod.a :mod.b :isaac.core} (set (keys index))))))
+        (should= #{:mod.a :mod.b :isaac.core :isaac.server} (set (keys index))))))
 
   (describe "process-manifest-berths!"
 
@@ -426,29 +427,6 @@
           (sut/activate! :isaac.comm.telly module-index)
           (sut/clear-activations!)
           (sut/activate! :isaac.comm.telly module-index)
-          (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls)))))
+          (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))))
 
-  (describe "comm-kinds"
 
-    (it "returns empty when module index has no comm entries"
-      (should= [] (sut/comm-kinds {})))
-
-    (it "returns sorted comm kind name from a module"
-      (let [index {:my.mod {:manifest {:isaac.server/comm {:telly {:factory 'foo/make}}}}}]
-        (should= ["telly"] (sut/comm-kinds index))))
-
-    (it "filters out entries with :configurable? false"
-      (let [index {:my.mod {:manifest {:isaac.server/comm {:internal {:factory 'foo/make :configurable? false}
-                                              :external {:factory 'bar/make}}}}}]
-        (should= ["external"] (sut/comm-kinds index))))
-
-    (it "aggregates and sorts kinds from multiple modules"
-      (let [index {:mod-a {:manifest {:isaac.server/comm {:bravo {:factory 'a/make}}}}
-                   :mod-b {:manifest {:isaac.server/comm {:alpha {:factory 'b/make}}}}}]
-        (should= ["alpha" "bravo"] (sut/comm-kinds index))))
-
-    (it "with no args falls back to core-index"
-      (let [index {:isaac.core {:coord {} :manifest {:id :isaac.core :version "1"
-                                                      :isaac.server/comm {:widget {:factory 'foo/make}}}}}]
-        (binding [sut/*core-index-override* index]
-          (should= ["widget"] (sut/comm-kinds)))))))

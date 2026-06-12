@@ -184,7 +184,7 @@
           ;; manifest :cli contribution. Process core's berths so
           ;; tests see init in the registry without going through
           ;; main/run first.
-          (module-loader/process-manifest-berths! (module-loader/core-index))
+          (module-loader/process-manifest-berths! (module-loader/builtin-index))
           (example)))))
 
   (it "registers the init command"

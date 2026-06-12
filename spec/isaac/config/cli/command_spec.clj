@@ -53,5 +53,5 @@
   (describe "registry integration"
 
     (it "registers the config command"
-      (module-loader/process-manifest-berths! (module-loader/core-index))
+      (module-loader/process-manifest-berths! (module-loader/builtin-index))
       (should-not-be-nil (registry/get-command "config")))))

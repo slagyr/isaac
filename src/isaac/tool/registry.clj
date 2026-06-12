@@ -61,12 +61,11 @@
 
 (defn- activate-missing-tool! [module-index name]
   ;; Phase 6 (isaac-w7o5): tool installation is a berth-side concern.
-  ;; supporting-module-id already translates :tools → :isaac.server/tools.
   ;; After activating the providing module (for its bootstrap + non-tool
   ;; extensions), call the berth's per-entry factory directly so the
   ;; single tool lands in the registry without paying for a full
   ;; process-manifest-berths! sweep.
-  (when-let [module-id (module-loader/supporting-module-id module-index :tools name)]
+  (when-let [module-id (module-loader/supporting-module-id module-index :isaac.server/tools name)]
     (module-loader/activate! module-id module-index)
     (let [tool-kw (keyword name)
           entry   (get-in module-index [module-id :manifest :isaac.server/tools tool-kw])]

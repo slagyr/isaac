@@ -40,7 +40,7 @@
     (let [response (sut/handler {:request-method :get :uri "/status"})]
       (should= 200 (:status response))))
 
-  (it "registers the hooks route from the core manifest's :isaac.server/route berth"
+  (it "registers the hooks route from the server manifest's :isaac.server/route berth"
     ;; Phase 5 of brth (isaac-8v1n): routes flow through
     ;; process-manifest-berths!. Phase 5b (isaac-v5js) folded
     ;; route-prefix into route — the hooks contribution is now a
@@ -51,7 +51,7 @@
       (module-loader/clear-activations!)
       (let [request {:request-method :post :uri "/hooks/bibelot"}
             opts    {:cfg {:mode :test}}]
-        (module-loader/process-manifest-berths! (module-loader/core-index))
+        (module-loader/process-manifest-berths! (module-loader/builtin-index))
         (should= {:status 204
                   :body   (assoc request :config {:mode :test} :route-params {:* "bibelot"})}
                  (sut/handler opts request)))))

@@ -20,7 +20,8 @@
 (defn greet-run-fn [_opts] 0)
 
 (defn- core-manifest-cli-command-names []
-  (->> (:cli (edn/read-string (slurp "src/isaac-manifest.edn")))
+  (->> ["src/isaac-manifest.edn" "resources/isaac-manifest.edn"]
+       (mapcat (fn [path] (:cli (edn/read-string (slurp path)))))
        (map :name)
        set))
 

@@ -35,9 +35,10 @@
 
 (defn- register-module-cli-commands!
   "Phase 4 of the berth epic: `:cli` is now a berth, so all CLI
-   contributions — built-in (core's `:cli [...]`) and module-supplied
-   alike — flow through process-manifest-berths!. discover! always
-   merges :isaac.core into the index, so core's :cli contributions
+   contributions — built-in (foundation + server `:cli [...]`) and
+   module-supplied alike — flow through process-manifest-berths!.
+   discover! always merges builtin manifests into the index, so built-in
+   :cli contributions
    (the built-in commands) register on every invocation, even when
    no user config exists. We bracket discover! in -with-nested-nexus
    so it sees mem-fs (when set), but process-manifest-berths! has to

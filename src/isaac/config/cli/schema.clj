@@ -7,7 +7,8 @@
     [isaac.config.schema :as config-schema]
     [isaac.config.schema.manifest :as manifest-schema]
     [isaac.config.schema.term :as schema-term]
-    [isaac.module.loader :as module-loader]))
+    [isaac.module.loader :as module-loader]
+    [isaac.server.module :as server-module]))
 
 (def option-spec
   [[nil  "--tree" "Expand every named sub-schema as its own section"]
@@ -49,8 +50,8 @@
 (defn- comm-resolver [module-index]
   (let [module-index (or module-index (module-loader/builtin-index))]
     (if module-index
-      #(module-loader/comm-kinds module-index)
-      module-loader/comm-kinds)))
+      #(server-module/comm-kinds module-index)
+      server-module/comm-kinds)))
 
 (def ^:private collection-surfaces #{"comms" "providers"})
 

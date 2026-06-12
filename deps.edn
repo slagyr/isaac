@@ -1,4 +1,4 @@
-{:paths ["src"]
+{:paths ["src" "resources"]
 
  :deps  {cheshire/cheshire                 {:mvn/version "5.13.0"}
          clj-commons/clj-yaml             {:mvn/version "1.0.29"}

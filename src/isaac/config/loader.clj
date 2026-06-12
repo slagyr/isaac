@@ -700,11 +700,6 @@
 (defn- find-slash-command-manifest-entry [config command-name]
   (find-manifest-entry config :isaac.server/slash-commands command-name))
 
-(defn- known-llm-api-ids [config]
-  (->> (declared-module-api-ids config)
-       sort
-       vec))
-
 ;; Validation refs registered in c3kit.apron.schema's ref registry.
 ;; Each carries :validate, :message, and :known (rich-error enrichment).
 ;; All read the document under validation from the *config* dynvar bound

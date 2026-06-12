@@ -1,4 +1,4 @@
-{:paths ["src" "spec"
+{:paths ["src" "resources" "spec"
          ;; Test fixtures masquerading as real modules — their factory
          ;; symbols (marigold.bridge.signal/register-route!, etc.) need
          ;; to be on the classpath because tests no-op add-module-deps!

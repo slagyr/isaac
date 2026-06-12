@@ -198,18 +198,26 @@
 
 ;; ----- Themed core manifest ----------------------------------------
 
-(def baseline-manifest
-  "A stand-in for src/isaac-manifest.edn. The shape mirrors the real
-   manifest one-to-one — :llm/api, :provider, :tools, :slash-commands,
-   :comm — so a describe that calls (marigold/with-manifest) gets a
-   complete world: themed providers/apis (the vendor IRL names — helm
-   instead of anthropic, etc.) plus the full set of capability names
-   (read, write, status, /crew, etc.) that capability tests still need.
-   Capability factories point at the real production symbols since
-   tool/slash-command/comm names are NOT vendor-specific."
+(def baseline-core-manifest
+  "A stand-in for src/isaac-manifest.edn — foundation only."
   {:id      :isaac.core
    :version "0.1.0"
    :factory 'isaac.core/create-module
+   :berths  {:cli {:description "CLI commands."
+                   :manifest    {:schema {:type :seq
+                                          :spec {:type    :map
+                                                 :factory 'isaac.cli/register-cli-command!
+                                                 :schema  {:name {:type :string}}}}}}}})
+
+(def baseline-server-manifest
+  "A stand-in for resources/isaac-manifest.edn. Themed server
+   contributions so a describe that calls (marigold/with-manifest) gets a
+   complete world: themed providers/apis (helm instead of anthropic, etc.)
+   plus the full set of capability names capability tests still need."
+  {:id       :isaac.server
+   :version  "0.1.0"
+   :builtin? true
+   :factory  'isaac.server.module/create-module
 
    :berths  {:isaac.server/tools             {:description "LLM tool factories."
                                               :manifest    {:schema {:type       :map
@@ -274,8 +282,11 @@
                        (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
                        (keyword logbook)  {:factory 'isaac.comm.memory/make}}}) ;; persisted / memory-like
 
+(def baseline-manifest baseline-server-manifest)
+
 (def ^:private baseline-core-index
-  {:isaac.core {:coord {} :manifest baseline-manifest :path nil}})
+  {:isaac.core   {:coord {} :manifest baseline-core-manifest :path nil}
+   :isaac.server {:coord {} :manifest baseline-server-manifest :path nil}})
 
 (defn- reset-extension-registries! []
   ;; Each registry (api factories, comm registry, tool registry, slash
@@ -288,10 +299,10 @@
   (module-loader/clear-activations!))
 
 (defn with-manifest
-  "Inside a `(describe ...)` block, swaps the core manifest for Marigold's
-   themed `baseline-manifest` for the duration of each example in the
-   describe. Tests assert against themed provider/api names (e.g.
-   `helm-systems`, `helm`) instead of `anthropic`, `messages`, etc.
+  "Inside a `(describe ...)` block, swaps the builtin manifests for
+   Marigold's themed foundation + server manifests for the duration of
+   each example in the describe. Tests assert against themed provider/api
+   names (e.g. `helm-systems`, `helm`) instead of `anthropic`, `messages`, etc.
 
    Clears all extension registries on entry and exit so the api/comm/
    tool/slash-command registrations reflect the currently-bound manifest

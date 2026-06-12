@@ -1,13 +1,18 @@
 (ns isaac.version
   (:require
     [clojure.edn :as edn]
-    [clojure.java.io :as io]
     [clojure.string :as str]))
 
 (defn- manifest-version []
   (try
-    (when-let [resource (io/resource "isaac-manifest.edn")]
-      (:version (edn/read-string (slurp resource))))
+    (some (fn [url]
+            (let [manifest (edn/read-string (slurp url))]
+              (when (= :isaac.core (:id manifest))
+                (:version manifest))))
+          (enumeration-seq
+            (.getResources (or (.getContextClassLoader (Thread/currentThread))
+                               (clojure.lang.RT/baseLoader))
+                           "isaac-manifest.edn")))
     (catch Exception _ nil)))
 
 (def ^:private manifest-version* (delay (manifest-version)))
