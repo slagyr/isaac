@@ -1,10 +1,10 @@
-(ns isaac.server.cli.cli-steps-spec
+(ns isaac.foundation.cli-steps-spec
   (:require
     [gherclj.core :as g]
-    [isaac.server.cli.cli-steps :as sut]
+    [isaac.foundation.cli-steps :as sut]
     [speclj.core :refer :all]))
 
-(describe "cli feature steps"
+(describe "foundation cli feature steps"
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
