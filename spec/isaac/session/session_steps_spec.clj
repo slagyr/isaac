@@ -3,18 +3,21 @@
     [gherclj.core :as g]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
+    [isaac.llm.api.grover :as grover]
     [isaac.marigold :as marigold]
     [isaac.session.session-steps :as sut]
     [isaac.nexus :as nexus]
-    [speclj.core :refer :all]))
+    [speclj.core :refer [around describe it should should=]]))
 
 (describe "session feature steps"
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (g/reset!)
+    (grover/reset-queue!)
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
       (it))
+    (grover/reset-queue!)
     (g/reset!))
 
   (it "fires the config change source when a file is written"
@@ -24,4 +27,14 @@
       (g/assoc! :config-change-source source)
       (sut/file-exists-with (str "/target/test-state/config/crew/" marigold/captain ".edn") "{:model :llama}")
       (should= (str "crew/" marigold/captain ".edn") (runtime/poll! source 0))
-      (runtime/stop! source))))
+      (runtime/stop! source)))
+
+  (it "does not wait for a Grover gate after a turn already completed"
+    (g/assoc! :turn-future (future {:output "done"
+                                    :request {:id :request}
+                                    :result  {:ok true}}))
+    (let [started-at (System/nanoTime)]
+      (sut/turn-ends-on-session "bridge")
+      (should (< (/ (- (System/nanoTime) started-at) 1000000.0)
+                 500.0)))
+    (should= {:ok true} (g/get :llm-result))))

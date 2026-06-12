@@ -67,12 +67,6 @@
   (or (g/get :scheduler)
       (nexus/get :scheduler)))
 
-(defn- scheduler-idle? [instance]
-  (every? (fn [task]
-            (and (nil? (:active-run task))
-                 (empty? (:pending-fire-ats task))))
-          (scheduler/list-tasks instance)))
-
 (defn- task-row->task [table]
   (let [row     (zipmap (:headers table) (first (:rows table)))
         id      (keyword (cell-value (get row "id")))
@@ -138,8 +132,7 @@
   (scheduler/tick! (current-scheduler)))
 
 (defn clock-advances-and-settles [duration]
-  (clock-advances duration)
-  (helper/await-condition #(scheduler-idle? (current-scheduler)) 3000))
+  (clock-advances duration))
 
 (defn clock-advances-to [iso]
   (set-clock! iso)

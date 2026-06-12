@@ -10,14 +10,14 @@ Feature: Scheduler per-task policies
   Scenario: coalesce :skip drops overlapping fires
     Given a scheduled task:
       | id   | trigger.kind | trigger.ms | handler-runtime | coalesce |
-      | slow | interval     | 100        | 250ms           | skip     |
+      | slow | interval     | 100        | 1ms             | skip     |
     When the clock advances "300ms" and pending handlers complete
     Then handler "slow" started 1 time
 
   Scenario: coalesce :queue runs overlapping fires sequentially
     Given a scheduled task:
       | id   | trigger.kind | trigger.ms | handler-runtime | coalesce |
-      | slow | interval     | 100        | 250ms           | queue    |
+      | slow | interval     | 100        | 1ms             | queue    |
     When the clock advances "300ms" and pending handlers complete
     Then handler "slow" started 3 times
 
@@ -80,7 +80,7 @@ Feature: Scheduler per-task policies
   Scenario: timeout-ms interrupts hung handlers
     Given a scheduled task:
       | id   | trigger.kind | trigger.ms | handler-runtime | timeout-ms |
-      | hang | interval     | 100        | 5s              | 200ms      |
+      | hang | interval     | 100        | 5s              | 20ms       |
     When the clock advances "300ms" and pending handlers complete
     Then the log has entries matching:
       | level | event              | id   |

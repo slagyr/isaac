@@ -920,9 +920,13 @@
     (g/assoc! :memory-comm-events @events)))
 
 (defn turn-ends-on-session [key-str]
-  (helper/await-condition #(grover/waiting? key-str))
-  (grover/release-wait! key-str)
-  (await-turn!))
+  (when-let [turn-future (g/get :turn-future)]
+    (helper/await-condition #(or (realized? turn-future)
+                                 (grover/waiting? key-str)))
+    (when (and (not (realized? turn-future))
+               (grover/waiting? key-str))
+      (grover/release-wait! key-str))
+    (await-turn!)))
 
 (defn session-in-flight-status [key-str expected]
   (g/should= (= "true" expected) (store/in-flight? (session-store) key-str)))
