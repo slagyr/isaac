@@ -33,6 +33,19 @@
   [f]
   (swap! isaac-run-preflights* conj f))
 
+;; Symmetric to the preflight registry: postflights run right AFTER
+;; main/run returns (and after :output/:stderr/:exit-code are captured),
+;; so server/LLM step layers can harvest provider/HTTP/drive state into g
+;; without the foundation-grade run wrapper depending on those namespaces.
+(defonce ^:private isaac-run-postflights* (atom []))
+
+(defn register-isaac-run-postflight!
+  "Register f to run inside isaac-run after main/run returns. f is a
+   zero-arg function; it may inspect/modify g state. Multiple modules can
+   register; all registered fns run in registration order."
+  [f]
+  (swap! isaac-run-postflights* conj f))
+
 (defn- interpolate-args [args]
   (cond-> args
           (g/get :server-port) (str/replace "${server.port}" (str (g/get :server-port)))
@@ -271,15 +284,28 @@
                               (run-final)))
          output-writer    (java.io.StringWriter.)
          error-writer     (java.io.StringWriter.)]
-    (grover/clear-provider-requests!)
-    (llm-http/clear-outbound-requests!)
-    (drive-dispatch/clear-last-request!)
     (binding [*out* output-writer
               *err* error-writer]
       (if cmd-stub
         (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))]
           (run-with-stdin))
         (run-with-stdin)))
+    (g/assoc! :output (str output-writer))
+    (g/assoc! :stderr (str error-writer))
+    (doseq [postflight @isaac-run-postflights*] (postflight))))
+
+;; LLM/HTTP/drive capture lives off the foundation-grade run wrapper:
+;; clear before the run (preflight), harvest after (postflight). At
+;; extraction time these two registrations move to the server/LLM step
+;; layer; the wrapper above stays foundation-clean.
+(register-isaac-run-preflight!
+  (fn []
+    (grover/clear-provider-requests!)
+    (llm-http/clear-outbound-requests!)
+    (drive-dispatch/clear-last-request!)))
+
+(register-isaac-run-postflight!
+  (fn []
     (let [outbound-requests (or (seq (llm-http/outbound-requests))
                                 (seq (grover/provider-requests)))
           outbound-requests (some-> outbound-requests vec)
@@ -292,9 +318,7 @@
                                            (grover/last-provider-request)
                                            grover-request)))
     (g/assoc! :llm-request (or (drive-dispatch/last-request)
-                               (grover/last-request)))
-    (g/assoc! :output (str output-writer))
-    (g/assoc! :stderr (str error-writer))))
+                               (grover/last-request)))))
 
 (defn isaac-run-background [args]
   (let [argv          (parse-argv args)
