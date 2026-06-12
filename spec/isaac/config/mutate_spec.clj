@@ -129,7 +129,7 @@
                                       :comms   {:bert {:type :telly :crew :atticus}}}))
       (let [result (sut/set-config marigold/root "comms.bert.bogus" 42)]
         (should= :ok (:status result))
-        (should-contain {:key "comms.bert.bogus" :value "unknown key"}
+        (should-contain {:key "comms[:bert].bogus" :value "unknown key"}
                         (mapv #(select-keys % [:key :value]) (:warnings result))))))
 
     (it "accepts a whole-entity value and replaces the target"

@@ -45,41 +45,60 @@
                                                                                           :key-spec   {:type :keyword}
                                                                                           :value-spec {:type :map}}}}
                                   :isaac.server/comm              {:description "Communication channels (Discord, iMessage, ACP, …). Manifest contributions name available impls and carry the per-impl factory plus user-config :schema. User-instantiated comm slots in the [:comms] config slot also count toward this berth, so `[:registered-in? :isaac.server/comm [:comms]]` accepts both manifest impl ids (the common :type values) and slot ids."
-                                                                   :manifest    {:schema {:type       :map
+                                                                   :manifest    {:schema {:type       :map ;; TODO - MDM: berths.value.manifest always hold a single key map {:schema ...}.  Let's flatten.
                                                                                           :key-spec   {:type :keyword}
                                                                                           :value-spec {:type    :map
                                                                                                        :factory isaac.comm.registry/register-comm-entry!
                                                                                                        :schema  {:factory       {:type :symbol :validations [:present?]}
-                                                                                                                 :schema        {:type :any}
-                                                                                                                 :configurable? {:type :boolean}}}}}}}
+                                                                                                                 :schema        {:type :any} ;; TODO - MDM: We need to pull in the apron.schema/spec-schema here.
+                                                                                                                 :configurable? {:type :boolean}}}}}
+                                                                   ;; Config berth: claims [:comms] so the composed root schema
+                                                                   ;; validates slots in one pass — base fields plus every impl's
+                                                                   ;; :schema fields gathered via :dynamic-schema (isaac-2ecl).
+                                                                   ;; No :factory: the server reconciler owns comm instantiation.
+                                                                   :config      {:path   [:comms]
+                                                                                 :schema {:name        "comms table"
+                                                                                          :type        :map
+                                                                                          :description "Communication channel configurations (map of name -> comm config)"
+                                                                                          :key-spec    {:type :id}
+                                                                                          :value-spec  {:name           :comm
+                                                                                                        :type           :map
+                                                                                                        :dynamic-schema [:schema]
+                                                                                                        :schema         {:type {:type         :id
+                                                                                                                                :options-from :comms
+                                                                                                                                :description  "Manifest comm kind to instantiate"
+                                                                                                                                :validations  [[:registered-in? :isaac.server/comm [:comms]]]}
+                                                                                                                         :crew {:type        :id
+                                                                                                                                :description "Crew id this comm routes into"
+                                                                                                                                :validations [:crew-exists?]}}}}}}}
 
- :isaac/cli {:auth    {:usage     "auth <subcommand> [options]"
-                        :summary   "Manage authentication credentials"
-                        :namespace isaac.llm.auth.cli}
-             :config  {:usage     "config <subcommand> [options]"
-                        :summary   "Inspect and validate Isaac configuration"
-                        :namespace isaac.config.cli.command}
-             :crew    {:usage     "crew"
-                        :summary   "List configured crew members"
-                        :namespace isaac.crew.cli}
-             :hail    {:usage     "hail <subcommand> [options]"
-                        :summary   "Produce hail records"
-                        :namespace isaac.hail.cli}
-             :prompt  {:usage     "prompt -m <message> [options]"
-                        :summary   "Run a single prompt turn and exit"
-                        :namespace isaac.bridge.prompt-cli}
-             :logs    {:usage     "logs [options]"
-                        :summary   "Tail and colorize the Isaac log file"
-                        :namespace isaac.logs.cli}
-             :server  {:usage     "server [options]"
-                        :summary   "Start the Isaac HTTP server"
-                        :namespace isaac.server.cli}
-             :service {:usage     "service [options] <subcommand>"
-                        :summary   "Manage Isaac as a background service"
-                        :namespace isaac.service.cli}
-             :sessions{:usage     "sessions [options]"
-                        :summary   "List stored conversation sessions"
-                        :namespace isaac.session.cli}}
+ :isaac/cli                      {:auth     {:usage     "auth <subcommand> [options]"
+                                             :summary   "Manage authentication credentials"
+                                             :namespace isaac.llm.auth.cli}
+                                  :config   {:usage     "config <subcommand> [options]"
+                                             :summary   "Inspect and validate Isaac configuration"
+                                             :namespace isaac.config.cli.command}
+                                  :crew     {:usage     "crew"
+                                             :summary   "List configured crew members"
+                                             :namespace isaac.crew.cli}
+                                  :hail     {:usage     "hail <subcommand> [options]"
+                                             :summary   "Produce hail records"
+                                             :namespace isaac.hail.cli}
+                                  :prompt   {:usage     "prompt -m <message> [options]"
+                                             :summary   "Run a single prompt turn and exit"
+                                             :namespace isaac.bridge.prompt-cli}
+                                  :logs     {:usage     "logs [options]"
+                                             :summary   "Tail and colorize the Isaac log file"
+                                             :namespace isaac.logs.cli}
+                                  :server   {:usage     "server [options]"
+                                             :summary   "Start the Isaac HTTP server"
+                                             :namespace isaac.server.cli}
+                                  :service  {:usage     "service [options] <subcommand>"
+                                             :summary   "Manage Isaac as a background service"
+                                             :namespace isaac.service.cli}
+                                  :sessions {:usage     "sessions [options]"
+                                             :summary   "List stored conversation sessions"
+                                             :namespace isaac.session.cli}}
 
  :isaac.server/route             [{:method :post :path "/hail/send" :handler isaac.hail.http/handler}
                                   {:method :* :path "/hooks/*" :handler isaac.hooks/handler}]
@@ -147,20 +166,6 @@
   :command-paths        {:schema {:type        :seq
                                   :description "Extra typed roots to scan for prepared commands"
                                   :spec        {:type :string}}}
-
-  :comms                {:schema {:name        "comms table"
-                                  :type        :map
-                                  :description "Communication channel configurations (map of name -> comm config)"
-                                  :key-spec    {:type :string}
-                                  :value-spec  {:name   :comm
-                                                :type   :map
-                                                :schema {:type {:type         :id
-                                                                :options-from :comms
-                                                                :description  "Manifest comm kind to instantiate"
-                                                                :validations  [[:registered-in? :isaac.server/comm [:comms]]]}
-                                                         :crew {:type        :id
-                                                                :description "Crew id this comm routes into"
-                                                                :validations [:crew-exists?]}}}}}
 
   :crew                 {:entity-dir         "crew"
                          :frontmatter?       true
@@ -512,7 +517,6 @@
   :tz                   {:schema {:type :string :description "IANA timezone name for cron evaluation"}}}
 
  :isaac.config/check             {:comm-reserved-schema {:fn isaac.config.checks/check-comm-reserved-schema}
-                                  :comms                {:fn isaac.config.checks/check-comms}
                                   :manifest-refs        {:fn isaac.config.checks/check-manifest-refs}
                                   :provider-types       {:fn isaac.config.checks/check-provider-types}
                                   :resolved-providers   {:fn isaac.config.checks/check-resolved-providers}

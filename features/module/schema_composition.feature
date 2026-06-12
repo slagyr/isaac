@@ -1,8 +1,9 @@
 Feature: Module schema composition
-  At config-load time, every declared module's :extends fragment merges
-  into the cfg schema before validation runs. Modules contribute slot
-  config keys discriminated by :type. Validation is strict (no
-  coercion); invalid values produce validation errors.
+  At config-load time, the comm berth's config schema composes every
+  declared module's :schema fragment into the effective root via
+  :dynamic-schema. Slots conform like any other config — values coerce
+  to their declared types, then :validations run; the annotation layer
+  reports errors with berth-normalized keys (comms[:bert].field).
 
   Manifest field schemas use c3kit.apron.schema's vocabulary directly,
   restricted to refs (no inline function literals). Only refs registered
@@ -29,7 +30,7 @@ Feature: Module schema composition
       | key             | value   |
       | comms.bert.loft | rooftop |
 
-  Scenario: Extended slot fields enforce their schema
+  Scenario: Extended slot fields conform — values coerce to declared types
     Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
@@ -37,9 +38,9 @@ Feature: Module schema composition
        :comms   {:bert {:type :telly :loft 42}}}
       """
     When the config is loaded
-    Then the config has validation errors matching:
-      | key             | value            |
-      | comms.bert.loft | must be a string |
+    Then the loaded config has:
+      | key             | value |
+      | comms.bert.loft | "42"  |
 
   Scenario: Without the module declared, extended keys are unknown
     Given an empty Isaac root at "/tmp/isaac"
@@ -49,8 +50,8 @@ Feature: Module schema composition
       """
     When the config is loaded
     Then the config has validation warnings matching:
-      | key             | value       |
-      | comms.bert.loft | unknown key |
+      | key                | value       |
+      | comms[:bert].loft | unknown key |
 
   Scenario: Manifest field marked [:present-when? :type X] errors when omitted
     Given an empty Isaac root at "/tmp/isaac"
@@ -61,8 +62,8 @@ Feature: Module schema composition
       """
     When the config is loaded
     Then the config has validation errors matching:
-      | key             | value                  |
-      | comms.bert.loft | is required when type  |
+      | key                | value                  |
+      | comms[:bert].loft | is required when type  |
 
   Scenario: Manifest [:one-of? ...] rejects values outside the enum
     Given an empty Isaac root at "/tmp/isaac"
@@ -73,8 +74,8 @@ Feature: Module schema composition
       """
     When the config is loaded
     Then the config has validation errors matching:
-      | key             | value           |
-      | comms.bert.mood | must be one of  |
+      | key                | value           |
+      | comms[:bert].mood | must be one of  |
 
   Scenario: Manifest [:one-of? ...] accepts values inside the enum
     Given an empty Isaac root at "/tmp/isaac"

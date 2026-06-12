@@ -113,40 +113,6 @@
                 {:errors [] :warnings []}
                 commands-config)))))
 
-(defn- impl->kw [impl-val]
-  (cond
-    (keyword? impl-val) impl-val
-    (string? impl-val) (keyword impl-val)
-    :else nil))
-
-(defn- find-comm-extension [module-index impl-kw]
-  (some (fn [[_id entry]]
-          (get-in entry [:manifest :isaac.server/comm impl-kw]))
-        module-index))
-
-(defn check-comms
-  [{:keys [config module-index effective-schema]}]
-  (if (berths/claims-path? module-index [:comms])
-    {:errors [] :warnings []}
-    (let [comms (:comms config)]
-      (if (empty? comms)
-        {:errors [] :warnings []}
-        (binding [validation/*config* (validation/validation-context config)]
-          (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
-                    (let [type-kw (or (impl->kw (:type slot-cfg))
-                                      (impl->kw slot-id))]
-                      (if (nil? type-kw)
-                        {:errors errors :warnings warnings}
-                        (let [entry       (find-comm-extension module-index type-kw)
-                              schema-flds (or (:schema entry) {})
-                              prefix      (str "comms." (name slot-id))
-                              result      (validation/validate-manifest-config prefix slot-cfg schema-flds
-                                                                             :ignore-keys (schema-compose/comm-base-fields effective-schema))]
-                          {:errors   (into errors (:errors result))
-                           :warnings (into warnings (:warnings result))}))))
-                  {:errors [] :warnings []}
-                  comms))))))
-
 (defn- find-provider-manifest-entry [module-index type-name]
   (let [type-kw (keyword (->id type-name))]
     (some (fn [[_id entry]]

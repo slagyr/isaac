@@ -258,7 +258,7 @@ Feature: Config Command
     When isaac is run with "config validate"
     Then the stderr matches:
       | pattern                                   |
-      | comms\.relay\.type                        |
+      | comms\[:relay\]\.type                     |
       | must be one of                            |
       | file: config/isaac\.edn                   |
       | bad value: smoke-signals                  |

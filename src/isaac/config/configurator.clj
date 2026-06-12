@@ -1,6 +1,7 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.config.configurator
   (:require
+    [isaac.config.schema-base :as schema-base]
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
@@ -59,12 +60,15 @@
           nil))))
 
 (defn slot-impl
-  "Resolves the comm type for a slot. Returns nil if slice is nil."
+  "Resolves the comm type for a slot, normalized by id — conformed
+   configs carry string discriminators where injected configs carry
+   keywords. Returns nil if slice is nil."
   [slot slice]
   (when slice
-    (or (get slice :type)
-        (get slice "type")
-        (->name slot))))
+    (some-> (or (get slice :type)
+                (get slice "type")
+                (->name slot))
+            schema-base/->id)))
 
 (defn- slot-keys [container-cfg]
   (when (map? container-cfg)
@@ -144,12 +148,20 @@
       (and (not= old-slice new-slice) (some? new-slice) (nil? existing))
       (start-instance! factory host path new-slice impl))))
 
+(defn- keyword-slots
+  "Slot containers arrive keyword-keyed from injected configs and
+   string-keyed from conformed loads; the instance tree keys slots by
+   keyword, so unify here."
+  [container]
+  (when container
+    (update-keys container #(keyword (schema-base/->id %)))))
+
 (defn- reconcile-registry! [host old-cfg new-cfg registry]
   (case (:kind registry)
     :component (reconcile-component! host old-cfg new-cfg registry)
     (let [path        (:path registry)
-          old-cont    (get-in old-cfg path)
-          new-cont    (get-in new-cfg path)
+          old-cont    (keyword-slots (get-in old-cfg path))
+          new-cont    (keyword-slots (get-in new-cfg path))
           slot-names  (into (or (slot-keys old-cont) #{})
                             (or (slot-keys new-cont) #{}))
           host        (assoc host :registry registry)]

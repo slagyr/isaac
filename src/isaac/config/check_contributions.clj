@@ -4,7 +4,6 @@
 
 (def server
   {:comm-reserved-schema {:fn 'isaac.config.checks/check-comm-reserved-schema}
-   :comms                 {:fn 'isaac.config.checks/check-comms}
    :manifest-refs         {:fn 'isaac.config.checks/check-manifest-refs}
    :provider-types        {:fn 'isaac.config.checks/check-provider-types}
    :resolved-providers    {:fn 'isaac.config.checks/check-resolved-providers}

@@ -44,6 +44,24 @@
                             (= "bert" (:module %)))
                       @log/captured-logs)))))
 
+  (it "unifies string and keyword slot keys — a conformed reload updates in place"
+    ;; boot configs can arrive keyword-keyed (injected :cfg) while
+    ;; load-config-result conforms slot ids to strings; the reconciler
+    ;; must see them as the same slot.
+    (let [host     {:module-index {:isaac.comm.telly {:manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
+          registry @comm-registry/*registry*]
+      (log/capture-logs
+        (sut/reconcile! host nil {:comms {:bert {:type :telly :mood "happy"}}} registry)
+        (let [booted (nexus/get-in [:comms :bert])]
+          (should-not-be-nil booted)
+          (sut/reconcile! host
+                          {:comms {:bert {:type :telly :mood "happy"}}}
+                          {:comms {"bert" {:type "telly" :mood "sad"}}}
+                          registry)
+          (should= booted (nexus/get-in [:comms :bert]))
+          (should-not (some #(= :telly/started (:event %))
+                            (filter #(= "sad" (get-in % [:slice :mood])) @log/captured-logs)))))))
+
   (it "logs activation failure and leaves the slot inert when the module load fails"
     (let [host     {:module-index {:isaac.comm.telly {:manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
           registry @comm-registry/*registry*]

@@ -994,7 +994,6 @@
                :version "0.1.0"
                :isaac.server/comm    {:crow {:factory 'isaac.comm.crow/make
                                 :schema  {:token       {:type :string}
-                                          :crew        {:type :string}
                                           :message-cap {:type :int}
                                           :allow-from  {:type :map}}}}}))
 
@@ -1004,6 +1003,15 @@
                "{:paths [\"resources\"]}")
       (fs/spit (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.crow/resources/isaac-manifest.edn") crow-manifest))
 
+    (it "conforms berth-claimed slices: extension fields coerce like base fields"
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
+                      :comms {:bert {:type :telly :loft 42 :mood "happy"}}})
+      (write-telly-module!)
+      (let [result (marigold/load-config)]
+        (should= [] (:errors result))
+        (should= "42" (get-in result [:config :comms "bert" :loft]))))
+
     (it "validates declared module comm slot fields with no error for valid value"
       (marigold/write-config!
                      {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
@@ -1011,17 +1019,17 @@
       (write-telly-module!)
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
-        (should= "rooftop" (get-in result [:config :comms :bert :loft]))
-        (should= "happy" (get-in result [:config :comms :bert :mood]))))
+        (should= "rooftop" (get-in result [:config :comms "bert" :loft]))
+        (should= "happy" (get-in result [:config :comms "bert" :mood]))))
 
-    (it "generates a validation error for wrong type in a module comm slot field"
+    (it "generates a conform error for an uncoercible module comm slot field"
       (marigold/write-config!
-                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
-                      :comms {:bert {:type :telly :loft 42}}})
-      (write-telly-module!)
+                     {:modules {:isaac.comm.crow {:local/root "/marigold/.isaac/modules/isaac.comm.crow"}}
+                      :comms {:mychan {:type :crow :message-cap "not-a-number"}}})
+      (write-crow-module!)
       (let [result (marigold/load-config)]
-        (should (some #(and (= "comms.bert.loft" (:key %))
-                            (= "must be a string" (:value %)))
+        (should (some #(and (= "comms[:mychan].message-cap" (:key %))
+                            (re-find #"can't coerce" (:value %)))
                       (:errors result)))))
 
     (it "requires a manifest field guarded by [:present-when? :type :telly]"
@@ -1030,19 +1038,18 @@
                       :comms   {:bert {:type :telly}}})
       (write-telly-module!)
       (let [result (marigold/load-config)]
-        (should (some #(and (= "comms.bert.loft" (:key %))
+        (should (some #(and (= "comms[:bert].loft" (:key %))
                             (re-find #"is required when type is telly" (:value %)))
                       (:errors result)))))
 
-    (it "infers the comm type from the slot-id when :type is omitted"
+    (it "applies composed impl fields to a slot whose id names the impl (no :type)"
       (marigold/write-config!
                      {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
                       :comms   {:telly {:loft 42}}})
       (write-telly-module!)
       (let [result (marigold/load-config)]
-        (should (some #(and (= "comms.telly.loft" (:key %))
-                            (= "must be a string" (:value %)))
-                      (:errors result)))))
+        (should= [] (:errors result))
+        (should= "42" (get-in result [:config :comms "telly" :loft]))))
 
     (it "does not warn 'unknown key' on a base comm-instance field"
       (marigold/write-config!
@@ -1080,7 +1087,7 @@
                       :comms   {:bert {:type :telly :loft "rooftop" :mood "elated"}}})
       (write-telly-module!)
       (let [result (marigold/load-config)]
-        (should (some #(and (= "comms.bert.mood" (:key %))
+        (should (some #(and (= "comms[:bert].mood" (:key %))
                             (re-find #"must be one of" (:value %)))
                       (:errors result)))))
 
@@ -1091,7 +1098,7 @@
       (write-telly-module!)
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
-        (should= "happy" (get-in result [:config :comms :bert :mood]))))
+        (should= "happy" (get-in result [:config :comms "bert" :mood]))))
 
     (it "fails fast when a manifest schema references an unregistered ref"
       (fs/mkdirs (nexus/get :fs) "/marigold/.isaac/modules/isaac.comm.broken")
@@ -1114,7 +1121,7 @@
       (marigold/write-config!
                      {:comms {:bert {:type :telly :loft "rooftop"}}})
       (let [result (marigold/load-config)]
-        (should (some #(and (= "comms.bert.loft" (:key %))
+        (should (some #(and (= "comms[:bert].loft" (:key %))
                             (= "unknown key" (:value %)))
                       (:warnings result)))))
 

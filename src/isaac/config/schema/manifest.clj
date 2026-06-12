@@ -45,9 +45,9 @@
   "Returns `root` with every manifest surface enriched in-place."
   [root module-index]
   (-> root
-      ;; Phase 8 (isaac-qqgv): comm contributions moved to the
-      ;; :isaac.server/comm berth.
-      (update-in [:schema :comms]          merge-into-value-spec  (variants module-index :isaac.server/comm))
+      ;; :comms needs no enrichment — the comm berth claims [:comms], so
+      ;; the composed root already gathers impl fields (with
+      ;; :isaac/variant annotations) via :dynamic-schema.
       ;; Phase 7 (isaac-ho18): provider templates and slash-command
       ;; contributions live under :isaac.server/* berths. Phase 6 did
       ;; the same for :tools.
