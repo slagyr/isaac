@@ -342,7 +342,12 @@
                          :dev                  (= "true" (config/env "ISAAC_DEV"))
                          :fs                   (server-fs)
                          :host                 (:host cfg)
-                         :port                 (if run-server? (:port cfg) 0)
+                         ;; Explicit :server :port in the scenario's config is honored;
+                         ;; otherwise bind ephemerally so suites never collide with a
+                         ;; live isaac on the default port.
+                         :port                 (if run-server?
+                                                 (or (get-in server-config [:server :port]) 0)
+                                                 0)
                          :root            runtime-state
                         :start-http-server?   run-server?}]
     (g/assoc! :runtime-root-dir runtime-state)
