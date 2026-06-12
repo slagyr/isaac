@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T14:55:19Z
+updated_at: 2026-06-12T15:04:58Z
 parent: isaac-brth
 ---
 
@@ -83,3 +83,30 @@ keep gherclj ambiguity clean):
 Approved decisions: incremental green sub-steps; isaac-run capture/clock/setup
 relocated via hook registries (no phrase registered twice). Foundation/server
 phrase divide approved (see the move list discussed on the bean's work session).
+
+## Progress update 2 (config_steps done)
+
+- 7ef2cd7e config_steps foundation-clean: loaded-config-has used app/current-config,
+  which is literally (config/snapshot ...) (isaac.config.api — foundation). Swapped
+  to config/snapshot directly, dropped the isaac.server.app require. config_steps now
+  requires only foundation nses. Stays in place (config-namespaced = foundation).
+  bb spec 1885 + bb features 744 green (incl. config hot-reload features).
+
+Remaining shape (discovered via deeper reads — these share seams, best done as one
+careful consolidated pass rather than piecemeal):
+- A recurring config-change-notify seam: notify-config-change! -> runtime/notify-path!
+  (config.runtime = server) appears in BOTH server_steps file-writes (isaac-file-
+  exists-with, EDN-isaac-file) AND session_steps (file-exists-with, initialize-root!
+  callers). Clean fix: foundation file-write steps do the foundation part (write +
+  g/dissoc :feature-config) and run a registered post-write hook; the server layer
+  registers (when source) runtime/notify-path!.
+- server_steps log steps (log-entries-match/dont-match) are already foundation-clean
+  (isaac.logger + step-tables + spec-helper only) — easy move.
+- server_steps "EDN isaac file" steps carry phase machinery (isaac-file-phase) that
+  entangles the move; needs care.
+- session_steps root-setup: initialize-root! foundation resets + server teardown
+  (comm/tool/single-turn/telly remove-ns/sidecar alter-var-root/memory-store) -> a
+  root-setup hook; plus the shared-util ripple (mem-fs/root-dir/with-feature-fs used
+  widely) — duplicate the trivial utils into the foundation ns to keep it self-contained.
+- service_steps generic "the file ..." fs assertions -> foundation (likely clean, no notify).
+- Then checkbox 5: per-feature audit (bb match-step per phrase).
