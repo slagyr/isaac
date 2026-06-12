@@ -6,6 +6,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
     [isaac.config.runtime :as runtime]
+    [isaac.foundation.fs-steps :as ffs]
     [isaac.server.cli :as server]
     [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
@@ -44,6 +45,14 @@
 ;; pollute feature test output. Gherclj loads isaac.features.steps.* for
 ;; every run, so this silences timbre for the whole feature suite.
 (timbre/merge-config! {:appenders {:println {:enabled? false}}})
+
+;; The foundation isaac-file write steps (moved to isaac.foundation.fs-steps)
+;; fire post-write hooks; register the server-side config-change notification
+;; so hot-reload scenarios still get notified when a config file is written.
+(ffs/register-post-write-hook!
+  (fn [path]
+    (when-let [source (g/get :config-change-source)]
+      (runtime/notify-path! source path))))
 
 (defn- parse-config-value [value]
   (cond
@@ -108,23 +117,6 @@
   (when-let [source (g/get :config-change-source)]
     (runtime/notify-path! source path)))
 
-(defn- parse-state-value [value]
-  (cond
-    (re-matches #"-?\d+" value) (parse-long value)
-    (= "true" (str/lower-case value)) true
-    (= "false" (str/lower-case value)) false
-    (or (str/starts-with? value "[")
-        (str/starts-with? value "{")
-        (str/starts-with? value ":")
-        (str/starts-with? value "\"")
-        (str/starts-with? value "#"))
-    (edn/read-string value)
-    (re-matches #"[a-z][a-z-]*" value) (keyword value)
-    :else value))
-
-(defn- parse-isaac-state-value [_file-path _path value]
-  (parse-state-value value))
-
 (defn- isaac-root-path []
   (g/get :root))
 
@@ -167,15 +159,6 @@
     (keyword value)
 
     :else value))
-
-(defn- maybe-prune-root-entity! [path]
-  (when-let [[_ kind id] (re-matches #"config/(crew|models|providers)/([^/]+)\.edn" path)]
-    (let [root-path (isaac-file-path "config/isaac.edn")
-          fs*       (server-fs)]
-      (when (fs/exists? fs* root-path)
-        (let [data (edn/read-string (fs/slurp fs* root-path))
-              data (update data (keyword kind) dissoc id)]
-          (fs/spit fs* root-path (pr-str data)))))))
 
 (defn- isaac-file-data [path]
   (let [path (isaac-file-path path)
@@ -266,43 +249,9 @@
                                        (assoc-in (or % {}) (config-path k) (parse-config-value (resolved-config-value v)))))
           (persist-config-entry! k v))))))
 
-(defn isaac-edn-file-exists [path table]
-  (with-server-fs
-    (fn []
-      (let [file-path (isaac-file-path path)
-            data      (reduce (fn [acc row]
-                                (let [row-map (zipmap (:headers table) row)
-                                      p       (get row-map "path")
-                                      value   (get row-map "value")
-                                      keys    (mapv keyword (str/split p #"\."))]
-                                  (cond
-                                    (skip-row? value)
-                                    acc
-
-                                    (delete-sentinel? value)
-                                    (dissoc-in acc keys)
-
-                                    :else
-                                    (assoc-in acc keys (parse-isaac-value file-path p value)))))
-                              (if (some #(delete-sentinel? (get (zipmap (:headers table) %) "value"))
-                                        (:rows table))
-                                (or (isaac-file-data path) {})
-                                {})
-                              (:rows table))]
-        (maybe-prune-root-entity! path)
-        (let [fs* (server-fs)]
-          (fs/mkdirs fs* (fs/parent file-path))
-          (fs/spit   fs* file-path (pr-str data)))
-        (notify-config-change! file-path)))))
-
-(defn isaac-file-exists-with-content [path content]
-  (with-server-fs
-    (fn []
-      (let [file-path (isaac-file-path path)
-            fs*       (server-fs)]
-        (fs/mkdirs fs* (fs/parent file-path))
-        (fs/spit   fs* file-path content)
-        (notify-config-change! file-path)))))
+;; isaac-edn-file-exists ("the EDN isaac file X exists with:") and
+;; isaac-file-exists-with-content ("the isaac file X exists with:") moved to
+;; isaac.foundation.fs-steps (write closure duplicated there).
 
 (defn isaac-edn-file-contains-content [path content]
   (with-server-fs
@@ -738,44 +687,9 @@
         k    (keyword key)]
     (g/should-not-be-nil (get body k))))
 
-(defn edn-isaac-file-contains [path table]
-  (if (= :assert (g/get :isaac-file-phase))
-    (let [data (with-server-fs #(isaac-file-data path))]
-      (doseq [row (:rows table)]
-        (let [row-map   (zipmap (:headers table) row)
-              value     (get row-map "value")]
-          (when-not (skip-row? value)
-            (let [actual   (get-path data (get row-map "path"))
-                  expected (parse-isaac-state-value path (get row-map "path") value)]
-              (g/should= expected actual))))))
-    (with-server-fs
-      (fn []
-        (let [data (reduce (fn [acc row]
-                             (let [row-map (zipmap (:headers table) row)
-                                   value   (get row-map "value")]
-                               (cond
-                                 (skip-row? value)
-                                 acc
-
-                                 (delete-sentinel? value)
-                                 (dissoc-in acc (str/split (get row-map "path") #"\."))
-
-                                 :else
-                                 (assoc-in acc
-                                           (str/split (get row-map "path") #"\.")
-                                           (parse-isaac-state-value path (get row-map "path") value)))))
-                           (if (some #(delete-sentinel? (get (zipmap (:headers table) %) "value"))
-                                     (:rows table))
-                             (or (isaac-file-data path) {})
-                             {})
-                           (:rows table))
-               path (isaac-file-path path)
-               fs*  (server-fs)]
-          (fs/mkdirs fs* (fs/parent path))
-          (fs/spit   fs* path (pr-str data)))))))
-
-(defn edn-isaac-file-does-not-exist [path]
-  (g/should-not (with-server-fs #(fs/exists? (server-fs) (isaac-file-path path)))))
+;; edn-isaac-file-contains ("the EDN isaac file X contains:") and
+;; edn-isaac-file-does-not-exist ("the isaac file X does not exist") moved to
+;; isaac.foundation.fs-steps.
 
 (defn isaac-edn-file-removed [path]
   (with-server-fs
@@ -836,19 +750,7 @@
   "Deletes any file at <root>/.isaac/<path> and fires a config-change
    notification so a running server's hot-reload processes the removal.")
 
-(defgiven "the isaac EDN file {path:string} exists with:" isaac.server.server-steps/isaac-edn-file-exists
-  "Writes structured EDN to <root>/.isaac/<path>. Table rows are
-    {path, value}; dot-separated path column creates nested keyword maps
-    (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
-    notification so a running server's hot-reload picks it up. A value of
-    '#delete' removes that dotted path from the current file before write.")
-
 (defgiven #"the isaac config path \"([^\"]+)\" is \"([^\"]*)\"" isaac.server.server-steps/isaac-config-path-is)
-
-(defgiven "the isaac file {path:string} exists with:" isaac.server.server-steps/isaac-file-exists-with-content
-  "Writes heredoc content (not EDN) to <root>/.isaac/<path>. Use
-   for markdown companions (.md), raw text files, etc. EDN files should
-   use 'the isaac EDN file X exists with:' instead.")
 
 (defgiven #"the isaac EDN file \"([^\"]+)\" contains:" isaac.server.server-steps/isaac-edn-file-contains-content
   "Writes heredoc EDN content to <root>/.isaac/<path> and notifies the
@@ -943,16 +845,5 @@
 (defthen "the response body has a {key:string} key" isaac.server.server-steps/response-body-has-key)
 
 (defthen "the available slash commands include:" isaac.server.server-steps/available-slash-commands-include)
-
-(defgiven "the EDN isaac file \"{path}\" contains:" isaac.server.server-steps/edn-isaac-file-contains
-  "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or
-     worker tick), reads the on-disk EDN and asserts the table rows match.
-     Otherwise writes the table as EDN to the path. Same phrase, different
-     behavior depending on where it appears in the scenario. In write mode,
-     '#delete' removes that path from the current file before writing.")
-
-(defgiven "the EDN isaac file \"{path}\" exists with:" isaac.server.server-steps/isaac-edn-file-exists)
-
-(defthen "the isaac file \"{path}\" does not exist" isaac.server.server-steps/edn-isaac-file-does-not-exist)
 
 ;; endregion ^^^^^ Routing ^^^^^
