@@ -4,8 +4,10 @@ title: 'Foundation pre-work: split isaac.config.api into read-side and isaac.con
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-12T12:49:21Z
-updated_at: 2026-06-12T13:44:08Z
+updated_at: 2026-06-12T13:50:22Z
 parent: isaac-brth
 ---
 
@@ -59,3 +61,22 @@ Working tree: clean
 Missing required unit spec for new production namespace `src/isaac/config/runtime.clj`. Project testing discipline in AGENTS.md requires every namespace in `src/` to have a corresponding spec in `spec/`, and says a bean is not complete if new `src/` namespaces lack corresponding `spec/` files. This bean adds `src/isaac/config/runtime.clj` but `spec/isaac/config/runtime_spec.clj` does not exist (`find spec -path "*runtime_spec.clj" -print` returned no files).
 
 The explicit grep acceptance check passed: `rg 'config\\.install|config\\.configurator|change\\.source' src/isaac/config/api.clj` returned zero hits. I did not continue to full suite closure after this blocking spec-coverage failure.
+
+## Verification fix (missing spec)
+
+Addressed the blocking verification failure: the new production namespace
+`src/isaac/config/runtime.clj` lacked a corresponding spec, violating
+AGENTS.md:114 ("Every namespace in src/ must have a corresponding spec in
+spec/").
+
+Added **spec/isaac/config/runtime_spec.clj** (17 examples, 33 assertions). Since
+config.runtime is a pure delegation facade, the spec pins the delegation
+contract for all 16 public fns — args forwarded unchanged and the source's
+return value passed back — mirroring how spec/isaac/api_spec.clj tests its
+delegating fns (with-redefs on the source for regular fns; reify for the
+Reconfigurable protocol methods on-startup!/on-config-change!; protocol
+re-export check for Reconfigurable itself).
+
+Re-ran both suites green:
+- bb spec: 1878 examples, 0 failures.
+- bb features: 744 examples, 0 failures.
