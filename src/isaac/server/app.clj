@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
     [isaac.cron.service :as cron-service]
     [isaac.comm.delivery.worker :as worker]
@@ -139,7 +140,7 @@
                              root (assoc :root root))
         comm-registry      @comm-registry/*registry*
         registries         (registries)
-        server-cfg         (config/server-config cfg)
+        server-cfg         (resolve/server-config cfg)
         port               (or (:port opts) (:port server-cfg))
         host               (or (:host opts) (:host server-cfg))
         dev?               (true? (:dev opts))

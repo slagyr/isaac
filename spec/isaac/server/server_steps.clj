@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
     [isaac.foundation.fs-steps :as ffs]
     [isaac.server.cli :as server]
@@ -325,7 +326,7 @@
                                        (module-loader/discover! merged {:root runtime-state
                                                                         :cwd       (System/getProperty "user.dir")}))]
                                (assoc merged :module-index (:index disc)))
-        cfg            (config/server-config server-config)
+        cfg            (resolve/server-config server-config)
         ;; For synthetic default homes, feature steps notify config changes
         ;; explicitly, so a memory-backed source is deterministic and cheap.
         ;; Real root scenarios keep the real watcher path when hot reload

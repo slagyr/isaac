@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.fs :as fs]
     [isaac.session.context :as session-ctx]
     [isaac.nexus :as nexus]))
@@ -51,7 +52,7 @@
              cfg    (if agents
                        (build-synthetic-cfg agents models)
                        (:config (config/load-config-result {:root root :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
-             ctx    (config/resolve-crew-context cfg crew-id)]
+             ctx    (resolve/resolve-crew-context cfg crew-id)]
          (assoc ctx :boot-files (session-ctx/read-boot-files nil))))))
 
 (defn turn-context-resolved [agent]

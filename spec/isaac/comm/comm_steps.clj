@@ -5,6 +5,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.comm.memory :as memory-comm]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.drive.dispatch :as drive-dispatch]
     [isaac.llm.provider :as llm-provider]
     [isaac.step-tables :as match]
@@ -112,7 +113,7 @@
                        (when-let [provider-id (:provider agent-cfg)]
                          {:model model-id :provider provider-id}))
         provider   (:provider model-cfg)
-        prov-cfg   (merge (or (config/resolve-provider cfg provider) {})
+        prov-cfg   (merge (or (resolve/resolve-provider cfg provider) {})
                           (or (get (g/get :provider-configs) provider) {})
                           {:module-index (:module-index cfg)})]
     {:model          (:model model-cfg)

@@ -3,6 +3,7 @@
     [c3kit.apron.schema :as schema]
     [clojure.string :as str]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -87,7 +88,7 @@
                            (get-in cfg [:defaults :crew])
                            "main")
         model-override (:model session-entry)
-        ctx            (config/resolve-crew-context cfg crew-id
+        ctx            (resolve/resolve-crew-context cfg crew-id
                                                     (cond-> {:root root}
                                                       model-override (assoc :model-override model-override)))
         crew-cfg       (:crew-cfg ctx)
@@ -110,23 +111,23 @@
      :effort            (effort/resolve-effort session-entry
                                                (or crew-cfg {})
                                                (or (:model-cfg ctx) {})
-                                               (or (config/resolve-provider cfg (get-in ctx [:model-cfg :provider])) {})
+                                               (or (resolve/resolve-provider cfg (get-in ctx [:model-cfg :provider])) {})
                                                (or (:defaults cfg) {}))
      :history-retention (or (:history-retention session-entry)
-                            (config/resolve-history-retention cfg crew-id nil))
+                            (resolve/resolve-history-retention cfg crew-id nil))
      :model             (or model-ref
                             (:model ctx))
      :model-cfg         (:model-cfg ctx)
      :nonce             (:nonce session-entry)
      :provider          (:provider ctx)
-     :provider-cfg      (or (config/resolve-provider cfg (get-in ctx [:model-cfg :provider])) {})
+     :provider-cfg      (or (resolve/resolve-provider cfg (get-in ctx [:model-cfg :provider])) {})
      :soul              (:soul ctx)}))
 
 (defn resolve-compaction-config
   [cfg session-entry ctx context-window]
   (let [provider-id  (or (get-in ctx [:model-cfg :provider])
                          (get-in session-entry [:provider]))
-        provider-cfg (or (config/resolve-provider cfg provider-id) {})
+        provider-cfg (or (resolve/resolve-provider cfg provider-id) {})
         defaults     {:async?    false
                       :strategy  :rubberband
                       :head      (default-head context-window)

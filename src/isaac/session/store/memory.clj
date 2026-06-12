@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.logger :as log]
     [isaac.naming :as naming]
     [isaac.session.schema :as session-schema]
@@ -46,7 +47,7 @@
 
   (open-session! [_ name opts]
     (let [opts      (c/entry-defaults opts)
-          retention (config/resolve-history-retention (effective-config (:config opts))
+          retention (resolve/resolve-history-retention (effective-config (:config opts))
                                                       (or (:crew opts) "main")
                                                       (:history-retention opts))
           name      (or name
@@ -216,7 +217,7 @@
   (splice-compaction! [_ name {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]}]
     (let [id               (c/session-id name)
           transcript       (get-in @state [:transcripts id] [])
-          retention        (or (get-in @state [:sessions id :history-retention]) config/default-history-retention)
+          retention        (or (get-in @state [:sessions id :history-retention]) resolve/default-history-retention)
           compacted-ids    (set compactedEntryIds)
           removable-ids    (->> transcript
                                 (filter #(and (= "message" (:type %))

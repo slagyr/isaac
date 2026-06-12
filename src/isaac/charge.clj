@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.bridge.cancellation :as cancellation]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.llm.provider :as llm-provider]
     [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]
@@ -86,7 +87,7 @@
 (defn- ensure-provider [provider cfg]
   (cond
     (nil? provider) nil
-    (string? provider) (let [prov-cfg     (config/resolve-provider cfg provider)
+    (string? provider) (let [prov-cfg     (resolve/resolve-provider cfg provider)
                              enriched-cfg (merge (or prov-cfg {})
                                                  {:providers    (:providers cfg)
                                                   :module-index (:module-index cfg)})]

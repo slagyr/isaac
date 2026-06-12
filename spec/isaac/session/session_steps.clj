@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
     [isaac.foundation.root-steps :as froot]
     [isaac.drive.dispatch :as drive-dispatch]
@@ -219,7 +220,7 @@
         model-cfg     (current-model-config)]
     (merge (or (get (g/get :provider-configs) provider-name)
                (get (g/get :provider-configs) base-name)
-               (config/resolve-provider (loaded-config) provider-name))
+               (resolve/resolve-provider (loaded-config) provider-name))
            (select-keys model-cfg [:enforce-context-window]))))
 
 (defn- current-agent-config []
@@ -890,7 +891,7 @@
             agent-id   (or (:crew session) (:agent session) "main")
             cfg        (loaded-config)
             model-cfg  (current-model-config)
-            ctx        (assoc (config/resolve-crew-context cfg agent-id)
+            ctx        (assoc (resolve/resolve-crew-context cfg agent-id)
                               :boot-files (session-ctx/read-boot-files (:cwd session)))
             provider'  (unquote-string provider)
             openai?    (or (str/includes? provider' "openai") (str/includes? provider' "grok"))
@@ -1125,7 +1126,7 @@
                      messages-api/build
                      prompt/build)
         skill-disclosure (session-ctx/read-skill-disclosure cfg (root-dir) (:cwd session) (mem-fs))
-        ctx        (assoc (config/resolve-crew-context cfg agent-id)
+        ctx        (assoc (resolve/resolve-crew-context cfg agent-id)
                           :boot-files      (session-ctx/read-boot-files (:cwd session))
                           :rules-text      (session-ctx/read-rules-text cfg (root-dir) (:cwd session) (mem-fs))
                           :skill-menu-text (:menu-text skill-disclosure))]
@@ -1251,7 +1252,7 @@
             agent-id      (or (:crew session) (:agent session) "main")
             cfg           (loaded-config)
             model-cfg     (current-model-config)
-            ctx           (assoc (config/resolve-crew-context cfg agent-id)
+            ctx           (assoc (resolve/resolve-crew-context cfg agent-id)
                                  :boot-files (session-ctx/read-boot-files (:cwd session)))
             provider-name (or (some (fn [[name cfg]]
                                       (when (contains? #{"chat-completions" "responses"} (:api cfg))

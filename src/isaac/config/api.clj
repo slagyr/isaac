@@ -17,7 +17,6 @@
    underlying fn still takes effect for callers through this API."
   (:require
     [isaac.config.loader :as loader]
-    [isaac.config.resolve :as resolve]
     [isaac.config.paths :as paths]
     [isaac.root :as root]))
 
@@ -99,34 +98,9 @@
   (loader/clear-env-overrides!))
 
 ;; ----- resolution -----
-
-(defn resolve-provider
-  "Resolves the provider config for `provider-id` against `cfg`."
-  [cfg provider-id]
-  (resolve/resolve-provider cfg provider-id))
-
-(defn resolve-crew
-  "Resolves the crew config for `crew-id` against `cfg`, merging in defaults."
-  [cfg crew-id]
-  (resolve/resolve-crew cfg crew-id))
-
-(defn resolve-crew-context
-  "Resolves a crew's per-turn context (soul, model, provider, context-window).
-   `opts` may carry crew-members/models/providers overrides and :model-override."
-  ([cfg crew-id]      (resolve/resolve-crew-context cfg crew-id))
-  ([cfg crew-id opts] (resolve/resolve-crew-context cfg crew-id opts)))
-
-(defn resolve-history-retention
-  "Resolves history retention for a new session from the cascade:
-   explicit > crew > model > provider > defaults > default-history-retention."
-  [cfg crew-id explicit-retention]
-  (resolve/resolve-history-retention cfg crew-id explicit-retention))
-
-(def default-history-retention
-  "History-retention used when nothing in the resolution cascade specifies one."
-  resolve/default-history-retention)
-
-(defn server-config
-  "Resolves the server settings (port, host, hot-reload, dev) from `config`."
-  [config]
-  (resolve/server-config config))
+;;
+;; Provider/crew/server-config resolution moved off the foundation read facade
+;; into isaac.config.resolve (server-side; depends on isaac.llm / config.schema).
+;; Server callers require isaac.config.resolve directly. Keeping it here would
+;; pull isaac.llm + isaac.session into the foundation (see the foundation
+;; boundary gate, isaac-youm).

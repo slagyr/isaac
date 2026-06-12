@@ -5,6 +5,7 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [isaac.config.api :as config]
+    [isaac.config.resolve :as resolve]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.naming :as naming]
@@ -105,7 +106,7 @@
       {}))
 
 (defn resolve-history-retention [opts]
-  (config/resolve-history-retention (effective-config (:config opts))
+  (resolve/resolve-history-retention (effective-config (:config opts))
                                     (or (:crew opts) "main")
                                     (:history-retention opts)))
 
@@ -565,7 +566,7 @@
 (defn splice-compaction! [get-session-fn migrate-fn update-entry-fn now-fn root identifier {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]} fs]
   (let [entry            (get-session-fn root identifier fs)
         transcript       (migrate-fn root (:session-file entry) fs)
-        retention        (or (:history-retention entry) config/default-history-retention)
+        retention        (or (:history-retention entry) resolve/default-history-retention)
         compacted-ids    (set compactedEntryIds)
         removable-ids    (->> transcript
                                (filter #(and (= "message" (:type %))
