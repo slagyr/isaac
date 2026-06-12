@@ -1,16 +1,12 @@
 (ns isaac.session.compaction-schema)
 
 (def config-schema
-  {:strategy  {:type :keyword}
-   :threshold {:type        :double
-               :validations [{:validate #(or (nil? %)
-                                             (and (>= % 0.0) (< % 1.0)))
-                              :message  "must be a percentage in [0.0, 1.0); e.g. 0.8 for 80% of context-window"}]}
-   :head      {:type        :double
-               :validations [{:validate #(or (nil? %)
-                                             (and (>= % 0.0) (< % 1.0)))
-                              :message  "must be a percentage in [0.0, 1.0); e.g. 0.3 for 30% of context-window"}]}
-   :async?    {:type :boolean}
-   :*         {:head-threshold {:validate (fn [{:keys [head threshold]}]
-                                           (or (nil? head) (nil? threshold) (< head threshold)))
-                                :message  "head must be smaller than threshold"}}})
+  {:strategy       {:type :keyword}
+   :threshold      {:type        :double
+                    :validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}
+   :head           {:type        :double
+                    :validations [[:percentage? "e.g. 0.3 for 30% of context-window"]]}
+   :async?         {:type :boolean}
+   :head-threshold {:type        :ignore
+                    :validations [[:less-than? :head :threshold]]
+                    :description "Derived: head must stay below threshold"}})

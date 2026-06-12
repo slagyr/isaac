@@ -154,47 +154,553 @@
                                :model  {:factory isaac.slash.builtin/model-command}
                                :status {:factory isaac.slash.builtin/status-command}}
 
- :isaac.config/schema {:acp {:fragment isaac.config.schema/acp}
-                       :channels {:fragment isaac.config.schema/channels}
-                       :comms {:fragment isaac.config.schema/field-comms}
-                       :crew {:fragment isaac.config.schema/field-crew
-                              :entity-dir "crew"
-                              :frontmatter? true
-                              :merge-root-entity? true
-                              :companion {:field :soul :mode :exclusive}}
-                       :cron {:fragment isaac.config.schema/field-cron
-                              :entity-dir "cron"
-                              :frontmatter? true
-                              :merge-root-entity? true
-                              :companion {:field :prompt :mode :required}}
-                       :defaults {:fragment isaac.config.schema/defaults}
-                       :gateway {:fragment isaac.config.schema/gateway}
-                       :hail {:fragment isaac.config.schema/hail
-                              :entity-dir "hail"
-                              :merge-root-entity? true
-                              :companion {:field :prompt :mode :optional}}
-                       :hooks {:fragment isaac.config.schema/hooks
-                               :entity-dir "hooks"
-                               :frontmatter? true
-                               :companion {:field :template :mode :required}}
-                       :models {:fragment isaac.config.schema/field-models
-                                :entity-dir "models"
-                                :merge-root-entity? true}
-                       :providers {:fragment isaac.config.schema/field-providers
-                                   :entity-dir "providers"
-                                   :merge-root-entity? true}
-                       :prompt-dir-names {:fragment isaac.config.schema/field-prompt-dir-names}
-                       :prompt-paths {:fragment isaac.config.schema/field-prompt-paths}
-                       :prefer-entity-files {:fragment isaac.config.schema/field-prefer-entity-files}
-                       :command-paths {:fragment isaac.config.schema/field-command-paths}
-                       :skill-paths {:fragment isaac.config.schema/field-skill-paths}
-                       :skill-menu-threshold {:fragment isaac.config.schema/field-skill-menu-threshold}
-                       :slash-commands {:fragment isaac.config.schema/slash-commands}
-                       :sessions {:fragment isaac.config.schema/sessions}
-                       :server {:fragment isaac.config.schema/server}
-                       :tools {:fragment isaac.config.schema/field-tools}
-                       :tz {:fragment isaac.config.schema/field-tz}}
-
+ :isaac.config/schema
+ {:acp
+  {:schema
+   {:name :acp,
+    :type :map,
+    :description "Agent Communication Protocol configuration",
+    :schema
+    {:proxy-max-reconnects
+     {:type :int,
+      :description "Maximum reconnect attempts for ACP proxy"},
+     :proxy-reconnect-delay-ms
+     {:type :int,
+      :description
+      "Base reconnect delay in milliseconds for ACP proxy"},
+     :proxy-reconnect-max-delay-ms
+     {:type :int,
+      :description
+      "Maximum reconnect delay in milliseconds for ACP proxy"}}}},
+  :channels
+  {:schema
+   {:name :channels,
+    :type :map,
+    :description "Legacy communication channel configuration",
+    :schema {}}},
+  :command-paths
+  {:schema
+   {:type :seq,
+    :spec {:type :string},
+    :description "Extra typed roots to scan for prepared commands"}},
+  :comms
+  {:schema
+   {:description
+    "Communication channel configurations (map of name -> comm config)",
+    :type :map,
+    :name "comms table",
+    :key-spec {:type :string},
+    :value-spec
+    {:name :comm,
+     :type :map,
+     :schema
+     {:type
+      {:type :id,
+       :description "Manifest comm kind to instantiate",
+       :validations [[:registered-in? :isaac.server/comm [:comms]]],
+       :options-from :comms},
+      :crew
+      {:type :id,
+       :description "Crew id this comm routes into",
+       :validations [:crew-exists?]}}}}},
+  :crew
+  {:entity-dir "crew",
+   :frontmatter? true,
+   :merge-root-entity? true,
+   :companion {:field :soul, :mode :exclusive},
+   :schema
+   {:description
+    "Crew member configurations (map of id -> crew config)",
+    :type :map,
+    :name "crew table",
+    :snapshot-only? true,
+    :key-spec {:type :string},
+    :value-spec
+    {:name :crew,
+     :type :map,
+     :schema
+     {:tags
+      {:type :ignore,
+       :set-type? true,
+       :validations [:keyword-set?],
+       :description
+       "Flat set of keyword tags for discovery and routing"},
+      :effort
+      {:type :int,
+       :description
+       "Effort level override for this crew member (0-10)"},
+      :tools
+      {:name :tools,
+       :type :map,
+       :description "Tool configuration",
+       :schema
+       {:allow
+        {:type :seq,
+         :spec
+         {:type :keyword,
+          :validations [[:registered-in? :isaac.server/tools]]},
+         :description "Allowed tool names"},
+        :directories
+        {:type :seq,
+         :spec {:type :ignore, :validations [:cwd-or-path?]},
+         :description
+         "Allowed directories; :cwd expands to session cwd, strings are absolute paths"}}},
+      :cwd
+      {:type :string,
+       :validations [:absolute-path?],
+       :description "Default workdir for new sessions on this crew"},
+      :soul
+      {:type :string,
+       :description
+       "The personality of this crew member. Alternatively saved at config/crew/<id>.md"},
+      :history-retention
+      {:type :keyword,
+       :validations [[:one-of? :prune :retain]],
+       :description
+       "Transcript history retention policy for new sessions"},
+      :id
+      {:type :id,
+       :description "Crew member id; must match filename when present"},
+      :context-mode
+      {:type :keyword,
+       :validations [[:one-of? :full :reset]],
+       :description "How much transcript history to replay each turn"},
+      :provider
+      {:type :id,
+       :description "Provider id for direct provider/model crews",
+       :validations
+       [[:registered-in? :isaac.server/provider [:providers]]]},
+      :compaction
+      {:type :map,
+       :schema
+       {:strategy {:type :keyword},
+        :threshold
+        {:type :double,
+         :validations
+         [[:percentage? "e.g. 0.8 for 80% of context-window"]]},
+        :head
+        {:type :double,
+         :validations
+         [[:percentage? "e.g. 0.3 for 30% of context-window"]]},
+        :async? {:type :boolean},
+        :head-threshold
+        {:type :ignore,
+         :validations [[:less-than? :head :threshold]],
+         :description "Derived: head must stay below threshold"}}},
+      :max-in-flight
+      {:type :int,
+       :validations [:positive?],
+       :description
+       "Maximum concurrent in-flight turns for this crew member"},
+      :model
+      {:type :id,
+       :description "ID of the model this crew member uses.",
+       :validations [:model-exists?]}}}}},
+  :cron
+  {:entity-dir "cron",
+   :frontmatter? true,
+   :merge-root-entity? true,
+   :companion {:field :prompt, :mode :required},
+   :schema
+   {:description
+    "Cron job configurations (map of job name -> cron job config)",
+    :type :map,
+    :name "cron table",
+    :key-spec {:type :string},
+    :value-spec
+    {:name :cron-job,
+     :type :map,
+     :description "Cron job configuration",
+     :schema
+     {:expr {:type :string, :description "5-field cron expression"},
+      :crew
+      {:type :id,
+       :description "Crew id to run the job as",
+       :validations [:crew-exists?]},
+      :prompt
+      {:type :string,
+       :description "Prompt sent when the cron job fires"}}}}},
+  :defaults
+  {:schema
+   {:name :defaults,
+    :type :map,
+    :description "Default crew and model selections",
+    :schema
+    {:crew
+     {:type :id,
+      :default "main",
+      :description "Default crew member id",
+      :validations [:crew-exists?]},
+     :model
+     {:type :id,
+      :default "llama",
+      :description "Default model alias",
+      :validations [:model-exists?]},
+     :context-mode
+     {:type :keyword,
+      :validations [[:one-of? :full :reset]],
+      :description "Default transcript replay mode for new turns"},
+     :compaction
+     {:type :map,
+      :schema
+      {:strategy {:type :keyword},
+       :threshold
+       {:type :double,
+        :validations
+        [[:percentage? "e.g. 0.8 for 80% of context-window"]]},
+       :head
+       {:type :double,
+        :validations
+        [[:percentage? "e.g. 0.3 for 30% of context-window"]]},
+       :async? {:type :boolean},
+       :head-threshold
+       {:type :ignore,
+        :validations [[:less-than? :head :threshold]],
+        :description "Derived: head must stay below threshold"}},
+      :description "Default compaction policy for sessions"},
+     :history-retention
+     {:type :keyword,
+      :validations [[:one-of? :prune :retain]],
+      :description
+      "Default transcript history retention policy for new sessions"},
+     :effort
+     {:type :int,
+      :description
+      "Default effort level (0-10) when not overridden by provider/model/crew/session"}}}},
+  :gateway
+  {:schema
+   {:name :gateway,
+    :type :map,
+    :description "Gateway server configuration (ACP WebSocket)",
+    :schema
+    {:host {:type :string, :description "Bind host"},
+     :port {:type :int, :description "Bind port"}}}},
+  :hail
+  {:entity-dir "hail",
+   :merge-root-entity? true,
+   :companion {:field :prompt, :mode :optional},
+   :schema
+   {:name :hail,
+    :type :map,
+    :description "Hail band declarations",
+    :snapshot-only? true,
+    :key-spec {:type :string},
+    :value-spec
+    {:name :hail-band,
+     :type :map,
+     :description "Hail band declaration",
+     :schema
+     {:crew
+      {:type :seq,
+       :spec {:type :string},
+       :description "Explicit crew ids eligible for the band"},
+      :crew-tags
+      {:type :seq,
+       :spec {:type :keyword},
+       :description "Tags crews must carry"},
+      :session
+      {:type :seq,
+       :spec {:type :string},
+       :description "Explicit session ids eligible for the band"},
+      :session-tags
+      {:type :seq,
+       :spec {:type :keyword},
+       :description "Tags sessions must carry"},
+      :reach
+      {:type :keyword,
+       :validations [[:one-of? :one :all]],
+       :description "How many listeners receive the hail"},
+      :prompt
+      {:type :string,
+       :description "Optional companion markdown prompt for the band"},
+      :addressing
+      {:type :ignore,
+       :validations
+       [[:requires-any? :crew :crew-tags :session :session-tags]],
+       :description
+       "Derived: bands must address crews or sessions"}}}}},
+  :hooks
+  {:entity-dir "hooks",
+   :frontmatter? true,
+   :companion {:field :template, :mode :required},
+   :schema
+   {:name :hooks,
+    :type :map,
+    :description "Webhook configuration",
+    :schema
+    {:auth
+     {:name :hook-auth,
+      :type :map,
+      :description "Retired webhook auth configuration",
+      :schema
+      {:token
+       {:type :string,
+        :validations [[:retired? "use :server :auth :token"]]}}}},
+    :key-spec {:type :string},
+    :value-spec
+    {:name :hook,
+     :type :map,
+     :description "Webhook receiver configuration",
+     :schema
+     {:crew
+      {:type :id,
+       :description "Crew id to run the hook as",
+       :validations [:crew-exists?]},
+      :id
+      {:type :id,
+       :description "Hook id; must match filename when present"},
+      :model
+      {:type :id,
+       :description "Optional model override for the hook session",
+       :validations [:model-exists?]},
+      :session-key
+      {:type :string,
+       :description "Session key to use for dispatched turns"},
+      :template
+      {:type :string,
+       :description "Rendered message template for the hook body"}}}}},
+  :models
+  {:entity-dir "models",
+   :merge-root-entity? true,
+   :schema
+   {:description "Model configurations (map of id -> model config)",
+    :type :map,
+    :name "model table",
+    :snapshot-only? true,
+    :key-spec {:type :string},
+    :value-spec
+    {:name :model,
+     :type :map,
+     :schema
+     {:effort
+      {:type :int,
+       :description "Effort level override for this model (0-10)"},
+      :thinking-budget-max
+      {:type :int,
+       :description
+       "Anthropic: max thinking budget tokens at effort=10; scales linearly. Default 32000."},
+      :allows-effort
+      {:type :boolean,
+       :description
+       "Whether to attach :effort to requests for this model (default true)"},
+      :history-retention
+      {:type :keyword,
+       :validations [[:one-of? :prune :retain]],
+       :description
+       "Transcript history retention policy for sessions created against this model"},
+      :id
+      {:type :id,
+       :description "Model alias; must match filename when present"},
+      :provider
+      {:type :id,
+       :description "Provider alias",
+       :required? true,
+       :validations
+       [:present?
+        [:registered-in? :isaac.server/provider [:providers]]]},
+      :context-window
+      {:type :int, :description "Context window size in tokens"},
+      :think-mode
+      {:type :keyword,
+       :description
+       "Ollama: how :effort is translated. :bool (default) → think true/false; :levels → \"low\"|\"medium\"|\"high\"."},
+      :compaction
+      {:type :map,
+       :schema
+       {:strategy {:type :keyword},
+        :threshold
+        {:type :double,
+         :validations
+         [[:percentage? "e.g. 0.8 for 80% of context-window"]]},
+        :head
+        {:type :double,
+         :validations
+         [[:percentage? "e.g. 0.3 for 30% of context-window"]]},
+        :async? {:type :boolean},
+        :head-threshold
+        {:type :ignore,
+         :validations [[:less-than? :head :threshold]],
+         :description "Derived: head must stay below threshold"}},
+       :description "Compaction policy override for this model"},
+      :model
+      {:type :string,
+       :description "Provider-specific model name or id",
+       :required? true,
+       :validations [:present?]}}}}},
+  :prefer-entity-files
+  {:schema
+   {:type :boolean,
+    :default false,
+    :description
+    "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}},
+  :prompt-dir-names
+  {:schema
+   {:type :map,
+    :key-spec {:type :string},
+    :value-spec {:type :string},
+    :description
+    "Directory-name to prompt-type mapping for prepared prompts"}},
+  :prompt-paths
+  {:schema
+   {:type :seq,
+    :spec {:type :string},
+    :description "Extra roots to scan for prepared prompts"}},
+  :providers
+  {:entity-dir "providers",
+   :merge-root-entity? true,
+   :schema
+   {:description
+    "Provider configurations (map of id -> provider config)",
+    :type :map,
+    :name "provider table",
+    :snapshot-only? true,
+    :key-spec {:type :string},
+    :value-spec
+    {:name :provider,
+     :type :map,
+     :schema
+     {:effort
+      {:type :int,
+       :description "Effort level for this provider (0-10)"},
+      :assistant-base-url
+      {:type :string, :description "Base URL for assistant endpoints"},
+      :supports-system-role
+      {:type :boolean,
+       :description
+       "Whether the provider accepts a system role message"},
+      :api
+      {:type :id,
+       :description
+       "Provider API adapter (e.g. \"anthropic\", \"ollama\")",
+       :validations [[:registered-in? :isaac.server/llm-api]]},
+      :name {:type :string, :description "Display name"},
+      :response-format
+      {:type :string, :description "Response format hint"},
+      :type
+      {:type :id,
+       :description "Manifest provider id to inherit template from",
+       :validations
+       [[:registered-in? :isaac.server/provider-template]]},
+      :auth
+      {:type :string,
+       :description "Authentication mode (e.g. \"oauth-device\")"},
+      :base-url {:type :string, :description "API base URL"},
+      :headers
+      {:type :map,
+       :key-spec {:type :string},
+       :value-spec {:type :string},
+       :description "Extra HTTP headers to include in requests"},
+      :token
+      {:type :string,
+       :description "Authentication token (alias for api-key)"},
+      :models
+      {:type :seq,
+       :spec {:type :string},
+       :description "Canonical model ids served by this provider"},
+      :auth-key {:type :string, :description "Authentication key"},
+      :history-retention
+      {:type :keyword,
+       :validations [[:one-of? :prune :retain]],
+       :description
+       "Transcript history retention policy for sessions created against this provider"},
+      :id
+      {:type :id,
+       :description "Provider id; must match filename when present"},
+      :stream-supports-tool-calls
+      {:type :boolean,
+       :description "Whether streaming mode supports tool calls"},
+      :compaction
+      {:type :map,
+       :schema
+       {:strategy {:type :keyword},
+        :threshold
+        {:type :double,
+         :validations
+         [[:percentage? "e.g. 0.8 for 80% of context-window"]]},
+        :head
+        {:type :double,
+         :validations
+         [[:percentage? "e.g. 0.3 for 30% of context-window"]]},
+        :async? {:type :boolean},
+        :head-threshold
+        {:type :ignore,
+         :validations [[:less-than? :head :threshold]],
+         :description "Derived: head must stay below threshold"}},
+       :description "Compaction policy override for this provider"},
+      :originator
+      {:type :string, :description "X-Originator header value"},
+      :api-key
+      {:type :string,
+       :validations [[:present-when? :auth "api-key"]],
+       :description "API key"}}}}},
+  :server
+  {:schema
+   {:name :server,
+    :type :map,
+    :description "HTTP server configuration",
+    :schema
+    {:auth
+     {:type :map,
+      :description "Server-wide inbound auth configuration",
+      :schema
+      {:token
+       {:type :string,
+        :description "Bearer token for inbound HTTP requests"}}},
+     :host {:type :string, :description "Bind host"},
+     :port {:type :int, :description "Bind port"},
+     :hot-reload
+     {:type :boolean,
+      :description "Enable config hot-reload watcher"}}}},
+  :sessions
+  {:schema
+   {:name :sessions,
+    :type :map,
+    :description "Session storage configuration",
+    :schema
+    {:store
+     {:type :keyword,
+      :description
+      "Session store implementation: :memory, :jsonl-edn-sidecar (default), :jsonl-edn-index"},
+     :naming-strategy
+     {:type :ignore,
+      :validations [:keyword-or-string?],
+      :description "Session naming strategy"}}}},
+  :skill-menu-threshold
+  {:schema
+   {:type :int,
+    :validations [:non-negative?],
+    :description
+    "Max skill count to inject into the cached prompt before falling back to list_skills"}},
+  :skill-paths
+  {:schema
+   {:type :seq,
+    :spec {:type :string},
+    :description "Extra typed roots to scan for prepared skills"}},
+  :slash-commands
+  {:schema
+   {:name :slash-commands,
+    :type :map,
+    :snapshot-only? true,
+    :description "Slash command configuration",
+    :key-spec {:type :string},
+    :value-spec
+    {:name :slash-command,
+     :type :map,
+     :description "Slash command configuration",
+     :schema
+     {:command-name
+      {:type :string,
+       :description "Alternative name for the command"}}}}},
+  :tools
+  {:schema
+   {:description "Tool configurations (map of tool name -> config)",
+    :type :map,
+    :key-spec {:type :keyword},
+    :value-spec {:type :map}}},
+  :tz
+  {:schema
+   {:type :string,
+    :description "IANA timezone name for cron evaluation"}}}
  :isaac.config/check {:comm-reserved-schema {:fn isaac.config.checks/check-comm-reserved-schema}
                      :comms                 {:fn isaac.config.checks/check-comms}
                      :crew-compaction       {:fn isaac.config.checks/check-crew-compaction}

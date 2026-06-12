@@ -1,6 +1,10 @@
 (ns isaac.manifest-self-consistency-spec
   (:require
     [clojure.edn :as edn]
+    [isaac.config.validation]
+    [isaac.schema.meta]
+    [isaac.schema.registered-in]
+    [isaac.session.compaction-schema :as compaction-schema]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [speclj.core :refer :all]))
@@ -35,6 +39,25 @@
        (keep :isaac/factory)))
 
 (describe "manifest self-consistency"
+
+  (it "the server manifest is pure data — clojure.edn parses it with no readers"
+    (let [manifest (edn/read-string (slurp "resources/isaac-manifest.edn"))]
+      (should= :isaac.server (:id manifest))
+      (should= manifest (edn/read-string (pr-str manifest)))))
+
+  (it "every inline :isaac.config/schema contribution meta-validates"
+    (let [manifest (edn/read-string (slurp "resources/isaac-manifest.edn"))]
+      (doseq [[config-key {:keys [schema]}] (:isaac.config/schema manifest)]
+        (should (map? schema))
+        (should-not-throw (isaac.schema.meta/conform-spec! schema)))))
+
+  (it "the embedded compaction schemas stay aligned with isaac.session.compaction-schema"
+    (let [manifest      (edn/read-string (slurp "resources/isaac-manifest.edn"))
+          contributions (:isaac.config/schema manifest)]
+      (doseq [path [[:crew :schema :value-spec :schema :compaction :schema]
+                    [:models :schema :value-spec :schema :compaction :schema]
+                    [:defaults :schema :schema :compaction :schema]]]
+        (should= compaction-schema/config-schema (get-in contributions path)))))
   (it "resolves every declared :isaac/factory and :bootstrap symbol"
     (doseq [path (manifest-paths)
             :let [manifest   (read-manifest path)

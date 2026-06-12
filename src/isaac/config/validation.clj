@@ -61,11 +61,26 @@
    :message  (str "retired; " hint)})
 
 (defn- requires-any-ref [& field-keys]
+  ;; entity-scope; benign when apron's conform hands it a bare (nil)
+  ;; pseudo-field value instead of the entity.
   {:scope    :entity
-   :validate (fn [entity _field-key]
-               (boolean (some #(seq (get entity %)) field-keys)))
+   :validate (fn [entity & _]
+               (or (nil? entity)
+                   (boolean (some #(seq (get entity %)) field-keys))))
    :message  (str "must include at least one of "
                   (str/join ", " (map str field-keys)))})
+
+(defn- percentage-ref [hint]
+  {:validate #(or (nil? %) (and (number? %) (<= 0.0 %) (< % 1.0)))
+   :message  (str "must be a percentage in [0.0, 1.0); " hint)})
+
+(defn- less-than-ref [smaller-key larger-key]
+  {:scope    :entity
+   :validate (fn [entity & _]
+               (let [a (get entity smaller-key)
+                     b (get entity larger-key)]
+                 (or (nil? a) (nil? b) (< a b))))
+   :message  (str (name smaller-key) " must be smaller than " (name larger-key))})
 
 (defn- present-when-ref [other-key expected]
   {:scope    :entity
@@ -82,6 +97,8 @@
            (cs/update-lexicon! :validations assoc :present-when? present-when-ref)
            (cs/update-lexicon! :validations assoc :retired? retired-ref)
            (cs/update-lexicon! :validations assoc :requires-any? requires-any-ref)
+           (cs/update-lexicon! :validations assoc :percentage? percentage-ref)
+           (cs/update-lexicon! :validations assoc :less-than? less-than-ref)
            true))
 
 (defn validation-context [config]

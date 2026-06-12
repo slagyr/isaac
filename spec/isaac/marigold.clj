@@ -22,7 +22,7 @@
     [isaac.config.api :as config-loader]
     [isaac.config.check-contributions :as check-contributions]
     [isaac.config.schema-compose :as schema-compose]
-    [isaac.config.schema-contributions :as schema-contributions]
+    [isaac.config.schema :as config-schema]
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     ;; Grover is the only impl namespace we need — all themed apis
@@ -215,7 +215,7 @@
                                    :manifest    {:schema {:type :map
                                                           :key-spec {:type :keyword}
                                                           :value-spec {:type :map
-                                                                       :schema {:fragment {:type :symbol :validations [:present?]}
+                                                                       :schema {:schema   {:type :map :validations [:present?]}
                                                                                 :entity-dir {:type :string}
                                                                                 :frontmatter? {:type :boolean}
                                                                                 :merge-root-entity? {:type :boolean}
@@ -301,7 +301,7 @@
                        (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
                        (keyword logbook)  {:factory 'isaac.comm.memory/make}}  ;; persisted / memory-like
 
-   :isaac.config/schema schema-contributions/server
+   :isaac.config/schema config-schema/contributions
    :isaac.config/check  check-contributions/server})
 
 (def baseline-manifest baseline-server-manifest)

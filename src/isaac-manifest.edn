@@ -17,7 +17,7 @@
                                   :manifest    {:schema {:type       :map
                                                          :key-spec   {:type :keyword}
                                                          :value-spec {:type   :map
-                                                                      :schema {:fragment           {:type :symbol :validations [:present?]}
+                                                                      :schema {:schema             {:type :map :validations [:present?]}
                                                                                :entity-dir         {:type :string}
                                                                                :frontmatter?       {:type :boolean}
                                                                                :merge-root-entity? {:type :boolean}

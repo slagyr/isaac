@@ -67,6 +67,30 @@
                                           {:validations [[:requires-any? :crew :crew-tags]]}
                                           nil {:crew ["atticus"]} :addressing))))
 
+  (describe "compaction-flavored refs"
+
+    (it "[:percentage? hint] rejects 1.0, folding the hint into the message"
+      (should= "must be a percentage in [0.0, 1.0); e.g. 0.8 for 80% of context-window"
+               (:value (first (sut/annotation-errors* nil [:threshold]
+                                                      {:validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}
+                                                      1.0)))))
+
+    (it "[:percentage? hint] accepts 0.8"
+      (should= [] (sut/annotation-errors* nil [:threshold]
+                                          {:validations [[:percentage? "e.g. 0.8 for 80% of context-window"]]}
+                                          0.8)))
+
+    (it "[:less-than? :head :threshold] errors when head meets threshold"
+      (should= "head must be smaller than threshold"
+               (:value (first (sut/annotation-errors* nil [:head-threshold]
+                                                      {:validations [[:less-than? :head :threshold]]}
+                                                      nil {:head 0.8 :threshold 0.8} :head-threshold)))))
+
+    (it "[:less-than? :head :threshold] passes when either side is absent"
+      (should= [] (sut/annotation-errors* nil [:head-threshold]
+                                          {:validations [[:less-than? :head :threshold]]}
+                                          nil {:head 0.3} :head-threshold))))
+
   (describe "validate-manifest-config"
 
     (it "reports unknown keys as warnings"
