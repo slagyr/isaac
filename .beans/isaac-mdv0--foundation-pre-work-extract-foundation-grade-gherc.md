@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-12T12:50:37Z
-updated_at: 2026-06-12T15:04:58Z
+updated_at: 2026-06-12T15:18:01Z
 parent: isaac-brth
 ---
 
@@ -110,3 +110,37 @@ careful consolidated pass rather than piecemeal):
   widely) — duplicate the trivial utils into the foundation ns to keep it self-contained.
 - service_steps generic "the file ..." fs assertions -> foundation (likely clean, no notify).
 - Then checkbox 5: per-feature audit (bb match-step per phrase).
+
+## Progress update 3 (log + service-fs extracted; remaining core mapped)
+
+Done + pushed since update 2 (each green + ambiguity-clean):
+- 95879e9d foundation log-steps (the log has entries/no entries matching:) — clean,
+  no fs-util coupling; server_steps_spec log tests moved to foundation/log_steps_spec.
+- da6e6d28 foundation fs-steps (the file X contains:/exists/does not exist) from
+  service_steps — clean, no notify; service_steps keeps expand-path for plist.
+
+Foundation step layer now: isaac.foundation.cli-steps, .log-steps, .fs-steps; config_steps
+foundation-clean in place. bb spec 1887 + bb features 744 green throughout.
+
+REMAINING = the deeply-entangled core (each a careful sub-extraction, not a clean lift):
+1. Simple file-writes ("the isaac file X exists with:" server, "the file X exists with:"
+   session) — need a post-write config-change-notify HOOK seam in foundation fs-steps +
+   a single server fixture-hooks ns to register (when source) runtime/notify-path! (avoids
+   double-notify). Duplicate the trivial path utils (isaac-file-path/server-fs/with-server-fs)
+   into foundation. MEDIUM.
+2. EDN-file dual-mode ("the EDN isaac file X contains:/exists with:", "the isaac file X
+   does not exist") — RIPPLE-HEAVY: shares a large write closure (parse-isaac-value,
+   isaac-file-data, maybe-prune-root-entity!, dissoc-in, skip-row?, delete-sentinel?,
+   isaac-file-path) with ~8 SERVER-only step bodies (configure, isaac-config-path-is,
+   isaac-file-with-log-entries...). The closure is foundation-clean CODE but moving it
+   means repointing those server steps to foundation/. Best done with the simple writes
+   so the notify seam is uniform. HARD.
+3. Root-setup ("an empty Isaac root at" x46, "an Isaac root at", "an empty Isaac state
+   directory", "a module manifest ...:") — initialize-root! untangle: foundation resets +
+   a root-setup hook for server teardown (comm/tool/single-turn/telly remove-ns/sidecar
+   alter-var-root/memory-store). GLOBAL MUTATION; highest blast radius. HARD.
+4. Checkbox 5: per-feature audit (bb match-step per phrase).
+
+Recommended: do #1+#2 together (uniform notify seam + the closure repoint) as one focused
+pass, then #3 (global-mutation untangle) as another, then #4. All four checkboxes (1,2,5)
+remain open until these land.
