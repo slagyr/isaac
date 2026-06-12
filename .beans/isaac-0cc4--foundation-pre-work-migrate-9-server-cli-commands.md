@@ -1,13 +1,11 @@
 ---
 # isaac-0cc4
 title: 'Foundation pre-work: migrate 9 server CLI commands to manifest :cli contributions'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-12T12:49:14Z
-updated_at: 2026-06-12T14:43:28Z
+updated_at: 2026-06-12T14:52:31Z
 parent: isaac-brth
 blocked_by:
     - isaac-pl1x
