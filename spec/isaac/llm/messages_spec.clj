@@ -250,11 +250,12 @@
           (should-not-throw (api/validate-response result)))))
 
     (it "auth errors conform to provider/error-response"
-      (let [result (sut/chat {:model "test" :messages []}
-                             "anthropic"
-                             {:auth "api-key" :api-key "" :base-url "https://api.anthropic.com"})]
-        (should (api/error? result))
-        (should-not-throw (schema/conform! api/error-response result))))
+      (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
+        (let [result (sut/chat {:model "test" :messages []}
+                               "anthropic"
+                               {:auth "api-key" :api-key "" :base-url "https://api.anthropic.com"})]
+          (should (api/error? result))
+          (should-not-throw (schema/conform! api/error-response result)))))
 
     (it "401 responses conform to provider/error-response"
       (with-redefs [http/post (fn [_ _] {:status 401 :body (json/generate-string {:error {:message "invalid"}})})]

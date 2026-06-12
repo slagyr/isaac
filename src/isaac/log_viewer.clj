@@ -119,6 +119,8 @@
 
 ;; region ----- Tailing -----
 
+(def ^:dynamic *follow-sleep-ms* 100)
+
 (defn tty? []
   (some? (System/console)))
 
@@ -171,6 +173,6 @@
         (loop []
           (if-let [line (.readLine raf)]
             (do (emit line) (recur))
-            (do (Thread/sleep 100) (recur))))))))
+            (do (Thread/sleep *follow-sleep-ms*) (recur))))))))
 
 ;; endregion ^^^^^ Tailing ^^^^^

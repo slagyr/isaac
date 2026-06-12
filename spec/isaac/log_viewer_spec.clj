@@ -243,18 +243,18 @@
             original-print @#'sut/print-line!
             run*          (future
                             (binding [*out* writer]
-                              (with-redefs [sut/print-line!
-                                            (fn [line row opts]
-                                              (let [printed? (original-print line row opts)]
-                                                (when (and printed? (zero? row))
-                                                  (spit (.getAbsolutePath f) second-line :append true)
-                                                  ;; Hold the transition open so the append happens
-                                                  ;; before tail! establishes its follow cursor.
-                                                  (Thread/sleep 150))
-                                                printed?))]
-                                (sut/tail! (.getAbsolutePath f) {:color? false
-                                                                 :follow? true
-                                                                 :limit   20}))))]
+                              (binding [sut/*follow-sleep-ms* 0]
+                                (with-redefs [sut/print-line!
+                                              (fn [line row opts]
+                                                (let [printed? (original-print line row opts)]
+                                                  (when (and printed? (zero? row))
+                                                    ;; Append while emitting the initial dump so the line
+                                                    ;; lands before the follow loop resumes reading.
+                                                    (spit (.getAbsolutePath f) second-line :append true))
+                                                  printed?))]
+                                  (sut/tail! (.getAbsolutePath f) {:color? false
+                                                                   :follow? true
+                                                                   :limit   20})))))]
         (try
           (spit (.getAbsolutePath f) first-line)
           (helper/await-condition #(str/includes? (str writer) ":first"))
