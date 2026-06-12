@@ -798,54 +798,8 @@
 ;; endregion ^^^^^ Request / Response ^^^^^
 
 ;; region ----- Log Assertions -----
-
-(defn- log-match-result [table entries]
-  (let [headers         (:headers table)
-        message-idx     (.indexOf headers "message")
-        table           (if (neg? message-idx)
-                          table
-                          (update table :rows
-                                  (fn [rows]
-                                    (mapv (fn [row]
-                                            (let [cell (nth row message-idx nil)]
-                                              (if (or (nil? cell) (str/starts-with? cell "#\""))
-                                                row
-                                                (assoc row message-idx (str "#\"" cell "\"")))))
-                                          rows))))
-        expected-count (count (:rows table))
-        direct         (match/match-entries table entries)]
-    (if (empty? (:failures direct))
-      direct
-      (or (some (fn [start]
-                  (let [window (subvec (vec entries) start (min (count entries) (+ start expected-count)))
-                        result (match/match-entries table window)]
-                    (when (empty? (:failures result)) result)))
-                (range (count entries)))
-          direct))))
-
-(defn log-entries-match [table]
-  (let [turn-future (g/get :turn-future)
-        result*     (atom nil)
-        matched?    (fn []
-                      (let [result (log-match-result table (log/get-entries))]
-                        (reset! result* result)
-                        (empty? (:failures result))))]
-    (helper/await-condition
-      #(or (matched?)
-           (some-> turn-future realized?))
-      100)
-    (when (and (seq (:failures @result*)) turn-future (not (realized? turn-future)))
-      (deref turn-future 30000 nil))
-    (when (seq (:failures @result*))
-      (helper/await-condition matched? 2000))
-    (g/should= [] (:failures @result*))))
-
-(defn log-entries-dont-match [table]
-  (let [entries (log/get-entries)
-        headers (:headers table)]
-    (doseq [row (:rows table)]
-      (let [result (match/match-entries {:headers headers :rows [row]} entries)]
-        (g/should-not (:pass? result))))))
+;; "the log has entries matching:" / "no entries matching:" moved to
+;; isaac.foundation.log-steps (foundation-grade; logger/step-tables only).
 
 (defn config-reloaded []
   (helper/await-condition
@@ -1000,17 +954,5 @@
 (defgiven "the EDN isaac file \"{path}\" exists with:" isaac.server.server-steps/isaac-edn-file-exists)
 
 (defthen "the isaac file \"{path}\" does not exist" isaac.server.server-steps/edn-isaac-file-does-not-exist)
-
-(defthen "the log has entries matching:" isaac.server.server-steps/log-entries-match
-  "Polls the captured-logs atom up to 2s. Tries a direct match against
-   all entries first; on failure, tries sliding-window matches (useful
-   when other entries surround the expected ones). Also awaits
-   :turn-future up to 30s if set. REQUIRES log.output=memory in config.")
-
-(defthen "the log has no entries matching:" isaac.server.server-steps/log-entries-dont-match
-  "Checks the captured logs once (no polling). Each row must NOT match
-   any current entry. Use after a step that should NOT have logged —
-   don't use for race-y absence; 'never logged' is a stronger claim
-   than this step can prove.")
 
 ;; endregion ^^^^^ Routing ^^^^^
