@@ -191,17 +191,22 @@
    intact. Wraps the run-fn in --help handling so module-supplied
    commands get a per-command help page for free (matches the old
    register-module-command! shape)."
-  [{:keys [name desc usage option-spec run-fn help-text]}]
+  [{:keys [name desc usage option-spec run-fn help-text subcommands]}]
   (let [resolved-run-fn   (maybe-resolve run-fn)
         resolved-help-fn  (maybe-resolve help-text)
         ;; option-spec may arrive as a symbol (pointing at a defed var
         ;; — the EDN manifest can't inline tools.cli specs cleanly when
         ;; they include fns) or as inline data.
         resolved-options  (if (symbol? option-spec) (maybe-resolve option-spec) option-spec)
+        ;; :subcommands is symbol-valued in manifests (the vector
+        ;; carries per-subcommand :run fns the EDN can't inline);
+        ;; resolve it so command-help renders the subcommand list.
+        resolved-subcmds  (if (symbol? subcommands) (maybe-resolve subcommands) subcommands)
         cmd               (cond-> {:name name}
                             desc             (assoc :desc desc)
                             usage            (assoc :usage usage)
                             resolved-options (assoc :option-spec resolved-options)
+                            resolved-subcmds (assoc :subcommands resolved-subcmds)
                             resolved-run-fn  (assoc :run-fn  resolved-run-fn)
                             resolved-help-fn (assoc :help-text resolved-help-fn))
         wrapped-run-fn    (when resolved-run-fn

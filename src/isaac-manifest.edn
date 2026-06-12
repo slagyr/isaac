@@ -15,7 +15,8 @@
                                                                                            :usage       {:type :string}
                                                                                            :option-spec {:type :any}
                                                                                            :run-fn      {:type :symbol}
-                                                                                           :help-text   {:type :symbol}}}}}}
+                                                                                           :help-text   {:type :symbol}
+                                                                                           :subcommands {:type :symbol}}}}}}
                   :isaac.server/route             {:description "HTTP routes. :path is a clout pattern (literal segments, :name params, * wildcards). :method is :get/:post/... or :* for any-method. Prefix matching is just a trailing wildcard in the path."
                                                    :manifest    {:schema {:type :seq
                                                                           :spec {:type    :map

@@ -11,6 +11,12 @@
 
 (def ^:dynamic *fs* nil)
 
+(def sample-subcommands
+  [{:name "install" :desc "Install the thing"}
+   {:name "logs"    :desc "Tail the logs"}])
+
+(defn sample-run-fn [_opts] 0)
+
 ;; region ----- Registry -----
 
 (describe "CLI Registry"
@@ -71,6 +77,19 @@
                                                  7)})
         (should= 7 ((:run-fn (sut/get-command "greet")) {:_raw-args [] :flag true}))
         (should= {:_raw-args [] :flag true} @called?))))
+
+  (describe "register-cli-command!"
+
+    (it "resolves a symbol-valued :subcommands so command-help renders them"
+      (sut/register-cli-command! {:name        "svc"
+                                  :usage       "svc <subcommand>"
+                                  :desc        "Manage a service"
+                                  :run-fn      'isaac.cli-spec/sample-run-fn
+                                  :subcommands 'isaac.cli-spec/sample-subcommands})
+      (let [help (sut/command-help (sut/get-command "svc"))]
+        (should-contain "Subcommands:" help)
+        (should-contain "install" help)
+        (should-contain "Tail the logs" help))))
 
   (describe "get-command"
 

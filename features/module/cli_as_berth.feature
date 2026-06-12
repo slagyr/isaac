@@ -19,3 +19,15 @@ Feature: :cli declared as a berth (phase 4 of the berth epic)
     When isaac is run with "longwave-ping"
     Then the stdout contains "pong"
     And the exit code is 0
+
+  Scenario: A :cli berth command resolves symbol-valued :subcommands into its help
+    Given an empty Isaac state directory "/tmp/greeter"
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:modules {:isaac.cli.greeter {:local/root "modules/isaac.cli.greeter"}}}
+      """
+    When isaac is run with "greet --help"
+    Then the stdout contains "Subcommands:"
+    And the stdout contains "wave"
+    And the stdout contains "Take a bow"
+    And the exit code is 0
