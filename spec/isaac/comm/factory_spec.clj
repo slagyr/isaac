@@ -1,8 +1,8 @@
-(ns isaac.comm.slots-spec
+(ns isaac.comm.factory-spec
   (:require
     [c3kit.apron.log :as apron-log]
     [isaac.comm.registry :as comm-registry]
-    [isaac.comm.slots :as sut]
+    [isaac.comm.factory :as sut]
     [isaac.schema.registered-in :as registered-in]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
@@ -38,5 +38,5 @@
   (it "loads the contributing module's :namespace on first dispatch"
     (binding [registered-in/*module-index*
               {:isaac.comm.lazy {:manifest {:isaac.server/comm
-                                            {:lazyimpl {:namespace 'isaac.comm.slots-lazy-fixture}}}}}]
-      (should= :isaac.comm.slots-lazy-fixture/lazy (sut/create! [:comms :bert] {:type :lazyimpl})))))
+                                            {:lazyimpl {:namespace 'isaac.comm.factory-lazy-fixture}}}}}]
+      (should= :isaac.comm.factory-lazy-fixture/lazy (sut/create! [:comms :bert] {:type :lazyimpl})))))

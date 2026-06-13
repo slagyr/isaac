@@ -1,5 +1,5 @@
-(ns isaac.comm.slots
-  "The :isaac.server/comm config berth's slot factory. Comm modules
+(ns isaac.comm.factory
+  "The :isaac.server/comm config berth's factory. Comm modules
    contribute data only ({:namespace … :extra-schema …}); instantiation
    attaches in code by implementing the `create` multimethod, keyed by
    impl id. The berth machinery calls `create!` per configured slot and

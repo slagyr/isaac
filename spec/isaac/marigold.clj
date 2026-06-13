@@ -283,7 +283,7 @@
                                                                      :key-spec    {:type :id}
                                                                      :value-spec  {:name           :comm
                                                                                    :type           :map
-                                                                                   :factory        'isaac.comm.slots/create!
+                                                                                   :factory        'isaac.comm.factory/create!
                                                                                    :dynamic-schema [:extra-schema]
                                                                                    :schema         {:type {:type         :id
                                                                                                            :options-from :comms

@@ -1,6 +1,6 @@
 (ns isaac.comm.telly
   (:require
-    [isaac.comm.slots :as slots]
+    [isaac.comm.factory :as factory]
     [c3kit.apron.env :as c3env]
     [isaac.api :as api]
     [isaac.comm.protocol :as comm]
@@ -49,7 +49,7 @@
 (defn make [host]
   (->Telly host (atom {})))
 
-(defmethod slots/create :telly [node-path _slice]
+(defmethod factory/create :telly [node-path _slice]
   (make {:name (last node-path)}))
 
 (defn telly? [x]
