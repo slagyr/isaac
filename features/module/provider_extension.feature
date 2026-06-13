@@ -126,7 +126,7 @@ Feature: Provider extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                              | value                |
-      | providers.my-kombucha.fizz-level | must be an integer.* |
+      | providers.my-kombucha.fizz-level | can't coerce .* to int |
 
   Scenario: :type referencing a user-only provider is rejected
     # Phase 7 of brth: user-only providers aren't manifest templates, so

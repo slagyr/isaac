@@ -51,6 +51,5 @@
       ;; Phase 7 (isaac-ho18): provider templates and slash-command
       ;; contributions live under :isaac.server/* berths. Phase 6 did
       ;; the same for :tools.
-      (update-in [:schema :providers]      merge-into-value-spec  (variants module-index :isaac.server/provider-template))
       (update-in [:schema :tools]          keyed-variant-schema   (variants module-index :isaac.server/tools))
       (update-in [:schema :slash-commands] keyed-variant-schema   (variants module-index :isaac.server/slash-commands))))

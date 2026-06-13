@@ -407,8 +407,9 @@
                                               :snapshot-only? true
                                               :description    "Provider configurations (map of id -> provider config)"
                                               :key-spec       {:type :string}
-                                              :value-spec     {:name   :provider
-                                                               :type   :map
+                                              :value-spec     {:name           :provider
+                                                               :type           :map
+                                                               :dynamic-schema {:berth :isaac.server/provider-template :path [:schema]}
                                                                :schema {:name                       {:type        :string
                                                                                                      :description "Display name"}
                                                                         :type                       {:type        :id
@@ -514,7 +515,6 @@
 
  :isaac.config/check             {:comm-reserved-schema {:fn isaac.config.checks/check-comm-reserved-schema}
                                   :manifest-refs        {:fn isaac.config.checks/check-manifest-refs}
-                                  :provider-types       {:fn isaac.config.checks/check-provider-types}
                                   :resolved-providers   {:fn isaac.config.checks/check-resolved-providers}
                                   :slash-commands       {:fn isaac.config.checks/check-slash-commands}
                                   :tools                {:fn isaac.config.checks/check-tools}}}

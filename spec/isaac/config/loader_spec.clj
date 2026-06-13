@@ -937,7 +937,7 @@
       (write-kombucha-module!)
       (let [result (marigold/load-config)]
         (should (some #(and (= "providers.my-kombucha.fizz-level" (:key %))
-                            (re-find #"must be an integer" (:value %)))
+                            (re-find #"can.t coerce .* to int" (:value %)))
                       (:errors result)))))
 
     (it "accepts a provider field that conforms to the manifest :schema"

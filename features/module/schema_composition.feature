@@ -99,7 +99,7 @@ Feature: Module schema composition
     When the config is loaded
     Then the config has validation errors matching:
       | key                       | value                |
-      | providers.tea.fizz-level  | must be an integer   |
+      | providers.tea.fizz-level  | can't coerce .* to int |
 
   Scenario: Manifest schema validation applies to tool fields
     Given an empty Isaac root at "/tmp/isaac"

@@ -814,7 +814,7 @@
                                                             (into (:errors result))
                                                             (berths/normalize-errors (:index discovery)))]
                                     {:config   config
-                                     :errors   (vec (sort-by :key errors))
+                                     :errors   (vec (distinct (sort-by :key errors)))
                                      :warnings (->> (concat (:warnings result) (:warnings contributed) (:warnings slices))
                                                     (berths/normalize-errors (:index discovery))
                                                     (sort-by :key)

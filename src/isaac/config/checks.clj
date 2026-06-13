@@ -113,35 +113,6 @@
                 {:errors [] :warnings []}
                 commands-config)))))
 
-(defn- find-provider-manifest-entry [module-index type-name]
-  (let [type-kw (keyword (->id type-name))]
-    (some (fn [[_id entry]]
-            (get-in entry [:manifest :isaac.server/provider-template type-kw]))
-          module-index)))
-
-(defn check-provider-types
-  [{:keys [config raw-providers module-index]}]
-  (if (empty? raw-providers)
-    {:errors [] :warnings []}
-    (binding [validation/*config* (validation/validation-context config)]
-      (reduce (fn [{:keys [errors warnings]} [provider-id provider-cfg]]
-                (let [type-name (->id (or (:type provider-cfg) (:from provider-cfg)))]
-                  (if (nil? type-name)
-                    {:errors errors :warnings warnings}
-                    (let [entry  (find-provider-manifest-entry
-                                   (merge (module-loader/builtin-index) module-index) type-name)
-                          schema (:schema entry)
-                          prefix (str "providers." (->id provider-id))]
-                      (if (nil? schema)
-                        {:errors errors :warnings warnings}
-                        (let [result (validation/validate-manifest-config prefix provider-cfg schema
-                                                                            :ignore-keys #{:from :type}
-                                                                            :warn-unknown? false)]
-                          {:errors   (into errors (:errors result))
-                           :warnings (into warnings (:warnings result))}))))))
-              {:errors [] :warnings []}
-              raw-providers))))
-
 (defn check-resolved-providers
   [{:keys [config raw-providers effective-schema]}]
   (let [resolve-provider (requiring-resolve 'isaac.config.resolve/resolve-provider)
