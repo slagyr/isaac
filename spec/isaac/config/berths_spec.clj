@@ -40,19 +40,58 @@
 
 (describe "config berths"
 
-  (it "install! skips berth paths excluded by the caller (reconciler-owned slot trees)"
-    (let [made  (atom [])
-          index {:mod.x {:manifest {:berths {:mod.x/things
-                                             {:description "things"
-                                              :config {:path   [:things]
-                                                       :schema {:type       :map
-                                                                :key-spec   {:type :keyword}
-                                                                :value-spec {:type    :map
-                                                                             :factory (fn [path slice] (swap! made conj [path slice]) ::node)}}}}}}}}]
-      (sut/install! {:config         {:things {:a {}}}
-                     :module-index   index
-                     :exclude-berths #{:mod.x/things}})
-      (should= [] @made)))
+  (describe "reconcile!"
+
+    (defn- things-index [factory]
+      {:mod.x {:manifest {:berths {:mod.x/things
+                                   {:description "things"
+                                    :config {:path   [:things]
+                                             :schema {:type       :map
+                                                      :key-spec   {:type :keyword}
+                                                      :value-spec {:type    :map
+                                                                   :factory factory}}}}}}}})
+
+    (it "creates a node when a slot appears and removes it when the slot goes"
+      (nexus/-with-nested-nexus {}
+        (let [index (things-index (fn [_path _slice] ::node))]
+          (sut/reconcile! {:config {:things {:a {:x 1}}} :module-index index})
+          (should= ::node (nexus/get-in [:things :a]))
+          (sut/reconcile! {:config {} :old-config {:things {:a {:x 1}}} :module-index index})
+          (should-be-nil (nexus/get-in [:things :a])))))
+
+    (it "delivers on-config-change! to a Reconfigurable node instead of recreating it"
+      (nexus/-with-nested-nexus {}
+        (let [changes (atom [])
+              node    (reify sut/Reconfigurable
+                        (on-startup! [_ _])
+                        (on-config-change! [_ old new] (swap! changes conj [old new])))
+              index   (things-index (fn [_ _] node))]
+          (sut/reconcile! {:config {:things {:a {:x 1}}} :module-index index})
+          (sut/reconcile! {:config     {:things {:a {:x 2}}}
+                           :old-config {:things {:a {:x 1}}}
+                           :module-index index})
+          (should= node (nexus/get-in [:things :a]))
+          (should= [[{:x 1} {:x 2}]] @changes))))
+
+    (it "recreates a non-Reconfigurable node when its slice changes"
+      (nexus/-with-nested-nexus {}
+        (let [made  (atom 0)
+              index (things-index (fn [_ _] (swap! made inc) [::node @made]))]
+          (sut/reconcile! {:config {:things {:a {:x 1}}} :module-index index})
+          (sut/reconcile! {:config     {:things {:a {:x 2}}}
+                           :old-config {:things {:a {:x 1}}}
+                           :module-index index})
+          (should= [::node 2] (nexus/get-in [:things :a])))))
+
+    (it "unifies string and keyword slot keys across boot and reload"
+      (nexus/-with-nested-nexus {}
+        (let [made  (atom 0)
+              index (things-index (fn [_ _] (swap! made inc) ::node))]
+          (sut/reconcile! {:config {:things {:a {:x 1}}} :module-index index})
+          (sut/reconcile! {:config     {:things {"a" {:x 1}}}
+                           :old-config {:things {:a {:x 1}}}
+                           :module-index index})
+          (should= 1 @made)))))
 
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
   (around [it]

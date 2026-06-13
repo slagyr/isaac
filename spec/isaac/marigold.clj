@@ -271,7 +271,7 @@
                                               :manifest    {:schema {:type       :map
                                                                      :key-spec   {:type :keyword}
                                                                      :value-spec {:type    :map
-                                                                                  :schema  {:factory       {:type :symbol :validations [:present?]}
+                                                                                  :schema  {:namespace     {:type :symbol :validations [:present?]}
                                                                                             :extra-schema  {:type :any}
                                                                                             :configurable? {:type :boolean}}}}}
                                               ;; mirrors the real manifest: the comm berth claims [:comms]
@@ -283,7 +283,7 @@
                                                                      :key-spec    {:type :id}
                                                                      :value-spec  {:name           :comm
                                                                                    :type           :map
-                                                                                   :factory        'isaac.comm.slots/impl-factory
+                                                                                   :factory        'isaac.comm.slots/create!
                                                                                    :dynamic-schema [:extra-schema]
                                                                                    :schema         {:type {:type         :id
                                                                                                            :options-from :comms
@@ -315,9 +315,9 @@
                                  (keyword bearing-command) {:factory 'isaac.marigold/bearing-slash-factory}
                                  (keyword muster-command)  {:factory 'isaac.marigold/muster-slash-factory}}
 
-   :isaac.server/comm {(keyword longwave) {:factory 'isaac.comm.cli/make}     ;; broadcast / cli-like
-                       (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
-                       (keyword logbook)  {:factory 'isaac.comm.memory/make}}  ;; persisted / memory-like
+   :isaac.server/comm {(keyword longwave) {:namespace 'isaac.marigold-comms}    ;; broadcast / cli-like
+                       (keyword skybeam)  {:namespace 'isaac.marigold-comms}    ;; no-op / null-like
+                       (keyword logbook)  {:namespace 'isaac.marigold-comms}}   ;; persisted / memory-like
 
    :isaac.config/schema config-schema/contributions
    :isaac.config/check  check-contributions/server})

@@ -40,18 +40,16 @@
     (configurator/reconcile! host old-config config registries))
   {:config config})
 
-(defn- slot-tree-berths [registries]
-  (into #{} (keep #(when (= :slot-tree (:kind %)) (:berth-id %))) registries))
-
 (defn install-config-berths!
-  "Fire-once install of config-berth nodes. :registries (when given)
-   identifies reconciler-owned slot-tree berths, which are excluded —
-   their instances live and die with the diff engine."
-  [{:keys [config module-index registries]}]
+  "Reconcile config-berth nodes against the nexus — factory on
+   appearance, on-config-change! for Reconfigurable instances,
+   deregister on removal. Boot passes no :old-config; shutdown passes
+   :config nil."
+  [{:keys [config old-config module-index]}]
   (when (seq module-index)
-    (berth-config/install! {:config         config
-                            :module-index   module-index
-                            :exclude-berths (slot-tree-berths registries)}))
+    (berth-config/reconcile! {:config       config
+                              :old-config   old-config
+                              :module-index module-index}))
   {:config config})
 
 (defn load-and-install!
@@ -135,6 +133,6 @@
       (do
         (config/set-snapshot! new-cfg "config hot reload")
         (install! {:config new-cfg :old-config old-config :registries registries :host host})
-        (install-config-berths! {:config new-cfg :module-index (:module-index host) :registries registries})
+        (install-config-berths! {:config new-cfg :old-config old-config :module-index (:module-index host)})
         (log/info :config/reloaded :path path)
         new-cfg))))

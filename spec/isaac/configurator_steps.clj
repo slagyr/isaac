@@ -5,6 +5,7 @@
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.runtime :as runtime]
+    [isaac.config.config-steps :as config-steps]
     [isaac.config.install :as config-install]
     [isaac.cron.service :as cron-service]
     [isaac.fs :as fs]
@@ -39,6 +40,8 @@
     (str/starts-with? value "\"")       (edn/read-string value)
     :else                                value))
 
+(declare ensure-config-berths-installed!)
+
 (defn- read-state [instance]
   ;; telly is a fixture module loaded via module-loader (not as a plain :require)
   ;; — soft-resolve avoids deftype-class-redefinition mismatches when the module
@@ -46,8 +49,10 @@
   (let [telly? (requiring-resolve 'isaac.comm.telly/telly?)
         state  (requiring-resolve 'isaac.comm.telly/state)]
     (cond
-      (telly? instance) (state instance)
-      :else             {})))
+      (telly? instance)            (state instance)
+      (some-> (:state* instance))  @(:state* instance)
+      (map? instance)              instance
+      :else                        {})))
 
 (defn- get-by-dotted-path [m path]
   (let [keys (mapv keyword (str/split path #"\."))]
@@ -83,6 +88,7 @@
               (:rows table)))))
 
 (defn comm-exists-with-state [name table]
+  (ensure-config-berths-installed!)
   (helper/await-condition #(expectations-met? name table))
   (let [instance (live-instance name)]
     (g/should-not-be-nil instance)
@@ -95,6 +101,7 @@
           (g/should= expected actual))))))
 
 (defn comm-does-not-exist [name]
+  (ensure-config-berths-installed!)
   (helper/await-condition #(nil? (live-instance name)))
   (g/should-be-nil (live-instance name)))
 
@@ -149,6 +156,16 @@
         (module-loader/start-modules! module-index)
         (config-install/install-config-berths! {:config cfg :module-index module-index :registries (app/registries)})
         (g/assoc! :config-berths-installed? true)))))
+
+(defn config-reloaded []
+  (ensure-config-berths-installed!)
+  (let [prev   (:config (g/get :loaded-config-result))
+        result (config-steps/reload-result)]
+    (let [cfg          (:config result)
+          module-index (merge (module-loader/core-index) (:module-index cfg))]
+      (config-install/install-config-berths! {:config       cfg
+                                              :old-config   prev
+                                              :module-index module-index}))))
 
 (defn nexus-has-node-at [expected-type path]
   (ensure-config-berths-installed!)
@@ -257,6 +274,11 @@
 (defthen "the cron job {name:string} has:" isaac.configurator-steps/cron-job-has)
 
 (defthen #"the nexus has a :([^ ]+) node at (.+)" isaac.configurator-steps/nexus-has-node-at)
+
+(defwhen "the config is reloaded" isaac.configurator-steps/config-reloaded
+  "Re-loads config from the root (after the scenario rewrote isaac.edn)
+   and reconciles config-berth nodes against the previous load — the
+   generic hot-reload path, no server required.")
 
 (defwhen "config is updated:" isaac.configurator-steps/config-updated
   "Delta-merges path/value rows into config/isaac.edn. A value of \"#delete\"

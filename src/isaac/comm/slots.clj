@@ -1,73 +1,79 @@
 (ns isaac.comm.slots
-  "The :isaac.server/comm config berth's slot factory. The reconciler
-   asks it for an impl's constructor when a comm slot appears in user
-   config: programmatic registrations (isaac.api/register-comm-factory!)
-   win; otherwise the impl's entry in the module-index supplies the
-   constructor, activating the owning module on first use."
+  "The :isaac.server/comm config berth's slot factory. Comm modules
+   contribute data only ({:namespace … :extra-schema …}); instantiation
+   attaches in code by implementing the `create` multimethod, keyed by
+   impl id. The berth machinery calls `create!` per configured slot and
+   the returned instance lives in the nexus."
   (:require
     [isaac.comm.registry :as comm-registry]
+    [isaac.config.schema-base :as schema-base]
     [isaac.logger :as log]
-    [isaac.module.loader :as module-loader]))
+    [isaac.module.loader :as module-loader]
+    [isaac.schema.registered-in :as registered-in]))
 
-(defn- ->name [x]
-  (cond (keyword? x) (name x) :else (str x)))
+(defn impl-id
+  "The impl a slot instantiates: its :type when present, else the slot's
+   own name — normalized to a keyword id."
+  [node-path slice]
+  (keyword (schema-base/->id (or (when (map? slice) (or (get slice :type) (get slice "type")))
+                                 (last node-path)))))
 
-(defn- activating-module-id [module-index impl-key]
+(defmulti create
+  "Instantiate the comm instance for a configured slot. Comm modules
+   implement this for each impl id they contribute; the instance goes
+   in the nexus (and receives on-startup!/on-config-change! when it
+   satisfies Reconfigurable)."
+  (fn [node-path slice] (impl-id node-path slice)))
+
+(defn- contribution [module-index impl-key]
   (some (fn [[module-id entry]]
-          (when (get-in entry [:manifest :isaac.server/comm impl-key])
-            module-id))
+          (when-let [contribution (get-in entry [:manifest :isaac.server/comm impl-key])]
+            [module-id contribution]))
         module-index))
 
-(defn- entry-factory [module-index module-id impl-key impl]
-  (when-let [entry (get-in module-index [module-id :manifest :isaac.server/comm impl-key])]
-    (try
-      (some-> (:factory entry) requiring-resolve var-get)
-      (catch Throwable t
-        (log/error :module/activation-failed
-                   :error  (.getMessage t)
-                   :impl   (->name impl)
-                   :module (name module-id))
-        nil))))
+(defn- ensure-impl!
+  "Make `create` dispatchable for impl-key: activate the contributing
+   module (idempotent per activation lifecycle — activate! tracks and
+   logs its own failures) and require the entry's :namespace so its
+   defmethod installs. Returns :failed when something would not load
+   (already logged)."
+  [module-index impl-key]
+  (when-let [[module-id entry] (contribution module-index impl-key)]
+    (let [activated (try
+                      (module-loader/activate! module-id module-index)
+                      (catch clojure.lang.ExceptionInfo _ :failed))
+          required  (when-not (get-method create impl-key)
+                      (when-let [ns-sym (:namespace entry)]
+                        (try
+                          (require ns-sym)
+                          nil
+                          (catch Throwable t
+                            (log/error :module/activation-failed
+                                       :error  (.getMessage t)
+                                       :impl   (name impl-key)
+                                       :module (name module-id))
+                            :failed))))]
+      (when (or (= :failed activated) (= :failed required))
+        :failed))))
 
-(defn impl-factory
-  "Returns the constructor (fn [host] -> Reconfigurable) for `impl`,
-   or nil — logging :module/activation-failed — when none resolves."
-  [host impl]
-  (or (comm-registry/factory-for impl)
-      (let [impl-key  (keyword (->name impl))
-            module-id (activating-module-id (:module-index host) impl-key)]
-        (if-not module-id
-          (do (log/error :module/activation-failed
-                         :error (str "no module contributes comm impl " (pr-str impl))
-                         :impl  (->name impl))
-              nil)
-          (do
-            (try
-              (module-loader/activate! module-id (:module-index host))
-              (catch clojure.lang.ExceptionInfo _ nil))
-            (or (entry-factory (:module-index host) module-id impl-key impl)
-                (do (log/error :module/activation-failed
-                               :error  (str "module did not register comm impl " (pr-str impl))
-                               :impl   (->name impl)
-                               :module (name module-id))
-                    nil)))))))
-
-(defn- comm-config-decl [module-index]
-  (some (fn [[_ entry]]
-          (get-in entry [:manifest :berths :isaac.server/comm :config]))
-        module-index))
-
-(defn registry
-  "The comm slot-tree registry for the reconciler, derived from the
-   :isaac.server/comm berth declaration (falling back to the comm
-   defaults when no declaration is in the index)."
-  ([] (registry (module-loader/builtin-index)))
-  ([module-index]
-   (let [decl         (comm-config-decl module-index)
-         decl-factory (some-> (get-in decl [:schema :value-spec :factory])
-                              requiring-resolve
-                              var-get)]
-     {:kind         :slot-tree
-      :berth-id     :isaac.server/comm
-      :path         (or (:path decl) [:comms])
-      :slot-factory (or decl-factory impl-factory)})))
+(defn create!
+  "Per-slot factory for the :isaac.server/comm config berth. Resolves
+   the impl's `create` method (loading the contributing module on first
+   use), preferring a programmatically registered constructor
+   (isaac.api/register-comm-factory!). Returns nil — leaving the slot
+   inert — when no implementation can be found."
+  [node-path slice]
+  (let [impl-key (impl-id node-path slice)
+        slot     (name (last node-path))
+        failed?  (= :failed (ensure-impl! registered-in/*module-index* impl-key))]
+    (if-let [instance (if-let [legacy (comm-registry/factory-for impl-key)]
+                        (legacy {:name (last node-path)})
+                        (when (get-method create impl-key)
+                          (create node-path slice)))]
+      (do (log/info :comm/activated :comm slot :type (name impl-key))
+          instance)
+      (do (when-not failed?
+            (log/error :module/activation-failed
+                       :error (str "no implementation creates comm impl " (pr-str impl-key))
+                       :impl  (name impl-key)))
+          nil))))

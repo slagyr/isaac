@@ -1,15 +1,17 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.config.configurator
   (:require
+    [isaac.config.berths :as berths]
     [isaac.config.schema-base :as schema-base]
     [clojure.string :as str]
-    [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
     [isaac.nexus :as nexus]))
 
-(defprotocol Reconfigurable
-  (on-startup!       [this slice])
-  (on-config-change! [this old-slice new-slice]))
+;; The lifecycle protocol lives with the berth engine (foundation);
+;; aliased here for the server-side implementors that require this ns.
+(def Reconfigurable berths/Reconfigurable)
+(def on-startup! berths/on-startup!)
+(def on-config-change! berths/on-config-change!)
 
 (defn ->name [x]
   (cond
@@ -18,15 +20,6 @@
 
 (defn- dotted [path]
   (str/join "." (map ->name path)))
-
-(defn- resolve-factory
-  "Asks the registry's :slot-factory (declared by the berth's :config
-   :value-spec :factory — e.g. isaac.comm.slots/impl-factory) for the
-   impl's constructor. The slot factory owns lookup, lazy module
-   activation, and activation-failure logging."
-  [registry host impl]
-  (when-let [slot-factory (:slot-factory registry)]
-    (slot-factory host impl)))
 
 (defn slot-impl
   "Resolves the comm type for a slot, normalized by id — conformed
@@ -39,62 +32,25 @@
                 (->name slot))
             schema-base/->id)))
 
-(defn- slot-keys [container-cfg]
-  (when (map? container-cfg)
-    (set (keys container-cfg))))
-
 (defn- singleton-impl [registry]
   (or (:impl registry)
       (->name (last (:path registry)))))
 
-(defn- start-instance! [factory host slot-path slice impl]
-  (let [host-with-name (assoc host :name (last slot-path))
-        instance-name  (->name (last slot-path))
-        instance       (factory host-with-name)]
+(defn- start-instance! [factory host path slice impl]
+  (let [instance (factory (assoc host :name (last path)))]
     (on-startup! instance slice)
-    (when (= [:comms] (:path (:registry host)))
-      (comm-registry/register-instance! impl instance))
-    (nexus/register! slot-path instance)
-    (log/info :lifecycle/started :path (dotted slot-path) :impl impl)
-    (when (= [:comms] (:path (:registry host)))
-      (log/info :comm/activated :comm instance-name :type impl))
+    (nexus/register! path instance)
+    (log/info :lifecycle/started :path (dotted path) :impl impl)
     instance))
 
-(defn- stop-instance! [instance slot-path old-slice impl]
+(defn- stop-instance! [instance path old-slice impl]
   (on-config-change! instance old-slice nil)
-  (when (= [:comms] (butlast slot-path))
-    (comm-registry/deregister-instance! impl))
-  (nexus/deregister! slot-path)
-  (log/info :lifecycle/stopped :path (dotted slot-path) :impl impl))
+  (nexus/deregister! path)
+  (log/info :lifecycle/stopped :path (dotted path) :impl impl))
 
-(defn- change-instance! [instance slot-path old-slice new-slice impl]
+(defn- change-instance! [instance path old-slice new-slice impl]
   (on-config-change! instance old-slice new-slice)
-  (log/info :lifecycle/changed :path (dotted slot-path) :impl impl))
-
-(defn- reconcile-slot! [host registry slot-path old-slice new-slice]
-  (let [slot     (last slot-path)
-        old-impl (slot-impl slot old-slice)
-        new-impl (slot-impl slot new-slice)
-        existing (nexus/get-in slot-path)]
-    (cond
-      (and (nil? old-slice) (some? new-slice))
-      (when-let [factory (resolve-factory registry host new-impl)]
-        (start-instance! factory host slot-path new-slice new-impl))
-
-      (and (some? old-slice) (nil? new-slice))
-      (when existing
-        (stop-instance! existing slot-path old-slice old-impl))
-
-      (not= old-impl new-impl)
-      (do
-        (when existing
-          (stop-instance! existing slot-path old-slice old-impl))
-        (when-let [factory (resolve-factory registry host new-impl)]
-          (start-instance! factory host slot-path new-slice new-impl)))
-
-      (not= old-slice new-slice)
-      (when existing
-        (change-instance! existing slot-path old-slice new-slice new-impl)))))
+  (log/info :lifecycle/changed :path (dotted path) :impl impl))
 
 (defn- reconcile-component! [host old-cfg new-cfg registry]
   (let [path      (vec (:path registry))
@@ -117,39 +73,14 @@
       (and (not= old-slice new-slice) (some? new-slice) (nil? existing))
       (start-instance! factory host path new-slice impl))))
 
-(defn- keyword-slots
-  "Slot containers arrive keyword-keyed from injected configs and
-   string-keyed from conformed loads; the instance tree keys slots by
-   keyword, so unify here."
-  [container]
-  (when container
-    (update-keys container #(keyword (schema-base/->id %)))))
-
-(defn- reconcile-registry! [host old-cfg new-cfg registry]
-  (case (:kind registry)
-    :component (reconcile-component! host old-cfg new-cfg registry)
-    (let [path        (:path registry)
-          old-cont    (keyword-slots (get-in old-cfg path))
-          new-cont    (keyword-slots (get-in new-cfg path))
-          slot-names  (into (or (slot-keys old-cont) #{})
-                            (or (slot-keys new-cont) #{}))
-          host        (assoc host :registry registry)]
-      (doseq [slot slot-names]
-        (let [old-slice (get old-cont slot)
-              new-slice (get new-cont slot)
-              slot-path (conj (vec path) slot)]
-          (reconcile-slot! host registry slot-path old-slice new-slice))))))
-
 (defn reconcile!
-  "Walks user-chosen slots under (:path registry), reconciling the live
-   component instances in the nexus against config-tree slices. One function
-   for boot, reload, and shutdown.
-
-   Boot:    (reconcile! host nil  cfg  registry)
-   Reload:  (reconcile! host old  new  registry)
-   Stop:    (reconcile! host @cfg nil  registry)"
+  "Reconciles singleton :component registries (hail bands, hooks, cron)
+   against config slices — boot (old nil), reload, and shutdown (new
+   nil). Slot-tree surfaces (comms) reconcile through the config-berth
+   engine (isaac.config.berths/reconcile!) instead."
   [host old-cfg new-cfg registry-or-registries]
-  (if (map? registry-or-registries)
-    (reconcile-registry! host old-cfg new-cfg registry-or-registries)
-    (doseq [registry registry-or-registries]
-      (reconcile-registry! host old-cfg new-cfg registry))))
+  (doseq [registry (if (map? registry-or-registries)
+                     [registry-or-registries]
+                     registry-or-registries)]
+    (when (= :component (:kind registry))
+      (reconcile-component! host old-cfg new-cfg registry))))

@@ -3,11 +3,12 @@
     [c3kit.apron.log :as apron-log]
     [isaac.comm.registry :as comm-registry]
     [isaac.comm.slots :as sut]
+    [isaac.schema.registered-in :as registered-in]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
-(def made-host (atom nil))
-(defn probe-make [host] (reset! made-host host) :probe-instance)
+(defmethod sut/create :probe [node-path slice]
+  {:probe true :slot (last node-path) :slice slice})
 
 (describe "comm slots"
 
@@ -15,45 +16,27 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (binding [comm-registry/*registry* (atom (comm-registry/fresh-registry))]
+    (binding [comm-registry/*registry*     (atom (comm-registry/fresh-registry))
+              registered-in/*module-index* {}]
       (example)))
 
-  (describe "impl-factory"
+  (it "creates the instance through the impl's defmethod"
+    (let [instance (sut/create! [:comms :bert] {:type :probe :x 1})]
+      (should= {:probe true :slot :bert :slice {:type :probe :x 1}} instance)))
 
-    (it "prefers a programmatically registered constructor"
-      (comm-registry/register-factory! "parrot" probe-make)
-      (should= probe-make (sut/impl-factory {} "parrot")))
+  (it "derives the impl from the slot name when :type is absent"
+    (should= :probe (:slot (sut/create! [:comms :probe] {:x 1}))))
 
-    (it "resolves the constructor from the impl's module-index entry"
-      (let [host {:module-index {:isaac.comm.probe
-                                 {:manifest {:isaac.server/comm
-                                             {:probe {:factory 'isaac.comm.slots-spec/probe-make}}}}}}]
-        (should= probe-make (sut/impl-factory host :probe))))
+  (it "prefers a programmatically registered constructor"
+    (comm-registry/register-factory! "probe" (fn [host] {:legacy (:name host)}))
+    (should= {:legacy :bert} (sut/create! [:comms :bert] {:type :probe})))
 
-    (it "returns nil and logs activation failure for an unknown impl"
-      (apron-log/capture-logs
-        (should-be-nil (sut/impl-factory {:module-index {}} "ghost"))))
+  (it "returns nil and logs when no implementation exists"
+    (apron-log/capture-logs
+      (should-be-nil (sut/create! [:comms :bert] {:type :ghost}))))
 
-    (it "returns nil and logs when the entry factory does not resolve"
-      (apron-log/capture-logs
-        (let [host {:module-index {:isaac.comm.broken
-                                   {:manifest {:isaac.server/comm
-                                               {:broken {:factory 'no.such.ns/make}}}}}}]
-          (should-be-nil (sut/impl-factory host :broken))))))
-
-  (describe "registry"
-
-    (it "derives the slot-tree registry from the comm berth declaration"
-      (let [index {:isaac.server
-                   {:manifest {:berths {:isaac.server/comm
-                                        {:config {:path   [:comms]
-                                                  :schema {:value-spec {:factory 'isaac.comm.slots/impl-factory}}}}}}}}
-            registry (sut/registry index)]
-        (should= :slot-tree (:kind registry))
-        (should= [:comms] (:path registry))
-        (should= sut/impl-factory (:slot-factory registry))))
-
-    (it "falls back to the comm defaults when no declaration is present"
-      (let [registry (sut/registry {})]
-        (should= [:comms] (:path registry))
-        (should= sut/impl-factory (:slot-factory registry))))))
+  (it "loads the contributing module's :namespace on first dispatch"
+    (binding [registered-in/*module-index*
+              {:isaac.comm.lazy {:manifest {:isaac.server/comm
+                                            {:lazyimpl {:namespace 'isaac.comm.slots-lazy-fixture}}}}}]
+      (should= :isaac.comm.slots-lazy-fixture/lazy (sut/create! [:comms :bert] {:type :lazyimpl})))))

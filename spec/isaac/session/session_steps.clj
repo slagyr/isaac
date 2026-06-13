@@ -27,6 +27,7 @@
     [isaac.logger :as log]
     [isaac.comm.memory :as memory-comm]
     [isaac.comm.registry :as comm-registry]
+    [isaac.comm.slots :as comm-slots]
     [isaac.slash.registry :as slash-registry]
     [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
@@ -67,7 +68,12 @@
     (bridge-cancel/clear!)
     (reset! comm-registry/*registry* (comm-registry/fresh-registry))
     (when-let [ns-obj (find-ns 'isaac.comm.telly)]
-      (remove-ns (ns-name ns-obj)))
+      (remove-ns (ns-name ns-obj))
+      ;; clear require bookkeeping and the comm defmethod so the next
+      ;; scenario exercises a genuine fresh load (FAIL_ON_LOAD etc.)
+      (let [loaded-libs (var-get #'clojure.core/*loaded-libs*)]
+        (dosync (alter loaded-libs disj 'isaac.comm.telly)))
+      (remove-method comm-slots/create :telly))
     (tool-registry/clear!)
     (single-turn/clear-async-compactions!)
     (let [mem-store (memory-store/create-store abs-dir)]

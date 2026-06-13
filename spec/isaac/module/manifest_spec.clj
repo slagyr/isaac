@@ -14,7 +14,7 @@
    :version           "0.1.0"
    :bootstrap         'isaac.comm.pigeon/bootstrap
    :description       "Carrier pigeon comm"
-   :isaac.server/comm {:pigeon {:factory 'isaac.comm.pigeon/make
+   :isaac.server/comm {:pigeon {:namespace 'isaac.comm.pigeon
                                 :schema  {:loft      {:type :string :validations [:present?]}
                                           :max-bytes {:type :int :coercions [[:default 140]]}}}}})
 

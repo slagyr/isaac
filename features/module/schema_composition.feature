@@ -132,7 +132,7 @@ Feature: Module schema composition
       """
       {:id                :isaac.comm.broken
        :version           "0.1.0"
-       :isaac.server/comm {:broken {:factory isaac.comm.broken/make
+       :isaac.server/comm {:broken {:namespace isaac.comm.broken
                                     :extra-schema {:thing {:type :string
                                                       :validations [:no-such-ref?]}}}}}
       """
@@ -154,7 +154,7 @@ Feature: Module schema composition
       """
       {:id                :isaac.comm.badmod
        :version           "0.1.0"
-       :isaac.server/comm {:badmod {:factory isaac.comm.null/make
+       :isaac.server/comm {:badmod {:namespace isaac.comm.null
                                     :extra-schema {:type {:type :string}}}}}
       """
     And the isaac file "isaac.edn" exists with:

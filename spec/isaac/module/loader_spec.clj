@@ -111,7 +111,7 @@
   ;; Phase 8 (isaac-qqgv): comm contributions live at :isaac.server/comm.
   {:id                :isaac.comm.pigeon
    :version           "0.1.0"
-   :isaac.server/comm {:pigeon {:factory 'isaac.comm.pigeon/make}}})
+   :isaac.server/comm {:pigeon {:namespace 'isaac.comm.pigeon}}})
 
 (describe "module loader"
 
@@ -362,7 +362,7 @@
       ;; registry spec.
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:dir telly-dir
-                                             :manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
+                                             :manifest {:isaac.server/comm {:telly {:namespace 'isaac.comm.telly}}}}}]
         (log/capture-logs
           (sut/activate! :isaac.comm.telly module-index)
           (sut/activate! :isaac.comm.telly module-index)
@@ -378,7 +378,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:dir telly-dir
                                              :manifest {:bootstrap         'isaac.comm.telly/bootstrap-load
-                                                        :isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
+                                                        :isaac.server/comm {:telly {:namespace 'isaac.comm.telly}}}}}]
         (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
         (log/capture-logs
           (let [error (try
@@ -395,7 +395,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}
+                                             :manifest {:isaac.server/comm {:telly {:namespace 'isaac.comm.telly}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
@@ -420,7 +420,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}
+                                             :manifest {:isaac.server/comm {:telly {:namespace 'isaac.comm.telly}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]

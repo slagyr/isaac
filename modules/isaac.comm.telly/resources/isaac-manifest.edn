@@ -7,7 +7,7 @@
  ;; user-config field schemas live under :schema (was the
  ;; legacy :schema field on the old :comm extension).
  :isaac.server/comm
- {:telly {:factory      isaac.comm.telly/make
+ {:telly {:namespace    isaac.comm.telly
           :extra-schema {:loft  {:type :string
                                  :validations [[:present-when? :type :telly]]}
                          :color {:type :string}

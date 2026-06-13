@@ -4,7 +4,6 @@
     [c3kit.apron.refresh :as refresh]
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
-    [isaac.comm.slots :as comm-slots]
     [isaac.config.api :as config]
     [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
@@ -34,8 +33,7 @@
   (config/snapshot "server/current-config accessor"))
 
 (defn registries []
-  [(comm-slots/registry)
-   hail-bands/registry
+  [hail-bands/registry
    hooks/registry
    cron-service/registry])
 
@@ -186,7 +184,7 @@
             ;; register-route-extensions! pass.
             _                       (module-loader/process-manifest-berths! module-index)
             _                       (module-loader/start-modules! module-index)
-            _                       (runtime/install-config-berths! {:config cfg :module-index module-index :registries registries})
+            _                       (runtime/install-config-berths! {:config cfg :module-index module-index})
             config-source           (start-config-source opts hot-reload? root)
             _                       (some-> config-source runtime/start!)
             reloader                (when (and config-source root)
@@ -211,7 +209,11 @@
     (when scheduler
       (scheduler-core/shutdown! scheduler))
     (when registries
-      (runtime/reconcile! host-ctx (config/snapshot "shutdown: current config for teardown reconcile") nil registries))
+      (let [cfg (config/snapshot "shutdown: current config for teardown reconcile")]
+        (runtime/reconcile! host-ctx cfg nil registries)
+        (runtime/install-config-berths! {:config     nil
+                                         :old-config cfg
+                                         :module-index (:module-index host-ctx)})))
     (some-> reloader future-cancel)
     (when config-source
       (runtime/stop! config-source))

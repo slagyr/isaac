@@ -976,7 +976,7 @@
     (def telly-manifest
       (pr-str {:id      :isaac.comm.telly
                 :version "0.1.0"
-                 :isaac.server/comm    {:telly {:factory 'isaac.comm.telly/make
+                 :isaac.server/comm    {:telly {:namespace 'isaac.comm.telly
                                   :extra-schema {:loft  {:type :string
                                                    :validations [[:present-when? :type :telly]]}
                                            :color {:type :string}
@@ -992,7 +992,7 @@
     (def crow-manifest
       (pr-str {:id      :isaac.comm.crow
                :version "0.1.0"
-               :isaac.server/comm    {:crow {:factory 'isaac.comm.crow/make
+               :isaac.server/comm    {:crow {:namespace 'isaac.comm.crow
                                 :extra-schema {:token       {:type :string}
                                           :message-cap {:type :int}
                                           :allow-from  {:type :map}}}}}))
@@ -1065,7 +1065,7 @@
       ;; Manifest validation must bind *config* so refs see the known-crew set.
       (let [crew-aware (pr-str {:id      :isaac.comm.telly
                                 :version "0.1.0"
-                                :isaac.server/comm    {:telly {:factory 'isaac.comm.telly/make
+                                :isaac.server/comm    {:telly {:namespace 'isaac.comm.telly
                                                   :schema  {:override-crew {:type :string
                                                                             :validations [[:crew-exists?]]}}}}})]
         (fs/mkdirs (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly"))
@@ -1107,7 +1107,7 @@
       (fs/spit   (nexus/get :fs) "/marigold/.isaac/modules/isaac.comm.broken/resources/isaac-manifest.edn"
                (pr-str {:id      :isaac.comm.broken
                         :version "0.1.0"
-                        :isaac.server/comm    {:broken {:factory 'isaac.comm.broken/make
+                        :isaac.server/comm    {:broken {:namespace 'isaac.comm.broken
                                            :schema  {:thing {:type :string
                                                              :validations [:no-such-ref?]}}}}}))
       (marigold/write-config!
