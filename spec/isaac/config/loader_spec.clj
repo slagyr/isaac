@@ -353,6 +353,17 @@
           (should= [{:key "hooks.webhook.template" :value "warn"}] (:errors result))
           (should= [(#'sut/source-path "hooks/webhook.md")] (:sources result))))))
 
+  (describe "config-compose collision boundary"
+
+    (it "a table-shell collision returns a located error row instead of throwing"
+      (let [index {:mod.a {:manifest {:isaac.config/schema {:tools {:schema {:type :map :description "A"}}}}}
+                   :mod.b {:manifest {:isaac.config/schema {:tools {:schema {:type :map :description "B"}}}}}}
+            [schema error] (#'sut/compose-or-fallback index)]
+        ;; fell back to the builtin composition rather than throwing
+        (should-not-be-nil schema)
+        (should= "config-schema.tools" (:key error))
+        (should (re-find #"collision" (:value error))))))
+
   (describe "load-config-result"
 
     (it "discovers declared modules before conforming the config schema"

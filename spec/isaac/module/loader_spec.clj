@@ -150,6 +150,21 @@
         (should= 1 @resource-calls)
         (should= 1 @read-calls))))
 
+  (describe "duplicate berth declarations"
+
+    (it "flags a berth declared by more than one module"
+      (let [index {:mod.a {:manifest {:berths {:shared/berth {:description "A" :schema {:type :map}}}}}
+                   :mod.b {:manifest {:berths {:shared/berth {:description "B" :schema {:type :map}}}}}}
+            errors (sut/duplicate-berth-declaration-errors index)]
+        (should (some #(and (= "berths[:shared/berth]" (:key %))
+                            (re-find #"multiple modules" (:value %)))
+                      errors))))
+
+    (it "is silent when each berth has a single declarer"
+      (let [index {:mod.a {:manifest {:berths {:a/berth {:schema {:type :map}}}}}
+                   :mod.b {:manifest {:berths {:b/berth {:schema {:type :map}}}}}}]
+        (should= [] (sut/duplicate-berth-declaration-errors index)))))
+
   (describe "discover!"
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
