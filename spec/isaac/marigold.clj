@@ -207,13 +207,13 @@
    :version "0.1.0"
    :factory 'isaac.core/create-module
    :berths  {:isaac/cli {:description "CLI commands."
-                   :manifest    {:type       :map
+                   :schema      {:type       :map
                                  :key-spec   {:type :keyword}
                                  :value-spec {:type    :map
                                               :factory 'isaac.cli.registry/register-cli-command!
                                               :schema  {:desc {:type :string}}}}}
              :isaac.config/schema {:description "Top-level config schema fragments."
-                                   :manifest    {:type :map
+                                   :schema      {:type :map
                                                  :key-spec {:type :keyword}
                                                  :value-spec {:type :map
                                                               :schema {:schema   {:type :map :validations [:present?]}
@@ -224,7 +224,7 @@
                                                                                    :schema {:field {:type :keyword}
                                                                                             :mode {:type :keyword}}}}}}}
              :isaac.config/check {:description "Post-load config validation checks."
-                                 :manifest    {:type       :map
+                                 :schema      {:type       :map
                                                :key-spec   {:type :keyword}
                                                :value-spec {:type :map
                                                             :schema {:fn {:type :symbol :validations [:present?]}}}}}}})
@@ -240,35 +240,35 @@
    :factory  'isaac.server.module/create-module
 
    :berths  {:isaac.server/tools             {:description "LLM tool factories."
-                                              :manifest    {:type       :map
+                                              :schema      {:type       :map
                                                             :key-spec   {:type :keyword}
                                                             :value-spec {:type    :map
                                                                          :factory 'isaac.tool.registry/register-tool-entry!
                                                                          :schema  {:factory {:type :symbol :validations [:present?]}
                                                                                    :schema  {:type :any}}}}}
              :isaac.server/llm-api           {:description "LLM API factories."
-                                              :manifest    {:type       :map
+                                              :schema      {:type       :map
                                                             :key-spec   {:type :keyword}
                                                             :value-spec {:type    :map
                                                                          :factory 'isaac.llm.api.protocol/register-api-entry!
                                                                          :schema  {:factory {:type :symbol :validations [:present?]}}}}}
              :isaac.server/slash-commands    {:description "Slash commands."
-                                              :manifest    {:type       :map
+                                              :schema      {:type       :map
                                                             :key-spec   {:type :keyword}
                                                             :value-spec {:type    :map
                                                                          :factory 'isaac.slash.registry/register-slash-entry!
                                                                          :schema  {:factory {:type :symbol :validations [:present?]}}}}}
              :isaac.server/provider-template {:description "Provider templates."
-                                              :manifest    {:type       :map
+                                              :schema      {:type       :map
                                                             :key-spec   {:type :keyword}
                                                             :value-spec {:type   :map
                                                                          :schema {:template {:type :map}}}}}
              :isaac.server/provider          {:description "Materialized providers."
-                                              :manifest    {:type       :map
+                                              :schema      {:type       :map
                                                             :key-spec   {:type :keyword}
                                                             :value-spec {:type :map}}}
              :isaac.server/comm              {:description "Communication channels."
-                                              :manifest    {:type       :map
+                                              :schema      {:type       :map
                                                             :key-spec   {:type :keyword}
                                                             :value-spec {:type    :map
                                                                          :schema  {:namespace     {:type :symbol :validations [:present?]}

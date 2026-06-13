@@ -24,7 +24,7 @@ Feature: Contribution validation against a berth's :manifest :schema
        :factory marigold.bridge/create-module
        :berths  {:marigold.bridge/comm
                  {:description "Comm channels."
-                  :manifest {:type       :map
+                  :schema   {:type       :map
                              :key-spec   {:type :keyword}
                              :value-spec {:type :map
                                           :schema {:label {:type :string :validations [:present?]}}}}}}}
@@ -64,7 +64,7 @@ Feature: Contribution validation against a berth's :manifest :schema
        :factory marigold.bridge/create-module
        :berths  {:marigold.bridge/comm
                  {:description "Comm channels."
-                  :manifest {:type       :map
+                  :schema   {:type       :map
                              :key-spec   {:type :keyword}
                              :value-spec {:type :map
                                           :schema {:label {:type :string :validations [:present?]}}}}}}}
@@ -103,7 +103,7 @@ Feature: Contribution validation against a berth's :manifest :schema
        :factory marigold.bridge/create-module
        :berths  {:marigold.bridge/comm
                  {:description "Comm channels."
-                  :manifest {:type       :map
+                  :schema   {:type       :map
                              :key-spec   {:type :keyword}
                              :value-spec {:type :map
                                           :schema {:extra-schema {:type :schema-map}}}}}}}
