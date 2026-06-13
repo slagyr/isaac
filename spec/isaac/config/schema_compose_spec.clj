@@ -1,6 +1,7 @@
 (ns isaac.config.schema-compose-spec
   (:require
     [isaac.config.schema-compose :as sut]
+    [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [speclj.core :refer :all]))
 
@@ -45,7 +46,7 @@
         (should= {:type :string}  (get-in root [:schema :tools :schema :web_search :schema :api-key]))
         (should= {:type :boolean} (get-in root [:schema :tools :schema :my_tool :schema :flag]))))
 
-    (it "errors when two modules define the same leaf differently"
+    (it "a later module's table entry overrides an earlier one wholesale — no error, logged"
       (let [index {:mod.a {:manifest {:isaac.config/schema
                                       {:tools {:schema {:type   :map
                                                         :schema {:web_search {:type   :map
@@ -53,7 +54,28 @@
                    :mod.b {:manifest {:isaac.config/schema
                                       {:tools {:schema {:schema {:web_search {:type   :map
                                                                              :schema {:api-key {:type :int}}}}}}}}}}]
-        (should-throw clojure.lang.ExceptionInfo (sut/compose-root-schema index)))))
+        (log/capture-logs
+          (let [root (sut/compose-root-schema index)]
+            ;; override is a feature: the later module's entry wins whole
+            (should= :int (get-in root [:schema :tools :schema :web_search :schema :api-key :type]))
+            (should (some #(= :tools/override (:event %)) @log/captured-logs))))))
+
+    (it "errors when two modules disagree on a table's shell (structure, not entries)"
+      (let [index {:mod.a {:manifest {:isaac.config/schema {:tools {:schema {:type :map :description "A"}}}}}
+                   :mod.b {:manifest {:isaac.config/schema {:tools {:schema {:type :map :description "B"}}}}}}]
+        (should-throw clojure.lang.ExceptionInfo (sut/compose-root-schema index))))
+
+    (it "the more dependent module wins on override — topological order, not alphabetical"
+      ;; mod.a depends on mod.z, so load order is z THEN a (a overrides z).
+      ;; Alphabetical order would wrongly let z (later letter) win.
+      (let [index {:mod.a {:manifest {:deps {:mod.z {}}
+                                      :isaac.config/schema
+                                      {:tools {:schema {:type :map
+                                                        :schema {:web_search {:type :map :schema {:api-key {:type :string}}}}}}}}}
+                   :mod.z {:manifest {:isaac.config/schema
+                                      {:tools {:schema {:schema {:web_search {:type :map :schema {:api-key {:type :int}}}}}}}}}}
+            root  (sut/compose-root-schema index)]
+        (should= :string (get-in root [:schema :tools :schema :web_search :schema :api-key :type])))))
 
   (describe "descriptors"
 

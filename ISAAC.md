@@ -99,6 +99,14 @@ day one.
   Discord's own "channel" concept.
 - Config-driven: `{:dev true}` toggles development features; config
   can pull from env via `${VAR}` substitution
+- **Module-contribution collision policy** (isaac-un18): activation
+  berths (per-entry factory) and the config-schema gather both
+  **last-loaded-win in topological order**, logging `:<kind>/override`
+  at `:warn`; distinct ids coexist. Override is a feature — a later
+  module declaring an existing name (a tool, comm, config-table entry)
+  replaces it, audibly. The gather still *errors* on table-**shell**
+  disagreement (two modules redefining a table's structure, vs its
+  entries).
 
 ### Conventions
 

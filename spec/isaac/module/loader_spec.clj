@@ -87,6 +87,12 @@
   (when (and method path)
     (nexus/register! [::test-berth [method path]] handler)))
 
+(defn record-keyed!
+  "Test factory for a keyed (:map) berth — records each [id entry] it is
+   handed so a spec can assert which entries activated."
+  [entry]
+  (when *factory-calls* (swap! *factory-calls* conj entry)))
+
 (defn- berth-decl-with-factory [factory-sym]
   {:description "test berth"
    :schema      {:type :seq
@@ -291,6 +297,22 @@
                           :consumer {:manifest {:provider/silent [{:k :v}]}}}]
         (should= [] (sut/process-manifest-berths! module-index))
         (should= [] @*factory-calls*)))
+
+    (it "warns :<kind>/override when a later module overrides a keyed berth entry by id"
+      (let [module-index {:provider {:manifest {:berths {:provider/widget
+                                                          {:description "keyed berth"
+                                                           :schema      {:type       :map
+                                                                          :key-spec   {:type :keyword}
+                                                                          :value-spec {:type    :map
+                                                                                       :factory 'isaac.module.loader-spec/record-keyed!
+                                                                                       :schema  {:v {:type :int}}}}}}}}
+                          :mod.a    {:manifest {:provider/widget {:foo {:v 1}}}}
+                          :mod.b    {:manifest {:provider/widget {:foo {:v 2}}}}}]
+        (log/capture-logs
+          (should= [] (sut/process-manifest-berths! module-index))
+          ;; topological tie-break is alphabetical: mod.a then mod.b, so
+          ;; mod.b overrides mod.a's :foo — audible as :widget/override
+          (should (some #(= :widget/override (:event %)) @log/captured-logs)))))
 
     (it "skips berths that also declare a :config slot (not manifest-only)"
       (let [module-index (-> (index-with-berth+contributions
