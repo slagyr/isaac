@@ -4,53 +4,53 @@
  :factory                        isaac.server.module/create-module
 
  :berths                         {:isaac.server/route             {:description "HTTP routes. :path is a clout pattern (literal segments, :name params, * wildcards). :method is :get/:post/... or :* for any-method. Prefix matching is just a trailing wildcard in the path."
-                                                                   :manifest    {:schema {:type :seq
-                                                                                          :spec {:type    :map
-                                                                                                 :factory isaac.server.routes/register-route-entry!
-                                                                                                 :schema  {:method  {:type :keyword :validations [:present?]}
-                                                                                                           :path    {:type :string :validations [:present?]}
-                                                                                                           :handler {:type :symbol :validations [:present?]}}}}}}
+                                                                   :manifest    {:type :seq
+                                                                                 :spec {:type    :map
+                                                                                        :factory isaac.server.routes/register-route-entry!
+                                                                                        :schema  {:method  {:type :keyword :validations [:present?]}
+                                                                                                  :path    {:type :string :validations [:present?]}
+                                                                                                  :handler {:type :symbol :validations [:present?]}}}}}
                                   :isaac.server/tools             {:description "LLM tool factories."
-                                                                   :manifest    {:schema {:type       :map
-                                                                                          :key-spec   {:type :keyword}
-                                                                                          :value-spec {:type    :map
-                                                                                                       :factory isaac.tool.registry/register-tool-entry!
-                                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}
-                                                                                                                 :schema  {:type :any}}}}}}
+                                                                   :manifest    {:type       :map
+                                                                                 :key-spec   {:type :keyword}
+                                                                                 :value-spec {:type    :map
+                                                                                              :factory isaac.tool.registry/register-tool-entry!
+                                                                                              :schema  {:factory {:type :symbol :validations [:present?]}
+                                                                                                        :schema  {:type :any}}}}}
                                   :isaac.server/llm-api           {:description "LLM API factories — adapters per provider API (messages, chat-completions, ollama, ...)."
-                                                                   :manifest    {:schema {:type       :map
-                                                                                          :key-spec   {:type :keyword}
-                                                                                          :value-spec {:type    :map
-                                                                                                       :factory isaac.llm.api.protocol/register-api-entry!
-                                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                                                                   :manifest    {:type       :map
+                                                                                 :key-spec   {:type :keyword}
+                                                                                 :value-spec {:type    :map
+                                                                                              :factory isaac.llm.api.protocol/register-api-entry!
+                                                                                              :schema  {:factory {:type :symbol :validations [:present?]}}}}}
                                   :isaac.server/slash-commands    {:description "Slash commands installed into the bridge slash registry."
-                                                                   :manifest    {:schema {:type       :map
-                                                                                          :key-spec   {:type :keyword}
-                                                                                          :value-spec {:type    :map
-                                                                                                       :factory isaac.slash.registry/register-slash-entry!
-                                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                                                                   :manifest    {:type       :map
+                                                                                 :key-spec   {:type :keyword}
+                                                                                 :value-spec {:type    :map
+                                                                                              :factory isaac.slash.registry/register-slash-entry!
+                                                                                              :schema  {:factory {:type :symbol :validations [:present?]}}}}}
                                   :isaac.server/hook              {:description "Event hooks installed into the hook registry. Per-entry factory resolves :factory and registers the returned spec via isaac.hooks/register-hook!."
-                                                                   :manifest    {:schema {:type       :map
-                                                                                          :key-spec   {:type :keyword}
-                                                                                          :value-spec {:type    :map
-                                                                                                       :factory isaac.hooks/register-hook-entry!
-                                                                                                       :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                                                                   :manifest    {:type       :map
+                                                                                 :key-spec   {:type :keyword}
+                                                                                 :value-spec {:type    :map
+                                                                                              :factory isaac.hooks/register-hook-entry!
+                                                                                              :schema  {:factory {:type :symbol :validations [:present?]}}}}}
                                   :isaac.server/provider-template {:description "Provider templates — partial provider configs that user-config :providers entries can inherit from via :type."
-                                                                   :manifest    {:schema {:type       :map
-                                                                                          :key-spec   {:type :keyword}
-                                                                                          :value-spec {:type   :map
-                                                                                                       :schema {:template {:type :map}}}}}}
+                                                                   :manifest    {:type       :map
+                                                                                 :key-spec   {:type :keyword}
+                                                                                 :value-spec {:type   :map
+                                                                                              :schema {:template {:type :map}}}}}
                                   :isaac.server/provider          {:description "Materialized LLM providers — instances usable by models. Manifest contributions are third-party modules shipping a ready-to-use provider; user-instantiated providers in the [:providers] config slot also count toward this berth (see `[:registered-in? :isaac.server/provider [:providers]]` use sites)."
-                                                                   :manifest    {:schema {:type       :map
-                                                                                          :key-spec   {:type :keyword}
-                                                                                          :value-spec {:type :map}}}}
+                                                                   :manifest    {:type       :map
+                                                                                 :key-spec   {:type :keyword}
+                                                                                 :value-spec {:type :map}}}
                                   :isaac.server/comm              {:description "Communication channels (Discord, iMessage, ACP, …). Manifest contributions name available impls and carry the per-impl factory plus user-config :schema. User-instantiated comm slots in the [:comms] config slot also count toward this berth, so `[:registered-in? :isaac.server/comm [:comms]]` accepts both manifest impl ids (the common :type values) and slot ids."
-                                                                   :manifest    {:schema {:type       :map ;; TODO - MDM: berths.value.manifest always hold a single key map {:schema ...}.  Let's flatten.
-                                                                                          :key-spec   {:type :keyword}
-                                                                                          :value-spec {:type    :map
-                                                                                                       :schema  {:namespace     {:type :symbol :validations [:present?]}
-                                                                                                                 :extra-schema  {:type :schema-map}
-                                                                                                                 :configurable? {:type :boolean}}}}}}}
+                                                                   :manifest    {:type       :map
+                                                                                 :key-spec   {:type :keyword}
+                                                                                 :value-spec {:type    :map
+                                                                                              :schema  {:namespace     {:type :symbol :validations [:present?]}
+                                                                                                        :extra-schema  {:type :schema-map}
+                                                                                                        :configurable? {:type :boolean}}}}}}
 
  :isaac/cli                      {:auth     {:usage     "auth <subcommand> [options]"
                                              :summary   "Manage authentication credentials"

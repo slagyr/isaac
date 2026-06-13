@@ -207,27 +207,27 @@
    :version "0.1.0"
    :factory 'isaac.core/create-module
    :berths  {:isaac/cli {:description "CLI commands."
-                   :manifest    {:schema {:type       :map
-                                          :key-spec   {:type :keyword}
-                                          :value-spec {:type    :map
-                                                       :factory 'isaac.cli.registry/register-cli-command!
-                                                       :schema  {:desc {:type :string}}}}}}
+                   :manifest    {:type       :map
+                                 :key-spec   {:type :keyword}
+                                 :value-spec {:type    :map
+                                              :factory 'isaac.cli.registry/register-cli-command!
+                                              :schema  {:desc {:type :string}}}}}
              :isaac.config/schema {:description "Top-level config schema fragments."
-                                   :manifest    {:schema {:type :map
-                                                          :key-spec {:type :keyword}
-                                                          :value-spec {:type :map
-                                                                       :schema {:schema   {:type :map :validations [:present?]}
-                                                                                :entity-dir {:type :string}
-                                                                                :frontmatter? {:type :boolean}
-                                                                                :merge-root-entity? {:type :boolean}
-                                                                                :companion {:type :map
-                                                                                            :schema {:field {:type :keyword}
-                                                                                                     :mode {:type :keyword}}}}}}}}
+                                   :manifest    {:type :map
+                                                 :key-spec {:type :keyword}
+                                                 :value-spec {:type :map
+                                                              :schema {:schema   {:type :map :validations [:present?]}
+                                                                       :entity-dir {:type :string}
+                                                                       :frontmatter? {:type :boolean}
+                                                                       :merge-root-entity? {:type :boolean}
+                                                                       :companion {:type :map
+                                                                                   :schema {:field {:type :keyword}
+                                                                                            :mode {:type :keyword}}}}}}}
              :isaac.config/check {:description "Post-load config validation checks."
-                                 :manifest    {:schema {:type       :map
-                                                        :key-spec   {:type :keyword}
-                                                        :value-spec {:type :map
-                                                                     :schema {:fn {:type :symbol :validations [:present?]}}}}}}}})
+                                 :manifest    {:type       :map
+                                               :key-spec   {:type :keyword}
+                                               :value-spec {:type :map
+                                                            :schema {:fn {:type :symbol :validations [:present?]}}}}}}})
 
 (def baseline-server-manifest
   "A stand-in for resources/isaac-manifest.edn. Themed server
@@ -240,40 +240,40 @@
    :factory  'isaac.server.module/create-module
 
    :berths  {:isaac.server/tools             {:description "LLM tool factories."
-                                              :manifest    {:schema {:type       :map
-                                                                     :key-spec   {:type :keyword}
-                                                                     :value-spec {:type    :map
-                                                                                  :factory 'isaac.tool.registry/register-tool-entry!
-                                                                                  :schema  {:factory {:type :symbol :validations [:present?]}
-                                                                                            :schema  {:type :any}}}}}}
+                                              :manifest    {:type       :map
+                                                            :key-spec   {:type :keyword}
+                                                            :value-spec {:type    :map
+                                                                         :factory 'isaac.tool.registry/register-tool-entry!
+                                                                         :schema  {:factory {:type :symbol :validations [:present?]}
+                                                                                   :schema  {:type :any}}}}}
              :isaac.server/llm-api           {:description "LLM API factories."
-                                              :manifest    {:schema {:type       :map
-                                                                     :key-spec   {:type :keyword}
-                                                                     :value-spec {:type    :map
-                                                                                  :factory 'isaac.llm.api.protocol/register-api-entry!
-                                                                                  :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                                              :manifest    {:type       :map
+                                                            :key-spec   {:type :keyword}
+                                                            :value-spec {:type    :map
+                                                                         :factory 'isaac.llm.api.protocol/register-api-entry!
+                                                                         :schema  {:factory {:type :symbol :validations [:present?]}}}}}
              :isaac.server/slash-commands    {:description "Slash commands."
-                                              :manifest    {:schema {:type       :map
-                                                                     :key-spec   {:type :keyword}
-                                                                     :value-spec {:type    :map
-                                                                                  :factory 'isaac.slash.registry/register-slash-entry!
-                                                                                  :schema  {:factory {:type :symbol :validations [:present?]}}}}}}
+                                              :manifest    {:type       :map
+                                                            :key-spec   {:type :keyword}
+                                                            :value-spec {:type    :map
+                                                                         :factory 'isaac.slash.registry/register-slash-entry!
+                                                                         :schema  {:factory {:type :symbol :validations [:present?]}}}}}
              :isaac.server/provider-template {:description "Provider templates."
-                                              :manifest    {:schema {:type       :map
-                                                                     :key-spec   {:type :keyword}
-                                                                     :value-spec {:type   :map
-                                                                                  :schema {:template {:type :map}}}}}}
+                                              :manifest    {:type       :map
+                                                            :key-spec   {:type :keyword}
+                                                            :value-spec {:type   :map
+                                                                         :schema {:template {:type :map}}}}}
              :isaac.server/provider          {:description "Materialized providers."
-                                              :manifest    {:schema {:type       :map
-                                                                     :key-spec   {:type :keyword}
-                                                                     :value-spec {:type :map}}}}
+                                              :manifest    {:type       :map
+                                                            :key-spec   {:type :keyword}
+                                                            :value-spec {:type :map}}}
              :isaac.server/comm              {:description "Communication channels."
-                                              :manifest    {:schema {:type       :map
-                                                                     :key-spec   {:type :keyword}
-                                                                     :value-spec {:type    :map
-                                                                                  :schema  {:namespace     {:type :symbol :validations [:present?]}
-                                                                                            :extra-schema  {:type :schema-map}
-                                                                                            :configurable? {:type :boolean}}}}}}}
+                                              :manifest    {:type       :map
+                                                            :key-spec   {:type :keyword}
+                                                            :value-spec {:type    :map
+                                                                         :schema  {:namespace     {:type :symbol :validations [:present?]}
+                                                                                   :extra-schema  {:type :schema-map}
+                                                                                   :configurable? {:type :boolean}}}}}}
 
    :isaac.server/llm-api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}
                           (keyword sky-api)    {:factory 'isaac.llm.api.grover/make}

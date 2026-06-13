@@ -89,12 +89,12 @@
 
 (defn- berth-decl-with-factory [factory-sym]
   {:description "test berth"
-   :manifest    {:schema {:type :seq
-                           :spec {:type    :map
-                                  :factory factory-sym
-                                  :schema  {:method  {:type :keyword}
-                                            :path    {:type :string}
-                                            :handler {:type :symbol}}}}}})
+   :manifest    {:type :seq
+                  :spec {:type    :map
+                         :factory factory-sym
+                         :schema  {:method  {:type :keyword}
+                                   :path    {:type :string}
+                                   :handler {:type :symbol}}}}})
 
 (defn- index-with-berth+contributions
   "Build a module-index where `:provider` declares a berth with a
@@ -286,8 +286,8 @@
     (it "skips berths whose schema declares no entry-level :factory"
       (let [module-index {:provider {:manifest {:berths {:provider/silent
                                                           {:description "no factory"
-                                                           :manifest    {:schema {:type :seq
-                                                                                   :spec {:type :map}}}}}}}
+                                                           :manifest    {:type :seq
+                                                                          :spec {:type :map}}}}}}
                           :consumer {:manifest {:provider/silent [{:k :v}]}}}]
         (should= [] (sut/process-manifest-berths! module-index))
         (should= [] @*factory-calls*)))
