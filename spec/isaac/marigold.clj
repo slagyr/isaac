@@ -272,7 +272,7 @@
                                                                      :key-spec   {:type :keyword}
                                                                      :value-spec {:type    :map
                                                                                   :schema  {:namespace     {:type :symbol :validations [:present?]}
-                                                                                            :extra-schema  {:type :any}
+                                                                                            :extra-schema  {:type :schema-map}
                                                                                             :configurable? {:type :boolean}}}}}}}
 
    :isaac.server/llm-api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}

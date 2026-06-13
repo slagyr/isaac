@@ -90,6 +90,45 @@ Feature: Contribution validation against a berth's :manifest :schema
       | key                                                                          | value           |
       | module-index["marigold.longwave"].marigold.bridge/comm[:longwave].label      | must be present |
 
+  Scenario: A contribution whose :schema-map field is malformed is a config-load error
+    Given an empty Isaac state directory "/tmp/marigold"
+    And the isaac file "/tmp/modules/marigold.bridge/deps.edn" exists with:
+      """
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.bridge/resources/isaac-manifest.edn" exists with:
+      """
+      {:id      :marigold.bridge
+       :version "1.0.0"
+       :factory marigold.bridge/create-module
+       :berths  {:marigold.bridge/comm
+                 {:description "Comm channels."
+                  :manifest {:schema {:type       :map
+                                      :key-spec   {:type :keyword}
+                                      :value-spec {:type :map
+                                                   :schema {:extra-schema {:type :schema-map}}}}}}}}
+      """
+    And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:
+      """
+      {:paths ["resources"]}
+      """
+    And the isaac file "/tmp/modules/marigold.longwave/resources/isaac-manifest.edn" exists with:
+      """
+      {:id                   :marigold.longwave
+       :version              "0.1.0"
+       :factory              marigold.longwave/create-module
+       :marigold.bridge/comm {:longwave {:extra-schema {:loft {:type :mystery}}}}}
+      """
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:modules {:marigold.bridge   {:local/root "/tmp/modules/marigold.bridge"}
+                 :marigold.longwave {:local/root "/tmp/modules/marigold.longwave"}}}
+      """
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key                                                                              | value                                  |
+      | module-index["marigold.longwave"].marigold.bridge/comm[:longwave].extra-schema   | must be a schema map of field → spec |
+
   Scenario: A contribution to an unknown berth is a config-load error
     Given an empty Isaac state directory "/tmp/marigold"
     And the isaac file "/tmp/modules/marigold.longwave/deps.edn" exists with:

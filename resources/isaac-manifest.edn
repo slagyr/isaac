@@ -49,7 +49,7 @@
                                                                                           :key-spec   {:type :keyword}
                                                                                           :value-spec {:type    :map
                                                                                                        :schema  {:namespace     {:type :symbol :validations [:present?]}
-                                                                                                                 :extra-schema  {:type :any} ;; TODO - MDM: We need to pull in the apron.schema/spec-schema here.
+                                                                                                                 :extra-schema  {:type :schema-map}
                                                                                                                  :configurable? {:type :boolean}}}}}}}
 
  :isaac/cli                      {:auth     {:usage     "auth <subcommand> [options]"
