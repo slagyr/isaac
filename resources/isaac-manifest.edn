@@ -44,7 +44,7 @@
                                                                    :schema      {:type       :map
                                                                                  :key-spec   {:type :keyword}
                                                                                  :value-spec {:type :map}}}
-                                  :isaac.server/comm              {:description "Communication channels (Discord, iMessage, ACP, …). Manifest contributions name available impls and carry the per-impl factory plus user-config :schema. User-instantiated comm slots in the [:comms] config slot also count toward this berth, so `[:registered-in? :isaac.server/comm [:comms]]` accepts both manifest impl ids (the common :type values) and slot ids."
+                                  :isaac.server/comm              {:description "Communication channels (Discord, iMessage, ACP, …). Manifest contributions name available impls and carry the impl's :namespace (whose load implements isaac.comm.factory/create for that :type) plus its :extra-schema (extension fields composed into [:comms] slots of that :type). User-instantiated comm slots in the [:comms] config slot also count toward this berth, so `[:registered-in? :isaac.server/comm [:comms]]` accepts both manifest impl ids (the common :type values) and slot ids."
                                                                    :schema      {:type       :map
                                                                                  :key-spec   {:type :keyword}
                                                                                  :value-spec {:type    :map
@@ -154,6 +154,10 @@
                                     :value-spec  {:name           :comm
                                                   :type           :map
                                                   :factory        isaac.comm.factory/create!
+                                                  ;; :path indexes each :isaac.server/comm contribution's value (telly
+                                                  ;; writes its fields at [:extra-schema]); gathered fields merge into
+                                                  ;; :schema below. It is a data path into the contribution, not a path
+                                                  ;; through this berth schema — the contribution has no :value-spec key.
                                                   :dynamic-schema {:berth :isaac.server/comm :path [:extra-schema]}
                                                   :schema         {:type {:type         :id
                                                                           :options-from :comms
