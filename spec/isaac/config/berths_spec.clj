@@ -91,7 +91,59 @@
           (sut/reconcile! {:config     {:things {"a" {:x 1}}}
                            :old-config {:things {:a {:x 1}}}
                            :module-index index})
-          (should= 1 @made)))))
+          (should= 1 @made))))
+
+    (describe ":isaac.config/schema factory tables"
+
+      (defn- schema-index [factory]
+        ;; A :isaac.config/schema table that declares a :factory in its
+        ;; value-spec and NO berth :config — the new source the engine
+        ;; must reconcile alongside berth :config-claimed paths.
+        {:mod.y {:manifest {:isaac.config/schema
+                            {:relays {:schema {:name       :relays
+                                               :type       :map
+                                               :key-spec   {:type :keyword}
+                                               :value-spec {:type    :map
+                                                            :factory factory
+                                                            :schema  {:freq {:type :string}}}}}}}}})
+
+      (it "exposes a config-schema-declared factory path as a reconcilable path"
+        (should-contain [:relays] (sut/config-paths (schema-index (fn [_ _] ::node)))))
+
+      (it "reports a config-schema-declared factory path as claimed"
+        (should (sut/claims-path? (schema-index (fn [_ _] ::node)) [:relays])))
+
+      (it "creates a node when a config-schema slot appears and removes it when it goes"
+        (nexus/-with-nested-nexus {}
+          (let [index (schema-index (fn [_path _slice] ::node))]
+            (sut/reconcile! {:config {:relays {:a {:freq "1"}}} :module-index index})
+            (should= ::node (nexus/get-in [:relays :a]))
+            (sut/reconcile! {:config {} :old-config {:relays {:a {:freq "1"}}} :module-index index})
+            (should-be-nil (nexus/get-in [:relays :a])))))
+
+      (it "delivers on-config-change! to a Reconfigurable config-schema node"
+        (nexus/-with-nested-nexus {}
+          (let [changes (atom [])
+                node    (reify sut/Reconfigurable
+                          (on-startup! [_ _])
+                          (on-config-change! [_ old new] (swap! changes conj [old new])))
+                index   (schema-index (fn [_ _] node))]
+            (sut/reconcile! {:config {:relays {:a {:freq "1"}}} :module-index index})
+            (sut/reconcile! {:config     {:relays {:a {:freq "2"}}}
+                             :old-config {:relays {:a {:freq "1"}}}
+                             :module-index index})
+            (should= node (nexus/get-in [:relays :a]))
+            (should= [[{:freq "1"} {:freq "2"}]] @changes))))
+
+      (it "leaves a pure-data config-schema table (no factory) untouched"
+        (nexus/-with-nested-nexus {}
+          (let [index {:mod.z {:manifest {:isaac.config/schema
+                                          {:knobs {:schema {:name   :knobs
+                                                            :type   :map
+                                                            :schema {:volume {:type :int}}}}}}}}]
+            (should-not-contain [:knobs] (sut/config-paths index))
+            (sut/reconcile! {:config {:knobs {:volume 3}} :module-index index})
+            (should-be-nil (nexus/get-in [:knobs])))))))
 
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
   (around [it]
