@@ -6,7 +6,10 @@
     [isaac.nexus :as nexus]
     [isaac.schema.dynamic :as dynamic]
     [isaac.schema.lexicon :as lexicon]
+    [isaac.schema.meta :as meta-schema]
     [isaac.schema.registered-in :as registered-in]))
+
+(def ^:private config-schema-key :isaac.config/schema)
 
 (defprotocol Reconfigurable
   (on-startup!       [this slice])
@@ -32,14 +35,67 @@
                  [berth-id config-decl])))
        vec))
 
+(declare composed-schema)
+
+(defn- spec-declares-factory?
+  "Structural check (no value): would `walk-factory-nodes` ever produce a
+   factory node for `spec`? True when the spec, its open-map :value-spec,
+   any closed-map :schema field, or a :seq :spec declares a :factory key."
+  [spec]
+  (boolean
+    (when (map? spec)
+      (or (:factory spec)
+          (and (= :map (:type spec)) (:value-spec spec)
+               (spec-declares-factory? (:value-spec spec)))
+          (and (= :map (:type spec)) (:schema spec)
+               (some spec-declares-factory? (vals (:schema spec))))
+          (and (= :seq (:type spec)) (:spec spec)
+               (spec-declares-factory? (:spec spec)))))))
+
+(defn- config-schema-table-schema
+  "The composed (meta-conformed) inline schema of a :isaac.config/schema
+   contribution — same composition schema-compose performs, computed here
+   so the reconcile engine stays a leaf dependency."
+  [descriptor]
+  (let [schema (:schema descriptor)]
+    (when (map? schema)
+      (meta-schema/conform-spec! schema))))
+
+(defn config-schema-factory-sources
+  "[[config-key composed-schema] ...] for every :isaac.config/schema
+   table whose composed value-spec carries a :factory. These reconcile
+   into the nexus exactly like a berth :config-claimed path; pure-data
+   tables (no factory) are skipped. Berth :config is the other source —
+   see config-berths — and both are active simultaneously."
+  [module-index]
+  (->> module-index
+       (mapcat (fn [[_module-id entry]]
+                 (get-in entry [:manifest config-schema-key])))
+       (sort-by (comp str key))
+       (keep (fn [[config-key descriptor]]
+               (let [schema (config-schema-table-schema descriptor)]
+                 (when (spec-declares-factory? schema)
+                   [config-key schema]))))
+       vec))
+
+(defn reconcile-sources
+  "The union of factory'd reconcilable paths: berth :config declarations
+   and :isaac.config/schema tables whose value-spec carries a :factory.
+   Each source is [path schema] where schema is the composed map/seq spec
+   the engine walks for factory nodes. The engine, config-paths, and
+   claims-path? all draw from this union."
+  [module-index]
+  (-> (mapv (fn [[berth-id config-decl]]
+              [(:path config-decl) (composed-schema berth-id config-decl module-index)])
+            (config-berths module-index))
+      (into (mapv (fn [[config-key schema]] [[config-key] schema])
+                  (config-schema-factory-sources module-index)))))
+
 (defn config-paths [module-index]
-  (->> (config-berths module-index)
-       (mapv (comp :path second))))
+  (mapv first (reconcile-sources module-index)))
 
 (defn claims-path? [module-index path]
   (some #(= path %) (config-paths module-index)))
-
-(declare composed-schema)
 
 (defn- open-map-paths [module-index]
   (->> (config-berths module-index)
@@ -220,16 +276,15 @@
           (create-node! module-index node-path node-spec new-slice)))))
 
 (defn reconcile!
-  "Reconcile config-berth-claimed paths against the nexus: factory on
-   appearance, on-config-change! when the live node satisfies
-   Reconfigurable (recreate when it doesn't), deregister on removal.
-   Boot is old-config nil; shutdown is config nil — one engine for all
-   three."
+  "Reconcile factory'd paths against the nexus: factory on appearance,
+   on-config-change! when the live node satisfies Reconfigurable
+   (recreate when it doesn't), deregister on removal. Paths come from the
+   union of berth :config declarations and :isaac.config/schema tables
+   whose value-spec carries a :factory (see reconcile-sources). Boot is
+   old-config nil; shutdown is config nil — one engine for all three."
   [{:keys [config old-config module-index]}]
-  (doseq [[berth-id config-decl] (config-berths module-index)
-          :let [path      (:path config-decl)
-                schema    (composed-schema berth-id config-decl module-index)
-                old-nodes (nodes-by-path path schema (get-in old-config path))
+  (doseq [[path schema] (reconcile-sources module-index)
+          :let [old-nodes (nodes-by-path path schema (get-in old-config path))
                 new-nodes (nodes-by-path path schema (get-in config path))]
           node-path (sort-by pr-str (into #{} (concat (keys old-nodes) (keys new-nodes))))]
     (let [[_ old-slice]         (get old-nodes node-path)
