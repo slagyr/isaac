@@ -40,6 +40,20 @@
 
 (describe "config berths"
 
+  (it "install! skips berth paths excluded by the caller (reconciler-owned slot trees)"
+    (let [made  (atom [])
+          index {:mod.x {:manifest {:berths {:mod.x/things
+                                             {:description "things"
+                                              :config {:path   [:things]
+                                                       :schema {:type       :map
+                                                                :key-spec   {:type :keyword}
+                                                                :value-spec {:type    :map
+                                                                             :factory (fn [path slice] (swap! made conj [path slice]) ::node)}}}}}}}}]
+      (sut/install! {:config         {:things {:a {}}}
+                     :module-index   index
+                     :exclude-berths #{:mod.x/things}})
+      (should= [] @made)))
+
   #_{:clj-kondo/ignore [:invalid-arity :unresolved-symbol]}
   (around [it]
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}

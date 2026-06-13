@@ -12,11 +12,4 @@
   (it "registers and returns a factory"
     (let [factory (fn [_] ::instance)]
       (sut/register-factory! "telly" factory)
-      (should= factory (sut/factory-for :telly))))
-
-  (it "installs a comm via the berth's per-entry factory"
-    ;; Phase 8 (isaac-qqgv): comm registration moved from the legacy
-    ;; module-loader handler into the :isaac.server/comm berth's
-    ;; per-entry factory.
-    (sut/register-comm-entry! [:telly {:factory 'isaac.comm.cli/make}])
-    (should-not-be-nil (sut/factory-for "telly"))))
+      (should= factory (sut/factory-for :telly)))))

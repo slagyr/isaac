@@ -271,7 +271,6 @@
                                               :manifest    {:schema {:type       :map
                                                                      :key-spec   {:type :keyword}
                                                                      :value-spec {:type    :map
-                                                                                  :factory 'isaac.comm.registry/register-comm-entry!
                                                                                   :schema  {:factory       {:type :symbol :validations [:present?]}
                                                                                             :extra-schema  {:type :any}
                                                                                             :configurable? {:type :boolean}}}}}
@@ -284,6 +283,7 @@
                                                                      :key-spec    {:type :id}
                                                                      :value-spec  {:name           :comm
                                                                                    :type           :map
+                                                                                   :factory        'isaac.comm.slots/impl-factory
                                                                                    :dynamic-schema [:extra-schema]
                                                                                    :schema         {:type {:type         :id
                                                                                                            :options-from :comms

@@ -17,14 +17,6 @@
     (swap! *registry* assoc-in [:impls n] factory)
     n))
 
-(defn register-comm-entry!
-  "Per-entry factory for the :isaac.server/comm berth (phase 8 of the
-   berth epic). Receives `[impl-id entry]`; resolves the entry's
-   symbol-valued :factory and installs it under impl-id."
-  [[impl-id entry]]
-  (let [factory (some-> (:factory entry) requiring-resolve var-get)]
-    (register-factory! impl-id factory)))
-
 (defn registered? [impl-name]
   (let [n (->name impl-name)]
     (contains? (:impls @*registry*) n)))

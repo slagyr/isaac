@@ -4,6 +4,7 @@
     [c3kit.apron.refresh :as refresh]
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
+    [isaac.comm.slots :as comm-slots]
     [isaac.config.api :as config]
     [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
@@ -33,7 +34,7 @@
   (config/snapshot "server/current-config accessor"))
 
 (defn registries []
-  [(assoc @comm-registry/*registry* :kind :slot-tree)
+  [(comm-slots/registry)
    hail-bands/registry
    hooks/registry
    cron-service/registry])
@@ -185,7 +186,7 @@
             ;; register-route-extensions! pass.
             _                       (module-loader/process-manifest-berths! module-index)
             _                       (module-loader/start-modules! module-index)
-            _                       (runtime/install-config-berths! {:config cfg :module-index module-index})
+            _                       (runtime/install-config-berths! {:config cfg :module-index module-index :registries registries})
             config-source           (start-config-source opts hot-reload? root)
             _                       (some-> config-source runtime/start!)
             reloader                (when (and config-source root)

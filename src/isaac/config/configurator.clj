@@ -5,7 +5,6 @@
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
-    [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]))
 
 (defprotocol Reconfigurable
@@ -20,44 +19,14 @@
 (defn- dotted [path]
   (str/join "." (map ->name path)))
 
-(defn- activating-module-id [module-index impl]
-  (let [impl-key (keyword (->name impl))]
-    (some (fn [[module-id entry]]
-            (when (get-in entry [:manifest :isaac.server/comm impl-key])
-              module-id))
-          module-index)))
-
-(defn- resolve-factory [_registry host impl]
-  ;; Phase 8 of brth (isaac-qqgv): comm impl registration moved into
-  ;; the :isaac.server/comm berth's per-entry factory. If the impl
-  ;; isn't already registered, look up its entry in the providing
-  ;; module's manifest and install it directly via register-comm-entry!.
-  ;; Then activate the module for its bootstrap. Both calls catch
-  ;; load failures and log :module/activation-failed so the slot
-  ;; stays inert (matches the legacy behavior).
-  (let [impl-key  (keyword (->name impl))
-        module-id (activating-module-id (:module-index host) impl)]
-    (when module-id
-      (try
-        (module-loader/activate! module-id (:module-index host))
-        (catch clojure.lang.ExceptionInfo _ nil))
-      (when-not (comm-registry/factory-for impl)
-        (when-let [entry (get-in (:module-index host)
-                                 [module-id :manifest :isaac.server/comm impl-key])]
-          (try
-            (comm-registry/register-comm-entry! [impl-key entry])
-            (catch Throwable t
-              (log/error :module/activation-failed
-                         :error  (.getMessage t)
-                         :impl   (->name impl)
-                         :module (name module-id)))))))
-    (or (comm-registry/factory-for impl)
-        (when module-id
-          (log/error :module/activation-failed
-                     :error  (str "module did not register comm impl " (pr-str impl))
-                     :impl   (->name impl)
-                     :module (name module-id))
-          nil))))
+(defn- resolve-factory
+  "Asks the registry's :slot-factory (declared by the berth's :config
+   :value-spec :factory — e.g. isaac.comm.slots/impl-factory) for the
+   impl's constructor. The slot factory owns lookup, lazy module
+   activation, and activation-failure logging."
+  [registry host impl]
+  (when-let [slot-factory (:slot-factory registry)]
+    (slot-factory host impl)))
 
 (defn slot-impl
   "Resolves the comm type for a slot, normalized by id — conformed

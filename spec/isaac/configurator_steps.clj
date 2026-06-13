@@ -147,7 +147,7 @@
       (let [cfg          (:config loaded)
             module-index (merge (module-loader/core-index) (:module-index cfg))]
         (module-loader/start-modules! module-index)
-        (config-install/install-config-berths! {:config cfg :module-index module-index})
+        (config-install/install-config-berths! {:config cfg :module-index module-index :registries (app/registries)})
         (g/assoc! :config-berths-installed? true)))))
 
 (defn nexus-has-node-at [expected-type path]

@@ -4,6 +4,7 @@
     [isaac.api]
     [isaac.config.schema.root :as schema]
     [isaac.comm.registry :as comm-registry]
+    [isaac.comm.slots :as comm-slots]
     [isaac.fs :as fs]
     [isaac.config.configurator :as sut]
     [isaac.logger :as log]
@@ -35,7 +36,7 @@
 
   (it "activates a declared module when a comm impl is first needed"
     (let [host     {:module-index {:isaac.comm.telly {:manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
-          registry @comm-registry/*registry*]
+          registry (comm-slots/registry nil)]
       (log/capture-logs
         (sut/reconcile! host nil {:comms {:bert {:type :telly}}} registry)
         (should-not-be-nil (nexus/get-in [:comms :bert]))
@@ -49,7 +50,7 @@
     ;; load-config-result conforms slot ids to strings; the reconciler
     ;; must see them as the same slot.
     (let [host     {:module-index {:isaac.comm.telly {:manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
-          registry @comm-registry/*registry*]
+          registry (comm-slots/registry nil)]
       (log/capture-logs
         (sut/reconcile! host nil {:comms {:bert {:type :telly :mood "happy"}}} registry)
         (let [booted (nexus/get-in [:comms :bert])]
@@ -64,7 +65,7 @@
 
   (it "logs activation failure and leaves the slot inert when the module load fails"
     (let [host     {:module-index {:isaac.comm.telly {:manifest {:isaac.server/comm {:telly {:factory 'isaac.comm.telly/make}}}}}}
-          registry @comm-registry/*registry*]
+          registry (comm-slots/registry nil)]
       (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
       (log/capture-logs
         (sut/reconcile! host nil {:comms {:bert {:type :telly}}} registry)
@@ -94,7 +95,7 @@
                       (on-startup! [_ slice]
                         (swap! events conj [:new slice]))
                       (on-config-change! [_ _ _] nil))
-           registry @comm-registry/*registry*
+           registry (comm-slots/registry nil)
            old-cfg  {:comms {:bert {:type (keyword marigold/longwave) :token "abc"}}}
            new-cfg  {:comms {:bert {:type :telly}}}]
       (comm-registry/register-factory! "telly" (fn [_] new-inst))
@@ -133,7 +134,7 @@
                       (on-startup! [_ slice]
                         (swap! events conj [:new slice]))
                       (on-config-change! [_ _ _] nil))
-           registry @comm-registry/*registry*
+           registry (comm-slots/registry nil)
            old-cfg  {:comms {:bert {:type (keyword marigold/longwave) :token "abc"}}}
            new-cfg  {:comms {:bert {:type :telly}}}]
       (comm-registry/register-factory! "telly" (fn [_] new-inst))

@@ -12,6 +12,7 @@
     [clojure.string :as str]
     [isaac.config.berths :as berth-config]
     [isaac.config.loader :as config]
+    [isaac.comm.registry :as comm-registry]
     [isaac.config.configurator :as configurator]
     [isaac.logger :as log]
     [isaac.session.store.spi :as store]))
@@ -39,10 +40,18 @@
     (configurator/reconcile! host old-config config registries))
   {:config config})
 
+(defn- slot-tree-berths [registries]
+  (into #{} (keep #(when (= :slot-tree (:kind %)) (:berth-id %))) registries))
+
 (defn install-config-berths!
-  [{:keys [config module-index]}]
+  "Fire-once install of config-berth nodes. :registries (when given)
+   identifies reconciler-owned slot-tree berths, which are excluded —
+   their instances live and die with the diff engine."
+  [{:keys [config module-index registries]}]
   (when (seq module-index)
-    (berth-config/install! {:config config :module-index module-index}))
+    (berth-config/install! {:config         config
+                            :module-index   module-index
+                            :exclude-berths (slot-tree-berths registries)}))
   {:config config})
 
 (defn load-and-install!
@@ -77,9 +86,9 @@
   (str/join "." (map configurator/->name path)))
 
 (defn- comm-validation-errors [cfg registry]
-  ;; Phase 8 (isaac-qqgv): comm contributions live at :isaac.server/comm.
+  ;; an impl is known when a module contributes it (lazy activation) or
+  ;; an embedder registered it programmatically (isaac.api).
   (let [path      (:path registry)
-        impls     (:impls registry)
         mod-index (:module-index cfg)
         cont      (get-in cfg path)]
     (->> cont
@@ -89,7 +98,7 @@
                          lazy?    (some #(get-in % [:manifest :isaac.server/comm (keyword (configurator/->name impl))])
                                         (vals mod-index))
                          slot-pth (dotted-path (conj (vec path) slot))]
-                     (when (and impl (not lazy?) (not (contains? impls (configurator/->name impl))))
+                     (when (and impl (not lazy?) (not (comm-registry/registered? impl)))
                        {:path slot-pth :message (str "unknown :type " (pr-str impl))})))))
          (remove nil?)
          vec)))
@@ -126,6 +135,6 @@
       (do
         (config/set-snapshot! new-cfg "config hot reload")
         (install! {:config new-cfg :old-config old-config :registries registries :host host})
-        (install-config-berths! {:config new-cfg :module-index (:module-index host)})
+        (install-config-berths! {:config new-cfg :module-index (:module-index host) :registries registries})
         (log/info :config/reloaded :path path)
         new-cfg))))
