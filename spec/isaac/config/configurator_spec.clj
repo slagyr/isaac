@@ -69,12 +69,13 @@
                       (seq (:schema value-spec)))))))
 
     (it "every config-driven entity collection has a lifecycle owner or is marked snapshot-only"
-      (let [owned-paths (owned-paths)]
-        (doseq [[key entry] (filter entity-collection-entry? (:schema schema/root))]
-          (when-not (or (contains? owned-paths [key])
-                        (:snapshot-only? entry))
-            (throw (ex-info (str "key `" key "` has no owner — register a Reconfigurable for `[:" (name key) "]` or add `:snapshot-only? true` to its schema entry")
-                            {:key key}))))))
+      (let [owned-paths (owned-paths)
+            unowned     (for [[key entry] (filter entity-collection-entry? (:schema schema/root))
+                              :when (not (or (contains? owned-paths [key])
+                                             (:snapshot-only? entry)))]
+                          (str "key `" key "` has no owner — register a Reconfigurable for `["
+                               key "]` or add `:snapshot-only? true` to its schema entry"))]
+        (should= [] (vec unowned))))
 
     (it "marks crew models and providers as snapshot-only"
       (should= true (get-in schema/root [:schema :crew :snapshot-only?]))
