@@ -56,12 +56,11 @@
       (should-contain "comms.value.loft" output)
       (should-not-contain "[telly] loft" output)))
 
-  (it "renders core manifest tool fields with provenance prefix"
+  (it "renders the statically-declared tool config fields"
     (write-config! {})
-    (let [output (with-out-str (should= 0 (sut/run {:root test-root} ["schema" (str "tools." marigold/signal-flare ".api-key")]))) ]
-      (should-contain (str "[" marigold/signal-flare "]") output)
+    (let [output (with-out-str (should= 0 (sut/run {:root test-root} ["schema" "tools.web_search.api-key"]))) ]
       (should-contain "string" output)
-      (should-contain (str "tools." marigold/signal-flare ".api-key") output)))
+      (should-contain "tools.web_search.api-key" output)))
 
   (it "lists manifest-backed comm variants in the aggregate comm schema view"
     (write-config! {:modules {:isaac.comm.telly {:local/root (str workspace-root "/modules/isaac.comm.telly")}}})
@@ -96,9 +95,8 @@
       (should-contain "int" output)
       (should-contain "providers.value.fizz-level" output)))
 
-  (it "renders manifest-supplied slash-command fields with provenance prefix"
-    (write-config! {:modules {:isaac.slash.echo {:local/root (str workspace-root "/modules/isaac.slash.echo")}}})
-    (let [output (with-out-str (should= 0 (sut/run {:root test-root} ["schema" "slash-commands.echo.command-name"]))) ]
-      (should-contain "[echo]" output)
-      (should-contain "string" output)
-      (should-contain "slash-commands.echo.command-name" output))))
+  (it "renders the statically-declared tool config fields"
+    (write-config! {})
+    (let [output (with-out-str (should= 0 (sut/run {:root test-root} ["schema" "tools.web_search.provider"]))) ]
+      (should-contain "keyword" output)
+      (should-contain "tools.web_search.provider" output))))

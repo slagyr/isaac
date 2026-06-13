@@ -53,30 +53,23 @@ Feature: web_search tool config schema
       | key                      | value       |
       | tools.web_search.mystery | unknown key |
 
-  Scenario: Unknown :provider value produces a warning
-    Given the brave provider is registered for web_search
-    And config file "isaac.edn" containing:
+  Scenario: A :provider value outside the manifest enum is rejected
+    Given config file "isaac.edn" containing:
       """
-      {:tools {:web_search {:provider :unknown-provider}}}
+      {:tools {:web_search {:provider :unknown-provider :api-key "sk"}}}
       """
     When the config is loaded
-    Then the config has validation warnings matching:
-      | key                       | value            |
-      | tools.web_search.provider | unknown provider |
+    Then the config has validation errors matching:
+      | key                       | value                 |
+      | tools.web_search.provider | must be one of :brave |
 
-  Scenario: Wrong type for a provider config key produces a validation error
-    Given a brave provider is registered for web_search with schema:
-      """
-      {:api-key {:type :string}}
-      """
-    And config file "isaac.edn" containing:
+  Scenario: A non-string value for a string field is coerced rather than rejected
+    Given config file "isaac.edn" containing:
       """
       {:tools {:web_search {:provider :brave :api-key 12345}}}
       """
     When the config is loaded
-    Then the config has validation errors matching:
-      | key                      | value            |
-      | tools.web_search.api-key | must be a string |
+    Then the config has no validation errors
 
   Scenario: Provider schema keys compose with tool schema — no spurious unknown-key warnings
     Given a brave provider is registered for web_search with schema:

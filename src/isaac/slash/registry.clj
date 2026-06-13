@@ -48,13 +48,13 @@
 (defn register-slash-entry!
   "Per-entry factory for the :isaac.server/slash-commands berth (phase 7
    of the berth epic). Receives `[command-id entry]`; resolves the
-   entry's symbol-valued :factory, applies the user-config slot, and
-   registers the resulting spec."
+   entry's symbol-valued :factory and registers the resulting spec under
+   the berth key — the command's name."
   [[command-id entry]]
   (let [command-id (clojure.core/name command-id)
         factory    (some-> (:factory entry) requiring-resolve var-get)
-        spec       (factory (module-loader/user-config :slash-commands command-id))]
-    (register! {:name        (:command-name spec)
+        spec       (factory)]
+    (register! {:name        command-id
                 :description (:description spec)
                 :handler     (:handler spec)})))
 

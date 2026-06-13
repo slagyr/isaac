@@ -112,17 +112,6 @@ Feature: Module schema composition
       | key                  | value           |
       | tools.web_search.api-key | is required |
 
-  Scenario: Manifest schema validation applies to slash-command fields
-    Given an empty Isaac root at "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:modules        {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}
-       :slash-commands {:echo {:command-name 42}}}
-      """
-    When the config is loaded
-    Then the config has validation errors matching:
-      | key                              | value            |
-      | slash-commands.echo.command-name | must be a string |
 
   Scenario: Manifest referencing an unregistered ref fails fast at module activation
     # Phase 8 (isaac-qqgv): comm contributions moved to the

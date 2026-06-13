@@ -2,10 +2,10 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
 
   `isaac config schema <path>` is config-aware: it reads `:modules` from
   the on-disk config and consults each declared module's manifest when
-  rendering schema paths under `:comms`, `:providers`, `:tools`, and
-  `:slash-commands`. Manifest-supplied fields surface with an automatic
-  `[type-name]` (or `[tool-name]`/`[command-name]`) prefix on the field
-  entry — the prefix is the only visual change from today's renderer.
+  rendering schema paths under the union tables `:comms` and
+  `:providers`. Manifest-supplied (variant) fields surface with an
+  automatic `[type-name]` prefix on the field entry — the prefix is the
+  only visual change from today's renderer.
   The existing color, layout, and `spec->term` formatting MUST be
   preserved: no new section headers, no `type: X` dividers, no per-type
   groupings. An aggregate view (e.g. `comms.value`) is a single flat
@@ -125,7 +125,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | int          |
     And the exit code is 0
 
-  Scenario: config schema renders manifest-supplied tool fields with provenance prefix
+  Scenario: config schema renders the statically-declared tool config fields
     Given an empty Isaac root at "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
@@ -133,22 +133,8 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       """
     When isaac is run with "config schema tools.web_search.api-key"
     Then the stdout matches:
-      | pattern        |
-      | :api-key       |
-      | \[web_search\] |
-      | string         |
+      | pattern  |
+      | :api-key |
+      | string   |
     And the exit code is 0
 
-  Scenario: config schema renders manifest-supplied slash-command fields with provenance prefix
-    Given an empty Isaac root at "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:modules {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}}
-      """
-    When isaac is run with "config schema slash-commands.echo.command-name"
-    Then the stdout matches:
-      | pattern        |
-      | :command-name  |
-      | \[echo\]       |
-      | string         |
-    And the exit code is 0

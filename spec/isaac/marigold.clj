@@ -119,24 +119,20 @@
 (def bearing-command  "bearing")  ;; what model is steering / model
 (def muster-command   "muster")   ;; assemble the crew / crew
 
-;; Themed slash-command factories. Production's slash-command registration
-;; uses (:command-name spec) from the factory's return value rather than
-;; the manifest's extension-id, so to surface themed names the factory must
-;; supply them itself. Each handler is a no-op stub appropriate for tests.
-(defn heading-slash-factory [_]
-  {:command-name heading-command
-   :description  "Where are we?"
-   :handler      (fn [_] {:type :command :command :status :message "steady on course"})})
+;; Themed slash-command factories. Slash-command registration names the
+;; command after its berth key, so the factory only supplies description
+;; and handler. Each handler is a no-op stub appropriate for tests.
+(defn heading-slash-factory []
+  {:description "Where are we?"
+   :handler     (fn [_] {:type :command :command :status :message "steady on course"})})
 
-(defn bearing-slash-factory [_]
-  {:command-name bearing-command
-   :description  "Bearing on the helm"
-   :handler      (fn [_] {:type :command :command :model :message "helm-mk-3-1.0"})})
+(defn bearing-slash-factory []
+  {:description "Bearing on the helm"
+   :handler     (fn [_] {:type :command :command :model :message "helm-mk-3-1.0"})})
 
-(defn muster-slash-factory [_]
-  {:command-name muster-command
-   :description  "Call the crew to muster"
-   :handler      (fn [_] {:type :command :command :crew :message "all hands"})})
+(defn muster-slash-factory []
+  {:description "Call the crew to muster"
+   :handler     (fn [_] {:type :command :command :crew :message "all hands"})})
 
 ;; ----- API alias registration --------------------------------------
 

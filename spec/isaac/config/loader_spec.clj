@@ -893,21 +893,29 @@
 
     (marigold/aboard)
 
-    (it "rejects a missing required tool field from manifest validations"
+    (it "rejects a missing required tool field from the statically-declared schema"
       (marigold/write-config!
-        {:tools {(keyword marigold/signal-flare) {:provider :brave}}})
+        {:tools {:web_search {:provider :brave}}})
       (let [result (marigold/load-config)]
-        (should (some #(and (= "tools.signal-flare.api-key" (:key %))
+        (should (some #(and (= "tools.web_search.api-key" (:key %))
                             (re-find #"is required" (:value %)))
                       (:errors result)))))
 
-    (it "warns when a tool provider falls outside a manifest enum"
+    (it "rejects a tool provider that falls outside the schema enum"
       (marigold/write-config!
-        {:tools {(keyword marigold/signal-flare) {:provider :duckduckgo
-                                                  :api-key  "search-key"}}})
+        {:tools {:web_search {:provider :duckduckgo
+                              :api-key  "search-key"}}})
       (let [result (marigold/load-config)]
-        (should (some #(and (= "tools.signal-flare.provider" (:key %))
-                            (= "unknown provider" (:value %)))
+        (should (some #(and (= "tools.web_search.provider" (:key %))
+                            (re-find #"must be one of" (:value %)))
+                      (:errors result)))))
+
+    (it "warns on an unknown tool config key"
+      (marigold/write-config!
+        {:tools {:web_search {:provider :brave :api-key "k" :mystery "x"}}})
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "tools.web_search.mystery" (:key %))
+                            (= "unknown key" (:value %)))
                       (:warnings result))))))
 
   (describe "provider type schema validation"
@@ -1132,34 +1140,6 @@
       (write-crow-module!)
       (let [result (marigold/load-config)]
         (should-not (some #(str/includes? (:key %) "comms.mychan") (:warnings result))))))
-
-  (describe "slash command schema validation"
-
-    (marigold/aboard)
-
-    (def echo-manifest
-      (pr-str {:id      :isaac.slash.echo
-               :version "0.1.0"
-               :isaac.server/slash-commands
-               {:echo {:factory 'isaac.slash.echo/echo-command
-                       :schema  {:command-name {:type :string
-                                                :coercions [[:default "echo"]]}}}}}))
-
-    (defn- write-echo-module! []
-      (fs/mkdirs (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo"))
-      (fs/spit (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo/deps.edn")
-               "{:paths [\"resources\"]}")
-      (fs/spit (nexus/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo/resources/isaac-manifest.edn") echo-manifest))
-
-    (it "rejects a slash-command field that violates the manifest :schema"
-      (marigold/write-config!
-        {:modules        {:isaac.slash.echo {:local/root "/marigold/.isaac/modules/isaac.slash.echo"}}
-         :slash-commands {:echo {:command-name 42}}})
-      (write-echo-module!)
-      (let [result (marigold/load-config)]
-        (should (some #(and (= "slash-commands.echo.command-name" (:key %))
-                            (= "must be a string" (:value %)))
-                      (:errors result))))))
 
   (describe "snapshot"
 

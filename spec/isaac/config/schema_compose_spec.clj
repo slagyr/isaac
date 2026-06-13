@@ -31,6 +31,30 @@
                                                                     :schema {:volume {:type :warble}}}}}}}}))]
         (should-contain ":warble" (.getMessage e)))))
 
+  (describe "merging contributions for the same config key"
+
+    (it "deep-merges schema fragments contributed by two modules"
+      (let [index {:mod.a {:manifest {:isaac.config/schema
+                                      {:tools {:schema {:type   :map
+                                                        :schema {:web_search {:type   :map
+                                                                              :schema {:api-key {:type :string}}}}}}}}}
+                   :mod.b {:manifest {:isaac.config/schema
+                                      {:tools {:schema {:schema {:my_tool {:type   :map
+                                                                           :schema {:flag {:type :boolean}}}}}}}}}}
+            root  (sut/compose-root-schema index)]
+        (should= {:type :string}  (get-in root [:schema :tools :schema :web_search :schema :api-key]))
+        (should= {:type :boolean} (get-in root [:schema :tools :schema :my_tool :schema :flag]))))
+
+    (it "errors when two modules define the same leaf differently"
+      (let [index {:mod.a {:manifest {:isaac.config/schema
+                                      {:tools {:schema {:type   :map
+                                                        :schema {:web_search {:type   :map
+                                                                              :schema {:api-key {:type :string}}}}}}}}}
+                   :mod.b {:manifest {:isaac.config/schema
+                                      {:tools {:schema {:schema {:web_search {:type   :map
+                                                                             :schema {:api-key {:type :int}}}}}}}}}}]
+        (should-throw clojure.lang.ExceptionInfo (sut/compose-root-schema index)))))
+
   (describe "descriptors"
 
     (it "includes entity metadata for crew cron and hooks"

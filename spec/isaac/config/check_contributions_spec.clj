@@ -5,7 +5,11 @@
 
 (describe "config check-contributions"
 
-  (it "declares server checks for tools and providers (comms validates through the config berth)"
-    (should (contains? sut/server :tools))
+  (it "declares only the checks the config schema cannot express (tools, slash-commands, providers, comms all validate through the config berth)"
+    (should-not (contains? sut/server :tools))
+    (should-not (contains? sut/server :slash-commands))
+    (should-not (contains? sut/server :provider-types))
     (should-not (contains? sut/server :comms))
-    (should (contains? sut/server :resolved-providers))))
+    (should (contains? sut/server :resolved-providers))
+    (should (contains? sut/server :manifest-refs))
+    (should (contains? sut/server :comm-reserved-schema))))

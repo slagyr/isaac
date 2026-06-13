@@ -103,10 +103,8 @@
                                   :session_info  {:factory isaac.tool.builtin/session-info-tool-factory}
                                   :session_model {:factory isaac.tool.builtin/session-model-tool-factory}
                                   :web_fetch     {:factory isaac.tool.builtin/web-fetch-tool-factory}
-                                  :web_search    {:factory isaac.tool.builtin/web-search-tool-factory
-                                                  :schema  {:provider {:type :keyword :validations [[:one-of? :brave]]}
-                                                            :api-key  {:type :string :validations [:present?]}}}
-                                  :write         {:factory isaac.tool.builtin/write-tool-factory :schema {}}}
+                                  :web_search    {:factory isaac.tool.builtin/web-search-tool-factory}
+                                  :write         {:factory isaac.tool.builtin/write-tool-factory}}
 
  :isaac.server/provider-template {:anthropic {:template {:api      "messages"
                                                          :base-url "https://api.anthropic.com"
@@ -495,26 +493,15 @@
                                   :description "Extra typed roots to scan for prepared skills"
                                   :spec        {:type :string}}}
 
-  :slash-commands       {:schema {:name           :slash-commands
-                                  :type           :map
-                                  :snapshot-only? true
-                                  :description    "Slash command configuration"
-                                  :key-spec       {:type :string}
-                                  :value-spec     {:name        :slash-command
-                                                   :type        :map
-                                                   :description "Slash command configuration"
-                                                   :schema      {:command-name {:type        :string
-                                                                                :description "Alternative name for the command"}}}}}
-
   :tools                {:schema {:type        :map
-                                  :description "Tool configurations (map of tool name -> config)"
-                                  :key-spec    {:type :keyword}
-                                  :value-spec  {:type :map}}}
+                                  :description "Tool configuration (per-tool config maps)"
+                                  :schema      {:web_search {:type        :map
+                                                             :description "Web search tool config"
+                                                             :schema      {:provider {:type :keyword :validations [[:one-of? :brave]]}
+                                                                           :api-key  {:type :string :validations [:present?]}}}}}}
 
   :tz                   {:schema {:type :string :description "IANA timezone name for cron evaluation"}}}
 
  :isaac.config/check             {:comm-reserved-schema {:fn isaac.config.checks/check-comm-reserved-schema}
                                   :manifest-refs        {:fn isaac.config.checks/check-manifest-refs}
-                                  :resolved-providers   {:fn isaac.config.checks/check-resolved-providers}
-                                  :slash-commands       {:fn isaac.config.checks/check-slash-commands}
-                                  :tools                {:fn isaac.config.checks/check-tools}}}
+                                  :resolved-providers   {:fn isaac.config.checks/check-resolved-providers}}}

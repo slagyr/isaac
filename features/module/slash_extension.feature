@@ -1,13 +1,13 @@
 Feature: Slash command extension
   Modules can register slash commands by declaring
-  :slash-commands {<name> {:factory ... :schema {...}}} in their
-  manifest. Built-in slash commands (status, crew, model, cwd) use the
-  same registry, so module-declared and built-in commands coexist in
-  available-commands.
+  :slash-commands {<name> {:factory ...}} in their manifest; the command
+  is registered under its berth key. Built-in slash commands (status,
+  crew, model, cwd) use the same registry, so module-declared and
+  built-in commands coexist in available-commands.
 
-  Name collisions are last-wins with a warning. A module can override a
-  built-in (intentional enhancement) — the override is logged so it does
-  not happen silently.
+  Name collisions are last-wins with a warning — a module declaring a
+  built-in's name overrides it, logged so it does not happen silently
+  (see the registry spec).
 
   Scenario: A module-declared slash command is invokable
     Given an empty Isaac root at "/tmp/isaac"
@@ -43,16 +43,3 @@ Feature: Slash command extension
       | status | Show session status           |
       | echo   | Echo the input back unchanged |
 
-  Scenario: A configured slash command overrides a built-in
-    Given an empty Isaac root at "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:log            {:output :memory}
-       :modules        {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}
-       :slash-commands {:echo {:command-name "status"}}}
-      """
-    When the user sends "/status some text" on session "main" via memory comm
-    Then the log has entries matching:
-      | level | event           | command |
-      | :warn | :slash/override | status  |
-    And the reply contains "some text"

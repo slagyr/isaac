@@ -5,7 +5,6 @@
     [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.schema.root :as config-schema]
-    [isaac.config.schema.manifest :as manifest-schema]
     [isaac.config.schema.term :as schema-term]
     [isaac.config.schema-compose :as schema-compose]
     [isaac.module.loader :as module-loader]
@@ -46,7 +45,7 @@
         module-index        (select-keys discovered-index declared-module-ids)]
     {:config        config
      :module-index  module-index
-     :root          (manifest-schema/enrich-root (schema-compose/effective-root-schema module-index) module-index)}))
+     :root          (schema-compose/effective-root-schema module-index)}))
 
 (defn- comm-resolver [module-index]
   (let [module-index (or module-index (module-loader/builtin-index))]

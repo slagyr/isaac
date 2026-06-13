@@ -4,23 +4,10 @@
     [isaac.config.berths :as berths]
     [isaac.config.schema-base :as schema-base]
     [isaac.config.schema-compose :as schema-compose]
-    [isaac.config.validation :as validation]
-    [isaac.module.loader :as module-loader]))
+    [isaac.config.validation :as validation]))
 
 (defn- ->id [value]
   (schema-base/->id value))
-
-(defn- find-manifest-entry [config section name]
-  (let [kw (keyword (->id name))]
-    (some (fn [[_ entry]]
-            (get-in entry [:manifest section kw]))
-          (merge (module-loader/builtin-index) (:module-index config)))))
-
-(defn- find-tool-manifest-entry [config tool-name]
-  (find-manifest-entry config :isaac.server/tools tool-name))
-
-(defn- find-slash-command-manifest-entry [config command-name]
-  (find-manifest-entry config :isaac.server/slash-commands command-name))
 
 (def ^:private manifest-schema-kinds
   [:isaac.server/comm :isaac.server/provider-template :isaac.server/slash-commands :isaac.server/tools])
@@ -55,63 +42,6 @@
                                    " (comm " (name extension-id) ")")}))
                   (get-in entry [:manifest :isaac.server/comm])))
           module-index))
-
-(defn- one-of-values [field-spec]
-  (some (fn [validation]
-          (when (and (vector? validation)
-                     (contains? #{:one-of :one-of?} (first validation)))
-            (into #{} (map ->id) (rest validation))))
-        (:validations field-spec)))
-
-(defn- tool-provider-warning [prefix tool-cfg field-schema result]
-  (let [provider-key   (str prefix ".provider")
-        provider-spec  (:provider field-schema)
-        known-values   (one-of-values provider-spec)
-        provider-value (some-> (:provider tool-cfg) ->id)]
-    (if (and (seq known-values)
-             provider-value
-             (not (contains? known-values provider-value)))
-      {:errors   (remove #(= provider-key (:key %)) (:errors result))
-       :warnings (conj (vec (:warnings result)) {:key provider-key :value "unknown provider"})}
-      result)))
-
-(defn check-tools
-  [{:keys [config]}]
-  (let [tools-config (:tools config)]
-    (if (empty? tools-config)
-      {:errors [] :warnings []}
-      (binding [validation/*config* (validation/validation-context config)]
-        (reduce
-          (fn [{:keys [errors warnings]} [tool-kw tool-cfg]]
-            (let [tool-name   (name tool-kw)
-                  tool-fields (:schema (find-tool-manifest-entry config tool-name))]
-              (if (nil? tool-fields)
-                {:errors errors :warnings warnings}
-                (let [prefix (str "tools." tool-name)
-                      check  (->> (validation/validate-manifest-config prefix tool-cfg tool-fields)
-                                  (tool-provider-warning prefix tool-cfg tool-fields))]
-                  {:errors   (into errors (:errors check))
-                   :warnings (into warnings (:warnings check))}))))
-          {:errors [] :warnings []}
-          tools-config)))))
-
-(defn check-slash-commands
-  [{:keys [config]}]
-  (let [commands-config (:slash-commands config)]
-    (if (empty? commands-config)
-      {:errors [] :warnings []}
-      (binding [validation/*config* (validation/validation-context config)]
-        (reduce (fn [{:keys [errors warnings]} [command-kw command-cfg]]
-                  (let [command-name (name command-kw)
-                        known-fields (:schema (find-slash-command-manifest-entry config command-name))]
-                    (if (nil? known-fields)
-                      {:errors errors :warnings warnings}
-                      (let [prefix (str "slash-commands." command-name)
-                            check  (validation/validate-manifest-config prefix command-cfg known-fields)]
-                        {:errors   (into errors (:errors check))
-                         :warnings (into warnings (:warnings check))}))))
-                {:errors [] :warnings []}
-                commands-config)))))
 
 (defn check-resolved-providers
   [{:keys [config raw-providers effective-schema]}]

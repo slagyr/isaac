@@ -8,10 +8,9 @@
     [isaac.slash.registry :as sut]
     [speclj.core :refer :all]))
 
-(defn echo-command [cfg]
-  {:command-name (or (:command-name cfg) "echo")
-   :description  "Echo"
-   :handler      identity})
+(defn echo-command []
+  {:description "Echo"
+   :handler     identity})
 
 (def ^:private root "/test-state")
 
@@ -77,13 +76,12 @@
                                               :activated)]
         (should= "echo" (:name (sut/lookup "echo" module-index))))))
 
-  (it "registers the factory-returned command-name from user-config"
-    (let [module-index {:isaac.slash.echo {:manifest {:isaac.server/slash-commands {:echo {:factory 'isaac.slash.registry-spec/echo-command
-                                                                                            :schema  {:command-name {:type :string}}}}}}}]
-      (nexus/-with-nexus {:config (atom {:slash-commands {:echo {:command-name "beep"}}})
+  (it "registers a berth command under its berth-key name"
+    (let [module-index {:isaac.slash.echo {:manifest {:isaac.server/slash-commands {:echo {:factory 'isaac.slash.registry-spec/echo-command}}}}}]
+      (nexus/-with-nexus {:config (atom {})
                            :fs (fs/mem-fs)}
         (module-loader/clear-activations!)
-        (should= "beep" (:name (sut/lookup "beep" module-index))))))
+        (should= "echo" (:name (sut/lookup "echo" module-index))))))
 
   (it "includes resolved prompt-template commands when listing advertised commands"
     (nexus/-with-nested-nexus {:fs (fs/mem-fs)}
