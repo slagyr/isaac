@@ -34,11 +34,17 @@
                    (filter #(str/ends-with? % "resources/isaac-manifest.edn"))
                    sort))))
 
-(defn- factory-symbols [manifest]
-  (->> (:extends manifest)
-       vals
-       (mapcat vals)
-       (keep :isaac/factory)))
+(defn- manifest-symbols
+  "Every symbol referenced anywhere in the manifest data — berth and
+   contribution :factory, route :handler, :isaac.config/check :fn, :cli
+   :namespace, :bootstrap, the top-level :factory. Manifests are pure
+   data, so each symbol is a reference that must resolve."
+  [x]
+  (cond
+    (symbol? x)     [x]
+    (map? x)        (mapcat manifest-symbols (vals x))
+    (sequential? x) (mapcat manifest-symbols x)
+    :else           []))
 
 (describe "manifest self-consistency"
 
@@ -64,10 +70,11 @@
   (it "no config path is claimed twice — one schema owner per path (berth :config XOR :isaac.config/schema factory)"
     (let [paths (berths/config-paths (module-loader/builtin-index))]
       (should= [] (->> paths frequencies (keep (fn [[p n]] (when (> n 1) p))) vec))))
-  (it "resolves every declared :isaac/factory and :bootstrap symbol"
+  (it "resolves every symbol the manifest references (factories, handlers, check :fns, cli namespaces, bootstrap)"
     (doseq [path (manifest-paths)
-            :let [manifest   (read-manifest path)
-                  bootstrap (:bootstrap manifest)]
-            symbol (concat (when bootstrap [bootstrap]) (factory-symbols manifest))]
+            :let [manifest (read-manifest path)]]
       (ensure-local-deps! path)
-      (should-not-be-nil (requiring-resolve symbol)))))
+      (doseq [sym (distinct (manifest-symbols manifest))]
+        (if (namespace sym)
+          (should-not-be-nil (requiring-resolve sym))   ; ns/var reference
+          (should-not-throw (require sym)))))))          ; bare namespace (e.g. :cli :namespace)

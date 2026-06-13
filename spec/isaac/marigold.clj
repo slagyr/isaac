@@ -240,8 +240,7 @@
                                                             :key-spec   {:type :keyword}
                                                             :value-spec {:type    :map
                                                                          :factory 'isaac.tool.registry/register-tool-entry!
-                                                                         :schema  {:factory {:type :symbol :validations [:present?]}
-                                                                                   :schema  {:type :any}}}}}
+                                                                         :schema  {:factory {:type :symbol :validations [:present?]}}}}}
              :isaac.server/llm-api           {:description "LLM API factories."
                                               :schema      {:type       :map
                                                             :key-spec   {:type :keyword}
@@ -285,9 +284,7 @@
 
    :isaac.server/tools {(keyword spyglass-tool) {:factory 'isaac.tool.builtin/read-tool-factory}
                         (keyword sextant-tool)  {:factory 'isaac.tool.builtin/grep-tool-factory}
-                        (keyword signal-flare)  {:factory 'isaac.tool.builtin/web-search-tool-factory
-                                                 :schema  {:provider {:type :keyword :validations [[:one-of? :brave]]}
-                                                           :api-key  {:type :string :validations [:present?]}}}}
+                        (keyword signal-flare)  {:factory 'isaac.tool.builtin/web-search-tool-factory}}
 
    :isaac.server/slash-commands {(keyword heading-command) {:factory 'isaac.marigold/heading-slash-factory}
                                  (keyword bearing-command) {:factory 'isaac.marigold/bearing-slash-factory}

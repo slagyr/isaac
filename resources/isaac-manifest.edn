@@ -15,8 +15,7 @@
                                                                                  :key-spec   {:type :keyword}
                                                                                  :value-spec {:type    :map
                                                                                               :factory isaac.tool.registry/register-tool-entry!
-                                                                                              :schema  {:factory {:type :symbol :validations [:present?]}
-                                                                                                        :schema  {:type :any}}}}}
+                                                                                              :schema  {:factory {:type :symbol :validations [:present?]}}}}}
                                   :isaac.server/llm-api           {:description "LLM API factories — adapters per provider API (messages, chat-completions, ollama, ...)."
                                                                    :schema      {:type       :map
                                                                                  :key-spec   {:type :keyword}
