@@ -50,28 +50,7 @@
                                                                                           :value-spec {:type    :map
                                                                                                        :schema  {:namespace     {:type :symbol :validations [:present?]}
                                                                                                                  :extra-schema  {:type :any} ;; TODO - MDM: We need to pull in the apron.schema/spec-schema here.
-                                                                                                                 :configurable? {:type :boolean}}}}}
-                                                                   ;; Config berth: claims [:comms] so the composed root schema
-                                                                   ;; validates slots in one pass — base fields plus every impl's
-                                                                   ;; :extra-schema fields gathered via :dynamic-schema (isaac-2ecl).
-                                                                   ;; The :factory is the slot factory the reconciler asks for an
-                                                                   ;; impl's constructor (lazy module activation lives there).
-                                                                   :config      {:path   [:comms]
-                                                                                 :schema {:name        "comms table"
-                                                                                          :type        :map
-                                                                                          :description "Communication channel configurations (map of name -> comm config)"
-                                                                                          :key-spec    {:type :id}
-                                                                                          :value-spec  {:name           :comm
-                                                                                                        :type           :map
-                                                                                                        :factory        isaac.comm.factory/create!
-                                                                                                        :dynamic-schema [:extra-schema]
-                                                                                                        :schema         {:type {:type         :id
-                                                                                                                                :options-from :comms
-                                                                                                                                :description  "Manifest comm kind to instantiate"
-                                                                                                                                :validations  [[:registered-in? :isaac.server/comm [:comms]]]}
-                                                                                                                         :crew {:type        :id
-                                                                                                                                :description "Crew id this comm routes into"
-                                                                                                                                :validations [:crew-exists?]}}}}}}}
+                                                                                                                 :configurable? {:type :boolean}}}}}}}
 
  :isaac/cli                      {:auth     {:usage     "auth <subcommand> [options]"
                                              :summary   "Manage authentication credentials"
@@ -167,6 +146,22 @@
   :command-paths        {:schema {:type        :seq
                                   :description "Extra typed roots to scan for prepared commands"
                                   :spec        {:type :string}}}
+
+  :comms                {:schema {:name        "comms table"
+                                    :type        :map
+                                    :description "Communication channel configurations (map of name -> comm config)"
+                                    :key-spec    {:type :id}
+                                    :value-spec  {:name           :comm
+                                                  :type           :map
+                                                  :factory        isaac.comm.factory/create!
+                                                  :dynamic-schema {:berth :isaac.server/comm :path [:extra-schema]}
+                                                  :schema         {:type {:type         :id
+                                                                          :options-from :comms
+                                                                          :description  "Manifest comm kind to instantiate"
+                                                                          :validations  [[:registered-in? :isaac.server/comm [:comms]]]}
+                                                                   :crew {:type        :id
+                                                                          :description "Crew id this comm routes into"
+                                                                          :validations [:crew-exists?]}}}}}
 
   :crew                 {:entity-dir         "crew"
                          :frontmatter?       true

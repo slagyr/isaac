@@ -52,14 +52,19 @@
           (and (= :seq (:type spec)) (:spec spec)
                (spec-declares-factory? (:spec spec)))))))
 
-(defn- config-schema-table-schema
-  "The composed (meta-conformed) inline schema of a :isaac.config/schema
-   contribution — same composition schema-compose performs, computed here
-   so the reconcile engine stays a leaf dependency."
-  [descriptor]
+(defn compose-config-table-schema
+  "The composed inline schema of a :isaac.config/schema contribution:
+   meta-conformed, then `:dynamic-schema` gathered (map-form directives
+   name their own berth, so the placeholder berth-key is ignored). The
+   single composition both schema-compose (effective root) and the
+   reconcile engine (node schema) use, so they agree. Computed here —
+   not in schema-compose — to keep the reconcile engine a leaf
+   dependency."
+  [descriptor module-index]
   (let [schema (:schema descriptor)]
     (when (map? schema)
-      (meta-schema/conform-spec! schema))))
+      (dynamic/compose (meta-schema/conform-spec! schema)
+                       config-schema-key module-index))))
 
 (defn config-schema-factory-sources
   "[[config-key composed-schema] ...] for every :isaac.config/schema
@@ -73,7 +78,7 @@
                  (get-in entry [:manifest config-schema-key])))
        (sort-by (comp str key))
        (keep (fn [[config-key descriptor]]
-               (let [schema (config-schema-table-schema descriptor)]
+               (let [schema (compose-config-table-schema descriptor module-index)]
                  (when (spec-declares-factory? schema)
                    [config-key schema]))))
        vec))
@@ -97,13 +102,19 @@
 (defn claims-path? [module-index path]
   (some #(= path %) (config-paths module-index)))
 
-(defn- open-map-paths [module-index]
-  (->> (config-berths module-index)
-       (keep (fn [[_ config-decl]]
-               (when (and (= :map (get-in config-decl [:schema :type]))
-                          (get-in config-decl [:schema :value-spec]))
-                 (:path config-decl))))
+(defn- open-map-sources
+  "[[path schema] ...] from reconcile-sources (berth :config AND
+   :isaac.config/schema factory tables) whose composed schema is an
+   open map (key-spec + value-spec) — the ones whose error keys want
+   slot-bracketing (path[:slot].field)."
+  [module-index]
+  (->> (reconcile-sources module-index)
+       (filter (fn [[_ schema]]
+                 (and (= :map (:type schema)) (:value-spec schema))))
        vec))
+
+(defn- open-map-paths [module-index]
+  (mapv first (open-map-sources module-index)))
 
 (defn- rewrite-open-map-key [path key]
   (let [segments        (str/split key #"\.")
@@ -135,19 +146,17 @@
           errors)))
 
 (defn- open-map-field-message [module-index path key]
-  (let [prefix (str/join "." (map name path))
-        field  (some (fn [[berth-id config-decl]]
-                       (when (= path (:path config-decl))
-                         (let [schema    (composed-schema berth-id config-decl module-index)
-                               pattern   (re-pattern (str "^"
-                                                         (java.util.regex.Pattern/quote prefix)
-                                                         "\\[:[^\\]]+\\](?:\\.([^\\.\\[]+)|\\[:([^\\]]+)\\])$"))
-                               [_ plain bracketed] (re-matches pattern key)
-                               field-key (or plain bracketed)]
-                           (when field-key
-                             (get-in schema [:value-spec :schema (keyword field-key) :message])))))
-                     (config-berths module-index))]
-    field))
+  (let [prefix (str/join "." (map name path))]
+    (some (fn [[src-path schema]]
+            (when (= path src-path)
+              (let [pattern   (re-pattern (str "^"
+                                               (java.util.regex.Pattern/quote prefix)
+                                               "\\[:[^\\]]+\\](?:\\.([^\\.\\[]+)|\\[:([^\\]]+)\\])$"))
+                    [_ plain bracketed] (re-matches pattern key)
+                    field-key (or plain bracketed)]
+                (when field-key
+                  (get-in schema [:value-spec :schema (keyword field-key) :message])))))
+          (open-map-sources module-index))))
 
 (defn normalize-errors [module-index errors]
   (let [rewritten (normalize-error-keys module-index errors)

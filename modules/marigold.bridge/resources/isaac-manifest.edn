@@ -2,12 +2,12 @@
  :version "1.0.0"
  :factory marigold.bridge/create-module
  :berths  {:marigold.bridge/comm
-           {:description "Comm channels (longwave, skybeam, logbook, ...)."
+           {:description "Relay channels (longwave, skybeam, logbook, ...) — a fixture config berth at [:relays]."
             :manifest    {:schema {:type       :map
                                    :key-spec   {:type :keyword}
                                    :value-spec {:type   :map
                                                 :schema {:extra-schema {:type :map}}}}}
-            :config      {:path   [:comms]
+            :config      {:path   [:relays]
                           :schema {:type       :map
                                    :key-spec   {:type :keyword}
                                    :value-spec {:type           :map

@@ -273,25 +273,7 @@
                                                                      :value-spec {:type    :map
                                                                                   :schema  {:namespace     {:type :symbol :validations [:present?]}
                                                                                             :extra-schema  {:type :any}
-                                                                                            :configurable? {:type :boolean}}}}}
-                                              ;; mirrors the real manifest: the comm berth claims [:comms]
-                                              ;; and composes impl :schema fields into the load-time tree.
-                                              :config      {:path   [:comms]
-                                                            :schema {:name        "comms table"
-                                                                     :type        :map
-                                                                     :description "Communication channel configurations (map of name -> comm config)"
-                                                                     :key-spec    {:type :id}
-                                                                     :value-spec  {:name           :comm
-                                                                                   :type           :map
-                                                                                   :factory        'isaac.comm.factory/create!
-                                                                                   :dynamic-schema [:extra-schema]
-                                                                                   :schema         {:type {:type         :id
-                                                                                                           :options-from :comms
-                                                                                                           :description  "Manifest comm kind to instantiate"
-                                                                                                           :validations  [[:registered-in? :isaac.server/comm [:comms]]]}
-                                                                                                    :crew {:type        :id
-                                                                                                           :description "Crew id this comm routes into"
-                                                                                                           :validations [:crew-exists?]}}}}}}}
+                                                                                            :configurable? {:type :boolean}}}}}}}
 
    :isaac.server/llm-api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}
                           (keyword sky-api)    {:factory 'isaac.llm.api.grover/make}

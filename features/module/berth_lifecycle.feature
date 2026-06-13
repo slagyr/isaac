@@ -15,10 +15,10 @@ Feature: Config-berth node lifecycle (generic — no comm machinery)
       """
       {:modules {:marigold.bridge   {:local/root "modules/marigold.bridge"}
                  :marigold.longwave {:local/root "modules/marigold.longwave"}}
-       :comms   {:relay1 {:type :relay-station :helm/freq "121.5"}}}
+       :relays  {:relay1 {:type :relay-station :helm/freq "121.5"}}}
       """
     When the config is loaded
-    Then the comm "relay1" exists with state:
+    Then the nexus node at [:relays :relay1] has state:
       | path             | value    |
       | last-event       | :started |
       | slice.helm/freq  | 121.5    |
@@ -26,10 +26,10 @@ Feature: Config-berth node lifecycle (generic — no comm machinery)
       """
       {:modules {:marigold.bridge   {:local/root "modules/marigold.bridge"}
                  :marigold.longwave {:local/root "modules/marigold.longwave"}}
-       :comms   {:relay1 {:type :relay-station :helm/freq "122.0"}}}
+       :relays  {:relay1 {:type :relay-station :helm/freq "122.0"}}}
       """
     When the config is reloaded
-    Then the comm "relay1" exists with state:
+    Then the nexus node at [:relays :relay1] has state:
       | path             | value    |
       | last-event       | :changed |
       | slice.helm/freq  | 122.0    |
@@ -39,17 +39,17 @@ Feature: Config-berth node lifecycle (generic — no comm machinery)
       """
       {:modules {:marigold.bridge   {:local/root "modules/marigold.bridge"}
                  :marigold.longwave {:local/root "modules/marigold.longwave"}}
-       :comms   {:helm-relay {:type :longwave :crew "captain" :helm/freq "121.5"}}}
+       :relays  {:helm-relay {:type :longwave :crew "captain" :helm/freq "121.5"}}}
       """
     When the config is loaded
     Given the isaac file "isaac.edn" exists with:
       """
       {:modules {:marigold.bridge   {:local/root "modules/marigold.bridge"}
                  :marigold.longwave {:local/root "modules/marigold.longwave"}}
-       :comms   {:helm-relay {:type :longwave :crew "captain" :helm/freq "122.0"}}}
+       :relays  {:helm-relay {:type :longwave :crew "captain" :helm/freq "122.0"}}}
       """
     When the config is reloaded
-    Then the comm "helm-relay" exists with state:
+    Then the nexus node at [:relays :helm-relay] has state:
       | path      | value |
       | helm/freq | 122.0 |
 
@@ -58,7 +58,7 @@ Feature: Config-berth node lifecycle (generic — no comm machinery)
       """
       {:modules {:marigold.bridge   {:local/root "modules/marigold.bridge"}
                  :marigold.longwave {:local/root "modules/marigold.longwave"}}
-       :comms   {:helm-relay {:type :longwave :crew "captain" :helm/freq "121.5"}}}
+       :relays  {:helm-relay {:type :longwave :crew "captain" :helm/freq "121.5"}}}
       """
     When the config is loaded
     Given the isaac file "isaac.edn" exists with:
@@ -67,4 +67,4 @@ Feature: Config-berth node lifecycle (generic — no comm machinery)
                  :marigold.longwave {:local/root "modules/marigold.longwave"}}}
       """
     When the config is reloaded
-    Then the comm "helm-relay" does not exist
+    Then the nexus has no node at [:relays :helm-relay]

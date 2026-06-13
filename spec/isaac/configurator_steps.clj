@@ -100,6 +100,30 @@
               actual   (get-by-dotted-path state path)]
           (g/should= expected actual))))))
 
+(defn- node-at-path [path-str]
+  (live-node (edn/read-string path-str)))
+
+(defn nexus-node-state-has [path-str table]
+  (ensure-config-berths-installed!)
+  (helper/await-condition
+    #(when-let [inst (node-at-path path-str)]
+       (let [state (read-state inst)]
+         (every? (fn [row]
+                   (let [row-map (zipmap (:headers table) row)]
+                     (= (parse-state-value (get row-map "value"))
+                        (get-by-dotted-path state (get row-map "path")))))
+                 (:rows table)))))
+  (let [state (read-state (node-at-path path-str))]
+    (doseq [row (:rows table)]
+      (let [row-map (zipmap (:headers table) row)]
+        (g/should= (parse-state-value (get row-map "value"))
+                   (get-by-dotted-path state (get row-map "path")))))))
+
+(defn nexus-no-node-at [path-str]
+  (ensure-config-berths-installed!)
+  (helper/await-condition #(nil? (node-at-path path-str)))
+  (g/should-be-nil (node-at-path path-str)))
+
 (defn comm-does-not-exist [name]
   (ensure-config-berths-installed!)
   (helper/await-condition #(nil? (live-instance name)))
@@ -274,6 +298,8 @@
 (defthen "the cron job {name:string} has:" isaac.configurator-steps/cron-job-has)
 
 (defthen #"the nexus has a :([^ ]+) node at (.+)" isaac.configurator-steps/nexus-has-node-at)
+(defthen #"the nexus node at (.+) has state:" isaac.configurator-steps/nexus-node-state-has)
+(defthen #"the nexus has no node at (.+)" isaac.configurator-steps/nexus-no-node-at)
 
 (defwhen "the config is reloaded" isaac.configurator-steps/config-reloaded
   "Re-loads config from the root (after the scenario rewrote isaac.edn)

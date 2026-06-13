@@ -1,6 +1,8 @@
 (ns isaac.manifest-self-consistency-spec
   (:require
     [clojure.edn :as edn]
+    [isaac.config.berths :as berths]
+    [isaac.module.loader :as module-loader]
     [isaac.config.validation]
     [isaac.schema.meta]
     [isaac.schema.registered-in]
@@ -58,6 +60,10 @@
                     [:models :schema :value-spec :schema :compaction :schema]
                     [:defaults :schema :schema :compaction :schema]]]
         (should= compaction-schema/config-schema (get-in contributions path)))))
+
+  (it "no config path is claimed twice — one schema owner per path (berth :config XOR :isaac.config/schema factory)"
+    (let [paths (berths/config-paths (module-loader/builtin-index))]
+      (should= [] (->> paths frequencies (keep (fn [[p n]] (when (> n 1) p))) vec))))
   (it "resolves every declared :isaac/factory and :bootstrap symbol"
     (doseq [path (manifest-paths)
             :let [manifest   (read-manifest path)
