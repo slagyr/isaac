@@ -71,16 +71,16 @@
                                    "-XX:+DebugNonSafepoints"]
                      :main-opts   ["-m" "profile-runner"]}
 
-  :features         {:extra-paths ["spec"
-                                   "spec/marigold/bridge/src" "spec/marigold/bridge/resources"
-                                   "spec/marigold/longwave/src" "spec/marigold/longwave/resources"]
+  :features         {:extra-paths ["spec"]
                      :extra-deps  {speclj/speclj                                     {:mvn/version "3.13.0"}
                                    babashka/process                                  {:mvn/version "0.5.22"}
                                    io.github.slagyr/gherclj                          {:git/tag "v1.3.0" :git/sha "9c3bb1d"}
                                    isaac.cli.greeter/isaac.cli.greeter               {:local/root "modules/isaac.cli.greeter"}
                                    isaac.slash.echo/isaac.slash.echo                 {:local/root "modules/isaac.slash.echo"}
                                    isaac.api.tin-can/isaac.api.tin-can               {:local/root "modules/isaac.api.tin-can"}
-                                   isaac.providers.kombucha/isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}
+                                   isaac.providers.kombucha/isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}
+                                   marigold.bridge/marigold.bridge                   {:local/root "modules/marigold.bridge"}
+                                   marigold.longwave/marigold.longwave               {:local/root "modules/marigold.longwave"}}
                      :main-opts   ["-m" "gherclj.main"
                                    "-f" "features" "-s" "isaac.**-steps"
                                    "-t" "~slow" "-t" "~wip"]}}}
