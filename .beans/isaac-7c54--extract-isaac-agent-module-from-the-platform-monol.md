@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T16:36:25Z
+updated_at: 2026-06-14T17:10:11Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -76,3 +76,9 @@ stays platform-side with hail. So agent carves clean.
 - REAL agent blocker found+fixed (isaac-agent 6ad683f): schema.root + slash/builtin read config/slash contributions from the :isaac.server MODULE id; the rename put them in :isaac.agent. -> 59 to 10 failures. The lexicon was a real latent bug but NOT the agent's blocker.
 - Remaining 10: ~8 are the :isaac.server/*->:isaac.agent/* rename RIPPLE — comm/tool/slash/provider contributors (telly fixture :isaac.server/comm, marigold, + real discord/imessage/acp) still use the old berth keys, so agent gathers nothing. Fixtures are SHARED with foundation/server/platform (still :isaac.server/*), so this is a coordinated cross-repo rename (same family as isaac-m4bi). ~2 config.mutate may be downstream of fixture providers.
 - DECISION NEEDED: propagate the berth rename to all contributors (cross-repo) vs revisit.
+
+### AGENT SPEC SUITE GREEN (2026-06-14)
+- isaac-agent: 1151 examples, 0 failures (isaac-agent 528d6e9). Phase 2 spec-complete.
+- Path from 10->0: renamed :isaac.server/*->:isaac.agent/* berth keys in agent spec fixtures; vendored telly+kombucha test fixture modules into isaac-agent/modules/ (specs load them via user.dir/modules); carved tool-test/provider-test module fixtures.
+- Cross-repo rename SWEPT (uncommitted) in: isaac/src, isaac/spec, isaac/modules, isaac/resources, isaac-discord/src, isaac-imessage/src (28 files, 94 refs). NOT yet verified/committed in those repos. Platform comm-berth DECL lives in isaac-server (server agent owns) — coordination.
+- REMAINING: (a) 7 agent FEATURE failures (config validate, crew tools, 3x config hot-reload, AGENTS.md-from-cwd, tool-exec logging) — triage; (b) verify+commit the cross-repo rename in isaac/discord/imessage.
