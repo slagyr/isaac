@@ -172,7 +172,7 @@
                             {:isaac.fake.pigeon
                              {:manifest {:factory 'isaac.fake.pigeon/create-module}}}}})
         (sut/stop!))
-      (should (contains? @started :isaac.core))
+      (should (contains? @started :isaac.foundation))
       (should (contains? @started :isaac.fake.pigeon))))
 
   (it "stops the cron scheduler with the server"
@@ -278,7 +278,7 @@
         (sut/stop!))
       (should= "/tmp/service-home/.isaac" (:root @captured))
       (should= nil (:connect-ws! @captured))
-      (should (contains? (:module-index @captured) :isaac.core))))
+      (should (contains? (:module-index @captured) :isaac.foundation))))
 
   (it "returns nil and does not start services when config validation fails"
     (let [started (atom nil)]

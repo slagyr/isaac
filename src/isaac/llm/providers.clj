@@ -39,7 +39,7 @@
 (defn- effective-registry []
   (merge (core-catalog) @registry*))
 
-(def ^:private builtin-module-ids #{:isaac.core :isaac.server})
+(def ^:private builtin-module-ids #{:isaac.foundation :isaac.server})
 
 (defn module-providers
   "Provider entries visible from third-party modules. Phase 7 of brth:

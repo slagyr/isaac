@@ -1,4 +1,4 @@
-(ns isaac.core
+(ns isaac.foundation
   (:require
     [isaac.module.protocol :as module]))
 

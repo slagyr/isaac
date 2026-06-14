@@ -3,5 +3,5 @@
  :factory isaac.module.protocol/module
 
  ;; Phase 7 of the berth epic moved LLM API factory contributions to
- ;; the :isaac.server/llm-api berth declared by isaac.core.
+ ;; the :isaac.server/llm-api berth declared by isaac.foundation.
  :isaac.server/llm-api {:tin-can {:factory isaac.api.tin-can/make}}}

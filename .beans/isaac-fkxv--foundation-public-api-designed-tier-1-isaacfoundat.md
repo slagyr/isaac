@@ -4,8 +4,10 @@ title: 'Foundation public API: designed Tier-1 + isaac.foundation facade'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-14T02:47:09Z
-updated_at: 2026-06-14T02:50:09Z
+updated_at: 2026-06-14T03:01:55Z
 parent: isaac-brth
 ---
 
@@ -52,11 +54,12 @@ a documented **direct import**. Step 1 produces the exact re-export list + carve
       → `/tmp/isaac-fkxv-step1-design.md` (2026-06-14). **Reviewed:** structure and
       classification approved; `Reconfigurable` → `isaac.reconfigurable` (not
       `config.runtime`). Gate cleared for step 2.
-- [ ] **2. `:isaac.core` -> `:isaac.foundation`.** Rename the module id
+- [x] **2. `:isaac.core` -> `:isaac.foundation`.** Rename the module id
       (`src/isaac-manifest.edn`) and the namespace; `isaac.foundation` owns
       `create-module` + manifest constants; retire `isaac.core` and the loader's
-      `core-module-id` naming; update `version.clj`'s hardcoded `:isaac.core` and
-      the `foundation_boundary_spec` set. Acceptance: `bb ci` green.
+      `foundation-module-id` / `foundation-index` naming; update `version.clj`'s
+      hardcoded `:isaac.foundation` and the `foundation_boundary_spec` set.
+      Acceptance: `bb ci` green (1962 spec / 745 feature).
 - [ ] **3. `isaac.root` -> `isaac.config.root`; dedupe `default-root`.** Bootstrap
       sibling to `paths`/`nav` (requires only fs/logger, NOT config.loader).
       Collapse the three `default-root` shims (`root`, `config.paths`,

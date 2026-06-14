@@ -217,7 +217,7 @@
                         (should= {:cwd (System/getProperty "user.dir")} context)
                         ;; Mock both the berth declaration (on core) and a
                         ;; contribution from the user module.
-                        {:index {:isaac.core {:manifest {:id      :isaac.core
+                        {:index {:isaac.foundation {:manifest {:id      :isaac.foundation
                                                          :version "1"
                                                          :berths  {:isaac/cli {:description "CLI commands"
                                                                          :schema       {:type       :map

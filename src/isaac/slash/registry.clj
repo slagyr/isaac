@@ -29,7 +29,7 @@
 
 (defn clear! []
   (reset! commands* {})
-  (module-loader/deactivate-core!))
+  (module-loader/deactivate-foundation!))
 
 (declare register-slash-entry!)
 

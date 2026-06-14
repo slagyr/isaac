@@ -149,7 +149,7 @@
    :handler     handle-effort})
 
 (defn ensure-registered!
-  "Make sure isaac.core's slash commands are installed in the slash
+  "Make sure isaac.foundation's slash commands are installed in the slash
    registry. Phase 7 of the berth epic (isaac-ho18) moved slash-command
    registration into the :isaac.server/slash-commands berth, so the
    built-ins now flow through the berth's per-entry factory the same

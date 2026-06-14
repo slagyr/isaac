@@ -449,7 +449,7 @@
 
 (defn- register-direct-routes! [cfg]
   (reset! routes/*registry* (routes/fresh-registry))
-  (let [module-index (merge (module-loader/core-index) (:module-index cfg))]
+  (let [module-index (merge (module-loader/foundation-index) (:module-index cfg))]
     (module-loader/process-manifest-berths! module-index)))
 
 (defn- direct-response [request]

@@ -1,6 +1,6 @@
-(ns isaac.core-spec
+(ns isaac.foundation-spec
   (:require
-    [isaac.core]
+    [isaac.foundation]
     [speclj.core :refer :all]))
 
 (describe "Isaac"

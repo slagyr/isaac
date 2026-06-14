@@ -29,7 +29,7 @@
     (it "with no args falls back to builtin-index"
       (let [index {:isaac.server {:coord {} :manifest {:id :isaac.server :version "1"
                                                       :isaac.server/comm {:widget {:factory 'foo/make}}}}}]
-        (binding [module-loader/*core-index-override* index]
+        (binding [module-loader/*foundation-index-override* index]
           (should= ["widget"] (sut/comm-kinds))))))
 
   (describe "create-module"

@@ -176,7 +176,7 @@
   (when-not (g/get :config-berths-installed?)
     (when-let [loaded (g/get :loaded-config-result)]
       (let [cfg          (:config loaded)
-            module-index (merge (module-loader/core-index) (:module-index cfg))]
+            module-index (merge (module-loader/foundation-index) (:module-index cfg))]
         (module-loader/start-modules! module-index)
         (config-install/install-config-berths! {:config cfg :module-index module-index :registries (app/registries)})
         (g/assoc! :config-berths-installed? true)))))
@@ -186,7 +186,7 @@
   (let [prev   (:config (g/get :loaded-config-result))
         result (config-steps/reload-result)]
     (let [cfg          (:config result)
-          module-index (merge (module-loader/core-index) (:module-index cfg))]
+          module-index (merge (module-loader/foundation-index) (:module-index cfg))]
       (config-install/install-config-berths! {:config       cfg
                                               :old-config   prev
                                               :module-index module-index}))))
