@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T16:19:02Z
+updated_at: 2026-06-14T16:36:25Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -70,3 +70,9 @@ stays platform-side with hail. So agent carves clean.
 - Now: 1151 examples, 59 failures.
 - DOMINANT remaining cluster (~38: schema.term/bridge-dispatch/CLI-Config): FOUNDATION load-order bug. schema_compose checks fragment validations against a lexicon populated by a defonce in isaac.config.validation, and memoizes via last-composed*. Compose before config.validation loads freezes a broken schema. FIX BELONGS IN FOUNDATION (schema_compose should ensure the lexicon / not cache pre-lexicon). Flag for foundation agent.
 - Remaining ~21 (slash registry, behavior funnel, mutate, tool registry, config resolve) untriaged.
+
+### Down to 10 failures (2026-06-14)
+- FOUNDATION lexicon bug fixed (isaac-foundation 2074263): extracted isaac.config.validation-lexicon leaf ns so schema-compose can load the lexicon before composing (broke the config.validation<->schema-compose cycle). Foundation suite still 5 pre-existing failures (Module-protocol, unrelated).
+- REAL agent blocker found+fixed (isaac-agent 6ad683f): schema.root + slash/builtin read config/slash contributions from the :isaac.server MODULE id; the rename put them in :isaac.agent. -> 59 to 10 failures. The lexicon was a real latent bug but NOT the agent's blocker.
+- Remaining 10: ~8 are the :isaac.server/*->:isaac.agent/* rename RIPPLE — comm/tool/slash/provider contributors (telly fixture :isaac.server/comm, marigold, + real discord/imessage/acp) still use the old berth keys, so agent gathers nothing. Fixtures are SHARED with foundation/server/platform (still :isaac.server/*), so this is a coordinated cross-repo rename (same family as isaac-m4bi). ~2 config.mutate may be downstream of fixture providers.
+- DECISION NEEDED: propagate the berth rename to all contributors (cross-repo) vs revisit.
