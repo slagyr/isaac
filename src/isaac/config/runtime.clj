@@ -1,6 +1,6 @@
 (ns isaac.config.runtime
-  "The server-side companion to isaac.foundation / isaac.config.loader. Where
-   foundation is the module read API (load, snapshot, env), config.runtime is the write /
+  "The server-side companion to isaac.config.loader. Where the loader is the read
+   API (load, snapshot, env), config.runtime is the write /
    lifecycle side: installing a committed config into the live nexus,
    reconciling config-driven components (the Reconfigurable protocol), and
    the config change source that drives hot reload.
@@ -8,8 +8,8 @@
    This surface exists so server callers requiring lifecycle behavior don't
    drag isaac.comm.registry / isaac.session.store.spi (pulled in transitively by
    install / configurator) into read-only foundation code. Everything outside
-   the isaac.config.* namespaces requires *only* foundation, config.loader,
-   config.api (test write helpers), and/or config.runtime — never install /
+   the isaac.config.* namespaces requires *only* config.loader, config.api (test
+   write helpers), and/or config.runtime — never install /
    configurator /
    change-source directly — so those internals stay free to reorganize behind
    these surfaces.
