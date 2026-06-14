@@ -6,6 +6,7 @@
     [isaac.config.api :as config-api]
     [isaac.foundation :as sut]
     [isaac.foundation-smoke-module :as smoke]
+    [isaac.fs :as fs]
     [isaac.module.protocol :as module-protocol]
     [isaac.nexus :as nexus]
     [isaac.reconfigurable :as reconfigurable]
@@ -119,8 +120,10 @@
             allowed  (conj tier-1-direct-imports 'isaac.foundation)]
         (should= #{} (set/difference requires allowed))))
 
-    (it "smoke module uses facade exports for module and Reconfigurable"
+    (it "smoke module uses facade exports for module, nexus, and Reconfigurable"
       (should (sut/module? (smoke/create-module)))
+      (nexus/-with-nexus {:fs (fs/mem-fs)}
+        (should (smoke/smoke-ready?)))
       (let [relay (smoke/relay)]
         (sut/on-startup! relay {:crew "main"})
         (should (satisfies? sut/Reconfigurable relay))))))

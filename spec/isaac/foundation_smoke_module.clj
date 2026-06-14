@@ -4,6 +4,7 @@
   (:require
     [isaac.foundation :as foundation]
     [isaac.cli.api :as cli-api]
+    [isaac.fs :as fs]
     [isaac.logger :as logger]))
 
 (defn create-module []
@@ -20,7 +21,15 @@
 (defn relay []
   (->SmokeRelay (atom {})))
 
+(defn smoke-ready?
+  "Module-style entry: facade for module/nexus, direct imports for fs/logger."
+  []
+  (and (foundation/module? (create-module))
+       (if-let [fs* (foundation/get :fs)]
+         (satisfies? fs/Fs fs*)
+         true)))
+
 (defmethod cli-api/run :smoke [_id _opts]
-  (if (foundation/module? (create-module))
+  (if (smoke-ready?)
     0
     1))
