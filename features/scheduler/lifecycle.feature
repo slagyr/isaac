@@ -1,5 +1,5 @@
 Feature: Scheduler lifecycle and isolation
-  The scheduler starts and stops with isaac.system. A slow or hung
+  The scheduler starts and stops with isaac.nexus. A slow or hung
   handler must not delay the timer or other tasks — this is the
   critical property of the two-layer (timer + virtual-thread work
   executor) design.
@@ -36,7 +36,7 @@ Feature: Scheduler lifecycle and isolation
     When the clock advances "300ms" and pending handlers complete
     Then handler "fast" started 3 times
 
-  Scenario: scheduler is started and stopped with isaac.system
+  Scenario: scheduler is started and stopped with isaac.nexus
     When the Isaac system is started
     Then the scheduler is running
     When the Isaac system is stopped
