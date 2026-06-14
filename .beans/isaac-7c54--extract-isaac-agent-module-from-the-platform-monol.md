@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T15:20:14Z
+updated_at: 2026-06-14T15:42:52Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -57,3 +57,9 @@ stays platform-side with hail. So agent carves clean.
 - Agent berths renamed :isaac.server/* -> :isaac.agent/* (tools, llm-api, slash-commands, provider, provider-template, comm). Manifest authored from the fat :isaac.server manifest. isaac.agent.module added. All agent nses compile vs foundation.
 - TODO: external comm modules (discord/imessage/acp) contribute to :isaac.server/comm -> must rename to :isaac.agent/comm (folds into isaac-m4bi).
 - TODO: spec/features carve + bb ci green standalone.
+
+### Spec carve + classpath blocker (2026-06-14)
+- specs/features carved; foundation-spec deps coord fixed (:deps/root only works for git coords — pointed :local/root at the subdir). Baseline: 1160 examples, 72 failures.
+- BLOCKER: agent test classpath drags isaac.comm.telly -> isaac(platform) -> isaac-server -> isaac-server/modules/isaac.agent, a STALE stub manifest (:isaac.server/* contributions) that SHADOWS the real agent manifest in builtin-index. Causes ~50 of 72 failures (providers/schema/dispatch/cli/tools/slash all read the stub).
+- Needs: (a) server agent drops/repoints isaac-server/modules/isaac.agent; (b) agent test fixtures must not transitively pull platform->server (agent ⊥ server). Decision pending.
+- providers.clj module-id lookup fixed (correct once shadowing resolved).
