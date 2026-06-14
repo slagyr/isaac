@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T17:23:55Z
+updated_at: 2026-06-14T17:56:16Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -91,3 +91,7 @@ Spec suite GREEN; features 516/7 (+76 expected @wip pending). The 7 are real beh
 4. Config-validate unknown-tool-refs (#1) + prompt AGENTS.md-from-cwd (#6) — individual.
 Each needs focused per-feature work. Spec-green is the milestone checkpoint.
 Cross-repo rename still swept-but-uncommitted in isaac/discord/imessage (needs verify+commit; platform comm-berth DECL in isaac-server).
+
+### Cross-repo rename verified — deferred to isaac-m4bi (2026-06-14)
+(a) verify+commit the cross-repo rename: the agent berths are declared ONLY in isaac-agent. The platform's agent-code (gatherers) is the duplicate deleted in Phase 3 (renaming it = throwaway); discord/imessage pin the platform not isaac-agent, so renaming their contributions orphans them. Reverted the premature platform/discord/imessage sweep. The real rename is now tracked in isaac-m4bi (coupled to the module repos depending on isaac-agent). isaac-agent stays green via its own vendored fixtures.
+### (b) feature failures: delegated to a background agent (7 failures, 4 causes).

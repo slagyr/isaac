@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-06-14T04:50:16Z
-updated_at: 2026-06-14T04:50:16Z
+updated_at: 2026-06-14T17:56:16Z
 ---
 
 ## Problem
@@ -65,3 +65,9 @@ root itself in a `create` defmethod).
 
 - Companion to the acp comm drift (isaac-lyg0 family).
 - Surfaced verifying isaac-eb1t (which fixed the symbol refs / bb spec only).
+
+## Berth rename :isaac.server/* -> :isaac.agent/* (added 2026-06-14)
+The agent-owned berths were renamed to :isaac.agent/* and are now DECLARED ONLY in isaac-agent's manifest (comm, tools, slash-commands, llm-api, provider, provider-template). So this migration must ALSO:
+- make discord/imessage (and acp) DEPEND ON isaac-agent (not just the platform) — that's where the berth is declared; a contribution to :isaac.agent/comm is orphaned without it.
+- rename their manifest contributions :isaac.server/comm -> :isaac.agent/comm.
+These two are coupled: the rename can't land until the dep is in place (otherwise the contribution validates against a berth nothing on the module's classpath declares). Attempted the rename standalone 2026-06-14; reverted because it orphaned the contributions. isaac-agent itself is fully renamed + green (1151/0 spec) using its own vendored test fixtures, so it does not block on this.
