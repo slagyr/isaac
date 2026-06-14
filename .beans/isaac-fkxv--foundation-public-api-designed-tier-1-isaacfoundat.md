@@ -93,7 +93,7 @@ onto the real var — so those stay a documented **direct import**.
       `get-in`, `register!`). `create-module` stays in this ns (step 2). Acceptance:
       smoke spec — module-style ns touches only facade + documented carve-outs
       (`cli.api`, `config.root` for bootstrap, etc.).
-- [ ] **7. Trim the nexus schema docs to foundation slots** (`:fs`, `:config`,
+- [x] **7. Trim the nexus schema docs to foundation slots** (`:fs`, `:config`,
       `:module-index`, `:scheduler`); drop platform-wide slots from foundation's
       nexus documentation.
 - [ ] **8. `FOUNDATION.md`: document the API tiers** (Tier 1 / 2 / 3 + the facade
