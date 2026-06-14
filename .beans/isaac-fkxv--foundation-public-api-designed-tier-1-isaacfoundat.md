@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-14T02:47:09Z
-updated_at: 2026-06-14T03:09:45Z
+updated_at: 2026-06-14T03:11:47Z
 parent: isaac-brth
 ---
 
@@ -68,7 +68,7 @@ a documented **direct import**. Step 1 produces the exact re-export list + carve
       (1968 spec / 745 feature); single `default-root` defn.
 - [x] **4. `isaac.version` -> `isaac.foundation.version`** (after step 2). Move
       the ns; update refs. Acceptance: `bb ci` green; `isaac --version` works.
-- [ ] **5. Extract `Reconfigurable` to `isaac.reconfigurable`.** Foundation-public
+- [x] **5. Extract `Reconfigurable` to `isaac.reconfigurable`.** Foundation-public
       protocol home (mirrors `module.protocol`). Move `defprotocol Reconfigurable` +
       invoke helpers out of `config.berths`; `berths` / `configurator` / `runtime`
       alias from the new ns. Repoint module implementors (`marigold.longwave`, comm,

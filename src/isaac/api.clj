@@ -3,7 +3,7 @@
     [isaac.bridge.core :as bridge-impl]
     [isaac.comm.protocol :as comm-impl]
     [isaac.comm.registry :as comm-registry]
-    [isaac.config.runtime :as runtime]
+    [isaac.reconfigurable :as reconfigurable]
     [isaac.llm.api.protocol :as api-impl]
     [isaac.nexus :as nexus]
     [isaac.session.store.spi :as session-store]))
@@ -18,8 +18,8 @@
   "Protocol implemented by long-running module instances.
    on-startup! is called when the instance is first started;
    on-config-change! is called on every config reload.
-   See isaac.config.runtime/Reconfigurable for method signatures."
-  runtime/Reconfigurable)
+   See isaac.reconfigurable/Reconfigurable for method signatures."
+  reconfigurable/Reconfigurable)
 
 (defn register-comm!
   "Register a Comm factory under impl-name.

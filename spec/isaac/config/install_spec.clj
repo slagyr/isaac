@@ -3,13 +3,13 @@
     [speclj.core :refer :all]
     [isaac.config.install :as sut]
     [isaac.config.loader :as config]
-    [isaac.config.configurator :as configurator]
+    [isaac.reconfigurable :as reconfigurable]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
     [isaac.session.store.spi :as store]))
 
 (defn- fake-component [started]
-  (reify configurator/Reconfigurable
+  (reify reconfigurable/Reconfigurable
     (on-startup! [_ slice] (reset! started slice))
     (on-config-change! [_ _old _new] nil)))
 

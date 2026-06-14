@@ -1,19 +1,20 @@
-(ns isaac.configurator-spec
+(ns isaac.reconfigurable-spec
   (:require
-    [isaac.configurator :as sut]
+    [isaac.reconfigurable :as sut]
     [speclj.core :refer :all]))
 
-(deftype LegacyReconfigurable [state]
+(deftype RecordingNode [state]
   sut/Reconfigurable
-  (sut/on-startup! [_ slice]
+  (on-startup! [_ slice]
     (swap! state assoc :startup slice))
-  (sut/on-config-change! [_ old-slice new-slice]
+  (on-config-change! [_ old-slice new-slice]
     (swap! state assoc :change [old-slice new-slice])))
 
-(describe "isaac.configurator compatibility"
-  (it "supports implementing the legacy Reconfigurable protocol"
+(describe "isaac.reconfigurable"
+
+  (it "supports on-startup! and on-config-change! dispatch"
     (let [state    (atom {})
-          instance (->LegacyReconfigurable state)]
+          instance (->RecordingNode state)]
       (sut/on-startup! instance {:status :started})
       (sut/on-config-change! instance {:status :started} {:status :changed})
       (should= {:startup {:status :started}

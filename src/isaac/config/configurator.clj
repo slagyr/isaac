@@ -1,17 +1,16 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.config.configurator
   (:require
-    [isaac.config.berths :as berths]
+    [isaac.reconfigurable :as reconfigurable]
     [isaac.config.schema-base :as schema-base]
     [clojure.string :as str]
     [isaac.logger :as log]
     [isaac.nexus :as nexus]))
 
-;; The lifecycle protocol lives with the berth engine (foundation);
-;; aliased here for the server-side implementors that require this ns.
-(def Reconfigurable berths/Reconfigurable)
-(def on-startup! berths/on-startup!)
-(def on-config-change! berths/on-config-change!)
+;; Protocol home is isaac.reconfigurable; aliased here for server-side callers.
+(def Reconfigurable reconfigurable/Reconfigurable)
+(def on-startup! reconfigurable/on-startup!)
+(def on-config-change! reconfigurable/on-config-change!)
 
 (defn ->name [x]
   (cond

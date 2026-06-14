@@ -8,6 +8,7 @@
     [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
     [isaac.config.runtime :as runtime]
+    [isaac.reconfigurable :as reconfigurable]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.context :as session-ctx]
@@ -95,7 +96,7 @@
 ;; Reconfigurable implementation
 
 (deftype HooksModule []
-  runtime/Reconfigurable
+  reconfigurable/Reconfigurable
   (on-startup! [_ slice]
     (reconcile-config-hooks nil slice))
   (on-config-change! [_ old-slice new-slice]

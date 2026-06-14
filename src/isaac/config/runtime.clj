@@ -18,7 +18,8 @@
   (:require
     [isaac.config.change-source :as change-source]
     [isaac.config.configurator :as configurator]
-    [isaac.config.install :as install]))
+    [isaac.config.install :as install]
+    [isaac.reconfigurable :as reconfigurable]))
 
 ;; ----- install (config -> nexus) -----
 
@@ -57,19 +58,19 @@
 (def Reconfigurable
   "Protocol implemented by config-driven components (comms, hail bands, hooks,
    cron) so the reconciler can start/stop/update them: on-startup! /
-   on-config-change!."
-  configurator/Reconfigurable)
+   on-config-change!. Canonical definition: isaac.reconfigurable."
+  reconfigurable/Reconfigurable)
 
 (defn on-startup!
   "Reconfigurable method: called when an instance is first started with its
    config slice."
   [instance slice]
-  (configurator/on-startup! instance slice))
+  (reconfigurable/on-startup! instance slice))
 
 (defn on-config-change!
   "Reconfigurable method: called on reload with the old and new config slices."
   [instance old-slice new-slice]
-  (configurator/on-config-change! instance old-slice new-slice))
+  (reconfigurable/on-config-change! instance old-slice new-slice))
 
 (defn reconcile!
   "Walks the registries' config slices and reconciles the live component

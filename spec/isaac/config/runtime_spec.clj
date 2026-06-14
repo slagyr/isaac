@@ -2,6 +2,7 @@
   (:require
     [isaac.config.change-source :as change-source]
     [isaac.config.configurator :as configurator]
+    [isaac.reconfigurable :as reconfigurable]
     [isaac.config.install :as install]
     [isaac.config.runtime :as sut]
     [speclj.core :refer :all]))
@@ -41,9 +42,9 @@
 
   (describe "Reconfigurable"
 
-    (it "re-exports the configurator protocol"
-      (should= (:name configurator/Reconfigurable) (:name sut/Reconfigurable))
-      (should= (set (keys (:sigs configurator/Reconfigurable)))
+    (it "re-exports the public protocol"
+      (should= (:name reconfigurable/Reconfigurable) (:name sut/Reconfigurable))
+      (should= (set (keys (:sigs reconfigurable/Reconfigurable)))
                (set (keys (:sigs sut/Reconfigurable)))))
 
     (it "on-startup! delegates to the instance's protocol method"
