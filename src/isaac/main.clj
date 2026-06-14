@@ -12,7 +12,7 @@
     [isaac.nexus :as nexus]
     [isaac.cli.args :as cli-args]
     [isaac.config.root :as root]
-    [isaac.version :as version]))
+    [isaac.foundation.version :as version]))
 
 (def ^:dynamic *extra-opts* nil)
 

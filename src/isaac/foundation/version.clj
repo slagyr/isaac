@@ -1,4 +1,4 @@
-(ns isaac.version
+(ns isaac.foundation.version
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]))
