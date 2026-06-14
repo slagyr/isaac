@@ -4,7 +4,7 @@
 *.jar
 .beads-credential-key
 .claude
-.clj-kondo
+.clj-kondo/
 .cpcache/
 .dolt/
 .DS_Store
