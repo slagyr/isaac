@@ -113,7 +113,7 @@ namespace — a `defmethod` attaches to the original var.
 | `isaac.fs` | `Fs` protocol, `real-fs`, `mem-fs` — factory I/O |
 | `isaac.logger` | `info`, `warn`, `error`, `debug` |
 | `isaac.config.paths` | Pure path helpers (`config-path`, `root-config-file`, …) |
-| `isaac.config.root` | Bootstrap root resolution (`default-root`, `extract-root-flag`) |
+| `isaac.config.root` | Bootstrap root resolution (`default-root`) |
 | `isaac.schema.lexicon` | Register custom apron types in code (advanced) |
 | `isaac.schema.meta` | `conform-spec!` for manifest schema authors (advanced) |
 
