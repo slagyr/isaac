@@ -103,6 +103,11 @@ onto the real var — so those stay a documented **direct import**.
       `config.loader`, `schema-compose`, `check-compose`, `validation`, ...)
       instead of Tier-1. Acceptance: passes today; a deliberate violation fails it.
 - [x] **10. Resync to isaac-foundation** (batch) + `bb ci` green there.
+      Post-resync patch (isaac `202e6fbe`, foundation follow-up): removed
+      `marigold.bridge.cli` `requiring-resolve` evasion of step-9 boundary
+      enforcement — `longwave-ping` now contributes via `:isaac/cli` +
+      `isaac.cli.api/run` in both repos. `bb ci` green (isaac 1981/745;
+      foundation 465/41).
 
 ## Notes
 
