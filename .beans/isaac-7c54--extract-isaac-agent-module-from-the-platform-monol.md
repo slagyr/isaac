@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T15:42:52Z
+updated_at: 2026-06-14T16:19:02Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -63,3 +63,10 @@ stays platform-side with hail. So agent carves clean.
 - BLOCKER: agent test classpath drags isaac.comm.telly -> isaac(platform) -> isaac-server -> isaac-server/modules/isaac.agent, a STALE stub manifest (:isaac.server/* contributions) that SHADOWS the real agent manifest in builtin-index. Causes ~50 of 72 failures (providers/schema/dispatch/cli/tools/slash all read the stub).
 - Needs: (a) server agent drops/repoints isaac-server/modules/isaac.agent; (b) agent test fixtures must not transitively pull platform->server (agent ⊥ server). Decision pending.
 - providers.clj module-id lookup fixed (correct once shadowing resolved).
+
+### De-shadow + spec green progress (2026-06-14)
+- Server agent's fix landed (stub removed, isaac-server off classpath): builtin-index clean (:isaac.agent + :isaac.foundation). Provider cluster cleared (13->1).
+- Spec boundary violations resolved: dropped tool/hail_spec (hail's), removed dead [isaac.server.routes] requires, relocated configurator_spec/steps + reconciler.feature (host/integration reconcile tests, assert against server.app/registries).
+- Now: 1151 examples, 59 failures.
+- DOMINANT remaining cluster (~38: schema.term/bridge-dispatch/CLI-Config): FOUNDATION load-order bug. schema_compose checks fragment validations against a lexicon populated by a defonce in isaac.config.validation, and memoizes via last-composed*. Compose before config.validation loads freezes a broken schema. FIX BELONGS IN FOUNDATION (schema_compose should ensure the lexicon / not cache pre-lexicon). Flag for foundation agent.
+- Remaining ~21 (slash registry, behavior funnel, mutate, tool registry, config resolve) untriaged.
