@@ -221,9 +221,11 @@ Two specs guard the foundation boundary:
 |------|----------------|
 | `spec/isaac/foundation_boundary_spec.clj` | Foundation file set never requires server/agent namespaces |
 | `spec/isaac/foundation_spec.clj` | Facade re-exports; smoke module requires only facade + carve-outs |
+| `spec/isaac/foundation_module_boundary_spec.clj` | Module `modules/` sources require Tier 1 or agent surfaces only |
 
-A module→foundation-internal enforcement spec (step 9) will flag production modules
-that require Tier-3 namespaces instead of Tier 1.
+The module boundary spec parses `:require` forms statically. Factories that must
+call Tier-3 internals at runtime should use `requiring-resolve`, not a namespace
+require.
 
 ## Not foundation
 

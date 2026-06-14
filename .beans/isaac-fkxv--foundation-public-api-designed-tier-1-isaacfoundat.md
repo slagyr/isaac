@@ -98,7 +98,7 @@ onto the real var — so those stay a documented **direct import**.
       nexus documentation.
 - [x] **8. `FOUNDATION.md`: document the API tiers** (Tier 1 / 2 / 3 + the facade
       + the direct-import carve-outs), from step 1's outline.
-- [ ] **9. Enforcement: module->foundation-internal boundary check.** A spec that
+- [x] **9. Enforcement: module->foundation-internal boundary check.** A spec that
       flags a module requiring a foundation *internal* (`module.loader`,
       `config.loader`, `schema-compose`, `check-compose`, `validation`, ...)
       instead of Tier-1. Acceptance: passes today; a deliberate violation fails it.
