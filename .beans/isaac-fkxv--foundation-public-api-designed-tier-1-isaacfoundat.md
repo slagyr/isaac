@@ -102,7 +102,7 @@ onto the real var — so those stay a documented **direct import**.
       flags a module requiring a foundation *internal* (`module.loader`,
       `config.loader`, `schema-compose`, `check-compose`, `validation`, ...)
       instead of Tier-1. Acceptance: passes today; a deliberate violation fails it.
-- [ ] **10. Resync to isaac-foundation** (batch) + `bb ci` green there.
+- [x] **10. Resync to isaac-foundation** (batch) + `bb ci` green there.
 
 ## Notes
 
