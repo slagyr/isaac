@@ -129,7 +129,7 @@ Five approved Gherkin scenarios had stderr/error expectations rewritten beyond `
 
 ### New berths declared in isaac core (`src/isaac-manifest.edn`)
 
-- `:isaac.server/llm-api` — manifest-only `:type :map` berth; per-entry factory `isaac.llm.api/register-api-entry!`.
+- `:isaac.server/llm-api` — manifest-only `:type :map` berth; per-entry factory `isaac.llm.api.protocol/register-api-entry!`.
 - `:isaac.server/slash-commands` — manifest-only `:type :map` berth; per-entry factory `isaac.slash.registry/register-slash-entry!`.
 - `:isaac.server/hook` — manifest-only `:type :map` berth; per-entry factory `isaac.hooks/register-hook-entry!`.
 - `:isaac.server/provider-template` — manifest-only `:type :map` berth holding partial provider configs that user-config `:providers` entries inherit from via `:type`.
@@ -147,7 +147,7 @@ Five approved Gherkin scenarios had stderr/error expectations rewritten beyond `
 
 ### Per-entry factories
 
-- `isaac.llm.api/register-api-entry!` — resolves `:factory` symbol, calls `api/register! api-id factory`.
+- `isaac.llm.api.protocol/register-api-entry!` — resolves `:factory` symbol, calls `api/register! api-id factory`.
 - `isaac.slash.registry/register-slash-entry!` — resolves `:factory` symbol, applies user-config slot via `module-loader/user-config`, calls `register!`.
 - `isaac.hooks/register-hook-entry!` — resolves `:factory` symbol, calls factory, registers via `register-hook!` with source `:module`.
 

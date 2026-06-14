@@ -31,7 +31,7 @@ Keeps:
 - `isaac.fs`
 - `isaac.logger`
 - Schema runtime + isaac lexicon extensions (isaac-c2g5, isaac-2yqb)
-- `isaac.scheduler` (primitives only — instance creation by isaac-server)
+- `isaac.scheduler.runtime` (primitives only — instance creation by isaac-server)
 - `isaac.root`
 - Module protocol
 - Berth-processing pipeline (isaac-jr64, isaac-8yxs)

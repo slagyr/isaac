@@ -24,7 +24,7 @@ reset support.
 - [ ] isaac.llm.api self-registers its clear-module-registrations! at
       namespace load (mirror config.loader's :user-config registration at
       config/loader.clj:1384).
-- [ ] Delete [isaac.llm.api :as api] require from module/loader.clj.
+- [ ] Delete [isaac.llm.api.protocol :as api] require from module/loader.clj.
 
 ## Acceptance
 

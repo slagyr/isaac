@@ -22,7 +22,7 @@ index.
 
 - [ ] Create resources/isaac-manifest.edn {:id :isaac.server :builtin? true
       :version "0.1.0" :factory isaac.server.module/create-module} + trivial
-      src/isaac/server/module.clj (create-module -> isaac.module/module) +
+      src/isaac/server/module.clj (create-module -> isaac.module.protocol/module) +
       add "resources" to bb.edn :paths. Discovered but inert — green.
 - [ ] :isaac.server/route decl + the two route entries.
 - [ ] :isaac.server/llm-api decl + 5 adapters; fix llm/providers.clj:32 (reads

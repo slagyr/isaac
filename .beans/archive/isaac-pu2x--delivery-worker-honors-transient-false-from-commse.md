@@ -9,7 +9,7 @@ updated_at: 2026-05-19T23:57:47Z
 ---
 
 ## Gap
-`isaac.comm/Comm` protocol's `send!` is documented to return
+`isaac.comm.protocol/Comm` protocol's `send!` is documented to return
 `{:ok false :transient? bool}`, where `:transient? false` signals a
 permanent failure that should not be retried. The current
 `isaac.comm.delivery.worker` ignores `:transient?` — every failure

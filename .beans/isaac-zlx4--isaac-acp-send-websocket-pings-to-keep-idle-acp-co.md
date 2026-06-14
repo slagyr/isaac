@@ -50,7 +50,7 @@ case).
 Implementation lives in `isaac-acp`'s WebSocket handler
 (`src/isaac/comm/acp/websocket.clj`). httpkit's `as-channel` returns
 an httpkit channel; periodic sends can be scheduled via
-`isaac.scheduler` or a per-channel future. httpkit auto-responds to
+`isaac.scheduler.runtime` or a per-channel future. httpkit auto-responds to
 inbound PINGs with PONGs, but it doesn't proactively send PINGs —
 that's the gap.
 
@@ -154,7 +154,7 @@ The architecture stays exactly as discussed (shared scheduled task, channel regi
 - `isaac.comm.acp.websocket` namespace requires cleanly (verified via `bb -e "(require 'isaac.comm.acp.websocket)"`).
 - Manual verification (the bean's long-running-tool-call scenario) is on the user to confirm in their actual zanebot setup — automated reproduction of a 60s+ idle scenario isn't feasible in CI.
 - Wider `bb spec` in isaac-acp does not run today due to pre-existing isaac-SHA drift (e.g. `isaac.bridge.cancellation` not in the pinned SHA) — covered by isaac-lyg0. Not caused by this bean; not in scope to fix here.
-- `bb features` for ACP scenarios in isaac-acp likewise does not run today. `bb features features/server/acp_websocket.feature` and `bb features features/comm/acp/reconnect.feature` both abort at gherclj/instaparse SCI load (`Protocol not found: clojure.lang.IHashEq` in `instaparse/auto_flatten_seq.clj`). Same root cause as the bb spec breakage — the pinned isaac SHA's dependency surface no longer aligns with what gherclj/instaparse expects under bb's SCI. The bean's acceptance criterion "Existing ACP scenarios still pass" therefore can't be re-verified in CI right now; the heartbeat code itself does not touch any of the namespaces involved in the failing analysis (its only run-time inputs are `isaac.scheduler`, `isaac.nexus`, `isaac.logger`, and `org.httpkit.server`). Folded into the same follow-up scope as the spec drift (isaac-lyg0) — once isaac-acp gets a clean isaac bump, both the spec and feature suites should come back together.
+- `bb features` for ACP scenarios in isaac-acp likewise does not run today. `bb features features/server/acp_websocket.feature` and `bb features features/comm/acp/reconnect.feature` both abort at gherclj/instaparse SCI load (`Protocol not found: clojure.lang.IHashEq` in `instaparse/auto_flatten_seq.clj`). Same root cause as the bb spec breakage — the pinned isaac SHA's dependency surface no longer aligns with what gherclj/instaparse expects under bb's SCI. The bean's acceptance criterion "Existing ACP scenarios still pass" therefore can't be re-verified in CI right now; the heartbeat code itself does not touch any of the namespaces involved in the failing analysis (its only run-time inputs are `isaac.scheduler.runtime`, `isaac.nexus`, `isaac.logger`, and `org.httpkit.server`). Folded into the same follow-up scope as the spec drift (isaac-lyg0) — once isaac-acp gets a clean isaac bump, both the spec and feature suites should come back together.
 
 ### Out of scope (deferred)
 

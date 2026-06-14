@@ -1,11 +1,11 @@
 ---
 # isaac-4cao
 title: Manifest field schemas become first-class apron schemas (refs only)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-05-18T22:07:53Z
-updated_at: 2026-05-19T00:10:47Z
+updated_at: 2026-06-13T18:10:14Z
 blocked_by:
     - isaac-vyz5
 ---
@@ -148,3 +148,7 @@ This is the third false-positive from the verifier in this session (also isaac-g
 ## Verification failed
 
 The new `## Exceptions` section clears the prior feature-history concern, but the bean's own acceptance command is still red. I re-ran `bb features features/modules/schema_composition.feature features/modules/activation.feature features/lifecycle/reconciler.feature` and it still fails with the same 3 reconciler scenarios: (1) `Comm receives on-config-change! when its slice changes` expected `"sad"` but got `"happy"`; (2) `Comm is stopped and evicted when its slot is removed from config` expected nil but the `Telly` instance remained; (3) `Comm is hot-added when its slot appears in config at runtime` failed its existence assertion. `bb spec` is green, but these prep'd reconciler scenarios are explicitly part of this bean's acceptance, so the bead cannot pass yet.
+
+## Closed (2026-06-13)
+
+The contested 3 reconciler scenarios do not reproduce at HEAD. Ran the acceptance command against the real paths (`features/config/reconciler.feature`, not the stale `features/lifecycle/`): 18 examples, 0 failures, 41 assertions. All five bespoke checkers (check-comm-slot, check-provider-type-fields, check-tools, required-tool-errors, check-slash-command-config) are confirmed gone; apron-driven validation is in place. Implementation complete.

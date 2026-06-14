@@ -233,7 +233,7 @@ Working tree: clean
 
 Bean acceptance: "Foundation features and the foundation specs listed above require only foundation namespaces + the new step layer."
 
-`spec/isaac/main_spec.clj` still has a top-level require of `[isaac.session.store :as store]` (line 10). It is used only to stub `store/register!` in the "installs the active fs into runtime init" test (line 252), but the namespace coupling remains. The bean body and summary both claim main_spec was re-themed to drop stray server requires; `module/loader_spec.clj` is clean, but main_spec is not.
+`spec/isaac/main_spec.clj` still has a top-level require of `[isaac.session.store.spi :as store]` (line 10). It is used only to stub `store/register!` in the "installs the active fs into runtime init" test (line 252), but the namespace coupling remains. The bean body and summary both claim main_spec was re-themed to drop stray server requires; `module/loader_spec.clj` is clean, but main_spec is not.
 
 **Fix:** Drop the `isaac.session.store` require; stub via `requiring-resolve` (or similar) inside that one `it` block so main_spec requires only foundation namespaces.
 
@@ -258,7 +258,7 @@ register-module-cli-commands! no-op stub), reverting the checkbox-4 removal.
 main.clj has zero session.store references, and the test passes without the
 stub (the register-module-cli-commands! no-op cuts the only path that could
 reach store/register!), so the stub was dead — removed it and the
-[isaac.session.store :as store] require entirely (cleaner than the suggested
+[isaac.session.store.spi :as store] require entirely (cleaner than the suggested
 requiring-resolve, since there is no live coupling). Both foundation specs
 (main_spec, module/loader_spec) now require only foundation namespaces;
 loader_spec's :isaac.server/comm occurrences are keyword literals in test data,

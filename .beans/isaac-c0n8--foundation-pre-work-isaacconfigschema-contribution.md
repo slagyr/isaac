@@ -48,7 +48,7 @@ requiring-resolve (schema fragments contain fns; can't live in EDN).
       (loader.clj:427-461), resolve-cron-prompts inline-root handling,
       normalize-config table conform. Legacy-shape migration in
       normalize-config stays foundation (keyword-only data logic).
-- [x] Remove [isaac.config.schema :as schema] from config/loader.clj; delete
+- [x] Remove [isaac.config.schema.root :as schema] from config/loader.clj; delete
       the fallback and the parity spec.
 
 Watch: normalize-config is called on snapshot configs outside load (resolution

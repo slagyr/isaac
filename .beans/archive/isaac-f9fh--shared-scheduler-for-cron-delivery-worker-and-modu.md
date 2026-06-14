@@ -39,7 +39,7 @@ Future comm modules and tools will too. There is no shared abstraction for
 
 ## Proposed change
 
-Introduce `isaac.scheduler` — a single component that owns timing and lets
+Introduce `isaac.scheduler.runtime` — a single component that owns timing and lets
 modules register tasks as `(trigger, handler)` pairs.
 
 ```clojure
@@ -108,7 +108,7 @@ demands it.
 
 ### New code
 
-- `isaac.scheduler` — core: registry, schedule!/schedule-once!/cancel!/list,
+- `isaac.scheduler.runtime` — core: registry, schedule!/schedule-once!/cancel!/list,
   two-layer executor, lifecycle integration with `isaac.system`.
 - `isaac.scheduler.trigger.interval`
 - `isaac.scheduler.trigger.cron` — wraps the expression evaluator extracted
@@ -119,7 +119,7 @@ demands it.
 
 ### Migrations (each independently shippable)
 
-1. Build `isaac.scheduler` with `:interval` + `:delay` triggers and the
+1. Build `isaac.scheduler.runtime` with `:interval` + `:delay` triggers and the
    two-layer executor.
 2. Migrate `isaac.comm.delivery.worker` — `start!` becomes
    `(scheduler/schedule! :delivery/tick ...)`. `tick!` stays. Delete the
@@ -135,7 +135,7 @@ independent.
 
 ### Naming
 
-`isaac.scheduler` clashes with existing `isaac.cron.scheduler`. Rename the
+`isaac.scheduler.runtime` clashes with existing `isaac.cron.scheduler`. Rename the
 cron one to `isaac.cron.jobs` since it'll become a thin registration layer
 over the scheduler.
 

@@ -1,11 +1,11 @@
 ---
 # isaac-8i8z
 title: Collapse isaac-manifest.edn into deps.edn :isaac/manifest
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-06-11T14:44:59Z
-updated_at: 2026-06-11T17:54:35Z
+updated_at: 2026-06-14T01:38:31Z
 parent: isaac-brth
 ---
 
@@ -141,3 +141,7 @@ Reverts pushed:
 Reset to `todo`. If retried, the new acceptance must include: a production-shape test with a non-`:local/root` coord (e.g. a marigold fixture loaded via `:git/url` against a local tracking branch, or whatever the test harness can simulate), so the git-coord discovery path is genuinely exercised.
 
 The "single source of truth for module deps" win is still desirable. Path forward is either (a) read `deps.edn` directly from each dep's resolved on-disk root (asking tools.deps where the dep landed) instead of via `getResources`, or (b) keep the manifest at `resources/isaac-manifest.edn` and accept the dual-file shape.
+
+## Reasons for Scrapping (2026-06-13)
+
+Scrapped per Micah. This was implemented, then rolled back (commit history: "isaac-8i8z rolled back + reset to todo"), and it's the documented foundation-extraction landmine: git-fetched module manifests are discovered via a classpath resource scan (`getResources "isaac-manifest.edn"`), so manifests must live on `:paths` (src/ or resources/), NOT inside `deps.edn`. Collapsing the manifest into `deps.edn :isaac/manifest` fights that mechanism. It was always a packaging convenience, not a manifest-shape requirement, and with it scrapped the brth epic's Phase A is fully closed — nothing blocks the foundation extraction flip.

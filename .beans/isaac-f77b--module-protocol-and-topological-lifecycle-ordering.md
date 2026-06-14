@@ -16,7 +16,7 @@ topological order across `:deps`, `on-shutdown` reverse.
 
 ## Protocol
 
-`isaac.module/Module`, with two methods:
+`isaac.module.protocol/Module`, with two methods:
 
 - `on-startup [this]` — called once per process after the config
   load and all contribution validation has passed.

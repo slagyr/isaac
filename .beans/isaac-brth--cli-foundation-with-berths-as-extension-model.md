@@ -99,7 +99,7 @@ Example — `:isaac.server/comm` berth:
                               :value-spec {:type :map
                                            :impl-schema-via :type}}}
   :lifecycle        :slot-tree
-  :satisfies        [isaac.comm/Comm]
+  :satisfies        [isaac.comm.protocol/Comm]
   :register-fn      isaac.comm.registry/register-instance!
   :deregister-fn    isaac.comm.registry/deregister-instance!}}
 ```
@@ -178,7 +178,7 @@ Constraint syntax is conventional semver: `"^1.0"` = "≥1.0, <2.0";
    (`isaac-cli/modules.edn` or similar) — like a tiny brew formula directory.
    Updateable via PR. No registry server.
 7. **Shared kitchen namespaces stay in the foundation**: `isaac.system`,
-   `isaac.fs`, `isaac.logger`, the schema runtime, `isaac.scheduler`. These
+   `isaac.fs`, `isaac.logger`, the schema runtime, `isaac.scheduler.runtime`. These
    have to be reachable to all modules; can't live in `isaac-server` because
    consumer modules need them and might not have isaac-server installed.
    Their *namespaces* are foundation-shipped; their *running instances* are
@@ -196,7 +196,7 @@ modules pull it via `(system/get :scheduler)`.
 
 | Utility                  | Instantiator today                | After the split                                 |
 |--------------------------|-----------------------------------|-------------------------------------------------|
-| `isaac.scheduler`        | `isaac.server.app/start!`         | isaac-server bootstrap, OR a private one        |
+| `isaac.scheduler.runtime`        | `isaac.server.app/start!`         | isaac-server bootstrap, OR a private one        |
 |                          |                                   | (e.g., acp's proxy creates its own pool=1)      |
 | `isaac.fs/*fs*`          | implicit (real fs); tests rebind  | unchanged                                       |
 | `isaac.system` registry  | `isaac.system/init!`              | invoked by foundation CLI dispatcher at start   |

@@ -36,7 +36,7 @@ Removing on-error simplifies the Comm protocol (11 methods -> 10), eliminates th
 
 ## Acceptance
 
-- isaac.comm/Comm has 10 methods (no on-error).
+- isaac.comm.protocol/Comm has 10 methods (no on-error).
 - finish-turn! calls on-turn-end only.
 - No comm impl declares an on-error method.
 - bb spec passes.
@@ -49,5 +49,5 @@ on-error removed from Comm; finish-turn! no longer calls it; all comm impls drop
 
 ## Notes
 
-Verification failed: bb spec (1350 examples) and bb features (494 examples) both pass, and the main protocol/call-site changes are present: isaac.comm/Comm has no on-error method and finish-turn! only calls on-turn-end. However, acceptance is not fully met because a remaining Comm impl in specs still declares on-error: spec/isaac/bridge/chat_cli_spec.clj lines 856-870 reify comm/Comm and include (on-error [_ _ _] nil). The bead's acceptance says all comm impls drop the method, including spec/feature impls, so cleanup is incomplete.
+Verification failed: bb spec (1350 examples) and bb features (494 examples) both pass, and the main protocol/call-site changes are present: isaac.comm.protocol/Comm has no on-error method and finish-turn! only calls on-turn-end. However, acceptance is not fully met because a remaining Comm impl in specs still declares on-error: spec/isaac/bridge/chat_cli_spec.clj lines 856-870 reify comm/Comm and include (on-error [_ _ _] nil). The bead's acceptance says all comm impls drop the method, including spec/feature impls, so cleanup is incomplete.
 
