@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T17:10:11Z
+updated_at: 2026-06-14T17:23:55Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -82,3 +82,12 @@ stays platform-side with hail. So agent carves clean.
 - Path from 10->0: renamed :isaac.server/*->:isaac.agent/* berth keys in agent spec fixtures; vendored telly+kombucha test fixture modules into isaac-agent/modules/ (specs load them via user.dir/modules); carved tool-test/provider-test module fixtures.
 - Cross-repo rename SWEPT (uncommitted) in: isaac/src, isaac/spec, isaac/modules, isaac/resources, isaac-discord/src, isaac-imessage/src (28 files, 94 refs). NOT yet verified/committed in those repos. Platform comm-berth DECL lives in isaac-server (server agent owns) — coordination.
 - REMAINING: (a) 7 agent FEATURE failures (config validate, crew tools, 3x config hot-reload, AGENTS.md-from-cwd, tool-exec logging) — triage; (b) verify+commit the cross-repo rename in isaac/discord/imessage.
+
+### Feature triage (2026-06-14) — 7 failures, 4 root causes
+Spec suite GREEN; features 516/7 (+76 expected @wip pending). The 7 are real behavioral wiring, not carve gaps:
+1. Crew tools resolve to #{} — 'isaac prompt hi' runs prompt-cli (calls builtin/register-all!) but the dispatched llm-request has no tools; builtin tools aren't reaching dispatch tool-resolution in agent context. (also affects tool-exec logging #7?)
+2. Config hot-reload x3 — gherclj 'no entries to match against' (reload watcher/change-source not firing or a step-table setup gap).
+3. Tool execution logging — :tool/start logged but :tool/result missing (tool exec not completing/logging).
+4. Config-validate unknown-tool-refs (#1) + prompt AGENTS.md-from-cwd (#6) — individual.
+Each needs focused per-feature work. Spec-green is the milestone checkpoint.
+Cross-repo rename still swept-but-uncommitted in isaac/discord/imessage (needs verify+commit; platform comm-berth DECL in isaac-server).
