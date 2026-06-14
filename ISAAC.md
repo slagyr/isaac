@@ -99,14 +99,23 @@ day one.
   Discord's own "channel" concept.
 - Config-driven: `{:dev true}` toggles development features; config
   can pull from env via `${VAR}` substitution
-- **Module-contribution collision policy** (isaac-un18): activation
-  berths (per-entry factory) and the config-schema gather both
-  **last-loaded-win in topological order**, logging `:<kind>/override`
-  at `:warn`; distinct ids coexist. Override is a feature — a later
-  module declaring an existing name (a tool, comm, config-table entry)
-  replaces it, audibly. The gather still *errors* on table-**shell**
-  disagreement (two modules redefining a table's structure, vs its
-  entries).
+- **Module-contribution collision policy** (isaac-un18) — one rule, two
+  cases by *what* collides:
+  - **Structural** — a berth *declaration*, or a config-table *shell*
+    (its `:type`/`:key-spec`/`:value-spec`/`:entity-dir`): two modules
+    cannot co-own a structure, so a disagreement is an **error**
+    (`module-loader/discover!`, `schema-compose/merge-descriptors`).
+  - **Named entity** — anything keyed by a *name*: a `:cli` command, a
+    tool, a slash command, a comm, a provider, a config-table *entry*.
+    The later module in `:modules` declaration (topological) order
+    **wins**; distinct names coexist. Override is a feature — the user's
+    `:modules` order is the explicit choice — surfaced as
+    `:<kind>/override` at `:warn`.
+  Both the activation berths (per-entry factory) and the config-schema
+  gather follow this, ordered by module topological order so they agree
+  on the winner. New extension kinds inherit it by answering one
+  question: is this a *name* or a *structure*? (Aspiration: surface
+  named overrides in `config validate` + startup output, not just logs.)
 
 ### Conventions
 
