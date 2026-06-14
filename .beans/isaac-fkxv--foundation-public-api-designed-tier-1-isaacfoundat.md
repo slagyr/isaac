@@ -85,7 +85,7 @@ onto the real var — so those stay a documented **direct import**.
       hail, hooks, cron). Delete `isaac.configurator` shim. Acceptance: `bb ci`
       green (1968 spec / 745 feature); no module requires `berths` or `configurator`
       for the protocol.
-- [ ] **6. Build the `isaac.foundation` facade** (step-1 design + carryovers above).
+- [x] **6. Build the `isaac.foundation` facade** (step-1 design + carryovers above).
       Re-export: `module.protocol` (`Module`, `module`, `module?`); `config.api`
       read fns **without** `default-root` (`load-config!`, `load-config-result`,
       `snapshot`, `root`, `normalize-config`, `env`); `isaac.reconfigurable`
