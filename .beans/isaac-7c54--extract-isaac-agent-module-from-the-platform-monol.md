@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T17:56:16Z
+updated_at: 2026-06-14T19:00:31Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -95,3 +95,11 @@ Cross-repo rename still swept-but-uncommitted in isaac/discord/imessage (needs v
 ### Cross-repo rename verified — deferred to isaac-m4bi (2026-06-14)
 (a) verify+commit the cross-repo rename: the agent berths are declared ONLY in isaac-agent. The platform's agent-code (gatherers) is the duplicate deleted in Phase 3 (renaming it = throwaway); discord/imessage pin the platform not isaac-agent, so renaming their contributions orphans them. Reverted the premature platform/discord/imessage sweep. The real rename is now tracked in isaac-m4bi (coupled to the module repos depending on isaac-agent). isaac-agent stays green via its own vendored fixtures.
 ### (b) feature failures: delegated to a background agent (7 failures, 4 causes).
+
+### bb ci GREEN — Phase 2 complete (2026-06-14)
+isaac-agent: spec 1151/0 + features 516/0 (72 @wip pending). Standalone green.
+- Took over the stalled background agent; reviewed its work (sound). Its harness fixes landed: prompt-tools last-request fallback (crew-tools), restored dropped 'config:' log-routing step (tool-exec logging), agent-local 'Isaac server is started' synchronous-reload stand-in (hot-reload trio), ensure-feature-fs run-order fix, cli.feature berth-name update.
+- The 2 spec 'regressions' the agent left were actually from MY earlier platform revert (telly fixture flipped back to :isaac.server) — fixed by re-renaming the telly+kombucha fixture manifests (isaac cf6bc1ca).
+- Last feature failure was a carve gap: AGENTS.md (read from user.dir by the 'load AGENTS.md from cwd' scenario) wasn't carried — added it.
+- Commits: isaac-agent 7c2249d, isaac cf6bc1ca.
+REMAINING: Phase 3 (flip platform to depend on isaac-agent + delete duplicate agent code); cross-repo contributor rename for discord/imessage/acp (isaac-m4bi).
