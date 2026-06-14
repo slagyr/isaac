@@ -4,7 +4,7 @@
     [clojure.data.xml :as xml]
     [gherclj.core :as g :refer [defgiven defthen helper!]]
     [isaac.fs :as fs]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
 

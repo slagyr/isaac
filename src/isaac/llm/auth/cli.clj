@@ -8,7 +8,7 @@
     [isaac.fs :as fs]
     [isaac.llm.auth.device-code :as device-code]
     [isaac.llm.auth.store :as auth-store]
-    [isaac.root :as root]))
+    [isaac.config.root :as root]))
 
 ;; region ----- Login -----
 

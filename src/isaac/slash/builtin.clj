@@ -5,7 +5,7 @@
     [isaac.config.api :as config]
     [isaac.effort :as effort]
      [isaac.fs :as fs]
-     [isaac.root :as root]
+     [isaac.config.root :as root]
      [isaac.logger :as log]
      [isaac.module.loader :as module-loader]
      [isaac.session.store.spi :as store]

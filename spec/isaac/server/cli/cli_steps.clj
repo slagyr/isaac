@@ -10,7 +10,7 @@
     [gherclj.core :as g :refer [defthen defwhen helper!]]
     [isaac.drive.dispatch :as drive-dispatch]
     [isaac.foundation.cli-steps :as fcli]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.bridge.status :as bridge]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]

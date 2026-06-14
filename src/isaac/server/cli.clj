@@ -6,6 +6,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.common :as cli-common]
     [isaac.config.api :as config]
+    [isaac.config.root :as root]
     [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
@@ -39,7 +40,7 @@
       path)))
 
 (defn run [{:keys [port host logs] :as opts}]
-  (let [root-dir      (config/default-root opts)
+  (let [root-dir      (root/default-root opts)
         fs*           (or (fs/instance opts) (fs/real-fs))
         ;; CLIs load config at their entry point (never reload — that's a
         ;; server-only concern); app/start! resolves port/host and commits it.

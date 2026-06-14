@@ -9,6 +9,7 @@
     [isaac.cli.registry :as cli]
     [isaac.comm.protocol :as comm]
     [isaac.config.api :as config]
+    [isaac.config.root :as root]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.drive.turn :as single-turn]
@@ -77,7 +78,7 @@
      :text text}))
 
 (defn- root-of [opts]
-  (config/default-root opts))
+  (root/default-root opts))
 
 (defn- print-error! [message]
   (binding [*out* *err*]

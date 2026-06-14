@@ -5,7 +5,7 @@
     [isaac.cli.registry :as registry]
     [isaac.config.api :as config]
     [isaac.fs :as fs]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.module.loader :as module-loader]
     [isaac.main :as sut]
     [isaac.nexus :as nexus]

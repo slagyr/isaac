@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-14T02:47:09Z
-updated_at: 2026-06-14T03:01:55Z
+updated_at: 2026-06-14T03:04:58Z
 parent: isaac-brth
 ---
 
@@ -60,11 +60,12 @@ a documented **direct import**. Step 1 produces the exact re-export list + carve
       `foundation-module-id` / `foundation-index` naming; update `version.clj`'s
       hardcoded `:isaac.foundation` and the `foundation_boundary_spec` set.
       Acceptance: `bb ci` green (1962 spec / 745 feature).
-- [ ] **3. `isaac.root` -> `isaac.config.root`; dedupe `default-root`.** Bootstrap
+- [x] **3. `isaac.root` -> `isaac.config.root`; dedupe `default-root`.** Bootstrap
       sibling to `paths`/`nav` (requires only fs/logger, NOT config.loader).
       Collapse the three `default-root` shims (`root`, `config.paths`,
-      `config.api`) to one. Move `extract-root-flag` (pure CLI arg-stripping) to
-      the CLI. Acceptance: `bb ci` green; single `default-root`.
+      `config.api`) to one in `isaac.config.root/default-root`. Move
+      `extract-root-flag` to `isaac.cli.args`. Acceptance: `bb ci` green
+      (1968 spec / 745 feature); single `default-root` defn.
 - [ ] **4. `isaac.version` -> `isaac.foundation.version`** (after step 2). Move
       the ns; update refs. Acceptance: `bb ci` green; `isaac --version` works.
 - [ ] **5. Extract `Reconfigurable` to `isaac.reconfigurable`.** Foundation-public

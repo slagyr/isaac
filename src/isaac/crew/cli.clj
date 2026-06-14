@@ -6,6 +6,7 @@
     [isaac.cli.registry :as cli]
     [isaac.cli.common :as cli-common]
     [isaac.config.api :as config]
+    [isaac.config.root :as root]
     [isaac.crew.store :as store]
     [isaac.fs :as fs]))
 
@@ -36,7 +37,7 @@
       s)))
 
 (defn- derive-root [opts]
-  (config/default-root opts))
+  (root/default-root opts))
 
 (defn resolve-crew
   "Returns a seq of {:name :model :provider :soul-source :tags} for display."

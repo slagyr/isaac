@@ -5,7 +5,7 @@
     [isaac.comm.delivery.worker :as sut]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.logger :as log]
     [isaac.scheduler.runtime :as scheduler]
     [isaac.spec-helper :as helper]

@@ -19,7 +19,7 @@
     [isaac.comm.delivery.worker :as worker]
     [isaac.comm.registry :as comm-registry]
     [isaac.bridge.status :as bridge-status]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.scheduler.runtime :as scheduler-core]
     [isaac.slash.registry :as slash-registry]
     [isaac.nexus :as nexus]

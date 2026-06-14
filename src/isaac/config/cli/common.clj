@@ -8,7 +8,7 @@
     [clojure.walk :as walk]
     [isaac.config.loader :as loader]
     [isaac.fs :as fs]
-    [isaac.root :as root]))
+    [isaac.config.root :as root]))
 
 ;; region ----- Option parsing -----
 

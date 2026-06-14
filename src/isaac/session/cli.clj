@@ -10,6 +10,7 @@
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
     [isaac.config.api :as config]
+    [isaac.config.root :as root]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
     [isaac.bridge.status :as bridge]
@@ -193,7 +194,7 @@
 ;; endregion ^^^^^ Output ^^^^^
 
 (defn- resolve-root [opts]
-  (config/default-root opts))
+  (root/default-root opts))
 
 (defn- install-cli!
   "Load config, resolve the state dir, and install it into the nexus (snapshot +

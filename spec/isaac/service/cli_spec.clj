@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.main :as main]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]

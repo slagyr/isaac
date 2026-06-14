@@ -3,7 +3,7 @@
     [isaac.config.api :as config]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.nexus :as nexus]
     [isaac.session.store.spi :as store]
     [isaac.session.store.memory :as memory]

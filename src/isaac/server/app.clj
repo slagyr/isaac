@@ -13,7 +13,7 @@
     [isaac.hail.bands :as hail-bands]
     [isaac.hail.delivery-worker :as hail-delivery-worker]
     [isaac.hail.router :as hail-router]
-    [isaac.root :as root]
+    [isaac.config.root :as root]
     [isaac.hooks :as hooks]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
