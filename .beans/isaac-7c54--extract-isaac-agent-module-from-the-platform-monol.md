@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T14:53:10Z
+updated_at: 2026-06-14T15:20:14Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -51,3 +51,9 @@ stays platform-side with hail. So agent carves clean.
 - isaac/platform `bb ci` green post-flip via isaac-agent local-root (Phase 3).
 - boundary spec green; grep agent set for requires into
   server/hail/hooks/cron returns nothing.
+
+### Progress (2026-06-14)
+- Phase 2 carve + skeleton committed (isaac-agent 4d486f1).
+- Agent berths renamed :isaac.server/* -> :isaac.agent/* (tools, llm-api, slash-commands, provider, provider-template, comm). Manifest authored from the fat :isaac.server manifest. isaac.agent.module added. All agent nses compile vs foundation.
+- TODO: external comm modules (discord/imessage/acp) contribute to :isaac.server/comm -> must rename to :isaac.agent/comm (folds into isaac-m4bi).
+- TODO: spec/features carve + bb ci green standalone.
