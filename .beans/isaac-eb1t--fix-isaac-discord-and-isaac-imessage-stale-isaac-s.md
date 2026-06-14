@@ -1,10 +1,11 @@
 ---
 # isaac-eb1t
 title: Fix isaac-discord and isaac-imessage stale isaac symbol references
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-06-05T14:38:26Z
-updated_at: 2026-06-05T14:38:26Z
+updated_at: 2026-06-14T03:39:49Z
 ---
 
 Both isaac-discord/src/isaac/comm/discord.clj and isaac-imessage/src/isaac/comm/imessage.clj reference removed isaac symbols (e.g. config/load-config) and fail at SCI analysis when running `bb spec` in those repos. Pre-existing, surfaced again during isaac-qqgv (phase 8 berth migration).
