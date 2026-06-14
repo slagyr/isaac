@@ -36,10 +36,11 @@ surface"; review notes `/tmp/foundation-api-cleanup.md` (claims verified; the
 ## Facade nuance (decided in step 1)
 
 `isaac.foundation` re-exports the fn/protocol/var surface (`module.protocol`'s
-`Module`/`module`, `config.api` read fns, `config.runtime/Reconfigurable`,
-`nexus/get`). It CANNOT re-export `cli.api`'s multimethods — a module `defmethod`s
-onto the real var — so those stay a documented **direct import**. Step 1 produces
-the exact re-export list + carve-outs.
+`Module`/`module`, `config.api` read fns, `isaac.reconfigurable/Reconfigurable`,
+`nexus/get`). `Reconfigurable` lives in foundation-public `isaac.reconfigurable`
+(step 5 extraction) — **not** `config.runtime` (Tier-2 host). It CANNOT re-export
+`cli.api`'s multimethods — a module `defmethod`s onto the real var — so those stay
+a documented **direct import**. Step 1 produces the exact re-export list + carve-outs.
 
 ## Steps (one at a time; each ends green under `bb ci`, reviewed before the next)
 
@@ -48,8 +49,9 @@ the exact re-export list + carve-outs.
       fn/protocol/var (facade-able) vs multimethod/macro (direct import); produce
       the concrete `isaac.foundation` re-export list + direct-import carve-outs +
       a `FOUNDATION.md` tier outline. Present for review.
-      → `/tmp/isaac-fkxv-step1-design.md` (2026-06-14). **Awaiting Micah review
-      before step 2.**
+      → `/tmp/isaac-fkxv-step1-design.md` (2026-06-14). **Reviewed:** structure and
+      classification approved; `Reconfigurable` → `isaac.reconfigurable` (not
+      `config.runtime`). Gate cleared for step 2.
 - [ ] **2. `:isaac.core` -> `:isaac.foundation`.** Rename the module id
       (`src/isaac-manifest.edn`) and the namespace; `isaac.foundation` owns
       `create-module` + manifest constants; retire `isaac.core` and the loader's
@@ -62,12 +64,16 @@ the exact re-export list + carve-outs.
       the CLI. Acceptance: `bb ci` green; single `default-root`.
 - [ ] **4. `isaac.version` -> `isaac.foundation.version`** (after step 2). Move
       the ns; update refs. Acceptance: `bb ci` green; `isaac --version` works.
-- [ ] **5. Build the `isaac.foundation` facade** (per step-1 design). Acceptance:
-      a smoke spec — a module-style ns builds a tool/comm/cli command touching
-      only Tier-1 (facade + documented carve-outs).
-- [ ] **6. Delete the `isaac.configurator` shim.** Confirmed thin re-export;
-      callers use `isaac.config.runtime/Reconfigurable`. Acceptance: ns gone,
-      `bb ci` green.
+- [ ] **5. Extract `Reconfigurable` to `isaac.reconfigurable`.** Foundation-public
+      protocol home (mirrors `module.protocol`). Move `defprotocol Reconfigurable` +
+      invoke helpers out of `config.berths`; `berths` / `configurator` / `runtime`
+      alias from the new ns. Repoint module implementors (`marigold.longwave`, comm,
+      hail, hooks, cron). Delete `isaac.configurator` shim. Acceptance: `bb ci`
+      green; no module requires `berths` or `configurator` for the protocol.
+- [ ] **6. Build the `isaac.foundation` facade** (per step-1 design; sources
+      `Reconfigurable` from `isaac.reconfigurable`, not `config.runtime`).
+      Acceptance: smoke spec — a module-style ns builds a tool/comm/cli command
+      touching only Tier-1 (facade + documented carve-outs).
 - [ ] **7. Trim the nexus schema docs to foundation slots** (`:fs`, `:config`,
       `:module-index`, `:scheduler`); drop platform-wide slots from foundation's
       nexus documentation.
