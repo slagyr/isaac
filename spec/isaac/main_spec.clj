@@ -19,8 +19,8 @@
 
 (defmethod cli-api/run :greet [_id _opts] 0)
 
-(defn- core-manifest-cli-command-names []
-  (->> ["src/isaac-manifest.edn" "resources/isaac-manifest.edn"]
+(defn- foundation-manifest-cli-command-names []
+  (->> ["src/isaac-manifest.edn"]
        (mapcat (fn [path] (keys (:isaac/cli (edn/read-string (slurp path))))))
        (map name)
        set))
@@ -233,9 +233,9 @@
         (should-not-be-nil (registry/get-command "greet"))
         (should= "Greets" (:summary (registry/get-command "greet")))))
 
-    (it "declares core command cli contributions in the manifest"
-      (should= #{"auth" "config" "crew" "hail" "init" "logs" "prompt" "server" "service" "sessions"}
-               (core-manifest-cli-command-names)))
+    (it "declares foundation command cli contributions in the manifest"
+      (should= #{"init"}
+               (foundation-manifest-cli-command-names)))
 
     (it "installs the active fs into runtime init"
       (let [mem       (fs/mem-fs)

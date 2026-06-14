@@ -26,13 +26,12 @@
         (add-deps {:deps {(symbol module-root) {:local/root module-root}}})))))
 
 (defn- manifest-paths []
-  (cons "resources/isaac-manifest.edn"
-        (cons "src/isaac-manifest.edn"
-              (->> (file-seq (io/file "modules"))
-                   (filter #(.isFile %))
-                   (map #(.getPath %))
-                   (filter #(str/ends-with? % "resources/isaac-manifest.edn"))
-                   sort))))
+  (cons "src/isaac-manifest.edn"
+        (->> (file-seq (io/file "modules"))
+             (filter #(.isFile %))
+             (map #(.getPath %))
+             (filter #(str/ends-with? % "resources/isaac-manifest.edn"))
+             sort)))
 
 (defn- manifest-symbols
   "Every symbol referenced anywhere in the manifest data — berth and
@@ -47,25 +46,6 @@
     :else           []))
 
 (describe "manifest self-consistency"
-
-  (it "the server manifest is pure data — clojure.edn parses it with no readers"
-    (let [manifest (edn/read-string (slurp "resources/isaac-manifest.edn"))]
-      (should= :isaac.server (:id manifest))
-      (should= manifest (edn/read-string (pr-str manifest)))))
-
-  (it "every inline :isaac.config/schema contribution meta-validates"
-    (let [manifest (edn/read-string (slurp "resources/isaac-manifest.edn"))]
-      (doseq [[config-key {:keys [schema]}] (:isaac.config/schema manifest)]
-        (should (map? schema))
-        (should-not-throw (isaac.schema.meta/conform-spec! schema)))))
-
-  (it "the embedded compaction schemas stay aligned with isaac.session.compaction-schema"
-    (let [manifest      (edn/read-string (slurp "resources/isaac-manifest.edn"))
-          contributions (:isaac.config/schema manifest)]
-      (doseq [path [[:crew :schema :value-spec :schema :compaction :schema]
-                    [:models :schema :value-spec :schema :compaction :schema]
-                    [:defaults :schema :schema :compaction :schema]]]
-        (should= compaction-schema/config-schema (get-in contributions path)))))
 
   (it "no config path is claimed twice — one schema owner per path (berth :config XOR :isaac.config/schema factory)"
     (let [paths (berths/config-paths (module-loader/builtin-index))]
