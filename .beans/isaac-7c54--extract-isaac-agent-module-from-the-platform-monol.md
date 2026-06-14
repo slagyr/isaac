@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: high
 created_at: 2026-06-14T14:53:10Z
-updated_at: 2026-06-14T19:00:31Z
+updated_at: 2026-06-14T19:06:45Z
 ---
 
 Carve the agent turn-loop out of isaac/platform into a standalone
@@ -103,3 +103,7 @@ isaac-agent: spec 1151/0 + features 516/0 (72 @wip pending). Standalone green.
 - Last feature failure was a carve gap: AGENTS.md (read from user.dir by the 'load AGENTS.md from cwd' scenario) wasn't carried — added it.
 - Commits: isaac-agent 7c2249d, isaac cf6bc1ca.
 REMAINING: Phase 3 (flip platform to depend on isaac-agent + delete duplicate agent code); cross-repo contributor rename for discord/imessage/acp (isaac-m4bi).
+
+### CORRECTION to remaining-work framing (2026-06-14)
+WRONG above: 'Phase 3 flip platform to depend on isaac-agent'. The isaac repo ends with NO code — it empties into a brew-formula/module-registry host (foundation is the seed). The remaining code (hail, hooks, cron) extracts into its OWN repos (each depends on isaac-agent + foundation); the duplicate agent code in isaac just LEAVES as that happens. No 'flip'.
+LOOSE END (blocks isaac emptying): isaac-agent still depends on ../isaac/modules/{telly,kombucha,marigold} as test fixtures — telly+kombucha via the classpath dep (hence those 2 manifests kept renamed in isaac cf6bc1ca), marigold.bridge/longwave as code deps. When isaac has no code these vanish and agent tests break. Must FULLY vendor agent's test fixtures first (standalone fixture coordinate, or fix the vendored module deps.edn shape — naive static-vendoring double-loads telly and yields 25 failures). Track before isaac drains.
