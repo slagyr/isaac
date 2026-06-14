@@ -6,7 +6,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.runtime :as runtime]
     [isaac.reconfigurable :as reconfigurable]
     [isaac.fs :as fs]
@@ -155,7 +155,7 @@
   ([request]
    (handler (nexus/necho) request))
   ([runtime request]
-   (let [cfg          (config/snapshot "hook dispatch entry — ambient config for hook handler")
+   (let [cfg          (loader/snapshot "hook dispatch entry — ambient config for hook handler")
          root    (or (:root cfg) (:root runtime))
          name         (hook-name (:uri request))]
      (cond

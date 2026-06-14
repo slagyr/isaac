@@ -1,6 +1,6 @@
 (ns isaac.tool.fs-bounds-spec
   (:require
-    [isaac.config.api :as config-loader]
+    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
     [isaac.session.store.spi :as store]
@@ -32,7 +32,7 @@
           session-store (store/create nil :memory)]
       (store/open-session! session-store "chat-1" {:crew marigold/captain})
       (nexus/-with-nexus {:root "/test/runtime" :sessions {:store session-store} :fs mem}
-        (config-loader/dangerously-install-config! {:crew {marigold/captain {:tools {:directories []}}}} "spec")
+        (config/dangerously-install-config! {:crew {marigold/captain {:tools {:directories []}}}} "spec")
         (should= [(str "/test/runtime/crew/" marigold/captain)]
                  (sut/allowed-directories {"session_key" "chat-1"}))
         #_{:clj-kondo/ignore [:invalid-arity]}

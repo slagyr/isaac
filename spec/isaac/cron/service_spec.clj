@@ -3,7 +3,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.runtime :as runtime]
     [isaac.cron.service :as sut]
     [isaac.fs :as fs]
@@ -31,7 +31,7 @@
                                    (reset! started opts)
                                    ::runner)]
           (runtime/on-startup! module {"health-check" {:expr "0 9 * * *"}})
-          (should= {:cfg (or (config/snapshot "spec") {}) :root "/test/isaac"}
+          (should= {:cfg (or (loader/snapshot "spec") {}) :root "/test/isaac"}
                    @started))))
 
     (it "stops the old scheduler and restarts it when the slice changes"

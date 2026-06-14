@@ -4,7 +4,7 @@
     [clojure.pprint :as pprint]
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.hail.router :as router]
@@ -36,7 +36,7 @@
 
 (defn- runtime-root [opts]
   (or (:root opts)
-      (config/root)
+      (loader/root)
       (nexus/get :root)
       (throw (ex-info "hail delivery worker requires :root" {}))))
 
@@ -281,7 +281,7 @@
   ;; then threaded as a value into each in-flight delivery — we never write the
   ;; snapshot back.
   [{:keys [cfg session-store now] :as opts}]
-  (let [cfg           (or cfg (config/snapshot "hail delivery tick wake boundary — config may have changed") {})
+  (let [cfg           (or cfg (loader/snapshot "hail delivery tick wake boundary — config may have changed") {})
         root     (runtime-root opts)
         session-store (or session-store
                           (nexus/get-in [:sessions :store])

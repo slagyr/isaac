@@ -19,7 +19,7 @@
   (:require
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
-    [isaac.config.api :as config-loader]
+    [isaac.config.loader :as loader]
     [isaac.config.check-contributions :as check-contributions]
     [isaac.config.schema-compose :as schema-compose]
     [isaac.config.schema.root :as config-schema]
@@ -385,7 +385,7 @@
       (nexus/-with-nested-nexus {:fs mem}
         (binding [module-loader/*foundation-index-override* baseline-foundation-index]
           (reset! c3env/-overrides {})
-          (config-loader/clear-env-overrides!)
+          (loader/clear-env-overrides!)
           (schema-compose/clear-cache!)
           (example))))))
 
@@ -404,7 +404,7 @@
    ;; seam instead of trying to add an in-memory local/root to the real JVM classpath.
    (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _])
                  isaac.module.loader/manifest-resource local-module-manifest-path]
-     (config-loader/load-config-result (merge {:root root} opts)))))
+     (loader/load-config-result (merge {:root root} opts)))))
 
 (defn write-config!
   "Write isaac.edn at the Marigold home, replacing any prior contents."

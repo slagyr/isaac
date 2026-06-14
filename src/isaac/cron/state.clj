@@ -2,7 +2,7 @@
   (:require
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]))
 
 (defn- cron-state-path [root]
@@ -13,7 +13,7 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-root []
-  (or (config/root) (throw (ex-info "cron state requires :root" {}))))
+  (or (loader/root) (throw (ex-info "cron state requires :root" {}))))
 
 (defn- runtime-fs! []
   (or (fs/instance) (throw (ex-info "cron state requires :fs in system" {}))))

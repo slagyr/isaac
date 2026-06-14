@@ -6,7 +6,7 @@
     [isaac.charge :as charge]
     [isaac.comm.protocol :as comm]
     [isaac.bridge.prompt-cli :as sut]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.runtime :as runtime]
     [isaac.server.routes]
     [isaac.session.spec-helper :as helper]
@@ -96,8 +96,8 @@
   (describe "run"
 
     (before (reset! loader-stub {:config synthetic-config}))
-    (redefs-around [config/load-config!        (fn [& _] (:config @loader-stub))
-                    config/load-config-result  (fn [& _] @loader-stub)
+    (redefs-around [loader/load-config!        (fn [& _] (:config @loader-stub))
+                    loader/load-config-result  (fn [& _] @loader-stub)
                     runtime/install!           (fn [_] nil)
                     builtin/register-all!      (fn [] nil)
                     charge/build               fake-charge

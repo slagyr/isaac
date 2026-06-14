@@ -2,6 +2,7 @@
   (:require
     [isaac.cli.registry :as registry]
     [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
@@ -37,7 +38,7 @@
             (reset! started false))
     (redefs-around [sut/block! (fn [] nil)
                     app/start! (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
-                    config/load-config-result (fn [& _] @config-stub)])
+                    loader/load-config-result (fn [& _] @config-stub)])
 
     (describe "start-log-tail!"
 

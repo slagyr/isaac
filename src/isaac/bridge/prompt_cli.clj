@@ -8,7 +8,7 @@
     [isaac.charge :as charge]
     [isaac.cli.registry :as cli]
     [isaac.comm.protocol :as comm]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.root :as root]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
@@ -85,7 +85,7 @@
     (println message)))
 
 (defn- ensure-local-config! [opts]
-  (let [result (config/load-config-result {:root (root-of opts)
+  (let [result (loader/load-config-result {:root (root-of opts)
                                            :fs   (fs/instance)})]
     (when (:missing-config? result)
       (print-error! (get-in result [:errors 0 :value]))
@@ -98,7 +98,7 @@
     (if (= false (ensure-local-config! opts))
       1
       (let [root     (root-of opts)
-            cfg           (config/load-config! root (fs/instance) "prompt-cli")
+            cfg           (loader/load-config! root (fs/instance) "prompt-cli")
             _             (runtime/install! {:config cfg})
             session-store (store/registered-store)
             resumed-key   (when (:resume opts)

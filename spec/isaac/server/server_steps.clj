@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
     [isaac.foundation.fs-steps :as ffs]
@@ -74,7 +75,7 @@
 
 (defn- resolved-config-value [value]
   (if-let [[_ env-name] (re-matches #"\$\{([^}]+)\}" (str value))]
-    (or (config/env env-name) value)
+    (or (loader/env env-name) value)
     value))
 
 (defn- config-path [path]
@@ -197,7 +198,7 @@
   (str (g/get :root) "/config/isaac.edn"))
 
 (defn- load-server-config [root fs*]
-  (let [load!       #(:config (config/load-config-result {:root root :fs fs*}))
+  (let [load!       #(:config (loader/load-config-result {:root root :fs fs*}))
         entity-dir? #(with-server-fs
                        (fn []
                          (seq (fs/children fs* (str root "/config/" %)))))
@@ -339,7 +340,7 @@
         run-server?    (not (false? (g/get :bind-server-port?)))
         start-opts     {:cfg                  server-config
                          :config-change-source config-source
-                         :dev                  (= "true" (config/env "ISAAC_DEV"))
+                         :dev                  (= "true" (loader/env "ISAAC_DEV"))
                          :fs                   (server-fs)
                          :host                 (:host cfg)
                          ;; Explicit :server :port in the scenario's config is honored;
@@ -362,14 +363,14 @@
 ;; region ----- Server Commands -----
 
 (defn- run-cli-with-stubbed-config!
-  "Runs `argv` through isaac.main with config/load-config-result stubbed to
+  "Runs `argv` through isaac.main with loader/load-config-result stubbed to
    the current :server-config bean and block! no-op'd, then stops the
    server. Stops any prior server first so consecutive scenarios don't
    collide on the same port."
   [argv]
   (let [cfg (or (g/get :server-config) {})]
     (with-redefs [server/block!             (fn [] nil)
-                  config/load-config-result (fn [& _] {:config cfg})]
+                  loader/load-config-result (fn [& _] {:config cfg})]
       (with-out-str
         (app/stop!)
         (main/run argv))))
@@ -381,7 +382,7 @@
 (defn server-command-run-no-port []
   (let [cfg (or (g/get :server-config) {})]
     (with-redefs [server/block!             (fn [] nil)
-                  config/load-config-result (fn [& _] {:config cfg})
+                  loader/load-config-result (fn [& _] {:config cfg})
                   httpkit/run-server        (fn [_handler opts] (atom (:port opts)))
                   httpkit/server-port       (fn [s] (or @s 0))
                   httpkit/server-stop!      (fn [_s] nil)]
@@ -728,7 +729,7 @@
   (g/should (some (fn [entry] (= :config/reloaded (:event entry))) (log/get-entries))))
 
 (defn available-slash-commands-include [table]
-  (let [commands (slash-registry/all-commands (:module-index (or (config/snapshot "spec") {})))
+  (let [commands (slash-registry/all-commands (:module-index (or (loader/snapshot "spec") {})))
         headers  (:headers table)]
     (doseq [row (:rows table)]
       (let [expected (zipmap headers row)
@@ -775,7 +776,7 @@
 (defgiven "the Isaac server is started" isaac.server.server-steps/server-running
   "Stops any prior server, then starts one against :root / :root.
    Merges in-memory :server-config and :provider-configs over whatever
-   config/load-config-result returns from disk. When mem-fs is active,
+   loader/load-config-result returns from disk. When mem-fs is active,
    wires a synchronous memory change-source so hot-reload scenarios fire
    deterministically from test writes.")
 
@@ -785,7 +786,7 @@
 
 (defwhen "the server command is run on port {port:int}" isaac.server.server-steps/server-command-run
   "Runs 'isaac server --port N' with server/block! stubbed to no-op and
-   config/load-config-result stubbed to {:config <feature server-config>}.
+   loader/load-config-result stubbed to {:config <feature server-config>}.
    Immediately stops the server after the run returns — use for testing
    startup flags/logging only.")
 

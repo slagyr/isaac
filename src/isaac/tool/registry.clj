@@ -1,6 +1,6 @@
 (ns isaac.tool.registry
   (:require
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
@@ -111,7 +111,7 @@
                                  (get arguments :session_key))))
 
 (defn- snapshot-caps []
-  (let [cfg (or (config/snapshot "tool output caps — ambient fallback when caller passes no caps") {})]
+  (let [cfg (or (loader/snapshot "tool output caps — ambient fallback when caller passes no caps") {})]
     {:max-lines (get-in cfg [:tools :defaults :max-lines])
      :max-bytes (get-in cfg [:tools :defaults :max-bytes])}))
 

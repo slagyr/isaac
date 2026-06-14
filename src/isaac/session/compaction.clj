@@ -1,7 +1,7 @@
 (ns isaac.session.compaction
   (:require
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.llm.api.protocol :as llm]
     [isaac.logger :as log]
     [isaac.session.context :as session-ctx]
@@ -265,7 +265,7 @@
         :compaction-llm-done - optional promise delivered after LLM call completes
         :splice-ready - optional promise waited on before performing the splice"
   [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock root session-store]}]
-  (let [root      (or root (config/root))
+  (let [root      (or root (loader/root))
         session-store  (or session-store (nexus/get-in [:sessions :store]))
         ctx            {:root root :session-store session-store}
         behavior       (session-ctx/resolve-behavior key-str {:context-window context-window})

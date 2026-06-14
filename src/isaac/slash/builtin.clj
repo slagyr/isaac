@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.bridge.status :as status]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.effort :as effort]
      [isaac.fs :as fs]
      [isaac.config.root :as root]
@@ -73,7 +73,7 @@
          :message (str "unknown crew: " args)}))))
 
 (defn- resolve-cwd-path [ctx path]
-  (let [root (or (get-in ctx [:config :root]) (:root ctx) (config/root))]
+  (let [root (or (get-in ctx [:config :root]) (:root ctx) (loader/root))]
     (cond
       (str/starts-with? path "/") path
       (str/starts-with? path "~/") (str (root/user-home) (subs path 1))

@@ -1,6 +1,6 @@
 (ns isaac.slash.builtin-spec
   (:require
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.config.root :as root]
@@ -37,7 +37,7 @@
                (#'sut/resolve-cwd-path {:root test-dir} "workspace")))
 
     (it "throws for relative paths without root"
-      (with-redefs [config/root (fn [] nil)
+      (with-redefs [loader/root (fn [] nil)
                     nexus/get        (fn [_] nil)]
         (should-throw clojure.lang.ExceptionInfo
                       "cwd command requires :root for relative paths"

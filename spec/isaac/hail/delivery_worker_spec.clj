@@ -3,6 +3,7 @@
     [isaac.charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.drive.turn]
     [isaac.fs :as fs]
     [isaac.hail.delivery-worker :as sut]
@@ -28,7 +29,7 @@
 
 (defn- setup-runtime [example]
   (let [session-store (memory-store/create-store "/test/isaac")
-        cfg          (config/normalize-config test-config)]
+        cfg          (loader/normalize-config test-config)]
     (nexus/-with-nexus {:fs        (fs/mem-fs)
                         :config    (atom cfg)
                         :root "/test/isaac"
@@ -121,7 +122,7 @@
     (let [session-store (nexus/get-in [:sessions :store])
           cfg           (-> test-config
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
-                            config/normalize-config)]
+                            loader/normalize-config)]
       (config/dangerously-install-config! cfg "spec")
       (write-delivery! {:id       "delivery-1"
                         :hail     {:id "hail-1"
@@ -145,7 +146,7 @@
     (let [session-store (nexus/get-in [:sessions :store])
           cfg           (-> test-config
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
-                            config/normalize-config)]
+                            loader/normalize-config)]
       (config/dangerously-install-config! cfg "spec")
       (store/open-session! session-store "coil-work" {:crew "bartholomew" :tags #{:project/warp-coil}})
       (should= {:crew :bartholomew :session :coil-work}
@@ -168,7 +169,7 @@
           cfg           (-> test-config
                             (assoc-in [:crew "atticus" :tags] #{:role/engineer})
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
-                            config/normalize-config)]
+                            loader/normalize-config)]
       (config/dangerously-install-config! cfg "spec")
       (should= {:action :spawn :crew-id "atticus"}
                (#'sut/spawn-target
@@ -188,7 +189,7 @@
           cfg           (-> test-config
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             (assoc-in [:crew "bartholomew" :max-in-flight] 2)
-                            config/normalize-config)]
+                            loader/normalize-config)]
       (config/dangerously-install-config! cfg "spec")
       (store/open-session! session-store "coil-work" {:crew "bartholomew" :tags #{:project/warp-coil}})
       (store/mark-in-flight! session-store "coil-work")
@@ -213,7 +214,7 @@
                             (assoc-in [:crew "atticus" :max-in-flight] 1)
                             (assoc-in [:crew "bartholomew" :tags] #{:role/engineer})
                             (assoc-in [:crew "bartholomew" :max-in-flight] 1)
-                            config/normalize-config)]
+                            loader/normalize-config)]
       (config/dangerously-install-config! cfg "spec")
       (store/open-session! session-store "atticus-busy" {:crew "atticus"})
       (store/open-session! session-store "bart-busy" {:crew "bartholomew"})
@@ -254,7 +255,7 @@
   (it "leaves a delivery pending when its crew is at capacity"
     (let [session-store (nexus/get-in [:sessions :store])
           cfg           (assoc-in test-config [:crew "bartholomew" :max-in-flight] 1)
-          cfg           (config/normalize-config cfg)]
+          cfg           (loader/normalize-config cfg)]
       (config/dangerously-install-config! cfg "spec")
       (store/open-session! session-store "engine-room" {:crew "bartholomew"})
       (store/open-session! session-store "warp-core" {:crew "bartholomew"})

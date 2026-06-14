@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.fs :as fs]
     [isaac.session.context :as session-ctx]
@@ -51,7 +51,7 @@
        (let [agents (or (not-empty crew) (not-empty agents))
              cfg    (if agents
                        (build-synthetic-cfg agents models)
-                       (:config (config/load-config-result {:root root :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
+                       (:config (loader/load-config-result {:root root :fs (or (g/get :mem-fs) (nexus/get :fs) (fs/real-fs))})))
              ctx    (resolve/resolve-crew-context cfg crew-id)]
          (assoc ctx :boot-files (session-ctx/read-boot-files nil))))))
 

@@ -3,7 +3,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
@@ -38,7 +38,7 @@
 (defn root [args]
   (let [args (string-key-map args)]
     (or (get args "state_dir")
-        (config/root))))
+        (loader/root))))
 
 (defn session-store [args]
   (let [args      (string-key-map args)
@@ -102,7 +102,7 @@
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters root crew-id)
               _           (fs/mkdirs fs* quarters)
-              cfg         (config/snapshot "tool fs-bounds: crew tool directories")
+              cfg         (loader/snapshot "tool fs-bounds: crew tool directories")
               directories (or (get-in cfg [:crew crew-id :tools :directories]) [])]
           (vec (concat [quarters]
                        (keep (fn [directory]

@@ -1,7 +1,7 @@
 (ns isaac.prompt.catalog-steps
   (:require
     [gherclj.core :as g :refer [defthen defwhen helper!]]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
     [isaac.prompt.catalog :as catalog]
@@ -19,7 +19,7 @@
       (fs/real-fs)))
 
 (defn- current-config []
-  (:config (config/load-config-result {:root (root)
+  (:config (loader/load-config-result {:root (root)
                                        :fs        (feature-fs)})))
 
 (defn- session-cwd [session-key]

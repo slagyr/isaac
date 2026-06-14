@@ -10,6 +10,7 @@
     [isaac.cli.table :as table]
     [isaac.config.nav :as nav]
     [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.root :as root]
     [isaac.config.runtime :as runtime]
     [isaac.fs :as fs]
@@ -161,7 +162,7 @@
 ;; region ----- Output -----
 
 (defn- resolve-context-window [cfg crew-id]
-  (let [cfg       (config/normalize-config cfg)
+  (let [cfg       (loader/normalize-config cfg)
         crew      (get-in cfg [:crew crew-id])
         model-id  (or (:model crew) (get-in cfg [:defaults :model]))
         model-cfg (get-in cfg [:models model-id])]
@@ -201,7 +202,7 @@
    session store + tree). Returns {:config :root :store}."
   [opts]
   (let [root  (resolve-root opts)
-        loaded-cfg (config/load-config! root (fs/instance) "session cli command")]
+        loaded-cfg (loader/load-config! root (fs/instance) "session cli command")]
     (runtime/install! {:config loaded-cfg})
     {:config loaded-cfg :root root :store (store/registered-store)}))
 
@@ -335,7 +336,7 @@
           (println "--in-flight and --not-in-flight are mutually exclusive"))
         1)
       (if (and crew-filter
-               (not (contains? (:crew (config/normalize-config cfg)) crew-filter)))
+               (not (contains? (:crew (loader/normalize-config cfg)) crew-filter)))
         (do
           (binding [*out* *err*]
             (println (str "unknown crew: " crew-filter)))

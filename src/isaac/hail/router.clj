@@ -3,7 +3,7 @@
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
     [clojure.set :as set]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.crew.store :as crew-store]
     [isaac.fs :as fs]
     [isaac.naming :as naming]
@@ -18,7 +18,7 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-root []
-  (or (config/root) (throw (ex-info "hail router requires :root" {}))))
+  (or (loader/root) (throw (ex-info "hail router requires :root" {}))))
 
 (defn- filesystem []
   (or (fs/instance) (throw (ex-info "hail.router requires :fs in system" {}))))
@@ -237,7 +237,7 @@
 
 (defn tick!
   [{:keys [cfg root] :as opts}]
-  (let [cfg            (or cfg (config/snapshot "hail router tick wake boundary — config may have changed") {})
+  (let [cfg            (or cfg (loader/snapshot "hail router tick wake boundary — config may have changed") {})
         root      (or root (runtime-root))
         fs*            (filesystem)
         session-store* (or (:session-store opts)

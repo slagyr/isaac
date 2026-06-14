@@ -4,7 +4,7 @@
     [isaac.bridge.status :as status]
     [isaac.charge :as charge]
     [isaac.comm.protocol :as comm]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -75,7 +75,7 @@
 (defn- ensure-session! [request]
   (let [session-key    (:session-key request)
         session-store* (or (:session-store request) (nexus/get-in [:sessions :store]))
-        cfg            (or (when (map? (:config request)) (:config request)) (config/snapshot "turn dispatch entry — falls back to ambient config when charge carries none") {})
+        cfg            (or (when (map? (:config request)) (:config request)) (loader/snapshot "turn dispatch entry — falls back to ambient config when charge carries none") {})
         crew-id        (or (:crew request) (get-in cfg [:defaults :crew]) "main")
         crew-cfg       (get (:crew cfg) crew-id)
         resolved-cwd   (resolve-session-cwd (:cwd request) crew-cfg nil)]

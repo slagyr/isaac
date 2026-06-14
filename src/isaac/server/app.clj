@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
     [isaac.cron.service :as cron-service]
@@ -30,7 +31,7 @@
   (some? @state))
 
 (defn current-config []
-  (config/snapshot "server/current-config accessor"))
+  (loader/snapshot "server/current-config accessor"))
 
 (defn registries []
   [hail-bands/registry
@@ -56,7 +57,7 @@
   (let [reload! (bound-fn [path]
                   (runtime/reload! {:root     root
                                    :fs            (fs/instance)
-                                   :old-config    (config/snapshot "reload: previous config for the reconcile diff")
+                                   :old-config    (loader/snapshot "reload: previous config for the reconcile diff")
                                    :comm-registry comm-registry
                                    :registries    registries
                                    :host          host
@@ -81,7 +82,7 @@
   (cond-> (dissoc opts :home)
     config-home (assoc :home config-home)
     root   (assoc :root root)
-    true        (assoc :cfg-fn (fn [] (config/snapshot "http handler: ambient config")))))
+    true        (assoc :cfg-fn (fn [] (loader/snapshot "http handler: ambient config")))))
 
 (defn- start-http-server [dev? start-http-server? handler-opts port host]
   (let [handler (when start-http-server?
@@ -134,7 +135,7 @@
   (let [root          (:root opts)
         fs                 (or (fs/instance opts) (fs/real-fs))
         load-result        (when (and (not (:cfg opts)) root)
-                             (config/load-config-result {:root root :fs fs}))
+                             (loader/load-config-result {:root root :fs fs}))
         cfg                (cond-> (or (:cfg opts) (:config load-result) {})
                              root (assoc :root root))
         comm-registry      @comm-registry/*registry*
@@ -175,7 +176,7 @@
             ;; isaac-8yxs: per-entry berth :factory invocation. Runs
             ;; here (after config commit, before module on-startup) so
             ;; the berth registrations are in the nexus by the time
-            ;; modules boot. Must run OUTSIDE config/load-config-result's
+            ;; modules boot. Must run OUTSIDE loader/load-config-result's
             ;; nested-nexus wrap — that wrap restores the prior nexus
             ;; state on exit, which would discard the factories' writes.
             ;;
@@ -209,7 +210,7 @@
     (when scheduler
       (scheduler-core/shutdown! scheduler))
     (when registries
-      (let [cfg (config/snapshot "shutdown: current config for teardown reconcile")]
+      (let [cfg (loader/snapshot "shutdown: current config for teardown reconcile")]
         (runtime/reconcile! host-ctx cfg nil registries)
         (runtime/install-config-berths! {:config     nil
                                          :old-config cfg

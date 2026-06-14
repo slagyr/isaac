@@ -6,7 +6,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.step-tables :as match]
     [isaac.fs :as isaac-fs]
     [isaac.session.session-steps :as session-steps]
@@ -168,7 +168,7 @@
 (defn- feature-config-snapshot [_reason]
   (let [base (when-let [dir (root)]
                (with-feature-fs
-                 #(:config (config/load-config-result {:root dir
+                 #(:config (loader/load-config-result {:root dir
                                                        :fs (or (g/get :mem-fs) (nexus/get :fs) (isaac-fs/real-fs))}))))]
     (cond-> (or base {})
       (g/get :web-search-config) (assoc-in [:tools :web_search] (g/get :web-search-config)))))
@@ -355,7 +355,7 @@
                 (fn []
                   (with-current-time
                     (fn []
-                      (with-redefs [config/snapshot feature-config-snapshot]
+                      (with-redefs [loader/snapshot feature-config-snapshot]
                         (registry/execute name args)))))))))))))
 
 (defn- session-store []

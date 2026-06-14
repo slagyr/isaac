@@ -5,7 +5,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.common :as cli-common]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.root :as root]
     [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
@@ -44,12 +44,12 @@
         fs*           (or (fs/instance opts) (fs/real-fs))
         ;; CLIs load config at their entry point (never reload — that's a
         ;; server-only concern); app/start! resolves port/host and commits it.
-        loaded-config (:config (config/load-config-result {:root root-dir :fs fs*}))
+        loaded-config (:config (loader/load-config-result {:root root-dir :fs fs*}))
         ;; dev mode is an environment/launch concern, not config: --dev overrides,
         ;; otherwise the ISAAC_DEV env var.
         dev?          (if (contains? opts :dev)
                         (boolean (:dev opts))
-                        (= "true" (config/env "ISAAC_DEV")))]
+                        (= "true" (loader/env "ISAAC_DEV")))]
     (when logs
       (when-let [abs-path (start-log-tail! (log/log-file) root-dir opts)]
         (log/set-log-file! abs-path)

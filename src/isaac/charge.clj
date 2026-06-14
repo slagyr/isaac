@@ -3,7 +3,7 @@
   (:require
     [clojure.string :as str]
     [isaac.bridge.cancellation :as cancellation]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.llm.provider :as llm-provider]
     [isaac.nexus :as nexus]
@@ -110,7 +110,7 @@
    keyword."
   [{:keys [session-key input comm crew config model model-ref model-override model-cfg
            provider provider-cfg context-window soul soul-prepend guidance origin dispatch-error]}]
-  (let [config*         (or (when (map? config) config) (config/snapshot "charge build fallback — no :config passed (entry seed)") {})
+  (let [config*         (or (when (map? config) config) (loader/snapshot "charge build fallback — no :config passed (entry seed)") {})
         ss*             (store/registered-store)
         session-entry   (when (and ss* session-key (satisfies? store/SessionStore ss*))
                           (store/get-session ss* session-key))

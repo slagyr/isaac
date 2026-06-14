@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
     [isaac.foundation.root-steps :as froot]
@@ -107,7 +108,7 @@
   []
   (when-let [root (root-dir)]
     (config/dangerously-install-config!
-      (:config (config/load-config-result {:root root :fs (mem-fs)}))
+      (:config (loader/load-config-result {:root root :fs (mem-fs)}))
       "feature: session behavior config")))
 
 (defn- invalidate-feature-config! []
@@ -201,7 +202,7 @@
 (defn- loaded-config []
   (or (g/get :feature-config)
       (let [fs*         (mem-fs)
-            load!       #(with-feature-fs (fn [] (:config (config/load-config-result {:root (root-dir) :fs fs*}))))
+            load!       #(with-feature-fs (fn [] (:config (loader/load-config-result {:root (root-dir) :fs fs*}))))
             entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (root-dir) "/config/" %)))))
             cfg         (load!)
             cfg         (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
@@ -807,7 +808,7 @@
   (grover/clear-provider-requests!)
   (isaac.llm.http/clear-outbound-requests!)
   (drive-dispatch/clear-last-request!)
-  (let [cfg           (config/normalize-config (loaded-config))
+  (let [cfg           (loader/normalize-config (loaded-config))
         _             (config/dangerously-install-config! cfg "spec")
         agent-cfg     (current-agent-config)
         model-cfg     (current-model-config)

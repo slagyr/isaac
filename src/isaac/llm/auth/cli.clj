@@ -4,7 +4,7 @@
     [isaac.cli.api :as cli-api]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.llm.auth.device-code :as device-code]
     [isaac.llm.auth.store :as auth-store]
@@ -21,7 +21,7 @@
     (if (str/blank? key)
       (do (println "Error: API key is required")
           1)
-      (let [sdir (or (:root (config/load-config! (root/current-root) (fs/instance) "auth cli: key login"))
+      (let [sdir (or (:root (loader/load-config! (root/current-root) (fs/instance) "auth cli: key login"))
                      (root/current-root))]
         (auth-store/save-api-key! sdir provider-name key (fs/instance))
         (println (str "Authenticated with " provider-name " via API key"))
@@ -111,7 +111,7 @@
 ;; region ----- Status -----
 
 (defn- status [_opts]
-  (let [cfg (config/load-config! (root/current-root) (fs/instance) "auth cli: status")]
+  (let [cfg (loader/load-config! (root/current-root) (fs/instance) "auth cli: status")]
     (println "Provider status:")
     (doseq [[name p] (or (seq (:providers cfg)) [["ollama" {}]])]
       (case name

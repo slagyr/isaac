@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.effort :as effort]
     [isaac.fs :as fs]
@@ -64,7 +64,7 @@
 
 (defn- effective-config [passed-config]
   (or passed-config
-      (config/snapshot "session behavior resolution — ambient fallback when caller passes no :config")
+      (loader/snapshot "session behavior resolution — ambient fallback when caller passes no :config")
       {}))
 
 (defn- default-cwd [root crew-id]
@@ -146,9 +146,9 @@
    (resolve-behavior session-key {}))
   ([session-key overrides]
    (let [passed-config  (:config overrides)
-         root      (or (:root overrides) (:root passed-config) (config/root))
+         root      (or (:root overrides) (:root passed-config) (loader/root))
          session-store* (session-store (:session-store overrides))
-         cfg            (config/normalize-config (effective-config passed-config))
+         cfg            (loader/normalize-config (effective-config passed-config))
          session-entry  (merge (or (some-> session-store* (store/get-session session-key) (ensure-session-nonce session-store*)) {})
                                (select-keys overrides behavioral-keys))
          behavior       (resolve-behavior* cfg root session-entry)]
@@ -164,8 +164,8 @@
 (defn create-with-resolved-behavior!
   [session-key opts]
   (let [passed-config (:config opts)
-        root (or (:root opts) (:root passed-config) (config/root))
-        cfg       (config/normalize-config (effective-config passed-config))
+        root (or (:root opts) (:root passed-config) (loader/root))
+        cfg       (loader/normalize-config (effective-config passed-config))
         behavior  (resolve-behavior* cfg root (select-keys opts behavioral-keys))
         store     (require-session-store (:session-store opts))]
    ;; bind the known crew set for the schema's crew validation on the writes below

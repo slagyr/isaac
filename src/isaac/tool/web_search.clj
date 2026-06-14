@@ -4,13 +4,13 @@
     [babashka.http-client :as http]
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.tool.fs-bounds :as bounds]))
 
 (def ^:private brave-search-endpoint "https://api.search.brave.com/res/v1/web/search")
 
 (defn- web-search-config [_args]
-  (get-in (config/snapshot "tool web-search: settings") [:tools :web_search]))
+  (get-in (loader/snapshot "tool web-search: settings") [:tools :web_search]))
 
 (defn- web-search-api-key [args]
   (:api-key (web-search-config args)))

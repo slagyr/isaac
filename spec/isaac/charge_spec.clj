@@ -1,7 +1,7 @@
 (ns isaac.charge-spec
   (:require
     [isaac.charge :as sut]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.marigold :as marigold]
     [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]
@@ -100,12 +100,12 @@
   (describe "build"
 
     (it "stamps :charge/type on the returned map"
-      (with-redefs [config/snapshot             (fn [_] base-cfg)
+      (with-redefs [loader/snapshot             (fn [_] base-cfg)
                     session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are Atticus." test-model-id 4096))]
         (should (sut/charge? (sut/build {:session-key "s1" :input "hi"})))))
 
     (it "builds a resolved charge from session-key and input"
-      (with-redefs [config/snapshot             (fn [_] base-cfg)
+      (with-redefs [loader/snapshot             (fn [_] base-cfg)
                     session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are Atticus." test-model-id 4096))]
         (let [ch     stub-comm
               charge (sut/build {:session-key "s1" :input "hello there" :comm ch})]
@@ -120,7 +120,7 @@
           (should= 4096 (:context-window charge)))))
 
     (it "preserves explicit guidance alongside origin"
-      (with-redefs [config/snapshot              (fn [_] base-cfg)
+      (with-redefs [loader/snapshot              (fn [_] base-cfg)
                     session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are Atticus." test-model-id 4096))]
         (let [charge (sut/build {:session-key "s1"
                                  :input       "hello there"
@@ -131,7 +131,7 @@
 
     (it "uses explicit crew override when provided"
       (let [first-mate-model marigold/starcore-7]
-        (with-redefs [config/snapshot             (fn [_] {:defaults {:crew "main"}
+        (with-redefs [loader/snapshot             (fn [_] {:defaults {:crew "main"}
                                                          :crew     {"main"                 (crew-cfg marigold/captain test-model-id "Main bridge orders")
                                                                     marigold/first-mate (crew-cfg marigold/first-mate first-mate-model "Cordelia has the watch")}
                                                          :models   {test-model-id      (model-cfg test-model-id 4096)
@@ -144,7 +144,7 @@
             (should= first-mate-model (:model charge))))))
 
     (it "appends soul-prepend when provided"
-      (with-redefs [config/snapshot             (fn [_] {:defaults {:crew "main"}
+      (with-redefs [loader/snapshot             (fn [_] {:defaults {:crew "main"}
                                                          :crew     {"main" (crew-cfg marigold/captain test-model-id "Base.")}
                                                          :models   {test-model-id (model-cfg test-model-id 4096)}})
                     session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "Base." test-model-id 4096))]
@@ -153,7 +153,7 @@
 
     (it "forwards crew and model overrides to resolve-behavior"
       (let [seen (atom nil)]
-        (with-redefs [config/snapshot             (fn [_] {:defaults  {:crew "main"}
+        (with-redefs [loader/snapshot             (fn [_] {:defaults  {:crew "main"}
                                                          :crew      {"main" (crew-cfg marigold/captain test-model-id "Base.")}
                                                          :models    {test-model-id (model-cfg test-model-id 4096)}
                                                          :root "/tmp/isaac/.isaac"})
@@ -169,7 +169,7 @@
             (should= "/tmp/isaac/.isaac" (get-in @seen [:config :root]))))))
 
     (it "returns an unresolved charge with :no-model when no model is configured"
-      (with-redefs [config/snapshot             (fn [_] {:defaults {:crew "main"}
+      (with-redefs [loader/snapshot             (fn [_] {:defaults {:crew "main"}
                                                          :crew     {"main" {:soul "You are Atticus."}}})
                     session-ctx/resolve-behavior (fn [_ _] {:crew "main" :soul "You are Atticus."})]
         (let [charge (sut/build {:session-key "s1" :input "hi"})]

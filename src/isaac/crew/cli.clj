@@ -5,7 +5,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as cli]
     [isaac.cli.common :as cli-common]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.root :as root]
     [isaac.crew.store :as store]
     [isaac.fs :as fs]))
@@ -46,8 +46,8 @@
         root (derive-root opts)
         cfg       (if crew
                     (cli-common/build-cfg crew models)
-                    (config/load-config! root (fs/instance) "crew cli"))
-        cfg       (config/normalize-config cfg)
+                    (loader/load-config! root (fs/instance) "crew cli"))
+        cfg       (loader/normalize-config cfg)
         crew-map  (cond-> (:crew cfg)
                     (not (contains? (:crew cfg) "main")) (assoc "main" {}))]
     (map (fn [[crew-id crew-member]]

@@ -4,7 +4,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.reconfigurable :as reconfigurable]
     [isaac.scheduler.cron :as cron]
      [isaac.cron.state :as state]
@@ -31,7 +31,7 @@
   (on-startup! [_ slice]
     (reset! config* (or slice {}))
     (when (seq slice)
-      (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :root root}))))
+      (reset! runner* (start! {:cfg (or (loader/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :root root}))))
   (on-config-change! [_ _old-slice new-slice]
     (when (not= @config* (or new-slice {}))
       (when-let [runner @runner*]
@@ -39,7 +39,7 @@
       (reset! runner* nil)
       (reset! config* (or new-slice {}))
       (when (seq new-slice)
-        (reset! runner* (start! {:cfg (or (config/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :root root})))))
+        (reset! runner* (start! {:cfg (or (loader/snapshot "cron reconcile lifecycle — ambient config at boundary") {}) :root root})))))
   Object
   (toString [_] "CronModule"))
 
@@ -122,7 +122,7 @@
 
 (defn start! [{:keys [cfg root session-store tick-ms]
                  :or   {tick-ms default-tick-ms}}]
-  (let [root        (or root (config/root))
+  (let [root        (or root (loader/root))
         session-store    (or session-store (nexus/get-in [:sessions :store]))
         shared-scheduler (or (nexus/get :scheduler)
                              (throw (ex-info "cron scheduler requires :scheduler in isaac.nexus" {})))

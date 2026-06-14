@@ -4,7 +4,7 @@
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -102,7 +102,7 @@
 
 (defn effective-config [passed-config]
   (or passed-config
-      (config/snapshot "session store config — ambient fallback when caller passes no :config")
+      (loader/snapshot "session store config — ambient fallback when caller passes no :config")
       {}))
 
 (defn resolve-history-retention [opts]

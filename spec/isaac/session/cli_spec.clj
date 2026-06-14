@@ -1,7 +1,6 @@
 (ns isaac.session.cli-spec
   (:require
     [cheshire.core :as json]
-    [isaac.config.api :as config]
     [isaac.fs :as fs]
     [isaac.tool.memory :as memory]
     [isaac.session.cli :as sut]

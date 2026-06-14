@@ -3,7 +3,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.bridge.prompt-cli :as sut]
     [isaac.comm.protocol :as comm]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.drive.turn :as single-turn]
     [isaac.marigold :as marigold]
     [isaac.server.routes]
@@ -26,8 +26,8 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example] (helper/with-memory-store (example)))
 
-  (redefs-around [config/load-config!       (fn [& _] synthetic-config)
-                  config/load-config-result (fn [& _] {:config synthetic-config})])
+  (redefs-around [loader/load-config!       (fn [& _] synthetic-config)
+                  loader/load-config-result (fn [& _] {:config synthetic-config})])
 
   (it "creates prompt sessions with a cli origin"
     (with-redefs [single-turn/run-turn! (fn [charge]

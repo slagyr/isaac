@@ -1,7 +1,7 @@
 ;; mutation-tested: pending
 (ns isaac.prompt.catalog-spec
   (:require
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.nexus :as nexus]
@@ -326,7 +326,7 @@
   (it "preserves prompt catalog config keys when config is loaded"
     (write-config-file! "config/isaac.edn"
                         "{:prompt-paths [\"config/prompts\"] :prompt-dir-names {\"abilities\" \"skill\"}}")
-    (let [config (:config (config/load-config-result {:root root
+    (let [config (:config (loader/load-config-result {:root root
                                                       :fs        (nexus/get :fs)}))]
       (should= ["config/prompts"] (:prompt-paths config))
       (should= {"abilities" "skill"} (:prompt-dir-names config)))))

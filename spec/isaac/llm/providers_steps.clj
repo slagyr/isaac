@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.step-tables :as match]
     [isaac.session.session-steps :as session-steps]
     [isaac.fs :as fs]
@@ -35,7 +35,7 @@
 
 (defn- resolve-env-value [value]
   (if (string? value)
-    (str/replace value #"\$\{([^}]+)\}" (fn [[_ var-name]] (or (config/env var-name) "")))
+    (str/replace value #"\$\{([^}]+)\}" (fn [[_ var-name]] (or (loader/env var-name) "")))
     value))
 
 (defn- missing-auth-hint [provider]

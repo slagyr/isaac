@@ -3,7 +3,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.session.store.spi :as store]
     [isaac.tool.fs-bounds :as bounds]))
 
@@ -53,7 +53,7 @@
          session     (store/get-session (bounds/session-store args) session-key)]
     (if (nil? session)
       {:isError true :error (str "session not found: " session-key)}
-      (let [cfg      (config/snapshot "session_info tool: model/crew resolution")
+      (let [cfg      (loader/snapshot "session_info tool: model/crew resolution")
             crew-id  (or (:crew session) "main")
             crew-cfg (or (get-in cfg [:crew crew-id]) {})
             defaults (:defaults cfg)]
@@ -77,7 +77,7 @@
             session       (store/get-session session-store session-key)]
         (if (nil? session)
           {:isError true :error (str "session not found: " session-key)}
-          (let [cfg        (config/snapshot "session_model tool: model/crew resolution")
+          (let [cfg        (loader/snapshot "session_model tool: model/crew resolution")
                 crew-id    (or (:crew session) "main")
                 crew-cfg   (or (get-in cfg [:crew crew-id]) {})
                 defaults   (:defaults cfg)

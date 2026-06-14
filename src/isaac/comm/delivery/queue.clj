@@ -3,7 +3,7 @@
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.tool.memory :as memory])
   (:import
@@ -14,7 +14,7 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-root []
-  (or (config/root) (throw (ex-info "delivery queue requires :root" {}))))
+  (or (loader/root) (throw (ex-info "delivery queue requires :root" {}))))
 
 (defn- filesystem []
   (or (fs/instance) (throw (ex-info "comm.delivery.queue requires :fs in system" {}))))

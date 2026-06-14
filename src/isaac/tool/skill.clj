@@ -1,6 +1,6 @@
 (ns isaac.tool.skill
   (:require
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.prompt.catalog :as prompt-catalog]
     [isaac.session.store.spi :as store]
     [isaac.tool.fs-bounds :as bounds]))
@@ -16,7 +16,7 @@
   {:isError true :error (str "session not found: " session-key)})
 
 (defn- catalog-opts [args]
-  (let [cfg     (or (config/snapshot "skill tools: prompt catalog resolution") {})
+  (let [cfg     (or (loader/snapshot "skill tools: prompt catalog resolution") {})
         session (session-entry args)]
     {:config    cfg
      :cwd       (:cwd session)

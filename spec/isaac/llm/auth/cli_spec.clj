@@ -6,7 +6,7 @@
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.auth.cli :as sut]
     [isaac.cli.registry :as registry]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
     [speclj.core :refer :all]))
@@ -158,15 +158,15 @@
             (should= {:help false} @captured))))
 
       (it "returns 0"
-        (with-redefs [config/load-config! (fn [& _] {:providers {"ollama" {}}})]
+        (with-redefs [loader/load-config! (fn [& _] {:providers {"ollama" {}}})]
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic not authenticated"
-        (with-redefs [config/load-config! (fn [& _] {:providers {"anthropic" {}}})]
+        (with-redefs [loader/load-config! (fn [& _] {:providers {"anthropic" {}}})]
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic api-key auth"
-        (with-redefs [config/load-config! (fn [& _] {:providers {"anthropic" {:api-key "sk-123"}}})]
+        (with-redefs [loader/load-config! (fn [& _] {:providers {"anthropic" {:api-key "sk-123"}}})]
           (should= 0 (sut/run ["status"])))))
 
     (describe "logout"
@@ -203,7 +203,7 @@
     (it "dispatches login with --api-key flag"
       (let [saved (atom nil)]
         (with-redefs [read-line                (fn [] "sk-test-key-123")
-                      config/load-config!        (fn [& _] {:root "target/test-auth"})
+                      loader/load-config!        (fn [& _] {:root "target/test-auth"})
                       auth-store/save-api-key! (fn [dir provider key _fs]
                                                  (reset! saved [dir provider key]))]
           (should= 0 (sut/run ["login" "--provider" "anthropic" "--api-key"]))

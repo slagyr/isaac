@@ -2,7 +2,7 @@
   (:require
     [clojure.edn :as edn]
     [clojure.pprint :as pprint]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.naming :as naming]
     [isaac.tool.memory :as memory]))
@@ -12,7 +12,7 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-root []
-  (or (config/root) (throw (ex-info "hail queue requires :root" {}))))
+  (or (loader/root) (throw (ex-info "hail queue requires :root" {}))))
 
 (defn- filesystem []
   (or (fs/instance) (throw (ex-info "hail.queue requires :fs in system" {}))))

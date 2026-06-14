@@ -3,7 +3,7 @@
    foundation scaffolding (logs/config/await) stays free of session.store
    requires. These move with the session/server code at extraction time."
   (:require
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.session.store.spi :as store]
     [isaac.session.store.sidecar :as sidecar-store]
@@ -22,7 +22,7 @@
   ;; (e.g., a real-fs from app/start! → nexus/init!). Outer fixtures that
   ;; need a specific fs should install it inside the body, not rely on
   ;; with-memory-store inheriting it.
-  `(let [mem-store# (memory/create-store (config/root))]
+  `(let [mem-store# (memory/create-store (loader/root))]
      (nexus/-with-nested-nexus {:fs       (fs/mem-fs)
                                  :sessions {:store mem-store#}}
        (binding [*session-store* (store/registered-store)]

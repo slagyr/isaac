@@ -1,6 +1,6 @@
 (ns isaac.slash.registry
   (:require
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.nexus :as nexus]
@@ -61,11 +61,11 @@
 (defn- prompt-catalog-opts [opts]
   (let [root (or (:root opts)
                       (nexus/get :root)
-                      (config/root))
+                      (loader/root))
         fs*       (or (:fs opts) (nexus/get :fs))]
     (when (and root fs*)
       {:config    (or (:config opts)
-                      (config/snapshot "slash command advertisement resolves prompt-template commands"))
+                      (loader/snapshot "slash command advertisement resolves prompt-template commands"))
        :cwd       (:cwd opts)
        :fs        fs*
        :root root})))

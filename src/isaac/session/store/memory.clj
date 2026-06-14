@@ -1,7 +1,7 @@
 (ns isaac.session.store.memory
   (:require
     [clojure.string :as str]
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.logger :as log]
     [isaac.naming :as naming]
@@ -28,7 +28,7 @@
 
 (defn- effective-config [passed-config]
   (or passed-config
-      (config/snapshot "session store config — ambient fallback when caller passes no :config")
+      (loader/snapshot "session store config — ambient fallback when caller passes no :config")
       {}))
 
 ;; endregion

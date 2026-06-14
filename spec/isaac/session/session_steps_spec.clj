@@ -1,6 +1,6 @@
 (ns isaac.session.session-steps-spec
   (:require
-    [isaac.config.api :as config]
+    [isaac.config.loader :as loader]
     [gherclj.core :as g]
     [isaac.foundation.fs-steps :as ffs]
     [isaac.fs :as fs]
@@ -38,7 +38,7 @@
                   :providers {}}]
       (g/assoc! :root "/target/test-state")
       (g/assoc! :mem-fs (nexus/get :fs))
-      (with-redefs [config/load-config-result (fn [_]
+      (with-redefs [loader/load-config-result (fn [_]
                                                 (swap! loads* inc)
                                                 {:config cfg})]
         (should= cfg (#'sut/loaded-config))

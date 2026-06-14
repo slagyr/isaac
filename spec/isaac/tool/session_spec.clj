@@ -2,7 +2,6 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.config.api :as config]
     [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
     [isaac.session.spec-helper :as store-helper]
