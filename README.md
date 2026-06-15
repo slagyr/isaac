@@ -1,6 +1,10 @@
+<img align="left" width="200" src="https://raw.githubusercontent.com/slagyr/isaac/master/isaac.png" alt="isaac" style="margin-right: 20px; margin-bottom: 10px;">
+
 # Isaac
 
 [![CI Tests](https://github.com/slagyr/isaac/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac/actions/workflows/ci-tests.yml)
+
+<br clear="left">
 
 Isaac is a Clojure-based agent system for running crew-configured assistants
 with tools, sessions, config-driven behavior, and multiple interaction
