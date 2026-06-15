@@ -4,8 +4,10 @@ title: Migrate config/hail_loader_spec to isaac-hail
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T16:20:01Z
-updated_at: 2026-06-15T16:32:50Z
+updated_at: 2026-06-15T16:35:50Z
 ---
 
 Restore the dropped isaac.config.hail-loader-spec (3 examples) into isaac-hail.
