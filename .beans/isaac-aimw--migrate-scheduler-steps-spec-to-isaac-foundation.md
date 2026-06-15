@@ -1,11 +1,11 @@
 ---
 # isaac-aimw
 title: Migrate scheduler_steps_spec to isaac-foundation
-status: todo
+status: in-progress
 type: task
 priority: low
 created_at: 2026-06-15T16:20:01Z
-updated_at: 2026-06-15T16:20:01Z
+updated_at: 2026-06-15T16:24:03Z
 ---
 
 Restore the dropped isaac.scheduler-steps-spec (1 example) into isaac-foundation.
