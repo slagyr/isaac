@@ -1,11 +1,11 @@
 ---
 # isaac-shnq
 title: Restore module extension-kind features into isaac-agent
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-15T16:52:43Z
-updated_at: 2026-06-15T17:03:15Z
+updated_at: 2026-06-15T17:09:39Z
 ---
 
 Five baseline features/module/ files testing module EXTENSION KINDS, whose berths are agent-tier.
