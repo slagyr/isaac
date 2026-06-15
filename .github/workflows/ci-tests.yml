@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local/bin/rg
-          key: ripgrep-14.1.0-${{ runner.os }}
+          key: ripgrep-14.1.0-gnu-${{ runner.os }}
 
       - name: Install ripgrep
         if: steps.cache-rg.outputs.cache-hit != 'true'
@@ -68,11 +68,19 @@ jobs:
       - name: Run bb ci
         run: |
           set -o pipefail
-          bb ci 2>&1 | tee /tmp/isaac-ci.log
-          r=${PIPESTATUS[0]}
-          if [ "$r" -ne 0 ]; then
-            echo "::group::CI failure tail"
-            tail -200 /tmp/isaac-ci.log
+          for attempt in 1 2; do
+            echo "::group::bb ci attempt ${attempt}"
+            if bb ci 2>&1 | tee /tmp/isaac-ci.log; then
+              echo "::endgroup::"
+              exit 0
+            fi
             echo "::endgroup::"
-          fi
-          exit "$r"
+            echo "attempt ${attempt} failed"
+            if [ "$attempt" -lt 2 ]; then
+              bb clean || true
+            fi
+          done
+          echo "::group::CI failure tail"
+          tail -200 /tmp/isaac-ci.log
+          echo "::endgroup::"
+          exit 1
