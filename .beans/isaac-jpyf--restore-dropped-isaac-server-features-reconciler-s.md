@@ -1,12 +1,11 @@
 ---
 # isaac-jpyf
 title: 'Restore dropped isaac-server features: reconciler + service'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags: [unverified]
 created_at: 2026-06-15T16:52:43Z
-updated_at: 2026-06-15T17:20:00Z
+updated_at: 2026-06-15T19:00:06Z
 ---
 
 Two baseline feature files dropped during extraction; both belong in isaac-server (pair with already-landed
