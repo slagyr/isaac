@@ -1,11 +1,11 @@
 ---
 # isaac-p5v2
 title: 'Composed-root config-schema: fold into foundation schema_compose_spec; park real-fragment smoke'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-15T16:18:04Z
-updated_at: 2026-06-15T16:47:59Z
+updated_at: 2026-06-15T16:49:19Z
 ---
 
 The 3 composed-root assertions left over from the schema_spec decomposition do NOT need a host/assembly
