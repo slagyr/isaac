@@ -1,13 +1,11 @@
 ---
 # isaac-kbzd
 title: 'iiga(2): Service primitive + :isaac.server/service berth'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-15T22:18:06Z
+updated_at: 2026-06-15T22:51:15Z
 ---
 
 Child of epic isaac-iiga. The new server-only turn-on primitive.
