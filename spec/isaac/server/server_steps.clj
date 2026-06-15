@@ -234,8 +234,6 @@
 (defn stop-server! []
   (app/stop!))
 
-(g/after-scenario stop-server!)
-
 (defn configure [table]
   (doseq [[k v] (config-rows table)]
     (if (= "log.output" k)

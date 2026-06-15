@@ -65,12 +65,32 @@ jobs:
       - name: Prepare isolated home
         run: mkdir -p /tmp/isaac-ci-home
 
+      - name: Verify ripgrep
+        run: rg --version
+
       - name: Run bb ci
         run: |
           set -o pipefail
+          run_once () {
+            bb spec 2>&1 | tee /tmp/isaac-spec.log
+            r=${PIPESTATUS[0]}
+            if [ "$r" -ne 0 ]; then
+              echo "::error::bb spec failed (exit $r)"
+              tail -80 /tmp/isaac-spec.log
+              return "$r"
+            fi
+            bb features 2>&1 | tee /tmp/isaac-features.log
+            r=${PIPESTATUS[0]}
+            if [ "$r" -ne 0 ]; then
+              echo "::error::bb features failed (exit $r)"
+              grep -E "^(Failures:|Finished|[0-9]+\\) )" /tmp/isaac-features.log | tail -40
+              return "$r"
+            fi
+            return 0
+          }
           for attempt in 1 2; do
             echo "::group::bb ci attempt ${attempt}"
-            if bb ci 2>&1 | tee /tmp/isaac-ci.log; then
+            if run_once; then
               echo "::endgroup::"
               exit 0
             fi
@@ -80,7 +100,4 @@ jobs:
               bb clean || true
             fi
           done
-          echo "::group::CI failure tail"
-          tail -200 /tmp/isaac-ci.log
-          echo "::endgroup::"
           exit 1

@@ -111,8 +111,6 @@
   (nexus/reset!)
   (log/clear-entries!))
 
-(g/after-scenario stop-scheduler!)
-
 (defn- advance-clock! [duration]
   (when-let [clock* (g/get :scheduler-clock*)]
     (swap! clock* #(.plusMillis ^Instant % (parse-duration-ms duration)))))
