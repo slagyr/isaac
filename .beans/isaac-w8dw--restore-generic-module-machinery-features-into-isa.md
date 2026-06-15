@@ -1,11 +1,11 @@
 ---
 # isaac-w8dw
 title: Restore generic module-machinery features into isaac-foundation
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-15T17:03:15Z
-updated_at: 2026-06-15T17:03:15Z
+updated_at: 2026-06-15T17:18:52Z
 ---
 
 Two baseline features/module/ files testing the GENERIC module machinery (not a specific extension kind).
