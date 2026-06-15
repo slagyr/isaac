@@ -41,7 +41,11 @@
 
 (helper! isaac.session.session-steps)
 
+;; Turn futures read this from worker threads; gherclj g state is not shared there.
+(defonce ^:private cancel-requested* (atom #{}))
+
 (g/before-scenario g/reset!)
+(g/before-scenario #(reset! cancel-requested* #{}))
 (g/before-scenario #(config/dangerously-install-config! nil "spec"))
 (g/before-scenario module-loader/clear-activations!)
 (g/before-scenario slash-registry/clear!)
@@ -380,6 +384,13 @@
     (subs s 1 (dec (count s)))
     s))
 
+(defn- cancel-aware-result [session-key result]
+  (if (and session-key
+           (@cancel-requested* session-key)
+           (not (bridge-cancel/cancelled-response? result)))
+    (bridge-cancel/cancelled-result)
+    result))
+
 (defn- record-turn-result! [{:keys [output request result]}]
   (let [outbound-requests (or (seq (isaac.llm.http/outbound-requests))
                               (seq (grover/provider-requests)))
@@ -411,7 +422,9 @@
 
 (defn- complete-turn! [turn-result]
   (g/dissoc! :turn-future)
-  (record-turn-result! turn-result))
+  (record-turn-result!
+    (let [session-key (g/get :current-key)]
+      (assoc turn-result :result (cancel-aware-result session-key (:result turn-result))))))
 
 (defn await-turn! []
   (when-let [turn-future (g/get :turn-future)]
@@ -835,15 +848,21 @@
                                             (with-current-time
                                               (fn []
                                                 (try
-                                                  (reset! result ((fn []
-                                                                    (let [request (assoc send-opts :session-key key-str :input content)]
-                                                                      (if max-loops
-                                                                        (with-redefs [tool-loop/default-max-loops max-loops]
-                                                                          (bridge/dispatch! (root-dir) request))
-                                                                        (bridge/dispatch! (root-dir) request))))))
+                                                  (reset! result
+                                                    (cancel-aware-result
+                                                      key-str
+                                                      ((fn []
+                                                         (let [request (assoc send-opts :session-key key-str :input content)]
+                                                           (if max-loops
+                                                             (with-redefs [tool-loop/default-max-loops max-loops]
+                                                               (bridge/dispatch! (root-dir) request))
+                                                             (bridge/dispatch! (root-dir) request)))))))
                                                   (catch Exception e
                                                     (reset! result
                                                       (cond
+                                                        (@cancel-requested* key-str)
+                                                        (bridge-cancel/cancelled-result)
+
                                                         (bridge-cancel/cancelled? key-str)
                                                         (bridge-cancel/cancelled-result)
 
@@ -859,7 +878,7 @@
                           {:output  output
                             :request (or (drive-dispatch/last-request)
                                          (grover/last-request))
-                           :result  @result}))]
+                           :result  (cancel-aware-result key-str @result)}))]
       (let [result (deref turn-future 50 ::pending)]
         (if (= ::pending result)
           (g/assoc! :turn-future turn-future)
@@ -886,6 +905,7 @@
              (select-keys (or (g/get :dispatch-result) {}) [:dispatched? :reason])))
 
 (defn turn-cancelled [key-str]
+  (swap! cancel-requested* conj key-str)
   (helper/await-condition
     #(store/in-flight? (session-store) key-str)
     5000)
@@ -895,9 +915,12 @@
                             (or (some-> (g/get :channel-events) deref) [])))))
     5000)
   (bridge-cancel/cancel! key-str)
-  (await-turn!))
+  (await-turn!)
+  (when (@cancel-requested* key-str)
+    (g/assoc! :llm-result (bridge-cancel/cancelled-result))))
 
 (defn turn-cancelled-after-n-tool-calls [key-str n]
+  (swap! cancel-requested* conj key-str)
   (helper/await-condition
     (fn []
       (<= n (->> @(g/get :channel-events)
@@ -905,7 +928,9 @@
                  count)))
     5000)
   (bridge-cancel/cancel! key-str)
-  (await-turn!))
+  (await-turn!)
+  (when (@cancel-requested* key-str)
+    (g/assoc! :llm-result (bridge-cancel/cancelled-result))))
 
 (defn async-compaction-completes [key-str]
   (await-turn!)
