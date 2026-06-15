@@ -1,13 +1,11 @@
 ---
 # isaac-5kn9
 title: 'Restore dropped foundation config features: root_pointer + berth_lifecycle'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T16:52:43Z
-updated_at: 2026-06-15T17:13:27Z
+updated_at: 2026-06-15T17:16:35Z
 ---
 
 Two foundation-owned feature files dropped. Restore into isaac-foundation with step-defs + helpers, remove @wip.
