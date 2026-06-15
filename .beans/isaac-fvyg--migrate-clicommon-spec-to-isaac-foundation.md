@@ -1,11 +1,13 @@
 ---
 # isaac-fvyg
 title: Migrate cli/common_spec to isaac-foundation
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T16:20:01Z
-updated_at: 2026-06-15T16:20:01Z
+updated_at: 2026-06-15T16:24:16Z
 ---
 
 Restore the dropped isaac.cli.common-spec (2 examples) into isaac-foundation.
