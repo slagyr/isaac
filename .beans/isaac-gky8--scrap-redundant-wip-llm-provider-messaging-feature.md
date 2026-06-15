@@ -1,11 +1,11 @@
 ---
 # isaac-gky8
 title: Scrap redundant @wip LLM provider messaging features
-status: todo
+status: in-progress
 type: task
 priority: low
 created_at: 2026-06-15T22:48:48Z
-updated_at: 2026-06-15T22:48:48Z
+updated_at: 2026-06-15T22:52:26Z
 ---
 
 The 4 whole-file @wip provider *_messaging features have dangled @wip since before the extraction (confirmed
