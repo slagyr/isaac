@@ -4,8 +4,10 @@ title: Restore dropped scheduler features into isaac-foundation
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T16:52:43Z
-updated_at: 2026-06-15T16:58:00Z
+updated_at: 2026-06-15T16:58:47Z
 ---
 
 Three scheduler feature files dropped. Scheduler machinery is foundation (src/isaac/scheduler/{runtime,cron}.clj),
@@ -19,3 +21,12 @@ Baseline (@ 09795481):
 Target: isaac-foundation/features/scheduler/...
 
 Acceptance: all three green under bb features, no @wip/pending, real behavior (no faked steps)."
+
+
+
+## Implemented
+
+Repo: isaac-foundation
+Files: features/scheduler/{policies,registry,triggers}.feature, spec/isaac/scheduler_steps.clj (full server-free step defs)
+Verify: `cd isaac-foundation && git pull --rebase && bb features features/scheduler/`
+Result: 16 scheduler scenarios green (72 total features). Full CI: spec 735/0, features 72/0. No @wip.
