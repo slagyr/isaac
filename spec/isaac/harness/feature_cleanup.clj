@@ -1,11 +1,11 @@
-(ns isaac.harness.cleanup-steps
-  "Terminal feature lifecycle hook. Loaded after all other step namespaces
-   so after-scenario teardown runs last (stop-server/scheduler first)."
+(ns isaac.harness.feature-cleanup
+  "Terminal feature lifecycle hook. Loaded explicitly after isaac.**-steps
+   glob resolution so runtime teardown always runs last."
   (:require
     [gherclj.core :as g :refer [helper!]]
     [isaac.foundation.cli-steps :as fcli]))
 
-(helper! isaac.harness.cleanup-steps)
+(helper! isaac.harness.feature-cleanup)
 
 (defn- after-scenario-cleanup! []
   (when-let [f (g/get :isaac-background-future)]

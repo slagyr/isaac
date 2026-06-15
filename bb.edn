@@ -58,7 +58,7 @@
                              (apply main/-main
                                (concat ["-f" "features"]
                                        ["-s" "isaac.**-steps"
-                                        "-s" "isaac.harness.cleanup-steps"
+                                        "-s" "isaac.harness.feature-cleanup"
                                         "-t" "~slow" "-t" "~wip"]
                                        *command-line-args*)))}
 
