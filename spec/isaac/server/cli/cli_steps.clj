@@ -41,6 +41,7 @@
     (f)))
 
 (defn isaac-run-background [args]
+  (fcli/ensure-cli-run-root!)
   (let [argv          (fcli/parse-argv args)
          root-dir      (g/get :root)
          extra-opts    (cond-> {}

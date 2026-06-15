@@ -8,6 +8,7 @@
     [isaac.config.loader :as loader]
     [isaac.config.resolve :as resolve]
     [isaac.config.runtime :as runtime]
+    [isaac.foundation.cli-steps :as fcli]
     [isaac.foundation.fs-steps :as ffs]
     [isaac.server.cli :as server]
     [isaac.hail.delivery-worker :as hail-delivery-worker]
@@ -368,19 +369,32 @@
    server. Stops any prior server first so consecutive scenarios don't
    collide on the same port."
   [argv]
-  (let [cfg (or (g/get :server-config) {})]
+  (fcli/ensure-cli-run-root!)
+  (let [cfg      (or (g/get :server-config) {})
+        mem-fs   (g/get :mem-fs)
+        root-dir (g/get :root)
+        run-opts (cond-> {:fs mem-fs}
+                   root-dir (assoc :root root-dir))]
     (with-redefs [server/block!             (fn [] nil)
                   loader/load-config-result (fn [& _] {:config cfg})]
       (with-out-str
         (app/stop!)
-        (main/run argv))))
-  (app/stop!))
+        (nexus/-with-nested-nexus {:fs mem-fs}
+          (binding [main/*extra-opts* run-opts]
+            (main/run argv))))))
+  (app/stop!)
+  (fcli/teardown-isaac-run-runtime!))
 
 (defn server-command-run [port]
   (run-cli-with-stubbed-config! ["server" "--port" (str port)]))
 
 (defn server-command-run-no-port []
-  (let [cfg (or (g/get :server-config) {})]
+  (fcli/ensure-cli-run-root!)
+  (let [cfg      (or (g/get :server-config) {})
+        mem-fs   (g/get :mem-fs)
+        root-dir (g/get :root)
+        run-opts (cond-> {:fs mem-fs}
+                   root-dir (assoc :root root-dir))]
     (with-redefs [server/block!             (fn [] nil)
                   loader/load-config-result (fn [& _] {:config cfg})
                   httpkit/run-server        (fn [_handler opts] (atom (:port opts)))
@@ -388,8 +402,11 @@
                   httpkit/server-stop!      (fn [_s] nil)]
       (with-out-str
         (app/stop!)
-        (main/run ["server"]))
-      (app/stop!))))
+        (nexus/-with-nested-nexus {:fs mem-fs}
+          (binding [main/*extra-opts* run-opts]
+            (main/run ["server"]))))
+      (app/stop!)
+      (fcli/teardown-isaac-run-runtime!))))
 
 (defn server-command-run-with-args [args]
   (let [arg-parts (remove str/blank? (str/split args #"\s+" 2))]
