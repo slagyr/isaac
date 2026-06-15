@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-06-15T16:52:43Z
-updated_at: 2026-06-15T17:19:53Z
+updated_at: 2026-06-15T18:55:05Z
 ---
 
 Five baseline features/module/ files testing module EXTENSION KINDS, whose berths are agent-tier.
@@ -26,3 +26,12 @@ integration, no host.
 
 Acceptance: each feature green under isaac-agent bb features, no @wip/pending, real berth machinery + real
 fixture modules (no faked steps)."
+
+
+## Added: activation.feature (re-homed from isaac-w8dw)
+Baseline features/module/activation.feature ("Module activation") — tests server-side LAZY activation:
+module activated on first use of a capability, asserting :module/activated + :telly/started for a user comm
+module (isaac.comm.telly), via the :comms table. Belongs here, NOT foundation: agent owns the comm berth,
+isaac.comm.telly, comm/registry (slot-tree), and the lazy module-loader/activate! call in comm/factory.clj.
+Verified: this behavior has ZERO coverage in server/agent/acp today — a real gap, restore it (don't scrap).
+Exercise via agent's marigold comm fixtures + the real comm slot-tree at runtime start.
