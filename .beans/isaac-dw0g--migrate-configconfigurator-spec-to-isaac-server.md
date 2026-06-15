@@ -1,11 +1,13 @@
 ---
 # isaac-dw0g
 title: Migrate config/configurator_spec to isaac-server
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T16:47:59Z
-updated_at: 2026-06-15T16:47:59Z
+updated_at: 2026-06-15T16:55:00Z
 ---
 
 Restore the dropped isaac.config.configurator-spec (6 examples) into isaac-server. It (:require
@@ -22,4 +24,12 @@ Porting notes:
 - Port to current behavior; flag real regressions, don't paper over.
 
 Acceptance (gate): bb spec -> file (it)==executed, 0 failures, SCRAP zero '(it) inside (it)', 6 faithful,
-exercising the real configurator against server.app (no fakes)."
+exercising the real configurator against server.app (no fakes).
+
+## Implemented
+
+Repo: isaac-server @ c68f272
+File: spec/isaac/config/configurator_spec.clj (ns isaac.config.configurator-spec)
+Fixture: test-resources/isaac-manifest.edn — agent-owned :crew/:models/:providers schema fragments with :snapshot-only? true (server classpath lacks isaac-agent manifest; fixture supplies the ownership contract without faking reconcile behavior)
+Verify: `cd isaac-server && git pull --rebase && bb spec spec/isaac/config/configurator_spec.clj`
+Result: 6 examples, 0 failures, 11 assertions. Full server suite: spec 117/0. Faithful port from isaac@09795481; component reconciliation exercises real configurator + nexus; schema ownership uses real app/registries and berths/config-paths.
