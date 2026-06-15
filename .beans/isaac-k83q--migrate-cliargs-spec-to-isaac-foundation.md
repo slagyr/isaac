@@ -1,11 +1,11 @@
 ---
 # isaac-k83q
 title: Migrate cli/args_spec to isaac-foundation
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-15T16:20:01Z
-updated_at: 2026-06-15T16:20:01Z
+updated_at: 2026-06-15T16:24:38Z
 ---
 
 Restore the dropped isaac.cli.args-spec (3 examples) into isaac-foundation.
