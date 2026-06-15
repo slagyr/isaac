@@ -4,8 +4,10 @@ title: Migrate cli/args_spec to isaac-foundation
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T16:20:01Z
-updated_at: 2026-06-15T16:24:38Z
+updated_at: 2026-06-15T16:26:02Z
 ---
 
 Restore the dropped isaac.cli.args-spec (3 examples) into isaac-foundation.
@@ -20,3 +22,11 @@ source bugs, don't paper over). Foundation-owned root-flag parsing — should be
 
 Acceptance (gate): bb spec -> file (it)==executed (no dead examples), 0 failures, SCRAP
 structure-errors has zero '(it) inside (it)', assertions faithful to baseline (3 examples).
+
+
+## Implemented
+
+Repo: isaac-foundation @ 4b71cf2
+File: spec/isaac/cli/args_spec.clj (ns isaac.cli.args-spec)
+Verify: cd isaac-foundation && bb spec spec/isaac/cli/args_spec.clj
+Result: 3 examples, 0 failures, 3 assertions. Full foundation suite: spec 733/0, features 56/0. SCRAP: no (it)-in-(it) structure errors. Faithful port from isaac@09795481; behavior matches src/isaac/cli/args.clj. Spec-only.
