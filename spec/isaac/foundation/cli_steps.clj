@@ -15,6 +15,9 @@
     [isaac.fs :as fs]
     [isaac.main :as main]
     [isaac.config.root :as root]
+    [isaac.cli.registry :as cli-registry]
+    [isaac.config.schema-compose :as schema-compose]
+    [isaac.module.loader :as module-loader]
     [isaac.spec-helper :as helper]
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
@@ -63,6 +66,30 @@
 
 (defn- apply-run-wrappers [thunk]
   (reduce (fn [t wrap] (fn [] (wrap t))) thunk @isaac-run-wrappers*))
+
+(def ^:private isolated-cli-root "/isaac-cli-test")
+
+(defn ensure-cli-run-root!
+  "When a scenario has not set :root / :mem-fs, pin main/run to a virtual
+   mem-fs root so help/usage-style `isaac is run with` steps do not discover
+   the host's real Isaac config (ISAAC_ROOT, ~/.isaac.edn, etc.) and poison
+   later feature scenarios."
+  []
+  (when (and (not (g/get :root)) (not (g/get :mem-fs)))
+    (let [mem (fs/mem-fs)]
+      (fs/mkdirs mem isolated-cli-root)
+      (g/assoc! :mem-fs mem)
+      (g/assoc! :root isolated-cli-root))))
+
+(defn teardown-isaac-run-runtime!
+  "Undo global side effects from main/run (module discover, berth processing,
+   nexus slots) so the next feature scenario starts from a clean runtime."
+  []
+  (nexus/reset!)
+  (schema-compose/clear-cache!)
+  (module-loader/clear-activations!)
+  (cli-registry/clear-berth-commands!)
+  (cli-registry/clear-module-commands!))
 
 (defn- interpolate-args [args]
   (cond-> args
@@ -232,6 +259,7 @@
               (recur (or rest-s "") (conj tokens tok)))))))))
 
 (defn isaac-run [args]
+  (ensure-cli-run-root!)
   (doseq [preflight @isaac-run-preflights*] (preflight))
   (let [argv             (parse-argv args)
         api-key-login?   (and (= "auth" (first argv))
@@ -283,7 +311,8 @@
         (run-with-stdin)))
     (g/assoc! :output (str output-writer))
     (g/assoc! :stderr (str error-writer))
-    (doseq [postflight @isaac-run-postflights*] (postflight))))
+    (doseq [postflight @isaac-run-postflights*] (postflight))
+    (teardown-isaac-run-runtime!)))
 
 (defn user-home-directory [path]
   (let [home (if (str/starts-with? path "/")
