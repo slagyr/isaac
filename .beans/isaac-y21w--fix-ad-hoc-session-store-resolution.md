@@ -1,13 +1,11 @@
 ---
 # isaac-y21w
 title: Fix ad-hoc session store resolution
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T19:13:10Z
-updated_at: 2026-05-23T19:32:57Z
+updated_at: 2026-06-15T16:56:27Z
 ---
 
 resolve-store and charge/build both silently create ephemeral stores when no :session-store is in context. Remove those fallbacks: resolve-store should require :session-store or throw; charge/build should use session-store as-is (nil is fine). api.clj and bridge/status.clj state-dir arities should call store/create directly.

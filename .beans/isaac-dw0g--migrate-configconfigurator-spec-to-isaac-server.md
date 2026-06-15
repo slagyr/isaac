@@ -1,13 +1,11 @@
 ---
 # isaac-dw0g
 title: Migrate config/configurator_spec to isaac-server
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T16:47:59Z
-updated_at: 2026-06-15T16:55:00Z
+updated_at: 2026-06-15T16:56:26Z
 ---
 
 Restore the dropped isaac.config.configurator-spec (6 examples) into isaac-server. It (:require
