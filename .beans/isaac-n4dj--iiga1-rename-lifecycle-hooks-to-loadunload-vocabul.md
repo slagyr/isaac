@@ -1,11 +1,11 @@
 ---
 # isaac-n4dj
 title: 'iiga(1): rename lifecycle hooks to load/unload vocabulary'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-15T21:31:34Z
+updated_at: 2026-06-15T21:34:09Z
 ---
 
 Child of epic isaac-iiga. Pure vocabulary/structure change — no behavior change; the resource-open split
