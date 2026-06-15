@@ -1,11 +1,11 @@
 ---
 # isaac-ktvs
 title: Migrate config/berths_spec to isaac-foundation
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-15T16:47:59Z
-updated_at: 2026-06-15T16:47:59Z
+updated_at: 2026-06-15T16:49:13Z
 ---
 
 Restore the dropped isaac.config.berths-spec (12 examples) into isaac-foundation. NOT host-side —
