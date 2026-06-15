@@ -1,13 +1,11 @@
 ---
 # isaac-zlfp
 title: Canonicalize isaac.session.store.spi (dedup agent/server divergence)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T22:21:05Z
-updated_at: 2026-06-15T22:56:16Z
+updated_at: 2026-06-15T23:04:51Z
 ---
 
 acp off-monolith prereq. acp will depend on isaac-agent + isaac-server (foundation transitive); it requires
