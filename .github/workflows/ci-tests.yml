@@ -66,4 +66,13 @@ jobs:
         run: mkdir -p /tmp/isaac-ci-home
 
       - name: Run bb ci
-        run: bb ci
+        run: |
+          set -o pipefail
+          bb ci 2>&1 | tee /tmp/isaac-ci.log
+          r=${PIPESTATUS[0]}
+          if [ "$r" -ne 0 ]; then
+            echo "::group::CI failure tail"
+            tail -200 /tmp/isaac-ci.log
+            echo "::endgroup::"
+          fi
+          exit "$r"
