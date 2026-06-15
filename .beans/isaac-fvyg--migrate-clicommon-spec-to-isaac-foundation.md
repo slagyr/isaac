@@ -4,8 +4,10 @@ title: Migrate cli/common_spec to isaac-foundation
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T16:20:01Z
-updated_at: 2026-06-15T16:27:11Z
+updated_at: 2026-06-15T16:35:00Z
 ---
 
 Restore the dropped isaac.cli.common-spec (2 examples) into isaac-foundation.
@@ -18,7 +20,13 @@ Covers:   render-json — renders sets as sorted JSON arrays; prints rendered JS
 Note: the stdout test must wrap output (with-out-str) to keep test output clean.
 Acceptance (gate): file(it)==executed, 0 failures, zero '(it) inside (it)', 2 examples faithful.
 
+## Implemented
 
+Repo: isaac-foundation @ b102173 (on `main` as of 4b71cf2)
+File: spec/isaac/cli/common_spec.clj (ns isaac.cli.common-spec)
+Verify: `cd isaac-foundation && git pull --rebase && bb spec spec/isaac/cli/common_spec.clj`
+Proof: `git rev-parse --verify origin/main^{tree}:spec/isaac/cli/common_spec.clj` succeeds on slagyr/isaac-foundation
+Result: 2 examples, 0 failures, 2 assertions. Full foundation suite: spec 733/0. SCRAP: STABLE, no (it)-in-(it) structure errors. Faithful port from isaac@09795481.
 
 ## Verification failed
 
