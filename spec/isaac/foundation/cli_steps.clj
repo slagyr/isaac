@@ -92,8 +92,6 @@
   (cli-registry/clear-berth-commands!)
   (cli-registry/clear-module-commands!))
 
-(g/after-scenario teardown-isaac-run-runtime!)
-
 (defn- interpolate-args [args]
   (cond-> args
           (g/get :server-port) (str/replace "${server.port}" (str (g/get :server-port)))
