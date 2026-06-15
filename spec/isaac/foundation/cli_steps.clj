@@ -73,9 +73,10 @@
   "When a scenario has not set :root / :mem-fs, pin main/run to a virtual
    mem-fs root so help/usage-style `isaac is run with` steps do not discover
    the host's real Isaac config (ISAAC_ROOT, ~/.isaac.edn, etc.) and poison
-   later feature scenarios."
+   later feature scenarios. Skipped when :user-home is set — init and
+   root-pointer scenarios lay out real paths under a test home directory."
   []
-  (when (and (not (g/get :root)) (not (g/get :mem-fs)))
+  (when (and (not (g/get :root)) (not (g/get :mem-fs)) (not (g/get :user-home)))
     (let [mem (fs/mem-fs)]
       (fs/mkdirs mem isolated-cli-root)
       (g/assoc! :mem-fs mem)
