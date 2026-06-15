@@ -1,13 +1,11 @@
 ---
 # isaac-kjjp
 title: Restore activation.feature (lazy module activation) into isaac-agent
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T20:41:04Z
-updated_at: 2026-06-15T21:11:36Z
+updated_at: 2026-06-15T21:21:36Z
 ---
 
 Baseline features/module/activation.feature @ 09795481 ("Module activation") — server-side LAZY activation:
