@@ -2,7 +2,7 @@
 
 ### Isaac
 
-AI assistent modular foundation.
+AI assistent foundation.
 
 [![CI Tests](https://github.com/slagyr/isaac/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac/actions/workflows/ci-tests.yml)
 
