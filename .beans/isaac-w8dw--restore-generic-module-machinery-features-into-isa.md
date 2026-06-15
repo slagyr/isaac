@@ -1,13 +1,11 @@
 ---
 # isaac-w8dw
 title: Restore schema_composition feature into isaac-foundation
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T17:03:15Z
-updated_at: 2026-06-15T19:02:19Z
+updated_at: 2026-06-15T19:08:32Z
 ---
 
 Restore baseline features/module/schema_composition.feature ("Module schema composition") into isaac-foundation.
