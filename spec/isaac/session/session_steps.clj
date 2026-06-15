@@ -842,7 +842,20 @@
                                                                           (bridge/dispatch! (root-dir) request))
                                                                         (bridge/dispatch! (root-dir) request))))))
                                                   (catch Exception e
-                                                    (reset! result {:error :exception :message (.getMessage e)}))))))))]
+                                                    (reset! result
+                                                      (cond
+                                                        (bridge-cancel/cancelled? key-str)
+                                                        (bridge-cancel/cancelled-result)
+
+                                                        (= :cancelled (:type (ex-data e)))
+                                                        (bridge-cancel/cancelled-result)
+
+                                                        (= "cancelled" (.getMessage e))
+                                                        (bridge-cancel/cancelled-result)
+
+                                                        :else
+                                                        {:error :exception
+                                                         :message (.getMessage e)})))))))))]
                           {:output  output
                             :request (or (drive-dispatch/last-request)
                                          (grover/last-request))
@@ -873,6 +886,14 @@
              (select-keys (or (g/get :dispatch-result) {}) [:dispatched? :reason])))
 
 (defn turn-cancelled [key-str]
+  (helper/await-condition
+    #(store/in-flight? (session-store) key-str)
+    5000)
+  (helper/await-condition
+    (fn []
+      (pos? (count (filter (fn [e] (= "tool-call" (:event e)))
+                            (or (some-> (g/get :channel-events) deref) [])))))
+    5000)
   (bridge-cancel/cancel! key-str)
   (await-turn!))
 

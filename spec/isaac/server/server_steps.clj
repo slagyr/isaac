@@ -539,10 +539,11 @@
 (defn- invoke-scheduled-cron-tasks! [scheduler now]
   (doseq [{:keys [handler trigger]} (scheduler-core/list-tasks scheduler)]
     (let [zone         (java.time.ZoneId/of (or (:zone trigger) (str (.getZone now))))
-          scheduled-at (cron/previous-fire-at (:expr trigger) now zone)]
+          scheduled-at (cron/previous-fire-at (:expr trigger) now zone)
+          run-handler  (nexus/bound-runtime-fn handler)]
       (when scheduled-at
-        (handler {:scheduled-at (.toInstant scheduled-at)
-                  :now          (.toInstant now)})))))
+        (run-handler {:scheduled-at (.toInstant scheduled-at)
+                      :now          (.toInstant now)})))))
 
 (defn scheduler-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
