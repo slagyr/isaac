@@ -52,20 +52,25 @@
     (g/assoc! :live-output-writer output-writer)
     (g/assoc! :live-error-writer error-writer)
     (future
-       (let [run! (fn [run-opts]
-                    (binding [*out* output-writer
-                              *err* error-writer
-                              root/*user-home* (or (g/get :user-home) root/*user-home*)]
-                      (let [code (with-current-time
-                                   #(if (seq run-opts)
-                                      (binding [main/*extra-opts* run-opts]
-                                        (main/run argv))
-                                      (main/run argv)))]
-                        (g/assoc! :exit-code code))))]
-        (if mem-fs
-          (nexus/-with-nested-nexus {:fs mem-fs}
-            (run! (assoc extra-opts :fs mem-fs)))
-          (run! extra-opts))))))
+      (try
+        (let [run-opts (cond-> extra-opts
+                         mem-fs (assoc :fs mem-fs))
+              run!     (fn [opts]
+                         (binding [*out* output-writer
+                                   *err* error-writer
+                                   root/*user-home* (or (g/get :user-home) root/*user-home*)]
+                           (let [code (with-current-time
+                                        #(if (seq opts)
+                                           (binding [main/*extra-opts* opts]
+                                             (main/run argv))
+                                           (main/run argv)))]
+                             (g/assoc! :exit-code code))))]
+          (if mem-fs
+            (nexus/-with-nested-nexus {:fs mem-fs}
+              (run! run-opts))
+            (run! run-opts)))
+        (finally
+          (fcli/teardown-isaac-run-runtime!))))))
 
 (defn reply-contains [expected]
   (let [expected (fcli/unescape-expected expected)

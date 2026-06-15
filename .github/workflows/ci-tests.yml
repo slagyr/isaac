@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NO_COLOR: "1"
+      HOME: /tmp/isaac-ci-home
+      TZ: America/Chicago
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -60,5 +62,8 @@ jobs:
       - name: Add ripgrep to PATH
         run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Run bb verify
+      - name: Prepare isolated home
+        run: mkdir -p /tmp/isaac-ci-home
+
+      - name: Run bb ci
         run: bb ci
