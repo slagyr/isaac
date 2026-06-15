@@ -1,13 +1,11 @@
 ---
 # isaac-cl0f
 title: Restore dropped scheduler features into isaac-foundation
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T16:52:43Z
-updated_at: 2026-06-15T16:58:47Z
+updated_at: 2026-06-15T17:01:50Z
 ---
 
 Three scheduler feature files dropped. Scheduler machinery is foundation (src/isaac/scheduler/{runtime,cron}.clj),
