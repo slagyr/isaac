@@ -1,11 +1,11 @@
 ---
 # isaac-kbzd
 title: 'iiga(2): Service primitive + :isaac.server/service berth'
-status: completed
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-15T21:34:48Z
+updated_at: 2026-06-15T22:15:39Z
 ---
 
 Child of epic isaac-iiga. The new server-only turn-on primitive.
@@ -36,3 +36,10 @@ Repo: isaac-server @ 49d8506
 - @wip `features/server/services.feature` + steps/fixtures; speclj coverage in `spec/isaac/service/`
 
 Verify: `cd isaac-server && bb ci` (specs + non-wip features green); wip scenarios: `clojure -M:test -m gherclj.main -f features/server/services.feature -s "isaac.**-steps" -t "~slow"`
+
+
+
+## Verification notes
+
+- Verification failed on 2026-06-15. `features/server/services.feature` passes under the focused Gherkin run, but `isaac.service.runtime/start-all!` does not roll back partially started services on startup failure. In [isaac-server/src/isaac/service/runtime.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/service/runtime.clj:36), the catch path calls `stop-all!`, but `stop-all!` only consults `started*`, which is still `[]` until the happy-path `reset!` at line 53. A later service start/create exception therefore leaks already-started earlier services and their registrations. Add coverage for partial-start rollback and fix the bookkeeping before re-handing off.
+- Environment note: `bb ci` is red in this sandbox because several existing server features need socket bind permission here; the dedicated new service specs are green and the focused WIP feature command is green.
