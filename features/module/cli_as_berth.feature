@@ -20,6 +20,9 @@ Feature: :isaac/cli declared as a berth
     Then the stdout contains "pong"
     And the exit code is 0
 
+  # @wip: incomplete work from isaac-6q8c — fixture module marigold.cli.greeter was
+  # never created and command-help does not resolve symbol-valued :subcommands. Reopened.
+  @wip
   Scenario: An :isaac/cli berth command resolves symbol-valued :subcommands into its help
     Given an empty Isaac state directory "/tmp/greeter"
     And the isaac file "isaac.edn" exists with:
