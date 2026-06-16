@@ -4,6 +4,8 @@ title: 'iiga(4): one door — dedup the reconcile machinery'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T21:31:34Z
 updated_at: 2026-06-16T04:57:06Z
 blocked_by:
