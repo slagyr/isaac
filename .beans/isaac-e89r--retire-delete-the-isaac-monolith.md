@@ -1,11 +1,11 @@
 ---
 # isaac-e89r
 title: Retire (delete) the isaac monolith
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-16T17:18:54Z
-updated_at: 2026-06-16T17:49:35Z
+updated_at: 2026-06-16T17:53:07Z
 ---
 
 The monolith is now DETACHABLE — verified 2026-06-16:
