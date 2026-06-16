@@ -1,9 +1,10 @@
 name: CI Tests
 
+# FROZEN 2026-06-16 — the isaac monolith is being retired. Its src/specs/features are
+# homed in the module repos (foundation/agent/server/acp/cron/hail/hooks/discord/imessage)
+# and no module depends on it any longer (runtime or test). Its CI red is no longer a
+# meaningful signal, so automatic runs are disabled — manual dispatch only until deletion.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
