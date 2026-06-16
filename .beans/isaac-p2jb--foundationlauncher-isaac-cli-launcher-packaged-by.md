@@ -1,54 +1,34 @@
 ---
 # isaac-p2jb
-title: 'foundation/launcher: isaac CLI launcher — packaged-by-default, dev-local override'
+title: 'foundation/launcher: isaac CLI launcher — compose classpath from config, boot foundation'
 status: draft
 type: feature
 priority: normal
 created_at: 2026-06-16T18:50:24Z
-updated_at: 2026-06-16T19:22:47Z
+updated_at: 2026-06-16T21:10:08Z
 ---
 
 The brew-installed `isaac` is a thin bb launcher (mirror slagyr/homebrew-tap's braids formula: depends_on
-borkdude/brew/babashka + a bb wrapper in libexec). It composes the runtime classpath (foundation + the user's
-configured :modules) via babashka.deps/add-deps and boots foundation. Runs against PUBLISHED artifacts by
-default; optionally against local checkouts for development.
+borkdude/brew/babashka + a bb wrapper in libexec). It composes the runtime classpath from the user's configured
+:modules (published coordinates) via babashka.deps/add-deps and boots foundation (isaac.main).
 
-## Default — packaged
-Config :modules holds PUBLISHED coordinates (git/url + tag, or maven). The launcher resolves them
-(babashka.deps/add-deps) -> brew-cached artifacts. John Doe needs no checkouts; `brew install isaac` then
-`isaac ...` just works.
+## Scope — packaged only (dev-local DROPPED)
+- Resolve config :modules (published git/mvn coords) -> classpath -> boot foundation. That's it.
+- DEV needs no launcher support: run `bb isaac ...` from inside a checkout (foundation/agent/...), which uses the
+  repo's existing :dev-local alias / bb.edn against local code. (Confirmed: `bb isaac help` already runs
+  isaac.main under bb and dispatches the full assembled command set.)
 
-## Dev-local override (the requirement)
-Reuse the pattern the module repos already use (:dev-local / :override-deps), lifted to the launcher. Three
-knobs, precedence FLAG > ENV > CONFIG:
-- CONFIG: :module-dev-root \"<dir>\" in ~/.isaac (e.g. on zanebot, /Users/micah/agents/plan) — records WHERE
-  checkouts live; on its own does NOT change behavior. (Optional :module-dev-default true to make a box default
-  to local.)
-- ENV: ISAAC_DEV_LOCAL=1 -> use local-roots for this process, from :module-dev-root.
-- FLAG: `isaac --dev-local [agent,server] ...` -> local-roots for this invocation. Bare = all modules + foundation
-  local; with a list = only those local, the rest packaged (per-module override).
-When active, each selected module coord is rewritten to {:local/root \"<dev-root>/isaac-<name>\"} by convention.
-Default (no flag/env/config-default) = packaged.
+## bb-compatibility: CONFIRMED (2026-06-16)
+Pure-bb launcher viable, no JVM fallback. All 9 modules: bb.edn + CI-on-bb + zero bb-hostile patterns; test
+suites (incl. isaac-server http-kit) run under bb; `bb isaac help` dispatches the assembled command set.
 
 ## Acceptance (write @wip scenarios)
-- Default: `isaac <cmd>` resolves modules from published coords, no checkout present, runs.
-- :module-dev-root set + `--dev-local`: same `isaac <cmd>` runs against ../isaac-<name> checkouts; an edit in a
-  checkout is reflected on the next run with NO reinstall.
-- Per-module: `--dev-local agent` -> agent from checkout, foundation/others from packaged (assert the source used).
-- Precedence: flag overrides env overrides config-default.
+- No :modules configured -> only foundation's own commands; a module command is absent.
+- :modules {agent <coord>} -> agent's berths/CLI commands become available (config -> loaded, end-to-end).
+- A bad/unresolvable coord in :modules -> structured error naming the module; foundation's own commands still
+  work (one bad module must not brick the CLI).
+- (optional) `isaac --describe` prints each module -> resolved source without loading (debug aid + test seam).
 
-## Relationships / open
+## Relationships
 - Pairs with isaac-dhzy (the `modules` command writes :modules; launcher reads it).
-- Part of the brew-packaging story (the isaac.rb formula in slagyr/homebrew-tap, next to braids.rb).
-- Open: confirm all modules run under bb (ISAAC.md bb-first); if a module needs JVM-only, that module gets a bb
-  fix or a JVM fallback in the launcher.
-
-
-## RESOLVED: bb-compatibility confirmed (2026-06-16)
-Pure-bb launcher is viable; NO JVM fallback needed.
-- All 9 modules: bb.edn present, CI runs on bb, zero bb-hostile patterns (gen-class/AOT/proxy/javax./
-  nio.channels/core.async) in src.
-- Test suites run under bb all session, incl. isaac-server starting http-kit under bb.
-- Live smoke: `bb isaac help` runs isaac.main/-main under babashka and dispatches the full command set
-  (config/init/logs/prompt/crew/auth/server) — multi-module assembly under bb already works in dev.
-So: launcher = bb (mirror braids formula) + babashka.deps/add-deps for the configured/dev-local classpath.
+- Part of the brew-packaging story (isaac.rb next to braids.rb in slagyr/homebrew-tap).
