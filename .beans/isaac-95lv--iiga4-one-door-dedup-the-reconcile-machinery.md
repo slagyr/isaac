@@ -4,10 +4,8 @@ title: 'iiga(4): one door — dedup the reconcile machinery'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-16T02:14:52Z
+updated_at: 2026-06-16T04:57:06Z
 blocked_by:
     - isaac-kbzd
     - isaac-bju6
@@ -35,3 +33,10 @@ Acceptance:
 - Foundation pinned to c12ebe3 in both repos
 - Agent + server CI green locally
 - Remaining: agent still carries comm/factory.clj for module defmethods (not invoked on agent boot); hot_reload features live in monolith isaac only
+
+
+## Verification notes
+
+- Verification failed on 2026-06-16. The agent-side collapse itself is behaving as intended after clearing stale generated features from deleted specs: `isaac-agent` `env ISAAC_GIT=1 bb spec spec/isaac/config/install_spec.clj spec/isaac/config/runtime_spec.clj` passed (`5 examples, 0 failures`), and after cleaning `target/gherclj/generated`, `env ISAAC_GIT=1 bb features` also passed (`523 examples, 0 failures`). The committed agent code in [src/isaac/config/install.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/config/install.clj:1) and [src/isaac/config/runtime.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/config/runtime.clj:1) is store-only and no longer starts services.
+- But the server-owned single-door path is not green yet. `isaac-server` `ISAAC_GIT=1 bb ci` currently fails in `features/server/services.feature` with a config-schema collision at `:comms` because the server test-only ownership fixture still declares the comm slot under `:isaac.server/comm` in [test-resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-server/test-resources/isaac-manifest.edn:15), while the live slot owner is `:isaac.agent/comm` in [isaac-agent/resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-agent/resources/isaac-manifest.edn:514). So the deduped server path is not yet preserving the existing load/config-change/unload behavior coherently in the affected integration suite.
+- This bean is also explicitly blocked by `isaac-bju6` and `isaac-qokc`, and both remain red on current heads.
