@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-16T18:43:21Z
-updated_at: 2026-06-16T18:43:21Z
+updated_at: 2026-06-16T18:47:47Z
 ---
 
 Part of the product vision: a brew-installed `isaac` (foundation) is the seed; the user composes their
@@ -27,9 +27,12 @@ service it owns only STARTS when the server runs (so installing discord doesn't 
 ## Open design (cross-ref the product-vision discussion)
 - Name -> coordinate resolution: a small registry (name -> git/mvn coord) for the homebrew-like UX, vs raw git
   coords (slagyr/isaac-<x>) as the zero-infra start. DECIDE.
-- Runtime loading: a brew-installed `isaac` must build its CLASSPATH from the configured modules at run time
-  (JVM-launcher model — separate bean). `modules install` writes config + ensures the dep is resolvable; the
-  launcher composes the classpath. NOTE the dependency on the launcher work.
+- Runtime loading: a brew-installed `isaac` must build its CLASSPATH from the configured modules at run time.
+  LIKELY a BB-LAUNCHER mirroring the slagyr/homebrew-tap braids formula (depends_on borkdude/brew/babashka; a
+  bb wrapper in libexec) — and use babashka.deps/add-deps to resolve the user's :modules coords dynamically.
+  Lighter than a JVM launcher and fits Isaac's bb-first design. CONFIRM all modules run under bb (ISAAC.md:
+  bb-first, fix bb breakage upstream); else a JVM fallback for that module. `modules install` writes config +
+  ensures the dep is resolvable; the launcher composes the classpath. Separate bean.
 
 ## Acceptance (write @wip scenarios; promote to todo after)
 - `isaac modules install agent` adds agent's coordinate to config :modules; `isaac modules list` shows it;
