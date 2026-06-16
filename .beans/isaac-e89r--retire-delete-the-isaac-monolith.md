@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-06-16T17:18:54Z
-updated_at: 2026-06-16T17:18:54Z
+updated_at: 2026-06-16T17:49:35Z
 ---
 
 The monolith is now DETACHABLE — verified 2026-06-16:
@@ -28,8 +28,12 @@ The monolith is now DETACHABLE — verified 2026-06-16:
 1. Re-scan: confirm NO repo still pulls io.github.slagyr/isaac or isaac-spec (runtime or alias).
 2. Confirm acp/discord/imessage + cron CI are green off-monolith (their migrations just landed).
 3. isaac-gky8: scrap the 4 @wip provider messaging features (or let them die with the monolith).
-4. Carry server/cli/cli_steps.clj to isaac-server, or confirm its step phrases are covered by
-   isaac-server/.../server_steps.clj.
+4. server/cli/cli_steps.clj needs NO carry. It is agent/LLM-flavored (reply assertions reading bridge
+   state + provider/HTTP/drive capture, requires isaac.drive.dispatch) — NOT foundation-generic CLI. Its step
+   phrases are already homed: reply-contains/matches/does-not-contain in isaac-agent
+   (spec/isaac/agent/module_steps.clj), and 'isaac is run in the background' in isaac-foundation
+   (foundation/cli_steps.clj). It dies with the monolith. (Quick-confirm the provider/HTTP/drive-capture
+   registrations exist in agent's test harness; no verbatim carry.)
 5. Confirm no module's :dev-local local-roots point at ../isaac/* (they should point at ../isaac-foundation,
    ../isaac-agent, ../isaac-server).
 
