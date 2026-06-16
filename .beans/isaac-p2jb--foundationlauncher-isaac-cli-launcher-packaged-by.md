@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-16T18:50:24Z
-updated_at: 2026-06-16T18:50:24Z
+updated_at: 2026-06-16T19:22:47Z
 ---
 
 The brew-installed `isaac` is a thin bb launcher (mirror slagyr/homebrew-tap's braids formula: depends_on
@@ -42,3 +42,13 @@ Default (no flag/env/config-default) = packaged.
 - Part of the brew-packaging story (the isaac.rb formula in slagyr/homebrew-tap, next to braids.rb).
 - Open: confirm all modules run under bb (ISAAC.md bb-first); if a module needs JVM-only, that module gets a bb
   fix or a JVM fallback in the launcher.
+
+
+## RESOLVED: bb-compatibility confirmed (2026-06-16)
+Pure-bb launcher is viable; NO JVM fallback needed.
+- All 9 modules: bb.edn present, CI runs on bb, zero bb-hostile patterns (gen-class/AOT/proxy/javax./
+  nio.channels/core.async) in src.
+- Test suites run under bb all session, incl. isaac-server starting http-kit under bb.
+- Live smoke: `bb isaac help` runs isaac.main/-main under babashka and dispatches the full command set
+  (config/init/logs/prompt/crew/auth/server) — multi-module assembly under bb already works in dev.
+So: launcher = bb (mirror braids formula) + babashka.deps/add-deps for the configured/dev-local classpath.
