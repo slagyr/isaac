@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-06-16T05:07:21Z
-updated_at: 2026-06-16T05:07:21Z
+updated_at: 2026-06-16T05:13:26Z
 ---
 
 Caught by features/module/comm_extension.feature "Multiple comm instances of the same :type coexist" (now @wip).
@@ -28,3 +28,16 @@ canonical :lifecycle/started + path/impl form (matching reconciler.feature). Rem
 
 Acceptance: comm_extension "Multiple comm instances" passes un-@wip'd; a module-declared comm activates on
 process start.
+
+
+## Scope: 3 scenarios @wip'd (same root cause)
+- features/module/comm_extension.feature "Multiple comm instances of the same :type coexist"
+- features/module/activation.feature "Activating the telly module on first comm slot use"
+- features/module/activation.feature "Module activation failure surfaces a structured error"
+
+The module-lifecycle events expected by these scenarios — :module/activated (loader), :telly/started /
+:comm/activated (telly comm) — do NOT fire for a module-contributed comm; only the generic config-berth
+:lifecycle/started (path/impl, no module/comm name) appears. So a module-declared comm reconciles as an inert
+slot but the module-activation + comm-start lifecycle is broken. Fix all three together; check whether it's a
+regression from the CI-isolation/teardown arc (974dee3e/58b8c1cb/03c448c4) — module activation may have lost
+its event emission there.
