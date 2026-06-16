@@ -1,11 +1,11 @@
 ---
 # isaac-m4bi
 title: Migrate discord + imessage comm contributions to :namespace/:extra-schema + real factory registration
-status: done
+status: completed
 type: task
 priority: normal
 created_at: 2026-06-14T04:50:16Z
-updated_at: 2026-06-15T00:00:00Z
+updated_at: 2026-06-16T00:35:29Z
 ---
 
 ## Problem
