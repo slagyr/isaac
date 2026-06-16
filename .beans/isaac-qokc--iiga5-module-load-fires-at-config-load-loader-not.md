@@ -1,11 +1,11 @@
 ---
 # isaac-qokc
 title: 'iiga(5): module load fires at config-load (loader), not server start'
-status: todo
+status: done
 type: task
 priority: normal
 created_at: 2026-06-16T00:59:07Z
-updated_at: 2026-06-16T00:59:07Z
+updated_at: 2026-06-16T01:30:00Z
 ---
 
 Child of epic isaac-iiga. Closes the gap the rename (n4dj) exposed: who loads modules.
