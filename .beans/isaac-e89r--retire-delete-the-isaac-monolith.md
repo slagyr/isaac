@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-16T17:18:54Z
-updated_at: 2026-06-16T17:53:07Z
+updated_at: 2026-06-16T18:02:46Z
 ---
 
 The monolith is now DETACHABLE — verified 2026-06-16:
@@ -45,3 +45,25 @@ The monolith is now DETACHABLE — verified 2026-06-16:
 ## Acceptance
 - Monolith repo holds no live code.
 - All module repos green with the monolith deleted/unreachable.
+
+
+## Done (pending review, then verifier)
+- CI frozen: ci-tests.yml -> workflow_dispatch only.
+- Last tie fixed: isaac-server :test telly fixture repointed ../isaac/modules -> ../isaac-agent/modules
+  (isaac-server commit 75a2e01). Verified: :test classpath has 0 monolith paths, telly loads,
+  configurator_spec 6/0.
+- Re-scan: NO module references the monolith (runtime or test); server's only hit is the benign :exclusions.
+- Deleted src/ (144), spec/ (183), features/ (134), modules/ (48) — commit f84afa01, -62114 lines.
+- README replaced with a retirement notice + where-the-code-lives map.
+
+## CORRECTION — do NOT archive/delete the repo
+The repo still hosts .beans/ (607 beans — the project's issue tracker) and the architecture docs.
+"Retire the code" != "delete the repo." The repo persists as the beans/docs home; CODE is removed.
+(My earlier 'archive the repo' note was wrong on this point.)
+
+## Remaining for the verifier
+- Confirm all module CIs are green off-monolith (gh), especially isaac-server (telly repoint just landed)
+  and acp/discord/imessage/cron (their migrations).
+- Husk cleanup (optional, not blocking): bb.edn/deps.edn/dev/ now reference removed dirs — gut or leave.
+- Doc relocation (optional): FOUNDATION.md / ISAAC.md describe foundation/agent architecture — consider
+  moving into isaac-foundation; leave AGENTS.md (toolbox/beans workflow still applies to this repo).
