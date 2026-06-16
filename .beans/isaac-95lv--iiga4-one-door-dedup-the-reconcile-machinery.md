@@ -1,11 +1,13 @@
 ---
 # isaac-95lv
 title: 'iiga(4): one door — dedup the reconcile machinery'
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-16T00:59:07Z
+updated_at: 2026-06-16T02:14:52Z
 blocked_by:
     - isaac-kbzd
     - isaac-bju6
@@ -23,3 +25,13 @@ Acceptance:
 - No code path outside server boot can start a service (prompt / CLI / agent runtime never invoke Service start).
 - The duplicated reconcile collapses to one server-owned implementation.
 - Existing slot load/config-change/unload behavior preserved.
+
+
+
+## Worker handoff
+
+- isaac-agent f46df92: store-only install/runtime; deleted agent configurator; comm/activation/hot-reload features moved off agent
+- isaac-server cc1ced2: server boot owns reconcile-modules!, install-config-berths!, service start-all!; comm_extension + activation features added; factory accepts :isaac.agent/comm manifests
+- Foundation pinned to c12ebe3 in both repos
+- Agent + server CI green locally
+- Remaining: agent still carries comm/factory.clj for module defmethods (not invoked on agent boot); hot_reload features live in monolith isaac only
