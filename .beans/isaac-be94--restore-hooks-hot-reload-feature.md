@@ -1,11 +1,11 @@
 ---
 # isaac-be94
 title: Restore hooks hot-reload feature
-status: done
+status: completed
 type: bug
 priority: normal
 created_at: 2026-06-15T23:36:17Z
-updated_at: 2026-06-16T00:15:00Z
+updated_at: 2026-06-16T00:15:40Z
 ---
 
 Repo: isaac-hooks

@@ -1,11 +1,11 @@
 ---
 # isaac-y8od
 title: Restore cron hot-reload feature
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-06-15T23:36:17Z
-updated_at: 2026-06-15T23:36:17Z
+updated_at: 2026-06-16T00:15:44Z
 ---
 
 Repo: isaac-cron
