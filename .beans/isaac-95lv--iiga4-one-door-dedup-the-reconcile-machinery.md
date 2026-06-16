@@ -5,10 +5,11 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-15T21:31:34Z
+updated_at: 2026-06-16T00:59:07Z
 blocked_by:
     - isaac-kbzd
     - isaac-bju6
+    - isaac-qokc
 ---
 
 Child of epic isaac-iiga. Make server-only structural, not conventional.
