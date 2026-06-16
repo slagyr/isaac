@@ -1,7 +1,7 @@
 ---
 # isaac-n4dj
 title: 'iiga(1): rename lifecycle hooks to load/unload vocabulary'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-06-15T21:31:34Z

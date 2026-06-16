@@ -54,7 +54,7 @@
   (log/info :hook/registered :name name :source source))
 
 (defn register-hook-entry!
-  "Per-entry factory for the :isaac.server/hook berth (phase 7 of the
+  "Per-entry factory for the :isaac.hooks/hook berth (phase 7 of the
    berth epic). Receives `[hook-id entry]`; resolves the entry's
    symbol-valued :factory and registers the returned spec as a module-
    sourced hook."
@@ -97,10 +97,12 @@
 
 (deftype HooksModule []
   reconfigurable/Reconfigurable
-  (on-startup! [_ slice]
+  (on-load [_ slice]
     (reconcile-config-hooks nil slice))
   (on-config-change! [_ old-slice new-slice]
-    (reconcile-config-hooks old-slice new-slice)))
+    (reconcile-config-hooks old-slice new-slice))
+  (on-unload [_ slice]
+    (reconcile-config-hooks slice nil)))
 
 (defn make
   "Factory: creates a HooksModule instance."

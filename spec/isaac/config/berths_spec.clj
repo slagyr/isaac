@@ -1,7 +1,7 @@
 (ns isaac.config.berths-spec
   (:require
     [isaac.config.berths :as sut]
-    [isaac.config.schema.root :as config-schema]
+    [isaac.config.schema-base :as schema-base]
     [isaac.fs :as fs]
     [isaac.nexus :as nexus]
     [isaac.schema.lexicon :as lexicon]
@@ -11,32 +11,32 @@
 (defn build-node [path slice]
   {:type       (:type slice)
    :path       path
-   :crew       (:crew slice)
-   :helm/freq  (:helm/freq slice)})
+   :station    (:station slice)
+   :relay/band (:relay/band slice)})
 
 (def module-index
-  {:marigold.bridge
+  {:marigold.chartroom
    {:manifest
     {:berths
-     {:marigold.bridge/comm
-      {:description "Comm channels."
-       :config      {:path   [:comms]
-                     :schema {:type      :map
-                              :key-spec  {:type :keyword}
+     {:marigold.chartroom/signal
+      {:description "Signal channels."
+       :config      {:path   [:signals]
+                     :schema {:type       :map
+                              :key-spec   {:type :keyword}
                               :value-spec {:type           :map
-                                           :schema         {:type {:type        :keyword
-                                                                   :validations [:present?
-                                                                                 [:registered-in? :marigold.bridge/comm]]}
-                                                            :crew {:type :string}}
+                                           :schema         {:type    {:type        :keyword
+                                                                       :validations [:present?
+                                                                                     [:registered-in? :marigold.chartroom/signal]]}
+                                                            :station {:type :string}}
                                            :dynamic-schema [:extra-schema]
                                            :factory        'isaac.config.berths-spec/build-node}}}}}}}
-   :marigold.longwave
+   :marigold.skybeam
    {:manifest
-    {:marigold.bridge/comm
+    {:marigold.chartroom/signal
      {:longwave
       {:extra-schema
-       {:helm/freq {:type        :string
-                    :validations [:present?]}}}}}}})
+       {:relay/band {:type        :string
+                     :validations [:present?]}}}}}}})
 
 (describe "config berths"
 
@@ -63,8 +63,9 @@
       (nexus/-with-nested-nexus {}
         (let [changes (atom [])
               node    (reify sut/Reconfigurable
-                        (on-startup! [_ _])
-                        (on-config-change! [_ old new] (swap! changes conj [old new])))
+                        (on-load [_ _])
+                        (on-config-change! [_ old new] (swap! changes conj [old new]))
+                        (on-unload [_ _]))
               index   (things-index (fn [_ _] node))]
           (sut/reconcile! {:config {:things {:a {:x 1}}} :module-index index})
           (sut/reconcile! {:config     {:things {:a {:x 2}}}
@@ -125,8 +126,9 @@
         (nexus/-with-nested-nexus {}
           (let [changes (atom [])
                 node    (reify sut/Reconfigurable
-                          (on-startup! [_ _])
-                          (on-config-change! [_ old new] (swap! changes conj [old new])))
+                          (on-load [_ _])
+                          (on-config-change! [_ old new] (swap! changes conj [old new]))
+                          (on-unload [_ _]))
                 index   (schema-index (fn [_ _] node))]
             (sut/reconcile! {:config {:relays {:a {:freq "1"}}} :module-index index})
             (sut/reconcile! {:config     {:relays {:a {:freq "2"}}}
@@ -151,32 +153,32 @@
       (it)))
 
   (it "overlays berth config schemas onto the root schema"
-    (let [effective (sut/effective-root-schema config-schema/root module-index)
-          comms-spec (get-in effective [:schema :comms])]
-      (should= [[:comms]] (sut/config-paths module-index))
-      (should= :map (:type comms-spec))
+    (let [effective   (sut/effective-root-schema schema-base/base-root module-index)
+          signal-spec (get-in effective [:schema :signals])]
+      (should= [[:signals]] (sut/config-paths module-index))
+      (should= :map (:type signal-spec))
       (should= 'isaac.config.berths-spec/build-node
-               (get-in comms-spec [:value-spec :factory]))))
+               (get-in signal-spec [:value-spec :factory]))))
 
   (it "composes dynamic schema fields into the effective root schema"
-    (let [effective {:comms {:helm-relay {:type :longwave
-                                          :crew "captain"
-                                          :helm/freq "121.5"}}}
-          schema    (sut/effective-root-schema config-schema/root module-index)]
+    (let [effective {:signals {:relay-1 {:type :longwave
+                                         :station "captain"
+                                         :relay/band "121.5"}}}
+          schema    (sut/effective-root-schema schema-base/base-root module-index)]
       (binding [registered-in/*module-index* module-index]
         (should= effective (lexicon/conform! schema effective))
         (should-throw Exception
                       (lexicon/conform! schema
-                                        {:comms {:helm-relay {:type :longwave
-                                                              :crew "captain"}}})))))
+                                        {:signals {:relay-1 {:type :longwave
+                                                             :station "captain"}}})))))
 
   (it "installs each built node into the nexus at the same path"
-    (sut/install! {:config       {:comms {:helm-relay {:type :longwave
-                                                       :crew "captain"
-                                                       :helm/freq "121.5"}}}
+    (sut/install! {:config       {:signals {:relay-1 {:type :longwave
+                                                      :station "captain"
+                                                      :relay/band "121.5"}}}
                    :module-index module-index})
-    (should= {:type      :longwave
-              :path      [:comms :helm-relay]
-              :crew      "captain"
-              :helm/freq "121.5"}
-             (nexus/get-in [:comms :helm-relay]))))
+    (should= {:type       :longwave
+              :path       [:signals :relay-1]
+              :station    "captain"
+              :relay/band "121.5"}
+             (nexus/get-in [:signals :relay-1]))))

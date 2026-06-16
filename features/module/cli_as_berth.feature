@@ -5,7 +5,7 @@ Feature: :isaac/cli declared as a berth
   isn't privileged; it uses the public extension API.
 
   CLI dispatch precedes server boot, so the foundation processes the
-  `:isaac/cli` berth BEFORE running Module/on-startup hooks. CLI handlers
+  `:isaac/cli` berth BEFORE running Module/on-load hooks. CLI handlers
   are stateless registrations; lifecycle isn't required to invoke
   them.
 
@@ -24,7 +24,7 @@ Feature: :isaac/cli declared as a berth
     Given an empty Isaac state directory "/tmp/greeter"
     And the isaac file "isaac.edn" exists with:
       """
-      {:modules {:isaac.cli.greeter {:local/root "modules/isaac.cli.greeter"}}}
+      {:modules {:marigold.cli.greeter {:local/root "modules/marigold.cli.greeter"}}}
       """
     When isaac is run with "greet --help"
     Then the stdout contains "Subcommands:"
