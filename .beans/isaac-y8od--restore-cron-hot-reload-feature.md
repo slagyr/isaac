@@ -5,22 +5,16 @@ status: completed
 type: bug
 priority: normal
 created_at: 2026-06-15T23:36:17Z
-updated_at: 2026-06-16T00:15:44Z
+updated_at: 2026-06-16T00:30:00Z
 ---
 
 Repo: isaac-cron
 
 Scenario: Cron config hot reload -> Cron prompt content change is picked up at runtime
 
-Current state:
-- scenario rehomed from isaac-agent to isaac-cron/features/hot_reload.feature
-- scenario now runs instead of pending
-- current failure: expected session transcript entry is missing after config rewrite and scheduler tick
-
-Temporary containment:
-- scenario tagged @wip in isaac-cron so it does not block the suite
-
-Definition of done:
-- remove @wip
-- scenario passes in isaac-cron
-- keep origin.feature green
+Done in isaac-cron `bbd608a`:
+- Rewrote `features/hot_reload.feature` to use `config:` + `cron config is:` +
+  `the scheduler ticks at` (no server-only harness steps)
+- Added `cron-config-is` step in `scheduler_steps.clj` delegating to agent
+  `config-applied`
+- `hot_reload.feature` and `origin.feature` green in `bb ci`; no isaac-acp dep
