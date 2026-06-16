@@ -470,28 +470,27 @@
                 (comm/on-compaction-success ch session-key {:summary      (:summary result)
                                                             :tokens-saved (max 0 (- prompt-tokens (:last-input-tokens (session-entry opts session-key) 0)))
                                                             :duration-ms  (- (System/currentTimeMillis) started-at)}))
-              (when-not (:chunked result)
-                (let [updated-total (:last-input-tokens (session-entry opts session-key) 0)]
-                  (if (>= updated-total prompt-tokens)
-                    (log/warn :session/compaction-stopped
-                              :session session-key
-                              :provider provider-name
-                              :model model
-                              :reason :no-progress
-                              :attempt attempt
-                              :total-tokens updated-total
-                              :context-window context-window)
-                    (run-compaction-check! session-key
-                                           {:comm            ch
-                                            :context-window  context-window
-                                            :model           model
-                                            :provider        provider
-                                            :root       (:root opts)
-                                            :session-store   (:session-store opts)
-                                            :soul            soul
-                                            :transcript-lock transcript-lock}
-                                           (inc attempt)
-                                           false)))))))))))
+              (let [updated-total (:last-input-tokens (session-entry opts session-key) 0)]
+                (if (>= updated-total prompt-tokens)
+                  (log/warn :session/compaction-stopped
+                            :session session-key
+                            :provider provider-name
+                            :model model
+                            :reason :no-progress
+                            :attempt attempt
+                            :total-tokens updated-total
+                            :context-window context-window)
+                  (run-compaction-check! session-key
+                                         {:comm            ch
+                                          :context-window  context-window
+                                          :model           model
+                                          :provider        provider
+                                          :root       (:root opts)
+                                          :session-store   (:session-store opts)
+                                          :soul            soul
+                                          :transcript-lock transcript-lock}
+                                         (inc attempt)
+                                         false))))))))))
 
 (defn- start-async-compaction! [session-key opts]
   (when-let [lock (reserve-async-compaction! session-key)]
