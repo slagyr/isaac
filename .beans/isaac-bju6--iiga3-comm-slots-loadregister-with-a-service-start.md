@@ -4,10 +4,8 @@ title: 'iiga(3): comm slots load+register with a Service; start opens the client
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-16T01:02:22Z
+updated_at: 2026-06-16T01:11:16Z
 blocked_by:
     - isaac-n4dj
     - isaac-kbzd
@@ -37,3 +35,10 @@ Acceptance (write @wip Gherkin) — the epic's proof:
 - **isaac-server@54b5aa3**: boot order — `install-config-berths!` before `start-all!`.
 - **Fixes**: `DiscordRegistration` as `deftype` (defrecord hashCode clash); `update-allow-from!` connects on nil→token without requiring existing client.
 - **Acceptance**: `features/comm/discord/service_lifecycle.feature` (@wip; verified locally — remove `@wip` or run file directly). `bb ci` green (50 specs, 37 features). Verifier: also run server CI.
+
+
+
+## Verification notes
+
+- Verification failed on 2026-06-16. The discord-side code appears close: `isaac-discord` `env ISAAC_GIT=1 bb spec-jvm` is green (`50 examples, 0 failures`). But the acceptance explicitly calls for server CI green, and `isaac-server` `env ISAAC_GIT=1 bb ci` currently fails to compile with `No such var: module-loader/reconcile-modules!` from [src/isaac/config/install.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/config/install.clj:136). This is the same downstream dependency gap as `isaac-qokc`: server is still pinned to an older foundation SHA in [deps.edn](/Users/micahmartin/agents/verify/isaac-server/deps.edn:4).
+- The proof feature [features/comm/discord/service_lifecycle.feature](/Users/micahmartin/agents/verify/isaac-discord/features/comm/discord/service_lifecycle.feature:1) is also still tagged `@wip`. `bb features` excludes it, and the repo does not currently expose a clean verifier entrypoint that runs that WIP feature under the standard task aliases. So even though the discord JVM spec suite is green, the handoff is still incomplete against the stated acceptance.

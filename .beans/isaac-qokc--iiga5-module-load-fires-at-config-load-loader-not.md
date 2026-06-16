@@ -1,11 +1,11 @@
 ---
 # isaac-qokc
 title: 'iiga(5): module load fires at config-load (loader), not server start'
-status: done
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-16T00:59:07Z
-updated_at: 2026-06-16T01:30:00Z
+updated_at: 2026-06-16T01:11:16Z
 ---
 
 Child of epic isaac-iiga. Closes the gap the rename (n4dj) exposed: who loads modules.
@@ -37,3 +37,10 @@ activate/discovery path (discover! / activate! / process-manifest-berths!), so i
 ## Deps
 - n4dj (rename) — done. kbzd (Service primitive) — done; the resource-y-becomes-Service decision rides on it.
 - Blocks iiga(4) isaac-95lv (dedup) — both modify the boot/load path; do the relocation before collapsing it.
+
+
+
+## Verification notes
+
+- Verification failed on 2026-06-16. Foundation-side behavior is green (`bb spec spec/isaac/module/lifecycle_spec.clj` and `bb features features/module/cli_as_berth.feature` passed), but dependent repos are still pinned to an older foundation SHA that does not export `module-loader/reconcile-modules!`. On current heads, `isaac-server` `env ISAAC_GIT=1 bb ci` fails to compile with `No such var: module-loader/reconcile-modules!` from [src/isaac/config/install.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/config/install.clj:136). The stale pin is visible in [isaac-server/deps.edn](/Users/micahmartin/agents/verify/isaac-server/deps.edn:4), [isaac-agent/deps.edn](/Users/micahmartin/agents/verify/isaac-agent/deps.edn:4), and [isaac-discord/deps.edn](/Users/micahmartin/agents/verify/isaac-discord/deps.edn:4), all still pointing foundation at `8b47fe2162db2159f60d6754b109b4f388ddc9eb` rather than the current loader revision.
+- Acceptance says all affected suites green; that is not true until the downstream dep bumps land and the consumer repos build against the new loader API.
