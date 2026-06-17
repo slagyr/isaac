@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-16T18:43:21Z
-updated_at: 2026-06-16T18:47:47Z
+updated_at: 2026-06-17T15:49:07Z
 ---
 
 Part of the product vision: a brew-installed `isaac` (foundation) is the seed; the user composes their
@@ -13,7 +13,7 @@ assistant by INSTALLING MODULES. `isaac modules install <name>` adds the module 
 foundation's existing loader (discover! / berths / schema-compose) picks it up on the next run.
 
 ## Command surface (a `modules` command on the :isaac/cli berth, declared by foundation)
-- `isaac modules list`              — show configured modules + load status.
+- `isaac modules list`              — show each configured module: id, source (coord/path), status (resolves?/loaded?). This is ALSO the inspection / dry-run view AND the test seam for the launcher's resolution (p2jb). No separate --describe command.
 - `isaac modules install <name>`    — resolve <name> -> coordinate, add to config :modules, fetch/cache.
 - `isaac modules remove <name>`     — remove from config :modules.
 - (maybe) `isaac modules available`/`search` — list installable modules from the registry.
