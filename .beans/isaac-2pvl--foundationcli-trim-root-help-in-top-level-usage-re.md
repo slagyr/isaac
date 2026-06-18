@@ -1,14 +1,12 @@
 ---
 # isaac-2pvl
 title: 'foundation/cli: trim --root help in top-level usage; relocate source-precedence to ''config sources'''
-status: todo
+status: completed
 type: feature
 priority: normal
-tags:
-    - in-progress
-    - unverified
+tags: []
 created_at: 2026-06-18T18:07:34Z
-updated_at: 2026-06-18T21:16:12Z
+updated_at: 2026-06-18T21:32:00Z
 ---
 
 The top-level `isaac` usage spends two lines on --root, one of which dumps the
@@ -45,3 +43,10 @@ Keep the front door clean — no pointer line needed (discoverable via `config`)
 
 • Pairs with the richer-help bean (the hidden `help` command); that bean can
   ALSO expose this detail as `isaac help root`. Complementary, not blocking.
+
+## Verification notes
+
+- Verified on 2026-06-18 against fetched GitHub `isaac-foundation` `main` at `7b5d7b4`, not the stale local `../plan/isaac-foundation` mirror.
+- Focused proof passed: `env ISAAC_GIT=1 bb features features/cli/cli.feature` in `isaac-foundation` → `7 examples, 0 failures, 22 assertions`.
+- The delivered code matches the acceptance: top-level usage trims `--root` to one line in [src/isaac/main.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/main.clj:68), and `config sources` now surfaces the full root-resolution precedence via [src/isaac/config/cli/sources.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/config/cli/sources.clj:7).
+- The feature run printed an unrelated classpath warning from the Babashka harness (`io.github.slagyr/isaac-foundation` tag/SHA mismatch), but the CLI scenarios themselves were green and the acceptance behavior checks passed.
