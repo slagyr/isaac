@@ -1,29 +1,80 @@
-# isaac — RETIRED (2026-06-16)
+<img align="left" width="200" src="https://raw.githubusercontent.com/slagyr/isaac/main/isaac.png" alt="isaac" style="margin-right: 20px; margin-bottom: 10px;">
 
-The isaac monolith has been retired. Its production code, Speclj unit specs, and Gherkin
-feature tests were extracted into focused module repositories and **verified homed** before
-removal — no module depends on this repository at runtime *or* in tests.
+### Isaac
 
-## Where the code lives now
+AI assistant foundation.
 
-| was here | now |
+<br clear="left">
+
+Isaac is a Clojure-based agent platform for crew-configured assistants with
+tools, sessions, config-driven behavior, and multiple interaction surfaces. You
+install a small **foundation** seed, declare **modules** in config, and grow a
+runtime that fits your setup.
+
+**This repository is the front page of the Isaac suite** — the logo, the index,
+planning notes, and the full git history of the original monolith. Production
+code, specs, and features now live in focused repos below; nothing in the suite
+depends on a monolithic checkout here at runtime or in CI.
+
+## Repositories
+
+| Repository | Role |
 |---|---|
-| CLI, module loader, config machinery, nexus, schema | **isaac-foundation** (the seed) |
-| crew, LLM providers, sessions, drive/bridge, tools, comms | **isaac-agent** |
-| HTTP server, service (launchd), reconciler | **isaac-server** |
-| ACP agent | **isaac-acp** |
-| cron / hail / hooks | **isaac-cron**, **isaac-hail**, **isaac-hooks** |
-| Discord / iMessage comms | **isaac-discord**, **isaac-imessage** |
+| [isaac-foundation](https://github.com/slagyr/isaac-foundation) | CLI dispatcher, module loader, config/schema machinery, nexus, scheduler |
+| [isaac-agent](https://github.com/slagyr/isaac-agent) | Crew, LLM providers, sessions, bridge, tools, comm delivery |
+| [isaac-server](https://github.com/slagyr/isaac-server) | HTTP host, boot orchestration, reconciler, `isaac server` |
+| [isaac-acp](https://github.com/slagyr/isaac-acp) | ACP stdio agent, `isaac chat`, `/acp` WebSocket transport |
+| [isaac-cron](https://github.com/slagyr/isaac-cron) | Scheduled prompt jobs |
+| [isaac-hail](https://github.com/slagyr/isaac-hail) | Out-of-band interrupt delivery |
+| [isaac-hooks](https://github.com/slagyr/isaac-hooks) | Webhook ingress |
+| [isaac-discord](https://github.com/slagyr/isaac-discord) | Discord comm |
+| [isaac-imessage](https://github.com/slagyr/isaac-imessage) | iMessage comm |
 
-New functionality is bolted onto **isaac-foundation** through modules.
+New capability is added by publishing a module with an `isaac-manifest.edn` and
+declaring it under `:modules` in your Isaac config.
 
-## Retirement record
+## Quick start
 
-- `src/`, `spec/`, `features/`, and the in-tree fixture `modules/` were removed in this commit.
-- All of it was verified to have a home in the module repos (src 100%; features accounted —
-  redundant `@wip` provider features scrapped, `component_hot_reload` relocated to cron/hooks;
-  spec all homed except the monolith-only combined-suite harness, which has no meaning outside
-  this repo).
-- CI is frozen (`.github/workflows/ci-tests.yml` → manual dispatch only).
-- Full history remains in git.
-- Tracked in bean `isaac-e89r`.
+Requirements: Java 21+ and [Babashka](https://babashka.org/).
+
+1. Clone and build from [isaac-foundation](https://github.com/slagyr/isaac-foundation).
+2. Run `isaac init` to scaffold `~/.isaac/config/isaac.edn`.
+3. Add modules (at minimum **isaac-agent** for crew/sessions and **isaac-server**
+   for the HTTP host):
+
+```clojure
+{:modules {:isaac.agent {:git/url "https://github.com/slagyr/isaac-agent.git"
+                         :git/sha "<pin>"}
+           :isaac.server {:git/url "https://github.com/slagyr/isaac-server.git"
+                          :git/sha "<pin>"}}}
+```
+
+4. Configure crew, providers, and comms in `~/.isaac/config/`, then run
+   `isaac server`, `isaac chat`, or `isaac prompt "..."` as your modules
+   expose.
+
+Each module README documents its own `bb ci` workflow and acceptance features.
+
+## What you get
+
+- crew-based agent configuration with soul companions
+- persistent sessions and JSONL transcripts
+- built-in and module-contributed tools
+- terminal chat, one-shot prompts, and ACP agent mode
+- HTTP server mode with hot config reload
+- structured EDN logs and a colorized viewer
+
+## In this repo
+
+- [`ISAAC.md`](ISAAC.md) — vocabulary, architecture notes, contributor traps
+- [`AGENTS.md`](AGENTS.md) — agent/worker workflow for people and coding agents
+- [`.beans/`](.beans/) — planning and handoff artifacts
+- [`isaac.png`](isaac.png) — suite logo (linked from module READMEs)
+
+Monolith source under `src/`, `spec/`, and `features/` was retired in June 2026
+after the split above was verified homed. Git history here is the archive; follow
+the module repos for current code.
+
+## License
+
+MIT — Copyright (c) 2026 Micah Martin. See [`LICENSE`](LICENSE).
