@@ -1,13 +1,12 @@
 ---
 # isaac-iy94
 title: 'modules CLI cleanup: install correctness bugs + list display polish + default-to-list'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-18T18:23:22Z
-updated_at: 2026-06-18T19:24:08Z
+updated_at: 2026-06-18T19:42:00Z
 ---
 
 `isaac modules install isaac.server isaac.agent` exposed a pileup. Observed:
@@ -92,3 +91,9 @@ updated_at: 2026-06-18T19:24:08Z
 - Table ID via `module-id-str`; COORD humanized (`local …`, `git repo@rev`).
 - Bare `isaac modules` defaults to list (incl. `--edn`/`--json`); `-h` still help.
 - Foundation `53ac490` (v0.1.0); `bb ci` green (749 spec + 94 features).
+
+## Verification notes
+
+- Verified on 2026-06-18 against fetched GitHub `isaac-foundation` `main` at `53ac490`, not the stale local `../plan/isaac-foundation` mirror.
+- Focused proof passed: `env ISAAC_GIT=1 bb features-all features/module/modules.feature features/module/modules_list.feature` in `isaac-foundation` → `11 examples, 0 failures, 29 assertions`.
+- The delivered code matches the acceptance: install rejects multi-name input and rewrites the whole `modules` map in [src/isaac/modules/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/modules/cli.clj:179); list rendering humanizes ID/COORD at [cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/modules/cli.clj:79); bare `isaac modules` defaults to list at [cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/modules/cli.clj:271); and top-level CLI registration skips remote classpath resolution for `isaac modules` in [src/isaac/main.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/main.clj:49).
