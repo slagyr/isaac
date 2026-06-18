@@ -1,10 +1,13 @@
 ---
 # isaac-gyk1
 title: Split the overloaded 'the EDN isaac file contains:' gherclj step (write vs assert)
-status: draft
+status: in-progress
 type: task
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-18T16:25:55Z
-updated_at: 2026-06-18T16:25:55Z
+updated_at: 2026-06-18T17:53:10Z
 ---
 
 foundation spec step `the EDN isaac file "<path>" contains:`
@@ -37,3 +40,17 @@ Then delete the dead :isaac-file-phase branch.
 dhzy adds a NEW assert-only `the isaac file "<path>" EDN contains:` in cli_steps
 (un-gated, CLI-context). This bean reconciles that with the fs_steps dual-mode
 step so we don't end up with two overlapping EDN-file inspectors.
+
+## Implementation (work-3)
+
+- Removed dual-mode `edn-isaac-file-contains` and `:isaac-file-phase` from
+  `fs_steps.clj` (spec + spec-support mirror).
+- Assert: `Then the isaac file "<path>" EDN contains:` → `isaac-file-edn-contains`.
+- Write: `Given the isaac EDN file <path> exists with:` → `isaac-edn-file-exists`
+  (removed duplicate `the EDN isaac file … contains/exists` phrasing).
+- Removed duplicate assert from `cli_steps.clj` (single assert lives in fs_steps).
+- Migrated consumer `.feature` files and dropped `:isaac-file-phase :assert` from
+  cron/hail/imessage step namespaces.
+- Foundation v0.1.0 at `36e4a6f` (includes hail session-id parse alignment with
+  `state-id-value`). Agent `dc93739`, server `d3ffd7f` pins bumped in hail/cron/imessage.
+- CI green: foundation, agent, hail (spec+features), cron, imessage.
