@@ -4,8 +4,10 @@ title: 'Module deps via deps.edn: auto-load transitive modules + list-as-tree (R
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-18T19:21:29Z
-updated_at: 2026-06-18T21:14:12Z
+updated_at: 2026-06-18T21:21:29Z
 blocked_by:
     - isaac-iq1t
 ---
@@ -96,3 +98,17 @@ column.
 • list --edn gains :required-by per module (always present, [] for explicit).
 • list/tree resolves the classpath dep graph (no longer config-only cheap read).
 • `the isaac launcher is run with` step (from dhzy/p2jb) reused for #1.
+
+
+
+## Implementation (work-2)
+
+HEAD: isaac-foundation `8fa5485`
+
+- Transitive module discovery via deps.edn walk in `loader.clj`; platform modules
+  (:isaac.foundation, :isaac.server) excluded from implied set.
+- `list-configured-modules` returns explicit + implied rows with `:required-by`.
+- `modules list` table adds REQUIRED BY column (`cli.clj`).
+- Fixtures: `modules/marigold.app`, `marigold.app2`, `marigold.util`.
+- Feature tests: `module_deps.feature` (@wip removed), `modules_list.feature` updated.
+- `bb ci` green (749 spec + 98 feature examples).
