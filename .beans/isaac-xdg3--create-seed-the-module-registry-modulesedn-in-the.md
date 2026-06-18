@@ -4,9 +4,10 @@ title: Create + seed the module registry (modules.edn) in the isaac repo
 status: in-progress
 type: task
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-18T14:32:19Z
-updated_at: 2026-06-18T17:48:30Z
+updated_at: 2026-06-18T18:10:10Z
 ---
 
 Create github.com/slagyr/isaac/modules.edn — the catalog of installable modules that `isaac modules install`

@@ -1,10 +1,10 @@
 {:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
                                :git/tag "v0.1.0"
-                               :git/sha "a795402548c662c320ef54f83eb2e448fb1f88f8"}
+                               :git/sha "dc93739dfa09a1804019aed71f41d2fc76986553"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.server        {:coord {:git/url "https://github.com/slagyr/isaac-server.git"
                                :git/tag "v0.1.0"
-                               :git/sha "6364564cc1cc7c688795b689c749e650ad6a290d"}
+                               :git/sha "d3ffd7f1910824f436b104af60af3290df09ae5e"}
                        :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp      {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
                                :git/tag "v0.1.0"
