@@ -4,8 +4,10 @@ title: Launcher resolves modules per-module → multiple versions of foundation/
 status: todo
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-18T23:22:04Z
+updated_at: 2026-06-18T23:24:02Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
