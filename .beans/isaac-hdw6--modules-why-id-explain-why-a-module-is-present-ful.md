@@ -1,10 +1,11 @@
 ---
 # isaac-hdw6
 title: 'modules why <id>: explain why a module is present (full reverse-dep set)'
-status: draft
+status: scrapped
 type: feature
+priority: normal
 created_at: 2026-06-18T20:00:38Z
-updated_at: 2026-06-18T20:00:38Z
+updated_at: 2026-06-18T21:15:22Z
 ---
 
 Drill-down companion to `modules list` (the resolved tree, isaac-0yp1). The list
