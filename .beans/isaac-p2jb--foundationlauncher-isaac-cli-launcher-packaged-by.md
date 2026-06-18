@@ -1,7 +1,7 @@
 ---
 # isaac-p2jb
 title: 'foundation/launcher: isaac CLI launcher — compose classpath from config, boot foundation'
-status: todo
+status: unverified
 type: feature
 priority: normal
 created_at: 2026-06-16T18:50:24Z
