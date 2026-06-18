@@ -4,8 +4,10 @@ title: 'modules CLI cleanup: install correctness bugs + list display polish + de
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-18T18:23:22Z
-updated_at: 2026-06-18T19:12:51Z
+updated_at: 2026-06-18T19:24:08Z
 ---
 
 `isaac modules install isaac.server isaac.agent` exposed a pileup. Observed:
@@ -79,3 +81,14 @@ updated_at: 2026-06-18T19:12:51Z
 
 • Foundation owns the modules command (isaac-dhzy, done). This is post-ship
   cleanup against real registry use (isaac-xdg3 seeded modules.edn).
+
+## Implementation (work-3)
+
+- install/remove write `modules` via whole-map assoc (fixes dotted-id path split).
+- Multi-name install rejected with clear error.
+- `list-configured-modules` inspects coord shape only (no classpath); git coords
+  flagged :invalid without crashing list.
+- `*resolve-classpath?*` false during `isaac modules` CLI registration.
+- Table ID via `module-id-str`; COORD humanized (`local …`, `git repo@rev`).
+- Bare `isaac modules` defaults to list (incl. `--edn`/`--json`); `-h` still help.
+- Foundation `53ac490` (v0.1.0); `bb ci` green (749 spec + 94 features).
