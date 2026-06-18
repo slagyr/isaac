@@ -1,13 +1,12 @@
 ---
 # isaac-b3n0
 title: 'isaac.rb: homebrew formula — brew install isaac (the seed)'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-18T16:48:52Z
-updated_at: 2026-06-18T17:18:17Z
+updated_at: 2026-06-18T18:29:00Z
 ---
 
 The entry point of the product vision: `brew install isaac` gives the user the
@@ -57,8 +56,7 @@ resolve on demand over the network (`isaac modules install`).
 
 ## Verification notes
 
-- Verification failed on 2026-06-18. The formula works on a clean runner, but its smoke checks are not isolated from an existing Isaac home, so I returned the bean to plain `in-progress`.
-- In [Formula/isaac.rb](../work-2/homebrew-tap/Formula/isaac.rb:17), the install phase sets `ENV["HOME"] = deps_home`, then runs `isaac help` and `isaac --version` at [lines 19-20](../work-2/homebrew-tap/Formula/isaac.rb:19). The test phase likewise runs `isaac help` / `isaac --version` without `--root` at [lines 38-39](../work-2/homebrew-tap/Formula/isaac.rb:38).
-- That does not actually isolate Isaac root resolution, because foundation resolves the user root from `System.getProperty("user.home")`, not the shell `HOME` environment: see [isaac-foundation/src/isaac/config/root.clj](../isaac-foundation/src/isaac/config/root.clj:28) and [root.clj](../isaac-foundation/src/isaac/config/root.clj:76).
-- On this machine, the real pointer file [~/.config/isaac.edn](/Users/micahmartin/.config/isaac.edn:1) points at a root whose config [config/isaac.edn](/Users/micahmartin/Projects/isaac/root/config/isaac.edn:1) declares local modules. Replaying the formula's launcher flow against that ambient home causes `isaac help` to try composing those modules and fail before the smoke check can pass.
-- What is correct: the tap repo has the formula and workflow the bean asked for, and the clean-runner path likely explains the worker's CI-green note. The missing piece is explicit root/home isolation in the formula smoke commands so they remain deterministic on machines that already use Isaac.
+- Verified on 2026-06-18 after pulling current `main` in `isaac` and `homebrew-tap`.
+- The isolation fix is present in [Formula/isaac.rb](../work-2/homebrew-tap/Formula/isaac.rb:17): install-time smoke commands now pass `--root` to an empty builder-owned root, and the formula `test do` uses the same isolated `--root` path for `help` and `--version`.
+- I replayed the formula's install and post-install smoke sequence locally with the real ambient Isaac pointer files still present on this machine. The updated flow passed: `bb prepare`, `isaac --root <smoke-root> help`, `isaac --root <smoke-root> --version`, and `isaac --root <new-root> init` all exited 0 and scaffolded `config/isaac.edn`.
+- I did not run a direct `brew install slagyr/tap/isaac` in this verifier session because Homebrew's tap-trust gate blocks that path without changing local trust settings. The formula logic itself, including the previously failing ambient-home case, now checks out.
