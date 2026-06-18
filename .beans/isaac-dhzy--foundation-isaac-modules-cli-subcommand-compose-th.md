@@ -1,11 +1,11 @@
 ---
 # isaac-dhzy
 title: 'foundation: ''isaac modules'' CLI subcommand — compose the assistant via config'
-status: unverified
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-16T18:43:21Z
-updated_at: 2026-06-18T16:26:19Z
+updated_at: 2026-06-18T22:31:00Z
 ---
 
 Product vision: a brew-installed isaac (foundation) is the seed; the user
