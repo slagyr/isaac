@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-16T18:43:21Z
-updated_at: 2026-06-18T13:43:18Z
+updated_at: 2026-06-18T14:30:01Z
 ---
 
 Product vision: a brew-installed `isaac` (foundation) is the seed; the user composes their assistant by
@@ -51,3 +51,12 @@ STARTS when the server runs (installing discord doesn't spin up a client).
 - Foundation owns this (the :isaac/cli berth, config mutate, the module loader).
 - Pairs with isaac-p2jb (launcher reads :modules + composes the classpath; `modules list` is the view onto its resolution).
 - Registry hosted in the isaac repo (modules.edn). Related: epic isaac-iiga (load/unload vs start/stop).
+
+
+## Scope boundary (does NOT create the real registry)
+dhzy owns: the `modules` command + the registry FORMAT + a TEST-FIXTURE modules.edn for its scenarios. It does
+NOT create or seed the real github.com/slagyr/isaac/modules.edn. That is separate:
+- Prereq: version-tag the modules — today only isaac-foundation has a tag (v0.1.0); the others have none and
+  cross-reference by :git/sha. A clean registry needs stable versioned coords.
+- Then: a separate task creates + seeds the real modules.edn in the isaac repo (data, maintained over time).
+dhzy is buildable/testable against the fixture without either.
