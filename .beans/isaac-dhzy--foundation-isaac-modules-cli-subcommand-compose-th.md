@@ -1,7 +1,7 @@
 ---
 # isaac-dhzy
 title: 'foundation: ''isaac modules'' CLI subcommand — compose the assistant via config'
-status: todo
+status: unverified
 type: feature
 priority: normal
 created_at: 2026-06-16T18:43:21Z
