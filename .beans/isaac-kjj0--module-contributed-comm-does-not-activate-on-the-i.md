@@ -1,11 +1,11 @@
 ---
 # isaac-kjj0
 title: Module-contributed comm does not activate on 'the Isaac process is started'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-06-16T05:07:21Z
-updated_at: 2026-06-16T05:13:26Z
+updated_at: 2026-06-18T16:46:05Z
 ---
 
 Caught by features/module/comm_extension.feature "Multiple comm instances of the same :type coexist" (now @wip).
