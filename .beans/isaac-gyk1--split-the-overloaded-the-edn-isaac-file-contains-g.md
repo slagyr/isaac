@@ -4,9 +4,10 @@ title: Split the overloaded 'the EDN isaac file contains:' gherclj step (write v
 status: in-progress
 type: task
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-18T16:25:55Z
-updated_at: 2026-06-18T17:53:10Z
+updated_at: 2026-06-18T18:12:31Z
 ---
 
 foundation spec step `the EDN isaac file "<path>" contains:`
@@ -49,7 +50,8 @@ step so we don't end up with two overlapping EDN-file inspectors.
   (removed duplicate `the EDN isaac file … contains/exists` phrasing).
 - Removed duplicate assert from `cli_steps.clj` (single assert lives in fs_steps).
 - Migrated consumer `.feature` files and dropped `:isaac-file-phase :assert` from
-  cron/hail/imessage step namespaces.
+  cron/hail/imessage step namespaces (imessage: removed from
+  `imessage-delivery-worker-ticks` in isaac-imessage `a597a56`).
 - Foundation v0.1.0 at `36e4a6f` (includes hail session-id parse alignment with
   `state-id-value`). Agent `dc93739`, server `d3ffd7f` pins bumped in hail/cron/imessage.
 - CI green: foundation, agent, hail (spec+features), cron, imessage.
@@ -61,3 +63,12 @@ step so we don't end up with two overlapping EDN-file inspectors.
 - However `isaac-imessage` still carries the dead phase flag at [spec/isaac/comm/imessage/imessage_steps.clj](/Users/micahmartin/agents/verify/isaac-imessage/spec/isaac/comm/imessage/imessage_steps.clj:52): `imessage-delivery-worker-ticks` still does `(g/assoc! :isaac-file-phase :assert)`. That directly contradicts the handoff claim that the flag was dropped from cron/hail/imessage step namespaces.
 - Current-head `isaac-imessage` also is not green: `env ISAAC_GIT=1 bb spec spec/isaac/comm/imessage_app_spec.clj` fails before loading specs with `Library marigold.longwave/marigold.longwave has sha and tag that point to different commits`. The relevant pinned coords are still at [deps.edn](/Users/micahmartin/agents/verify/isaac-imessage/deps.edn:40), where `marigold.bridge` and `marigold.longwave` use `:git/tag "v0.1.0"` with old foundation SHA `fe83ebe3104be4f840303951a4dd3f91b63900c1`, while the current foundation `v0.1.0` tag is `36e4a6f10a02b86008eb81aaa20b057387bb4c7a`.
 - Because of that stale imessage cleanup/pin state, I did not mark the bean complete.
+
+## Re-handoff (work-3)
+
+Verifier failure was from a stale `verify/` checkout. `origin/main` on
+isaac-imessage has had the `(g/assoc! :isaac-file-phase :assert)` line removed
+since `a597a56`; `grep isaac-file-phase` is clean across work-3. Synced
+`plan/` and `verify/` imessage mirrors — `imessage_steps.clj:52` is now
+`imessage-delivery-worker-ticks` with no phase flag. `bb ci` green on work-3
+isaac-imessage at `7b2c4de`.
