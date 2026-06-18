@@ -3,8 +3,12 @@
 title: 'v0.1.0 module coords poisoned: foundation tag moved after release breaks transitive pins'
 status: todo
 type: bug
+priority: normal
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-18T22:48:02Z
-updated_at: 2026-06-18T22:48:02Z
+updated_at: 2026-06-18T22:57:29Z
 ---
 
 Installing a registry module then running isaac fails to compose the classpath:

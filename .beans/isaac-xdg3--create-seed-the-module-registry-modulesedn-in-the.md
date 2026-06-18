@@ -23,10 +23,10 @@ and `isaac modules available` (isaac-dhzy) fetch via raw github. Format is defin
 
 ## Maintenance
 
-When a module repo cuts a new release tag, bump that entry's `:git/tag` and
-`:git/sha` in `modules.edn` on `isaac` `main`. Order: tag the module repo,
-resolve the tag SHA (`gh api repos/slagyr/<repo>/git/ref/tags/<tag>`), update
-the registry entry, push.
+When a module repo cuts a new release, bump that entry's `:git/sha` in
+`modules.edn` on `isaac` `main` (sha-only coords — no `:git/tag`). Order: tag
+the module repo, resolve the commit SHA, update the registry entry, push.
+Published tags are immutable; supersede poisoned releases with a new tag/sha.
 
 ## Acceptance
 - modules.edn exists with all installable modules + valid tagged coords (matches the format in isaac-dhzy).
