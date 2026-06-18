@@ -4,8 +4,10 @@ title: Module-contributed comm does not activate on 'the Isaac process is starte
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-16T05:07:21Z
-updated_at: 2026-06-18T16:55:29Z
+updated_at: 2026-06-18T17:24:13Z
 ---
 
 RE-SCOPED 2026-06-18 (planner): the original bean was written against a STALE
@@ -66,3 +68,21 @@ Acceptance (revised): isaac-server module features (comm_extension +
 activation) pass with telly fixture repointed off the monolith; a module-
 contributed comm configured under :comms activates at server start emitting
 :module/activated + :comm/activated.
+
+
+
+## RESOLVED (work-1, 2026-06-18) — tag: unverified
+
+Verify-first run was RED (2 failures + 1 in reconciler.feature), not resolved-by-95lv. Root causes + fixes:
+
+**1. Stale monolith telly path (step 3 of the bean).** Repointed every `../isaac/modules/isaac.comm.telly` → `../isaac-agent/modules/isaac.comm.telly`:
+- features/module/activation.feature (3 slices), features/module/comm_extension.feature (1 slice).
+- spec/isaac/configurator_steps.clj `telly-module-coord` — the legacy reconciler.feature fixture had the same dead path, so the module manifest could not be discovered, telly :extra-schema (:color/:loft/:mood) was never composed into the :comms schema, and :color was stripped from the slice → "Two comms run independently" got nil.
+
+**2. Real activation bug (step 2): load-once `require` in isaac.comm.factory/ensure-impl!.** `create!` activates the module then `(require ns-sym)` to install the `create` defmethod — but a load-once require no-ops once the lib is in *loaded-libs*, even when the defmethod is absent (an earlier load that threw partway, e.g. a module failing first activation, or an ns removed without clearing *loaded-libs*). Result: `:module/activated` fired but `:comm/activated` never did (has-method? false). Fixed by `(require ns-sym :reload)` in the already-guarded method-missing branch — makes activation idempotent/recoverable, costs nothing once the impl is live. Confirmed necessary: path repoints alone leave comm_extension red.
+
+**Result:** isaac-server full suite green locally — features 75/0, spec 121/0; module + config features 55/0. Diff: src/isaac/comm/factory.clj + the 3 path repoints above.
+
+**Cannot confirm on CI:** isaac-server CI is currently red for an UNRELATED reason — classpath build fails, "Local lib isaac.comm.telly not found: .../isaac-agent/modules/isaac.comm.telly" (CI does not lay telly out at the deps.edn :test local-root). That is the e89r/CI-layout concern, not kjj0. Feature tests never run on CI until that is fixed.
+
+**Flagged follow-ups (NOT done — out of kjj0 scope, no failing test):** the identical load-once `require` exists in isaac-server/src/isaac/service/factory.clj:30 (services berth) and isaac-agent/src/isaac/comm/factory.clj:52 (vestigial agent comm copy). Same latent unrecoverable-activation bug; planner may want a follow-up bean.
