@@ -1,11 +1,11 @@
 ---
 # isaac-0yp1
 title: 'Module deps via deps.edn: auto-load transitive modules + list-as-tree (REQUIRED BY)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-06-18T19:21:29Z
-updated_at: 2026-06-18T20:00:47Z
+updated_at: 2026-06-18T21:10:26Z
 blocked_by:
     - isaac-iq1t
 ---
@@ -64,3 +64,35 @@ another manifest-bearing module -> shows as implied, REQUIRED BY the requirer).
 • `modules why <id>` drill-down — separate bean.
 • registry :requires — DROPPED (superseded by this model).
 • depends-on isaac-iq1t; pairs with isaac-dhzy (modules command).
+
+
+## Feature — features/module/module_deps.feature (@wip), 5 scenarios (approved 2026-06-18)
+
+1. (@slow, launcher subprocess) A dependency module's contributions activate
+   transitively — :modules {marigold.app}; `greet` works because app's deps.edn
+   pulls marigold.cli.greeter and its manifest activates.
+2. A plain library dep (marigold.util, no isaac-manifest.edn) is NOT a module —
+   list shows app + greeter, not util.
+3. Provenance via --edn — :required-by is always present: [] for explicit,
+   [requirer] for implied.
+4. Diamond — module required by app + app2 -> :required-by [:marigold.app
+   :marigold.app2] (sorted vector; tree order: explicit sorted, then implied).
+5. (minimal) human table renders a REQUIRED BY column.
+
+All in-process except #1. The table check (#5) is minimal here; on implementation
+it may instead extend dhzy's existing "table shows human-readable id" scenario in
+modules_list.feature — don't break that passing scenario, fold in when wiring the
+column.
+
+## Fixtures to build (these LOAD, unlike config-only install)
+
+• marigold.app   — deps.edn -> marigold.cli.greeter (+ marigold.util)
+• marigold.app2  — deps.edn -> marigold.cli.greeter (for the diamond)
+• marigold.util  — plain code, NO manifest (proves manifest = module marker)
+• marigold.cli.greeter — existing; ships manifest contributing `greet`
+
+## New surface the impl adds
+
+• list --edn gains :required-by per module (always present, [] for explicit).
+• list/tree resolves the classpath dep graph (no longer config-only cheap read).
+• `the isaac launcher is run with` step (from dhzy/p2jb) reused for #1.
