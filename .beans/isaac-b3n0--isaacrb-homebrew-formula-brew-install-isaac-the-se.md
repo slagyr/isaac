@@ -33,7 +33,7 @@ the `bin/isaac` wrapper exports `CLJ_CONFIG` / `DEPS_CLJ_DIR` to that cellar
 cache so `help` / `--version` / `init` work offline. Installed modules still
 resolve on demand over the network (`isaac modules install`).
 
-## Implementation (slagyr/homebrew-tap `23b7b83`)
+## Implementation (slagyr/homebrew-tap `11a10ec`)
 
 • `Formula/isaac.rb` — v0.1.0 tarball, babashka dep, libexec launcher layout.
 • `.github/workflows/tests.yml` — `brew install` + `brew test` all tap formulae.
