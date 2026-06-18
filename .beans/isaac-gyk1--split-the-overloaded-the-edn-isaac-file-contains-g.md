@@ -1,13 +1,12 @@
 ---
 # isaac-gyk1
 title: Split the overloaded 'the EDN isaac file contains:' gherclj step (write vs assert)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-18T16:25:55Z
-updated_at: 2026-06-18T18:12:31Z
+updated_at: 2026-06-18T18:28:00Z
 ---
 
 foundation spec step `the EDN isaac file "<path>" contains:`
@@ -58,11 +57,10 @@ step so we don't end up with two overlapping EDN-file inspectors.
 
 ## Verification notes
 
-- Verification failed on 2026-06-18. The foundation-side split is good, but the imessage side is still incomplete and not green on current head.
-- Foundation looks correct on current GitHub `main` (`36e4a6f`): [fs_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:337) now exposes assert-only `the isaac file "<path>" EDN contains:` and [fs_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:342) keeps the unambiguous writer `the isaac EDN file <path> exists with:`. `env ISAAC_GIT=1 bb features-all features/module/modules.feature features/module/modules_list.feature features/cli/init.feature` passed in `isaac-foundation` with `11 examples, 0 failures`.
-- However `isaac-imessage` still carries the dead phase flag at [spec/isaac/comm/imessage/imessage_steps.clj](/Users/micahmartin/agents/verify/isaac-imessage/spec/isaac/comm/imessage/imessage_steps.clj:52): `imessage-delivery-worker-ticks` still does `(g/assoc! :isaac-file-phase :assert)`. That directly contradicts the handoff claim that the flag was dropped from cron/hail/imessage step namespaces.
-- Current-head `isaac-imessage` also is not green: `env ISAAC_GIT=1 bb spec spec/isaac/comm/imessage_app_spec.clj` fails before loading specs with `Library marigold.longwave/marigold.longwave has sha and tag that point to different commits`. The relevant pinned coords are still at [deps.edn](/Users/micahmartin/agents/verify/isaac-imessage/deps.edn:40), where `marigold.bridge` and `marigold.longwave` use `:git/tag "v0.1.0"` with old foundation SHA `fe83ebe3104be4f840303951a4dd3f91b63900c1`, while the current foundation `v0.1.0` tag is `36e4a6f10a02b86008eb81aaa20b057387bb4c7a`.
-- Because of that stale imessage cleanup/pin state, I did not mark the bean complete.
+- Verified on 2026-06-18 on current heads. Foundation has the split in place: assert-only [fs_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:337) and the unambiguous writer at [fs_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:342).
+- Repo sweep is clean: `rg -n "isaac-file-phase" isaac-foundation isaac-agent isaac-server isaac-cron isaac-hail isaac-imessage` returned no matches.
+- The stale imessage issues are fixed on current `main`: [imessage_steps.clj](/Users/micahmartin/agents/verify/isaac-imessage/spec/isaac/comm/imessage/imessage_steps.clj:52) no longer sets `:isaac-file-phase`, and [deps.edn](/Users/micahmartin/agents/verify/isaac-imessage/deps.edn:40) now pins `marigold.bridge` and `marigold.longwave` to foundation SHA `36e4a6f10a02b86008eb81aaa20b057387bb4c7a`.
+- Verification runs were green: `env ISAAC_GIT=1 bb features-all features/module/modules.feature features/module/modules_list.feature features/cli/init.feature` in `isaac-foundation` → `11 examples, 0 failures, 34 assertions`; `env ISAAC_GIT=1 bb spec spec/isaac/server/imessage_app_spec.clj` in `isaac-imessage` → `34 examples, 0 failures, 56 assertions`; `env ISAAC_GIT=1 bb features` in `isaac-imessage` → `15 examples, 0 failures, 20 assertions, 3 pre-existing pending`.
 
 ## Re-handoff (work-3)
 
