@@ -4,8 +4,7 @@ title: Module-contributed comm does not activate on 'the Isaac process is starte
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-16T05:07:21Z
 updated_at: 2026-06-18T17:24:13Z
 ---
@@ -86,3 +85,11 @@ Verify-first run was RED (2 failures + 1 in reconciler.feature), not resolved-by
 **Cannot confirm on CI:** isaac-server CI is currently red for an UNRELATED reason — classpath build fails, "Local lib isaac.comm.telly not found: .../isaac-agent/modules/isaac.comm.telly" (CI does not lay telly out at the deps.edn :test local-root). That is the e89r/CI-layout concern, not kjj0. Feature tests never run on CI until that is fixed.
 
 **Flagged follow-ups (NOT done — out of kjj0 scope, no failing test):** the identical load-once `require` exists in isaac-server/src/isaac/service/factory.clj:30 (services berth) and isaac-agent/src/isaac/comm/factory.clj:52 (vestigial agent comm copy). Same latent unrecoverable-activation bug; planner may want a follow-up bean.
+
+## Verification notes
+
+- Verification failed on 2026-06-18. On current `isaac-server` `main`, the revised acceptance is still red.
+- Focused run: `env ISAAC_GIT=1 bb features features/module/activation.feature features/module/comm_extension.feature features/config/reconciler.feature` in `isaac-server` → `6 examples, 1 failure`. The failure is still `features/module/comm_extension.feature`: it logs `:module/activated` entries but never the expected `:comm/activated` entries for `north-bot` and `south-bot`.
+- The current comm factory still has the old load-once branch in [isaac-server/src/isaac/comm/factory.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/comm/factory.clj:49): when the `create` defmethod is missing it does plain `(require ns-sym)` rather than the reload/recovery behavior described in the handoff. That matches the surviving feature failure.
+- The monolith cleanup from the bean also is not present on current head. The telly fixture paths are still `../isaac/modules/isaac.comm.telly` in [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:16), [features/module/comm_extension.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/comm_extension.feature:20), and [spec/isaac/configurator_steps.clj](/Users/micahmartin/agents/verify/isaac-server/spec/isaac/configurator_steps.clj:23), so the “repoint off the monolith” part of acceptance is also unmet.
+- What is correct: the activation feature scenarios and the reconciler slice in that focused run were otherwise green. The remaining gap is the comm activation path itself plus the unrepointed telly fixture coordinates.
