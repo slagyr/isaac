@@ -1,13 +1,12 @@
 ---
 # isaac-92p3
 title: Launcher resolves modules per-module → multiple versions of foundation/modules on classpath
-status: todo
+status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-18T23:24:02Z
+updated_at: 2026-06-18T23:34:45Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -89,3 +88,24 @@ multi-version skew that made zanebot report 0.1.0 on a v0.1.1 install.
 
 Add an acceptance test with VERSIONED (git/sha) fixtures pinning different
 foundation versions — the case the marigold :local/root fixtures can't reach.
+
+## Verification failed
+
+HEAD: 5454cee
+Working tree: clean
+
+The explicit-module batching is real, but the single-version invariant is still
+false for transitive module discovery. `compose-config-modules!` now batches
+configured modules in one `add-deps` pass, but `discover!` still resolves
+transitive manifest deps through `resolve-manifest-resource` →
+`ensure-module-deps!` one module at a time. That leaves duplicate module copies
+on the runtime classpath when an explicit module is also pulled transitively.
+
+Repro on fetched GitHub `isaac-foundation` `main` at `5454cee`:
+
+- Focused specs are green: `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/foundation/version_spec.clj` → `34 examples, 0 failures`.
+- Current-zanebot-style comm set also reports the seed version correctly through the launcher: `./libexec/isaac --root <tmp-root> --version` → `isaac 0.1.2 (5454cee)`.
+- But direct classpath inspection after a real compose + discover run with explicit `isaac.server` `ba30caa` plus `isaac.comm.acp` `d108562` shows duplicates:
+  `{[:isaac.foundation "0.1.2"] 1, [:isaac.comm.acp "0.1.0"] 1, [:isaac.server "0.1.0"] 2, [:isaac.agent "0.1.0"] 1}`
+
+That fails the bean's acceptance `A module both explicitly installed and pulled transitively -> single entry`, and it means the broader `exactly one version of EVERY module` invariant is still not enforced. The missing work is to bring transitive module resolution into the same unified basis instead of adding those coords one-by-one during discovery.
