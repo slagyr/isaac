@@ -1,13 +1,12 @@
 ---
 # isaac-kjj0
 title: Module-contributed comm does not activate on 'the Isaac process is started'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-16T05:07:21Z
-updated_at: 2026-06-18T17:35:35Z
+updated_at: 2026-06-18T18:08:00Z
 ---
 
 RE-SCOPED 2026-06-18 (planner): the original bean was written against a STALE
@@ -89,11 +88,10 @@ Verify-first run was RED (2 failures + 1 in reconciler.feature), not resolved-by
 
 ## Verification notes
 
-- Verification failed on 2026-06-18. On current `isaac-server` `main`, the revised acceptance is still red.
-- Focused run: `env ISAAC_GIT=1 bb features features/module/activation.feature features/module/comm_extension.feature features/config/reconciler.feature` in `isaac-server` → `6 examples, 1 failure`. The failure is still `features/module/comm_extension.feature`: it logs `:module/activated` entries but never the expected `:comm/activated` entries for `north-bot` and `south-bot`.
-- The current comm factory still has the old load-once branch in [isaac-server/src/isaac/comm/factory.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/comm/factory.clj:49): when the `create` defmethod is missing it does plain `(require ns-sym)` rather than the reload/recovery behavior described in the handoff. That matches the surviving feature failure.
-- The monolith cleanup from the bean also is not present on current head. The telly fixture paths are still `../isaac/modules/isaac.comm.telly` in [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:16), [features/module/comm_extension.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/comm_extension.feature:20), and [spec/isaac/configurator_steps.clj](/Users/micahmartin/agents/verify/isaac-server/spec/isaac/configurator_steps.clj:23), so the “repoint off the monolith” part of acceptance is also unmet.
-- What is correct: the activation feature scenarios and the reconciler slice in that focused run were otherwise green. The remaining gap is the comm activation path itself plus the unrepointed telly fixture coordinates.
+- Verified on 2026-06-18 against the true GitHub `isaac-server` `main`, not the stale local `../plan/isaac-server` mirror that this verifier checkout had as `origin`.
+- The delivered fix is present on GitHub `main`: [isaac-server/src/isaac/comm/factory.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/comm/factory.clj:49) now reloads the entry namespace in the guarded method-missing branch with `(require ns-sym :reload)`, and the telly fixture coordinates are repointed to `../isaac-agent/modules/isaac.comm.telly` in [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:16), [features/module/comm_extension.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/comm_extension.feature:20), and [spec/isaac/configurator_steps.clj](/Users/micahmartin/agents/verify/isaac-server/spec/isaac/configurator_steps.clj:23).
+- Focused proof on fetched GitHub `main` passed: `env ISAAC_GIT=1 bb features features/module/activation.feature features/module/comm_extension.feature features/config/reconciler.feature` in `isaac-server` → `6 examples, 0 failures, 17 assertions`.
+- The earlier verification failure was against local commit `76cf81d`, which was behind GitHub and did not contain the kjj0 fix.
 
 
 
