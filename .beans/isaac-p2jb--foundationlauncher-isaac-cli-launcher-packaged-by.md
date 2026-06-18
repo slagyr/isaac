@@ -1,11 +1,11 @@
 ---
 # isaac-p2jb
 title: 'foundation/launcher: isaac CLI launcher — compose classpath from config, boot foundation'
-status: unverified
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-16T18:50:24Z
-updated_at: 2026-06-18T15:30:42Z
+updated_at: 2026-06-18T22:10:00Z
 ---
 
 The brew-installed isaac is a thin bb launcher (mirror slagyr/homebrew-tap's
