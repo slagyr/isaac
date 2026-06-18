@@ -4,9 +4,10 @@ title: 'Module deps via deps.edn: auto-load transitive modules + list-as-tree (R
 status: in-progress
 type: feature
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-18T19:21:29Z
-updated_at: 2026-06-18T21:21:29Z
+updated_at: 2026-06-18T21:41:47Z
 blocked_by:
     - isaac-iq1t
 ---
@@ -118,3 +119,14 @@ HEAD: isaac-foundation `8fa5485`
 - Focused proof: `env ISAAC_GIT=1 bb features-all features/module/module_deps.feature features/module/modules_list.feature` in `isaac-foundation` → `10 examples, 1 failure, 24 assertions`. The failing case is [features/module/module_deps.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/module/module_deps.feature:15) “A dependency module's contributions activate transitively”.
 - I reproduced that scenario directly with the packaged launcher and a temp root containing only `{:modules {:marigold.app {:local/root "modules/marigold.app"}}}`. `./libexec/isaac --root <tmp-root> greet --help` exits 1 with `Unknown command: greet`, so the transitive `marigold.cli.greeter` contribution is still not being activated for the real launcher path.
 - What is correct: the non-slow list/tree behavior appears to be in place. The same focused run passed the other scenarios covering plain-lib exclusion, `:required-by` in `--edn`, diamond provenance, and the human table REQUIRED BY column. The missing piece is the actual transitive activation of contributions on launcher startup.
+
+
+
+## Fix (work-2, verification feedback)
+
+HEAD: isaac-foundation `dceb2af`
+
+merge-resolved-classpath-modules double-unwrapped implied entries (`(get entry id)`
+on an already-unwrapped value), leaving transitive modules as nil in the index.
+Launcher greet now works; `env ISAAC_GIT=1 bb features-all features/module/
+module_deps.feature features/module/modules_list.feature` → 10/10 green.
