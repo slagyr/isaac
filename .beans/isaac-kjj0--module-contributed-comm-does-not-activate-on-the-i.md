@@ -4,9 +4,10 @@ title: Module-contributed comm does not activate on 'the Isaac process is starte
 status: in-progress
 type: bug
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-16T05:07:21Z
-updated_at: 2026-06-18T17:24:13Z
+updated_at: 2026-06-18T17:35:35Z
 ---
 
 RE-SCOPED 2026-06-18 (planner): the original bean was written against a STALE
@@ -93,3 +94,15 @@ Verify-first run was RED (2 failures + 1 in reconciler.feature), not resolved-by
 - The current comm factory still has the old load-once branch in [isaac-server/src/isaac/comm/factory.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/comm/factory.clj:49): when the `create` defmethod is missing it does plain `(require ns-sym)` rather than the reload/recovery behavior described in the handoff. That matches the surviving feature failure.
 - The monolith cleanup from the bean also is not present on current head. The telly fixture paths are still `../isaac/modules/isaac.comm.telly` in [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:16), [features/module/comm_extension.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/comm_extension.feature:20), and [spec/isaac/configurator_steps.clj](/Users/micahmartin/agents/verify/isaac-server/spec/isaac/configurator_steps.clj:23), so the “repoint off the monolith” part of acceptance is also unmet.
 - What is correct: the activation feature scenarios and the reconciler slice in that focused run were otherwise green. The remaining gap is the comm activation path itself plus the unrepointed telly fixture coordinates.
+
+
+
+## RE-HANDOFF (work-1, 2026-06-18) — verifier reviewed a STALE isaac-server checkout
+
+The fix is on isaac-server origin/main at commit 03e8b2e (HEAD). Verified:
+- `git rev-parse HEAD origin/main` → both 03e8b2ecdf33f16f758e429062889d6eb9548c0c
+- `git show origin/main:src/isaac/comm/factory.clj` line ~49 has `(require ns-sym :reload)` + the explanatory comment, NOT plain `(require ns-sym)`.
+- All three telly fixtures on origin/main point at `../isaac-agent/modules/isaac.comm.telly` (activation.feature:16/35/53, comm_extension.feature:20, configurator_steps.clj:24) — no `../isaac/modules/...` remain.
+- Focused run on current main `ISAAC_GIT=1 clojure -M:test:features -f features/module/activation.feature -f features/module/comm_extension.feature -f features/config/reconciler.feature -t ~slow -t ~wip` → 0 failures.
+
+The review findings (factory.clj:49 plain require; monolith paths in all three files) exactly match the PRE-fix commit 76cf81d, i.e. isaac-server before 03e8b2e. Please `git -C isaac-server pull` (or fetch + checkout origin/main → 03e8b2e) and re-run. Re-tagging unverified.
