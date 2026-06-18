@@ -5,39 +5,64 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-06-16T05:07:21Z
-updated_at: 2026-06-18T16:46:05Z
+updated_at: 2026-06-18T16:55:29Z
 ---
 
-Caught by features/module/comm_extension.feature "Multiple comm instances of the same :type coexist" (now @wip).
+RE-SCOPED 2026-06-18 (planner): the original bean was written against a STALE
+isaac-agent checkout. The named features were not deleted into the void — 95lv
+(cc1ced2 "own comm reconcile door; server boot uses reconcile-modules!") MOVED
+them to isaac-server, and f46df92 removed the agent copies. They live and run in
+isaac-server now. DO NOT rebuild from scratch.
 
-A comm declared via :modules (isaac.comm.telly) + :comms {:north-bot {:type :telly} :south-bot {...}} does NOT
-activate when the Isaac process starts: the telly module's comm impl never registers, so the comm slot factory
-(isaac.comm.factory/create!) can't build north-bot/south-bot. Only a stray cron :lifecycle/started fires; no
-comm lifecycle entries appear.
+## Where the work actually is: isaac-server (NOT isaac-agent)
 
-Contrast: features/config/reconciler.feature passes ONLY because it manually registers the comm
-("Given the telly comm is registered"). comm_extension specifically tests MODULE-contributed comm activation —
-the broken path.
+Both features exist, are NOT @wip, and fire on the post-95lv boot path
+("When the Isaac server is started"):
+• features/module/comm_extension.feature — "Multiple comm instances of the same
+  :type coexist" → asserts :comm/activated north-bot + south-bot.
+• features/module/activation.feature — 3 scenarios: telly activates on first
+  comm-slot use (:module/activated + :telly/started); declared-but-unused module
+  is NOT activated; activation failure surfaces :module/activation-failed.
 
-Likely module lazy-activation / load wiring (iiga territory: who activates a module-contributed comm slot at
-process start) OR a regression from the CI-isolation/teardown work.
+These already cover the module-contributed path: user config has :comms
+{:north-bot {:type :telly} ...}; the module supplies the :telly factory; boot
+reconcile must activate the module to build the slot.
 
-Fix: module-contributed comm impls must register + activate when the process starts (the :comms slot-tree
-reconcile must trigger module load/activation for the impl). The scenario's assertion is already updated to the
-canonical :lifecycle/started + path/impl form (matching reconciler.feature). Remove @wip when green.
+## This changes the framing
 
-Acceptance: comm_extension "Multiple comm instances" passes un-@wip'd; a module-declared comm activates on
-process start.
+Activation is INTENTIONALLY lazy / on-first-use (activation.feature scenario 2
+asserts a declared module is NOT activated when no slot uses it). So "does not
+activate on load" is the wrong frame. Correct acceptance: a module-contributed
+comm that IS configured in :comms activates at server start and emits the
+module + comm lifecycle events.
 
+## Do this, in order
 
-## Scope: 3 scenarios @wip'd (same root cause)
-- features/module/comm_extension.feature "Multiple comm instances of the same :type coexist"
-- features/module/activation.feature "Activating the telly module on first comm slot use"
-- features/module/activation.feature "Module activation failure surfaces a structured error"
+1. VERIFY FIRST (likely already fixed by 95lv): run isaac-server's module
+   features. The features are un-@wip and were kept green in CI (8b0ffe3), so
+   they may already pass → if GREEN, kjj0 is resolved-by-95lv; close it
+   (verifier confirms). The original agent-side @wip scenarios are obsolete.
+2. If RED: the live bug is at SERVER BOOT reconcile (reconcile-modules! /
+   berth reconcile in isaac-server/src/isaac/config/install.clj +
+   isaac-foundation berths.clj). A module-contributed :comms slot must trigger
+   module activation + emit :module/activated, :telly/started, :comm/activated.
+   The tests already exist — fix the code, do not recreate scenarios.
+3. INDEPENDENT of the bug (monolith-retirement cleanup, tie to e89r): the three
+   scenarios hardcode :local/root "../isaac/modules/isaac.comm.telly" (the
+   RETIRING monolith). telly now lives at ../isaac-agent/modules/isaac.comm.telly
+   (server deps.edn :test already points there). Repoint the feature local-roots
+   so they survive monolith deletion. This may be the only change actually
+   needed.
 
-The module-lifecycle events expected by these scenarios — :module/activated (loader), :telly/started /
-:comm/activated (telly comm) — do NOT fire for a module-contributed comm; only the generic config-berth
-:lifecycle/started (path/impl, no module/comm name) appears. So a module-declared comm reconciles as an inert
-slot but the module-activation + comm-start lifecycle is broken. Fix all three together; check whether it's a
-regression from the CI-isolation/teardown arc (974dee3e/58b8c1cb/03c448c4) — module activation may have lost
-its event emission there.
+## Note on a conflicting read
+
+An exploration of berths/reconcile! suggested "boot doesn't discover module
+comms." That describes the DEFAULT-INSTANCE case (a module declaring a comm
+instance with no user :comms entry) — NOT this bug. kjj0 is about a USER-
+configured :comms slot whose :type is module-supplied. The verify run in step 1
+settles it empirically.
+
+Acceptance (revised): isaac-server module features (comm_extension +
+activation) pass with telly fixture repointed off the monolith; a module-
+contributed comm configured under :comms activates at server start emitting
+:module/activated + :comm/activated.
