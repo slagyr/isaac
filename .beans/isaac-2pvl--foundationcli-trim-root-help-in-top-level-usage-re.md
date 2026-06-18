@@ -3,8 +3,12 @@
 title: 'foundation/cli: trim --root help in top-level usage; relocate source-precedence to ''config sources'''
 status: todo
 type: feature
+priority: normal
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-18T18:07:34Z
-updated_at: 2026-06-18T18:07:34Z
+updated_at: 2026-06-18T21:16:12Z
 ---
 
 The top-level `isaac` usage spends two lines on --root, one of which dumps the
