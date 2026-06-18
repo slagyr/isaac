@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-18T23:17:26Z
+updated_at: 2026-06-18T23:22:04Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -67,3 +67,23 @@ the classpath. The installed SEED foundation is authoritative.
 Re-install the comm modules so their coords pin foundation v0.1.1 consistently
 (`isaac modules install isaac.comm.{discord,imessage,acp}`). Aligns the versions
 so nothing skews, but does NOT remove the multi-version-on-classpath hazard.
+
+
+## Update 2026-06-18 — 0yp1 landed ON TOP of this bug
+
+isaac-0yp1 (completed) added transitive module DISCOVERY (resolve-deps! walks
+manifests' :deps), but did NOT change the classpath-addition path:
+add-module-deps! still does `bb-add-deps {:deps {lib coord}}` ONE COORD PER CALL
+(loader.clj:182), now invoked for explicit AND every transitive module
+(loader.clj:207, :1127). So the per-module-append hazard is now exercised MORE,
+not less.
+
+0yp1's tests do NOT cover this: all fixtures are :local/root marigold modules
+(single foundation, no version conflict), so a green 0yp1 does not prove
+version-safety. This bug (single unified resolution + seed-authoritative
+foundation) is the missing substrate under 0yp1's transitive activation; until
+it lands, transitive activation on a real VERSIONED module set has the same
+multi-version skew that made zanebot report 0.1.0 on a v0.1.1 install.
+
+Add an acceptance test with VERSIONED (git/sha) fixtures pinning different
+foundation versions — the case the marigold :local/root fixtures can't reach.
