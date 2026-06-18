@@ -1,10 +1,11 @@
 ---
 # isaac-iy94
 title: 'modules CLI cleanup: install correctness bugs + list display polish + default-to-list'
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-06-18T18:23:22Z
-updated_at: 2026-06-18T18:23:22Z
+updated_at: 2026-06-18T19:12:51Z
 ---
 
 `isaac modules install isaac.server isaac.agent` exposed a pileup. Observed:
