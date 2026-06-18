@@ -4,8 +4,10 @@ title: 'isaac.rb: homebrew formula — brew install isaac (the seed)'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-18T16:48:52Z
-updated_at: 2026-06-18T17:01:45Z
+updated_at: 2026-06-18T17:03:41Z
 ---
 
 The entry point of the product vision: `brew install isaac` gives the user the
@@ -23,17 +25,18 @@ braids.rb), modeled on braids.rb's bb-launcher pattern.
 • `test do`: smoke — `isaac --version` (or `isaac help`) and `isaac init` in a
   sandbox prefix exit 0 and scaffold a config.
 
-## Open decision — dependency strategy (DECIDE before implementing)
+## Dependency strategy — (A) chosen
 
-How do foundation's OWN runtime deps land?
-• (A) Vendor at build time: `brew install` resolves foundation's base classpath
-  into the cellar -> `isaac init`/help work OFFLINE; slower, reproducible install.
-• (B) Resolve on first run: first `isaac` invocation composes the classpath via
-  bb/tools.deps -> fast install, needs network on first use.
-Recommendation: (A) for foundation's base deps (a brew tool should work offline
-out of the box), while INSTALLED MODULES still resolve on demand over the network
-— consistent with `isaac modules install` (isaac-dhzy), which is inherently a
-network op. So: base offline-ready, modules network-resolved.
+Vendor foundation base deps at `brew install`: `bb prepare` against
+`libexec/isaac-foundation/libexec/bb.edn` with `HOME=libexec/deps-home`, then
+the `bin/isaac` wrapper exports `CLJ_CONFIG` / `DEPS_CLJ_DIR` to that cellar
+cache so `help` / `--version` / `init` work offline. Installed modules still
+resolve on demand over the network (`isaac modules install`).
+
+## Implementation (slagyr/homebrew-tap `23b7b83`)
+
+• `Formula/isaac.rb` — v0.1.0 tarball, babashka dep, libexec launcher layout.
+• `.github/workflows/tests.yml` — `brew install` + `brew test` all tap formulae.
 
 ## Relationships
 
