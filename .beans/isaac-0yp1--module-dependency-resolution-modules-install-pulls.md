@@ -1,11 +1,11 @@
 ---
 # isaac-0yp1
 title: 'Module deps via deps.edn: auto-load transitive modules + list-as-tree (REQUIRED BY)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-18T19:21:29Z
-updated_at: 2026-06-18T21:10:26Z
+updated_at: 2026-06-18T21:14:12Z
 blocked_by:
     - isaac-iq1t
 ---
