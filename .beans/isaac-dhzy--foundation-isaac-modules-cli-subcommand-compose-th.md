@@ -5,42 +5,49 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-16T18:43:21Z
-updated_at: 2026-06-17T15:49:07Z
+updated_at: 2026-06-18T13:43:18Z
 ---
 
-Part of the product vision: a brew-installed `isaac` (foundation) is the seed; the user composes their
-assistant by INSTALLING MODULES. `isaac modules install <name>` adds the module to the user's config :modules;
-foundation's existing loader (discover! / berths / schema-compose) picks it up on the next run.
+Product vision: a brew-installed `isaac` (foundation) is the seed; the user composes their assistant by
+INSTALLING MODULES. `isaac modules install <name>` resolves <name> via the registry and adds the module to the
+user's config :modules; foundation's loader (discover! / berths / schema-compose) picks it up on the next run.
 
 ## Command surface (a `modules` command on the :isaac/cli berth, declared by foundation)
-- `isaac modules list`              — show each configured module: id, source (coord/path), status (resolves?/loaded?). This is ALSO the inspection / dry-run view AND the test seam for the launcher's resolution (p2jb). No separate --describe command.
-- `isaac modules install <name>`    — resolve <name> -> coordinate, add to config :modules, fetch/cache.
-- `isaac modules remove <name>`     — remove from config :modules.
-- (maybe) `isaac modules available`/`search` — list installable modules from the registry.
+- `isaac modules list`               — INSTALLED modules: each configured module's id, source (coord/path),
+                                        status (resolves?/loaded?). LOCAL config only, no network. Also the
+                                        inspection/dry-run view AND the launcher (p2jb) resolution test seam.
+- `isaac modules available` [search] — the CATALOG of installable modules, FETCHED from the registry (below).
+- `isaac modules install <name>`     — fetch registry, resolve <name> -> coordinate, write it into config :modules.
+- `isaac modules remove <name>`      — remove <name> from config :modules.
+
+## Registry (resolves the name -> coordinate question)
+The catalog of official modules is a simple EDN hosted IN THE ISAAC REPO (which persists as the beans/docs host —
+now also the module registry), fetched via raw github (same pattern as a homebrew tap):
+
+  ;; github.com/slagyr/isaac/modules.edn
+  {:agent   {:coord {:git/url \"https://github.com/slagyr/isaac-agent.git\" :git/tag \"v0.1.0\"}
+             :desc  \"Crew, LLM providers, sessions, drive/bridge, tools\"}
+   :discord {:coord {:git/url \"...\" :git/tag \"...\"} :desc \"Discord comm\"}
+   ...}
+
+`install` and `available` fetch this; `install` looks up :<name> -> :coord and writes it to config :modules.
+Cache the fetched registry; allow an override URL (testing / private registries).
 
 ## Behavior — config management, NOT runtime
-install/remove MUTATE THE CONFIG (:modules map in isaac.edn) — they do not run module code. Reuse the existing
+install/remove/list operate on CONFIG (:modules in isaac.edn); they do not run module code. Reuse the existing
 config-mutate machinery (isaac.config.mutate / cli set-value / nav). Foundation loads from :modules on the next
-invocation (existing contract). Pairs with epic isaac-iiga: an installed module LOADS as config presence; any
-service it owns only STARTS when the server runs (so installing discord doesn't spin up a client).
+invocation. Pairs with epic isaac-iiga: an installed module LOADS as config presence; any service it owns only
+STARTS when the server runs (installing discord doesn't spin up a client).
 
-## Open design (cross-ref the product-vision discussion)
-- Name -> coordinate resolution: a small registry (name -> git/mvn coord) for the homebrew-like UX, vs raw git
-  coords (slagyr/isaac-<x>) as the zero-infra start. DECIDE.
-- Runtime loading: a brew-installed `isaac` must build its CLASSPATH from the configured modules at run time.
-  LIKELY a BB-LAUNCHER mirroring the slagyr/homebrew-tap braids formula (depends_on borkdude/brew/babashka; a
-  bb wrapper in libexec) — and use babashka.deps/add-deps to resolve the user's :modules coords dynamically.
-  Lighter than a JVM launcher and fits Isaac's bb-first design. CONFIRM all modules run under bb (ISAAC.md:
-  bb-first, fix bb breakage upstream); else a JVM fallback for that module. `modules install` writes config +
-  ensures the dep is resolvable; the launcher composes the classpath. Separate bean.
-
-## Acceptance (write @wip scenarios; promote to todo after)
-- `isaac modules install agent` adds agent's coordinate to config :modules; `isaac modules list` shows it;
-  the next `isaac` run loads it (its berths/schema appear).
-- `isaac modules remove agent` removes it; next run does not load it.
-- installing an unknown module -> a friendly structured error, config unchanged.
+## Acceptance (write @wip scenarios)
+- `isaac modules available` (against a test registry) lists the catalog entries (name + desc).
+- `isaac modules install agent` resolves agent via the registry and adds its coordinate to config :modules;
+  `isaac modules list` then shows it.
+- `isaac modules remove agent` removes it from config; `list` no longer shows it.
+- `isaac modules install <unknown>` -> friendly structured error (not in registry); config unchanged.
+- registry fetch failure -> clear error; config unchanged.
 
 ## Relationships
-- Foundation owns this (it owns the :isaac/cli berth, config mutate, the module loader).
-- Depends on: the launcher (classpath-from-config) + the brew packaging.
-- Related: epic isaac-iiga (load/unload vs start/stop).
+- Foundation owns this (the :isaac/cli berth, config mutate, the module loader).
+- Pairs with isaac-p2jb (launcher reads :modules + composes the classpath; `modules list` is the view onto its resolution).
+- Registry hosted in the isaac repo (modules.edn). Related: epic isaac-iiga (load/unload vs start/stop).
