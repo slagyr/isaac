@@ -4,9 +4,10 @@ title: 'isaac.rb: homebrew formula — brew install isaac (the seed)'
 status: in-progress
 type: task
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-18T16:48:52Z
-updated_at: 2026-06-18T17:03:41Z
+updated_at: 2026-06-18T17:18:17Z
 ---
 
 The entry point of the product vision: `brew install isaac` gives the user the
@@ -32,7 +33,7 @@ the `bin/isaac` wrapper exports `CLJ_CONFIG` / `DEPS_CLJ_DIR` to that cellar
 cache so `help` / `--version` / `init` work offline. Installed modules still
 resolve on demand over the network (`isaac modules install`).
 
-## Implementation (slagyr/homebrew-tap `11a10ec`)
+## Implementation (slagyr/homebrew-tap `37e8c5e`)
 
 • `Formula/isaac.rb` — v0.1.0 tarball, babashka dep, libexec launcher layout.
 • `.github/workflows/tests.yml` — `brew install` + `brew test` all tap formulae.
