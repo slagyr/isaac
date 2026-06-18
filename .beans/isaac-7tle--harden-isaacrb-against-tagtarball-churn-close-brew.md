@@ -1,10 +1,11 @@
 ---
 # isaac-7tle
 title: Harden isaac.rb against tag/tarball churn + close brew-install verification gap
-status: draft
+status: todo
 type: task
+priority: normal
 created_at: 2026-06-18T17:52:12Z
-updated_at: 2026-06-18T17:52:12Z
+updated_at: 2026-06-18T21:21:02Z
 ---
 
 isaac.rb (slagyr/homebrew-tap) broke on `brew install` with a sha256 mismatch:
@@ -42,3 +43,40 @@ on a clean-ish prefix, not just a local smoke replay.
 • Release/tag policy documented (no moving published tags; or pinned asset).
 • Formula CI (tap tests.yml) actually exercises `brew install`, catching sha
   drift.
+
+
+## Chosen direction (decided with Micah 2026-06-18): immutable tags + auto-bump
+
+Goal: `brew install slagyr/tap/isaac` always gets the LATEST release, and never
+breaks on a stale sha. Achieve it the idiomatic Homebrew way — NOT a dynamic
+"resolve latest tag at install" (unsupported: stable formulae need a literal
+url+sha; only --HEAD tracks a moving target, unstable/opt-in).
+
+1. Tags become IMMUTABLE + incrementing. Never move a published tag; ship
+   v0.1.1, v0.1.2, ... per release. (This alone kills the stale-sha churn.)
+2. `livecheck` block in Formula/isaac.rb so Homebrew knows where the newest
+   version lives.
+3. Auto-bump Action in slagyr/homebrew-tap: on a new foundation release, run
+   `brew bump-formula-pr` (or commit the new url+sha256) so the tap always
+   points at the latest tag, properly checksummed. Users get latest; the bot
+   keeps it current (minutes of lag, not install-time resolution).
+4. Keep `head "<git-url>"` for `brew install --HEAD` (dev bleeding-edge).
+
+This subsumes the earlier "pick one" hardening options.
+
+## Open decision for the worker
+
+• Auto-bump trigger: fire on EVERY new tag, or only on tags explicitly marked
+  as releases (e.g. GitHub Release published, or a naming convention)? Decide
+  before wiring the Action.
+
+## Acceptance (updated)
+
+• Published tags are immutable; a release bumps version (no tag moves).
+• `brew install slagyr/tap/isaac` on a clean machine installs the latest
+  released version, checksum valid.
+• A new foundation release auto-updates the tap formula (url+sha) without manual
+  edits.
+• Formula CI runs a REAL `brew install` from the tap (closes the b3n0 verify
+  gap — replay can't catch sha drift).
+• `brew install --HEAD` works for dev.
