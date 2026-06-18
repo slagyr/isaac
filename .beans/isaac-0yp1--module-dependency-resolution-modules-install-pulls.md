@@ -1,64 +1,66 @@
 ---
 # isaac-0yp1
-title: 'Module dependency resolution: ''modules install'' pulls required modules transitively'
+title: 'Module deps via deps.edn: auto-load transitive modules + list-as-tree (REQUIRED BY)'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-06-18T19:21:29Z
-updated_at: 2026-06-18T19:21:29Z
+updated_at: 2026-06-18T20:00:47Z
+blocked_by:
+    - isaac-iq1t
 ---
 
-Today `isaac modules install <name>` installs ONLY the named module (registry
-lookup -> write one coord). Real modules need others: e.g. installing
-isaac.hail or a comm module without isaac.agent/isaac.server yields a half-wired
-assistant. Users shouldn't have to know and hand-install the dependency graph.
+SUPERSEDES this bean's original registry-:requires design. Decided with Micah
+2026-06-18: module dependencies are deps.edn-native, NOT declared in the
+registry or a manifest field.
 
-## Goal
+## Model
 
-`modules install <name>` installs <name> AND its required modules (transitive
-closure), writing them all into config :modules. "Compose the assistant" should
-mean: name what you want, get what it needs.
+• A module declares its dependencies in its OWN deps.edn — ordinary tools.deps
+  git/mvn coords on other isaac module repos (same as any Clojure lib).
+• A transitive dep is a MODULE iff it ships an isaac-manifest.edn. The manifest
+  IS the module marker; a dep without one is just a library on the classpath.
+• config :modules holds ONLY explicitly-installed modules. Transitive modules
+  are downloaded + loaded AUTOMATICALLY (tools.deps resolves them onto the
+  classpath; see add-module-deps!).
 
-## Design
+## A. Loader — activate EVERY manifest on the resolved classpath
 
-1. REGISTRY declares deps. Add `:requires [<module-id> ...]` to modules.edn
-   entries (isaac-xdg3 owns the file; this needs the entries populated — e.g.
-   :isaac.hail :requires [:isaac.agent]; comm modules -> [:isaac.agent];
-   :isaac.server -> [:isaac.agent]; verify each module's real needs).
+Today discovery finds only the manifest whose :id matches the requested module
+(see isaac-iq1t). Transitively-pulled module manifests land on the classpath but
+never activate, so their berths/comms/providers don't fire. Change: after
+resolving the classpath for the configured :modules, scan for ALL
+isaac-manifest.edn on the classpath and activate each — not just configured ids.
+DEPENDS ON isaac-iq1t (classpath manifest discovery unification).
 
-2. INSTALL resolves the closure. On `install <name>`: walk :requires, dedupe,
-   skip already-installed, write every new module's coord to :modules. Cycle-
-   safe (visited set). Confirm with a summary: "Installed isaac.hail (+ deps:
-   isaac.agent)".
+## B. `modules list` = resolved tree
 
-3. Idempotent. Re-installing is a no-op for already-present modules; only new
-   ones are added/announced.
-
-## Open questions (decide in design)
-
-• remove: should `remove <name>` also remove now-orphaned deps? Lean NO by
-  default (a dep may be required by another installed module / be wanted
-  standalone); maybe a `--prune` flag that removes deps not required by anything
-  else. Decide.
-• Version conflicts: if two modules require different coords/tags of the same
-  dep, how to resolve? v1 could take the registry's canonical coord and warn.
-• Should deps be recorded as explicitly-installed vs pulled-as-dependency
-  (affects prune)? v1 can treat all :modules entries equally; revisit if prune
-  lands.
+list shows the FULL resolved set: explicit (:modules) + transitive. New column
+REQUIRED BY: blank for explicit; for implied, the requiring module(s), truncated
+"first +N" (e.g. "isaac.hail +2"). Full vector in --edn/--json as :required-by
+[...] (never truncated). Consequence: list now RESOLVES the classpath (no longer
+the cheap config-only read it is today) — accepted tradeoff per Micah.
+Update features/module/modules_list.feature to the tree shape (its current
+marigold.bridge fixtures pull no module deps, so tree == config there; add the
+REQUIRED BY column + a new scenario where a fixture module's deps.edn pulls
+another manifest-bearing module -> shows as implied, REQUIRED BY the requirer).
 
 ## Acceptance (feature-test, features/module)
 
-• Registry where :isaac.hail :requires [:isaac.agent]; `install isaac.hail` ->
-  config :modules gains BOTH :isaac.hail and :isaac.agent; `modules list` shows
-  both :ok; confirmation names the pulled deps.
-• Re-running install is idempotent (no dupes, no re-announce).
-• A cycle in :requires terminates (no infinite loop).
-• An unknown id in :requires -> clear structured error; partial closure not
-  half-written (all-or-nothing, or clearly reported).
+• Fixture module A whose deps.edn depends on module B (B ships isaac-manifest.edn):
+  loading A activates B's contributions (berths/comms fire). NOTE: activation
+  scenarios LOAD modules, so these fixtures must really exist (unlike config-only
+  install). Likely build on the telly/kombucha/echo manifest fixtures.
+• A deps.edn dep WITHOUT a manifest is a plain lib: on the classpath, NOT a
+  module, NOT listed.
+• `modules list` shows explicit + implied; REQUIRED BY blank for explicit,
+  requirer (first +N) for implied; --edn carries the full :required-by vector.
+• config :modules is UNCHANGED by transitive loading (only explicit installs
+  persist).
+• Diamond dep (B required by A and C) -> table "A +1", --edn :required-by [A C].
 
-## Relationships
+## Out of scope / related
 
-• Builds on isaac-iy94 (install write-path correctness — dotted-id fix,
-  multi-write, validation). Do iy94 first; dep-install writes MULTIPLE coords,
-  so it needs the corrected whole-map write.
-• Registry data: isaac-xdg3 (modules.edn) must carry :requires per module.
-• Part of the dhzy `modules` command surface.
+• `modules why <id>` drill-down — separate bean.
+• registry :requires — DROPPED (superseded by this model).
+• depends-on isaac-iq1t; pairs with isaac-dhzy (modules command).
