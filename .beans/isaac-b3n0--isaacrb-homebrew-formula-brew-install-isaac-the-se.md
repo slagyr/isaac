@@ -1,10 +1,11 @@
 ---
 # isaac-b3n0
 title: 'isaac.rb: homebrew formula — brew install isaac (the seed)'
-status: draft
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-06-18T16:48:52Z
-updated_at: 2026-06-18T16:48:52Z
+updated_at: 2026-06-18T17:01:45Z
 ---
 
 The entry point of the product vision: `brew install isaac` gives the user the
