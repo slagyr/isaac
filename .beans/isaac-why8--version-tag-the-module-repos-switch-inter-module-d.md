@@ -1,11 +1,13 @@
 ---
 # isaac-why8
 title: Version-tag the module repos; switch inter-module deps from :git/sha to tags
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-18T14:32:19Z
-updated_at: 2026-06-18T14:32:19Z
+updated_at: 2026-06-18T16:35:55Z
 ---
 
 Today only isaac-foundation has a version tag (v0.1.0). The other 8 modules — agent, server, acp, cron, hail,
