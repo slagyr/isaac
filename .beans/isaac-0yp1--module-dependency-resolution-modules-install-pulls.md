@@ -1,13 +1,12 @@
 ---
 # isaac-0yp1
 title: 'Module deps via deps.edn: auto-load transitive modules + list-as-tree (REQUIRED BY)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-18T19:21:29Z
-updated_at: 2026-06-18T21:41:47Z
+updated_at: 2026-06-18T21:51:32Z
 blocked_by:
     - isaac-iq1t
 ---
@@ -130,3 +129,9 @@ merge-resolved-classpath-modules double-unwrapped implied entries (`(get entry i
 on an already-unwrapped value), leaving transitive modules as nil in the index.
 Launcher greet now works; `env ISAAC_GIT=1 bb features-all features/module/
 module_deps.feature features/module/modules_list.feature` → 10/10 green.
+
+## Verification notes
+
+- Verification passed on 2026-06-18 against fetched GitHub `isaac-foundation` `main` at `dceb2af`, not the stale local `../plan/isaac-foundation` mirror.
+- Focused proof: `env ISAAC_GIT=1 bb features-all features/module/module_deps.feature features/module/modules_list.feature` in `isaac-foundation` → `10 examples, 0 failures, 24 assertions`.
+- The launcher-path regression is fixed: the transitive module contribution now activates, while the previously-green list/tree scenarios remain green.

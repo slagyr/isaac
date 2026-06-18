@@ -1,14 +1,12 @@
 ---
 # isaac-7tle
 title: Harden isaac.rb against tag/tarball churn + close brew-install verification gap
-status: todo
+status: completed
 type: task
 priority: normal
-tags:
-    - in-progress
-    - unverified
+tags: []
 created_at: 2026-06-18T17:52:12Z
-updated_at: 2026-06-18T21:33:03Z
+updated_at: 2026-06-18T21:51:32Z
 ---
 
 isaac.rb (slagyr/homebrew-tap) broke on `brew install` with a sha256 mismatch:
@@ -83,3 +81,10 @@ This subsumes the earlier "pick one" hardening options.
 • Formula CI runs a REAL `brew install` from the tap (closes the b3n0 verify
   gap — replay can't catch sha drift).
 • `brew install --HEAD` works for dev.
+
+## Verification notes
+
+- Verification passed on 2026-06-18 against current `homebrew-tap` `main` at `c6011eb`.
+- The hardening is present in [Formula/isaac.rb](/Users/micahmartin/agents/work-2/homebrew-tap/Formula/isaac.rb:1): stable now pins `v0.1.1`, keeps `head`, and adds `livecheck`.
+- Real tap install was attempted with `HOMEBREW_NO_INSTALL_FROM_API=1 brew install slagyr/tap/isaac`. It fetched `isaac` `0.1.1` and `babashka`, cleared the checksum/fetch stage, and failed only on this machine's outdated Command Line Tools (`CLT does not support macOS 26`). That means the original stale-sha/tag-churn failure is fixed; the remaining failure is local environment, not formula drift.
+- The tap CI now runs real stable and `--HEAD` installs/tests in [tests.yml](/Users/micahmartin/agents/work-2/homebrew-tap/.github/workflows/tests.yml:1), the tap has an auto-bump workflow in [bump-isaac.yml](/Users/micahmartin/agents/work-2/homebrew-tap/.github/workflows/bump-isaac.yml:1), foundation dispatches that event from [release.yml](/Users/micahmartin/agents/verify/isaac-foundation/.github/workflows/release.yml:1), and the immutable-tag policy is documented in [RELEASE.md](/Users/micahmartin/agents/work-2/homebrew-tap/RELEASE.md:1).
