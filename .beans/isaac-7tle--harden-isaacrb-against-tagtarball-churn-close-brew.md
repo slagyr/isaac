@@ -4,8 +4,11 @@ title: Harden isaac.rb against tag/tarball churn + close brew-install verificati
 status: todo
 type: task
 priority: normal
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-18T17:52:12Z
-updated_at: 2026-06-18T21:21:02Z
+updated_at: 2026-06-18T21:33:03Z
 ---
 
 isaac.rb (slagyr/homebrew-tap) broke on `brew install` with a sha256 mismatch:
