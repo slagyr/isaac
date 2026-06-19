@@ -1,12 +1,10 @@
 ---
 # isaac-7e60
 title: 'modules show <name>: full detail for one module (brew info)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
-    - in-progress
-    - unverified
 created_at: 2026-06-19T18:43:30Z
 updated_at: 2026-06-19T18:53:14Z
 ---
@@ -33,3 +31,11 @@ structured. Unknown id -> error, exit 1.
   meaningful for published modules; until then show it for what resolves.
 • Keeps the list table compact; detail on demand. `modules list -v` (full coords
   inline) was the considered alternative — show chosen.
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Verified against fetched GitHub `isaac-foundation` `main` at `11a7fd9`.
+- `env ISAAC_GIT=1 bb features-all features/module/modules_show.feature` passed: `3 examples, 0 failures, 7 assertions`.
+- Full repo lane on the same head passed: `env ISAAC_GIT=1 bb ci` -> `754` spec examples, `0` failures; `109` feature examples, `0` failures.

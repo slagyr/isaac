@@ -1,11 +1,10 @@
 ---
 # isaac-qqor
 title: 'modules upgrade [name...]: refresh installed modules to latest registry coords'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
-    - unverified
 created_at: 2026-06-19T18:43:30Z
 updated_at: 2026-06-19T18:50:30Z
 ---
@@ -33,3 +32,12 @@ date".
 • Mirrors brew upgrade; pairs with modules install/available (dhzy).
 • Uses :module-registry seam (test) / raw-github (real).
 • Selective `upgrade <name>` and a summary of changes.
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Verified against fetched GitHub `isaac-foundation` `main` at `11a7fd9`.
+- `env ISAAC_GIT=1 bb features-all features/module/modules_upgrade.feature` passed on rerun: `2 examples, 0 failures, 7 assertions`.
+- I also replayed the stale-registry scenario directly with the packaged launcher; `modules upgrade` printed `Upgraded stale: 6960803 -> 817a524` and rewrote the config as expected.
+- Full repo lane on the same head passed: `env ISAAC_GIT=1 bb ci` -> `754` spec examples, `0` failures; `109` feature examples, `0` failures.
