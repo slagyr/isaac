@@ -1,10 +1,13 @@
 ---
 # isaac-09zr
 title: Run @slow feature tests in CI (launcher/subprocess end-to-end lane)
-status: todo
+status: in-progress
 type: task
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T15:30:35Z
-updated_at: 2026-06-19T15:30:35Z
+updated_at: 2026-06-19T15:39:30Z
 ---
 
 @slow feature scenarios are EXCLUDED from the fast lane (:features alias uses
@@ -41,3 +44,13 @@ flip to required.
 • All currently-green @slow scenarios pass in it; red ones are tracked (@wip or
   pinned to their bean).
 • New @slow scenarios are picked up automatically (tag-driven, not enumerated).
+
+
+
+## Implementation (work-2)
+
+HEAD: isaac-foundation (see push SHA)
+
+- `bb features-slow` routed through `bb.test-tasks/run-features-slow!` (60s timeout).
+- CI job `slow-features` runs `bb features-slow` on push/PR, nightly (06:00 UTC), and workflow_dispatch.
+- Audited @slow scenarios: 2 green (module_deps transitive launcher, modules_list real-load); no 92p3 scenario yet (lands with that bean; use @wip until green).
