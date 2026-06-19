@@ -3,8 +3,11 @@
 title: Cut v0.1.2 coordinated release (foundation + modules + registry + formula)
 status: todo
 type: task
+priority: normal
 created_at: 2026-06-19T16:41:52Z
-updated_at: 2026-06-19T16:41:52Z
+updated_at: 2026-06-19T16:42:25Z
+blocked_by:
+    - isaac-xc9n
 ---
 
 Unblocked: isaac-92p3 (seed-authoritative foundation) is DONE. All the recent
