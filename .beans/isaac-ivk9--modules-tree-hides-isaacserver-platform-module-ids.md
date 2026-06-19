@@ -1,11 +1,13 @@
 ---
 # isaac-ivk9
 title: modules tree hides :isaac.server (platform-module-ids) despite real dependents + conflicts
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-19T19:24:48Z
-updated_at: 2026-06-19T19:24:48Z
+updated_at: 2026-06-19T19:29:11Z
 ---
 
 `modules list` never shows :isaac.server even though modules depend on it
