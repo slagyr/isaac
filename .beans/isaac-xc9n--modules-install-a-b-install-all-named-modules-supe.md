@@ -1,10 +1,12 @@
 ---
 # isaac-xc9n
 title: 'modules install <a> <b> ...: install ALL named modules (supersede reject)'
-status: todo
+status: unverified
 type: feature
+tags:
+    - unverified
 created_at: 2026-06-19T16:41:52Z
-updated_at: 2026-06-19T16:41:52Z
+updated_at: 2026-06-19T17:05:00Z
 ---
 
 Micah 2026-06-19: `isaac modules install a b c` should install ALL named
