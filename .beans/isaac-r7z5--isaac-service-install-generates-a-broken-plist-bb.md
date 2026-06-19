@@ -1,11 +1,14 @@
 ---
 # isaac-r7z5
 title: isaac service install generates a broken plist (bb --config $HOME/bb.edn -m isaac.main)
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-19T20:23:47Z
-updated_at: 2026-06-19T20:23:47Z
+updated_at: 2026-06-19T20:57:15Z
 ---
 
 `isaac service install` (and the monolith `isaac-dev service install`) write a
@@ -52,3 +55,11 @@ migration plan).
 
 ## Relationships
 • Blocks the "run packaged isaac as a service" deployment (iiga lifecycle).
+
+## Handoff notes (work-3)
+
+• `service install` prefers packaged launcher (`which isaac`) → plist runs
+  `isaac [--root <root>] server`; dev checkout falls back to
+  `bb --config <isaac-dir>/bb.edn -m isaac.main server`.
+• `--root` on install (or global `--root`) forwarded to the launcher.
+• Regression: `features/cli/service.feature` packaged + dev scenarios.
