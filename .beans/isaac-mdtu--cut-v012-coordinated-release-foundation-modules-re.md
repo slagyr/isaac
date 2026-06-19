@@ -1,11 +1,10 @@
 ---
 # isaac-mdtu
 title: Cut v0.1.2 coordinated release (foundation + modules + registry + formula)
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
-    - unverified
 created_at: 2026-06-19T16:41:52Z
 updated_at: 2026-06-19T17:53:53Z
 blocked_by:
@@ -100,3 +99,12 @@ Bumped `:version` in each module manifest to match its release tag; re-tagged
 
 Local proof: `modules install isaac.server isaac.cron` → list shows `0.1.4` /
 `0.1.2`.
+
+## Verification Notes (round 2 — green)
+
+2026-06-19 verifier re-check:
+
+- Published retagged modules match the handoff exactly: `agent v0.1.4 -> 632d7fe`, `server v0.1.5 -> 817a524`, `acp v0.1.4 -> f8e1499`, `cron v0.1.3 -> bf8208a`, `hail v0.1.3 -> 4d06719`, `hooks v0.1.3 -> 7e9673b`, `discord v0.1.3 -> 6b8ae03`, `imessage v0.1.3 -> aea6a8b`. [modules.edn](/Users/micahmartin/agents/verify/isaac/modules.edn:1) matches those SHAs.
+- Tap is still correct: [Formula/isaac.rb](/Users/micahmartin/agents/work-2/homebrew-tap/Formula/isaac.rb:1) still points at foundation `v0.1.2`.
+- Released manifests now carry the corrected top-level versions in the published artifacts. Spot checks: `git -C /Users/micahmartin/agents/verify/isaac-agent show FETCH_HEAD:resources/isaac-manifest.edn` for `isaac-agent v0.1.4` reports `:version "0.1.3"`, [isaac.server](/Users/micahmartin/.gitlibs/libs/isaac.server/isaac.server/817a5242b3c85bdcadbc4225c5d75f8fafc64c18/resources/isaac-manifest.edn:2) reports `0.1.4`, and [isaac.cron](/Users/micahmartin/.gitlibs/libs/isaac.cron/isaac.cron/bf8208a9370fc2c497c494eda5aa06713532189b/resources/isaac-manifest.edn:2) reports `0.1.2`.
+- Clean proof is green on released foundation `v0.1.2`: `./libexec/isaac --root /private/tmp/isaac-mdtu-proof-root-2 --version` returned `isaac 0.1.2 (305c337)`, `init` succeeded, `modules install isaac.server isaac.cron` succeeded from the live registry, `modules list --edn` reported `:version "0.1.4"` for `isaac.server` and `:version "0.1.2"` for `isaac.cron`, and rerunning `--version` after install still returned `isaac 0.1.2 (305c337)`.
