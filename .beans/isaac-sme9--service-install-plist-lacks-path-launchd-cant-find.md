@@ -1,11 +1,14 @@
 ---
 # isaac-sme9
 title: service install plist lacks PATH — launchd can't find bb (service won't start)
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-19T21:54:36Z
-updated_at: 2026-06-19T21:54:36Z
+updated_at: 2026-06-19T21:57:55Z
 ---
 
 Follow-up to isaac-r7z5. r7z5 fixed the plist ProgramArguments (packaged launcher
@@ -45,3 +48,9 @@ launcher shells out to bb AND git).
 ## Relationships
 • Follow-up to isaac-r7z5 (same `service install`, isaac-server). Completes the
   monolith->packaged service cutover (done on zanebot via the PATH workaround).
+
+## Handoff notes (work-3)
+
+• Plist now includes `EnvironmentVariables.PATH` = `<bb-dir>:<isaac-dir>:/usr/bin:/bin`.
+• Packaged install resolves bb (required by launcher) and prints both paths.
+• Regression: `service.feature` PATH scenario; `which` stub merges isaac+bb.
