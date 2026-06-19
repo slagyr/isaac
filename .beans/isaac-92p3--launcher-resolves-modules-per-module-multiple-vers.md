@@ -8,7 +8,7 @@ tags:
     - unverified
     - in-progress
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-19T15:44:56Z
+updated_at: 2026-06-19T15:51:47Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -163,3 +163,31 @@ deps). Don't fight it with a full BOM-override of everything.
   so `modules list` can warn (see the modules-list-conflict-warning bean).
 • Full registry-BOM override stays an OPTIONAL future lever if surfacing-and-
   warning proves insufficient.
+
+
+## Scenarios written -> features/module/single_version.feature (@wip, 3)
+
+1. (@slow) transitive foundation never shadows the seed (--version != "9.9.9").
+2. (@slow) a module required at two versions loads as exactly one (marigold.app
+   pulls marigold.shared 1.0.0, app2 pulls 9.9.9 -> tree shows shared ONCE with
+   the chosen version; "9.9.9" absent).
+3. a module both installed AND required appears once (explicit wins; tree has
+   exactly 2 entries, greeter not duplicated).
+
+## New surface the fix must add (for observability)
+
+• :version on each resolved-tree entry (read from the module's manifest). list
+  --edn currently emits {:id :coord :status :required-by} (loader.clj:1150) — add
+  :version. Also helps isaac-yi82's conflict output. Probably add a VERSION
+  column to the human table too.
+• New gherclj step: `the isaac modules list has {int} entries` — asserts the
+  resolved :modules count (the dedup observable; path-contains can't assert
+  "appears once / no duplicate").
+
+## Caveats for the implementer
+
+• Scenario 2's winner (1.0.0) must be made DETERMINISTIC by fixture design
+  (tools.deps single-basis IS deterministic given fixed input, but pin the
+  fixtures so the known version wins; adjust the asserted version to match).
+• Scenarios 2 & 3 share fixture shape with isaac-yi82 (conflicting versions) —
+  reuse.
