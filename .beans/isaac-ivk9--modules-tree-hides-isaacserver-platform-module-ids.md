@@ -1,11 +1,10 @@
 ---
 # isaac-ivk9
 title: modules tree hides :isaac.server (platform-module-ids) despite real dependents + conflicts
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
 created_at: 2026-06-19T19:24:48Z
 updated_at: 2026-06-19T19:29:11Z
 ---
@@ -54,3 +53,11 @@ from platform-module-ids does not change classpath/seed behavior.
 
 • Surfaced by isaac-90df (git-coord tree). Restores yi82 conflict detection for
   server. Pairs with isaac-wnyz (implied-coord display).
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Verified against fetched GitHub `isaac-foundation` `main` at `e282234`, not the stale local mirror.
+- `env ISAAC_GIT=1 bb features-all features/module/git_coord_tree.feature features/module/conflict_warning.feature` passed: `6 examples, 0 failures, 14 assertions`.
+- Full repo lane on the same head passed: `env ISAAC_GIT=1 bb ci` -> `754` spec examples, `0` failures; `110` feature examples, `0` failures.
