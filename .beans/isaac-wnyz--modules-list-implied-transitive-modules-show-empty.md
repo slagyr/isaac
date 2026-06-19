@@ -1,12 +1,10 @@
 ---
 # isaac-wnyz
 title: 'modules list: implied (transitive) modules show empty COORD {}'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
-    - unverified
-    - in-progress
 created_at: 2026-06-19T19:22:00Z
 updated_at: 2026-06-19T19:24:38Z
 ---
@@ -51,3 +49,11 @@ into the index entry so implied rows show it. Surface it in the table (COORD),
   all implied ids (not only absent keys).
 • Regression: `git_coord_tree.feature` asserts `modules.1.coord.git/url` for
   `:isaac.agent`.
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Verified against fetched GitHub `isaac-foundation` `main` at `5833dcf`, not the stale local mirror.
+- `env ISAAC_GIT=1 bb features-all features/module/git_coord_tree.feature features/module/module_deps.feature features/module/modules_show.feature` passed: `10 examples, 0 failures, 23 assertions`.
+- Full repo lane on the same head passed: `env ISAAC_GIT=1 bb ci` -> `754` spec examples, `0` failures; `109` feature examples, `0` failures.
