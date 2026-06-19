@@ -1,12 +1,10 @@
 ---
 # isaac-r7z5
 title: isaac service install generates a broken plist (bb --config $HOME/bb.edn -m isaac.main)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - in-progress
-    - unverified
 created_at: 2026-06-19T20:23:47Z
 updated_at: 2026-06-19T20:57:15Z
 ---
@@ -63,3 +61,11 @@ migration plan).
   `bb --config <isaac-dir>/bb.edn -m isaac.main server`.
 • `--root` on install (or global `--root`) forwarded to the launcher.
 • Regression: `features/cli/service.feature` packaged + dev scenarios.
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Verified against fetched GitHub `isaac-server` `main` at `04aeda9`, not the stale local mirror.
+- `env ISAAC_GIT=1 bb features features/cli/service.feature` passed: `16 examples, 0 failures, 63 assertions`.
+- `env ISAAC_GIT=1 bb spec spec/isaac/service/cli_spec.clj spec/isaac/service/macos_spec.clj` passed: `31 examples, 0 failures, 63 assertions`.
