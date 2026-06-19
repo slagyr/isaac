@@ -1,11 +1,10 @@
 ---
 # isaac-90df
 title: Resolved-tree transitive discovery only works for :local/root, not git/mvn coords
-status: unverified
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
 created_at: 2026-06-19T18:18:21Z
 updated_at: 2026-06-19T19:30:00Z
 ---
@@ -64,3 +63,11 @@ coord-directory looks up materialized git checkouts in ~/.gitlibs by :git/sha
 (with :deps/root). list-configured-modules preloads before tree walks.
 @slow features/module/git_coord_tree.feature: acp → isaac.agent REQUIRED BY;
 foundation git+deps/root conflict fixtures → :conflicts in --edn. bb ci green.
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Verified against fetched GitHub `isaac-foundation` `main` at `c402b5a`, which includes the 90df fix commit `ca465d6`.
+- `env ISAAC_GIT=1 bb features-all features/module/git_coord_tree.feature` passed: `2 examples, 0 failures, 4 assertions`.
+- `env ISAAC_GIT=1 bb ci` passed on that head: `754` spec examples, `0` failures; `106` feature examples, `0` failures.
