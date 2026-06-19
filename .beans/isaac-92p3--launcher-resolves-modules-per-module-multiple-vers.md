@@ -1,13 +1,12 @@
 ---
 # isaac-92p3
 title: Launcher resolves modules per-module → multiple versions of foundation/modules on classpath
-status: unverified
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-19T16:45:00Z
+updated_at: 2026-06-19T16:13:12Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -208,3 +207,15 @@ set now covers both lib symbols. Repro after compose + discover with explicit
 
 Green locally: `bb ci`, loader spec (29 examples), `single_version.feature`,
 `bb features-slow`.
+
+## Verification notes
+
+- Verification passed on 2026-06-19 against fetched GitHub `isaac-foundation` `main` at `684eb32`, not the stale local mirror.
+- The old versioned explicit-plus-transitive repro is fixed. Direct classpath inspection after real compose + discover with explicit `isaac.server` `ba30caa` plus transitive `isaac.comm.acp` `d108562` now yields one entry per module:
+  `{[:isaac.foundation "0.1.2"] 1, [:isaac.comm.acp "0.1.0"] 1, [:isaac.server "0.1.0"] 1, [:isaac.agent "0.1.0"] 1}`.
+- The packaged launcher path is green on the zanebot-style comm set:
+  `./libexec/isaac --root <tmp-root> --version` → `isaac 0.1.2 (684eb32)`.
+- Focused checks passed:
+  - `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/foundation/cli_steps.clj` → `29 examples, 0 failures, 73 assertions`
+  - `env ISAAC_GIT=1 bb features features/module/single_version.feature` → `1 examples, 0 failures, 2 assertions`
+  - `env ISAAC_GIT=1 bb features-slow` → `4 examples, 0 failures, 9 assertions`
