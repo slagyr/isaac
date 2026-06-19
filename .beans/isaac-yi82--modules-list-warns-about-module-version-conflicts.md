@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-19T15:44:56Z
-updated_at: 2026-06-19T16:14:38Z
+updated_at: 2026-06-19T16:15:45Z
 blocked_by:
     - isaac-92p3
 ---
@@ -91,5 +91,5 @@ Robust to column widths; strict on structure + the ✓ marker.
 
 ## Handoff
 
-isaac-foundation @ 231be0c
+isaac-foundation @ e68a9bb (231be0c + slow-scenario fix)
 bb ci green (754 spec + 105 feature examples)
