@@ -1,10 +1,13 @@
 ---
 # isaac-qqor
 title: 'modules upgrade [name...]: refresh installed modules to latest registry coords'
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T18:43:30Z
-updated_at: 2026-06-19T18:43:30Z
+updated_at: 2026-06-19T18:50:30Z
 ---
 
 The fix for stale config coords (config snapshots don't auto-update when the
