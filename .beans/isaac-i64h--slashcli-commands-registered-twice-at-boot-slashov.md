@@ -1,13 +1,12 @@
 ---
 # isaac-i64h
 title: Slash/CLI commands registered twice at boot -> :slash/override warnings
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-19T22:41:43Z
+updated_at: 2026-06-19T22:53:51Z
 ---
 
 Built-in slash commands (crew, cwd, effort, model, status) are registered ONCE
@@ -29,3 +28,10 @@ same `:handler` (idempotent re-registration). CLI-init and server-boot both call
 `process-manifest-berths!`; second pass no longer emits `:slash/override` for
 built-ins. Specs added in `registry_spec.clj`. `bb spec`: 1041 examples, 0
 failures.
+
+## Verification Notes
+
+- Verification passed on 2026-06-19 against fetched GitHub `isaac-agent` `main` at `7bcc183`, not the stale local `../plan` mirror.
+- Focused proof passed: `env ISAAC_GIT=1 bb spec spec/isaac/slash/registry_spec.clj spec/isaac/llm/api_spec.clj` -> `47 examples, 0 failures, 61 assertions`.
+- The fix is in [src/isaac/slash/registry.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/slash/registry.clj:16): `register!` now skips the second swap/log pass when the existing command has the same `:handler`.
+- Coverage in [spec/isaac/slash/registry_spec.clj](/Users/micahmartin/agents/verify/isaac-agent/spec/isaac/slash/registry_spec.clj:52) explicitly proves same-handler double registration stays quiet and that processing built-in slash berths twice emits no `:slash/override` warnings.
