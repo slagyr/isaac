@@ -18,17 +18,17 @@ depends on a monolithic checkout here at runtime or in CI.
 
 ## Repositories
 
-| Repository | Role |
-|---|---|
-| [isaac-foundation](https://github.com/slagyr/isaac-foundation) | CLI dispatcher, module loader, config/schema machinery, nexus, scheduler |
-| [isaac-agent](https://github.com/slagyr/isaac-agent) | Crew, LLM providers, sessions, bridge, tools, comm delivery |
-| [isaac-server](https://github.com/slagyr/isaac-server) | HTTP host, boot orchestration, reconciler, `isaac server` |
-| [isaac-acp](https://github.com/slagyr/isaac-acp) | ACP stdio agent, `isaac chat`, `/acp` WebSocket transport |
-| [isaac-cron](https://github.com/slagyr/isaac-cron) | Scheduled prompt jobs |
-| [isaac-hail](https://github.com/slagyr/isaac-hail) | Out-of-band interrupt delivery |
-| [isaac-hooks](https://github.com/slagyr/isaac-hooks) | Webhook ingress |
-| [isaac-discord](https://github.com/slagyr/isaac-discord) | Discord comm |
-| [isaac-imessage](https://github.com/slagyr/isaac-imessage) | iMessage comm |
+| Repository | Role | Build |
+|---|---|---|
+| [isaac-foundation](https://github.com/slagyr/isaac-foundation) | CLI dispatcher, module loader, config/schema machinery, nexus, scheduler | [![CI](https://github.com/slagyr/isaac-foundation/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-foundation/actions/workflows/ci-tests.yml) |
+| [isaac-agent](https://github.com/slagyr/isaac-agent) | Crew, LLM providers, sessions, bridge, tools, comm delivery | [![CI](https://github.com/slagyr/isaac-agent/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-agent/actions/workflows/ci-tests.yml) |
+| [isaac-server](https://github.com/slagyr/isaac-server) | HTTP host, boot orchestration, reconciler, `isaac server` | [![CI](https://github.com/slagyr/isaac-server/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-server/actions/workflows/ci-tests.yml) |
+| [isaac-acp](https://github.com/slagyr/isaac-acp) | ACP stdio agent, `isaac chat`, `/acp` WebSocket transport | [![CI](https://github.com/slagyr/isaac-acp/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-acp/actions/workflows/ci-tests.yml) |
+| [isaac-cron](https://github.com/slagyr/isaac-cron) | Scheduled prompt jobs | [![CI](https://github.com/slagyr/isaac-cron/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-cron/actions/workflows/ci-tests.yml) |
+| [isaac-hail](https://github.com/slagyr/isaac-hail) | Out-of-band interrupt delivery | [![CI](https://github.com/slagyr/isaac-hail/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-hail/actions/workflows/ci-tests.yml) |
+| [isaac-hooks](https://github.com/slagyr/isaac-hooks) | Webhook ingress | [![CI](https://github.com/slagyr/isaac-hooks/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-hooks/actions/workflows/ci-tests.yml) |
+| [isaac-discord](https://github.com/slagyr/isaac-discord) | Discord comm | [![CI](https://github.com/slagyr/isaac-discord/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-discord/actions/workflows/ci-tests.yml) |
+| [isaac-imessage](https://github.com/slagyr/isaac-imessage) | iMessage comm | [![CI](https://github.com/slagyr/isaac-imessage/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-imessage/actions/workflows/ci-tests.yml) |
 
 New capability is added by publishing a module with an `isaac-manifest.edn` and
 declaring it under `:modules` in your Isaac config.
