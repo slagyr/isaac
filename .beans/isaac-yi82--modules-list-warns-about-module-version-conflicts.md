@@ -3,8 +3,11 @@
 title: modules list warns about module version conflicts
 status: todo
 type: feature
+priority: normal
 created_at: 2026-06-19T15:44:56Z
-updated_at: 2026-06-19T15:44:56Z
+updated_at: 2026-06-19T15:45:09Z
+blocked_by:
+    - isaac-92p3
 ---
 
 Once the launcher resolves modules in one unified basis (isaac-92p3), tools.deps
