@@ -1,10 +1,14 @@
 ---
 # isaac-7e60
 title: 'modules show <name>: full detail for one module (brew info)'
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-19T18:43:30Z
-updated_at: 2026-06-19T18:43:30Z
+updated_at: 2026-06-19T18:53:14Z
 ---
 
 The compact `modules list` table omits full coords (you see "git isaac-acp@d108562",
