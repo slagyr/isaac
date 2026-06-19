@@ -8,7 +8,7 @@ tags:
     - unverified
     - in-progress
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-19T15:39:03Z
+updated_at: 2026-06-19T15:44:56Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -150,3 +150,16 @@ fail-on-any-conflict. Drives the resolve implementation.
    only post-fix.)
 2. (to spec) Two installed modules pinning DIFFERENT versions of a shared module
    -> exactly ONE version loads (the registry/canonical one), not both.
+
+
+## Policy chosen 2026-06-19 (Micah): unified tools.deps resolution + expose conflicts
+
+Use tools.deps' OWN resolution — a SINGLE unified basis gives one version per lib
+DETERMINISTICALLY (the nondeterminism was the per-module separate add-deps, not
+deps). Don't fight it with a full BOM-override of everything.
+• Single unified resolution (one add-deps / one basis) -> one version of each.
+• Foundation pinned seed-authoritative (override) — the installed seed wins.
+• The resolver must EXPOSE conflicts it mediated (module X wanted v1, chosen v2)
+  so `modules list` can warn (see the modules-list-conflict-warning bean).
+• Full registry-BOM override stays an OPTIONAL future lever if surfacing-and-
+  warning proves insufficient.
