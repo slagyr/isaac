@@ -5,7 +5,6 @@ status: in-progress
 type: task
 priority: normal
 tags:
-    - unverified
 created_at: 2026-06-19T16:41:52Z
 updated_at: 2026-06-19T17:29:38Z
 blocked_by:
@@ -76,3 +75,11 @@ Note: agent/acp/server used next patch tags — v0.1.2 already taken immutably o
 ### Verify locally
 `./libexec/isaac --version` → `isaac 0.1.2 (305c337)`
 Remote formula: raw.githubusercontent.com/slagyr/homebrew-tap/main/Formula/isaac.rb → v0.1.2
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- What is correct: GitHub tags match the handoff exactly (`foundation v0.1.2 -> 305c337`, `agent v0.1.3 -> 4abb96b`, `server v0.1.4 -> 2fb78f4`, `acp v0.1.3 -> f488107`, `cron v0.1.2 -> 4acf02e`, `hail v0.1.2 -> 9821901`, `hooks v0.1.2 -> 63ec28b`, `discord v0.1.2 -> db8d01b`, `imessage v0.1.2 -> 8607c29`). `isaac/modules.edn` matches those SHAs. `homebrew-tap` `main` is at `5b8b81d`, and [Formula/isaac.rb](/Users/micahmartin/agents/work-2/homebrew-tap/Formula/isaac.rb:1) points at foundation `v0.1.2`.
+- What works: In a clean foundation `v0.1.2` clone, `./libexec/isaac --root /private/tmp/isaac-mdtu-proof-root --version` returned `isaac 0.1.2 (305c337)`. `init` succeeded, `modules install isaac.server isaac.cron` succeeded from the live registry, and rerunning `--version` after install still returned `isaac 0.1.2 (305c337)`.
+- What is wrong: the released module manifests still advertise `0.1.0`, so `modules list` reports the wrong module versions after install. Repro from the clean proof root: `modules list --edn` showed `{:id :isaac.cron ... :version "0.1.0"}` and `{:id :isaac.server ... :version "0.1.0"}` even though the release tags are `v0.1.2` and `v0.1.4`. The released artifacts confirm it: [isaac.cron/resources/isaac-manifest.edn](/Users/micahmartin/.gitlibs/libs/isaac.cron/isaac.cron/4acf02e3d045e82c319a37dba2daa8659f553ce3/resources/isaac-manifest.edn:2), [isaac.server/resources/isaac-manifest.edn](/Users/micahmartin/.gitlibs/libs/isaac.server/isaac.server/2fb78f44a2dfed5159713089b506eb9d3ee587da/resources/isaac-manifest.edn:2), and [isaac.agent/resources/isaac-manifest.edn](/Users/micahmartin/.gitlibs/libs/io.github.slagyr/isaac-agent/4abb96bca71a95d953b15e05a2736e4f2e4a61f9/resources/isaac-manifest.edn:2) all still say `:version "0.1.0"`.
