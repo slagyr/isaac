@@ -1,13 +1,12 @@
 ---
 # isaac-09zr
 title: Run @slow feature tests in CI (launcher/subprocess end-to-end lane)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-19T15:30:35Z
-updated_at: 2026-06-19T15:39:30Z
+updated_at: 2026-06-19T16:15:00Z
 ---
 
 @slow feature scenarios are EXCLUDED from the fast lane (:features alias uses
@@ -54,3 +53,11 @@ HEAD: isaac-foundation (see push SHA)
 - `bb features-slow` routed through `bb.test-tasks/run-features-slow!` (60s timeout).
 - CI job `slow-features` runs `bb features-slow` on push/PR, nightly (06:00 UTC), and workflow_dispatch.
 - Audited @slow scenarios: 2 green (module_deps transitive launcher, modules_list real-load); no 92p3 scenario yet (lands with that bean; use @wip until green).
+
+## Verification notes
+
+- Verification passed on 2026-06-19 against fetched GitHub `isaac-foundation` `main` at `0f5256f`, not the stale local mirror.
+- CI wiring is present in [ci-tests.yml](/Users/micahmartin/agents/verify/isaac-foundation/.github/workflows/ci-tests.yml:1): separate `slow-features` job, triggered on `push`, `pull_request`, `workflow_dispatch`, and nightly `schedule`.
+- The lane is tag-driven, not enumerated: [bb.edn](/Users/micahmartin/agents/verify/isaac-foundation/bb.edn:43) adds `bb features-slow`, and [bb/test_tasks.clj](/Users/micahmartin/agents/verify/isaac-foundation/bb/test_tasks.clj:33) runs all feature files with `-t "slow" -t "~wip"`.
+- The current slow inventory is exactly the two green launcher scenarios the bean names: [features/module/module_deps.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/module/module_deps.feature:14) and [features/module/modules_list.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/module/modules_list.feature:67). There is no 92p3 slow scenario on this head yet.
+- Focused proof passed: `env ISAAC_GIT=1 bb features-slow` in `isaac-foundation` → `2 examples, 0 failures, 4 assertions`.
