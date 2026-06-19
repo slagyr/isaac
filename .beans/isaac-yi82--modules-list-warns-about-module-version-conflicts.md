@@ -1,11 +1,13 @@
 ---
 # isaac-yi82
 title: modules list warns about module version conflicts
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T15:44:56Z
-updated_at: 2026-06-19T16:10:21Z
+updated_at: 2026-06-19T16:14:38Z
 blocked_by:
     - isaac-92p3
 ---
@@ -84,3 +86,10 @@ conflict_warning.feature scenario 1 pins the conflicts-table LAYOUT with
 spacing): the "N version conflict" header, the "MODULE VERSION REQUIRED BY
 LOADED" column row, the loaded row ending in ✓, and the dropped row without ✓.
 Robust to column widths; strict on structure + the ✓ marker.
+
+
+
+## Handoff
+
+isaac-foundation @ 231be0c
+bb ci green (754 spec + 105 feature examples)
