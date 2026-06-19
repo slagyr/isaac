@@ -8,7 +8,7 @@ tags:
     - unverified
     - in-progress
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-18T23:49:54Z
+updated_at: 2026-06-19T15:39:03Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -111,3 +111,42 @@ Repro on fetched GitHub `isaac-foundation` `main` at `5454cee`:
   `{[:isaac.foundation "0.1.2"] 1, [:isaac.comm.acp "0.1.0"] 1, [:isaac.server "0.1.0"] 2, [:isaac.agent "0.1.0"] 1}`
 
 That fails the bean's acceptance `A module both explicitly installed and pulled transitively -> single entry`, and it means the broader `exactly one version of EVERY module` invariant is still not enforced. The missing work is to bring transitive module resolution into the same unified basis instead of adding those coords one-by-one during discovery.
+
+
+## Broaden 2026-06-19 (Micah): ONE version of ANY module, not just foundation
+
+The invariant is general: NO two versions of ANY module (or foundation) on the
+classpath. Foundation is just the case we hit first.
+
+Don't delegate "which version wins" to the resolver — none of the defaults are
+safe:
+• Maven = nearest-wins (shortest path to root; NOT highest version).
+• Gradle = highest-version-wins.
+• tools.deps = wins by graph position (top/most-direct beats transitive); does
+  NOT compare version numbers. So "newest" is never automatic.
+
+### Recommended policy: registry-as-BOM (authoritative version set)
+
+The isaac RELEASE curates one coherent version of every module (the registry,
+modules.edn). The launcher resolves with :override-deps so EVERY module +
+foundation is forced to the registry/seed version, regardless of what an
+individual module's deps.edn pins. One version of each, chosen by the release —
+not by graph accident. Like Maven <dependencyManagement> / a Spring BOM.
+Complement: FAIL-FAST if a transitive module isn't covered by the registry /
+can't be reconciled (don't silently guess a version).
+
+### Open decision
+
+Confirm policy: registry-BOM override (recommended) vs newest-wins-we-compute vs
+fail-on-any-conflict. Drives the resolve implementation.
+
+## Scenarios (92p3)
+
+1. (@slow, approved) A module's transitive foundation never shadows the seed:
+   config :modules {marigold.needs-fdn} whose deps.edn pulls a fixture
+   foundation manifest {:id :isaac.foundation :version "9.9.9"};
+   `isaac launcher --version` does NOT contain "9.9.9". Fixtures:
+   marigold.needs-fdn + a fixture foundation manifest. (Regression-lock; green
+   only post-fix.)
+2. (to spec) Two installed modules pinning DIFFERENT versions of a shared module
+   -> exactly ONE version loads (the registry/canonical one), not both.
