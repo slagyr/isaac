@@ -6,6 +6,8 @@ AI assistant foundation.
 
 <br clear="left">
 
+## About
+
 Isaac is a Clojure-based agent platform for crew-configured assistants with
 tools, sessions, config-driven behavior, and multiple interaction surfaces. You
 install a small **foundation** seed, declare **modules** in config, and grow a
