@@ -1,24 +1,21 @@
+# Isaac - AI Assistant, destined for the stars
+
 <img align="left" width="200" src="https://raw.githubusercontent.com/slagyr/isaac/main/isaac.png" alt="isaac" style="margin-right: 20px; margin-bottom: 10px;">
 
-### Isaac
+Isaac is a modular AI assistant foundation with a spaceship theme. Crews operate with persistent souls and append-only transcripts of their journeys, guided by declarative configuration rather than brittle code. Its berth system lets you extend tools, interfaces, and behaviors cleanly across surfaces while maintaining strict boundaries and verifiable history. Built for the long voyage, not the next hype cycle.
 
-AI assistant foundation.
+<br>
+
+[![Foundation](https://github.com/slagyr/isaac-foundation/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-foundation/actions/workflows/ci-tests.yml) 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![GitHub last commit](https://img.shields.io/github/last-commit/slagyr/isaac)
+[![Clojure](https://img.shields.io/badge/Clojure-1.11%2B-blue?logo=clojure)](https://clojure.org)
+[![Babashka](https://img.shields.io/badge/Babashka-1.3%2B-blue?logo=clojure)](https://babashka.org)
+[![Java](https://img.shields.io/badge/Java-21%2B-orange?logo=openjdk)](https://openjdk.org/)
 
 <br clear="left">
 
-## About
-
-Isaac is a Clojure-based agent platform for crew-configured assistants with
-tools, sessions, config-driven behavior, and multiple interaction surfaces. You
-install a small **foundation** seed, declare **modules** in config, and grow a
-runtime that fits your setup.
-
-**This repository is the front page of the Isaac suite** — the logo, the index,
-planning notes, and the full git history of the original monolith. Production
-code, specs, and features now live in focused repos below; nothing in the suite
-depends on a monolithic checkout here at runtime or in CI.
-
-## Repositories
+## Module Repositories
 
 | Repository | Role | Build |
 |---|---|---|
@@ -56,26 +53,6 @@ Requirements: Java 21+ and [Babashka](https://babashka.org/).
    expose.
 
 Each module README documents its own `bb ci` workflow and acceptance features.
-
-## What you get
-
-- crew-based agent configuration with soul companions
-- persistent sessions and JSONL transcripts
-- built-in and module-contributed tools
-- terminal chat, one-shot prompts, and ACP agent mode
-- HTTP server mode with hot config reload
-- structured EDN logs and a colorized viewer
-
-## In this repo
-
-- [`ISAAC.md`](ISAAC.md) — vocabulary, architecture notes, contributor traps
-- [`AGENTS.md`](AGENTS.md) — agent/worker workflow for people and coding agents
-- [`.beans/`](.beans/) — planning and handoff artifacts
-- [`isaac.png`](isaac.png) — suite logo (linked from module READMEs)
-
-Monolith source under `src/`, `spec/`, and `features/` was retired in June 2026
-after the split above was verified homed. Git history here is the archive; follow
-the module repos for current code.
 
 ## License
 
