@@ -1,11 +1,13 @@
 ---
 # isaac-90df
 title: Resolved-tree transitive discovery only works for :local/root, not git/mvn coords
-status: todo
+status: unverified
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-19T18:18:21Z
-updated_at: 2026-06-19T18:18:21Z
+updated_at: 2026-06-19T19:30:00Z
 ---
 
 On a real (git-coord) install, `modules list` shows ONLY explicit modules with
@@ -55,3 +57,10 @@ resolved basis.
 
 • Breaks isaac-0yp1 (tree) + isaac-yi82 (conflicts) on real installs.
 • The missing git/versioned coverage 92p3/0yp1/yi82 fixtures all lack.
+
+## Handoff 2026-06-19 (8710f02)
+
+coord-directory looks up materialized git checkouts in ~/.gitlibs by :git/sha
+(with :deps/root). list-configured-modules preloads before tree walks.
+@slow features/module/git_coord_tree.feature: acp → isaac.agent REQUIRED BY;
+foundation git+deps/root conflict fixtures → :conflicts in --edn. bb ci green.
