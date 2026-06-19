@@ -1,12 +1,11 @@
 ---
 # isaac-xc9n
 title: 'modules install <a> <b> ...: install ALL named modules (supersede reject)'
-status: unverified
+status: completed
 type: feature
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-19T16:41:52Z
-updated_at: 2026-06-19T17:05:00Z
+updated_at: 2026-06-19T16:26:10Z
 ---
 
 Micah 2026-06-19: `isaac modules install a b c` should install ALL named
@@ -61,3 +60,11 @@ single whole-map mutate, and confirm each. Single-name still works.
 
 • Supersedes the reject-one-at-a-time behavior from isaac-iy94.
 • Should be IN the v0.1.2 release.
+
+## Verification notes
+
+- Verification passed on 2026-06-19 against fetched GitHub `isaac-foundation` `main` at `305c337`, not the stale local mirror.
+- The `modules.feature` edit is in-bounds for the bean: it replaces the old reject-one-at-a-time scenario with the requested multi-install and all-or-nothing scenarios, without weakening the remaining coverage.
+- Focused acceptance proof passed: `env ISAAC_GIT=1 bb features features/module/modules.feature` → `7 examples, 0 failures, 22 assertions`.
+- Full repo lane also passed on this head: `ISAAC_GIT=1 bb ci` → `754 spec examples, 0 failures` and `106 feature examples, 0 failures`.
+- The delivered behavior is present in [src/isaac/modules/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/modules/cli.clj:219): install now resolves all names first, writes one merged `:modules` map, and prints one confirmation per installed module. The registry cache reset in [spec/isaac/foundation/root_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/root_steps.clj:15) is exercised by the green feature run.
