@@ -1,11 +1,13 @@
 ---
 # isaac-mdtu
 title: Cut v0.1.2 coordinated release (foundation + modules + registry + formula)
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T16:41:52Z
-updated_at: 2026-06-19T16:42:25Z
+updated_at: 2026-06-19T17:29:38Z
 blocked_by:
     - isaac-xc9n
 ---
@@ -47,3 +49,30 @@ release foundation), but the lockstep-or-it-breaks pain is gone.
 • Unblocked by isaac-92p3 (done). Includes the multi/all-install bean.
 • Uses 7tle's auto-bump (foundation-release dispatch). 5h15 = the consistency
   lesson that made this necessary.
+
+
+## Handoff
+
+Foundation **v0.1.2** tagged at `305c337` (manifest 0.1.2). GitHub Release published; tap auto-bump failed (missing `HOMEBREW_TAP_BUMP_TOKEN`) — formula bumped manually in homebrew-tap @ `5b8b81d`. Tap `brew test` CI green.
+
+### Module release SHAs (registry @ isaac `390ecfe6`)
+| module | tag | sha |
+|--------|-----|-----|
+| agent | v0.1.3 | 4abb96b |
+| server | v0.1.4 | 2fb78f4 |
+| acp | v0.1.3 | f488107 |
+| cron | v0.1.2 | 4acf02e |
+| hail | v0.1.2 | 9821901 |
+| hooks | v0.1.2 | 63ec28b |
+| discord | v0.1.2 | db8d01b (+ feature-bootstrap fix) |
+| imessage | v0.1.2 | 8607c29 |
+
+Note: agent/acp/server used next patch tags — v0.1.2 already taken immutably on remote.
+
+### Extras bundled in agent/discord releases
+- agent: cli-usage feature fix for trimmed `--root` help (7b5d7b4)
+- discord: feature-bootstrap registry dedupe fix (private gherclj var + keep session Grover setup)
+
+### Verify locally
+`./libexec/isaac --version` → `isaac 0.1.2 (305c337)`
+Remote formula: raw.githubusercontent.com/slagyr/homebrew-tap/main/Formula/isaac.rb → v0.1.2
