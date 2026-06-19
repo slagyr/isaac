@@ -1,11 +1,13 @@
 ---
 # isaac-x2r1
 title: Mock LLM provider 'grover' registered in production (isaac.llm.api.grover)
-status: in-progress
+status: unverified
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-19T22:38:29Z
+updated_at: 2026-06-19T23:45:00Z
 ---
 
 Boot logs :api/registered {:api "grover"}. grover is NOT in config — it's a
