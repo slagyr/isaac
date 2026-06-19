@@ -4,9 +4,8 @@ title: Launcher resolves modules per-module → multiple versions of foundation/
 status: completed
 type: bug
 priority: high
-tags: []
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-19T16:13:12Z
+updated_at: 2026-06-19T16:38:29Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -219,3 +218,21 @@ Green locally: `bb ci`, loader spec (29 examples), `single_version.feature`,
   - `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/foundation/cli_steps.clj` → `29 examples, 0 failures, 73 assertions`
   - `env ISAAC_GIT=1 bb features features/module/single_version.feature` → `1 examples, 0 failures, 2 assertions`
   - `env ISAAC_GIT=1 bb features-slow` → `4 examples, 0 failures, 9 assertions`
+
+
+## Real-world repro (zanebot, 2026-06-19)
+
+zanebot on the brew v0.1.1 PACKAGE still reports `isaac 0.1.0` AND renders the
+OLD `modules list` (colon, #:git, no REQUIRED BY) — i.e. runs OLD foundation
+CODE at runtime. Cause: every module pins foundation v0.1.0.
+isaac-agent/deps.edn (main) pins io.github.slagyr/isaac-foundation
+{:git/tag "v0.1.0" :git/sha "fe83ebe3..."}. Comm modules depend on agent, so
+comm -> agent -> foundation v0.1.0 lands on the classpath and SHADOWS the
+bundled v0.1.1. Refreshing comm coords does NOT help (they pull old foundation
+via agent).
+
+Implication: this is the exact bug. Until seed-authoritative foundation lands,
+the ONLY alternative is bumping EVERY module's foundation pin to the release
+version in lockstep (v0.1.2) — the coordination pain this bean removes. The fix
+must make the installed seed's foundation win over any module's transitive
+foundation pin.
