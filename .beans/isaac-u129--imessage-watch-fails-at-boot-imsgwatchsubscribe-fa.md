@@ -1,11 +1,13 @@
 ---
 # isaac-u129
 title: 'imessage watch fails at boot: :imsg.watch/subscribe-failed Internal error (can''t receive)'
-status: todo
+status: unverified
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-19T22:22:26Z
+updated_at: 2026-06-19T23:15:00Z
 ---
 
 On server boot, isaac.comm.imessage activates (:module/activated -> :comm/activated
