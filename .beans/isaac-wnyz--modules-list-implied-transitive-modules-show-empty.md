@@ -1,10 +1,14 @@
 ---
 # isaac-wnyz
 title: 'modules list: implied (transitive) modules show empty COORD {}'
-status: todo
+status: in-progress
 type: bug
+priority: normal
+tags:
+    - unverified
+    - in-progress
 created_at: 2026-06-19T19:22:00Z
-updated_at: 2026-06-19T19:22:00Z
+updated_at: 2026-06-19T19:24:38Z
 ---
 
 On a real (git-coord) install the resolved tree shows transitive modules with
@@ -37,3 +41,13 @@ into the index entry so implied rows show it. Surface it in the table (COORD),
 
 • Follow-on to isaac-90df (git-coord transitive discovery surfaced the modules;
   this captures their coord). Feeds isaac-7e60 (show detail).
+
+## Handoff notes (work-3)
+
+• Root cause confirmed: `:builtin?` modules (e.g. `:isaac.agent`) land in
+  `builtin-index` with `:coord {}` after classpath preload; merge skipped them
+  because they were already in the index.
+• Fix: `merge-resolved-classpath-modules` overlays `discover-implied-entry` for
+  all implied ids (not only absent keys).
+• Regression: `git_coord_tree.feature` asserts `modules.1.coord.git/url` for
+  `:isaac.agent`.
