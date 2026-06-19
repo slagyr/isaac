@@ -1,4 +1,4 @@
-# Isaac - AI Assistant, destined for the stars
+# 🍏 Isaac - AI Assistant, destined for the stars 🚀⭐
 
 <img align="left" width="200" src="https://raw.githubusercontent.com/slagyr/isaac/main/isaac.png" alt="isaac" style="margin-right: 20px; margin-bottom: 10px;">
 
@@ -10,7 +10,7 @@ Isaac is a modular AI assistant foundation with a spaceship theme. Crews operate
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![GitHub last commit](https://img.shields.io/github/last-commit/slagyr/isaac)
 [![Clojure](https://img.shields.io/badge/Clojure-1.11%2B-blue?logo=clojure)](https://clojure.org)
-[![Babashka](https://img.shields.io/badge/Babashka-1.3%2B-blue?logo=clojure)](https://babashka.org)
+[![Babashka](https://img.shields.io/badge/Babashka-1.3%2B-red?logo=clojure)](https://babashka.org)
 [![Java](https://img.shields.io/badge/Java-21%2B-orange?logo=openjdk)](https://openjdk.org/)
 
 <br clear="left">
