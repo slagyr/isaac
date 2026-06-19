@@ -1,13 +1,13 @@
 ---
 # isaac-92p3
 title: Launcher resolves modules per-module → multiple versions of foundation/modules on classpath
-status: in-progress
+status: unverified
 type: bug
 priority: high
 tags:
-    - in-progress
+    - unverified
 created_at: 2026-06-18T23:17:26Z
-updated_at: 2026-06-19T16:02:52Z
+updated_at: 2026-06-19T16:45:00Z
 ---
 
 CORRECTNESS BUG: the packaged launcher can put MULTIPLE versions of foundation
@@ -191,29 +191,20 @@ deps). Don't fight it with a full BOM-override of everything.
 • Scenarios 2 & 3 share fixture shape with isaac-yi82 (conflicting versions) —
   reuse.
 
-## Verification failed
+## Handoff 2026-06-19 — split-repo lib alias exclusions (ef85feb)
 
-HEAD: 872fc47
-Working tree: clean
+Prior verification at `872fc47` was green on marigold fixtures but still
+showed duplicate `isaac.server` on the git-coord repro (`[:isaac.server "0.1.0"] 2`).
 
-The new feature/spec coverage is green, but the original versioned explicit-plus-
-transitive duplicate repro still fails the bean's invariant. On fetched GitHub
-`isaac-foundation` `main` at `872fc47`:
+Root cause: sibling exclusions only used `->lib-sym` (e.g.
+`isaac.server/isaac.server`) but split-repo deps.edn edges reference
+`io.github.slagyr/isaac-server`, so acp's transitive server was not excluded
+when explicit server was in the same batch.
 
-- Focused specs passed: `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/foundation/cli_steps.clj` → `28 examples, 0 failures`.
-- The new feature file checks passed:
-  - `env ISAAC_GIT=1 bb features features/module/single_version.feature` → `1 examples, 0 failures` (non-slow dedup scenario)
-  - `env ISAAC_GIT=1 bb features-slow` → `4 examples, 0 failures` (includes the two new 92p3 @slow scenarios)
-- The packaged launcher also reports the seed version on the zanebot-style comm set:
-  `./libexec/isaac --root <tmp-root> --version` → `isaac 0.1.2 (872fc47)`
+Fix: `module-lib-syms` / `split-repo-lib-sym` — each module id's exclusion
+set now covers both lib symbols. Repro after compose + discover with explicit
+`isaac.server` `ba30caa` + `isaac.comm.acp` `d108562`:
+`{[:isaac.server "0.1.0"] 1, ...}` (was 2).
 
-But direct classpath inspection after a real compose + discover run with
-explicit `isaac.server` `ba30caa` plus transitive `isaac.comm.acp` `d108562`
-still shows a duplicate server manifest:
-
-`{[:isaac.foundation "0.1.2"] 1, [:isaac.comm.acp "0.1.0"] 1, [:isaac.server "0.1.0"] 2, [:isaac.agent "0.1.0"] 1}`
-
-That still fails the acceptance `A module both explicitly installed and pulled
-transitively -> single entry`, and it means the “exactly one version of EVERY
-module” invariant is not yet true for the real versioned-module path, even
-though `--version` and the new local-root feature scenarios are green.
+Green locally: `bb ci`, loader spec (29 examples), `single_version.feature`,
+`bb features-slow`.
