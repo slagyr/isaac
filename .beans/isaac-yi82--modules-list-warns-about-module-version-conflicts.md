@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-06-19T15:44:56Z
-updated_at: 2026-06-19T16:07:00Z
+updated_at: 2026-06-19T16:10:21Z
 blocked_by:
     - isaac-92p3
 ---
@@ -75,3 +75,12 @@ REQUIRED BY in the conflicts table truncates first +N like the main table.
                :chosen "1.0.0"
                :requested [{:version "1.0.0" :required-by [:marigold.app.conflict]}
                            {:version "9.9.9" :required-by [:marigold.app2.conflict]}]}]
+
+
+## Layout is asserted (not just contents)
+
+conflict_warning.feature scenario 1 pins the conflicts-table LAYOUT with
+`the stdout matches:` — each row a regex (re-find over whole stdout, '+' for
+spacing): the "N version conflict" header, the "MODULE VERSION REQUIRED BY
+LOADED" column row, the loaded row ending in ✓, and the dropped row without ✓.
+Robust to column widths; strict on structure + the ✓ marker.
