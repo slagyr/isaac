@@ -1,11 +1,11 @@
 ---
 # isaac-kxdg
 title: 'acp activation fails: Unable to resolve symbol lexicon/->id (:isaac.server/route) -> no routes'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
+tags:
 created_at: 2026-06-19T22:22:26Z
 updated_at: 2026-06-19T22:35:46Z
 ---
@@ -30,3 +30,11 @@ Fix: `isaac-acp` f1819a5 — `:factory isaac.module.protocol/module` (matches
 discord/hooks/imessage). Added `spec/isaac/manifest_spec.clj` covering factory
 resolution, `activate!`, and `/acp` route registration via
 `process-manifest-berths!`. `bb spec`: 189 examples, 0 failures.
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Verified against fetched GitHub `isaac-acp` `main` at `f1819a5`, not the stale local checkout.
+- `env ISAAC_GIT=1 bb spec spec/isaac/manifest_spec.clj spec/isaac/comm/acp_spec.clj` passed: `12 examples, 0 failures, 38 assertions`.
+- Full repo spec lane also passed on that head: `env ISAAC_GIT=1 bb spec` -> `189 examples, 0 failures, 480 assertions, 1 pre-existing pending` in [server_spec.clj](/Users/micahmartin/agents/verify/isaac-acp/spec/isaac/comm/acp/server_spec.clj:326).
