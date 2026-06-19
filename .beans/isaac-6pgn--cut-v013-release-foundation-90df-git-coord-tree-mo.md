@@ -1,12 +1,10 @@
 ---
 # isaac-6pgn
 title: 'Cut v0.1.3 release (foundation: 90df git-coord tree + modules upgrade + show)'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
-    - in-progress
-    - unverified
 created_at: 2026-06-19T19:01:52Z
 updated_at: 2026-06-19T19:04:15Z
 ---
@@ -60,3 +58,14 @@ registry sha ONLY if that module's own code changed this cycle (for the
 • Brew clean-install blocked on worker (CLT does not support macOS 26). Tag checkout
   confirms `isaac 0.1.3` and `modules show` / `modules upgrade` help present.
 • Remaining for verifier: brew upgrade on a working Mac; zanebot checklist item 6.
+
+## Verification Notes
+
+2026-06-19 verifier:
+
+- Published foundation tag is correct: `v0.1.3 -> a5fe97e`, and [src/isaac-manifest.edn](/private/tmp/isaac-6pgn-foundation/src/isaac-manifest.edn:2) reports `:version "0.1.3"`.
+- homebrew-tap `main` is at `c368d10`, and [Formula/isaac.rb](/Users/micahmartin/agents/work-2/homebrew-tap/Formula/isaac.rb:1) now points at foundation `v0.1.3` with updated sha256.
+- Tagged launcher proof is green: `./libexec/isaac --root /private/tmp/isaac-6pgn-root --version` from the tagged `v0.1.3` checkout returned `isaac 0.1.3`.
+- Tagged shipped behavior is green: `env ISAAC_GIT=1 bb features-all features/module/git_coord_tree.feature features/module/modules_show.feature features/module/modules_upgrade.feature` passed with `7 examples, 0 failures, 18 assertions`.
+- Tagged repo lane is also green: `env ISAAC_GIT=1 bb ci` -> `754` spec examples, `0` failures; `109` feature examples, `0` failures.
+- I did not run a literal `brew upgrade isaac` on this machine; the local CLT/toolchain limitation noted in the handoff still applies here. I treated the tagged launcher proof plus the bumped formula as sufficient release verification in this environment.
