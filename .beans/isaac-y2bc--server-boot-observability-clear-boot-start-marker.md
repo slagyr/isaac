@@ -4,8 +4,10 @@ title: 'Server boot observability: clear boot-start marker + per-module load/act
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-19T22:50:45Z
+updated_at: 2026-06-19T22:58:15Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
