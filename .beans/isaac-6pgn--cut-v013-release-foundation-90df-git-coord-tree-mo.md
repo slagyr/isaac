@@ -1,10 +1,14 @@
 ---
 # isaac-6pgn
 title: 'Cut v0.1.3 release (foundation: 90df git-coord tree + modules upgrade + show)'
-status: todo
+status: in-progress
 type: task
+priority: normal
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-19T19:01:52Z
-updated_at: 2026-06-19T19:01:52Z
+updated_at: 2026-06-19T19:04:15Z
 ---
 
 Ship the post-v0.1.2 foundation work to brew users / zanebot. Everything in this
@@ -45,3 +49,14 @@ registry sha ONLY if that module's own code changed this cycle (for the
 
 • Follows isaac-mdtu (v0.1.2). Ships 90df/qqor/7e60.
 • Uses 7tle auto-bump (no manual formula edit). Unblocked (all contents done).
+
+## Handoff notes (work-3)
+
+• foundation `a5fe97e` — manifest `0.1.3`, tag `v0.1.3` pushed, GitHub release published.
+• `ce4c7a0` — fixed release workflow dispatch (secrets unavailable in `if:` broke
+  workflow_dispatch since 0372181).
+• Auto-bump skipped: `HOMEBREW_TAP_BUMP_TOKEN` unset on foundation repo. Formula
+  bumped manually in homebrew-tap `c368d10` (url/sha256 -> v0.1.3).
+• Brew clean-install blocked on worker (CLT does not support macOS 26). Tag checkout
+  confirms `isaac 0.1.3` and `modules show` / `modules upgrade` help present.
+• Remaining for verifier: brew upgrade on a working Mac; zanebot checklist item 6.
