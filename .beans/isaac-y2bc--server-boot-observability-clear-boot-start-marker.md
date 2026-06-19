@@ -1,10 +1,11 @@
 ---
 # isaac-y2bc
 title: 'Server boot observability: clear boot-start marker + per-module load/activate (incl agent/server) in order'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-19T22:22:26Z
+updated_at: 2026-06-19T22:50:45Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
