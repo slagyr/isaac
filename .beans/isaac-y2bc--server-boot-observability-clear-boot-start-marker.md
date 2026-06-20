@@ -4,10 +4,9 @@ title: 'Server boot observability: clear boot-start marker + per-module load/act
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T03:29:55Z
+updated_at: 2026-06-20T03:36:30Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
@@ -41,3 +40,5 @@ answerable directly from the log.
   - The same scenario is still red: [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:6) “Activating the telly module on first comm slot use”.
   - The split assertion did not fix the matcher behavior. The standalone `:telly/started` check still binds against an earlier one-row window before the comm start entry arrives and fails with: `Row 0: event: Expected ":telly/started", got: :server/boot-phase`.
 - Net: the observability work is present, but the acceptance feature remains non-green on current head, so the bean is still not verifier-ready.
+
+- Re-verified on 2026-06-19 after the bean was re-tagged `unverified`: `isaac-server` GitHub `main` had not advanced beyond `997ff9d`, and rerunning `env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` produced the same `1/6` failure above.
