@@ -1,13 +1,12 @@
 ---
 # isaac-m14k
 title: Agent re-loads config + re-registers all tools on every turn (should be boot/config-change only)
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-20T23:46:43Z
-updated_at: 2026-06-20T23:52:25Z
+updated_at: 2026-06-20T23:57:05Z
 ---
 
 The agent re-runs the **entire config load** — module discovery, schema compose,
@@ -68,3 +67,12 @@ hail. Plus 2 passes at boot (23:24:26) — boot itself loads config twice.
 - `isaac-server` `bf0ffea` — removed pre-boot `register-builtins!` pass.
 
 **Verified:** `bb spec` isaac-agent (1048 examples); `bb spec spec/isaac/server/cli_spec.clj` isaac-server.
+
+## Verification Notes
+
+- Verification passed on fetched GitHub `isaac-agent` `dcac6dc` and `isaac-server` `bf0ffea`, not the stale local mirrors.
+- `isaac-agent`: `bb spec` passed: `1048 examples, 0 failures, 2070 assertions`.
+- `isaac-server`: `bb spec spec/isaac/server/cli_spec.clj` passed: `17 examples, 0 failures, 30 assertions`.
+- The agent-side fix is present in [src/isaac/drive/turn.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/drive/turn.clj:833), which no longer bulk-registers built-in tools at turn start, and [src/isaac/tool/builtin.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/tool/builtin.clj:157), which now skips tools already in the registry.
+- The reopened per-turn behavior is directly covered in [spec/isaac/drive/turn_spec.clj](/Users/micahmartin/agents/verify/isaac-agent/spec/isaac/drive/turn_spec.clj:574): two successive turns run with `builtin/register-all!` stubbed, and the call count stays `0`.
+- The duplicate boot pass is removed in [isaac-server/src/isaac/server/cli.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/cli.clj:56) by deleting the pre-`app/start!` `register-builtins!` call; current `cli_spec` is green on that head.
