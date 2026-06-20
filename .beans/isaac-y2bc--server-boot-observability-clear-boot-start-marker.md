@@ -1,12 +1,11 @@
 ---
 # isaac-y2bc
 title: 'Server boot observability: clear boot-start marker + per-module load/activate (incl agent/server) in order'
-status: completed
+status: todo
 type: feature
 priority: normal
-tags: []
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T03:52:33Z
+updated_at: 2026-06-20T15:26:29Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
@@ -75,3 +74,12 @@ Reproduced green on fresh `git clone` of GitHub `isaac-server` `main` and on
 `work-3` checkout (`6/6` features, `45/0` foundation specs, `42/0` server specs).
 Verifier must fetch `8dd1205`+ — failure text citing `:telly/started` or scenario
 "Activating the telly module on first comm slot use" is from obsolete `997ff9d`.
+
+
+## REOPENED 2026-06-20 — goals not met on v0.1.5
+
+Verified on zanebot foundation v0.1.5 boot (08:14:59): still NO clear boot-start
+marker (boot begins with :config/set-snapshot), and isaac.agent / isaac.server
+still emit NO :module/activated — only discord/imessage do. So the observability
+goals (boot-start marker, per-module load/activate incl agent/server, in order)
+are unmet; closed prematurely. Verify against an actual server boot.
