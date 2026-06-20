@@ -1,13 +1,13 @@
 ---
 # isaac-wv8z
 title: 'Release hygiene: sync a module''s inter-module deps.edn pins to the registry on release'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - unverified
 created_at: 2026-06-20T15:26:29Z
-updated_at: 2026-06-20T19:48:26Z
+updated_at: 2026-06-20T19:50:47Z
 ---
 
 `isaac modules upgrade` only refreshes EXPLICIT :modules entries. Transitive
@@ -107,3 +107,17 @@ transitive module.
 
 **Verification:** doc-only change to RELEASE.md; no code/test impact. foundation
 working tree otherwise clean.
+
+
+## CLOSED 2026-06-20 (Micah — verification skipped, much thrashing)
+
+Resolution: the original "modules upgrade ignores transitive (BOM-override)" is
+WORKS-AS-INTENDED. Transitive versions correctly come from parent deps.edn;
+`upgrade` moves them via parent re-releases; cross-parent conflicts already
+resolved. The registry should NOT override transitive versions.
+
+The one genuine concern — release hygiene (sync a module's inter-module deps.edn
+pins to the registry on release, so transitive fixes propagate on the next
+consumer upgrade) — is documented in the isaac-mdtu release checklist. If that
+sync TOOLING is wanted as actionable work, file a fresh bean for it; this bean
+closes as the design/analysis that reached that conclusion.
