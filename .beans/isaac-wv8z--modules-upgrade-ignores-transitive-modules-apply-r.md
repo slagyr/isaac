@@ -4,8 +4,10 @@ title: 'Release hygiene: sync a module''s inter-module deps.edn pins to the regi
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-20T15:26:29Z
-updated_at: 2026-06-20T16:31:31Z
+updated_at: 2026-06-20T19:48:26Z
 ---
 
 `isaac modules upgrade` only refreshes EXPLICIT :modules entries. Transitive
@@ -69,3 +71,39 @@ offline -> fall back to parent pins.
 ## Relationships
 • isaac-mdtu (release process). Supersedes the "extend BOM to all modules" idea —
   keep foundation seed-authoritative, do NOT BOM-override transitive modules.
+
+
+
+## RESOLVED (work-1, 2026-06-20) — tag: unverified
+
+Worked through the design with Micah; landed Model 1 + doc-only (his call).
+
+**Conclusion:** the registry is NOT authoritative for transitive modules — their
+versions correctly come from the depending module deps.edn pins (forcing
+registry versions would shove a parent onto an X it was not built against). So
+the observed "agent stuck at 0.1.0 after upgrade" is working-as-intended, not a
+resolution bug. The fix is release hygiene: a parent must re-release with bumped
+pins for a transitive fix to reach users via `modules upgrade`.
+
+**Delivered (doc-only, fast, no resolution):** isaac-foundation `RELEASE.md` ae45f03
+— new "Releasing a module" section: step 2 = sync inter-module deps.edn pins to
+the registry current versions before releasing; plus the documented
+`isaac modules install <name>` workaround for a consumer stuck on an old
+transitive module.
+
+**Deliberately NOT done (decided against, in order):**
+• `sync-module-pins` tool — Micah chose doc-over-tool (option 2). Tool remains a
+  future option if the manual step proves error-prone.
+• registry-as-BOM / override-deps (the original bean premise) — rejected:
+  forcing transitive versions is unsafe + bets everything on registry coherence
+  (the session-long pain). Keep foundation seed-authoritative (92p3).
+• manifest semver `:version` validation — explored for a registry-version-compare
+  model, then reverted when we settled on Model 1 (it broke discovery.feature
+  message expectations and was orphaned).
+• conflict-highlighting on install/upgrade — implemented then reverted: it needs
+  a full dependency-resolution pass (slow), and those commands must stay fast.
+  Version conflicts already surface in `modules list` (where resolution is
+  expected). Could be added as an opt-in flag later if wanted.
+
+**Verification:** doc-only change to RELEASE.md; no code/test impact. foundation
+working tree otherwise clean.
