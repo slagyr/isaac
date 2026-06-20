@@ -1,11 +1,11 @@
 ---
 # isaac-wv8z
-title: modules upgrade ignores transitive modules — apply registry versions as a BOM (92p3)
+title: 'Release hygiene: sync a module''s inter-module deps.edn pins to the registry on release'
 status: in-progress
 type: bug
 priority: normal
 created_at: 2026-06-20T15:26:29Z
-updated_at: 2026-06-20T15:40:16Z
+updated_at: 2026-06-20T16:31:31Z
 ---
 
 `isaac modules upgrade` only refreshes EXPLICIT :modules entries. Transitive
@@ -33,3 +33,39 @@ transitive — `modules install isaac.agent` to apply" so the gap is visible.
 
 ## Relationships
 • isaac-92p3 (registry-as-BOM). The recurring transitive-version theme.
+
+
+## RE-SCOPED 2026-06-20 — the BOM-override premise was WRONG
+
+Worked through with Micah. Conclusions:
+• Transitive module versions correctly come from the PARENT's deps.edn — NOT the
+  registry. `upgrade` already moves them: bumping an explicit parent to the
+  registry's latest pulls whatever that parent release pins; cross-parent
+  conflicts are already resolved (newest-wins + the conflict report). The
+  registry is IRRELEVANT for transitive modules.
+• Forcing transitive X to the registry version (the original BOM-override) would
+  risk shoving a parent onto an X it wasn't built against. So DON'T do that.
+• The observed "agent stuck at 0.1.0 after upgrade" is therefore NOT a
+  consumer-side resolution bug — it's RELEASE HYGIENE: acp@0.1.5 / imessage@0.1.4
+  were released still pinning agent@0.1.0, so the agent fix can't reach users
+  until the parents re-release with bumped agent pins. The recurring lockstep
+  theme.
+
+## Real fix
+
+Make transitive fixes propagate by syncing pins UPSTREAM, at release time:
+• A release step / tool (`sync-module-pins`) that, when a module is released /
+  registry-published, rewrites its inter-isaac-module deps.edn pins to the
+  registry's CURRENT coherent set. Then the next consumer `upgrade` pulls the
+  fixed transitive automatically.
+• Add to the release checklist (isaac-mdtu): "sync inter-module deps.edn pins to
+  the registry before tagging/registering."
+
+## Precedence (agreed, documents intent)
+explicit user :modules pin > parent deps.edn (transitive). Registry does NOT
+override transitive. Foundation stays seed-authoritative (92p3). Registry
+offline -> fall back to parent pins.
+
+## Relationships
+• isaac-mdtu (release process). Supersedes the "extend BOM to all modules" idea —
+  keep foundation seed-authoritative, do NOT BOM-override transitive modules.
