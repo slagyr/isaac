@@ -8,7 +8,6 @@ Isaac is a modular AI assistant foundation with a spaceship theme. Crews operate
 
 [![Foundation](https://github.com/slagyr/isaac-foundation/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-foundation/actions/workflows/ci-tests.yml) 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![GitHub last commit](https://img.shields.io/github/last-commit/slagyr/isaac)
 [![Clojure](https://img.shields.io/badge/Clojure-1.11%2B-blue?logo=clojure)](https://clojure.org)
 [![Babashka](https://img.shields.io/badge/Babashka-1.3%2B-red?logo=clojure)](https://babashka.org)
 [![Java](https://img.shields.io/badge/Java-21%2B-orange?logo=openjdk)](https://openjdk.org/)
