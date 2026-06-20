@@ -1,11 +1,13 @@
 ---
 # isaac-y2bc
 title: 'Server boot observability: clear boot-start marker + per-module load/activate (incl agent/server) in order'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T15:26:29Z
+updated_at: 2026-06-20T15:34:26Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
@@ -83,3 +85,18 @@ marker (boot begins with :config/set-snapshot), and isaac.agent / isaac.server
 still emit NO :module/activated — only discord/imessage do. So the observability
 goals (boot-start marker, per-module load/activate incl agent/server, in order)
 are unmet; closed prematurely. Verify against an actual server boot.
+
+## Worker notes (work-2, 2026-06-20 reopen)
+
+Root cause of reopen: foundation v0.1.5 shipped loader observability
+(`activate-modules!`, `:module/loaded`, `boot-stats`) but server v0.1.6 tag
+(`8471596`, r7z5) predates server-side boot logging — `:server/boot-starting`,
+phases, and summary live in server commits after that tag.
+
+Pulled foundation `3ea9bb8` and server `8dd1205` into work-2; all acceptance
+criteria green. Released `isaac-server` v0.1.7 (`47de6d4`) with foundation pin
+`3ea9bb8`. Updated `isaac/modules.edn` server coord to `47de6d4…`.
+
+Verifier: fetch server `47de6d4`+, confirm boot log shows `:server/boot-starting`
+before config snapshot, `:module/loaded`/`:module/activated` for builtins in
+order, `:server/boot-phase` boundaries, and `:server/boot-summary`.
