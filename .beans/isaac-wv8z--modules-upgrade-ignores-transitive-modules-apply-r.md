@@ -1,10 +1,11 @@
 ---
 # isaac-wv8z
 title: modules upgrade ignores transitive modules — apply registry versions as a BOM (92p3)
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-06-20T15:26:29Z
-updated_at: 2026-06-20T15:26:29Z
+updated_at: 2026-06-20T15:40:16Z
 ---
 
 `isaac modules upgrade` only refreshes EXPLICIT :modules entries. Transitive

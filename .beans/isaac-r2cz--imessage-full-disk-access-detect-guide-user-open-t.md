@@ -1,11 +1,11 @@
 ---
 # isaac-r2cz
 title: 'imessage Full Disk Access: detect + guide user (open the System Settings page)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-06-20T15:26:29Z
-updated_at: 2026-06-20T15:39:53Z
+updated_at: 2026-06-20T15:40:01Z
 ---
 
 imessage receiving needs macOS Full Disk Access — the launchd server can't read
