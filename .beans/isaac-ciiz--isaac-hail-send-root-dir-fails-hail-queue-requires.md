@@ -1,13 +1,12 @@
 ---
 # isaac-ciiz
 title: 'isaac hail send --root <dir> fails: ''hail queue requires :root'' (root not on CLI command path)'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-20T21:22:55Z
-updated_at: 2026-06-20T21:25:57Z
+updated_at: 2026-06-20T21:30:27Z
 ---
 
 `isaac hail send` cannot resolve `--root` outside a running server, so the CLI
@@ -57,3 +56,11 @@ unchanged).
 - **Fix:** `isaac-foundation` `b923282` — CLI dispatch passes `:root resolved-root` to `nexus/init!`.
 - **Test:** extended `main_spec` "installs the active fs and resolved root into runtime init".
 - **Verified:** `bb ci` in isaac-foundation; `bb features features/send.feature` in isaac-hail (local foundation).
+
+## Verification Notes
+
+- Verification passed on fetched GitHub `isaac-foundation` `b923282` and the current hail release head `4d06719`, not the stale local mirrors.
+- `bb ci` in `isaac-foundation` passed: `760 examples, 0 failures, 1328 assertions`.
+- The direct standalone CLI repro now works without a running server: from the hail release worktree, `clojure -Sdeps '{:deps {io.github.slagyr/isaac-foundation {:local/root "/private/tmp/isaac-ciiz-foundation"}}}' -M -m isaac.main --root /private/tmp/isaac-ciiz-proof-root hail send --band bean-pickup --prompt ping --edn` exited 0 and printed a hail record with `:id "hail-1"`.
+- The fix is the one-line CLI runtime install in [isaac-foundation/src/isaac/main.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/main.clj:120), and the accompanying regression coverage is in [spec/isaac/main_spec.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/main_spec.clj:239).
+- This closes the specific bug surface from the bean: `hail.queue/runtime-root` in the hail release still reads ambient `loader/root`, and that ambient root is now present on the standalone CLI path.
