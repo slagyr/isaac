@@ -76,14 +76,14 @@ Scenario: Boot emits a per-berth registration summary
 
 ## Worker handoff (2026-06-20, work-3)
 
-Foundation `b69e5e0`: `process-manifest-berths!` and `register-builtin-berth-entry!`
+Foundation `455e0db`: `process-manifest-berths!` and `register-builtin-berth-entry!`
 emit `:berth/registered {:berth :entry :module}` per factory invocation;
 `:berth/registration-summary {:counts ...}` closes the pass.
 
-Agent `be6337a`: removed `:slash/registered` from `slash.registry` (uniform event only);
-`slash_extension.feature` uses manifest-berths-processed step. Foundation pin `b69e5e0`.
+Agent `304d8e5`: removed `:slash/registered` from `slash.registry` (uniform event only);
+`slash_extension.feature` uses manifest-berths-processed step. Foundation pin `455e0db`.
 
-Server `c888605`: foundation pin bumped to `b69e5e0`.
+Server `5af5022`: foundation pin bumped to `455e0db`.
 
 Proof:
 - `isaac-foundation`: `bb spec` → `760/0`; `bb features features/module/berth_registration.feature` → `3/3`
