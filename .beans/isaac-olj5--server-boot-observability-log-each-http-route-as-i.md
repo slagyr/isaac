@@ -1,13 +1,12 @@
 ---
 # isaac-olj5
 title: 'Server boot observability: log every berth registration (:berth/registered)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-20T20:32:41Z
-updated_at: 2026-06-20T20:45:25Z
+updated_at: 2026-06-20T21:02:00Z
 ---
 
 Follow-on to y2bc (module/phase boot logging). y2bc logs :module/loaded/:module/activated, :server/boot-phase, and :server/boot-summary, but NOT individual HTTP route registration. So a 404 (e.g. a hooks webhook call) is undiagnosable from the log — you cannot tell whether the route was ever registered.
@@ -88,3 +87,17 @@ Server `5af5022`: foundation pin bumped to `455e0db`.
 Proof:
 - `isaac-foundation`: `bb spec` → `760/0`; `bb features features/module/berth_registration.feature` → `3/3`
 - `isaac-agent`: `bb spec` → green; `clojure -M:dev-local:features features/module/slash_extension.feature` → `3/3`
+
+## Verification Notes
+
+- Verification passed on fetched GitHub heads `isaac-foundation` `455e0db`, `isaac-agent` `304d8e5`, and `isaac-server` `dc84b39`, not the stale local mirrors.
+- `isaac-foundation`:
+  - `bb spec` passed: `760 examples, 0 failures, 1327 assertions`
+  - `bb features features/module/berth_registration.feature` passed: `3 examples, 0 failures, 4 assertions`
+- `isaac-agent`:
+  - `bb spec` passed: `1046 examples, 0 failures, 2068 assertions`
+  - `clojure -Sdeps '{:aliases {:dev-local {:override-deps {io.github.slagyr/isaac-foundation {:local/root "/private/tmp/isaac-olj5-foundation"} io.github.slagyr/isaac-foundation-spec {:local/root "/private/tmp/isaac-olj5-foundation/spec"} marigold.bridge/marigold.bridge {:local/root "/private/tmp/isaac-olj5-foundation/modules/marigold.bridge"} marigold.longwave/marigold.longwave {:local/root "/private/tmp/isaac-olj5-foundation/modules/marigold.longwave"}}}}}' -M:dev-local:features features/module/slash_extension.feature` passed: `3 examples, 0 failures, 4 assertions`
+- The new uniform logging is present at the foundation choke point in [src/isaac/module/loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:678) and closes with `:berth/registration-summary` at [loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:1171).
+- The new feature [features/module/berth_registration.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/module/berth_registration.feature:1) proves a route berth registration at server boot, cross-berth registration visibility, and the summary event.
+- The old one-off slash signal is gone on current heads: repo search of foundation/agent/server source for `:slash/registered` returned no hits.
+- Current server head [deps.edn](/private/tmp/isaac-olj5-server/deps.edn:4) is pinned to foundation `455e0db`, so the consumer side is on the verified choke-point implementation.
