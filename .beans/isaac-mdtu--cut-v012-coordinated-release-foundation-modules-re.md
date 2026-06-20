@@ -4,9 +4,8 @@ title: Cut v0.1.2 coordinated release (foundation + modules + registry + formula
 status: completed
 type: task
 priority: normal
-tags:
 created_at: 2026-06-19T16:41:52Z
-updated_at: 2026-06-19T17:53:53Z
+updated_at: 2026-06-20T16:12:05Z
 blocked_by:
     - isaac-xc9n
 ---
@@ -108,3 +107,19 @@ Local proof: `modules install isaac.server isaac.cron` → list shows `0.1.4` /
 - Tap is still correct: [Formula/isaac.rb](/Users/micahmartin/agents/work-2/homebrew-tap/Formula/isaac.rb:1) still points at foundation `v0.1.2`.
 - Released manifests now carry the corrected top-level versions in the published artifacts. Spot checks: `git -C /Users/micahmartin/agents/verify/isaac-agent show FETCH_HEAD:resources/isaac-manifest.edn` for `isaac-agent v0.1.4` reports `:version "0.1.3"`, [isaac.server](/Users/micahmartin/.gitlibs/libs/isaac.server/isaac.server/817a5242b3c85bdcadbc4225c5d75f8fafc64c18/resources/isaac-manifest.edn:2) reports `0.1.4`, and [isaac.cron](/Users/micahmartin/.gitlibs/libs/isaac.cron/isaac.cron/bf8208a9370fc2c497c494eda5aa06713532189b/resources/isaac-manifest.edn:2) reports `0.1.2`.
 - Clean proof is green on released foundation `v0.1.2`: `./libexec/isaac --root /private/tmp/isaac-mdtu-proof-root-2 --version` returned `isaac 0.1.2 (305c337)`, `init` succeeded, `modules install isaac.server isaac.cron` succeeded from the live registry, `modules list --edn` reported `:version "0.1.4"` for `isaac.server` and `:version "0.1.2"` for `isaac.cron`, and rerunning `--version` after install still returned `isaac 0.1.2 (305c337)`.
+
+
+## Release-step clarification (2026-06-20): module tags are OPTIONAL
+
+Because the registry (modules.edn) is SHA-ONLY (5h15), `modules install`/`upgrade`
+resolve modules BY SHA — nothing consumes a module's git tag. So the REQUIRED
+steps to release a MODULE (agent, acp, server, comms, cron, hail, hooks) are just:
+  1. bump the module's manifest :version  (shows in `modules list`)
+  2. bump the registry modules.edn :git/sha to the new commit
+A git tag on the module is OPTIONAL — a human-readable "this commit = vX.Y.Z"
+record / future-proofing if the registry ever goes tag-based. Tag for deliberate
+releases if you want the marker; skip for quick fixes.
+
+FOUNDATION is the exception — it MUST be tagged: the homebrew formula's url points
+at .../archive/refs/tags/vX.Y.Z.tar.gz, so no tag => no installable tarball. (Plus
+foundation manifest :version bump + the release.yml/formula auto-bump.)
