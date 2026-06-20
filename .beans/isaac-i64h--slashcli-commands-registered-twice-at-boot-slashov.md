@@ -1,13 +1,12 @@
 ---
 # isaac-i64h
 title: Slash/CLI commands registered twice at boot -> :slash/override warnings
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T15:28:50Z
+updated_at: 2026-06-20T15:33:52Z
 ---
 
 Built-in slash commands (crew, cwd, effort, model, status) are registered ONCE
@@ -71,3 +70,11 @@ server-boot berth pass, `ensure-registered!` interleaving, and lookup activation
 
 Repro proof: `bb spec spec/isaac/slash/registry_spec.clj` → `15/0`; full suite
 `1046/0`.
+
+## Verification Notes (2026-06-20 re-verify)
+
+- Verification passed on fetched GitHub `isaac-agent` `main` at `2aff304`, not the stale local `../plan` mirror.
+- `bb spec spec/isaac/slash/registry_spec.clj` passed: `15 examples, 0 failures, 17 assertions`.
+- `bb spec` passed on the same head: `1046 examples, 0 failures, 2068 assertions`.
+- The fix in [src/isaac/slash/registry.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/slash/registry.clj:18) now treats same-factory re-registration as idempotent while preserving handler-based equality for direct `register!` calls.
+- The reopened boot-path concern is covered by the new integration specs in [spec/isaac/slash/registry_spec.clj](/Users/micahmartin/agents/verify/isaac-agent/spec/isaac/slash/registry_spec.clj:89): CLI-init via `main/register-module-cli-commands!`, server-boot berth processing, `ensure-registered!` interleaving, and lookup activation all rerun without any `:slash/override` warnings.
