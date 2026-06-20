@@ -1,13 +1,12 @@
 ---
 # isaac-y2bc
 title: 'Server boot observability: clear boot-start marker + per-module load/activate (incl agent/server) in order'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T03:48:08Z
+updated_at: 2026-06-20T03:52:33Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
@@ -46,19 +45,17 @@ answerable directly from the log.
 
 ## Verification Notes
 
-- Verification failed on 2026-06-19 against fetched GitHub heads `isaac-foundation` `11f03d8` and `isaac-server` `997ff9d`, not the stale local `../plan` mirrors.
-- What is correct:
-  - `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/module/lifecycle_spec.clj` in `isaac-foundation` passed: `41 examples, 0 failures, 98 assertions`.
-  - `env ISAAC_GIT=1 bb spec spec/isaac/server/app_spec.clj spec/isaac/server/cli_spec.clj` in `isaac-server` passed: `42 examples, 0 failures, 78 assertions`.
-  - The follow-up changed [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:20) to split the `:module/activated` and `:telly/started` checks into separate log assertions, matching the prior review note.
-  - The delivered code still contains the requested observability surfaces: `:server/boot-starting` in [src/isaac/server/cli.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/cli.clj:65), phase logs and summary in [src/isaac/server/app.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/app.clj:199), and `:module/loaded` plus topological `activate-modules!` in [src/isaac/module/loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:871).
-- What is wrong:
-  - `env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` in `isaac-server` still fails `1/6` scenarios on current head.
-  - The same scenario is still red: [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:6) “Activating the telly module on first comm slot use”.
-  - The split assertion did not fix the matcher behavior. The standalone `:telly/started` check still binds against an earlier one-row window before the comm start entry arrives and fails with: `Row 0: event: Expected ":telly/started", got: :server/boot-phase`.
-- Net: the observability work is present, but the acceptance feature remains non-green on current head, so the bean is still not verifier-ready.
-
-- Re-verified on 2026-06-19 after the bean was re-tagged `unverified`: `isaac-server` GitHub `main` had not advanced beyond `997ff9d`, and rerunning `env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` produced the same `1/6` failure above.
+- Verification passed on 2026-06-20 against fetched GitHub heads `isaac-foundation` `b00a024` and `isaac-server` `8dd1205`, not the stale local `../plan` mirrors.
+- `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/module/lifecycle_spec.clj spec/isaac/foundation/log_steps_spec.clj` in `isaac-foundation` passed: `45 examples, 0 failures, 101 assertions`.
+- `env ISAAC_GIT=1 bb spec spec/isaac/server/app_spec.clj spec/isaac/server/cli_spec.clj` in `isaac-server` passed: `42 examples, 0 failures, 78 assertions`.
+- `env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` in `isaac-server` passed: `6 examples, 0 failures, 7 assertions` when rerun outside the sandbox so the startup-command scenarios could bind a local test socket.
+- The delivered observability surfaces are present on current head:
+  - [src/isaac/server/cli.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/cli.clj:65) logs `:server/boot-starting`
+  - [src/isaac/server/app.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/app.clj:199) logs boot phases and `:server/boot-summary`
+  - [src/isaac/module/loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:871) logs `:module/loaded`, activates modules topologically, and exposes `boot-stats`
+- The acceptance follow-up also landed:
+  - foundation [spec/isaac/foundation/log_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/log_steps.clj:12) now handles interleaved ordered subsequences correctly
+  - server [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:1) now asserts the boot-time comm lifecycle on a self-contained git-pinned telly fixture
 
 ## Worker handoff (2026-06-20)
 
