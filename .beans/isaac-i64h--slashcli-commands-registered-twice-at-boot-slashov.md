@@ -1,11 +1,11 @@
 ---
 # isaac-i64h
 title: Slash/CLI commands registered twice at boot -> :slash/override warnings
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T15:19:54Z
+updated_at: 2026-06-20T15:25:03Z
 ---
 
 Built-in slash commands (crew, cwd, effort, model, status) are registered ONCE
