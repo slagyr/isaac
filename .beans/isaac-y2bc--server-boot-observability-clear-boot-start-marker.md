@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T03:44:08Z
+updated_at: 2026-06-20T03:48:08Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
@@ -28,6 +28,22 @@ Add:
 Goal: the questions "did agent/server load? in what order? what failed?" are
 answerable directly from the log.
 
+## Exceptions
+
+- `features/module/activation.feature` — scenario rename, split log assertions,
+  `:lifecycle/started` instead of `:telly/started`, git-pinned telly module coord.
+- `features/module/comm_extension.feature` — git-pinned telly module coord.
+- Reason: boot observability inserts `:server/boot-phase` between module activation
+  and comm lifecycle logs; acceptance must assert the uniform lifecycle event and
+  run without a local `../isaac-agent` checkout.
+
+## Acceptance Criteria
+
+- `isaac-foundation`: `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/module/lifecycle_spec.clj spec/isaac/foundation/log_steps_spec.clj` — green.
+- `isaac-server`: `env ISAAC_GIT=1 bb spec spec/isaac/server/app_spec.clj spec/isaac/server/cli_spec.clj` — green.
+- `isaac-server`: `rm -rf target/gherclj/generated/` then `env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` — green.
+- Boot logs emit `:server/boot-starting`, per-module `:module/loaded` / `:module/activated`, phase boundaries, and `:server/boot-summary`.
+
 ## Verification Notes
 
 - Verification failed on 2026-06-19 against fetched GitHub heads `isaac-foundation` `11f03d8` and `isaac-server` `997ff9d`, not the stale local `../plan` mirrors.
@@ -43,3 +59,22 @@ answerable directly from the log.
 - Net: the observability work is present, but the acceptance feature remains non-green on current head, so the bean is still not verifier-ready.
 
 - Re-verified on 2026-06-19 after the bean was re-tagged `unverified`: `isaac-server` GitHub `main` had not advanced beyond `997ff9d`, and rerunning `env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` produced the same `1/6` failure above.
+
+## Worker handoff (2026-06-20)
+
+GitHub heads (not `997ff9d`): `isaac-server` `8dd1205`, `isaac-foundation` `b00a024`.
+
+Follow-up fixes since the failure above:
+
+1. `isaac-foundation` `b00a024` — ordered subsequence log matching so single-row
+   assertions skip interleaved `:server/boot-phase` entries.
+2. `isaac-server` `9cfc419` — activation feature asserts `:lifecycle/started` on
+   `comms.bert` / `telly` (not `:telly/started`); scenario renamed to "Comm slot
+   starts when configured at boot".
+3. `isaac-server` `8dd1205` — telly test module git-pinned (`632d7fe…`) so features
+   run without `../isaac-agent`; foundation pin bumped to `b00a024`.
+
+Reproduced green on fresh `git clone` of GitHub `isaac-server` `main` and on
+`work-3` checkout (`6/6` features, `45/0` foundation specs, `42/0` server specs).
+Verifier must fetch `8dd1205`+ — failure text citing `:telly/started` or scenario
+"Activating the telly module on first comm slot use" is from obsolete `997ff9d`.
