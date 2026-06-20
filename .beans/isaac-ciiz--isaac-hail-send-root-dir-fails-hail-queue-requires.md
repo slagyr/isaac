@@ -1,11 +1,11 @@
 ---
 # isaac-ciiz
 title: 'isaac hail send --root <dir> fails: ''hail queue requires :root'' (root not on CLI command path)'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-06-20T21:22:55Z
-updated_at: 2026-06-20T21:22:55Z
+updated_at: 2026-06-20T21:24:12Z
 ---
 
 `isaac hail send` cannot resolve `--root` outside a running server, so the CLI
