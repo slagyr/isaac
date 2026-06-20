@@ -1,11 +1,11 @@
 ---
 # isaac-m14k
 title: Agent re-loads config + re-registers all tools on every turn (should be boot/config-change only)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-06-20T23:46:43Z
-updated_at: 2026-06-20T23:46:43Z
+updated_at: 2026-06-20T23:49:11Z
 ---
 
 The agent re-runs the **entire config load** — module discovery, schema compose,
