@@ -1,13 +1,12 @@
 ---
 # isaac-y2bc
 title: 'Server boot observability: clear boot-start marker + per-module load/activate (incl agent/server) in order'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T15:34:26Z
+updated_at: 2026-06-20T15:39:49Z
 ---
 
 Micah, reviewing zanebot's boot log: the boot is hard to read. Issues:
@@ -100,3 +99,14 @@ criteria green. Released `isaac-server` v0.1.7 (`47de6d4`) with foundation pin
 Verifier: fetch server `47de6d4`+, confirm boot log shows `:server/boot-starting`
 before config snapshot, `:module/loaded`/`:module/activated` for builtins in
 order, `:server/boot-phase` boundaries, and `:server/boot-summary`.
+
+## Verification Notes (2026-06-20 release re-verify)
+
+- Verification passed on the released pair named in the reopen notes: `isaac-foundation` `3ea9bb8` and `isaac-server` `47de6d4`, not the older branch heads.
+- `env ISAAC_GIT=1 bb spec spec/isaac/module/loader_spec.clj spec/isaac/module/lifecycle_spec.clj spec/isaac/foundation/log_steps_spec.clj` in `isaac-foundation` passed: `45 examples, 0 failures, 101 assertions`.
+- `env ISAAC_GIT=1 bb spec spec/isaac/server/app_spec.clj spec/isaac/server/cli_spec.clj` in `isaac-server` passed: `42 examples, 0 failures, 78 assertions`.
+- `rm -rf target/gherclj/generated/ && env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` in `isaac-server` passed: `6 examples, 0 failures, 7 assertions` when rerun outside the sandbox so the startup-command scenarios could bind a local test socket.
+- The released server build is pinned to the released foundation fix as claimed in [deps.edn](/private/tmp/isaac-y2bc-server-4/deps.edn:4), and the acceptance surfaces remain present:
+  - [src/isaac/server/cli.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/cli.clj:65) logs `:server/boot-starting`
+  - [src/isaac/server/app.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/app.clj:199) logs phase boundaries and `:server/boot-summary`
+  - [src/isaac/module/loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:871) logs `:module/loaded`, topological `:module/activated`, and exposes `boot-stats`
