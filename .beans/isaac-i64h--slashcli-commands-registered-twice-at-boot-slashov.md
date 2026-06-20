@@ -4,8 +4,10 @@ title: Slash/CLI commands registered twice at boot -> :slash/override warnings
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-19T22:22:26Z
-updated_at: 2026-06-20T15:25:03Z
+updated_at: 2026-06-20T15:28:50Z
 ---
 
 Built-in slash commands (crew, cwd, effort, model, status) are registered ONCE
@@ -45,3 +47,27 @@ So the double-registration was not actually eliminated — the bean was closed
 prematurely. The CLI-init registration + server-boot berth processing still both
 register the built-in slash commands. Re-investigate and verify against an
 actual server boot (not just a unit assertion).
+
+## Acceptance Criteria
+
+- `isaac-agent`: `bb spec spec/isaac/slash/registry_spec.clj` — green.
+- `isaac-agent`: `bb spec` — green.
+- Server boot after `isaac server` does not emit `:slash/override` for built-in
+  slash commands (crew, cwd, effort, model, status).
+
+## Worker handoff (2026-06-20, work-3)
+
+Root cause: handler-fn identity (`=`) is insufficient — CLI-init and server-boot
+both call `process-manifest-berths!`, but the second pass can resolve the same
+manifest `:factory` to a different handler ref (classpath reload), so the
+handler-based idempotency in `7bcc183` still logged `:slash/override`.
+
+Fix (`isaac-agent` `2aff304`): `register-slash-entry!` stores `:factory` on each
+command; `register!` treats re-registration as idempotent when the factory
+symbol matches (handler compare retained for direct `register!` calls).
+
+Integration specs added for CLI-init (`register-module-cli-commands!`) +
+server-boot berth pass, `ensure-registered!` interleaving, and lookup activation.
+
+Repro proof: `bb spec spec/isaac/slash/registry_spec.clj` → `15/0`; full suite
+`1046/0`.
