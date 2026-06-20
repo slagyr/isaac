@@ -1,11 +1,11 @@
 ---
 # isaac-olj5
 title: 'Server boot observability: log every berth registration (:berth/registered)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-20T20:32:41Z
-updated_at: 2026-06-20T20:39:17Z
+updated_at: 2026-06-20T20:40:47Z
 ---
 
 Follow-on to y2bc (module/phase boot logging). y2bc logs :module/loaded/:module/activated, :server/boot-phase, and :server/boot-summary, but NOT individual HTTP route registration. So a 404 (e.g. a hooks webhook call) is undiagnosable from the log — you cannot tell whether the route was ever registered.
