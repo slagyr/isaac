@@ -4,8 +4,10 @@ title: 'Server boot observability: log every berth registration (:berth/register
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-20T20:32:41Z
-updated_at: 2026-06-20T20:40:47Z
+updated_at: 2026-06-20T20:45:25Z
 ---
 
 Follow-on to y2bc (module/phase boot logging). y2bc logs :module/loaded/:module/activated, :server/boot-phase, and :server/boot-summary, but NOT individual HTTP route registration. So a 404 (e.g. a hooks webhook call) is undiagnosable from the log — you cannot tell whether the route was ever registered.
@@ -71,3 +73,18 @@ Scenario: Boot emits a per-berth registration summary
 - `:berth/registration-summary` per-berth counts present.
 - Existing `:slash/registered` folded into the uniform event.
 - A missing route/command (e.g. the hooks 404) is diagnosable from the boot log.
+
+## Worker handoff (2026-06-20, work-3)
+
+Foundation `b69e5e0`: `process-manifest-berths!` and `register-builtin-berth-entry!`
+emit `:berth/registered {:berth :entry :module}` per factory invocation;
+`:berth/registration-summary {:counts ...}` closes the pass.
+
+Agent `be6337a`: removed `:slash/registered` from `slash.registry` (uniform event only);
+`slash_extension.feature` uses manifest-berths-processed step. Foundation pin `b69e5e0`.
+
+Server `c888605`: foundation pin bumped to `b69e5e0`.
+
+Proof:
+- `isaac-foundation`: `bb spec` → `760/0`; `bb features features/module/berth_registration.feature` → `3/3`
+- `isaac-agent`: `bb spec` → green; `clojure -M:dev-local:features features/module/slash_extension.feature` → `3/3`
