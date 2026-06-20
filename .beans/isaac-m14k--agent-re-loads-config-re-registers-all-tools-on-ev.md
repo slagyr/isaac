@@ -4,8 +4,10 @@ title: Agent re-loads config + re-registers all tools on every turn (should be b
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-20T23:46:43Z
-updated_at: 2026-06-20T23:49:11Z
+updated_at: 2026-06-20T23:52:25Z
 ---
 
 The agent re-runs the **entire config load** — module discovery, schema compose,
@@ -55,3 +57,14 @@ hail. Plus 2 passes at boot (23:24:26) — boot itself loads config twice.
 - Fixing the root removes the olj5 per-turn log noise — no need to suppress the
   event; it becomes a clean boot-only signal again.
 - Relates to the boot double-pass (register-module-cli-commands! + server boot).
+
+
+## Handoff (work-3)
+
+**Actual root cause:** `run-turn!` called `builtin/register-all!` every turn (not uncached `load-config-result`). Boot also double-registered via `server/cli` `register-builtins!` before `app/start!`'s `process-manifest-berths!`.
+
+**Fixes:**
+- `isaac-agent` `dcac6dc` — removed per-turn `ensure-default-tools-registered!`; `register-built-in-tool!` skips tools already in registry.
+- `isaac-server` `bf0ffea` — removed pre-boot `register-builtins!` pass.
+
+**Verified:** `bb spec` isaac-agent (1048 examples); `bb spec spec/isaac/server/cli_spec.clj` isaac-server.
