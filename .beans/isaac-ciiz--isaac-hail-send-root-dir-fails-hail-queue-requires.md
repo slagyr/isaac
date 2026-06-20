@@ -4,8 +4,10 @@ title: 'isaac hail send --root <dir> fails: ''hail queue requires :root'' (root 
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-20T21:22:55Z
-updated_at: 2026-06-20T21:24:12Z
+updated_at: 2026-06-20T21:25:57Z
 ---
 
 `isaac hail send` cannot resolve `--root` outside a running server, so the CLI
@@ -48,3 +50,10 @@ unchanged).
 - `isaac --root <dir> hail send --crew <c> --prompt <p>` persists a record to
   <dir>/hail/pending and prints the id (exit 0), with no running server.
 - Existing server hail path (HTTP /hail/send, delivery worker) unchanged.
+
+
+## Handoff (work-3)
+
+- **Fix:** `isaac-foundation` `b923282` — CLI dispatch passes `:root resolved-root` to `nexus/init!`.
+- **Test:** extended `main_spec` "installs the active fs and resolved root into runtime init".
+- **Verified:** `bb ci` in isaac-foundation; `bb features features/send.feature` in isaac-hail (local foundation).
