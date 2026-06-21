@@ -1,13 +1,11 @@
 ---
 # isaac-buh6
 title: Cron/proactive sessions can deliver to a comm target (retire null-comm + osascript)
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-21T17:47:56Z
-blocked_by:
-    - isaac-ve2a
+updated_at: 2026-06-21T17:49:59Z
 ---
 
 A cron job runs its prompt and DISCARDS the output — `isaac.cron.service` wires
