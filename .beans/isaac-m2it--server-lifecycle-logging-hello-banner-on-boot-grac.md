@@ -1,9 +1,11 @@
 ---
 # isaac-m2it
 title: 'Server lifecycle logging: hello banner on boot, graceful goodbye on shutdown'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-21T23:13:15Z
 updated_at: 2026-06-21T23:27:23Z
 ---
@@ -109,3 +111,11 @@ Feature: Server lifecycle bookends
 ```
 
 Notes: hello asserts runtime=bb (suite runs under bb) + version/root/pid present; goodbye relies on subsequence-ordered log matching to assert shutdown-starting -> component stops -> goodbye. host/port/modules intentionally NOT in hello (logged later via :server/started / :server/boot-summary).
+
+## Worker notes (work-2, 2026-06-21)
+
+- `isaac-foundation` @ `140af54`: `:module/unloaded` on successful `on-unload` in `rollback-loaded-modules!`.
+- `isaac-server` @ `bc35aad`: `isaac.server.lifecycle/emit-hello!` (`:server/hello` + banner) before boot in `cli/run` and feature server-start; SIGTERM shutdown hook → `app/stop!`; `stop!` logs `:server/shutdown-starting`, `:server/shutdown-phase` per component, `:server/stopped` (+ `:uptime-ms`); idempotent double-stop guard.
+- `features/server/lifecycle.feature` — 2 scenarios green (no @wip). Log field `:dev` not `:dev?` (gherclj path parser skips `?`).
+- Tests: `bb ci` green in isaac-server (153 spec + 42 feature); foundation `bb ci` green.
+- Deploy: foundation + server releases; zanebot manual check for SIGTERM hello…goodbye in server.log.
