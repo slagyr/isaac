@@ -1,11 +1,11 @@
 ---
 # isaac-hgf6
 title: Compaction keys off lagging :last-input-tokens — session runs over the hard context window
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-06-21T00:16:55Z
-updated_at: 2026-06-21T00:16:55Z
+updated_at: 2026-06-21T00:17:43Z
 ---
 
 Carved from isaac-twbz RC1 (per the data, twbz's "compaction never fires" is
