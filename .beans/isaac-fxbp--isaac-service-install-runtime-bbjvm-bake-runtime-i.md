@@ -1,11 +1,11 @@
 ---
 # isaac-fxbp
 title: isaac service install --runtime bb|jvm — bake runtime into the launchd plist
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-21T01:09:18Z
-updated_at: 2026-06-21T02:25:09Z
+updated_at: 2026-06-21T02:29:02Z
 parent: isaac-5zfv
 ---
 
