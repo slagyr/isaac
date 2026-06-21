@@ -1,11 +1,13 @@
 ---
 # isaac-ve2a
 title: 'Outbound delivery dead-letters: comm instance never registered in nexus'
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-21T15:40:38Z
-updated_at: 2026-06-21T15:40:38Z
+updated_at: 2026-06-21T15:45:27Z
 ---
 
 The delivery worker can't find the live comm, so every outbound reply for
@@ -44,3 +46,12 @@ which is the bigger comm-Service-lifecycle refactor and is currently blocked.)
 ## Deploy
 - Lands in whichever repo owns berths.clj; needs a release + zanebot redeploy to
   restore outbound iMessage.
+
+## Worker notes (work-2, 2026-06-21)
+
+- `isaac-foundation` @ `c48fb06`: berths reconcile invokes berth `:register-fn` / `:deregister-fn` on factory node create/teardown; maps `[:comms]` slots via `:dynamic-schema :berth`.
+- `isaac-server` @ `ea8706d`: `:isaac.server/comm` berth declares `isaac.comm.registry/register-instance!` + deregister.
+- `isaac-agent` @ `0cebe7a`: test fixture berth mirrors register-fn.
+- `isaac-imessage` @ `a56e4d9`: lifecycle spec asserts `comm-registry/comm-for "imessage"` after server boot + deregister on slot delete.
+- Tests: foundation `bb ci` (762+117 ex), `bb spec berths_spec` (13 ex), imessage `clojure -M:dev-local:spec imessage_lifecycle_feature_spec` (35 ex), agent delivery worker spec (6 ex) — 0 failures.
+- Deploy: foundation + server releases + zanebot redeploy required; 4 stuck `~/.isaac/comm/delivery/failed/*.edn` records are lost (attempts 0, never sent).
