@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-21T15:48:10Z
+updated_at: 2026-06-21T16:00:32Z
 blocked_by:
     - isaac-ve2a
 ---
@@ -43,3 +43,23 @@ through it (`imsg send` for imessage) — no AppleScript, no special tool.
 - `health-checkin.md` contains no `osascript`; the 9 AM health review sends
   through the comm.
 - Untargeted crons (e.g. heartbeat) still run-and-discard as today.
+
+## Scenarios (DRAFT — pending review; do not generate feature file yet)
+```gherkin
+Scenario: a cron addressed to a comm delivers its output through that comm
+  Given a cron entry "health" with crew main, :comm :imessage, :to "micahmartin@mac.com"
+  When the cron fires and the session produces a response
+  Then the response is delivered to "micahmartin@mac.com" via the imessage comm (imsg send)
+  And  the cron session does NOT use the null comm
+
+Scenario: an untargeted cron runs and discards output (unchanged default)
+  Given a cron entry "heartbeat" with no comm target
+  When the cron fires
+  Then the session runs against the null comm and no message is delivered
+
+Scenario: a cron targeting an unknown comm is rejected at config load
+  Given a cron entry with :comm :nope
+  When config is loaded
+  Then validation reports that comm :nope does not exist
+  And  the config is invalid
+```

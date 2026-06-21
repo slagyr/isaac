@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-06-21T15:40:38Z
-updated_at: 2026-06-21T15:50:48Z
+updated_at: 2026-06-21T16:00:32Z
 ---
 
 The delivery worker can't find the live comm, so every outbound reply for
@@ -53,3 +53,26 @@ which is the bigger comm-Service-lifecycle refactor and is currently blocked.)
 - `isaac-imessage` @ `a56e4d9`: lifecycle spec asserts `comm-registry/comm-for "imessage"` after server boot + deregister on slot delete.
 - Tests: foundation `bb ci` (762+117 ex), `bb spec berths_spec` (13 ex), imessage `clojure -M:dev-local:spec imessage_lifecycle_feature_spec` (35 ex), agent delivery worker spec (6 ex) — 0 failures.
 - Deploy: foundation + server releases + zanebot redeploy required; 4 stuck `~/.isaac/comm/delivery/failed/*.edn` records are lost (attempts 0, never sent).
+
+## Scenarios (DRAFT — pending review; do not generate feature file yet)
+```gherkin
+Scenario: a comm node registers its live instance when its berth node is created
+  Given a configured :isaac.server/comm slot (e.g. imessage)
+  When the server boots and the comm node is created
+  Then isaac.comm.registry/comm-for resolves the live comm instance from the nexus
+
+Scenario: outbound delivery reaches the comm instead of dead-lettering
+  Given a registered imessage comm
+  And  a queued outbound reply addressed to that comm
+  When the delivery worker processes the record
+  Then it resolves the comm and invokes send!
+  And  the record is NOT dead-lettered with :reason :permanent
+
+Scenario: teardown deregisters the comm instance
+  Given a registered comm instance
+  When the comm node is torn down
+  Then isaac.comm.registry/comm-for no longer resolves it
+```
+(Note: the middle scenario — delivery-worker resolves the comm — likely lands as
+a unit/integration spec on the worker + registry; the register/deregister pair
+is the brth-lifecycle feature. Split during speccing.)
