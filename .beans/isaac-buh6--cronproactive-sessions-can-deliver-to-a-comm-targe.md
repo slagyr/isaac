@@ -4,8 +4,10 @@ title: Cron/proactive sessions can deliver to a comm target (retire null-comm + 
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-21T17:49:59Z
+updated_at: 2026-06-21T21:45:27Z
 ---
 
 A cron job runs its prompt and DISCARDS the output — `isaac.cron.service` wires
