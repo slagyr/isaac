@@ -1,13 +1,11 @@
 ---
 # isaac-8esh
 title: imessage make the imsg command configurable
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-21T01:20:32Z
-updated_at: 2026-06-21T01:47:11Z
+updated_at: 2026-06-21T01:54:05Z
 ---
 
 Today isaac-imessage only exposes :imessage/bin as a string path and always spawns [bin "rpc" ...]. That is too narrow for wrapper-based deployments.
