@@ -165,14 +165,15 @@ for the step surface to sprawl silently — surfacing them keeps reuse honest
 and lets Micah veto a new step before it exists.
 
 **Marigold — keep scenarios fun and fictional.** All example data lives aboard
-the *Marigold*, a fictional spaceship with a themed crew and tech (see
-`spec/isaac/marigold*.clj` and the agent features). Use its established world:
-crew like Cordelia (first mate), Joe, Oscar; comms `longwave` (CLI), `skybeam`
-(null), `logbook` (memory); providers/models `starcore`, `quantum-anvil`,
-`anvil-x`. Invent within it — never real people, accounts, or use cases (no
-`micahmartin@mac.com`, no real health check-in). The *behavior* under test
-stays real; only the *content* is fictional. Real PII/use-cases in a spec are
-a smell: they leak, they date, and read as config instead of a spec.
+the *Marigold*, a fictional spaceship with a themed crew and tech. Its fixtures
+are spread per-module — read the `marigold*` source/spec files in whatever
+modules you work on or depend on, and reuse their established names instead of
+inventing fresh ones. Examples: crew like Cordelia (first mate), Joe, Oscar;
+comms `longwave` (CLI), `skybeam` (null), `logbook` (memory); providers/models
+`starcore`, `quantum-anvil`, `anvil-x`. Never real people, accounts, or use
+cases (no `micahmartin@mac.com`, no real health check-in). The *behavior* under
+test stays real; only the *content* is fictional. Real PII/use-cases in a spec
+are a smell: they leak, they date, and read as config instead of a spec.
 
 ### Key files to know
 
