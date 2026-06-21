@@ -1,11 +1,13 @@
 ---
 # isaac-smmm
 title: isaac modules deps — emit JVM launch classpath/deps from config modules
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-21T01:08:42Z
-updated_at: 2026-06-21T02:02:54Z
+updated_at: 2026-06-21T02:05:15Z
 parent: isaac-5zfv
 ---
 
