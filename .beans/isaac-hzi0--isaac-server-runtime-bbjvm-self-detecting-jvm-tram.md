@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-21T01:09:00Z
-updated_at: 2026-06-21T02:05:15Z
+updated_at: 2026-06-21T02:21:00Z
 parent: isaac-5zfv
 ---
 
@@ -35,7 +35,7 @@ Scenario: --runtime jvm from a bb process re-execs into clojure
   Given the process is running under Babashka
   When isaac is run with "server --runtime jvm"
   Then it execs a clojure command of form
-       "clojure -Scp <classpath> -M -m isaac.main ... server"
+       "clojure -Sdeps <deps-map> -M -m isaac.main ... server"
 
 Scenario: --runtime jvm while already on the JVM runs in-process
   Given the process is running on the JVM (no babashka.version)

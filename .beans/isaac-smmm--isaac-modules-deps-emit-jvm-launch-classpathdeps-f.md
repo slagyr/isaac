@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-21T01:08:42Z
-updated_at: 2026-06-21T02:09:39Z
+updated_at: 2026-06-21T02:21:00Z
 parent: isaac-5zfv
 ---
 
@@ -50,9 +50,9 @@ Scenario: --edn emits a -Sdeps map with seed-authoritative exclusions
   And  the stdout EDN paths contains the foundation seed src
 
 @slow
-Scenario: the generated classpath actually boots isaac on the JVM
-  When isaac is run with "modules deps --classpath" and the output is passed to
-       "clojure -Scp <cp> -M -m isaac.main --version"
+Scenario: the generated --edn deps actually boot isaac on the JVM
+  When isaac is run with "modules deps --edn" and the output is passed to
+       "clojure -Sdeps <edn> -M -m isaac.main --version"
   Then the stdout contains the isaac version
 ```
 
