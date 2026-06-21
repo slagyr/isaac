@@ -1,13 +1,11 @@
 ---
 # isaac-m2it
 title: 'Server lifecycle logging: hello banner on boot, graceful goodbye on shutdown'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-21T23:13:15Z
-updated_at: 2026-06-21T23:27:23Z
+updated_at: 2026-06-21T23:40:16Z
 ---
 
 The server gives no visible lifecycle bookends. On boot it logs a thin `:server/started :host :port`; on stop it logs nothing — and `app/stop!` never even runs on a real service stop because no shutdown hook is registered (the process blocks on `@(promise)` and SIGTERM hard-kills it). Goal: a clear hello on boot and a graceful, logged goodbye on shutdown.
