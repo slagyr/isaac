@@ -1,13 +1,12 @@
 ---
 # isaac-hgf6
 title: Compaction keys off lagging :last-input-tokens — session runs over the hard context window
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-21T00:16:55Z
-updated_at: 2026-06-21T00:20:09Z
+updated_at: 2026-06-21T00:26:46Z
 ---
 
 Carved from isaac-twbz RC1 (per the data, twbz's "compaction never fires" is
@@ -56,3 +55,12 @@ a direct measure of the transcript/request about to be sent. Consequences:
 - **Fix:** `isaac-agent` `20fb5dd` — compaction decisions use `estimate-prompt-tokens` (live transcript via `prompt.builder/build`) instead of `:last-input-tokens`.
 - **API:** `should-compact?` now takes `estimated-tokens` as first arg.
 - **Verified:** `bb spec` isaac-agent (1049 examples).
+
+## Verification Notes
+
+- Verification passed on fetched GitHub `isaac-agent` `20fb5dd`, not the stale local mirror.
+- `bb spec` passed on that head: `1049 examples, 0 failures`.
+- The compaction decision path now uses a live prompt estimate in [src/isaac/session/compaction.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/session/compaction.clj:29) and [src/isaac/drive/turn.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/drive/turn.clj:503), not lagging `:last-input-tokens`.
+- The new coverage is directly on the reopened behavior:
+  - [spec/isaac/session/compaction_spec.clj](/Users/micahmartin/agents/verify/isaac-agent/spec/isaac/session/compaction_spec.clj:58) proves `should-compact?` keys off the live estimate and that `estimate-prompt-tokens` derives from the current transcript.
+  - [spec/isaac/drive/turn_spec.clj](/Users/micahmartin/agents/verify/isaac-agent/spec/isaac/drive/turn_spec.clj:379) proves compaction progress/no-progress now measures post-compaction estimated prompt size rather than stale `:last-input-tokens`.
