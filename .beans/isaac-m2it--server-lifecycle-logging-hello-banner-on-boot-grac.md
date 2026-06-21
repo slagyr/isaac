@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-06-21T23:13:15Z
-updated_at: 2026-06-21T23:14:35Z
+updated_at: 2026-06-21T23:23:05Z
 ---
 
 The server gives no visible lifecycle bookends. On boot it logs a thin `:server/started :host :port`; on stop it logs nothing — and `app/stop!` never even runs on a real service stop because no shutdown hook is registered (the process blocks on `@(promise)` and SIGTERM hard-kills it). Goal: a clear hello on boot and a graceful, logged goodbye on shutdown.
@@ -60,3 +60,12 @@ Modules already have a close hook: `on-unload` on `isaac.module.protocol/Module`
 Critical: these only fire when `app/stop!` runs — which is NEVER on a real service stop today (no shutdown hook; SIGTERM hard-kills). So the shutdown hook (item #2) is what actually makes module `on-unload` hooks fire on `service restart`/`stop`. Without it, every restart skips module + service teardown entirely.
 
 Goodbye-logging refinement: `run-unload!`/`shutdown-modules!` log nothing on success (only `:module/unload-failed` on throw). The per-component shutdown logging must add a per-module unload line and a per-service stop line so the log shows each one closing. Two channels to surface: services (run-stop!) and modules (on-unload).
+
+## Decision (2026-06-21): hello is an early, minimal greeting
+
+`:server/hello` is emitted at the START of `cli/run` (replacing/absorbing `:server/boot-starting`), BEFORE the bind — so it carries only intrinsic process facts:
+- version, runtime (+ runtime-version), root, dev?, pid
+
+Dropped from hello: host, port, modules — these are logged later in boot (`:server/started` for listen address, `:server/boot-summary` for module count). No duplication.
+
+Scenario 1 (locked pending final approval): assert log has `:server/hello` with runtime=bb (suite runs under bb), version/root/pid present (`#*`), dev?=false. Reuses existing steps (default Grover setup, config:, the Isaac server is started, the log has entries matching:) — NO new step defs; the new `:server/hello` event is the implementation deliverable.
