@@ -146,6 +146,33 @@ day one.
   opts. The default 50ms grace period fires after every request and
   dominates spec time.
 
+### Planning & feature scenarios
+
+Planning agents author Gherkin scenarios before beans. Required reading:
+- `/plan-with-features` (.toolbox/commands) — feature-first: draft scenarios
+  as text, iterate to approval, THEN write `@wip` feature files, THEN beans.
+  Beans without committed scenarios stay `draft`.
+- `features/TABLES.md` (isaac-foundation) — the gherclj table dialect.
+  Reuse existing step families (`bb steps`) before inventing a step.
+
+**One scenario at a time.** When drafting in chat, present a single scenario,
+get a nod, then the next — never a wall of a whole feature file. A rejected
+batch of twelve is worse than twelve reviewed one-by-one.
+
+**Flag new steps.** With each scenario, call out which steps are reused
+(existing) vs new (need step code written). New steps are work and a chance
+for the step surface to sprawl silently — surfacing them keeps reuse honest
+and lets Micah veto a new step before it exists.
+
+**Marigold — keep scenarios fun and fictional.** All example data lives in
+Marigold, a whimsical town-and-garden world (fixtures: `marigold.app`,
+`marigold.cli.greeter`, `marigold.shared`). Invent Marigold-flavored names,
+prompts, and content (mayor-petunia, the bloom bugle, the town square).
+Never use real people, accounts, or use cases — no `micahmartin@mac.com`,
+no real health check-in. The *behavior* under test stays real; only the
+*content* is fictional. Real PII/use-cases in a spec are a smell: they leak,
+they date, and read as config instead of a spec.
+
 ### Key files to know
 
 - `src/isaac/cli/chat.clj` — `process-user-input!` is the core chat
