@@ -4,8 +4,10 @@ title: imessage make the imsg command configurable
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-21T01:20:32Z
-updated_at: 2026-06-21T01:44:20Z
+updated_at: 2026-06-21T01:47:11Z
 ---
 
 Today isaac-imessage only exposes :imessage/bin as a string path and always spawns [bin "rpc" ...]. That is too narrow for wrapper-based deployments.
@@ -24,3 +26,11 @@ Requirements:
 - Update schema, runtime docs, and focused specs
 
 Done when isaac can be configured to launch imsg through a wrapper command without code hacks, and the config contract is documented clearly enough for remote-Mac deployments.
+
+
+## Handoff (work-3)
+
+- **Fix:** `isaac-imessage` `40e5a03` — new `:imessage/command` vector config for full imsg launch prefix (ssh wrappers); `:imessage/bin` unchanged for local default.
+- **Behavior:** Wrapped mode skips local `chat.db` existence check; `:imessage/db-path` still passed as `--db` on the remote host.
+- **Docs:** README config section updated; schema in `isaac-manifest.edn`.
+- **Verified:** `clojure -M:dev-local:spec` (47 examples).
