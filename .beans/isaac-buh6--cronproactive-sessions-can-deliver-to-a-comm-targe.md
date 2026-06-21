@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-21T16:00:32Z
+updated_at: 2026-06-21T17:47:56Z
 blocked_by:
     - isaac-ve2a
 ---
@@ -63,3 +63,34 @@ Scenario: a cron targeting an unknown comm is rejected at config load
   Then validation reports that comm :nope does not exist
   And  the config is invalid
 ```
+
+## Scenarios written (2026-06-21) — supersedes the draft block above
+
+Re-themed to the Marigold (spaceship) world and committed `@wip`:
+
+- **Scenarios 1 & 2** → `isaac-cron` `features/delivery.feature` (`@wip`, pushed
+  `d5f4e2c`): (1) Cordelia's dawn watch report delivers via the `longwave` comm;
+  (2) the untargeted `hull-check` cron discards (skybeam/null default), delivery
+  queue stays empty.
+- **Scenario 3 (validate undefined comm)** → a **SPEC**, not a feature. Cron's
+  `config_validate.feature` was retired; config-validate is now spec-tested
+  (`isaac-foundation/spec/isaac/config/cli/command_spec.clj`). So implement the
+  `:comm-exists?` cron-schema validation + a unit spec mirroring `:crew-exists?`.
+
+## Implementation tasks (DoD: remove `@wip`, green)
+- [ ] Cron schema: `:comm` + `:to` fields; `:comm-exists?` validation.
+- [ ] Cron service: when `:comm` set, enqueue a delivery to that comm + `:to`
+      (the async path — see ve2a) instead of `null-comm`. No target = discard.
+- [ ] New step `the delivery queue is empty` (negative assertion on the queue).
+- [ ] Parameterize `with-stub-comm` (isaac-agent `worker_steps.clj`) so a
+      scenario can register/target a named ship comm (`longwave`/`skybeam`/
+      `logbook`) rather than the hardcoded `"stub"`.
+- [ ] `:comm-exists?` spec (cron) for the undefined-comm case.
+
+## Acceptance (runnable)
+- `bb features features/delivery.feature` in `isaac-cron` — green (after `@wip`
+  removed).
+- `bb spec` covering the `:comm-exists?` validation — green.
+
+## Dependency
+- Still **blocked by ve2a** (delivery worker must resolve the live comm).
