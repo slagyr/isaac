@@ -1,13 +1,11 @@
 ---
 # isaac-ve2a
 title: 'Outbound delivery dead-letters: comm instance never registered in nexus'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-06-21T15:40:38Z
-updated_at: 2026-06-21T15:45:27Z
+updated_at: 2026-06-21T15:50:48Z
 ---
 
 The delivery worker can't find the live comm, so every outbound reply for
