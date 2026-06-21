@@ -1,11 +1,11 @@
 ---
 # isaac-i0g9
 title: Release auto-bump dispatch doesn't reach the tap (manual tap trigger required)
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-06-19T19:51:00Z
-updated_at: 2026-06-20T23:55:41Z
+updated_at: 2026-06-21T00:07:11Z
 ---
 
 7tle's "auto-bump" is not actually automatic. On the v0.1.4 release, foundation's
@@ -55,3 +55,28 @@ Add a PAT secret to the foundation repo:
 ## Verify / close
 Re-run `release.yml -f tag=v0.1.6`; confirm a `repository_dispatch` (foundation-release)
 run appears in slagyr/homebrew-tap actions and the formula bumps with no manual step.
+
+## Summary of Changes (2026-06-20 — fixed & verified end-to-end)
+
+Auto-bump now works: a foundation release dispatches the tap, which bumps the
+formula with NO manual step. Took three fixes (the missing secret was only the
+first):
+
+1. **Secret** — Micah added `HOMEBREW_TAP_BUMP_TOKEN` (fine-grained PAT,
+   `slagyr/homebrew-tap`, Contents: read/write) to the foundation repo.
+2. **release.yml GH_TOKEN** (foundation `fe84db4`) — bump step passed the PAT
+   only as `HOMEBREW_TAP_BUMP_TOKEN`; `gh api` authenticates via `GH_TOKEN`, so it
+   failed "set the GH_TOKEN environment variable" (exit 4). Added
+   `GH_TOKEN: ${{ secrets.HOMEBREW_TAP_BUMP_TOKEN }}` to the step env.
+3. **release.yml client_payload** (foundation `9591687`) — `-f "client_payload={...}"`
+   sent a string → HTTP 422 "is not an object". Changed to gh nested-field syntax
+   `-f "client_payload[tag]=${TAG}"`; tap reads `github.event.client_payload.tag`.
+
+## Verification
+- `release.yml -f tag=v0.1.6`: **success**.
+- slagyr/homebrew-tap: first-ever **repository_dispatch** (foundation-release) run
+  appeared and completed **success** (all prior bumps were manual workflow_dispatch);
+  formula stayed v0.1.6 (no-op, path proven).
+
+Future releases auto-bump the tap; the manual `gh workflow run bump-isaac.yml`
+workaround is no longer needed.
