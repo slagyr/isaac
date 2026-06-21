@@ -1,0 +1,53 @@
+---
+# isaac-m2it
+title: 'Server lifecycle logging: hello banner on boot, graceful goodbye on shutdown'
+status: todo
+type: feature
+created_at: 2026-06-21T23:13:15Z
+updated_at: 2026-06-21T23:13:15Z
+---
+
+The server gives no visible lifecycle bookends. On boot it logs a thin `:server/started :host :port`; on stop it logs nothing — and `app/stop!` never even runs on a real service stop because no shutdown hook is registered (the process blocks on `@(promise)` and SIGTERM hard-kills it). Goal: a clear hello on boot and a graceful, logged goodbye on shutdown.
+
+## 1. Hello banner on boot
+Emit `:server/hello` in `isaac.server.cli/run` right after a successful `app/start!`, replacing the thin `:server/started` line. Structured log + human banner.
+
+Fields (all already available):
+- version — `isaac.foundation.version/version-string` (`isaac 0.1.7 (73ee5cc)`)
+- runtime — `isaac.server.runtime/babashka?` -> `bb`|`jvm`; plus runtime-version (`babashka.version` prop for bb, `java.version` for jvm)
+- root — root-dir
+- host / port — from start! result
+- dev? — resolved dev flag
+- modules — count from module boot-stats
+- pid — `(.pid (java.lang.ProcessHandle/current))` (works on bb and jvm)
+
+Human banner:
+```
+Isaac 0.1.7 (73ee5cc) — hello
+  runtime   jvm (java 25.0.2)
+  root      /Users/zane/.isaac
+  listen    127.0.0.1:8080
+  dev mode  off
+  modules   9 loaded
+  pid       41207
+```
+
+## 2. Shutdown hook (behavioral fix)
+Register `(.addShutdownHook (Runtime/getRuntime) (Thread. #(app/stop!)))` in the server run path before `block!`, so `app/stop!` runs on SIGTERM (launchd `service restart`/`stop`). Works under bb and jvm. Guard against double-stop (hook racing an in-process `stop!` / `start!`'s `(when (running?) (stop!))`) — `stop!` already no-ops on nil `@state`, but make the hook idempotent/race-safe.
+
+## 3. Goodbye logging in app/stop!
+`app/stop!` (app.clj:222) currently tears down delivery -> hail services -> module services -> scheduler -> config-source -> http with ZERO logs. Add:
+- `:server/shutdown-starting`
+- a per-service line as each component stops (delivery, services, modules, scheduler, config-source, http) — mirror the `:server/boot-phase` style
+- final `:server/stopped` goodbye (with uptime if cheap)
+
+## Acceptance
+- Boot logs a single `:server/hello` carrying version, runtime (+version), root, host, port, dev?, modules, pid; human banner prints the same.
+- `isaac service restart`/`stop` (SIGTERM) triggers `app/stop!`: logs show each service shutting down then `:server/stopped`.
+- No double-shutdown when the hook and an in-process stop race.
+- Verified on zanebot: restart the service and observe the full hello…goodbye sequence in server.log.
+
+## Notes
+- Surfaced 2026-06-21 alongside the JVM cutover; graceful SIGTERM matters more on the long-running JVM (delivery worker finishes its tick, Discord disconnects cleanly).
+- Runtime detection helpers exist: `isaac.server.runtime/babashka?`, `normalize-runtime`.
+- Pairs with the JVM runtime epic (isaac-5zfv) but is independent of it.
