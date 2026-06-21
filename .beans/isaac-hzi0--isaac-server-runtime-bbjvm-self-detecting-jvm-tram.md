@@ -1,0 +1,56 @@
+---
+# isaac-hzi0
+title: isaac server --runtime bb|jvm — self-detecting JVM trampoline
+status: draft
+type: feature
+created_at: 2026-06-21T01:09:00Z
+updated_at: 2026-06-21T01:09:00Z
+parent: isaac-5zfv
+blocked_by:
+    - isaac-smmm
+---
+
+Add `--runtime bb|jvm` (default `bb`) to `isaac server` (`isaac.server.cli`). When
+jvm is requested from a bb process, re-exec into the JVM; otherwise run in-process
+as today. Part of epic isaac-5zfv. Blocked by isaac-smmm (uses its classpath fn).
+
+## Behavior
+- Detect current runtime via `babashka.version` (set under bb, absent on JVM).
+- `--runtime jvm` AND currently bb  -> compute the classpath (smmm's function,
+  in-process), then `exec clojure -Scp "<cp>" -M -m isaac.main --root <root>
+  server` (exec-replace = one process; pass through original args/root).
+- `--runtime jvm` AND already JVM (or `--runtime bb`) -> start the server
+  in-process. (This guards against an infinite trampoline.)
+- `--runtime jvm` with clojure absent -> clear error to stderr:
+  "--runtime jvm requires the clojure CLI (brew install clojure)"; non-zero exit.
+
+## Scenarios (DRAFT — pending Micah review; do not generate feature file yet)
+```gherkin
+Scenario: default runtime starts the server in-process (bb)
+  When isaac is run with "server" with no --runtime
+  Then the server starts in the current process (no re-exec)
+
+Scenario: --runtime jvm from a bb process re-execs into clojure
+  Given the process is running under Babashka
+  When isaac is run with "server --runtime jvm"
+  Then it execs a clojure command of form
+       "clojure -Scp <classpath> -M -m isaac.main ... server"
+
+Scenario: --runtime jvm while already on the JVM runs in-process
+  Given the process is running on the JVM (no babashka.version)
+  When server is invoked with "--runtime jvm"
+  Then the server starts in-process and does NOT re-exec
+
+Scenario: --runtime jvm errors clearly when clojure is unavailable
+  Given the clojure CLI is not on PATH
+  When isaac is run with "server --runtime jvm"
+  Then stderr contains "requires the clojure CLI"
+  And  the exit code is non-zero
+```
+(Note: the re-exec scenarios likely land as unit specs on the runtime-dispatch
+fn + one @slow feature that genuinely trampolines; split during speccing.)
+
+## Acceptance
+- `server` default behavior unchanged (bb, in-process).
+- `server --runtime jvm` boots the JVM server (proven in spike) via smmm's cp.
+- No infinite trampoline; missing-clojure error is actionable.
