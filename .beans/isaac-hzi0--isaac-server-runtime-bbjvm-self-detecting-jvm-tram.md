@@ -1,11 +1,11 @@
 ---
 # isaac-hzi0
 title: isaac server --runtime bb|jvm — self-detecting JVM trampoline
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-21T01:09:00Z
-updated_at: 2026-06-21T02:22:16Z
+updated_at: 2026-06-21T02:27:21Z
 parent: isaac-5zfv
 ---
 
