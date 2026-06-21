@@ -3,8 +3,9 @@
 title: 'Server lifecycle logging: hello banner on boot, graceful goodbye on shutdown'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-06-21T23:13:15Z
-updated_at: 2026-06-21T23:13:15Z
+updated_at: 2026-06-21T23:14:35Z
 ---
 
 The server gives no visible lifecycle bookends. On boot it logs a thin `:server/started :host :port`; on stop it logs nothing — and `app/stop!` never even runs on a real service stop because no shutdown hook is registered (the process blocks on `@(promise)` and SIGTERM hard-kills it). Goal: a clear hello on boot and a graceful, logged goodbye on shutdown.
@@ -51,3 +52,11 @@ Register `(.addShutdownHook (Runtime/getRuntime) (Thread. #(app/stop!)))` in the
 - Surfaced 2026-06-21 alongside the JVM cutover; graceful SIGTERM matters more on the long-running JVM (delivery worker finishes its tick, Discord disconnects cleanly).
 - Runtime detection helpers exist: `isaac.server.runtime/babashka?`, `normalize-runtime`.
 - Pairs with the JVM runtime epic (isaac-5zfv) but is independent of it.
+
+## Module close hooks (on-unload) — confirmed wired, but gated on stop!
+
+Modules already have a close hook: `on-unload` on `isaac.module.protocol/Module`. Teardown path: `app/stop!` -> `module-loader/shutdown-modules!` -> `rollback-loaded-modules!` -> `module/run-unload!` -> `on-unload`, called in REVERSE load order with per-module error isolation (`:module/unload-failed`). Services tear down separately via `service-runtime/stop-all!` -> `run-stop!`.
+
+Critical: these only fire when `app/stop!` runs — which is NEVER on a real service stop today (no shutdown hook; SIGTERM hard-kills). So the shutdown hook (item #2) is what actually makes module `on-unload` hooks fire on `service restart`/`stop`. Without it, every restart skips module + service teardown entirely.
+
+Goodbye-logging refinement: `run-unload!`/`shutdown-modules!` log nothing on success (only `:module/unload-failed` on throw). The per-component shutdown logging must add a per-module unload line and a per-service stop line so the log shows each one closing. Two channels to surface: services (run-stop!) and modules (on-unload).
