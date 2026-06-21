@@ -4,10 +4,8 @@ title: isaac service install --runtime bb|jvm — bake runtime into the launchd 
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-21T01:09:18Z
-updated_at: 2026-06-21T02:21:25Z
+updated_at: 2026-06-21T02:25:09Z
 parent: isaac-5zfv
 ---
 
@@ -48,3 +46,12 @@ Scenario: service status reports the installed runtime
 - A jvm-installed service actually starts on the JVM end-to-end (plist -> isaac
   server --runtime jvm -> clojure). @slow / manual verification on a host with
   clojure present.
+
+
+
+## Verification failed
+
+HEAD: 3a7c4ca9680de9aad8266ca374c2f9f489e89968
+Working tree: clean
+
+The service-specific runtime/plist slice is green: `bb spec spec/isaac/service/cli_spec.clj spec/isaac/service/macos_spec.clj` passes with 40 examples, 0 failures. But current isaac-server main still does not load the runtime trampoline path it depends on. Running `bb spec spec/isaac/server/runtime_spec.clj spec/isaac/server/cli_spec.clj` fails while compiling `src/isaac/server/runtime.clj` with `No such var: module-loader/config->launch-deps`. `deps.edn` still pins `io.github.slagyr/isaac-foundation` to `455e0db8cb48de547b06f0e150079f5b566979e3`, which predates smmm's `config->launch-deps` addition. Since fxbp explicitly depends on hzi0 and the jvm runtime path is not consumable on the current repo head, acceptance is not met.
