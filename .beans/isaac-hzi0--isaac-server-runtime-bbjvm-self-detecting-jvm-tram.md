@@ -1,14 +1,12 @@
 ---
 # isaac-hzi0
 title: isaac server --runtime bb|jvm — self-detecting JVM trampoline
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-21T01:09:00Z
-updated_at: 2026-06-21T01:18:44Z
+updated_at: 2026-06-21T02:02:54Z
 parent: isaac-5zfv
-blocked_by:
-    - isaac-smmm
 ---
 
 Add `--runtime bb|jvm` (default `bb`) to `isaac server` (`isaac.server.cli`). When
