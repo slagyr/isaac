@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-06-21T23:13:15Z
-updated_at: 2026-06-21T23:23:05Z
+updated_at: 2026-06-21T23:27:23Z
 ---
 
 The server gives no visible lifecycle bookends. On boot it logs a thin `:server/started :host :port`; on stop it logs nothing — and `app/stop!` never even runs on a real service stop because no shutdown hook is registered (the process blocks on `@(promise)` and SIGTERM hard-kills it). Goal: a clear hello on boot and a graceful, logged goodbye on shutdown.
@@ -69,3 +69,43 @@ Goodbye-logging refinement: `run-unload!`/`shutdown-modules!` log nothing on suc
 Dropped from hello: host, port, modules — these are logged later in boot (`:server/started` for listen address, `:server/boot-summary` for module count). No duplication.
 
 Scenario 1 (locked pending final approval): assert log has `:server/hello` with runtime=bb (suite runs under bb), version/root/pid present (`#*`), dev?=false. Reuses existing steps (default Grover setup, config:, the Isaac server is started, the log has entries matching:) — NO new step defs; the new `:server/hello` event is the implementation deliverable.
+
+## Scenarios (locked 2026-06-21, Micah-approved)
+
+Two Gherkin scenarios in NEW file `isaac-server/features/server/lifecycle.feature` (@wip until implemented). Module `on-unload` ordering is covered by SPEC, not Gherkin (no module-on-unload test fixture; service channel already proves reverse-order teardown). The shutdown-hook-fires-on-SIGTERM is spec + manual zanebot check.
+
+Both reuse existing steps (default Grover setup, config:, the Isaac server is started/stopped, the log has entries matching:) — NO new step defs. New IMPL events to emit: `:server/hello`, `:server/shutdown-starting`, `:server/stopped`.
+
+```gherkin
+@wip
+Feature: Server lifecycle bookends
+  The Marigold's console announces itself when it powers on and bids the
+  crew farewell when it powers down.
+
+  Background:
+    Given default Grover setup
+
+  Scenario: the console greets the crew on boot
+    Given config:
+      | key               | value |
+      | server.auth.token | shh   |
+    When the Isaac server is started
+    Then the log has entries matching:
+      | level | event         | runtime | version | root | dev? | pid |
+      | :info | :server/hello | bb      | #*      | #*   | false| #*  |
+
+  Scenario: the console bids the crew farewell on shutdown
+    Given the widget test service module is registered
+    And config:
+      | key               | value |
+      | server.auth.token | shh   |
+    When the Isaac server is started
+    And the Isaac server is stopped
+    Then the log has entries matching:
+      | level | event                     | service |
+      | :info | :server/shutdown-starting |         |
+      | :info | :service/stopped          | widget  |
+      | :info | :server/stopped           |         |
+```
+
+Notes: hello asserts runtime=bb (suite runs under bb) + version/root/pid present; goodbye relies on subsequence-ordered log matching to assert shutdown-starting -> component stops -> goodbye. host/port/modules intentionally NOT in hello (logged later via :server/started / :server/boot-summary).
