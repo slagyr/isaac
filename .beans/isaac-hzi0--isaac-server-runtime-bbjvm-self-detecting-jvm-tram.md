@@ -3,8 +3,9 @@
 title: isaac server --runtime bb|jvm — self-detecting JVM trampoline
 status: draft
 type: feature
+priority: normal
 created_at: 2026-06-21T01:09:00Z
-updated_at: 2026-06-21T01:09:00Z
+updated_at: 2026-06-21T01:18:44Z
 parent: isaac-5zfv
 blocked_by:
     - isaac-smmm
@@ -54,3 +55,11 @@ fn + one @slow feature that genuinely trampolines; split during speccing.)
 - `server` default behavior unchanged (bb, in-process).
 - `server --runtime jvm` boots the JVM server (proven in spike) via smmm's cp.
 - No infinite trampoline; missing-clojure error is actionable.
+
+## Decision (2026-06-20): trampoline uses -Sdeps, not -Scp
+
+The `--runtime jvm` trampoline computes the `--edn` deps map in-process (smmm's
+`compose-module-deps-map`) and `exec`s
+`clojure -Sdeps '<map>' -M -m isaac.main --root <root> server`.
+One JVM, no shell-out, clojure supplies itself. Supersedes the earlier `-Scp`
+framing in the epic/bean.

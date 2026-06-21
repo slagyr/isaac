@@ -3,8 +3,9 @@
 title: isaac modules deps — emit JVM launch classpath/deps from config modules
 status: draft
 type: feature
+priority: normal
 created_at: 2026-06-21T01:08:42Z
-updated_at: 2026-06-21T01:08:42Z
+updated_at: 2026-06-21T01:18:44Z
 parent: isaac-5zfv
 ---
 
@@ -58,3 +59,23 @@ Scenario: the generated classpath actually boots isaac on the JVM
   isaac.main server` (proven in the spike).
 - `--edn` carries the foundation exclusion on every module dep.
 - Generation reuses the loader coords (no second resolution implementation).
+
+## Decisions (2026-06-20, locked — verified on zanebot)
+
+- **Launch uses `--edn` + `clojure -Sdeps`, NOT `--classpath` + `-Scp`.** With
+  nothing materialized, `-Scp` forces a per-launch resolution (`clojure -Spath` =
+  a full JVM) before the run JVM → two JVM startups per boot. `clojure -Sdeps
+  "$(modules deps --edn)" -M -m isaac.main server` resolves inside the single
+  launch JVM (cached after first). So:
+  - `--edn` = primary output AND the **default** (pure, no subprocess).
+  - `--classpath` = opt-in **convenience** (debug / `java -cp` / flat cp): shell
+    to `clojure -Spath -Sdeps '<edn>'`; clear error if clojure absent. Off the
+    hot launch path.
+- **No `org.clojure/clojure` injection anywhere.** Verified: `clojure -Sdeps`
+  launch works without it (clojure's root deps supply it); `clojure -Spath`
+  includes it too. Drops the version-pin question.
+- **Factor `compose-module-deps-map`** out of `add-modules-deps!` (returns
+  `{lib-sym coord}` from the planned pairs, incl. sibling + 92p3 seed exclusions);
+  bb's preload and this command both call it. No second resolver.
+- Scenarios: keep the three; change the `@slow` boot one to exec
+  `clojure -Sdeps "$(isaac modules deps --edn)" -M -m isaac.main --version`.
