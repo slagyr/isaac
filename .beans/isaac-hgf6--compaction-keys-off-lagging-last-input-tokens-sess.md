@@ -4,8 +4,10 @@ title: Compaction keys off lagging :last-input-tokens — session runs over the 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-21T00:16:55Z
-updated_at: 2026-06-21T00:17:43Z
+updated_at: 2026-06-21T00:20:09Z
 ---
 
 Carved from isaac-twbz RC1 (per the data, twbz's "compaction never fires" is
@@ -47,3 +49,10 @@ a direct measure of the transcript/request about to be sent. Consequences:
   completed isaac-m14k.
 - Related: isaac-92h (mid-turn checks during tool loops — complementary), isaac-5xx7
   (threshold/head as % — config units, separate).
+
+
+## Handoff (work-3)
+
+- **Fix:** `isaac-agent` `20fb5dd` — compaction decisions use `estimate-prompt-tokens` (live transcript via `prompt.builder/build`) instead of `:last-input-tokens`.
+- **API:** `should-compact?` now takes `estimated-tokens` as first arg.
+- **Verified:** `bb spec` isaac-agent (1049 examples).
