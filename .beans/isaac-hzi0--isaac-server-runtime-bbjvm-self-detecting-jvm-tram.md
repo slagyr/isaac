@@ -4,10 +4,8 @@ title: isaac server --runtime bb|jvm — self-detecting JVM trampoline
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-21T01:09:00Z
-updated_at: 2026-06-21T02:21:00Z
+updated_at: 2026-06-21T02:22:16Z
 parent: isaac-5zfv
 ---
 
@@ -63,3 +61,12 @@ The `--runtime jvm` trampoline computes the `--edn` deps map in-process (smmm's
 `clojure -Sdeps '<map>' -M -m isaac.main --root <root> server`.
 One JVM, no shell-out, clojure supplies itself. Supersedes the earlier `-Scp`
 framing in the epic/bean.
+
+
+
+## Verification failed
+
+HEAD: 9c27d36747e704532f5d225c3aa89dca8dedbd57
+Working tree: clean
+
+Current isaac-server main does not compile on the targeted proof. Running `bb spec spec/isaac/server/runtime_spec.clj spec/isaac/server/cli_spec.clj` fails while loading `src/isaac/server/runtime.clj` with `No such var: module-loader/config->launch-deps`. `isaac-server` still pins `io.github.slagyr/isaac-foundation` to `455e0db8cb48de547b06f0e150079f5b566979e3` in `deps.edn`, which predates smmm's `config->launch-deps` addition in foundation `06a271e4c18ffc92421e84f752b10a89db3c4e35`. The trampoline implementation is present, but the repo head is not consumable, so acceptance is not met.
