@@ -1,13 +1,11 @@
 ---
 # isaac-6zll
 title: service subcommand --help discards the generated option summary
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-21T23:07:23Z
-updated_at: 2026-06-21T23:10:53Z
+updated_at: 2026-06-21T23:14:19Z
 ---
 
 `isaac service install --help` (and `isaac service logs --help`) print only a hardcoded usage line and never list their options, so flags like `--runtime`, `--root`, `--isaac-bin`, `--bb-bin`, `--isaac-dir`, `--follow` are invisible in help even though they work.
