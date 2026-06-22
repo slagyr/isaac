@@ -1,13 +1,11 @@
 ---
 # isaac-mfdt
 title: :prefer-entity-files missing from config schema — validator warns "unknown key"
-status: unverified
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-22T19:17:48Z
-updated_at: 2026-06-22T19:26:00Z
+updated_at: 2026-06-22T19:27:51Z
 ---
 
 `:prefer-entity-files` is a real, honored top-level config key (it makes `config set` write to entity files like config/crew/*.edn instead of inlining), but it is NOT declared in any module's `isaac.config/schema`. So config validation flags it as `unknown key` on every load / `config set`.
