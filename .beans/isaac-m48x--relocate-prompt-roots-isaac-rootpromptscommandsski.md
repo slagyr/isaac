@@ -1,11 +1,13 @@
 ---
 # isaac-m48x
 title: 'Relocate prompt roots: <isaac-root>/prompts/{commands,skills} (drop config/)'
-status: in-progress
+status: unverified
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-22T23:07:49Z
-updated_at: 2026-06-22T23:15:39Z
+updated_at: 2026-06-22T23:20:47Z
 parent: isaac-nwj3
 ---
 
@@ -39,3 +41,4 @@ No NEW step defs — same steps (`the isaac file "..." exists with:`, `the promp
 
 ## Notes
 Design discussion 2026-06-22: prompts are library content (markdown bodies the agent draws from), distinct from `config/` which holds schema-validated settings + entity definitions (crew/providers/comms/cron/hooks). Chose subdir layout (A) `prompts/{commands,skills}` over a flat `prompts/*.md`+type-frontmatter (B).
+Implemented in isaac-agent @ ca59165.
