@@ -1,10 +1,13 @@
 ---
 # isaac-98vy
 title: CLI config commands fail validating provider :api — manifest berths not registered before validation (server boot OK)
-status: todo
+status: in-progress
 type: bug
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-22T19:32:55Z
-updated_at: 2026-06-22T19:32:55Z
+updated_at: 2026-06-22T20:49:07Z
 ---
 
 Any CLI command that loads config (`isaac crew list`, `config get`, `config set`) throws `invalid configuration … unknown berth: :isaac.agent/llm-api … valid-values []` when a provider's `:api` is validated. The SERVER boots the exact same config fine — so it's a CLI-path-only bug.
@@ -29,3 +32,14 @@ Make the CLI config-load/validation path register manifest berths (or at least t
 
 ## Notes
 Surfaced 2026-06-22 on zanebot. Foundation-level (CLI load path) fix; ships in a foundation release. The running server is unaffected and restarts safely; only CLI config commands are blocked.
+
+
+
+## Worker notes (work-2)
+
+Root cause: `check-resolved-providers` (agent config check) calls `validation/annotation-errors*` without binding `registered-in/*module-index*`, so inherited provider `:api` values fail `[:registered-in? :isaac.agent/llm-api]` on CLI load even though agent manifest is on the classpath.
+
+Fix: foundation `isaac.config.check-compose/run-checks` now binds the same registered-in context as `semantic-errors`.
+
+Foundation: 1785528409339cb9426c54f7421aa903378f4ebb
+Agent: 311bb02 (regression spec + foundation pin bump)
