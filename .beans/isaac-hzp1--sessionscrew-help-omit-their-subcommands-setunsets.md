@@ -3,8 +3,9 @@
 title: sessions/crew --help omit their subcommands (set/unset/show/delete, show)
 status: todo
 type: bug
+priority: normal
 created_at: 2026-06-22T22:07:19Z
-updated_at: 2026-06-22T22:07:19Z
+updated_at: 2026-06-22T22:21:27Z
 ---
 
 `isaac sessions --help` shows only the list options — it never lists the `show`/`set`/`unset`/`delete` subcommands, so the entire session-update surface is undiscoverable. `isaac crew --help` has the same gap (hides `show`).
@@ -40,3 +41,33 @@ Go in EXISTING `isaac-agent/features/session/cli.feature` and `features/crew/cli
 
 ## Notes
 Same family as 6zll (service install --help option summaries), shipped this deploy. Surfaced 2026-06-22 when Micah asked whether sessions could update a session — it can (sessions set/unset), but help hid it.
+
+## Scenarios (locked 2026-06-22, Micah-approved)
+
+Add to EXISTING `isaac-agent/features/session/cli.feature` and `features/crew/cli.feature`. Reuse existing steps (`isaac is run with`, `the stdout matches:`, `the exit code is 0`) — NO new step defs.
+
+```gherkin
+  # session/cli.feature
+  Scenario: sessions --help lists its subcommands
+    When isaac is run with "sessions --help"
+    Then the stdout matches:
+      | pattern                                          |
+      | Usage: isaac sessions                            |
+      | Subcommands:                                     |
+      | show\s+Show one session                          |
+      | set\s+Set a mutable field.*<id>\.<path> <value>  |
+      | unset\s+Clear a mutable field.*<id>\.<path>      |
+      | delete\s+Delete a session                        |
+    And the exit code is 0
+
+  # crew/cli.feature
+  Scenario: crew --help lists its subcommands
+    When isaac is run with "crew --help"
+    Then the stdout matches:
+      | pattern              |
+      | Usage: isaac crew    |
+      | Subcommands:         |
+      | show\s+Show one crew |
+    And the exit code is 0
+```
+The set/unset patterns assert the `<id>.<path> <value>` usage text so the update affordance is provably discoverable. Summary wording in these scenarios is the contract for the `cli-api/subcommands` :summary strings.
