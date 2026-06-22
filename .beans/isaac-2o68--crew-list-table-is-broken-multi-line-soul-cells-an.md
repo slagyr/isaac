@@ -1,11 +1,13 @@
 ---
 # isaac-2o68
 title: crew list table is broken — multi-line soul cells and bespoke renderer
-status: in-progress
+status: unverified
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-22T21:14:57Z
-updated_at: 2026-06-22T21:38:23Z
+updated_at: 2026-06-22T21:40:00Z
 ---
 
 `isaac crew list` renders a mangled table: the Soul column contains the crew's full multi-line soul markdown (starts with `# SOUL.md — X\n\nYou are…`), so embedded newlines land inside a cell and shatter every row. It also hand-rolls its own table instead of the shared renderer used elsewhere.
@@ -45,3 +47,4 @@ Consider also stripping a leading markdown heading (`# SOUL.md — X`) so the pr
 
 ## Notes
 Surfaced 2026-06-22 on zanebot after the agent deploy unblocked `crew list`. The single-row `crew show` path (`render-row!`) uses the same `format-crew` — fix benefits both.
+Implemented in isaac-agent @ a8c143f.
