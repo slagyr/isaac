@@ -1,13 +1,11 @@
 ---
 # isaac-m48x
 title: 'Relocate prompt roots: <isaac-root>/prompts/{commands,skills} (drop config/)'
-status: unverified
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-22T23:07:49Z
-updated_at: 2026-06-22T23:20:47Z
+updated_at: 2026-06-22T23:43:37Z
 parent: isaac-nwj3
 ---
 
