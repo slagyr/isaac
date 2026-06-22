@@ -1,10 +1,11 @@
 ---
 # isaac-m48x
 title: 'Relocate prompt roots: <isaac-root>/prompts/{commands,skills} (drop config/)'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-06-22T23:07:49Z
-updated_at: 2026-06-22T23:07:49Z
+updated_at: 2026-06-22T23:15:39Z
 parent: isaac-nwj3
 ---
 
