@@ -1,13 +1,11 @@
 ---
 # isaac-2o68
 title: crew list table is broken — multi-line soul cells and bespoke renderer
-status: unverified
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-22T21:14:57Z
-updated_at: 2026-06-22T21:40:00Z
+updated_at: 2026-06-22T21:41:25Z
 ---
 
 `isaac crew list` renders a mangled table: the Soul column contains the crew's full multi-line soul markdown (starts with `# SOUL.md — X\n\nYou are…`), so embedded newlines land inside a cell and shatter every row. It also hand-rolls its own table instead of the shared renderer used elsewhere.
