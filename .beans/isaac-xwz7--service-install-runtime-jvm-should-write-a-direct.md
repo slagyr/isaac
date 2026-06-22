@@ -1,11 +1,11 @@
 ---
 # isaac-xwz7
 title: service install --runtime jvm should write a direct-clojure plist, not the bb trampoline
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-21T23:55:17Z
-updated_at: 2026-06-21T23:55:23Z
+updated_at: 2026-06-22T00:11:49Z
 parent: isaac-5zfv
 blocking:
     - isaac-m2it
