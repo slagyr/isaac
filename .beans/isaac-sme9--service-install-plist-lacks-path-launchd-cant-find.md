@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - in-progress
+    - unverified
 created_at: 2026-06-19T21:54:36Z
-updated_at: 2026-06-22T23:33:59Z
+updated_at: 2026-06-22T23:46:45Z
 ---
 
 Follow-up to isaac-r7z5. The original bug was real: launchd could not find `bb`
