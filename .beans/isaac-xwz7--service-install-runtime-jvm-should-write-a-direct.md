@@ -1,11 +1,13 @@
 ---
 # isaac-xwz7
 title: service install --runtime jvm should write a direct-clojure plist, not the bb trampoline
-status: in-progress
+status: unverified
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-21T23:55:17Z
-updated_at: 2026-06-22T00:11:49Z
+updated_at: 2026-06-22T00:15:00Z
 parent: isaac-5zfv
 blocking:
     - isaac-m2it
@@ -42,3 +44,4 @@ Chosen: sh wrapper + `--edn`/`-Sdeps` (NOT baked `--classpath`/`-Scp`). `modules
 ## Status / notes
 - Already HAND-APPLIED on zanebot (2026-06-21): plist rewritten to the sh-wrapper form, launchd bootout/bootstrap. Verified single `java` ppid=1, port 6674 bound, Discord gateway + imsg watcher up. The manual edit will be overwritten by the next `service install`; this bean makes it durable.
 - Related/prereq for isaac-m2it (graceful shutdown only works on JVM once launchd supervises java directly).
+- Implemented in isaac-server @ a3021d0.
