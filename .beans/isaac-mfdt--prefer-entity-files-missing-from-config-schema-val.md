@@ -1,11 +1,13 @@
 ---
 # isaac-mfdt
 title: :prefer-entity-files missing from config schema — validator warns "unknown key"
-status: in-progress
+status: unverified
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-22T19:17:48Z
-updated_at: 2026-06-22T19:23:47Z
+updated_at: 2026-06-22T19:26:00Z
 ---
 
 `:prefer-entity-files` is a real, honored top-level config key (it makes `config set` write to entity files like config/crew/*.edn instead of inlining), but it is NOT declared in any module's `isaac.config/schema`. So config validation flags it as `unknown key` on every load / `config set`.
@@ -29,3 +31,4 @@ Register `:prefer-entity-files` in foundation's top-level `:isaac.config/schema`
 
 ## Notes
 Surfaced 2026-06-22 while diagnosing zanebot config warnings. Foundation-level (brew formula) fix — ships in the next foundation release.
+Implemented in isaac-foundation @ f64238d.
