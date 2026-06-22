@@ -1,11 +1,13 @@
 ---
 # isaac-hzp1
 title: sessions/crew --help omit their subcommands (set/unset/show/delete, show)
-status: todo
+status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-22T22:07:19Z
-updated_at: 2026-06-22T22:21:27Z
+updated_at: 2026-06-22T22:24:50Z
 ---
 
 `isaac sessions --help` shows only the list options — it never lists the `show`/`set`/`unset`/`delete` subcommands, so the entire session-update surface is undiscoverable. `isaac crew --help` has the same gap (hides `show`).
@@ -71,3 +73,12 @@ Add to EXISTING `isaac-agent/features/session/cli.feature` and `features/crew/cl
     And the exit code is 0
 ```
 The set/unset patterns assert the `<id>.<path> <value>` usage text so the update affordance is provably discoverable. Summary wording in these scenarios is the contract for the `cli-api/subcommands` :summary strings.
+
+
+
+## Worker notes (work-2)
+
+Added `cli-api/subcommands` for `:sessions` (show/set/unset/delete) and `:crew` (show). Help rendering via existing `registry/command-help` — dispatch unchanged in run-fn.
+
+Agent: b0a6150
+Feature scenarios added to session/cli.feature + crew/cli.feature (16 examples green).
