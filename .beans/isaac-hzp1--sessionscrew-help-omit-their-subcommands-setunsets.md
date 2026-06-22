@@ -1,13 +1,11 @@
 ---
 # isaac-hzp1
 title: sessions/crew --help omit their subcommands (set/unset/show/delete, show)
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-22T22:07:19Z
-updated_at: 2026-06-22T22:24:50Z
+updated_at: 2026-06-22T22:30:13Z
 ---
 
 `isaac sessions --help` shows only the list options — it never lists the `show`/`set`/`unset`/`delete` subcommands, so the entire session-update surface is undiscoverable. `isaac crew --help` has the same gap (hides `show`).
