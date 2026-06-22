@@ -1,13 +1,11 @@
 ---
 # isaac-98vy
 title: CLI config commands fail validating provider :api — manifest berths not registered before validation (server boot OK)
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-22T19:32:55Z
-updated_at: 2026-06-22T20:49:07Z
+updated_at: 2026-06-22T20:52:38Z
 ---
 
 Any CLI command that loads config (`isaac crew list`, `config get`, `config set`) throws `invalid configuration … unknown berth: :isaac.agent/llm-api … valid-values []` when a provider's `:api` is validated. The SERVER boots the exact same config fine — so it's a CLI-path-only bug.
