@@ -1,11 +1,14 @@
 ---
 # isaac-2s0b
 title: comm_send tool sends messages over registered comms
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - in-progress
+    - unverified
 created_at: 2026-06-23T17:10:38Z
-updated_at: 2026-06-23T22:03:56Z
+updated_at: 2026-06-23T22:20:32Z
 ---
 
 Isaac already knows how to deliver outbound messages once a delivery record exists: registered comm instances implement `Comm/send!`, and the persistent delivery queue stores records shaped like `{:comm ... :target ... :content ...}`. What Isaac does not have is a crew-callable tool that lets a model create one of those deliveries on purpose.
