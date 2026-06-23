@@ -1,10 +1,11 @@
 ---
 # isaac-2s0b
 title: comm_send tool sends messages over registered comms
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-06-23T17:10:38Z
-updated_at: 2026-06-23T17:10:38Z
+updated_at: 2026-06-23T22:03:56Z
 ---
 
 Isaac already knows how to deliver outbound messages once a delivery record exists: registered comm instances implement `Comm/send!`, and the persistent delivery queue stores records shaped like `{:comm ... :target ... :content ...}`. What Isaac does not have is a crew-callable tool that lets a model create one of those deliveries on purpose.
@@ -93,3 +94,24 @@ JSON: namespaced keyword :telly/target <-> JSON property "telly/target"; comm_se
 - ANY key contributed by a module (i.e. every :send-schema field) MUST be namespaced by the comm type: :telly/target, :telly/loft, :discord/target, :imessage/target, :imessage/service.
 - Full-namespacing confirmed (target included). discord/imessage send! + the reply-enqueue path migrate to the namespaced keys (one record contract).
 - NOTE for the new "a pending comm delivery matches:" step (and any EDN path matcher used): a namespaced keyword like :telly/target is a SINGLE top-level key, not a nested path telly->target. The path syntax/matcher must treat "telly/target" as the keyword :telly/target.
+
+
+## Scenarios written + locked (2026-06-23)
+
+Feature file: `isaac-agent/features/tool/comm_send.feature` (4 @wip scenarios):
+1. bare comm (skybeam, no :send-schema) -> comm_send params are exactly {comm, content}.
+2. a comm with :send-schema (telly: :telly/target, :telly/loft) -> params gain those namespaced fields (optional).
+3. calling comm_send (toolCall args incl namespaced keys) -> a pending comm delivery matches {comm, content, telly/target, telly/loft}; queue-first (lands in pending/, worker never ticked).
+4. unknown comm slot (phantom) -> tool result is an error; no pending deliveries.
+
+New steps owed by the implementer:
+- `the prompt tool "<name>" has parameters:` (exact param set; namespaced keys are single keyword keys).
+- `a pending comm delivery matches:` (id-agnostic).
+- `there are no pending comm deliveries`.
+- `the comm_send tool result is an error` (verify an existing :tool-result step doesn't already cover it).
+
+In-scope for THIS bean (the generic mechanism + fixture): add a `:send-schema` field to the `:isaac.server/comm` berth (analogous to `:extra-schema`); give the **telly fixture** a `:send-schema {:telly/target ... :telly/loft ...}`; build comm_send to compose its schema (common comm+content + union of configured comms' namespaced send-schema) and write the record verbatim, queue-first via `queue/enqueue!`.
+
+Deferred to follow-up (isaac-<see below>): real comm modules (discord/imessage) adopting `:send-schema` + migrating send! to namespaced keys, and the turn->comm reply-enqueue path emitting namespaced keys.
+
+Still OPEN (not yet specced): outbound guardrails / spam policy (per-crew or per-comm allowlists). Suggest a separate bean; scenario 4 only covers unknown-slot errors, not authorization.
