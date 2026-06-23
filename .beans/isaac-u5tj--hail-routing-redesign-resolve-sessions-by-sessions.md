@@ -4,10 +4,8 @@ title: 'Hail routing redesign: resolve sessions by :session/:session-tags only; 
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-23T18:15:30Z
-updated_at: 2026-06-23T19:38:08Z
+updated_at: 2026-06-23T19:51:39Z
 ---
 
 Rework hail routing so a hail resolves to an in-flight SESSION purely by session selectors, and the crew is chosen only AFTER resolution to PROCESS the hail. Rationale (Micah, 2026-06-23): a hail addresses an in-flight thing (a session); a crew is config, not in-flight, so matching recipients by crew/crew-tags is a category error.
@@ -134,3 +132,15 @@ Removed keys HARD-REJECT at config validate (loud migration signal), not soft un
 
 ## Feature review COMPLETE (2026-06-23)
 All affected hail feature files reviewed + recorded: router.feature, spawn.feature, send-addressing.feature, bands.feature, delivery.feature. Unaffected: send, http, commands, crew-tool. Specs to mirror: router_spec.clj, delivery_worker_spec.clj. Scenario verdicts above are the implementation contract.
+
+
+
+## Verification note (2026-06-23)
+
+Verification failed on fetched GitHub `isaac-hail` `main` `2daafc1`. The touched spec slice is green: `bb spec spec/isaac/hail/router_spec.clj spec/isaac/hail/delivery_worker_spec.clj spec/isaac/config/hail_loader_spec.clj spec/isaac/hail/bands_spec.clj spec/isaac/hail/cli_spec.clj spec/isaac/hail/http_spec.clj` -> `47 examples, 0 failures, 118 assertions`.
+
+But the reviewed feature surface is still red. Repo `bb features` is blocked by the pre-existing foundation tag/sha dependency poison in current module heads, so I verified the fetched hail head with a scratch `gherclj` classpath wired to the live verifier checkouts. That run fails the reviewed feature set with current behavior. The failing assertions are concentrated in:
+- `features/send-addressing.feature`: all direct-addressing scenarios fail because the expected pending hail record is not found (`id` expected `hail-1`, got `nil`).
+- `features/bands.feature`: all four `config validate` scenarios fail their output assertions.
+
+So `u5tj` does not currently meet its own acceptance `Reviewed feature scenarios updated and green`, even though the underlying spec slices are green and the static redesign surfaces are present in code/schema/release notes.
