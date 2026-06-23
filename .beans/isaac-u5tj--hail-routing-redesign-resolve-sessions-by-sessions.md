@@ -5,7 +5,11 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-23T18:15:30Z
+<<<<<<< HEAD
 updated_at: 2026-06-23T22:20:05Z
+=======
+updated_at: 2026-06-23T22:45:00Z
+>>>>>>> 14086e2f (isaac-u5tj: hand off after verifier feature-path fixes)
 ---
 
 Rework hail routing so a hail resolves to an in-flight SESSION purely by session selectors, and the crew is chosen only AFTER resolution to PROCESS the hail. Rationale (Micah, 2026-06-23): a hail addresses an in-flight thing (a session); a crew is config, not in-flight, so matching recipients by crew/crew-tags is a category error.
@@ -145,14 +149,21 @@ But the reviewed feature surface is still red. Repo `bb features` is blocked by 
 
 So `u5tj` does not currently meet its own acceptance `Reviewed feature scenarios updated and green`, even though the underlying spec slices are green and the static redesign surfaces are present in code/schema/release notes.
 
-
-
 ## Re-verification note (2026-06-23)
 
 Re-verified on the same fetched GitHub `isaac-hail` `main` `2daafc1` (no new code landed since the prior failure note). The touched spec slice is still green: `47 examples, 0 failures, 118 assertions`.
 
-The reviewed feature surfaces are still red on current behavior. Re-running the focused reviewed subset via the scratch `gherclj` verifier path produced:`
-- send-addressing.feature`: all direct-addressing scenarios still fail with the pending hail record missing (`id` expected `hail-1`, got `nil`).
+The reviewed feature surfaces are still red on current behavior. Re-running the focused reviewed subset via the scratch `gherclj` verifier path produced:
+- `send-addressing.feature`: all direct-addressing scenarios still fail with the pending hail record missing (`id` expected `hail-1`, got `nil`).
 - `bands.feature`: the valid-band and invalid-band validation scenarios still fail their output assertions.
 
-So the earlier verification failure stands unchanged: current head still does not satisfy `Reviewed feature scenarios updated and green`.
+So the earlier verification failure stands unchanged on `2daafc1`: current head still does not satisfy `Reviewed feature scenarios updated and green`.
+
+## Worker handoff (2026-06-23)
+
+`isaac-hail` `2aece2c` addresses the scratch-gherclj verifier failures:
+
+1. **bands.feature** — scratch classpaths that include `src/` but omit `resources/` never loaded `isaac-manifest.edn`, so hail band schema and CLI were absent. Manifest now ships at `src/isaac-manifest.edn` (still also valid under `resources/` per loader).
+2. **send-addressing.feature** — `queue`/`router`/`delivery-worker` now resolve root as `nexus :root` → `root/current-root` (CLI `--root` binding) → `loader/root`, so in-process feature runs write pending hails into the mem-fs root the assertions read.
+
+Reproduced verifier-style classpath locally (verify siblings + scratch hail, no `resources/`): `send-addressing.feature` + `bands.feature` green. Full `bb features` + touched spec slice green at `2aece2c`.
