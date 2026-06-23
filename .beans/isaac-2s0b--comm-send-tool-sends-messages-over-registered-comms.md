@@ -54,3 +54,34 @@ That gap blocks obvious workflows: send a note to the harbor bell Discord channe
 
 - This bean should remain `draft` until `/plan-with-features` writes and commits the `@wip` scenarios.
 - Related: `isaac-8xb7` (scheduled reminders delivered to a comm) wants the same outbound seam and should likely depend on this or share its delivery contract.
+
+
+## Design settled (2026-06-23): send-schema owns addressing; comm+content common (model B)
+
+Empirical check of send! impls: only **discord** (:target->channel-id) and **imessage** (:target->to-handle, plus :service extra) read :target. cli/null/telly are no-op outbound ({:ok false}); memory stores the whole record. The queue/worker do NOT mandate :target — enqueue! stores arbitrary keys and the worker just hands the record to send!. The only structurally-required field is :comm.
+
+So hardcoding target/content as universal blocks the extensibility :send-schema is meant to provide. Settled model (B):
+- **Common (hardcoded) params:** :comm (required; enum of configured comm slot ids) and :content (required — a message without content isn't useful).
+- **Per-comm params:** :target and any extras (e.g. imessage :service, telly :loft) come from the SELECTED comm's :send-schema. NO normalizer — send-schema field NAMES are the record keys, written verbatim.
+- **Tool schema** = comm + content + the UNION of all configured comms' :send-schema fields, each OPTIONAL (required-ness enforced at tool-exec against the chosen comm's send-schema).
+- **Record written** = {:comm <slot> :content <body> ...send-schema fields}.
+- :send-schema is the COMPLETE per-comm outbound contract; a new comm adds outbound fields with ZERO isaac-agent changes.
+
+Supersedes the earlier "canonical record shape {:comm :target :content}" framing: the canonical record is {:comm <slot> :content <body>} + comm-declared fields.
+
+
+## Decision (2026-06-23): :send-schema keys MUST be namespaced by comm type
+
+To avoid key collisions in the union tool schema (two comms both declaring e.g. target), every :send-schema key is namespaced by the comm TYPE:
+- telly:    :telly/target, :telly/loft
+- discord:  :discord/target
+- imessage: :imessage/target, :imessage/service
+:comm stays the slot id (the enum); :content stays the common un-namespaced field. The union then has zero collisions — every per-comm param is globally unique.
+
+Consequence (no normalizer): the namespaced keys ARE the record keys, so each comm's send! reads its own namespaced key + the common :content. RIPPLE / scope:
+- discord send!: (:target record) -> (:discord/target record)
+- imessage send!: (:target record)/(:service record) -> (:imessage/target record)/(:imessage/service record)
+- every OTHER writer of these records (esp. the turn->comm reply-enqueue path) must emit the namespaced per-comm keys too, so there is ONE record contract.
+(Open: could limit namespacing to extras only and keep :target un-namespaced/common — less invasive but reopens the 'is target common' question. Current direction: full namespacing.)
+
+JSON: namespaced keyword :telly/target <-> JSON property "telly/target"; comm_send does (keyword "telly/target") -> :telly/target when writing the record.
