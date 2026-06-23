@@ -85,3 +85,11 @@ Consequence (no normalizer): the namespaced keys ARE the record keys, so each co
 (Open: could limit namespacing to extras only and keep :target un-namespaced/common — less invasive but reopens the 'is target common' question. Current direction: full namespacing.)
 
 JSON: namespaced keyword :telly/target <-> JSON property "telly/target"; comm_send does (keyword "telly/target") -> :telly/target when writing the record.
+
+
+## Namespacing rule (2026-06-23, settled): framework bare, module keys namespaced
+
+- Framework-owned record/param keys are BARE: :comm (slot id), :content (message body).
+- ANY key contributed by a module (i.e. every :send-schema field) MUST be namespaced by the comm type: :telly/target, :telly/loft, :discord/target, :imessage/target, :imessage/service.
+- Full-namespacing confirmed (target included). discord/imessage send! + the reply-enqueue path migrate to the namespaced keys (one record contract).
+- NOTE for the new "a pending comm delivery matches:" step (and any EDN path matcher used): a namespaced keyword like :telly/target is a SINGLE top-level key, not a nested path telly->target. The path syntax/matcher must treat "telly/target" as the keyword :telly/target.
