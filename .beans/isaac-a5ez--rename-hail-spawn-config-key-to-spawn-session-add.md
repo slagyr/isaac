@@ -1,13 +1,11 @@
 ---
 # isaac-a5ez
 title: Rename hail :spawn config key to :spawn-session (+ add to schema)
-status: unverified
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-23T17:06:34Z
-updated_at: 2026-06-23T17:11:09Z
+updated_at: 2026-06-23T17:23:00Z
 ---
 
 The hail `:spawn` config key is opaque — it actually controls whether a hail may START A NEW SESSION when no matching session is available (`:reach :one` + spawn -> if no session is handling the band, create one with the host crew; see delivery_worker/spawn-target, spawn-session!). Rename to `:spawn-session` for clarity. Clean cutover, NO deprecated alias (Micah, 2026-06-23).
