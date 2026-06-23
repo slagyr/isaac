@@ -3,8 +3,9 @@
 title: 'Hail routing redesign: resolve sessions by :session/:session-tags only; crew is processing-only'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-06-23T18:15:30Z
-updated_at: 2026-06-23T18:15:30Z
+updated_at: 2026-06-23T19:27:05Z
 ---
 
 Rework hail routing so a hail resolves to an in-flight SESSION purely by session selectors, and the crew is chosen only AFTER resolution to PROCESS the hail. Rationale (Micah, 2026-06-23): a hail addresses an in-flight thing (a session); a crew is config, not in-flight, so matching recipients by crew/crew-tags is a category error.
@@ -55,3 +56,79 @@ Affected: features/router.feature, spawn.feature, send-addressing.feature, bands
 
 ## Notes
 Supersedes the crew-matching half of the original hail routing. a5ez (:spawn-session rename) already verified; this builds on it.
+
+## Feature review — router.feature (approved 2026-06-23)
+- S1 reach-one band matches one session: REWRITE — band selector crew-tags -> session-tags; tag the session. Delivery crew stays = session crew.
+- S2 reach-one pool unbound w/ candidates: REWRITE — frequency crew-tags -> session-tags on the two sessions; candidates keep crew=session-crew.
+- S3 direct crew frequency binds to that crew's session: REMOVE (addressing a session by crew is gone). Optionally replace with crew-override scenario.
+- S4 direct session frequency binds exact session: KEEP.
+- S5 reach :all fans out per matching session: REWRITE — crew-tags -> session-tags on sessions.
+- S6 band + session-tag intersect: REWRITE — band crew-tags -> session-tags; sessions tagged band-tag + warp-coil so intersection narrows to coil-tinkering.
+- S7 unknown band -> :unknown-band: KEEP.
+- S8 reach-one band no matching crew -> undeliverable: REWRITE + RENAME to 'no matching session'; crew-tags -> session-tags -> :no-recipients.
+- S9 reach :all zero sessions -> :no-recipients: REWRITE — crew-tags -> session-tags.
+- S10 router tick registered: KEEP.
+NEW scenarios (processing-crew order): hail :crew override beats session crew; band :crew beats session crew; default to :main when none.
+
+## Clarifications (2026-06-23, Micah)
+1. Crew resolution FINAL fallback is the CONFIG default crew, not hardcoded :main:
+   effective-crew = hail :crew -> band :crew -> session :crew -> (get-in cfg [:defaults :crew] :main).
+   Spawn (no session yet): hail :crew -> band :crew -> (cfg :defaults :crew, default :main).
+2. The spawn crew is resolved at ROUTER time (deterministic now — no session needed) and CARRIED in the spawn delivery (:crew = resolved value), NOT left nil for the worker to fill.
+
+## Feature review — spawn.feature (approved 2026-06-23)
+- Preamble: REWRITE — match-or-create by session-tags; create under resolved crew (hail->band->cfg-default/main); drop crew-tags + :no-host language.
+- S1 spawn reach-one no session -> spawn delivery: REWRITE — drop crew-tags; spawn delivery now CARRIES resolved crew (cfg-default/main or override), session nil.
+- S2 without spawn, no session -> undeliverable: REWRITE — session-tags, no match, spawn off -> :no-recipients.
+- S3 spawn + session-tags but no crew to host -> :no-host: REMOVE (:no-host gone; spawn always proceeds under cfg-default/main).
+- S4 spawn creates tagged session + dispatches: REWRITE — crew-tags -> hail :crew override drives spawned crew; session-tags applied; dispatch.
+- S5 spawn binds existing matching session: REWRITE — drop crew-tags; match by session-tags -> bind.
+- S6 spawn whose only match in-flight waits, no sibling: REWRITE — drop crew-tags; session-tags match -> wait.
+- S7 spawn waits when crew at capacity: REWRITE — capacity gates the RESOLVED crew; use hail :crew override (max-in-flight 1, busy session) -> wait.
+Net: rewrite 7 (incl preamble), remove 1 (:no-host).
+
+## Principle (2026-06-23, Micah): :frequency is ROUTING ONLY
+- :frequency holds only routing selectors: :band, :session, :session-tags, :reach, :spawn-session.
+- The :crew override is a PROCESSING concern -> lives at the hail TOP-LEVEL (:crew, single keyword), NOT in :frequency.
+- So effective-crew = (or (:crew hail) (:crew band) (id-keyword (:crew session)) (get-in cfg [:defaults :crew] :main)) — reads hail top-level :crew, no [:frequency :crew] lookup. (Supersedes the earlier 'top-level or frequency' note.)
+
+## Feature review — send-addressing.feature (approved 2026-06-23)
+- Preamble: REWRITE — drop --crew-tag; --crew = processing override (single, hail top-level); --session/--session-tag = routing.
+- S1 --crew populates :crew: REWRITE — --crew marvin -> :crew :marvin at hail TOP-LEVEL (single), not frequency {:crew [:marvin]}.
+- S2 --session: KEEP.
+- S3 --crew-tag: REMOVE (flag deleted).
+- S4 --session-tag: KEEP.
+- S5 combine --crew + --session-tag: REWRITE — :crew :marvin (top-level) + frequency {:session-tags ...}; reframe override+routing, not intersection.
+- S6 --from-json band: KEEP.
+- S7 bare - EDN: REWRITE example to new shape (:crew top-level, :session-tags in frequency).
+- S8 no --prompt errors: REWRITE — address via --session-tag (not --crew) to isolate the missing-prompt error.
+Net: keep 3, rewrite 5 (incl preamble), remove 1.
+
+## Feature review — bands.feature (approved 2026-06-23)
+- S1 validate accepts valid band: REWRITE — drop :crew-tags; new shape {:crew :ops :session-tags [...] :reach :one :spawn-session true} (single :crew).
+- S2 validate rejects invalid :reach: REWRITE — drop :crew-tags from fixture; keep :reach :many -> rejects.
+- NEW: band :crew must be a single id, not a seq — {:crew [:ops]} -> validation error.
+- Bands remain config (config/hail/<name>.edn) — they ARE schema-validated, unlike commands/skills.
+
+## NO LEGACY / NO BACK-COMPAT (hard requirement, Micah 2026-06-23)
+Zero compatibility shims anywhere in this redesign:
+- :crew-tags — removed from schema/router/CLI; not read anywhere.
+- :crew selector-as-seq — NOT accepted; :crew is a single id; no 'use first element' coercion.
+- :crew in :frequency — NOT read; effective-crew reads hail TOP-LEVEL :crew only. No dual-location read.
+- crew-based resolution — gone; NO fallback to crew matching when session selectors are absent. A crew/crew-tags-only band -> undeliverable (:no-recipients), never silently routed.
+- :no-host — removed entirely.
+- :spawn alias — none (a5ez was a clean cutover).
+- --crew-tag CLI flag — removed, not hidden/deprecated.
+- Feature scenarios exercising old behavior — DELETED, not retained for compat.
+DECISION (pending): removed keys (:crew-tags, seq :crew) should HARD-REJECT at config validate (loud migration signal) rather than fall through to the default unknown-key warning. Recommended: hard-reject.
+
+## Feature review — delivery.feature (approved 2026-06-23): ALL KEEP
+Operates on already-resolved deliveries (concrete :crew + :session); no :crew-tags. No edits. The :crew in deliveries/candidates is understood as the router-resolved processing crew, but fixtures supply it directly so no scenario changes. (S1-S8 all keep.)
+
+## DECISION LOCKED (2026-06-23): hard-reject stale keys
+Removed keys HARD-REJECT at config validate (loud migration signal), not soft unknown-key warning:
+- a band/hail carrying :crew-tags -> validation ERROR.
+- :crew as a seq -> validation ERROR (must be a single id).
+
+## Feature review COMPLETE (2026-06-23)
+All affected hail feature files reviewed + recorded: router.feature, spawn.feature, send-addressing.feature, bands.feature, delivery.feature. Unaffected: send, http, commands, crew-tool. Specs to mirror: router_spec.clj, delivery_worker_spec.clj. Scenario verdicts above are the implementation contract.
