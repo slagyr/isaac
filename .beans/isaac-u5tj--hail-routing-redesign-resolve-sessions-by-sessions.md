@@ -4,8 +4,10 @@ title: 'Hail routing redesign: resolve sessions by :session/:session-tags only; 
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-23T18:15:30Z
-updated_at: 2026-06-23T19:51:39Z
+updated_at: 2026-06-23T22:15:40Z
 ---
 
 Rework hail routing so a hail resolves to an in-flight SESSION purely by session selectors, and the crew is chosen only AFTER resolution to PROCESS the hail. Rationale (Micah, 2026-06-23): a hail addresses an in-flight thing (a session); a crew is config, not in-flight, so matching recipients by crew/crew-tags is a category error.
