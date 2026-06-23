@@ -1,14 +1,13 @@
 ---
 # isaac-sme9
 title: service install plist lacks PATH — launchd can't find bb (service won't start)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - in-progress
-    - unverified
 created_at: 2026-06-19T21:54:36Z
-updated_at: 2026-06-22T23:46:45Z
+updated_at: 2026-06-23T00:03:14Z
 ---
 
 Follow-up to isaac-r7z5. The original bug was real: launchd could not find `bb`
