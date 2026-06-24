@@ -1,13 +1,11 @@
 ---
 # isaac-7in9
 title: Extract shared {{var}} template renderer (de-dupe render-template)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-24T00:09:28Z
-updated_at: 2026-06-24T00:25:00Z
+updated_at: 2026-06-24T00:23:57Z
 ---
 
 Two independent copies of a `{{var}}` template renderer exist; consolidate into one shared helper in isaac-agent so future hail templating (band-prompt/payload) can reuse it instead of adding a third copy.
