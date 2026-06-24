@@ -1,11 +1,11 @@
 ---
 # isaac-smmm
 title: isaac modules deps — emit JVM launch classpath/deps from config modules
-status: completed
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-21T01:08:42Z
-updated_at: 2026-06-21T02:22:06Z
+updated_at: 2026-06-21T01:20:43Z
 parent: isaac-5zfv
 ---
 
@@ -48,9 +48,9 @@ Scenario: --edn emits a -Sdeps map with seed-authoritative exclusions
   And  the stdout EDN paths contains the foundation seed src
 
 @slow
-Scenario: the generated --edn deps actually boot isaac on the JVM
-  When isaac is run with "modules deps --edn" and the output is passed to
-       "clojure -Sdeps <edn> -M -m isaac.main --version"
+Scenario: the generated classpath actually boots isaac on the JVM
+  When isaac is run with "modules deps --classpath" and the output is passed to
+       "clojure -Scp <cp> -M -m isaac.main --version"
   Then the stdout contains the isaac version
 ```
 
@@ -79,12 +79,3 @@ Scenario: the generated --edn deps actually boot isaac on the JVM
   bb's preload and this command both call it. No second resolver.
 - Scenarios: keep the three; change the `@slow` boot one to exec
   `clojure -Sdeps "$(isaac modules deps --edn)" -M -m isaac.main --version`.
-
-## Worker notes (work-2, 2026-06-20)
-
-Repo: `isaac-foundation` @ `06a271e`.
-
-- Factored `compose-module-deps-map` from `add-modules-deps!`; `config->launch-deps` + `foundation-seed-path` wrap planned pairs + seed `:paths`.
-- `isaac modules deps` subcommand: `--edn` default (pure pprint), `--classpath` shells `clojure -Spath -Sdeps`.
-- Feature `features/module/modules_deps_emit.feature` + `spec/isaac/module/modules_deps_steps.clj`.
-- Tests: `bb spec spec/isaac/module/loader_spec.clj` (33 ex), `bb features features/module/modules_deps_emit.feature` (4 ex), `bb features-slow` (2 ex), `bb ci` (761 spec + 117 feature ex, 0 failures).
