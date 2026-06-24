@@ -22,7 +22,7 @@ Two independent copies of a `{{var}}` template renderer exist; consolidate into 
 3. Strategy: catalog reduces over the binding set (unknown {{...}} left as-is); hooks regex-scans (every {{word}} resolved, missing -> marker). Make regex-scan canonical; route catalog's behavior via :on-missing.
 
 ## Proposed
-- New foundation ns, e.g. `isaac.template`, `(render template vars & {:keys [on-missing]})`. Foundation is the shared seed both isaac-agent and isaac-hooks already depend on.
+- New ns in **isaac-agent** under the existing prompt namespace, e.g. `isaac.prompt.template`, `(render template vars & {:keys [on-missing]})`. NOT foundation — foundation has no internal consumer for a `{{var}}` renderer, and both current consumers already live at/above the agent layer (catalog is in agent; isaac-hooks already depends on isaac-agent and requires agent nses). Putting it in foundation would push a util down into a layer that never uses it just to share it upward.
 - Replace both private render-templates with calls; each passes the :on-missing preserving current behavior.
 - Unit-spec the shared fn: known var, missing under each policy, keyword vs string keys, unknown placeholder, nil template.
 
@@ -39,3 +39,6 @@ Surfaced 2026-06-23 investigating hail :payload intent — likely a band :prompt
 - `isaac-foundation` `3b3a6b1`: new `isaac.template/render` with `:on-missing` `:keep` | `:empty` | `:marker`; `spec/isaac/template_spec.clj` (9 examples).
 - `isaac-agent` `9d13ad5`: `catalog.clj` calls `template/render` with `{:on-missing :keep}`; catalog specs green.
 - `isaac-hooks` `e5cee84`: `hooks.clj` calls `tpl/render` with `{:on-missing :marker}`; hooks specs green (policy asserted via `isaac.template/render`).
+
+## Home decision (2026-06-23, Micah): isaac-agent, not foundation
+Verified: isaac-hooks deps.edn depends on isaac-agent and hooks.clj already requires isaac.bridge.core / isaac.session.* (agent nses). So the two consumers (agent catalog.clj + hooks.clj) both sit at/above agent. Helper lives in isaac-agent `isaac.prompt.template`. Foundation rejected: it has no internal use for a {{var}} renderer (its own ${var} env-interpolation in config/loader is consumed by foundation itself; this is not). Future hail-templating consumer reaches it via its existing agent dependency (hail dispatches turns through the bridge/charge path — confirm at impl time).
