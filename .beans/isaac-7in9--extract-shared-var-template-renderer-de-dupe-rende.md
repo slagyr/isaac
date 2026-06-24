@@ -7,10 +7,10 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-24T00:09:28Z
-updated_at: 2026-06-24T00:20:00Z
+updated_at: 2026-06-24T00:25:00Z
 ---
 
-Two independent copies of a `{{var}}` template renderer exist; consolidate into one shared helper in foundation so future hail templating (band-prompt/payload) can reuse it instead of adding a third copy.
+Two independent copies of a `{{var}}` template renderer exist; consolidate into one shared helper in isaac-agent so future hail templating (band-prompt/payload) can reuse it instead of adding a third copy.
 
 ## Duplicated sites
 - `isaac-agent/src/isaac/prompt/catalog.clj:160` render-template — reduce-kv over KNOWN bindings (string params), missing var -> "" (empty). Renders command/skill bodies with arg bindings.
@@ -27,18 +27,22 @@ Two independent copies of a `{{var}}` template renderer exist; consolidate into 
 - Unit-spec the shared fn: known var, missing under each policy, keyword vs string keys, unknown placeholder, nil template.
 
 ## Acceptance
-- Single {{var}} renderer in foundation; catalog.clj + hooks.clj call it; no local copies remain.
+- Single {{var}} renderer in isaac-agent (`isaac.prompt.template`); catalog.clj + hooks.clj call it; no local copies remain.
 - catalog still renders missing -> ""; hooks still missing -> "(missing)" (preserved, spec-covered).
-- foundation spec covers the renderer directly.
+- agent spec covers the renderer directly (`spec/isaac/prompt/template_spec.clj`).
 
 ## Notes
 Surfaced 2026-06-23 investigating hail :payload intent — likely a band :prompt TEMPLATE filled by the hail :payload (the hooks :template + webhook body pattern), never wired. Any future hail-templating work should consume THIS shared renderer, not add a third copy. Mustache-lite (`{{word}}`) only — not a full engine.
 
-## Worker handoff (2026-06-24)
+## Worker handoff (2026-06-24, superseded)
 
-- `isaac-foundation` `3b3a6b1`: new `isaac.template/render` with `:on-missing` `:keep` | `:empty` | `:marker`; `spec/isaac/template_spec.clj` (9 examples).
-- `isaac-agent` `9d13ad5`: `catalog.clj` calls `template/render` with `{:on-missing :keep}`; catalog specs green.
-- `isaac-hooks` `e5cee84`: `hooks.clj` calls `tpl/render` with `{:on-missing :marker}`; hooks specs green (policy asserted via `isaac.template/render`).
+Initial implementation placed renderer in foundation (`3b3a6b1`); reversed after home decision below.
+
+## Worker handoff (2026-06-24, current)
+
+- `isaac-foundation` `1685b76`: removed mistaken `isaac.template` (foundation has no consumer).
+- `isaac-agent` `ad1a3b6`: `isaac.prompt.template/render` with `:on-missing` `:keep` | `:empty` | `:marker`; `spec/isaac/prompt/template_spec.clj` (9 examples); `catalog.clj` uses `{:on-missing :keep}`.
+- `isaac-hooks` `d905452`: `hooks.clj` requires `isaac.prompt.template`, pins agent `ad1a3b6`; `{:on-missing :marker}`; hooks specs green.
 
 ## Home decision (2026-06-23, Micah): isaac-agent, not foundation
 Verified: isaac-hooks deps.edn depends on isaac-agent and hooks.clj already requires isaac.bridge.core / isaac.session.* (agent nses). So the two consumers (agent catalog.clj + hooks.clj) both sit at/above agent. Helper lives in isaac-agent `isaac.prompt.template`. Foundation rejected: it has no internal use for a {{var}} renderer (its own ${var} env-interpolation in config/loader is consumed by foundation itself; this is not). Future hail-templating consumer reaches it via its existing agent dependency (hail dispatches turns through the bridge/charge path — confirm at impl time).
