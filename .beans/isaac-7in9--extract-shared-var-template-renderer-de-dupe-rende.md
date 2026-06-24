@@ -4,8 +4,10 @@ title: Extract shared {{var}} template renderer (de-dupe render-template)
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-24T00:09:28Z
-updated_at: 2026-06-24T00:12:26Z
+updated_at: 2026-06-24T00:20:00Z
 ---
 
 Two independent copies of a `{{var}}` template renderer exist; consolidate into one shared helper in foundation so future hail templating (band-prompt/payload) can reuse it instead of adding a third copy.
@@ -31,3 +33,9 @@ Two independent copies of a `{{var}}` template renderer exist; consolidate into 
 
 ## Notes
 Surfaced 2026-06-23 investigating hail :payload intent — likely a band :prompt TEMPLATE filled by the hail :payload (the hooks :template + webhook body pattern), never wired. Any future hail-templating work should consume THIS shared renderer, not add a third copy. Mustache-lite (`{{word}}`) only — not a full engine.
+
+## Worker handoff (2026-06-24)
+
+- `isaac-foundation` `3b3a6b1`: new `isaac.template/render` with `:on-missing` `:keep` | `:empty` | `:marker`; `spec/isaac/template_spec.clj` (9 examples).
+- `isaac-agent` `9d13ad5`: `catalog.clj` calls `template/render` with `{:on-missing :keep}`; catalog specs green.
+- `isaac-hooks` `e5cee84`: `hooks.clj` calls `tpl/render` with `{:on-missing :marker}`; hooks specs green (policy asserted via `isaac.template/render`).
