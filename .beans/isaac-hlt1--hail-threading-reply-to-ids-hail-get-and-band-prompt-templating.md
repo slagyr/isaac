@@ -1,16 +1,15 @@
 ---
 # isaac-hlt1
 title: hail threading, reply-to, ids, hail_get, and band prompt templating with params
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - hail
     - agent
     - planning
-    - unverified
 created_at: 2026-06-23T23:00:00Z
-updated_at: 2026-06-24T01:20:37Z
+updated_at: 2026-06-24T15:32:02Z
 ---
 
 # Hail threading, reply-to, ids, and hail_get
