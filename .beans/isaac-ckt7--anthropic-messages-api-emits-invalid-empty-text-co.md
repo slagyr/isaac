@@ -4,10 +4,8 @@ title: Anthropic messages API emits invalid empty text content blocks
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-25T22:31:13Z
-updated_at: 2026-06-25T22:47:49Z
+updated_at: 2026-06-25T22:56:47Z
 ---
 
 ## Context
@@ -61,3 +59,11 @@ Harden the anthropic path in builder.clj:
 - Verify on zanebot main crew after fix.
 
 Run `bb features` in isaac-agent and relevant specs.
+
+## Verification (2026-06-25)
+- Current GitHub `isaac-agent` `main` has not advanced beyond `fd559dc`; there is no `ckt7` commit or delivered diff on head.
+- The bug still reproduces on current code. Direct prompt-builder repro:
+  - `filter-messages-anthropic [{:role "assistant" :content ""}] nil` => `{:content [{:type "text" :text ""}]}`
+  - `filter-messages-anthropic [{:role "toolResult" :content ""}] nil` => `{:content [{:type "text" :text ""}]}`
+  - private `text-blocks \"\"` => `[{:type \"text\" :text \"\"}]`
+- The root cause is still present in [src/isaac/llm/prompt/builder.clj](src/isaac/llm/prompt/builder.clj): `text-blocks` keeps empty strings, `filter-messages-anthropic` uses `when text` for tool results, and user/assistant blank strings still produce empty text blocks.
