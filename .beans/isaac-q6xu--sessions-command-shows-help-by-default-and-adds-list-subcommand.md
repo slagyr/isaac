@@ -40,8 +40,55 @@ This bean tracks bringing `sessions` into the same convention.
 
 - This is a command-shape change, not a behavior rewrite of session listing itself.
 - Machine-readable output for `sessions list --json/--edn` should remain what the listing already returns today; the change is how users reach that behavior.
-- Keep this bean `draft` until the `@wip` feature scenarios are written and committed.
+- The `@wip` feature scenarios are now committed; remaining work is implementation and verification against those scenarios.
 
 ## Related
 
 - Companion planning work is in progress for the `crew` command to follow the same management-command convention.
+
+## Scenarios committed (2026-06-25)
+
+The `@wip` scenarios now live in `isaac-agent/features/session/cli.feature`:
+
+- `isaac-agent/features/session/cli.feature:17`
+- `isaac-agent/features/session/cli.feature:24`
+- `isaac-agent/features/session/cli.feature:33`
+- `isaac-agent/features/session/cli.feature:51`
+- `isaac-agent/features/session/cli.feature:64`
+- `isaac-agent/features/session/cli.feature:70`
+- `isaac-agent/features/session/cli.feature:77`
+- `isaac-agent/features/session/cli.feature:124`
+- `isaac-agent/features/session/cli.feature:135`
+- `isaac-agent/features/session/cli.feature:146`
+
+These cover:
+
+- bare `isaac sessions` showing help
+- `sessions --help` listing subcommands
+- explicit `sessions list` for the existing listing/filter/color surfaces
+
+## Acceptance
+
+Run in `isaac-agent`:
+
+```bash
+cd /Users/micahmartin/agents/plan/isaac-agent
+bb features features/session/cli.feature
+```
+
+Targeted selectors if needed:
+
+```bash
+cd /Users/micahmartin/agents/plan/isaac-agent
+bb features \
+  features/session/cli.feature:17 \
+  features/session/cli.feature:24 \
+  features/session/cli.feature:33 \
+  features/session/cli.feature:51 \
+  features/session/cli.feature:64 \
+  features/session/cli.feature:70 \
+  features/session/cli.feature:77 \
+  features/session/cli.feature:124 \
+  features/session/cli.feature:135 \
+  features/session/cli.feature:146
+```
