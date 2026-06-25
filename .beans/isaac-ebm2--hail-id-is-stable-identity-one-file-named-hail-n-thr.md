@@ -56,6 +56,6 @@ Anchor: any id a sender is handed must resolve via `hail_get` to a meaningful re
   - `hail_get hail-42` returns the broadcast parent (incl the `:children` id list); the caller can `hail_get` each child for its status. NO aggregation in hail_get.
 - **undeliverable** unchanged (already keyed by hail-N).
 
-Dirs: `pending/` (raw) -> for reach :one: `inflight/` -> `delivered/`|`failed/`; for reach :all: parent -> `broadcasts/`, children -> `inflight/` -> `delivered/`|`failed/`. `undeliverable/` for routing failures. DROP `deliveries/` + `deliveries/.counter` + delivery-N ids.
+Dirs (corrected): `pending/` (raw) -> `deliveries/` (routed-ready, files now named hail-N) -> `inflight/` (claimed/dispatching) -> `delivered/`|`failed/`. `undeliverable/` for routing failures (hail-N). `broadcasts/` for reach :all PARENT records (durable, queryable; NOT a delivery). DROP only `deliveries/.counter` + the delivery-N id scheme — deliveries are named by hail id. All hail ids (originals + fan-out children) mint from `hail/.counter`.
 
 Decisions retired: Model X (original becomes one delivery) REJECTED — would make `hail_get <original-id>` return only one delivery and hide the rest. Model A (one file + :deliveries list) REJECTED — Micah wants a file per delivery.
