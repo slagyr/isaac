@@ -1,18 +1,17 @@
 ---
 # isaac-hrl1
 title: 'Hot-reload: crew and model config changes not immediately visible to running sessions'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
+    - config
+    - hot-reload
     - session
     - crew
     - model
-    - unverified
-    - config
-    - hot-reload
 created_at: 2026-06-25T12:00:00Z
-updated_at: 2026-06-25T16:53:26Z
+updated_at: 2026-06-25T17:09:11Z
 ---
 
 ## Context / Motivation
