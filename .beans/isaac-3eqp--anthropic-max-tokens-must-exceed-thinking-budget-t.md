@@ -22,44 +22,22 @@ Existing sessions had `:effort 0` set (no thinking) so they worked; a FRESH clau
 ## Core problem
 max_tokens (the Anthropic field) is the TOTAL cap and must exceed budget_tokens; response tokens = max_tokens - budget_tokens. A fixed 4096 can't coexist with any meaningful thinking budget (even effort 1 -> budget 3200 leaves ~900 response tokens). max_tokens must scale with the thinking budget.
 
-## Proposed fix
-Make max_tokens = thinking budget_tokens + a RESPONSE budget, so it always exceeds budget_tokens with predictable response room:
-- Add a configurable response budget, model field `:max-output-tokens` (resolve.clj select-keys), default **4096** (keeps today's non-thinking behavior identical).
-- In request-body / send paths: `max_tokens = (+ budget_tokens max-output-tokens)` when thinking is enabled; `max_tokens = max-output-tokens` when effort 0 / no thinking.
-- Guarantee invariant `max_tokens > budget_tokens` always.
-(Minimal alternative: `max_tokens = budget_tokens + 4096` with no new config. Either is acceptable; the configurable version is preferred.)
+## Fix (design approved 2026-06-25, Micah)
+The messages adapter must emit TWO numbers — thinking budget AND max_tokens — modeled as separable quantities so `max_tokens > budget_tokens` holds by construction:
 
-## Scenarios (DRAFT — add to features/llm/api/messages/api.feature, @wip; reuse existing steps `the last outbound HTTP request matches:`, `the last provider request does not contain path`, config/session/user-sends. NO new steps.)
-Match the file's existing background (grover-simulated anthropic, session "thinking", model with :thinking-budget-max).
+1. **Keep the existing effort->budget curve** (unchanged; existing api.feature scenarios stay green):
+   `budget_tokens = round(effort/10 * thinking-budget-max)` (per-model `:thinking-budget-max`, default 32000). effort 0 omits the thinking block.
+   - effort 1 -> 3200, 5 -> 16000, 10 -> 32000 (with default budget-max).
+   - **Clamp to Anthropic's 1024 floor** when effort > 0 (so a small budget-max can't produce an illegal sub-1024 budget — a latent bug today).
+2. **Add a response budget and compute max_tokens:**
+   `max_tokens = budget_tokens + response_budget`, where `response_budget` is a configurable model field `:max-output-tokens` (add to resolve.clj select-keys), default **4096** (keeps today's non-thinking behavior identical).
+   - effort 0 / no thinking -> `max_tokens = response_budget`.
+   - **Clamp max_tokens to the model's output ceiling** (configurable, sane default) so a huge budget-max can't exceed what the model allows.
 
-```gherkin
-@wip
-Scenario: max_tokens exceeds the thinking budget so the request is valid
-  # model :thinking-budget-max 32000, session/crew effort 7 -> budget 22400
-  When the user sends "hi" on session "thinking"
-  Then the last outbound HTTP request matches:
-    | path                        | value |
-    | body.thinking.budget_tokens | 22400 |
-    | body.max_tokens             | 26496 |   # 22400 + 4096 response budget; > budget_tokens
+Decision: KEEP the 0-10 curve and per-model budget-max; only ADD the max_tokens computation. (Rejected: re-anchoring the budget as a fraction of max_tokens — guarantees the invariant too but changes every existing budget number and breaks current scenarios for no gain.)
 
-@wip
-Scenario: effort 0 sends only the response budget and no thinking
-  # effort 0
-  When the user sends "hi" on session "thinking"
-  Then the last outbound HTTP request matches:
-    | path            | value |
-    | body.max_tokens | 4096  |
-  And the last provider request does not contain path "body.thinking"
-
-@wip
-Scenario: response budget is configurable via :max-output-tokens
-  # model :max-output-tokens 8192, :thinking-budget-max 32000, effort 5 -> budget 16000
-  When the user sends "hi" on session "thinking"
-  Then the last outbound HTTP request matches:
-    | path            | value |
-    | body.max_tokens | 24192 |   # 16000 + 8192
-```
-(Exact max_tokens numbers depend on the chosen response-budget default of 4096 — adjust if a different default is picked.)
+## Scenarios
+Under review with Micah (one at a time) — to land in `features/llm/api/messages/api.feature` (@wip), reusing existing steps (`the last outbound HTTP request matches:`, `the last provider request does not contain path`, config/session/user-sends — NO new steps). Recorded here as each is approved.
 
 ## Acceptance
 - For any effort/budget-max, the Anthropic request has max_tokens > thinking.budget_tokens (no 400).
