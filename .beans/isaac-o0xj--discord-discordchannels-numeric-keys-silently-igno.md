@@ -1,13 +1,11 @@
 ---
 # isaac-o0xj
 title: Discord :discord/channels numeric keys silently ignored for :session/:crew overrides
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-25T19:06:44Z
-updated_at: 2026-06-25T19:23:27Z
+updated_at: 2026-06-25T21:55:53Z
 ---
 
 ## Context
