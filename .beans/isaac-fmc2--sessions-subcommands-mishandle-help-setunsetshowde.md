@@ -1,13 +1,11 @@
 ---
 # isaac-fmc2
 title: sessions subcommands mishandle --help (set/unset/show/delete treat --help as a positional arg)
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-25T18:05:37Z
-updated_at: 2026-06-25T18:25:59Z
+updated_at: 2026-06-25T18:45:36Z
 ---
 
 `isaac sessions set --help` prints `invalid path: --help` instead of showing help. The sessions subcommands pass positional args straight through without checking for `--help`/`-h` first. Mirror the crew management-command pattern (isaac-3d8j) which handles per-subcommand help correctly.
