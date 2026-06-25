@@ -3,8 +3,9 @@
 title: sessions subcommands mishandle --help (set/unset/show/delete treat --help as a positional arg)
 status: todo
 type: bug
+priority: normal
 created_at: 2026-06-25T18:05:37Z
-updated_at: 2026-06-25T18:05:37Z
+updated_at: 2026-06-25T18:17:50Z
 ---
 
 `isaac sessions set --help` prints `invalid path: --help` instead of showing help. The sessions subcommands pass positional args straight through without checking for `--help`/`-h` first. Mirror the crew management-command pattern (isaac-3d8j) which handles per-subcommand help correctly.
@@ -35,3 +36,11 @@ crew's `show` (crew/cli.clj): `(parse-with-arguments (rest raw-args))` -> if `(:
 
 ## Notes
 Surfaced 2026-06-25 on zanebot: `sessions set --help` -> `invalid path: --help`. Micah: 'similar to the recent crew bean, this should work on sessions'.
+
+## Scenarios (approved 2026-06-25, Micah) — written @wip in isaac-agent features/session/cli.feature
+4 scenarios (individual, NOT a Scenario Outline — the <id>/<path>/<value> in the usage strings collide with Gherkin outline placeholder syntax):
+- sessions set --help    -> stdout contains "Usage: isaac sessions set <id>.<path> <value>", exit 0
+- sessions unset --help  -> stdout contains "Usage: isaac sessions unset <id>.<path>", exit 0
+- sessions show --help   -> stdout contains "Usage: isaac sessions show <id>", exit 0
+- sessions delete --help -> stdout contains "Usage: isaac sessions delete <id>", exit 0
+Positive assertions (what it SHOULD show), per Micah — not 'does not contain invalid path'. Reuse existing steps (isaac is run with, the stdout contains, the exit code is). Mirrors crew 'crew show --help' (3d8j). The exact Usage strings are the contract the implementer must produce. DoD: implement per-subcommand --help handling, remove @wip, scenarios green.
