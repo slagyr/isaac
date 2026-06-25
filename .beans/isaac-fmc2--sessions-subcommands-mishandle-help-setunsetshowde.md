@@ -1,0 +1,37 @@
+---
+# isaac-fmc2
+title: sessions subcommands mishandle --help (set/unset/show/delete treat --help as a positional arg)
+status: todo
+type: bug
+created_at: 2026-06-25T18:05:37Z
+updated_at: 2026-06-25T18:05:37Z
+---
+
+`isaac sessions set --help` prints `invalid path: --help` instead of showing help. The sessions subcommands pass positional args straight through without checking for `--help`/`-h` first. Mirror the crew management-command pattern (isaac-3d8j) which handles per-subcommand help correctly.
+
+## Diagnosis (isaac-agent src/isaac/session/cli.clj, run-fn ~384)
+Each subcommand takes a positional arg without a help check:
+- `set`:    `(run-mutation opts :set (second raw-args) (nth raw-args 2 nil))` -> `set --help` -> path = "--help" -> `parse-mutation-target` -> "invalid path: --help".
+- `unset`:  `(run-mutation opts :unset (second raw-args) nil)` -> same.
+- `delete`: `(run-delete opts (second raw-args))` -> `delete --help` would target session "--help".
+- `show`:   parses options from `(drop 2 raw-args)` and uses `(second raw-args)` as the id -> `show --help` treats "--help" as a session id, not help.
+
+## Fix — mirror crew (isaac-3d8j)
+crew's `show` (crew/cli.clj): `(parse-with-arguments (rest raw-args))` -> if `(:help options)` -> `(print-show-help!)` BEFORE using the positional. Apply the same to each sessions subcommand:
+- Parse the subcommand's args for options + positionals (a parse-with-arguments equivalent; sessions currently only has parse-option-map).
+- If `--help`/`-h` present -> print that subcommand's help text and return 0.
+- Otherwise proceed with the positional (id/path/value).
+- Add per-subcommand help text (set/unset/show/delete), like crew's `print-show-help!`/`show-help-text`. set/unset help should show the `<id>.<path> <value>` usage.
+
+## Acceptance
+- `isaac sessions set --help` / `unset --help` / `show --help` / `delete --help` each print that subcommand's help and exit 0 (no "invalid path"/no accidental mutation/delete).
+- The positional paths/ids still work when --help is absent.
+- Feature coverage in the sessions cli feature (mirror the crew show-help scenarios from 3d8j).
+
+## Related
+- isaac-3d8j (crew management command + per-subcommand help) — the pattern to copy.
+- isaac-q6xu (sessions shows help by default; list subcommand) — recent sessions mgmt work; this fills the per-subcommand-help gap it left.
+- isaac-hzp1 (sessions/crew --help lists subcommands) — top-level help; distinct from this (subcommand-level --help).
+
+## Notes
+Surfaced 2026-06-25 on zanebot: `sessions set --help` -> `invalid path: --help`. Micah: 'similar to the recent crew bean, this should work on sessions'.
