@@ -1,11 +1,13 @@
 ---
 # isaac-3eqp
 title: 'Anthropic adaptive thinking: migrate Sonnet/Opus 4.6 to thinking.adaptive + effort (fixes max_tokens vs budget_tokens)'
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-25T15:28:39Z
-updated_at: 2026-06-25T16:19:49Z
+updated_at: 2026-06-25T16:47:52Z
 ---
 
 Anthropic Messages requests can send a thinking `budget_tokens` larger than `max_tokens`, which the API rejects: `max_tokens must be greater than thinking.budget_tokens`. Any fresh claude session that doesn't override effort hits this and CANNOT take a turn.
