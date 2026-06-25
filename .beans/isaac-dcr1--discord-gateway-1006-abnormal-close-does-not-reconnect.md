@@ -9,8 +9,9 @@ tags:
     - comm
     - gateway
     - hot-reload
+    - unverified
 created_at: 2026-06-25T12:00:00Z
-updated_at: 2026-06-25T18:13:52Z
+updated_at: 2026-06-25T18:15:01Z
 ---
 
 ## Context
