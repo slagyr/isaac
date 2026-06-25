@@ -1,11 +1,11 @@
 ---
 # isaac-ebm2
 title: 'Hail id is stable identity: one file named hail-N through the whole lifecycle (drop separate delivery-N)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T22:18:13Z
+updated_at: 2026-06-25T22:27:04Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -112,3 +112,9 @@ delivery.feature (8): 7 flat-rewrite, 1 keep, +1 new (child independence / paren
 hail-get.feature (5): 3 keep, 2 update (+broadcasts dir), +2 new (parent :children read, child :source-hail).
 spawn-session.feature (6): 6 flat-rewrite.
 Plus sweep of 7 other files. Net new behavior: broadcasts/ dir + parent record with :children; child delivery hails with :source-hail + shared thread-id; hail_get walks broadcasts/ and is a dumb read.
+
+## @wip scenarios WRITTEN + verified parse (2026-06-25)
+Committed to isaac-hail (3849b33 base): router.feature, delivery.feature, hail-get.feature, spawn-session.feature rewritten to the stable-id model; every changed scenario tagged @wip; the two scheduler-registration scenarios kept green.
+Verification: `bb features` over the 4 files = 5 non-wip examples 0 failures; with @wip stripped = 34 examples parse, 18 failures + 2 pending (expected — behavior not implemented). Table syntax valid across all 34 scenarios. 29 @wip tags total.
+
+Remaining DoD (implementation): build the router/worker/hail_get changes (flat enrich-in-place; broadcasts/ parent + child fan-out with :source-hail; hail_get walks broadcasts/ + dumb read), drop deliveries/.counter + delivery-N ids, then remove @wip and green. Plus the grep-sweep of the 7 other hail feature files for delivery-/nested :hail references.
