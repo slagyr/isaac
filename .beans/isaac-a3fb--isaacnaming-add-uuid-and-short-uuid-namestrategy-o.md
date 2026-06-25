@@ -1,10 +1,13 @@
 ---
 # isaac-a3fb
 title: 'isaac.naming: add :uuid and :short-uuid NameStrategy (optional prefix)'
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-25T23:43:37Z
-updated_at: 2026-06-25T23:43:37Z
+updated_at: 2026-06-25T23:47:32Z
 ---
 
 Add two stateless id strategies to isaac.naming (isaac-foundation/src/isaac/naming.clj), alongside SequentialStrategy + AdjectiveNounStrategy. UUIDs are collision-free without a shared .counter, so concurrent/external producers can mint ids independently (no counter-file race) — enables distributed hail producers (cf isaac-ugx7).
@@ -35,3 +38,12 @@ NOTE: unlike @wip gherkin, these specs reference not-yet-existing records, so th
 
 ## Scope / follow-up (separate, NOT this bean)
 This adds the strategies only. Switching HAIL to use UuidStrategy (bare) instead of SequentialStrategy "hail-" is a deliberate follow-up (changes the on-disk id format; decide coexistence with existing hail-N records). Surfaced 2026-06-25, Micah.
+
+## Worker notes (work-1, 2026-06-25)
+
+isaac-foundation @ `f9a84f8`.
+
+- `src/isaac/naming.clj`: added `UuidStrategy [prefix]` (full random UUID) and `ShortUuidStrategy [prefix]` (UUID's leading 8-hex group) — both stateless `NameStrategy` impls (no root/counter/fs). Shared private `with-prefix` treats nil/blank prefix as bare id.
+- `spec/isaac/naming_spec.clj`: 9 new specs (satisfies, bare format via re-matches, optional + blank prefix, uniqueness/distinctness) per the bean examples.
+- Strategies only — switching hail to bare uuids is the deferred follow-up (not this bean).
+- Tests: `bb spec naming_spec` 23/0; `bb ci` spec 776/0, features 117/0.
