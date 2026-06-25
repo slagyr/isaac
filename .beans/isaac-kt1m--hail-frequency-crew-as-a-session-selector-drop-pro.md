@@ -1,13 +1,11 @@
 ---
 # isaac-kt1m
 title: 'Hail frequency: :crew as a session selector; drop processing-crew override; require >=1 selector (fix match-all)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-25T23:00:12Z
-updated_at: 2026-06-25T23:07:47Z
+updated_at: 2026-06-25T23:17:13Z
 blocked_by:
     - isaac-ebm2
 ---
@@ -44,3 +42,16 @@ This bean ALSO needs NEW scenarios: 'frequency :crew selects sessions of that cr
 
 ## Notes
 Surfaced 2026-06-25: Micah noticed a :crew-only hail 'worked' on zanebot and questioned the u5tj removal of :crew addressing. Resolution: :crew is valid as a session selector (priority case), but :crew-tags and the processing override are not needed.
+
+## Verification (2026-06-25)
+- Current GitHub `isaac-hail` `main` includes `isaac-kt1m` at `5a9989d`.
+- Focused proofs are green on that head:
+  - `bb spec spec/isaac/hail/router_spec.clj spec/isaac/hail/cli_spec.clj spec/isaac/hail/http_spec.clj spec/isaac/config/hail_loader_spec.clj` -> `32 examples, 0 failures`
+  - `bb features features/router.feature features/send-addressing.feature` -> `21 examples, 0 failures`
+- Full repo lane is also green on current head aside from the same two pre-existing pending hail-get directory-scan scenarios:
+  - `bb ci` -> `71` spec examples, `0` failures; `76` feature examples, `0` failures, `2` unrelated pending
+- The delivered routing surfaces match the bean:
+  - `:frequency :crew` is now a session selector in [src/isaac/hail/router.clj](src/isaac/hail/router.clj)
+  - absent `:session`/`:session-tags`/`:crew` now yields `:no-recipients`
+  - processing crew resolves from the matched session, not a hail/band override
+  - CLI/HTTP send put `:crew` under `:frequency` and reject selector-less addressing
