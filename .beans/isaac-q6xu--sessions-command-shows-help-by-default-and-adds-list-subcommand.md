@@ -1,13 +1,11 @@
 ---
 # isaac-q6xu
 title: sessions command shows help by default and adds list subcommand
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-25T14:57:58Z
-updated_at: 2026-06-25T15:02:53Z
+updated_at: 2026-06-25T15:39:30Z
 ---
 
 We just settled the CLI convention for management commands: the top-level command shows management help by default, and concrete actions hang off explicit subcommands. `isaac crew` is moving to that shape. `isaac sessions` still does the older thing: bare `isaac sessions` executes the listing behavior directly.
