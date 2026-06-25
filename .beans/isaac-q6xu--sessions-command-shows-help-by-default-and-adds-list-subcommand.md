@@ -1,0 +1,44 @@
+---
+# isaac-q6xu
+title: sessions command shows help by default and adds list subcommand
+status: draft
+type: feature
+created_at: 2026-06-25T14:57:58Z
+updated_at: 2026-06-25T14:57:58Z
+---
+
+We just settled the CLI convention for management commands: the top-level command shows management help by default, and concrete actions hang off explicit subcommands. `isaac crew` is moving to that shape. `isaac sessions` still does the older thing: bare `isaac sessions` executes the listing behavior directly.
+
+This bean tracks bringing `sessions` into the same convention.
+
+## Intended behavior
+
+- `isaac sessions` shows help by default
+- `isaac sessions --help` shows management help, including subcommands
+- `isaac sessions list` becomes the explicit listing command
+- existing listing/filter behavior moves under `sessions list`
+- existing subcommands (`show`, `set`, `unset`, `delete`) remain, and `list` joins them
+
+## Why this exists
+
+- The current CLI is inconsistent:
+  - `isaac config` and `isaac service` show help by default
+  - `isaac sessions` executes a default action instead
+- The `crew` command is being reshaped into a real management surface; `sessions` should follow the same convention rather than remain an odd one-off.
+
+## Likely feature impact
+
+- Existing scenarios in `isaac-agent/features/session/cli.feature` that currently run `isaac sessions` for listing will need to move to `isaac sessions list`.
+- New scenarios will be needed for:
+  - bare `sessions` showing help
+  - `sessions --help` listing `list` alongside `show`, `set`, `unset`, `delete`
+
+## Design notes
+
+- This is a command-shape change, not a behavior rewrite of session listing itself.
+- Machine-readable output for `sessions list --json/--edn` should remain what the listing already returns today; the change is how users reach that behavior.
+- Keep this bean `draft` until the `@wip` feature scenarios are written and committed.
+
+## Related
+
+- Companion planning work is in progress for the `crew` command to follow the same management-command convention.
