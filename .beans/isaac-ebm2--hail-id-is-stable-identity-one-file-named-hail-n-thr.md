@@ -42,3 +42,20 @@ Review existing one at a time (router.feature 12, delivery.feature 8, spawn-sess
 
 ## Notes
 Surfaced 2026-06-25 on zanebot: hail-6 became failed/delivery-3.edn; hail-2 stayed undeliverable/hail-2.edn — the rename inconsistency. Builds on the u5tj routing redesign (session-only resolution). Fan-out model A pending confirmation in scenario review.
+
+## LOCKED MODEL (2026-06-25, Micah) — supersedes the "Proposed model" above
+
+Anchor: any id a sender is handed must resolve via `hail_get` to a meaningful record. `hail_get` is a DUMB READ — returns whatever record matches the id; NO aggregation.
+
+- **Flat content.** A routed hail file IS the hail, enriched in place (resolved `:crew`/`:session`, `:attempts`, etc.) — no `:hail` wrapper, no separate `delivery-N` id.
+- **reach :one** -> the hail IS its single delivery. It flows `pending -> inflight -> delivered/failed`, keeping its id and filename throughout. `hail_get <id>` returns it + its delivery state.
+- **reach :all** -> the original hail is a durable BROADCAST PARENT:
+  - Router mints N child delivery hails (e.g. hail-42 -> hail-43, hail-44, hail-45), each: its own unique id, ONE resolved session, the shared `:thread-id`, and `:source-hail hail-42` back-ref.
+  - The parent record gets `:children [hail-43 hail-44 hail-45]` and, once routed, MOVES to a new `broadcasts/` dir (durable + queryable). It is NOT a delivery and does not flow through inflight/delivered/failed.
+  - Children flow through the delivery lifecycle independently (own file, own retry/dead-letter).
+  - `hail_get hail-42` returns the broadcast parent (incl the `:children` id list); the caller can `hail_get` each child for its status. NO aggregation in hail_get.
+- **undeliverable** unchanged (already keyed by hail-N).
+
+Dirs: `pending/` (raw) -> for reach :one: `inflight/` -> `delivered/`|`failed/`; for reach :all: parent -> `broadcasts/`, children -> `inflight/` -> `delivered/`|`failed/`. `undeliverable/` for routing failures. DROP `deliveries/` + `deliveries/.counter` + delivery-N ids.
+
+Decisions retired: Model X (original becomes one delivery) REJECTED — would make `hail_get <original-id>` return only one delivery and hide the rest. Model A (one file + :deliveries list) REJECTED — Micah wants a file per delivery.
