@@ -3,8 +3,9 @@
 title: 'Hail id is stable identity: one file named hail-N through the whole lifecycle (drop separate delivery-N)'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T19:34:09Z
+updated_at: 2026-06-25T22:09:56Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -59,3 +60,12 @@ Anchor: any id a sender is handed must resolve via `hail_get` to a meaningful re
 Dirs (corrected): `pending/` (raw) -> `deliveries/` (routed-ready, files now named hail-N) -> `inflight/` (claimed/dispatching) -> `delivered/`|`failed/`. `undeliverable/` for routing failures (hail-N). `broadcasts/` for reach :all PARENT records (durable, queryable; NOT a delivery). DROP only `deliveries/.counter` + the delivery-N id scheme — deliveries are named by hail id. All hail ids (originals + fan-out children) mint from `hail/.counter`.
 
 Decisions retired: Model X (original becomes one delivery) REJECTED — would make `hail_get <original-id>` return only one delivery and hide the rest. Model A (one file + :deliveries list) REJECTED — Micah wants a file per delivery.
+
+## Feature review — router.feature (approved 2026-06-25)
+Wire shape: child back-ref = :source-hail; parent :children = plain id list [hail-2 hail-3].
+- S1,S3,S4,S6,S7,S8 (reach-one binds/overrides/defaults): REWRITE -> deliveries/hail-1.edn, flat fields (id, frequency, crew, session top-level; no :hail wrapper, no delivery-N).
+- S2 (unbound candidates pool): REWRITE -> deliveries/hail-1.edn, flat crew/session nil + candidates.
+- S5 (reach :all): MAJOR REWRITE -> parent broadcasts/hail-1.edn with :children [hail-2 hail-3]; children deliveries/hail-2.edn + hail-3.edn each flat with :source-hail hail-1 + resolved crew/session.
+- S9,S10,S11 (-> undeliverable): LIGHT -> undeliverable/hail-1 already correct; drop the 'deliveries/delivery-1 does not exist' line (or update to hail-N).
+- S12 (router tick registered): KEEP.
+Feature description rewrite: router enriches the pending hail in place (flat) and moves it to deliveries/ (reach :one) keeping its id; reach :all writes a broadcasts/ parent (with :children) + one deliveries/ child per session; undeliverable keyed by hail-N.
