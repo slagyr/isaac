@@ -1,11 +1,13 @@
 ---
 # isaac-kt1m
 title: 'Hail frequency: :crew as a session selector; drop processing-crew override; require >=1 selector (fix match-all)'
-status: draft
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-25T23:00:12Z
-updated_at: 2026-06-25T23:00:23Z
+updated_at: 2026-06-25T23:07:47Z
 blocked_by:
     - isaac-ebm2
 ---
