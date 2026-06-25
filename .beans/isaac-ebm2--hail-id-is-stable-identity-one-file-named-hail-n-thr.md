@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T22:14:11Z
+updated_at: 2026-06-25T22:18:13Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -92,3 +92,23 @@ Already mostly aligned (hail-N filenames, flat top-level fields, subdir walk, no
 - NEW: hail_get on a broadcast parent returns its :children id list WITHOUT aggregating (dumb read).
 - NEW: hail_get on a fan-out child returns its :source-hail back-ref.
 hail_get must walk broadcasts/ in addition to pending/deliveries/inflight/delivered/failed/undeliverable.
+
+## Feature review — spawn-session.feature (approved 2026-06-25)
+Spawn is reach-one only (no broadcast path). All 6 scenarios: mechanical flat + hail-N rewrite (hail.id->id, hail.frequency.*->frequency.*, hail.prompt->prompt; delivery-1->hail-1).
+- S1 spawn-enabled no match -> spawn delivery: REWRITE deliveries/hail-1 flat (id, frequency.spawn-session, crew, session nil).
+- S2 without spawn no match -> undeliverable: REWRITE undeliverable/hail-1 flat (id, reason).
+- S3 spawn creates session + dispatches: REWRITE flat, deliveries/hail-1 -> delivered/hail-1.
+- S4 spawn binds existing session: REWRITE flat.
+- S5 only-match in-flight waits, no sibling: REWRITE flat, stays deliveries/hail-1.
+- S6 resolved crew at capacity waits: REWRITE flat.
+No new scenarios.
+
+## Sweep (other hail feature files — implementer to grep, not individually reviewed)
+send.feature, send-addressing.feature, http.feature, hail-threading.feature, commands.feature, crew-tool.feature, bands.feature: mostly create hails / bands and likely already use hail-N. Grep each for `delivery-` filenames and nested `:hail`/`hail.*` paths; flatten/rename to the hail-N + flat model. bands.feature unaffected (band config, not delivery records).
+
+## SCENARIO PLAN COMPLETE (2026-06-25) — reviewed + approved
+router.feature (12): 8 flat-rewrite, 1 major (S5 broadcast), 3 light (undeliverable), 1 keep.
+delivery.feature (8): 7 flat-rewrite, 1 keep, +1 new (child independence / parent untouched).
+hail-get.feature (5): 3 keep, 2 update (+broadcasts dir), +2 new (parent :children read, child :source-hail).
+spawn-session.feature (6): 6 flat-rewrite.
+Plus sweep of 7 other files. Net new behavior: broadcasts/ dir + parent record with :children; child delivery hails with :source-hail + shared thread-id; hail_get walks broadcasts/ and is a dumb read.
