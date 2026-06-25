@@ -1,11 +1,13 @@
 ---
 # isaac-97bf
 title: Comm modules adopt :send-schema + migrate to namespaced record keys
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+  - unverified
 created_at: 2026-06-23T22:04:23Z
-updated_at: 2026-06-23T22:04:33Z
+updated_at: 2026-06-25T14:25:00Z
 blocked_by:
     - isaac-2s0b
 ---
@@ -43,3 +45,9 @@ Follow-up to isaac-2s0b (comm_send tool). 2s0b builds the generic mechanism (the
 
 ## Notes
 Breaking change to the delivery-record shape for discord/imessage (:target -> :discord/target etc.). Coordinate so send! reads and ALL writers (comm_send + reply path) flip together. Surfaced 2026-06-23 during comm_send planning.
+
+## Implementation (work-3)
+
+- **isaac-discord** `694e770`: manifest `:send-schema` with `:discord/target`; `send!` and `try-send-or-enqueue!` use namespaced keys; specs updated.
+- **isaac-imessage** `8d322b5`: manifest `:send-schema` with `:imessage/target` + `:imessage/service`; `send!`, `imsg-params`, `dispatch-and-enqueue-reply!` migrated; specs added for manifest shape, reply enqueue, and Comm `send!`.
+- `bb spec` green except one pre-existing flaky lifecycle spec (`comm-registry/comm-for` race on main before this change).
