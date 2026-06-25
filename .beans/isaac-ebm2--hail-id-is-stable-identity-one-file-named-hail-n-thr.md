@@ -1,0 +1,44 @@
+---
+# isaac-ebm2
+title: 'Hail id is stable identity: one file named hail-N through the whole lifecycle (drop separate delivery-N)'
+status: draft
+type: feature
+created_at: 2026-06-25T19:34:09Z
+updated_at: 2026-06-25T19:34:09Z
+---
+
+An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
+
+## Principle (Micah, 2026-06-25)
+- A hail's `:id` is assigned at creation and NEVER changes; the filename is always `<hail-id>.edn`.
+- The single hail file MOVES between lifecycle dirs (pending -> inflight -> delivered/failed/undeliverable) as it's routed/processed.
+- The file CONTENT is enriched in place (routing adds resolved addressing: crew/session; the worker bumps :attempts, :next-attempt-at, etc.).
+- There is NO separate `delivery` id/record. A 'delivery' is just the hail at a later lifecycle stage.
+
+## Current (to change)
+- `isaac.hail.router`: `delivery-id` mints `delivery-N` via SequentialStrategy on `hail/deliveries`; `resolve-obligations` writes one `deliveries/delivery-M.edn` per obligation, wrapping the hail under `:hail`.
+- Lifecycle dirs: pending/ (hail-N), deliveries/ + inflight/ + delivered/ + failed/ (delivery-M), undeliverable/ (hail-N).
+- Delivery worker processes delivery-M files.
+
+## Proposed model (RECOMMENDED — confirm during scenario review)
+- Drop the `deliveries/.counter` + delivery-N id. The hail file itself flows through the dirs, keeping `hail-N`.
+- Router enriches the pending hail in place (adds resolved crew + session) and moves it to inflight/ (or undeliverable/ with :reason). No new id.
+- **reach :all fan-out (the one real tension): MODEL A** — the single `hail-N` file carries per-session delivery state: `:deliveries [{:session a :attempts N :status ...} {:session b ...}]`. It stays in inflight/ until all sessions resolve, then moves to delivered/ (all ok) or failed/ (any exhausted). The worker updates per-session entries in place; one stable file/id.
+  - (Alternatives considered: B = reach :all spawns child hails with new ids — reintroduces id churn; C = atomic all-or-nothing per hail — loses independent per-session retry. A chosen.)
+
+## Affected code
+- `isaac.hail.router`: remove delivery-id minting; enrich+move the hail file; resolve-obligations -> in-place addressing on the hail (+ :deliveries list for reach :all).
+- `isaac.hail.delivery_worker`: operate on hail-N files; per-session attempt/backoff/dead-letter within the :deliveries list; move file by aggregate state.
+- Dir layout: drop `deliveries/` (or repurpose); pending -> inflight -> delivered/failed; undeliverable unchanged (already hail-N).
+
+## Scenarios
+Review existing one at a time (router.feature 12, delivery.feature 8, spawn-session.feature 6; plus hail-threading/hail-get references to ids) — propose updates + any new. Recorded here as approved.
+
+## Acceptance (sketch — pending design lock)
+- A hail keeps its `hail-N` id and filename from creation through delivered/failed/undeliverable; the file moves dirs and content is enriched in place.
+- No `delivery-N` ids or `deliveries/` files exist.
+- reach :all tracks per-session delivery state within the one hail file (model A); independent retry preserved.
+- Undeliverable still keyed by hail-N (unchanged).
+
+## Notes
+Surfaced 2026-06-25 on zanebot: hail-6 became failed/delivery-3.edn; hail-2 stayed undeliverable/hail-2.edn — the rename inconsistency. Builds on the u5tj routing redesign (session-only resolution). Fan-out model A pending confirmation in scenario review.
