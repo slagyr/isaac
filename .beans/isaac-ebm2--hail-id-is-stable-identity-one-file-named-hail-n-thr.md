@@ -1,11 +1,11 @@
 ---
 # isaac-ebm2
 title: 'Hail id is stable identity: one file named hail-N through the whole lifecycle (drop separate delivery-N)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T23:10:04Z
+updated_at: 2026-06-25T23:20:04Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -134,10 +134,12 @@ isaac-hail @ `fc81f09`. Implemented the LOCKED MODEL; all DoD met.
 Decision (C) in kt1m drops the processing-crew override and makes :crew a frequency session-selector. So the @wip router.feature scenarios written here — S3 'hail processing-crew override beats session crew' and S7 'band processing-crew default beats session crew' — are SUPERSEDED: kt1m removes/reworks them. S8 (defaults to :main) stays valid. Implement ebm2 + kt1m together (crew is just the resolved session's crew -> default; no override).
 
 ## Verification (2026-06-25)
-- Current GitHub `isaac-hail` `main` has advanced to `5a9989d` (`isaac-kt1m`), but there is still no `ebm2` delivery on head.
-- The repo is still entirely on the old delivery-id model:
-  - [src/isaac/hail/router.clj](src/isaac/hail/router.clj) still mints `delivery-N` via `delivery-id`, writes `hail/deliveries/delivery-N.edn`, and wraps the original hail under `:hail`.
-  - [src/isaac/hail/delivery_worker.clj](src/isaac/hail/delivery_worker.clj) still consumes wrapped delivery records keyed by `delivery-N`.
-  - [features/router.feature](features/router.feature), [features/delivery.feature](features/delivery.feature), and [features/spawn.feature](features/spawn.feature) still assert `delivery-1` filenames and nested `hail.*` paths.
-  - There is no `broadcasts/` handling or `:source-hail` / `:children` shape on current head.
-- Acceptance therefore fails before runtime proof: the stable-id/broadcast-parent model described in the bean is not present in code or features.
+- Current GitHub `isaac-hail` `main` at `5a9989d` does include the stable-id/broadcast model. My earlier failure note was wrong because I inspected the stale local checkout instead of the fetched head.
+- Current-head proof is green:
+  - `bb spec spec/isaac/hail/router_spec.clj spec/isaac/hail/delivery_worker_spec.clj spec/isaac/tool/hail_get_spec.clj` -> `27 examples, 0 failures`
+  - `bb features features/router.feature features/delivery.feature features/hail-get.feature features/spawn-session.feature` -> `35 examples, 0 failures, 2 pre-existing pending hail-get directory-scan scenarios`
+- The delivered surfaces match the bean:
+  - no `delivery-N` minting in [src/isaac/hail/router.clj](src/isaac/hail/router.clj)
+  - reach-`one` deliveries keep the original `hail-N` id/filename
+  - reach-`all` writes a `broadcasts/` parent with `:children` plus child delivery hails with `:source-hail`
+  - [src/isaac/hail/store.clj](src/isaac/hail/store.clj) includes `broadcasts` in `hail-subdirs`, so `hail_get` walks it as a dumb read
