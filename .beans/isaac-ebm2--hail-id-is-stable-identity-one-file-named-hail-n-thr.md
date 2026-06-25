@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T22:12:08Z
+updated_at: 2026-06-25T22:14:11Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -81,3 +81,14 @@ Pattern: delivery files become hail-N (not delivery-N); content FLAT (delivery I
 - S7 exhausts max->failed/: REWRITE flat; dead-letter log :id hail-1.
 - S8 worker tick registered: KEEP.
 - NEW: a reach-all child delivery completes independently (delivered/hail-2 exists) AND broadcasts/hail-1 parent :children list is unchanged — locks child independence + no parent aggregation/update.
+
+## Feature review — hail-get.feature (approved 2026-06-25)
+Already mostly aligned (hail-N filenames, flat top-level fields, subdir walk, no index).
+- S1 fetch by id from any subdir: KEEP.
+- S2 dir scan no index: UPDATE — add 'broadcasts' to the scanned subdir list.
+- S3 templated-band rendered prompt/params: KEEP.
+- S4 returns full record: KEEP.
+- S5 dir scan for templated-band hails: UPDATE — add 'broadcasts'.
+- NEW: hail_get on a broadcast parent returns its :children id list WITHOUT aggregating (dumb read).
+- NEW: hail_get on a fan-out child returns its :source-hail back-ref.
+hail_get must walk broadcasts/ in addition to pending/deliveries/inflight/delivered/failed/undeliverable.
