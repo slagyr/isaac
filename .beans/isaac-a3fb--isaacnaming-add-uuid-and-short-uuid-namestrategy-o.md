@@ -4,10 +4,8 @@ title: 'isaac.naming: add :uuid and :short-uuid NameStrategy (optional prefix)'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-25T23:43:37Z
-updated_at: 2026-06-25T23:47:32Z
+updated_at: 2026-06-25T23:56:10Z
 ---
 
 Add two stateless id strategies to isaac.naming (isaac-foundation/src/isaac/naming.clj), alongside SequentialStrategy + AdjectiveNounStrategy. UUIDs are collision-free without a shared .counter, so concurrent/external producers can mint ids independently (no counter-file race) — enables distributed hail producers (cf isaac-ugx7).
@@ -47,3 +45,10 @@ isaac-foundation @ `f9a84f8`.
 - `spec/isaac/naming_spec.clj`: 9 new specs (satisfies, bare format via re-matches, optional + blank prefix, uniqueness/distinctness) per the bean examples.
 - Strategies only — switching hail to bare uuids is the deferred follow-up (not this bean).
 - Tests: `bb spec naming_spec` 23/0; `bb ci` spec 776/0, features 117/0.
+
+## Verification (2026-06-25)
+- Current GitHub `isaac-foundation` `main` has not advanced beyond `1685b76`; there is no `a3fb` commit or delivered diff on head.
+- The requested strategies are still absent on current head:
+  - [src/isaac/naming.clj](src/isaac/naming.clj) still defines only `SequentialStrategy` and `AdjectiveNounStrategy`.
+  - [spec/isaac/naming_spec.clj](spec/isaac/naming_spec.clj) has no `UuidStrategy` / `ShortUuidStrategy` coverage.
+- Acceptance therefore fails before runtime proof: the new stateless UUID strategies are not present in code or specs on the true current head.
