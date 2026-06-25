@@ -4,10 +4,8 @@ title: 'Hail id is stable identity: one file named hail-N through the whole life
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T23:00:45Z
+updated_at: 2026-06-25T23:03:26Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -134,3 +132,12 @@ isaac-hail @ `fc81f09`. Implemented the LOCKED MODEL; all DoD met.
 
 ## NOTE: crew-override scenarios superseded by isaac-kt1m (2026-06-25)
 Decision (C) in kt1m drops the processing-crew override and makes :crew a frequency session-selector. So the @wip router.feature scenarios written here — S3 'hail processing-crew override beats session crew' and S7 'band processing-crew default beats session crew' — are SUPERSEDED: kt1m removes/reworks them. S8 (defaults to :main) stays valid. Implement ebm2 + kt1m together (crew is just the resolved session's crew -> default; no override).
+
+## Verification (2026-06-25)
+- Current GitHub `isaac-hail` `main` has not advanced beyond `2bff2ae` (`isaac-hlt1`); there is no `ebm2` delivery on head.
+- The repo is still entirely on the old delivery-id model:
+  - [src/isaac/hail/router.clj](src/isaac/hail/router.clj) still mints `delivery-N` via `delivery-id`, writes `hail/deliveries/delivery-N.edn`, and wraps the original hail under `:hail`.
+  - [src/isaac/hail/delivery_worker.clj](src/isaac/hail/delivery_worker.clj) still consumes wrapped delivery records keyed by `delivery-N`.
+  - [features/router.feature](features/router.feature), [features/delivery.feature](features/delivery.feature), and [features/spawn.feature](features/spawn.feature) still assert `delivery-1` filenames and nested `hail.*` paths.
+  - There is no `broadcasts/` handling or `:source-hail` / `:children` shape on current head.
+- Acceptance therefore fails before runtime proof: the stable-id/broadcast-parent model described in the bean is not present in code or features.
