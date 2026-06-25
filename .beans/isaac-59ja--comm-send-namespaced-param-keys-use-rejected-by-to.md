@@ -1,13 +1,11 @@
 ---
 # isaac-59ja
 title: comm_send namespaced param keys use '/' — rejected by tool API (breaks every turn for crews with comm_send)
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-  - unverified
 created_at: 2026-06-25T14:52:05Z
-updated_at: 2026-06-25T15:00:00Z
+updated_at: 2026-06-25T14:59:49Z
 ---
 
 comm_send serializes namespaced send-schema fields to JSON property keys with a slash (e.g. `discord/target`). The LLM tool API requires property keys to match `^[a-zA-Z0-9_.-]{1,64}$` — `/` is NOT allowed — so the whole tools payload is rejected and the crew can take NO turns.
