@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T22:54:28Z
+updated_at: 2026-06-25T23:00:45Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -131,3 +131,6 @@ isaac-hail @ `fc81f09`. Implemented the LOCKED MODEL; all DoD met.
 - Wire types confirmed against the EDN step parser: `id`/`source-hail` = strings, `crew`/`session` = keywords, `children` = symbols.
 - Un-wip'd router/delivery/hail-get/spawn-session features; swept commands + hail-threading off delivery-N/nested `:hail`. Rewrote router_spec + delivery_worker_spec to flat model (+ a broadcast-tick spec).
 - **Tests:** `bb ci` -> spec 70/0, features 74/0. (2 pre-existing pending hail-get 'directory scan' scenarios — stubbed hlt1 steps, unrelated to ebm2, expected per the bean.)
+
+## NOTE: crew-override scenarios superseded by isaac-kt1m (2026-06-25)
+Decision (C) in kt1m drops the processing-crew override and makes :crew a frequency session-selector. So the @wip router.feature scenarios written here — S3 'hail processing-crew override beats session crew' and S7 'band processing-crew default beats session crew' — are SUPERSEDED: kt1m removes/reworks them. S8 (defaults to :main) stays valid. Implement ebm2 + kt1m together (crew is just the resolved session's crew -> default; no override).
