@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T22:09:56Z
+updated_at: 2026-06-25T22:12:08Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -69,3 +69,15 @@ Wire shape: child back-ref = :source-hail; parent :children = plain id list [hai
 - S9,S10,S11 (-> undeliverable): LIGHT -> undeliverable/hail-1 already correct; drop the 'deliveries/delivery-1 does not exist' line (or update to hail-N).
 - S12 (router tick registered): KEEP.
 Feature description rewrite: router enriches the pending hail in place (flat) and moves it to deliveries/ (reach :one) keeping its id; reach :all writes a broadcasts/ parent (with :children) + one deliveries/ child per session; undeliverable keyed by hail-N.
+
+## Feature review — delivery.feature (approved 2026-06-25)
+Pattern: delivery files become hail-N (not delivery-N); content FLAT (delivery IS the hail: hail.id->id, hail.prompt->prompt, hail.payload->payload; drop the separate :id delivery-N). Worker logic unchanged — a reach-:all child is just a delivery hail carrying :source-hail (rides along, no dispatch effect). Parent broadcasts/ record is NEVER touched/aggregated by the worker.
+- S1 bound->delivered: REWRITE flat, hail-1 files.
+- S2 unbound binds idle candidate: REWRITE flat + candidates (reach-one pool still applies).
+- S3 in-flight session->pending: REWRITE flat.
+- S4 at-capacity crew->pending: REWRITE flat.
+- S5 one-turn/session serializing: REWRITE two delivery hails hail-1/hail-2, flat.
+- S6 dispatch failure->attempts+backoff: REWRITE flat; inflight/hail-1.
+- S7 exhausts max->failed/: REWRITE flat; dead-letter log :id hail-1.
+- S8 worker tick registered: KEEP.
+- NEW: a reach-all child delivery completes independently (delivered/hail-2 exists) AND broadcasts/hail-1 parent :children list is unchanged — locks child independence + no parent aggregation/update.
