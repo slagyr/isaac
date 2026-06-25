@@ -1,11 +1,13 @@
 ---
 # isaac-fmc2
 title: sessions subcommands mishandle --help (set/unset/show/delete treat --help as a positional arg)
-status: todo
+status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-25T18:05:37Z
-updated_at: 2026-06-25T18:17:50Z
+updated_at: 2026-06-25T18:25:59Z
 ---
 
 `isaac sessions set --help` prints `invalid path: --help` instead of showing help. The sessions subcommands pass positional args straight through without checking for `--help`/`-h` first. Mirror the crew management-command pattern (isaac-3d8j) which handles per-subcommand help correctly.
@@ -44,3 +46,13 @@ Surfaced 2026-06-25 on zanebot: `sessions set --help` -> `invalid path: --help`.
 - sessions show --help   -> stdout contains "Usage: isaac sessions show <id>", exit 0
 - sessions delete --help -> stdout contains "Usage: isaac sessions delete <id>", exit 0
 Positive assertions (what it SHOULD show), per Micah — not 'does not contain invalid path'. Reuse existing steps (isaac is run with, the stdout contains, the exit code is). Mirrors crew 'crew show --help' (3d8j). The exact Usage strings are the contract the implementer must produce. DoD: implement per-subcommand --help handling, remove @wip, scenarios green.
+
+## Worker notes (work-1, 2026-06-25)
+
+isaac-agent @ `fd559dc`.
+
+- `src/isaac/session/cli.clj`: added `help-requested?` (--help/-h scan) + per-subcommand help-text (`subcommand-help-text`/`print-subcommand-help!` + set/unset/show/delete usage consts). `run-fn` short-circuits to that subcommand's help (exit 0) before touching positionals, for set/unset/show/delete.
+- Chose a --help scan over crew's parse-with-arguments so `set` values that start with `-` (e.g. negative numbers) still pass through positionally (parse-opts would reject them). Same per-subcommand-help contract as crew (3d8j), safer for the free value arg.
+- Exact Usage strings produced: 'Usage: isaac sessions set <id>.<path> <value>' / 'unset <id>.<path>' / 'show <id>' / 'delete <id>'.
+- Un-wip'd the 4 sessions <sub> --help scenarios in features/session/cli.feature (left the unrelated in-flight @wip scenarios alone).
+- Tests: `clojure -M:features features/session/cli.feature` 17/0; `bb ci` spec 1077/0, features 540/0.
