@@ -1,11 +1,13 @@
 ---
 # isaac-ebm2
 title: 'Hail id is stable identity: one file named hail-N through the whole lifecycle (drop separate delivery-N)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-25T19:34:09Z
-updated_at: 2026-06-25T22:27:04Z
+updated_at: 2026-06-25T22:54:28Z
 ---
 
 An id is identity — it must not change once minted, and the filename must equal the id. Today the router TRANSFORMS a `hail-N` into a brand-new `delivery-M` record (new id, new file), so the same logical hail appears under different filenames as it's processed. That's wrong.
@@ -118,3 +120,14 @@ Committed to isaac-hail (3849b33 base): router.feature, delivery.feature, hail-g
 Verification: `bb features` over the 4 files = 5 non-wip examples 0 failures; with @wip stripped = 34 examples parse, 18 failures + 2 pending (expected — behavior not implemented). Table syntax valid across all 34 scenarios. 29 @wip tags total.
 
 Remaining DoD (implementation): build the router/worker/hail_get changes (flat enrich-in-place; broadcasts/ parent + child fan-out with :source-hail; hail_get walks broadcasts/ + dumb read), drop deliveries/.counter + delivery-N ids, then remove @wip and green. Plus the grep-sweep of the 7 other hail feature files for delivery-/nested :hail references.
+
+## Worker notes (work-1, 2026-06-25)
+
+isaac-hail @ `fc81f09`. Implemented the LOCKED MODEL; all DoD met.
+
+- **Router** (`src/isaac/hail/router.clj`): `resolve-obligations` now returns flat `{:delivery hail}` / `{:broadcast {:parent :children}}` / `{:undeliverable hail}` — no `:hail` wrapper. reach :one enriches in place -> deliveries/<hail-id>.edn (same id); reach :all writes a broadcasts/<hail-id>.edn parent with `:children [hail-N ...]` (symbols, per the EDN-step parse) + one deliveries/<child-id>.edn per session (own id from `hail/.counter`, `:source-hail`, shared `:thread-id`, sorted by session); routing failures -> undeliverable + `:reason`. Dropped `delivery-id`/`deliveries/.counter`.
+- **Worker** (`delivery_worker.clj`): unwrapped `:hail` everywhere (delivery IS the hail). Binding to an existing session resolves crew from the SESSION (feature header: 'in that crew's context') by ignoring the delivery's routed default crew. reach-:all child rides along via `:source-hail`; parent never touched.
+- **Store** (`hail/store.clj`): added `broadcasts` to `hail-subdirs` -> `hail_get` walks it (dumb read) and `max-hail-seq` counts broadcast ids. **queue/next-id** made public for fan-out.
+- Wire types confirmed against the EDN step parser: `id`/`source-hail` = strings, `crew`/`session` = keywords, `children` = symbols.
+- Un-wip'd router/delivery/hail-get/spawn-session features; swept commands + hail-threading off delivery-N/nested `:hail`. Rewrote router_spec + delivery_worker_spec to flat model (+ a broadcast-tick spec).
+- **Tests:** `bb ci` -> spec 70/0, features 74/0. (2 pre-existing pending hail-get 'directory scan' scenarios — stubbed hlt1 steps, unrelated to ebm2, expected per the bean.)
