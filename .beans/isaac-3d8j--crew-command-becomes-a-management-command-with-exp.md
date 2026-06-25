@@ -1,11 +1,13 @@
 ---
 # isaac-3d8j
 title: crew command becomes a management command with explicit list and richer show output
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+  - unverified
 created_at: 2026-06-25T15:30:02Z
-updated_at: 2026-06-25T15:30:02Z
+updated_at: 2026-06-25T16:00:00Z
 ---
 
 `isaac crew` currently mixes two different shapes: bare `crew` acts like a listing command, while `show` hangs off the side with list-style rendering, truncated soul text, and no subcommand help. The zanebot session on 2026-06-25 surfaced the gaps directly:
@@ -87,3 +89,8 @@ Definition of done:
 - remove `@wip` from the scenarios above
 - `isaac crew` help/list/show behavior matches the locked scenarios
 - `crew show --edn` / `--json` expose full `:soul` and no presentation-only fields
+
+## Implementation (work-3)
+
+- **isaac-agent** `a4bad77`: `crew/cli.clj` routes bare `crew` → management help, `crew list` → table listing, `crew show` → key/value detail; show machine output uses `show-payload` (`:soul`, no `:soul-source`/`:tags-text`). Manifest updated; `@wip` removed from all 17 scenarios.
+- `bb spec spec/isaac/crew/cli_spec.clj` and `bb features features/crew/cli.feature features/tagging/crew_tags.feature` green (24 scenarios).
