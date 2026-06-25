@@ -1,11 +1,11 @@
 ---
 # isaac-ckt7
 title: Anthropic messages API emits invalid empty text content blocks
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-06-25T22:31:13Z
-updated_at: 2026-06-25T22:56:47Z
+updated_at: 2026-06-25T23:07:32Z
 ---
 
 ## Context
@@ -61,9 +61,13 @@ Harden the anthropic path in builder.clj:
 Run `bb features` in isaac-agent and relevant specs.
 
 ## Verification (2026-06-25)
-- Current GitHub `isaac-agent` `main` has not advanced beyond `fd559dc`; there is no `ckt7` commit or delivered diff on head.
-- The bug still reproduces on current code. Direct prompt-builder repro:
-  - `filter-messages-anthropic [{:role "assistant" :content ""}] nil` => `{:content [{:type "text" :text ""}]}`
-  - `filter-messages-anthropic [{:role "toolResult" :content ""}] nil` => `{:content [{:type "text" :text ""}]}`
-  - private `text-blocks \"\"` => `[{:type \"text\" :text \"\"}]`
-- The root cause is still present in [src/isaac/llm/prompt/builder.clj](src/isaac/llm/prompt/builder.clj): `text-blocks` keeps empty strings, `filter-messages-anthropic` uses `when text` for tool results, and user/assistant blank strings still produce empty text blocks.
+- Current GitHub `isaac-agent` `main` now includes `isaac-ckt7` at `6a2e55e`.
+- Focused proofs are green on that head:
+  - `bb spec spec/isaac/llm/prompt/builder_spec.clj spec/isaac/session/compaction_spec.clj spec/isaac/llm/messages_spec.clj` -> `106 examples, 0 failures`
+  - `bb features features/llm/api/messages/api.feature` -> `8 examples, 0 failures`
+  - `bb ci` -> `1083` spec examples, `540` feature examples, `0` failures
+- Direct prompt-builder repro on the delivered head confirms the bug is gone:
+  - `filter-messages-anthropic [{:role "assistant" :content ""}] nil` => `[]`
+  - `filter-messages-anthropic [{:role "toolResult" :content ""}] nil` => `[]`
+  - private `text-blocks ""` => `nil`
+  - `non-blank-summary "  "` => `"Session history compacted."`
