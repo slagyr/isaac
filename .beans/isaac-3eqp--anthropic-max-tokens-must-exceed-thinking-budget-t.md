@@ -38,30 +38,96 @@ Branch the messages adapter on the existing per-model `:think-mode` field (same 
   - 10  -> `max`
 - `max_tokens` = a plain hard cap (NO budget arithmetic). Default **16000** (Anthropic's recurring example value); per-model overridable. (xhigh as an opt-in for capable models can be a later enhancement.)
 
-### `:think-mode :budget` (legacy: Sonnet 4.5 / Opus 4.5 etc. — adaptive NOT supported)
-- Keep `:thinking {:type "enabled" :budget_tokens N}`; `budget_tokens = round(effort/10 * thinking-budget-max)` (per-model `:thinking-budget-max`, default 32000); effort 0 omits thinking.
-- **Clamp budget_tokens to Anthropic's 1024 floor** when effort > 0.
-- **Here the max_tokens fix still applies:** `max_tokens = budget_tokens + response_room` so `max_tokens > budget_tokens` (response_room default ~8192; clamp to model output ceiling). Existing api.feature budget scenarios stay green.
-
 ### `:think-mode :off`
-- No thinking block; `max_tokens` = the flat cap default.
+- No thinking block ever (regardless of effort); `max_tokens` = the flat cap default.
+- **Use for non-adaptive Anthropic models.** Adaptive is supported only on Sonnet 4.6 / Opus 4.6+ (and Fable/Mythos). Haiku and 4.5-era models do NOT support adaptive and would 400 on `type "adaptive"` — set `:think-mode :off` for them.
+
+### NO legacy budget path (Micah, 2026-06-25)
+The deprecated `:thinking {:type "enabled" :budget_tokens N}` path is NOT implemented. No `budget_tokens`, no `thinking-budget-max` use, no max_tokens-vs-budget arithmetic. The adapter does adaptive-only. The file's EXISTING budget_tokens scenarios (effort 1->3200 etc.) are DELETED (they test the removed path), replaced by the adaptive scenarios below.
 
 ### Config / defaults
-- Default `:think-mode` for the Anthropic provider = `:adaptive` (all current Anthropic models support it; fixes the live sonnet-4-6 breakage). Legacy 4.5 models must set `:think-mode :budget` in their model config.
-- zanebot: claude.edn (sonnet-4-6) uses adaptive (default) — no per-model config needed.
+- Default `:think-mode` for the Anthropic provider = `:adaptive`.
+- zanebot: claude.edn (sonnet-4-6) and opus.edn (opus-4-6) use adaptive (default). **haiku.edn (claude-haiku-4-5) must set `:think-mode :off`** (haiku is not adaptive-capable) — part of this fix's config changes.
 
-Rationale: matches Anthropic's recommended/forward path, eliminates the budget-vs-max_tokens bug by construction for the live models, and maps the 0-10 knob to native categorical effort (consistent with how the OpenAI adapter already maps low/med/high). opencode/qwen-code hit the same deprecated-path bug (Sources).
+Rationale: matches Anthropic's recommended/forward path, eliminates the budget-vs-max_tokens bug by construction, and maps the 0-10 knob to native categorical effort (consistent with the OpenAI adapter's low/med/high). opencode/qwen-code hit the same deprecated-path bug (Sources).
 
-## Scenarios
-Under review with Micah (one at a time) — to land in `features/llm/api/messages/api.feature` (@wip), reusing existing steps (`the last outbound HTTP request matches:`, `the last provider request does not contain path`, config/session/user-sends — NO new steps). Recorded here as each is approved.
+## Scenarios (approved 2026-06-25, Micah)
+Land in `features/llm/api/messages/api.feature` (@wip), reusing existing steps (`the last outbound HTTP request matches:`, `the last provider request does not contain path`, `the isaac EDN file ... exists with:`, `the user sends ... on session` — NO new steps). DELETE the file's existing budget_tokens scenarios (removed path).
+
+```gherkin
+@wip
+Scenario: adaptive thinking sends type adaptive and an effort level, no budget_tokens
+  Given the isaac EDN file "config/models/grover.edn" exists with:
+    | path       | value    |
+    | model      | echo     |
+    | provider   | grover   |
+    | think-mode | adaptive |
+  And the isaac EDN file "config/crew/main.edn" exists with:
+    | path   | value  |
+    | model  | grover |
+    | effort | 7      |
+  When the user sends "hi" on session "thinking"
+  Then the last outbound HTTP request matches:
+    | path                      | value    |
+    | body.thinking.type        | adaptive |
+    | body.output_config.effort | high     |
+    | body.max_tokens           | 16000    |
+  And the last provider request does not contain path "body.thinking.budget_tokens"
+
+@wip
+Scenario: effort 0 under adaptive sends no thinking block
+  Given the isaac EDN file "config/models/grover.edn" exists with:
+    | path       | value    |
+    | model      | echo     |
+    | provider   | grover   |
+    | think-mode | adaptive |
+  And the isaac EDN file "config/crew/main.edn" exists with:
+    | path   | value  |
+    | model  | grover |
+    | effort | 0      |
+  When the user sends "hi" on session "thinking"
+  Then the last provider request does not contain path "body.thinking"
+  And the last provider request does not contain path "body.output_config"
+  And the last outbound HTTP request matches:
+    | path            | value |
+    | body.max_tokens | 16000 |
+
+@wip
+Scenario Outline: effort maps to the Anthropic adaptive effort level
+  Given the isaac EDN file "config/models/grover.edn" exists with:
+    | path       | value    |
+    | model      | echo     |
+    | provider   | grover   |
+    | think-mode | adaptive |
+  And the isaac EDN file "config/crew/main.edn" exists with:
+    | path   | value    |
+    | model  | grover   |
+    | effort | <effort> |
+  When the user sends "hi" on session "thinking"
+  Then the last outbound HTTP request matches:
+    | path                      | value   |
+    | body.output_config.effort | <level> |
+
+  Examples:
+    | effort | level  |
+    | 1      | low    |
+    | 3      | low    |
+    | 4      | medium |
+    | 6      | medium |
+    | 7      | high   |
+    | 9      | high   |
+    | 10     | max    |
+```
+(Legacy/budget scenario dropped — no legacy support. Reconcile the Given rows with the file's existing background when writing.)
 
 ## Acceptance
 - Sonnet 4.6 (adaptive default): request body has `thinking.type "adaptive"` + `output_config.effort` mapped from 0-10; NO `budget_tokens`; `max_tokens` is a flat cap (default 16000). No `max_tokens must be > budget_tokens` 400.
 - A fresh claude (sonnet-4-6) session at default effort takes a turn successfully end-to-end (the live regression).
-- effort 0 -> no thinking block (any mode).
-- Legacy `:think-mode :budget` model: `type "enabled"` + `budget_tokens` (clamped >= 1024) AND `max_tokens > budget_tokens` (= budget + response_room). Existing budget api.feature scenarios stay green.
+- effort 0 -> no thinking block.
+- NO budget_tokens anywhere; NO legacy `:enabled` path. `:think-mode :off` (e.g. haiku) sends no thinking, flat max_tokens.
 - 0-10 -> level mapping per spec (1-3 low, 4-6 medium, 7-9 high, 10 max; xhigh skipped).
-- api.feature scenarios added/updated (@wip) and green; effort.feature unaffected.
+- haiku.edn sets `:think-mode :off`; sonnet-4-6/opus-4-6 use adaptive default.
+- Existing budget_tokens api.feature scenarios DELETED; adaptive scenarios added (@wip) and green; effort.feature unaffected.
 
 ## Notes
 Surfaced 2026-06-25 on zanebot: fresh sonnet-4-6 session failed every turn with `invalid_request_error: max_tokens must be greater than thinking.budget_tokens`. Micah declined the effort-0 config mitigation. Research (2026-06-25) found budget_tokens is deprecated on 4.6 -> adaptive thinking is the correct fix (option A). default-effort 7 being aggressive is a SEPARATE issue (not this bean).
