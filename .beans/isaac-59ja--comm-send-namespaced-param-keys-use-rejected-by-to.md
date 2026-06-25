@@ -1,11 +1,13 @@
 ---
 # isaac-59ja
 title: comm_send namespaced param keys use '/' — rejected by tool API (breaks every turn for crews with comm_send)
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+  - unverified
 created_at: 2026-06-25T14:52:05Z
-updated_at: 2026-06-25T14:52:05Z
+updated_at: 2026-06-25T15:00:00Z
 ---
 
 comm_send serializes namespaced send-schema fields to JSON property keys with a slash (e.g. `discord/target`). The LLM tool API requires property keys to match `^[a-zA-Z0-9_.-]{1,64}$` — `/` is NOT allowed — so the whole tools payload is rejected and the crew can take NO turns.
@@ -48,3 +50,8 @@ After fix + deploy: re-add :comm_send to the crews it was pulled from (main/marv
 
 ## Notes
 Surfaced 2026-06-25 testing comm_send live. Follow-up to isaac-2s0b (namespacing) + isaac-97bf (discord/imessage send-schema). Lesson for PLANNING-PARTNER.md: a scenario can assert the intended shape and still be wrong if it never validates against the real external contract (here, the tool-API property-key pattern).
+
+## Implementation (work-3)
+
+- **isaac-agent** `7df9875`: `field-json-key` uses `.` separator (`discord.target` in tool schema/args; `:discord/target` unchanged in delivery records). Feature + spec updated; added `api-safe-property-key-re` regression guard in `comm_send_spec.clj`.
+- `bb spec spec/isaac/tool/comm_send_spec.clj` and `bb features features/tool/comm_send.feature` green.
