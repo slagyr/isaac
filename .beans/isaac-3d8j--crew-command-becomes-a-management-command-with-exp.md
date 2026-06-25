@@ -1,13 +1,11 @@
 ---
 # isaac-3d8j
 title: crew command becomes a management command with explicit list and richer show output
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-  - unverified
 created_at: 2026-06-25T15:30:02Z
-updated_at: 2026-06-25T16:00:00Z
+updated_at: 2026-06-25T15:53:58Z
 ---
 
 `isaac crew` currently mixes two different shapes: bare `crew` acts like a listing command, while `show` hangs off the side with list-style rendering, truncated soul text, and no subcommand help. The zanebot session on 2026-06-25 surfaced the gaps directly:
