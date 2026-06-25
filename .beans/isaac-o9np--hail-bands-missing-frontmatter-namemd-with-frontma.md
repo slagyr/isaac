@@ -3,8 +3,9 @@
 title: Hail bands missing :frontmatter? — <name>.md with frontmatter doesn't load (and warns dangling)
 status: draft
 type: bug
+priority: normal
 created_at: 2026-06-25T17:10:34Z
-updated_at: 2026-06-25T17:10:34Z
+updated_at: 2026-06-25T17:12:43Z
 ---
 
 Hail band config supports a companion `<name>.md` (prompt body) but NOT a self-contained `<name>.md` with YAML frontmatter as the whole band entity. So bands authored as frontmatter-md don't load, and `config validate` flags them `dangling: no matching hail entry`.
@@ -34,3 +35,9 @@ Under review with Micah (one at a time) — to land in isaac-hail `features/band
 
 ## Notes
 Surfaced 2026-06-25 on zanebot `isaac config validate`. Foundation-mechanism is fine (crew/cron use it); the bug is hail not opting into frontmatter.
+
+## ALREADY IN FLIGHT (observed 2026-06-25)
+The fix is being implemented concurrently by another agent — UNCOMMITTED WIP in the local isaac-hail checkout:
+- `src/isaac-manifest.edn`: `+   :frontmatter? true,` added to the hail schema descriptor (exactly the diagnosed fix).
+- `features/bands.feature`: description updated to '(or single <name>.md with YAML frontmatter + prompt body, like crews)'.
+So: do NOT write scenarios here or touch the hail repo — it would collide with that WIP. This bean documents the bug; let the in-flight work complete it (and add its own bands.feature scenarios). Scenario drafting paused for this reason.
