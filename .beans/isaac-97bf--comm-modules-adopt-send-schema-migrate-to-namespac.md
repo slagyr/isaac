@@ -1,13 +1,11 @@
 ---
 # isaac-97bf
 title: Comm modules adopt :send-schema + migrate to namespaced record keys
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-  - unverified
 created_at: 2026-06-23T22:04:23Z
-updated_at: 2026-06-25T14:25:00Z
+updated_at: 2026-06-25T14:25:08Z
 blocked_by:
     - isaac-2s0b
 ---
