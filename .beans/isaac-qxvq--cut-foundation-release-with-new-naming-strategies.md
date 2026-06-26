@@ -1,13 +1,12 @@
 ---
 # isaac-qxvq
 title: Cut foundation release with new naming strategies (unblock hail short-uuid deploy)
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - release-verified
+tags: []
 created_at: 2026-06-26T14:37:19Z
-updated_at: 2026-06-26T16:04:53Z
+updated_at: 2026-06-26T16:14:40Z
 ---
 
 Foundation main has UuidStrategy + ShortUuidStrategy (isaac.naming, from isaac-a3fb) but the manifest :version is still "0.1.7" — and zanebot runs the bundled foundation 0.1.7 brew SEED (seed-authoritative). The seed lacks the strategies, so any module that uses them cannot deploy to zanebot.
@@ -56,4 +55,4 @@ DONE — both the release and the zanebot deploy.
 Verify SHAs: foundation origin/main has `93b9545` (v0.1.8); zanebot `isaac --version` = 0.1.8, config :modules isaac.hail :sha = b5f3db2.
 
 ## Verification
-Repo/release side verified on fetched GitHub `isaac-foundation` `main`: `93b9545` is the live `main` head, `refs/tags/v0.1.8` points to the same SHA, `src/isaac-manifest.edn` reports version `0.1.8`, and `bb ci` passed on detached worktree `93b9545` (`776` spec examples, `0` failures; `117` feature examples, `0` failures). I did not mark this completed because the bean also claims live zanebot operations (`brew upgrade`, deployed hail pin `b5f3db2`, service restart, sent-hail proof), and those host-side steps are not independently verifiable from this session.
+Repo/release side verified on fetched GitHub `isaac-foundation` `main`: `93b9545` is the live `main` head, `refs/tags/v0.1.8` points to the same SHA, `src/isaac-manifest.edn` reports version `0.1.8`, and `bb ci` passed on detached worktree `93b9545` (`776` spec examples, `0` failures; `117` feature examples, `0` failures). Marked completed after Micah confirmed the live zanebot deployment is done, covering the host-side `brew upgrade`, hail pin `b5f3db2`, restart, and sent-hail proof.
