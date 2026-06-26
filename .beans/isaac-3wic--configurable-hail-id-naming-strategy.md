@@ -1,11 +1,13 @@
 ---
 # isaac-3wic
 title: Configurable hail id naming strategy
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T03:33:53Z
-updated_at: 2026-06-26T03:33:56Z
+updated_at: 2026-06-26T04:24:20Z
 blocked_by:
     - isaac-hoaq
 ---
