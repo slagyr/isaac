@@ -5,7 +5,9 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-06-26T21:45:52Z
-updated_at: 2026-06-26T21:45:52Z
+updated_at: 2026-06-26T21:46:03Z
+blocking:
+    - isaac-c58s
 ---
 
 The hail feature suite is BROKEN on main: `clojure -M:features` in isaac-hail dies with
