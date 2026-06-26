@@ -1,13 +1,13 @@
 ---
 # isaac-buh6
 title: Cron/proactive sessions can deliver to a comm target (retire null-comm + osascript)
-status: in-progress
+status: unverified
 type: feature
 priority: high
 tags:
     - unverified
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-21T21:45:27Z
+updated_at: 2026-06-26T20:14:12Z
 ---
 
 A cron job runs its prompt and DISCARDS the output — `isaac.cron.service` wires
@@ -78,14 +78,12 @@ Re-themed to the Marigold (spaceship) world and committed `@wip`:
   `:comm-exists?` cron-schema validation + a unit spec mirroring `:crew-exists?`.
 
 ## Implementation tasks (DoD: remove `@wip`, green)
-- [ ] Cron schema: `:comm` + `:to` fields; `:comm-exists?` validation.
-- [ ] Cron service: when `:comm` set, enqueue a delivery to that comm + `:to`
-      (the async path — see ve2a) instead of `null-comm`. No target = discard.
-- [ ] New step `the delivery queue is empty` (negative assertion on the queue).
-- [ ] Parameterize `with-stub-comm` (isaac-agent `worker_steps.clj`) so a
-      scenario can register/target a named ship comm (`longwave`/`skybeam`/
-      `logbook`) rather than the hardcoded `"stub"`.
-- [ ] `:comm-exists?` spec (cron) for the undefined-comm case.
+- [x] Cron schema: `:comm` + `:to` fields; `[:registered-in? :isaac.server/comm [:comms]]` validation.
+- [x] Cron service: when `:comm` set, enqueue a delivery to that comm + `:to`
+      (async path via delivery queue). No target = discard (null-comm dispatch).
+- [x] New step `the delivery queue is empty` (already in isaac-agent worker_steps).
+- [x] Parameterize `with-stub-comm` (already supports longwave/skybeam/logbook).
+- [x] `:registered-in?` spec (cron schema_spec) for the undefined-comm case.
 
 ## Acceptance (runnable)
 - `bb features features/delivery.feature` in `isaac-cron` — green (after `@wip`
