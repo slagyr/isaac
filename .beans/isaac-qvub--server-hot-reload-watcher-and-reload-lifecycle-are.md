@@ -4,8 +4,10 @@ title: Server hot-reload watcher and reload lifecycle are visible in logs
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T16:24:30Z
-updated_at: 2026-06-26T17:16:26Z
+updated_at: 2026-06-26T17:22:03Z
 ---
 
 ## Context
