@@ -1,13 +1,12 @@
 ---
 # isaac-evws
 title: Hail-driven worker bootstrap/docs gap surfaced by orchestration smoke test
-status: in-progress
+status: completed
 type: task
 priority: low
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T16:39:58Z
-updated_at: 2026-06-26T20:15:00Z
+updated_at: 2026-06-26T20:10:04Z
 ---
 
 ## Summary
@@ -70,3 +69,18 @@ Documented the bootstrap path surfaced by `isaac-orc1`:
 
 No product code changes (docs-only bean). Re-test `isaac-orc1` after deploy to
 confirm a hail worker can follow the checklist without manual discovery.
+
+## Verification
+
+Verified on current `isaac` head:
+
+- `isaac/AGENTS.md` registers `hail-bean-work`
+- `isaac/.toolbox/commands/work.md` contains the hail bootstrap and
+  process-test sections
+- `isaac/.toolbox/skills/hail-bean-work/SKILL.md` contains the repo discovery,
+  `list_skills` fallback, role-home vs beans-repo layout, and process-test
+  checklist
+- `../work-3/AGENTS.md` contains the hail-worker pointer back to the shared
+  boot doc and skill
+
+Docs-only bean; no product tests required for close-out.

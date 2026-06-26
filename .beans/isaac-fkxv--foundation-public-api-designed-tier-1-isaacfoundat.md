@@ -1,13 +1,12 @@
 ---
 # isaac-fkxv
 title: 'Foundation public API: designed Tier-1 + isaac.foundation facade'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-14T02:47:09Z
-updated_at: 2026-06-14T03:11:47Z
+updated_at: 2026-06-26T20:10:04Z
 parent: isaac-brth
 ---
 
