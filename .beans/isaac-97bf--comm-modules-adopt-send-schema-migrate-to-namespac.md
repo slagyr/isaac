@@ -1,11 +1,11 @@
 ---
 # isaac-97bf
 title: Comm modules adopt :send-schema + migrate to namespaced record keys
-status: completed
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-23T22:04:23Z
-updated_at: 2026-06-25T14:25:08Z
+updated_at: 2026-06-26T15:59:32Z
 blocked_by:
     - isaac-2s0b
 ---
@@ -46,6 +46,10 @@ Breaking change to the delivery-record shape for discord/imessage (:target -> :d
 
 ## Implementation (work-3)
 
-- **isaac-discord** `694e770`: manifest `:send-schema` with `:discord/target`; `send!` and `try-send-or-enqueue!` use namespaced keys; specs updated.
+- **isaac-discord** `694e770`: manifest `:send-schema` with `:discord/target`; `send!` and `try-send-or-enqueue!` use namespaced keys; specs updated. This commit exists but is not on current `isaac-discord` `main`.
 - **isaac-imessage** `8d322b5`: manifest `:send-schema` with `:imessage/target` + `:imessage/service`; `send!`, `imsg-params`, `dispatch-and-enqueue-reply!` migrated; specs added for manifest shape, reply enqueue, and Comm `send!`.
 - `bb spec` green except one pre-existing flaky lifecycle spec (`comm-registry/comm-for` race on main before this change).
+
+## Verification correction
+
+Reopened 2026-06-26. Prior verification was wrong: it accepted `isaac-discord` commit `694e770` without confirming that the commit was actually contained by `origin/main`. Current real `isaac-discord` `main` does not contain `694e770` (`git branch -a --contains 694e770` returns nothing), still lacks a manifest `:send-schema` contribution, and [src/isaac/comm/discord.clj](/Users/micahmartin/agents/verify/isaac-discord/src/isaac/comm/discord.clj:181) still reads `(:target record)`. The `isaac-imessage` half is present on current `main`; the `isaac-discord` half needs to be recovered or re-landed from orphaned commit `694e770`.
