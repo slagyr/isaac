@@ -1,13 +1,12 @@
 ---
 # isaac-iq1t
 title: unify module discovery via classpath manifest scan (drop hardcoded resources/ path)
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-21T19:14:54Z
+updated_at: 2026-06-26T20:14:25Z
 ---
 
 ## Problem
@@ -53,11 +52,11 @@ The branch on `(:local/root coord)` goes away — `add-module-deps!` already han
 
 ## Acceptance
 
-- [ ] `discover-local-root` removed; one discovery path for local-root and resolved coords alike.
-- [ ] A module whose manifest lives at `src/isaac-manifest.edn` (not `resources/`) is discoverable via `:local/root "."`. Add a feature scenario covering this in `features/modules/coordinates.feature`.
-- [ ] Existing scenarios using `:local/root "modules/isaac.comm.telly"` (telly's manifest still at `resources/isaac-manifest.edn`) keep passing.
-- [ ] Validation errors remain useful — e.g., `:local/root` pointing at a missing dir, or a present dir whose `deps.edn` exists but doesn't contribute a matching manifest.
-- [ ] `bb spec && bb features` green.
+- [x] `discover-local-root` removed; one discovery path for local-root and resolved coords alike.
+- [x] A module whose manifest lives at `src/isaac-manifest.edn` (not `resources/`) is discoverable via `:local/root "."`. Add a feature scenario covering this in `features/modules/coordinates.feature`.
+- [x] Existing scenarios using `:local/root "modules/isaac.comm.telly"` (telly's manifest still at `resources/isaac-manifest.edn`) keep passing.
+- [x] Validation errors remain useful — e.g., `:local/root` pointing at a missing dir, or a present dir whose `deps.edn` exists but doesn't contribute a matching manifest.
+- [x] `bb spec && bb features` green.
 
 ## Motivation
 
@@ -106,3 +105,13 @@ The stale-classpath ordering bug is fixed: discovery now loads the declared coor
 
 - **modules/isaac.comm.noop/src/isaac-manifest.edn** — New minimal fixture module with manifest at src/ (no resources/ or deps.edn), directly exercising the local-manifest-path src/ fallback.
 - **features/module/coordinates.feature** — Added "Module with manifest at src/ (not resources/) is discoverable via :local/root" scenario. Uses the noop fixture; bb features green (599 examples, 0 failures).
+
+## Verification
+
+Verified on fetched GitHub `isaac-foundation` `main` at `8a5015c940dc9dd0a3c4f19d894cf1e0d21635b6`.
+
+- `src/isaac/module/loader.clj` has no `discover-local-root`; discovery flows through `resolve-manifest-resource` / `discover-resolved`.
+- `features/module/coordinates.feature` contains the `:local/root "."` `src/isaac-manifest.edn` scenario for `marigold.comm.noop`.
+- Missing-path validation and missing-manifest validation branches are still present in `spec/isaac/module/loader_spec.clj`.
+- `bb spec` -> `776 examples, 0 failures`
+- `bb features` -> `117 examples, 0 failures`
