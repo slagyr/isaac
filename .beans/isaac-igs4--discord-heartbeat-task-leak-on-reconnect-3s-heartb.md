@@ -1,11 +1,13 @@
 ---
 # isaac-igs4
 title: Discord heartbeat-task leak on reconnect (3s heartbeats + 'Send pending' IllegalStateException)
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-26T14:18:22Z
-updated_at: 2026-06-26T14:18:22Z
+updated_at: 2026-06-26T14:23:32Z
 ---
 
 Regression from isaac-dcr1 (reconnect after 1006), deployed in isaac-discord 2b6842e. Observed live on zanebot: discord heartbeats every ~3s (should be ~41s) and a recurring `java.lang.IllegalStateException: "Send pending"` logged as :scheduler/handler-error (scheduler/runtime.clj:294).
