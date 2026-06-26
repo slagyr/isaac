@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-06-26T04:14:17Z
-updated_at: 2026-06-26T16:21:55Z
+updated_at: 2026-06-26T17:06:35Z
 ---
 
 DESIGN (exploratory, 2026-06-25). Session SELECTION and PARAMETER OVERRIDE are a cross-cutting concern shared by hail, the prompt command, ACP, and chat. Each rolls its own. Unify into one mechanism.
@@ -78,3 +78,15 @@ The shared selection/override LOGIC (selector type, resolver, override applicati
   hail-only extras: --band (named/saved selector), --reach all (fan-out), --payload + async.
 
 The shared `:select` map every tool builds: `{:session [...] :session-tags [...] :crew X :reach :one :create (:none|:spawn|:new)}` — hail serializes it as its :frequency; the others hand it to the agent-side resolver and attach to the one result.
+
+
+## REVISION (2026-06-26): create policy is a single `:create` attribute (not --spawn/--new switches)
+spawn/new/neither are mutually exclusive, so model them as ONE enum, not two booleans (two booleans can be set to a contradictory pair).
+- Attribute: **`:create`** with values **`:never` | `:if-missing` | `:always`**:
+  - `:never`      — match an existing session only; never create (no match -> error for sync tools / undeliverable for hail). (the former "neither")
+  - `:if-missing` — match, or create if none (get-or-create). (the former "spawn"; hail's :spawn-session migrates to this)
+  - `:always`     — always create a fresh session, ignoring any match. (the former "new")
+- CLI: a single `--create never|if-missing|always` (NOT --spawn/--new switches).
+- **prompt default = `:create :if-missing`** (when not conflicting with --session). hail default = `:never` unless the band/flag says otherwise.
+- `--session` (exact address) remains mutually exclusive with `--create` (and the describe flags). When creating with describe flags, those attrs become the new session's identity.
+- Reads as a sentence: "create: if-missing" / "create: never" / "create: always". Supersedes the earlier --spawn/--new section.
