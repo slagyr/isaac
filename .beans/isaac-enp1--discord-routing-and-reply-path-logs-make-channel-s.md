@@ -1,10 +1,13 @@
 ---
 # isaac-enp1
 title: Discord routing and reply-path logs make channel-session resolution diagnosable
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T16:24:37Z
-updated_at: 2026-06-26T16:59:10Z
+updated_at: 2026-06-26T17:49:55Z
 ---
 
 ## Context
