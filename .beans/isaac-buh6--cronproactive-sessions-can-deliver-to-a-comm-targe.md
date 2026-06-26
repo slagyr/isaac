@@ -1,13 +1,13 @@
 ---
 # isaac-buh6
 title: Cron/proactive sessions can deliver to a comm target (retire null-comm + osascript)
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
-    - unverified
+    []
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-26T20:46:51Z
+updated_at: 2026-06-26T20:56:04Z
 ---
 
 A cron job runs its prompt and DISCARDS the output — `isaac.cron.service` wires
@@ -93,24 +93,16 @@ Re-themed to the Marigold (spaceship) world and committed `@wip`:
 ## Dependency
 - Still **blocked by ve2a** (delivery worker must resolve the live comm).
 
-## Verification failed
+## Verification
 
-Verified against fetched GitHub `isaac-cron` `main` at `a192b6e27e735d4ad6aed505cb66b451acd81349`.
+Verified on fetched GitHub heads:
 
-What is green:
+- `isaac-cron` `f766e2ae79d30c6c148a3ea5cb72d71dd0161e03`
+- feature classpath pins now point at newer cross-repo SHAs, including foundation `778e91a9e4f857967d2dcd654d24031346a6338b`, agent `91ea8ef980930289d9d22a69007879bd30be86f5`, and server `468c2610fba7fc702c0ea3ab174998c80143559a`
 
+Proofs were green:
+
+- `bb features features/delivery.feature` -> `2 examples, 0 failures`
 - `bb spec spec/isaac/config/schema_spec.clj spec/isaac/cron/service_spec.clj` -> `14 examples, 0 failures`
-- The cron-side delivery implementation and schema changes are present on current head.
 
-What is still red:
-
-- `bb features features/delivery.feature` fails before scenarios run while bootstrapping feature deps:
-  `Syntax error compiling at (isaac/foundation/cli_steps.clj:173:26). No such var: step-tables/match-value`
-
-Current `isaac-cron` `deps.edn` still pins older cross-repo coordinates in the feature classpath:
-
-- `io.github.slagyr/isaac-foundation` -> `8f7ee8f6123188c524697f360fcd05e42a078853`
-- `io.github.slagyr/isaac-agent` -> `151330ad041a8ec23e9d7e437fa3df7d2e18e177`
-- `io.github.slagyr/isaac-server` -> `ba30caa2c2dc4564a352ae82742d39739fad9744`
-
-So this is still blocked as a cross-repo pin / feature-classpath integration failure, not a missing cron implementation slice.
+The earlier feature-classpath compile blocker is resolved on current heads. I did not independently audit the external zanebot `health-checkin.md` file from this verifier workspace.

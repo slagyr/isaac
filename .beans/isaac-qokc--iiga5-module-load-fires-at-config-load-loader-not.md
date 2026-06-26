@@ -1,13 +1,13 @@
 ---
 # isaac-qokc
 title: 'iiga(5): module load fires at config-load (loader), not server start'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
-    - unverified
+    []
 created_at: 2026-06-16T00:59:07Z
-updated_at: 2026-06-26T20:32:45Z
+updated_at: 2026-06-26T20:56:04Z
 ---
 
 Child of epic isaac-iiga. Closes the gap the rename (n4dj) exposed: who loads modules.
@@ -50,3 +50,22 @@ activate/discovery path (discover! / activate! / process-manifest-berths!), so i
 - But the downstream suites are still not green. `isaac-server` `ISAAC_GIT=1 bb ci` now fails in `features/server/services.feature` with a config-schema collision at `:comms` because the server test-only schema fixture still declares the comm slot against `:isaac.server/comm` in [test-resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-server/test-resources/isaac-manifest.edn:15), while the live agent-owned slot schema points at `:isaac.agent/comm` in [isaac-agent/resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-agent/resources/isaac-manifest.edn:514). That means config-load/module-load behavior is still not coherent across the affected repos.
 - `isaac-discord` is also still pinned to an older server SHA in [deps.edn](/Users/micahmartin/agents/verify/isaac-discord/deps.edn:7), [deps.edn](/Users/micahmartin/agents/verify/isaac-discord/deps.edn:27), and [deps.edn](/Users/micahmartin/agents/verify/isaac-discord/deps.edn:49), and its proof feature currently fails to compile against that older server dependency. So “all affected suites green” is still false.
 - work-2 repin (2026-06-26): bumped foundation to `8f7ee8f` in `isaac-server` (`9d0feee`), `isaac-agent` (`2131c9c`), `isaac-discord` (`8c1e154`); discord also pins server `c03b13f` and agent `91ea8ef`. Local `ISAAC_GIT=1` green: foundation lifecycle + cli_as_berth; server `bb ci` (155 spec + 47 feature); discord `bb spec` (66 examples, 1 pending); agent `bb spec` (1110 examples).
+
+## Verification
+
+Verified on fetched GitHub heads:
+
+- `isaac-foundation` `8f7ee8f6123188c524697f360fcd05e42a078853`
+- `isaac-agent` `2131c9c6bd943504b444fa4c2c9f7533f5b50e80`
+- `isaac-server` `9d0feee09f0d95f1f190edcc90c2f036290c27bb`
+- `isaac-discord` `8c1e154c604331036d1bf8d521944fdd0033e6ac`
+
+Proofs were green:
+
+- `isaac-foundation`: `env ISAAC_GIT=1 bb spec spec/isaac/module/lifecycle_spec.clj` -> `11 examples, 0 failures`
+- `isaac-foundation`: `env ISAAC_GIT=1 bb features features/module/cli_as_berth.feature` -> `2 examples, 0 failures`
+- `isaac-agent`: `bb spec` -> `1110 examples, 0 failures`
+- `isaac-server`: `env ISAAC_GIT=1 bb ci` -> `155 examples, 0 failures, 279 assertions` plus green feature phase
+- `isaac-discord`: `bb spec` -> `66 examples, 0 failures, 1 pre-existing pending`
+
+The downstream repins are in place and the affected suites are green enough to satisfy the bean's cross-repo acceptance.
