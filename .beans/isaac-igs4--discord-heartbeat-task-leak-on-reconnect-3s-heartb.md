@@ -1,13 +1,12 @@
 ---
 # isaac-igs4
 title: Discord heartbeat-task leak on reconnect (3s heartbeats + 'Send pending' IllegalStateException)
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T14:18:22Z
-updated_at: 2026-06-26T14:23:32Z
+updated_at: 2026-06-26T14:27:42Z
 ---
 
 Regression from isaac-dcr1 (reconnect after 1006), deployed in isaac-discord 2b6842e. Observed live on zanebot: discord heartbeats every ~3s (should be ~41s) and a recurring `java.lang.IllegalStateException: "Send pending"` logged as :scheduler/handler-error (scheduler/runtime.clj:294).
@@ -40,3 +39,6 @@ isaac-discord features/spec. A gateway that has connected, then reconnects (rece
 
 ## Notes
 Surfaced 2026-06-26 from zanebot logs (Micah). Not breaking (heartbeats still ack, discord works) but wasteful, log-spammy, and could spiral (a dropped heartbeat from Send pending -> 1006 -> reconnect -> more leaked loops). Stopgap applied 2026-06-26: restarted the service to reset to one loop (loops re-accumulate until this ships).
+
+## Verification
+Verified on fetched GitHub `isaac-discord` `main` at `769feef`. `schedule-heartbeats!` now cancels any existing `:heartbeat-task-id` via the stored `:heartbeat-scheduler` before scheduling the replacement task, so reconnect/second-HELLO leaves one active loop. `bb spec spec/isaac/comm/discord/gateway_spec.clj` passed: `57 examples, 0 failures, 121 assertions, 1 pre-existing pending` (pending in `discord_app_spec.clj`, unrelated to this bug).
