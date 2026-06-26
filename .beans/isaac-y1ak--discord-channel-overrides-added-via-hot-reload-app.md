@@ -1,10 +1,13 @@
 ---
 # isaac-y1ak
 title: Discord channel overrides added via hot reload apply to both inbound routing and outbound replies
-status: todo
+status: in-progress
 type: bug
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T16:24:25Z
-updated_at: 2026-06-26T16:34:20Z
+updated_at: 2026-06-26T16:42:19Z
 ---
 
 ## Context
