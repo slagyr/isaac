@@ -1,11 +1,11 @@
 ---
 # isaac-nfmo
 title: Rename log event :berth/registered -> :berth/registration
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-06-21T02:31:44Z
-updated_at: 2026-06-21T02:31:44Z
+updated_at: 2026-06-26T19:55:12Z
 ---
 
 Follow-up to olj5: rename the per-entry boot log event `:berth/registered` to
