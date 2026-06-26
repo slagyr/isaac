@@ -1,13 +1,12 @@
 ---
 # isaac-opc4
 title: Ambiguous gherclj step "config:" collides across isaac-agent and isaac-server
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T21:45:52Z
-updated_at: 2026-06-26T21:53:26Z
+updated_at: 2026-06-26T22:16:12Z
 blocking:
     - isaac-c58s
 ---
@@ -49,3 +48,23 @@ cd isaac-hail && clojure -M:features  (or bb features)
 - **Agent** (`75190ff`): dropped duplicate `config:`; delegates to foundation; foundation SHA `eb3bcb0`.
 - **Cron** (`d6440c3`): resolves foundation `config-applied`.
 - **Verification**: isaac-hail features 80/0 (dev-local); isaac-server features 47/0 (git deps).
+
+## Verification
+
+Verified on fetched GitHub `main`:
+
+- `isaac-foundation` `eb3bcb0785c4e86d9e8c032c26aa7b4341b9f04d`
+- `isaac-agent` `75190ffa45edc19e87402b60cc4bce7277ca46d8`
+- `isaac-server` `96bd83ad315a7a9c2dbd840d3089ae6d6c9153cc`
+- `isaac-cron` `d6440c30a3213a7822c518126fc669df97e97ea4`
+- `isaac-hail` `da07bd8878c39f94e79412b225f38b2567171245`
+
+Proofs were green:
+
+- `isaac-hail` `bb features` in a sibling worktree layout matching its `../isaac-*` local-root feature alias -> `80 examples, 0 failures, 333 assertions, 2 pre-existing pending`
+- `isaac-server` `bb features` -> `47 examples, 0 failures, 120 assertions`
+
+The original `config:` ambiguity is resolved on current heads. The first bare
+hail worktree run failed only because its `:features` alias resolves
+`../isaac-agent`, `../isaac-server`, and `../isaac-foundation`; once verified
+in that intended sibling layout, the suite was green.

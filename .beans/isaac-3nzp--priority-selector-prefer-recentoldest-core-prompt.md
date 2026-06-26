@@ -1,13 +1,12 @@
 ---
 # isaac-3nzp
 title: 'Priority selector: --prefer recent/oldest (core + prompt)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T21:50:05Z
-updated_at: 2026-06-26T21:56:59Z
+updated_at: 2026-06-26T22:16:12Z
 parent: isaac-4e4b
 ---
 
@@ -37,3 +36,15 @@ Selection-suite, CLI side. Lowest-risk, mechanical. Empty-filter default (named 
 - Removed `@wip` on four `cli-prompt.feature` scenarios; oldest scenario re-asserts `updated-at` after transcript seed (append bumps timestamps).
 - **SHA:** isaac-agent `47e038c`
 - **Verified:** selector + selector-cli + prompt_cli specs 51/0; `cli-prompt.feature` 29/0 (583 examples in full features run).
+
+## Verification
+
+Verified on fetched GitHub `isaac-agent` `main` `75190ffa45edc19e87402b60cc4bce7277ca46d8`.
+
+Proofs were green on the current head:
+
+- `bb spec spec/isaac/session/selector_spec.clj spec/isaac/session/selector_cli_spec.clj spec/isaac/bridge/prompt_cli_spec.clj` -> `51 examples, 0 failures, 103 assertions`
+- `bb features features/bridge/cli-prompt.feature` -> `29 examples, 0 failures, 59 assertions`
+
+The worker handoff named intermediate SHA `47e038c`, but the behavior remains
+correct on the newer current `main` head.
