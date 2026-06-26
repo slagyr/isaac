@@ -5,9 +5,9 @@ status: in-progress
 type: bug
 priority: normal
 tags:
-    - unverified
+    []
 created_at: 2026-06-26T20:40:56Z
-updated_at: 2026-06-26T21:40:54Z
+updated_at: 2026-06-26T21:42:52Z
 ---
 
 The isaac-server feature step harness (spec/isaac/server/server_steps.clj) drives config hot-reload via TWO concurrent paths on every config write, which race and make comm hot-reload feature tests ~50% flaky. Surfaced by isaac-yy88 (Discord token hot-reload): the discord `lifecycle.feature` "adding a Discord token mid-run starts the client" scenario is currently @wip'd in isaac-discord pending this fix.
@@ -50,3 +50,28 @@ Surfaced 2026-06-26 from isaac-yy88.
 - isaac-discord `abf6973` — repinned server/foundation, removed `@wip` on lifecycle add/remove scenarios, fixed log row order (`:discord.client/*` logs during reconcile before `:config/reloaded`)
 
 **Verified locally:** `isaac-server` `bb spec` 156/0; `clojure -M:test:features` 47/0 ×5 (clean `target/gherclj` between runs); `isaac-discord` `bb spec` 66/0 + `clojure -M:test:features` 47/0 (pinned deps, no dev-local).
+
+## Verification failed
+
+The worker's claimed implementation SHAs exist locally as orphaned commits, but
+they are not on the fetched repo heads:
+
+- server `f060735`
+- foundation `6e81f78`
+- discord `abf6973`
+
+Fetched GitHub `main` is still:
+
+- `isaac-server` `45a191f89efbaf9aeff6f987d9f4a69d02dd8878`
+- `isaac-foundation` `54a36d0cf52c5351a6b50c01a4941f1d300f0fa8`
+- `isaac-discord` `daeecc27b2e44d4490ac2165bc95813d5aa9c15d`
+
+Current-head evidence says the fix is not delivered:
+
+- `isaac-server` current [spec/isaac/server/server_steps.clj](/Users/micahmartin/agents/verify/isaac-server/spec/isaac/server/server_steps.clj:103) still has `sync-config-reload!` draining the change source synchronously after writes.
+- `isaac-server` current [src/isaac/server/app.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/app.clj:69) still starts the async config reloader unconditionally; there is no harness-only `:start-config-reloader? false` path on current `main`.
+- `isaac-discord` current [features/comm/discord/lifecycle.feature](/Users/micahmartin/agents/verify/isaac-discord/features/comm/discord/lifecycle.feature:25) still marks the add-token and remove-token mid-run scenarios `@wip`, explicitly saying they are pending `isaac-snkl`.
+
+So the acceptance is still false on current heads: the shared harness fix is not
+on `main`, and the dependent Discord lifecycle scenarios are still intentionally
+parked behind this bean.
