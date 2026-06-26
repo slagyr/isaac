@@ -4,8 +4,10 @@ title: Rename log event :berth/registered -> :berth/registration
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-21T02:31:44Z
-updated_at: 2026-06-26T19:55:12Z
+updated_at: 2026-06-26T19:56:48Z
 ---
 
 Follow-up to olj5: rename the per-entry boot log event `:berth/registered` to
@@ -35,3 +37,12 @@ tests synced to the new name but has no runtime change.
 - Needs a foundation release to land on zanebot (the emit change). Fold into the
   next foundation release rather than cutting one just for this.
 - Agent needs no release for the rename (it doesn't emit); only its tests change.
+
+
+
+## Implemented (work-2, 2026-06-26)
+
+- isaac-foundation @ 8a5015c: emit `:berth/registration` (was `:berth/registered`); loader_spec + berth_registration.feature updated
+- isaac-agent: slash_extension.feature + registry_spec.clj synced; foundation SHA bumped to 8a5015c
+- No `:berth/registered` remains in either repo
+- foundation bb spec + berth_registration.feature green; agent registry_spec + slash_extension.feature green
