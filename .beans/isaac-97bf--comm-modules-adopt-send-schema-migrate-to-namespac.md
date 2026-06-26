@@ -4,8 +4,10 @@ title: Comm modules adopt :send-schema + migrate to namespaced record keys
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-23T22:04:23Z
-updated_at: 2026-06-26T15:59:32Z
+updated_at: 2026-06-26T16:06:01Z
 blocked_by:
     - isaac-2s0b
 ---
@@ -53,3 +55,8 @@ Breaking change to the delivery-record shape for discord/imessage (:target -> :d
 ## Verification correction
 
 Reopened 2026-06-26. Prior verification was wrong: it accepted `isaac-discord` commit `694e770` without confirming that the commit was actually contained by `origin/main`. Current real `isaac-discord` `main` does not contain `694e770` (`git branch -a --contains 694e770` returns nothing), still lacks a manifest `:send-schema` contribution, and [src/isaac/comm/discord.clj](/Users/micahmartin/agents/verify/isaac-discord/src/isaac/comm/discord.clj:181) still reads `(:target record)`. The `isaac-imessage` half is present on current `main`; the `isaac-discord` half needs to be recovered or re-landed from orphaned commit `694e770`.
+
+## Implementation (work-2, 2026-06-26)
+
+- **isaac-discord** `860af32` (vhyw) + `5914356`: `:send-schema` with `:discord/target` on main; `send!` and `rest/try-send-or-enqueue!` use namespaced keys; legacy `:target` read path removed. `bb spec` green (62 examples).
+- **isaac-imessage** `8d322b5` on main: `:send-schema`, `send!`, `imsg-params`, `dispatch-and-enqueue-reply!` migrated; manifest/reply/send specs present. `bb spec` has one pre-existing lifecycle/registry failure unrelated to send-schema.
