@@ -8,9 +8,35 @@ user-invocable: true
 
 Pick up the next ready bean and work on it.
 
+## Hail-driven bootstrap
+
+If you arrived via hail (band/skill) rather than `/work`:
+
+1. **Locate the isaac clone** — the git repo with `.beans/` (see
+   `../AGENTS.md` "Agent homes vs repo checkouts"). Session cwd may be your
+   role home, not this repo.
+2. **`git pull --rebase`** in that isaac clone before any `beans` read.
+3. **Skills fallback** — if `list_skills` is empty or `load_skill` fails, read
+   `isaac/.toolbox/skills/hail-bean-work/SKILL.md` and this file directly; do
+   not stop.
+4. Continue with the steps below from the isaac clone (claim beans here; edit
+   module repos per bean scope).
+
+## Process-test beans
+
+Beans whose body marks **process test**, **no-op**, or **orchestration smoke**
+intentionally suspend normal implementation rules:
+
+- No product code or tests unless explicitly required.
+- Append `## Process Observations` to the bean body.
+- File follow-up beans for workflow gaps.
+- Still claim, hand off `tag=unverified`, and push `.beans/`.
+
+See `isaac/.toolbox/skills/hail-bean-work/SKILL.md` for the full checklist.
+
 ## Steps
 
-1. Pull the latest code with `git pull`. Beans live alongside the code, so this also syncs the latest bean state. **Run this alone.** Do not parallelize `git pull` with `beans show` / `beans list` or any other state-dependent read — the bean read can race the pull and return stale data, causing you to claim a bean that was just taken or skip one that just became ready. Sequence: pull, wait, then read.
+1. Pull the latest code with `git pull`. Beans live alongside the code, so this also syncs the latest bean state. **Run this alone.** Do not parallelize `git pull` with `beans show` / `beans list` or any other state-dependent read — the bean read can race the pull and return stale data, causing you to claim a bean that was just taken or skip one that just became ready. Sequence: pull, wait, then read. (`beans list --all` does not exist — use `beans list` or `beans list --ready`.)
 2. Branch on `$ARGUMENTS`:
    - **If a bean ID was provided** → follow "Targeted bean" below. Do not fall back to the ready queue.
    - **If no argument was provided** → follow "Pick from ready queue" below.

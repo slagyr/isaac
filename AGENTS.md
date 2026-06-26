@@ -31,6 +31,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [clojure](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/clojure/SKILL.md)
 - [c3kit](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit/SKILL.md)
 - [c3kit-schema](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit-schema/SKILL.md)
+- [hail-bean-work](.toolbox/skills/hail-bean-work/SKILL.md) — hail-driven worker bootstrap; repo discovery; `list_skills` fallback; process-test beans
 
 ### Commands
 

@@ -1,11 +1,13 @@
 ---
 # isaac-evws
 title: Hail-driven worker bootstrap/docs gap surfaced by orchestration smoke test
-status: todo
+status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-06-26T16:39:58Z
-updated_at: 2026-06-26T18:38:02Z
+updated_at: 2026-06-26T20:15:00Z
 ---
 
 ## Summary
@@ -52,3 +54,19 @@ The evws bean itself was created inside the isaac-live `.beans/` and pushed from
 - Re-test orc1 after any changes to confirm the worker lands in the right place without manual chdir discovery.
 
 Added planner context on dual-checkout structure (agents work areas vs Projects/isaac/isaac-live).
+
+## Resolution (work-3, 2026-06-26)
+
+Documented the bootstrap path surfaced by `isaac-orc1`:
+
+- **`agents/AGENTS.md`** — agent homes vs repo checkouts table; hail-driven worker
+  section with `list_skills` fallback.
+- **`isaac/.toolbox/skills/hail-bean-work/SKILL.md`** — bootstrap checklist,
+  cwd vs worktree layout, normal vs process-test beans, verify handoff.
+- **`isaac/.toolbox/commands/work.md`** — hail bootstrap + process-test sections;
+  note that `beans list --all` does not exist.
+- **`isaac/AGENTS.md`** — skill registered in toolbox list.
+- **`work-3/AGENTS.md`** — pointer for hail-driven workers.
+
+No product code changes (docs-only bean). Re-test `isaac-orc1` after deploy to
+confirm a hail worker can follow the checklist without manual discovery.
