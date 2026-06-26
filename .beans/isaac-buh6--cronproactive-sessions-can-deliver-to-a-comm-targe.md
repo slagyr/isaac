@@ -5,9 +5,9 @@ status: in-progress
 type: feature
 priority: high
 tags:
-    []
+    - unverified
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-26T20:14:25Z
+updated_at: 2026-06-26T20:46:51Z
 ---
 
 A cron job runs its prompt and DISCARDS the output — `isaac.cron.service` wires
