@@ -1,11 +1,11 @@
 ---
 # isaac-tgon
 title: Define root runtime and remove dynamic isaac.system binding
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-05-21T15:55:07Z
-updated_at: 2026-05-21T15:57:23Z
+updated_at: 2026-06-26T21:18:55Z
 parent: isaac-jw6d
 ---
 
@@ -37,3 +37,11 @@ Acceptance
 Notes
 
 This is the foundation slice for the larger runtime-explicitness epic. Follow-on beans will thread runtime values through subsystems and then migrate ambient fs usage.
+
+## Verification notes
+
+- work-2 audit (2026-06-26): `*system*` eliminated codebase-wide; runtime holder is `isaac.nexus` (`defonce` atom: `install!`, `get`, `bound-runtime-fn`, `-with-nexus`).
+- `isaac.system` (ACP facade) delegates to nexus — no dynamic binding.
+- Cross-thread acceptance: `bb spec spec/isaac/nexus_spec.clj` → 25 examples, 0 failures (`-with-nexus` thread visibility + `bound-runtime-fn`).
+- Production entrypoints install runtime via `nexus/init!` (e.g. `isaac-server` boot). hail `delivery_worker` uses `bound-runtime-fn` for deferred work.
+- Completed: tgon acceptance met; no further code changes required for this slice.

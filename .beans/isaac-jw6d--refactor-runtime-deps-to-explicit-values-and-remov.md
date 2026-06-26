@@ -4,10 +4,8 @@ title: Refactor runtime deps to explicit values and remove thread-local system/f
 status: in-progress
 type: epic
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-21T15:54:56Z
-updated_at: 2026-05-22T01:23:29Z
+updated_at: 2026-06-26T21:18:55Z
 ---
 
 Problem
