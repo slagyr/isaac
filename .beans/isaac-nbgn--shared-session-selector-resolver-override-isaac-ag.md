@@ -4,8 +4,10 @@ title: Shared session selector + resolver + override (isaac-agent) — proven by
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T16:28:33Z
-updated_at: 2026-06-26T17:42:49Z
+updated_at: 2026-06-26T17:51:14Z
 parent: isaac-4e4b
 ---
 
@@ -47,3 +49,12 @@ Also rewrote the two pre-existing `--crew` scenarios (model-resolution, soul) �
 
 ### Still to author during implementation
 - speclj **unit specs** for the shared resolver + validation (the `resolve-session-targets` API + `--session`-exclusivity / describe-AND / tri-state-create rules) — deferred because the resolver's namespace/fn signature isn't designed yet; write them alongside the resolver so they test a real API rather than an invented one.
+
+
+
+## Implemented (work-2, 2026-06-26)
+
+- `isaac.session.selector` / `isaac.session.selector-cli` — `resolve-session-targets`, hail-aligned matching, tri-state `:create`, CLI validation
+- `prompt` migrated: `--crew`/`--session-tag` select, `--create`, `--with-*` override; `-M/--model` alias kept
+- `features/bridge/cli-prompt.feature` — selector scenarios added; crew scenarios fixed for crew-owned sessions
+- `bb ci` green on isaac-agent @ 8a7f7a2+
