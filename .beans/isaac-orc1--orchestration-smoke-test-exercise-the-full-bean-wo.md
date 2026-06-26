@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: low
 created_at: 2026-06-26T15:17:03Z
-updated_at: 2026-06-26T16:38:55Z
+updated_at: 2026-06-26T16:39:50Z
 ---
 
 ## Purpose
@@ -41,3 +41,33 @@ This is **not** a real feature or bug fix. Success = the bean makes it all the w
 When creating this bean, the planner should treat it like any other: give it a proper ID, make the intent obvious, and put it in the active list.
 
 Subsequent workers and verifiers should treat the process steps themselves as the work to be verified.
+
+## Process Observations
+
+### Worker pass (scrapper, hail-driven)
+- Claimed the bean and exercised the worker handoff path without changing product code.
+- Minimal work performed: claim + workflow notes + follow-up bean for process gaps.
+
+### Friction in claiming / status updates
+- The trusted hail said this session was the `isaac-1` checkout in `quarters`, but that path was not present here. I had to discover the actual repo checkout manually before I could act.
+- `list_skills` returned no discovered skills, even though the worker workflow references loading a hail/bean-work skill. The task was still doable, but only by falling back to repo docs and direct CLI usage.
+
+### Clarity of acceptance criteria
+- The no-op intent is clear in the bean body.
+- For a hail-driven worker, the exact expected deliverable is still slightly implicit: the bean says to append observations, while the hail says to claim, note the step, document gaps, and hail verify. Those are compatible, but not expressed as a short worker checklist in one place.
+
+### Tooling / git / notifications
+- Session bootstrap is the main gap: repo/session location was not authoritative from the hail alone.
+- Skill discovery mismatch is a second tooling gap: referenced skills may not be available in-session, so the workflow needs an explicit fallback path.
+- `beans list --all` does not exist; the CLI help corrected this quickly, but it is an easy assumption to make when inspecting tracker state.
+
+### Communication / hand-off
+- The hail was sufficient to proceed once the repo was located.
+- The verify target is clear at the band level, but there is no local skill/document in this checkout showing the exact expected verify hail payload shape for this project, so I am using the direct bean details + commit references.
+
+### Missing / unclear workflow rules
+- There should be a single authoritative place that tells a hail-driven worker: expected checkout path, repo root, whether skills are guaranteed to exist, and the fallback if they do not.
+- There should be an explicit statement in the worker docs for process-test beans that no product-code/test changes are expected, so the worker does not have to infer whether normal red/green rules are intentionally suspended.
+
+## Follow-up
+- Created follow-up bean to track the bootstrap/skill-discovery gap observed in this run.
