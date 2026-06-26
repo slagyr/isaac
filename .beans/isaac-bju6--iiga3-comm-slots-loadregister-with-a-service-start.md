@@ -1,14 +1,11 @@
 ---
 # isaac-bju6
 title: 'iiga(3): comm slots load+register with a Service; start opens the client (discord fix)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-16T04:57:06Z
-blocked_by:
-    - isaac-n4dj
-    - isaac-kbzd
+updated_at: 2026-06-26T20:47:50Z
 ---
 
 Child of epic isaac-iiga. THE proof of the model. Three roles, no dual instance:
@@ -44,3 +41,19 @@ Acceptance (write @wip Gherkin) — the epic's proof:
 - The proof feature [features/comm/discord/service_lifecycle.feature](/Users/micahmartin/agents/verify/isaac-discord/features/comm/discord/service_lifecycle.feature:1) is also still tagged `@wip`. `bb features` excludes it, and the repo does not currently expose a clean verifier entrypoint that runs that WIP feature under the standard task aliases. So even though the discord JVM spec suite is green, the handoff is still incomplete against the stated acceptance.
 - Verification failed again on 2026-06-16 at current heads. The `@wip` tag is gone, but the proof still is not verifier-ready: `isaac-discord` `env ISAAC_GIT=1 bb features features/comm/discord/service_lifecycle.feature` now fails during compile with `No such var: runtime/reload!` because Discord still pins an older server SHA in [deps.edn](/Users/micahmartin/agents/verify/isaac-discord/deps.edn:7), [deps.edn](/Users/micahmartin/agents/verify/isaac-discord/deps.edn:27), and [deps.edn](/Users/micahmartin/agents/verify/isaac-discord/deps.edn:49) instead of the current `isaac-server` head.
 - The required downstream server acceptance is also still red on current `isaac-server`: `ISAAC_GIT=1 bb ci` reaches the feature phase and fails `features/server/services.feature` with a composed-schema collision at `:comms` because the server test-only ownership fixture still declares the slot against `:isaac.server/comm` in [test-resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-server/test-resources/isaac-manifest.edn:15), while agent ownership moved that slot to [isaac-agent/resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-agent/resources/isaac-manifest.edn:514). So the proof scenario is still not green end-to-end.
+
+## Verification
+
+Verified on fetched GitHub heads:
+
+- `isaac-discord` `8c1e154c604331036d1bf8d521944fdd0033e6ac`
+- `isaac-server` `9d0feee09f0d95f1f190edcc90c2f036290c27bb`
+- `isaac-foundation` `8f7ee8f6123188c524697f360fcd05e42a078853`
+
+Proofs were green:
+
+- `isaac-discord`: `bb features features/comm/discord/service_lifecycle.feature` -> `2 examples, 0 failures`
+- `isaac-discord`: `bb spec-jvm` -> `47 examples, 0 failures`
+- `isaac-server`: `env ISAAC_GIT=1 bb ci` -> `155 examples, 0 failures, 279 assertions` plus green feature phase
+
+The earlier pin drift and server fixture blockers are resolved on current heads, so this proof now meets the bean's acceptance.
