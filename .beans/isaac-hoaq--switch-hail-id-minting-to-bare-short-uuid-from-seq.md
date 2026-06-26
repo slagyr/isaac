@@ -1,13 +1,11 @@
 ---
 # isaac-hoaq
 title: Switch hail id minting to bare :short-uuid (from sequential hail-N)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-26T00:13:12Z
-updated_at: 2026-06-26T00:22:31Z
+updated_at: 2026-06-26T03:28:30Z
 blocked_by:
     - isaac-a3fb
 ---
@@ -35,3 +33,12 @@ Short-uuids are random, so the filename hail/pending/<id>.edn is unpredictable. 
 
 ## Notes
 Existing zanebot records (delivered/failed/undeliverable, named hail-N or delivery-N) coexist — no migration needed; new hails just get short-uuid names. Follow-up to a3fb. Surfaced 2026-06-25, Micah: make :short-uuid the default for hail.
+
+## Verification (2026-06-26)
+- Current GitHub `isaac-hail` `main` includes `isaac-hoaq` at `1346654`.
+- The mint path is switched in [src/isaac/hail/queue.clj](src/isaac/hail/queue.clj): `naming-strategy` now uses `ShortUuidStrategy nil`, `next-id` is stateless, and the old counter sync path is gone.
+- Focused proofs are green on that head:
+  - `bb spec spec/isaac/hail/queue_spec.clj` -> `8 examples, 0 failures`
+  - `bb features features/send.feature` -> `9 examples, 0 failures`
+- Full repo lane is also green on current head aside from the same two pre-existing pending hail-get directory-scan scenarios:
+  - `bb ci` -> `71` spec examples, `0` failures; `76` feature examples, `0` failures, `2` unrelated pending
