@@ -4,9 +4,8 @@ title: Shared session selector + resolver + override (isaac-agent) â€” proven by
 status: completed
 type: feature
 priority: normal
-tags: []
 created_at: 2026-06-26T16:28:33Z
-updated_at: 2026-06-26T18:02:28Z
+updated_at: 2026-06-26T18:30:05Z
 parent: isaac-4e4b
 ---
 
@@ -61,3 +60,17 @@ Also rewrote the two pre-existing `--crew` scenarios (model-resolution, soul) â€
 ## Verification
 
 Verified on fetched GitHub `isaac-agent` head `e7c46f3`. The delivered acceptance proof is green: `bb ci` passed with `1109` spec examples, `0` failures, `2184` assertions, plus `549` feature examples, `0` failures, `1227` assertions. That covers the shared session selector/resolver/override module, prompt migration onto it, the tri-state `--create` surface, selector validation rules, `--with-*` override behavior, and preservation of existing prompt behavior.
+
+## Reopened (2026-06-26): swap in peer-reviewed selector scenarios
+
+Implementation landed via a concurrent commit (selector + selector-cli + prompt migration + scenarios) and the bean was marked completed. Our scenarios were peer-reviewed one-at-a-time with Micah and are stronger in setup (prior-history reuse proof, no-fallback contrast, differently-tagged foil, orthogonal --crew+--with-model). Reopening to upgrade the merged feature coverage with the reviewed versions, reconciled to the live impl's fixtures/strings. Implementation code is unchanged.
+
+## Summary of Changes
+
+Implementation landed via a concurrent commit (isaac.session.selector + selector-cli + prompt migration + unit specs). Reopened to upgrade the feature coverage with the peer-reviewed scenarios (cf3066c in isaac-agent):
+- --crew reuse now asserts prior history is resumed (not just landed on)
+- --crew no-match create asserts no silent fallback to prompt-default
+- --session-tag adds a differently-tagged foil (proves discrimination)
+- --create always proves the matching session is left untouched (kept the session-count check)
+- --with-model overrides while --crew selects (orthogonal axes)
+Reconciled to the live impl's fixtures (crew model grover->echo) and error strings. Implementation code unchanged; full feature suite green (only the unrelated prompt-catalog WIP fails).
