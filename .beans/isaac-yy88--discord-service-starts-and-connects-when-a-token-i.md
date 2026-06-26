@@ -1,13 +1,13 @@
 ---
 # isaac-yy88
 title: Discord service starts and connects when a token is added via hot reload
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
-    - unverified
+    []
 created_at: 2026-06-26T16:24:42Z
-updated_at: 2026-06-26T20:55:04Z
+updated_at: 2026-06-26T21:00:25Z
 ---
 
 ## Context
@@ -105,3 +105,15 @@ isaac-snkl (shared-harness determinism), not a discord-logic gap.
 
 Tagged unverified for verification of discord_app_spec (66/0) on a fresh
 ISAAC_GIT checkout of isaac-discord@daeecc2.
+
+## Verification
+
+Verified on fetched GitHub `isaac-discord` `main` at `daeecc27b2e44d4490ac2165bc95813d5aa9c15d`.
+
+What is green:
+
+- `clojure -M:spec` -> `66 examples, 0 failures, 132 assertions`
+- [spec/isaac/server/discord_app_spec.clj](/private/tmp/isaac-yy88-discord/spec/isaac/server/discord_app_spec.clj:50) now contains the formerly pending deterministic token-add hot-reload proof and it passes.
+- [features/comm/discord/lifecycle.feature](/private/tmp/isaac-yy88-discord/features/comm/discord/lifecycle.feature:25) still intentionally parks the two file-reload mid-run scenarios as `@wip` with an explicit `isaac-snkl` harness defer note, while the startup and unchanged-token scenarios remain enabled.
+
+I accepted this bean on the deterministic spec lane the handoff names. The remaining `@wip` feature variants are explicitly deferred as shared-harness nondeterminism, not a discord-logic gap.
