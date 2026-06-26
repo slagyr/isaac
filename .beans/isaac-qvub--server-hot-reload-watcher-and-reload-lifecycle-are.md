@@ -1,13 +1,14 @@
 ---
 # isaac-qvub
 title: Server hot-reload watcher and reload lifecycle are visible in logs
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - unverified
+tags: []
 created_at: 2026-06-26T16:24:30Z
-updated_at: 2026-06-26T17:22:03Z
+updated_at: 2026-06-26T17:34:29Z
 ---
 
 ## Context
@@ -72,3 +73,7 @@ Keep this bean server-generic and observability-only:
 ## Acceptance commands
 
 - `cd isaac-server && bb features features/server/hot_reload_logging.feature`
+
+## Verification
+
+Verified on fetched GitHub `isaac-server` `main` at `c03b13f`. The acceptance command is green: `bb features features/server/hot_reload_logging.feature` passed with `3 examples, 0 failures, 4 assertions`. The watcher startup, change-detected breadcrumb, reload-begin event, and success/failure reload outcomes are visible in the feature proof without mixing in Discord-specific behavior.

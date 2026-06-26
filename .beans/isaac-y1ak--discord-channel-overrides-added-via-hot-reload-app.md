@@ -1,13 +1,12 @@
 ---
 # isaac-y1ak
 title: Discord channel overrides added via hot reload apply to both inbound routing and outbound replies
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T16:24:25Z
-updated_at: 2026-06-26T17:26:31Z
+updated_at: 2026-06-26T17:34:29Z
 ---
 
 ## Context
@@ -86,4 +85,4 @@ Observability work stays in:
 
 ## Verification
 
-Verified on fetched GitHub `isaac-discord` `main` at `d05a429`. The touched spec slice is green: `bb spec spec/isaac/comm/discord_spec.clj` passed with `63 examples, 0 failures, 128 assertions, 1 pre-existing pending`. The bean is not complete because its own acceptance command is red on current head: `bb features features/comm/discord/routing.feature` fails `2/8` scenarios before the new routing behavior is exercised. Both approved hot-reload scenarios fail during server startup with `Unconformable entity #:discord{:token "test-token", :allow-from {:users ..., :guilds ...}}`; the feature background still seeds `comms.discord.discord/allow-from.users` and `.guilds` as bare scalars (`123`, `G789`) while current schema expects string sequences. Until the routing feature is green with valid Discord allow-from fixture data, the handoff is not verifier-ready.
+Re-verified on fetched GitHub `isaac-discord` `main` after the follow-up fixture fix landed (`9377acc` on top of `d05a429`; current head `77fe9af`). The acceptance command is now green: `bb features features/comm/discord/routing.feature` passed with `6 examples, 0 failures, 7 assertions`. That covers both approved hot-reload scenarios, confirms the new channel/session and channel/crew overrides apply to inbound routing and outbound replies without reconnecting the Discord client, and keeps the existing string-key routing behavior green.
