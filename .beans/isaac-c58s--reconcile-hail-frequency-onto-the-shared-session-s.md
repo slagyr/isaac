@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-26T16:28:54Z
-updated_at: 2026-06-26T21:02:41Z
+updated_at: 2026-06-26T21:29:53Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-nbgn
@@ -45,3 +45,25 @@ Deltas / what stays hail-specific:
 
 ## Test posture
 Existing hail router/delivery features (ebm2/kt1m) are the regression net — they MUST stay green (selector == shared one, no behavior change). New scenarios assert the translation (spawn-session<->create), that the shared filter is in use, and --prefer picking among multi-match under :reach :one.
+
+## Gherkin design finalized (2026-06-26, reviewed with Micah)
+
+### Record shape
+- Rename `:frequency` -> `:frequencies` GLOBALLY (proper "open hailing frequencies" nod; the old name implied repetition). Touches router/delivery/store/cli code, `get-in [:frequencies ...]`, and every `frequency.*` in the hail features.
+- `:frequencies` holds the SAME flat map the prompt command builds — selection keys + `:with-*` override keys inline (NOT a separate `:override` slot). The shared core projects it: select keys -> matching; `:with-*` -> behavioral-keys -> create-with-resolved-behavior!.
+- Resolved outputs stay top-level on the record (`:crew`, `:session`, `:candidates`, `:attempts`, ...) — kept separate from the input flat map because the delivery worker re-resolves each tick (selector must survive). That input/output split is why we did NOT fully flatten the record.
+- Feature tables use dotted paths, no nested EDN: `frequencies.session | [:engine-room]`, `frequencies.with-crew | :navigator`.
+
+### New @wip scenarios
+1. **--prefer orders the frozen candidates** (router.feature) — reach:one multi-match freezes `candidates`; `:prefer recent|oldest` sorts that snapshot (oldest-first for :oldest). Placement (a): router orders, worker binds first idle in order.
+2. **--with-crew overrides the processing crew** (router.feature) — `:with-crew` sits at the top of `effective-crew` (override -> session crew -> cfg default -> :main); selection unaffected.
+3. **--with-model overrides the dispatched turn** (delivery.feature) — representative of the behavioral path; effort/context-mode follow the same projection, no separate scenarios.
+
+### Rewrites (vocabulary)
+4. `:spawn-session` -> `:create` adoption: rewrite `spawn-session.feature` -> `session-create.feature`; `spawn-session true` -> `create :if-missing`, absent/false -> `create :never` (hail default). `:always` out of scope (two-value subset), noted in prose. Rename `effective-spawn` -> `effective-create`, send/cli `--spawn`/`:spawn-session` -> `--create`.
+
+### Regression net
+Existing ebm2/kt1m router/delivery scenarios MUST stay green (selector == shared one, no behavior change).
+
+### Write entanglement
+The 3 new scenarios are @wip-safe to write now. The `:frequencies` rename + `:create` rewrites of EXISTING scenarios CANNOT be gherkin-only — they break the passing suite unless the code changes too, so they land WITH the implementation, not before.
