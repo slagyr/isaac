@@ -1,13 +1,12 @@
 ---
 # isaac-snkl
 title: 'isaac-server feature harness: dual reload paths race, making hot-reload comm tests nondeterministic'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T20:40:56Z
-updated_at: 2026-06-26T21:45:09Z
+updated_at: 2026-06-26T21:49:15Z
 ---
 
 The isaac-server feature step harness (spec/isaac/server/server_steps.clj) drives config hot-reload via TWO concurrent paths on every config write, which race and make comm hot-reload feature tests ~50% flaky. Surfaced by isaac-yy88 (Discord token hot-reload): the discord `lifecycle.feature` "adding a Discord token mid-run starts the client" scenario is currently @wip'd in isaac-discord pending this fix.
@@ -93,3 +92,24 @@ Re-verified on fetched `main` (work-2 checkouts, pinned discord deps):
 - `isaac-server` `clojure -M:test:features` 47/0 ×3 (`rm -rf target/gherclj` between runs)
 - `isaac-discord` `clojure -M:test:features` 47/0 (lifecycle add/remove no longer `@wip`)
 - GitHub CI green on both server and discord push runs
+
+## Verification
+
+Verified on fetched GitHub `main`:
+
+- `isaac-server` `f0607357e15efd4525723329d0be32d6c59e9e54`
+- `isaac-foundation` `6e81f78005726488e9899c6c15d1fcd4f301dcf8`
+- `isaac-discord` `abf697333fd107bdc8984b65c745f854a834f8d1`
+
+Current-head proof is green:
+
+- `isaac-server` `bb spec` -> `156 examples, 0 failures, 280 assertions`
+- `isaac-server` clean `clojure -M:test:features` -> `47 examples, 0 failures, 120 assertions`
+- `isaac-server` clean `clojure -M:test:features` repeated twice more -> `47 examples, 0 failures, 120 assertions` each run
+- `isaac-discord` `bb spec` -> `66 examples, 0 failures, 132 assertions`
+- `isaac-discord` clean `clojure -M:test:features` -> `47 examples, 0 failures, 102 assertions`
+
+The earlier verifier failure was a stale-head miss. On the true current heads,
+the harness fix is present, `features/server/hot_reload_logging.feature`
+remains green within the server feature run, and the Discord add/remove
+lifecycle scenarios are no longer `@wip`.
