@@ -4,8 +4,10 @@ title: 'Orchestration smoke test: exercise the full bean workflow with a deliber
 status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-06-26T15:17:03Z
-updated_at: 2026-06-26T16:39:50Z
+updated_at: 2026-06-26T16:40:16Z
 ---
 
 ## Purpose
