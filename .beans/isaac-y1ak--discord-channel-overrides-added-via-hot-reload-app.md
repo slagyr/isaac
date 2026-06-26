@@ -4,10 +4,9 @@ title: Discord channel overrides added via hot reload apply to both inbound rout
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T16:24:25Z
-updated_at: 2026-06-26T16:42:19Z
+updated_at: 2026-06-26T17:18:05Z
 ---
 
 ## Context
@@ -83,3 +82,7 @@ Observability work stays in:
 ## Acceptance commands
 
 - `cd isaac-discord && bb features features/comm/discord/routing.feature`
+
+## Verification
+
+Verified on fetched GitHub `isaac-discord` `main` at `d05a429`. The touched spec slice is green: `bb spec spec/isaac/comm/discord_spec.clj` passed with `63 examples, 0 failures, 128 assertions, 1 pre-existing pending`. The bean is not complete because its own acceptance command is red on current head: `bb features features/comm/discord/routing.feature` fails `2/8` scenarios before the new routing behavior is exercised. Both approved hot-reload scenarios fail during server startup with `Unconformable entity #:discord{:token "test-token", :allow-from {:users ..., :guilds ...}}`; the feature background still seeds `comms.discord.discord/allow-from.users` and `.guilds` as bare scalars (`123`, `G789`) while current schema expects string sequences. Until the routing feature is green with valid Discord allow-from fixture data, the handoff is not verifier-ready.
