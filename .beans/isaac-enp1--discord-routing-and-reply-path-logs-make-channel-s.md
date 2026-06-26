@@ -1,10 +1,10 @@
 ---
 # isaac-enp1
 title: Discord routing and reply-path logs make channel-session resolution diagnosable
-status: draft
+status: todo
 type: feature
 created_at: 2026-06-26T16:24:37Z
-updated_at: 2026-06-26T16:24:37Z
+updated_at: 2026-06-26T16:59:10Z
 ---
 
 ## Context
@@ -48,3 +48,32 @@ returns nil.
 
 This bean is about decision visibility, not changing the routing contract. The
 separate behavior bug is `isaac-y1ak`.
+
+## Approved scenarios
+
+- `isaac-discord/features/comm/discord/routing.feature:69`
+  - `an accepted Discord message logs its resolved routing`
+- `isaac-discord/features/comm/discord/routing.feature:99`
+  - `creating a new Discord session logs the created session name`
+- `isaac-discord/features/comm/discord/routing.feature:223`
+  - `an invalid Discord config logs a routing config-load failure`
+- `isaac-discord/features/comm/discord/reply.feature:47`
+  - `a reply for an unmapped session logs a warning instead of silently dropping`
+
+## Decision (2026-06-26, Micah)
+
+Keep this bean in the existing Discord feature files:
+
+- routing breadcrumbs live in `features/comm/discord/routing.feature`
+- reply-path warning lives in `features/comm/discord/reply.feature`
+
+This bean adds one new step:
+
+- `When the current session receives a completed turn with text "{text}"`
+
+It is needed only for the negative outbound case, where there is no inbound
+Discord message to establish a channel mapping.
+
+## Acceptance commands
+
+- `cd isaac-discord && bb features features/comm/discord/routing.feature features/comm/discord/reply.feature`
