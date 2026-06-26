@@ -1,11 +1,13 @@
 ---
 # isaac-opc4
 title: Ambiguous gherclj step "config:" collides across isaac-agent and isaac-server
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-26T21:45:52Z
-updated_at: 2026-06-26T21:46:03Z
+updated_at: 2026-06-26T21:53:26Z
 blocking:
     - isaac-c58s
 ---
@@ -40,3 +42,10 @@ Resolve the collision so `config:` is unambiguous and features keep using the pr
 
 ## Repro
 cd isaac-hail && clojure -M:features  (or bb features)
+
+## Implementation (work-3)
+- **Foundation** (`eb3bcb0`): canonical `config:` in `isaac.foundation.harness-config-steps` (spec + spec-support).
+- **Server** (`96bd83a`): renamed to `server config:` → `server-config-applied`; disk persist delegates to foundation; bumped foundation-spec pin; fixed dev-reload log row order.
+- **Agent** (`75190ff`): dropped duplicate `config:`; delegates to foundation; foundation SHA `eb3bcb0`.
+- **Cron** (`d6440c3`): resolves foundation `config-applied`.
+- **Verification**: isaac-hail features 80/0 (dev-local); isaac-server features 47/0 (git deps).
