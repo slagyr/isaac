@@ -1,7 +1,7 @@
 ---
 # isaac-3wic
 title: Configurable hail id naming strategy
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-06-26T03:33:53Z
@@ -10,62 +10,65 @@ blocked_by:
     - isaac-hoaq
 ---
 
-Make hail id minting strategy configurable via Isaac config, mirroring `:sessions :naming-strategy` (isaac-atpy). Today isaac-hoaq hardcodes bare `:short-uuid` in `queue.clj`; this bean adds a config dispatch so installs can choose `:short-uuid` (default), `:uuid`, or `:sequential` (`hail-N`).
+Make hail id minting strategy configurable via Isaac config, mirroring `:sessions.naming-strategy`. The current `isaac-hoaq` behavior hardcodes bare short-uuid ids; this bean adds config dispatch so installs can choose default short-uuid, full UUID, or deterministic sequential `hail-N`.
 
-## Problem
-- Hail minting is hardcoded to `ShortUuidStrategy` — no config knob.
-- Sessions already have `:sessions :naming-strategy`; hail should follow the same pattern for consistency and test determinism (`:sequential` → predictable `hail-1` in feature Backgrounds).
-- Existing on-disk `hail-N` records coexist regardless of strategy; ids are opaque strings everywhere downstream.
+## Decisions locked (2026-06-25, Micah)
 
-## Config shape (proposed — planner confirm path)
-Add a **new snapshot-only config slice** in isaac-hail manifest (NOT the `:hail` bands entity map):
+- Config path: `hail-settings.naming-strategy`
+- Allowed values: `short-uuid`, `uuid`, `sequential`
+- Default when absent: bare short-uuid
+- No legacy path aliases; clean cutover to the new config key
+- Router reach-`:all` child deliveries use the same configured hail id strategy
+- Session spawn ids remain out of scope
 
-```
-:hail-settings :naming-strategy
-```
+## Feature file
 
-- **Path:** `config/isaac.edn` → `{:hail-settings {:naming-strategy :short-uuid}}`
-- **Default when absent:** `:short-uuid` (preserve post-hoaq behavior)
-- **Allowed values:** `:short-uuid`, `:uuid`, `:sequential` (keyword or string, like sessions)
-- **Schema:** isaac-hail `src/isaac-manifest.edn` — new `:hail-settings` entry with `:naming-strategy` validated `[:one-of? :short-uuid :uuid :sequential]`
+Committed `@wip` scenarios live in:
 
-Alternative names (`:hail-defaults`, nested under `:defaults`) — planner pick one; avoid overloading the `:hail` bands table.
+- `isaac-hail/features/hail-naming.feature:9`
+- `isaac-hail/features/hail-naming.feature:27`
+- `isaac-hail/features/hail-naming.feature:40`
+- `isaac-hail/features/hail-naming.feature:82`
 
-## Production — isaac-hail
-**`src/isaac/hail/queue.clj`** (single mint path: `send!` + router `next-id`):
-- Extract `make-hail-naming-strategy [cfg root fs*]` (or `ensure-hail-naming-strategy!` cached on nexus like sessions).
-- Dispatch on `(get-in cfg [:hail-settings :naming-strategy])`:
-  - `:short-uuid` → `(naming/->ShortUuidStrategy nil)` — bare 8-hex
-  - `:uuid` → `(naming/->UuidStrategy nil)` — bare full UUID
-  - `:sequential` → `(naming/->SequentialStrategy root "hail" "hail-" fs*)` + restore counter sync against existing hail files before mint (the old `sync-hail-counter!` / `store/max-hail-seq` path) so `hail-2` follows delivered `hail-1`
-- `naming-strategy` reads from installed config snapshot (already available in `send!` via `snapshot-config`).
+These scenarios lock:
 
-**Out of scope:** `delivery_worker.clj` session spawn ids (`session-` SequentialStrategy) — session naming, not hail.
+1. sequential strategy resumes at `hail-2` when `hail-1` already exists outside pending
+2. `uuid` strategy emits a full UUID and keeps `thread-id == id`
+3. sequential strategy propagates to router reach-`:all` child deliveries (`hail-2`, `hail-3`)
+4. absent config still defaults to a bare short-uuid
 
-## Tests
-**New feature:** `features/hail-naming.feature` (mirror `isaac-agent/features/session/naming.feature`):
-1. With `hail-settings.naming-strategy sequential`, two sends mint `hail-1` then `hail-2` (deterministic paths OK).
-2. With `hail-settings.naming-strategy short-uuid`, two sends produce distinct bare 8-hex ids.
-3. (Optional third) `:uuid` → full UUID format assertion.
+## Implementation notes
 
-**Specs:** `spec/isaac/hail/queue_spec.clj` — dispatch unit tests per strategy; default remains `:short-uuid` when config absent.
-
-**Existing minting features:** No required revert — id-agnostic steps from hoaq stay valid for default. Sequential Background is optional ergonomics for new scenarios only.
-
-**Fixture features** (router/delivery/spawn with Given `hail-1`): unaffected — explicit ids, not minting.
+- The mint seam is `src/isaac/hail/queue.clj` (`next-id` / naming-strategy dispatch).
+- `send!` and router child fan-out must both read the configured strategy.
+- Sequential mode must restore the old counter-sync behavior so existing `hail-N` records are respected.
+- Default short-uuid behavior already exists in `main`; this bean adds override behavior without changing the default.
 
 ## Acceptance
-- `config/isaac.edn` may set `hail-settings.naming-strategy` to `:short-uuid`, `:uuid`, or `:sequential`.
-- Default (unset) → `:short-uuid` (same as current hoaq production).
-- `:sequential` restores `hail-N` minting with counter sync; `:uuid` / `:short-uuid` do not touch `hail/.counter`.
-- Router reach-`:all` child ids use the same configured strategy.
-- `features/hail-naming.feature` green; `bb spec` + `bb features` green in isaac-hail.
 
-## Dependencies
-- **Blocked by:** isaac-hoaq (short-uuid hardcoded default + id-agnostic test rework must land first)
-- **Uses:** isaac-a3fb strategies in isaac-foundation (already shipped)
+Run in `isaac-hail`:
 
-## Notes
-- Surfaced 2026-06-25 discussion: Micah wanted `:short-uuid` as hail default; this bean adds configurability without changing the default.
-- zanebot / existing terminals: no migration; strategy only affects newly minted ids.
-- Planner: confirm config path name and whether `isaac config get/set` needs path-navigator examples in bean body.
+```bash
+cd /Users/micahmartin/agents/plan/isaac-hail
+bb features features/hail-naming.feature
+bb spec spec/isaac/hail/queue_spec.clj
+```
+
+Targeted feature selectors:
+
+```bash
+cd /Users/micahmartin/agents/plan/isaac-hail
+bb features \
+  features/hail-naming.feature:9 \
+  features/hail-naming.feature:27 \
+  features/hail-naming.feature:40 \
+  features/hail-naming.feature:82
+```
+
+Definition of done:
+
+- remove `@wip` from `features/hail-naming.feature`
+- `hail-settings.naming-strategy` accepts `short-uuid`, `uuid`, and `sequential`
+- unset config still yields bare short-uuid ids
+- sequential mode resumes after existing `hail-N` files and applies to reach-`:all` children
+- `bb spec` and `bb features` are green in `isaac-hail`
