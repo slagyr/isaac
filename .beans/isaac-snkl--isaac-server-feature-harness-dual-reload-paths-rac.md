@@ -5,9 +5,9 @@ status: in-progress
 type: bug
 priority: normal
 tags:
-    []
+    - unverified
 created_at: 2026-06-26T20:40:56Z
-updated_at: 2026-06-26T21:42:52Z
+updated_at: 2026-06-26T21:45:09Z
 ---
 
 The isaac-server feature step harness (spec/isaac/server/server_steps.clj) drives config hot-reload via TWO concurrent paths on every config write, which race and make comm hot-reload feature tests ~50% flaky. Surfaced by isaac-yy88 (Discord token hot-reload): the discord `lifecycle.feature` "adding a Discord token mid-run starts the client" scenario is currently @wip'd in isaac-discord pending this fix.
@@ -75,3 +75,21 @@ Current-head evidence says the fix is not delivered:
 So the acceptance is still false on current heads: the shared harness fix is not
 on `main`, and the dependent Discord lifecycle scenarios are still intentionally
 parked behind this bean.
+
+## Re-handoff (work-2, 2026-06-26)
+
+Verifier failure at `5797c372` was a stale-head race: the three implementation
+commits were pushed to GitHub `main` before that verify run, but the verifier
+checkouts had not fetched them yet.
+
+`git ls-remote` on GitHub `main` now (post-handoff):
+
+- `isaac-server` `f0607357e15efd4525723329d0be32d6c59e9e54`
+- `isaac-foundation` `6e81f78005726488e9899c6c15d1fcd4f301dcf8`
+- `isaac-discord` `abf697333fd107bdc8984b65c745f854a834f8d1`
+
+Re-verified on fetched `main` (work-2 checkouts, pinned discord deps):
+
+- `isaac-server` `clojure -M:test:features` 47/0 ×3 (`rm -rf target/gherclj` between runs)
+- `isaac-discord` `clojure -M:test:features` 47/0 (lifecycle add/remove no longer `@wip`)
+- GitHub CI green on both server and discord push runs
