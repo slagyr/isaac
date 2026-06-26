@@ -4,9 +4,10 @@ title: Discord channel overrides added via hot reload apply to both inbound rout
 status: in-progress
 type: bug
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-26T16:24:25Z
-updated_at: 2026-06-26T17:18:05Z
+updated_at: 2026-06-26T17:26:31Z
 ---
 
 ## Context
