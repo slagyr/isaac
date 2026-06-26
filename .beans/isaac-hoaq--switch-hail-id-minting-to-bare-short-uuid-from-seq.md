@@ -1,11 +1,13 @@
 ---
 # isaac-hoaq
 title: Switch hail id minting to bare :short-uuid (from sequential hail-N)
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T00:13:12Z
-updated_at: 2026-06-26T00:13:28Z
+updated_at: 2026-06-26T00:22:31Z
 blocked_by:
     - isaac-a3fb
 ---
