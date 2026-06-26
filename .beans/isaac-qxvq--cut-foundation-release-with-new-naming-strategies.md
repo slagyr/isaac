@@ -4,8 +4,10 @@ title: Cut foundation release with new naming strategies (unblock hail short-uui
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-26T14:37:19Z
-updated_at: 2026-06-26T14:47:15Z
+updated_at: 2026-06-26T15:00:35Z
 ---
 
 Foundation main has UuidStrategy + ShortUuidStrategy (isaac.naming, from isaac-a3fb) but the manifest :version is still "0.1.7" — and zanebot runs the bundled foundation 0.1.7 brew SEED (seed-authoritative). The seed lacks the strategies, so any module that uses them cannot deploy to zanebot.
@@ -39,6 +41,16 @@ Surfaced 2026-06-26, Micah deploy request.
 - Tagged **v0.1.8** (frozen, → 93b9545), ran the Release workflow: GitHub Release v0.1.8 published; homebrew-tap `Formula/isaac.rb` auto-bumped to v0.1.8 (foundation-release tap job green).
 
 ### Pending — zanebot deploy (steps 3–4), live ops
-- [ ] `brew upgrade` on zanebot so the bundled 0.1.8 seed has the strategies.
-- [ ] Bump hail to b5f3db2 on zanebot; deploy (dry-boot + `(require 'isaac.hail.queue)` load test + config validate + restart); verify a sent hail gets a bare short-uuid.
+- [x] `brew upgrade isaac` on zanebot: 0.1.7 → 0.1.8 (seed now has the naming strategies).
+- [x] Bumped hail `5a9989d` → `b5f3db2` in ~/.isaac/config/isaac.edn (backed up). Load-test gate `(require 'isaac.hail.queue)` against deployed deps = LOAD-OK (the var that failed before now resolves on the 0.1.8 seed); `config validate` OK; service restarted (pid 64759, running). Verified: a sent hail minted bare short-uuid id `0fb33893` (routed to undeliverable/0fb33893.edn — bare-id filename also confirms the stable-id lifecycle is live). Test record cleaned up.
 These are live changes to the zanebot host (brew upgrade + service restart) — holding for confirmation before deploying.
+
+## Summary of Changes (work-1, 2026-06-26)
+
+DONE — both the release and the zanebot deploy.
+
+**Release:** foundation `v0.1.8` (commit `93b9545`, tagged `v0.1.8`): :version 0.1.7→0.1.8 + fixed a blocking regression (778e91a's `step-tables-cell?` mis-routed EDN set literals to the DSL matcher). Release workflow published the GitHub release and auto-bumped homebrew-tap Formula/isaac.rb to v0.1.8.
+
+**Deploy (zanebot):** `brew upgrade isaac` 0.1.7→0.1.8; hail pin → b5f3db2; the bean's `(require 'isaac.hail.queue)` load-test gate passed against the deployed deps (the exact `naming/->UuidStrategy` failure is gone); config valid; service restarted healthy; a sent hail mints a bare short-uuid id. Unblocks isaac-hoaq + isaac-3wic.
+
+Verify SHAs: foundation origin/main has `93b9545` (v0.1.8); zanebot `isaac --version` = 0.1.8, config :modules isaac.hail :sha = b5f3db2.
