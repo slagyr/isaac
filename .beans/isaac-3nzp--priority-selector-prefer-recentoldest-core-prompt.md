@@ -1,10 +1,13 @@
 ---
 # isaac-3nzp
 title: 'Priority selector: --prefer recent/oldest (core + prompt)'
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T21:50:05Z
-updated_at: 2026-06-26T21:50:05Z
+updated_at: 2026-06-26T21:56:59Z
 parent: isaac-4e4b
 ---
 
@@ -25,3 +28,12 @@ Plus unit specs on the core :prefer tiebreak.
 
 ## Notes
 Selection-suite, CLI side. Lowest-risk, mechanical. Empty-filter default (named prompt-default vs most-recent-of-all vs new) is a SEPARATE deferred decision, not this bean. Hail's --prefer (isaac-c58s) reuses the same core knob.
+
+## Implementation (work-2, 2026-06-26)
+
+- `isaac.session.selector`: `:prefer` (`:recent` default, `:oldest` tiebreak) via `pick-by-prefer`; `--resume` routes through a new resume-select branch (all sessions, same tiebreak).
+- `isaac.session.selector-cli`: `--prefer` option, validation, `build-select` mapping.
+- `isaac.bridge.prompt-cli`: removed `resolve-via-resume` / `most-recent-session` bypass; all selection flows through the shared selector.
+- Removed `@wip` on four `cli-prompt.feature` scenarios; oldest scenario re-asserts `updated-at` after transcript seed (append bumps timestamps).
+- **SHA:** isaac-agent `47e038c`
+- **Verified:** selector + selector-cli + prompt_cli specs 51/0; `cli-prompt.feature` 29/0 (583 examples in full features run).
