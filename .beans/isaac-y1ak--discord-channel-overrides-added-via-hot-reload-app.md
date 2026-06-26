@@ -1,10 +1,10 @@
 ---
 # isaac-y1ak
 title: Discord channel overrides added via hot reload apply to both inbound routing and outbound replies
-status: draft
+status: todo
 type: bug
 created_at: 2026-06-26T16:24:25Z
-updated_at: 2026-06-26T16:24:25Z
+updated_at: 2026-06-26T16:34:20Z
 ---
 
 ## Context
@@ -54,3 +54,29 @@ Related but distinct:
 - `isaac-o0xj` fixed numeric channel keys
 - `isaac-tw3m` fixed allow-from reload without reconnect
 - `isaac-yy88` below is the separate token-add lifecycle gap
+
+## Approved scenarios
+
+- `isaac-discord/features/comm/discord/routing.feature:69`
+  - `a hot-reloaded channel session override applies to both inbound routing and outbound reply`
+- `isaac-discord/features/comm/discord/routing.feature:171`
+  - `a hot-reloaded channel crew override applies without reconnecting the Discord client`
+
+## Decision (2026-06-26, Micah)
+
+Keep this bean focused on the split-brain config bug in Discord routing:
+
+- inbound routing and outbound reply must honor the same hot-reloaded channel
+  override view
+- no new steps
+- Marigold-themed routing scenarios in `routing.feature`
+- no reconnect assertions stay here because they are part of the operator-facing
+  contract for channel override edits
+
+Observability work stays in:
+- `isaac-qvub` server reload visibility
+- `isaac-enp1` Discord routing/reply-path logs
+
+## Acceptance commands
+
+- `cd isaac-discord && bb features features/comm/discord/routing.feature`
