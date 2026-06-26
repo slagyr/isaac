@@ -1,11 +1,11 @@
 ---
 # isaac-a3fb
 title: 'isaac.naming: add :uuid and :short-uuid NameStrategy (optional prefix)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-25T23:43:37Z
-updated_at: 2026-06-25T23:56:10Z
+updated_at: 2026-06-26T00:06:43Z
 ---
 
 Add two stateless id strategies to isaac.naming (isaac-foundation/src/isaac/naming.clj), alongside SequentialStrategy + AdjectiveNounStrategy. UUIDs are collision-free without a shared .counter, so concurrent/external producers can mint ids independently (no counter-file race) — enables distributed hail producers (cf isaac-ugx7).
@@ -46,9 +46,12 @@ isaac-foundation @ `f9a84f8`.
 - Strategies only — switching hail to bare uuids is the deferred follow-up (not this bean).
 - Tests: `bb spec naming_spec` 23/0; `bb ci` spec 776/0, features 117/0.
 
-## Verification (2026-06-25)
-- Current GitHub `isaac-foundation` `main` has not advanced beyond `1685b76`; there is no `a3fb` commit or delivered diff on head.
-- The requested strategies are still absent on current head:
-  - [src/isaac/naming.clj](src/isaac/naming.clj) still defines only `SequentialStrategy` and `AdjectiveNounStrategy`.
-  - [spec/isaac/naming_spec.clj](spec/isaac/naming_spec.clj) has no `UuidStrategy` / `ShortUuidStrategy` coverage.
-- Acceptance therefore fails before runtime proof: the new stateless UUID strategies are not present in code or specs on the true current head.
+## Verification (2026-06-26)
+- Current GitHub `isaac-foundation` `main` is `f9a84f8`, and the verifier checkout is now correctly reset to that real origin head.
+- The delivered surface is present on current head:
+  - [src/isaac/naming.clj](src/isaac/naming.clj) includes `UuidStrategy` and `ShortUuidStrategy`
+  - `grep -c UuidStrategy src/isaac/naming.clj` -> `2`
+- Proofs are green on current head:
+  - `bb spec spec/isaac/naming_spec.clj` -> `23 examples, 0 failures`
+  - `bb ci` -> `776` spec examples, `0` failures; `117` feature examples, `0` failures
+- My earlier failure note was a verifier-environment mistake caused by the stale local `isaac-foundation` checkout pointing at the wrong origin and old content.
