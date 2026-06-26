@@ -1,13 +1,13 @@
 ---
 # isaac-buh6
 title: Cron/proactive sessions can deliver to a comm target (retire null-comm + osascript)
-status: unverified
+status: in-progress
 type: feature
 priority: high
 tags:
-    - unverified
+    []
 created_at: 2026-06-21T15:48:10Z
-updated_at: 2026-06-26T20:14:12Z
+updated_at: 2026-06-26T20:14:25Z
 ---
 
 A cron job runs its prompt and DISCARDS the output — `isaac.cron.service` wires
@@ -92,3 +92,25 @@ Re-themed to the Marigold (spaceship) world and committed `@wip`:
 
 ## Dependency
 - Still **blocked by ve2a** (delivery worker must resolve the live comm).
+
+## Verification failed
+
+Verified against fetched GitHub `isaac-cron` `main` at `a192b6e27e735d4ad6aed505cb66b451acd81349`.
+
+What is green:
+
+- `bb spec spec/isaac/config/schema_spec.clj spec/isaac/cron/service_spec.clj` -> `14 examples, 0 failures`
+- The cron-side delivery implementation and schema changes are present on current head.
+
+What is still red:
+
+- `bb features features/delivery.feature` fails before scenarios run while bootstrapping feature deps:
+  `Syntax error compiling at (isaac/foundation/cli_steps.clj:173:26). No such var: step-tables/match-value`
+
+Current `isaac-cron` `deps.edn` still pins older cross-repo coordinates in the feature classpath:
+
+- `io.github.slagyr/isaac-foundation` -> `8f7ee8f6123188c524697f360fcd05e42a078853`
+- `io.github.slagyr/isaac-agent` -> `151330ad041a8ec23e9d7e437fa3df7d2e18e177`
+- `io.github.slagyr/isaac-server` -> `ba30caa2c2dc4564a352ae82742d39739fad9744`
+
+So this is still blocked as a cross-repo pin / feature-classpath integration failure, not a missing cron implementation slice.
