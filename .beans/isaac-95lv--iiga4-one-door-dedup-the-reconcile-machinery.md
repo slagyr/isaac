@@ -7,11 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-15T21:31:34Z
-updated_at: 2026-06-16T04:57:06Z
-blocked_by:
-    - isaac-kbzd
-    - isaac-bju6
-    - isaac-qokc
+updated_at: 2026-06-26T21:02:13Z
 ---
 
 Child of epic isaac-iiga. Make server-only structural, not conventional.
@@ -30,10 +26,10 @@ Acceptance:
 
 ## Worker handoff
 
-- isaac-agent 515d0ae: removed production `:comms` + `:isaac.agent/comm` berth; test-resources supplies server-owned `:comms` + `:isaac.server/comm` berth stub; schema/root merges classpath builtins; telly/marigold comm keys → `:isaac.server/comm`
-- isaac-server a8ea8b6: production manifest owns `:comms` (`:isaac.server/comm`); test-resources fixture drops duplicate `:comms` (crew/models/providers snapshot-only remain)
-- isaac-foundation 3cc82a1: `comm-kinds` reads `:isaac.server/comm` (falls back to `:isaac.agent/comm`)
-- Foundation pinned to 3cc82a1 in agent + server
-- Agent CI green: 1039 spec + 523 feature examples; server CI green: 121 spec + 36 feature examples
-- Cross-classpath `:comms` compose no longer collides (agent production manifest no longer contributes the table)
-- Remaining: agent still carries comm/factory.clj for module defmethods (not invoked on agent boot); hot_reload features live in monolith isaac only; bean still blocked by isaac-bju6 / isaac-qokc
+- **Agent install is store-only** (`isaac.agent.config.install`); prompt/CLI never reconcile registries or start services
+- **Server owns reconcile** (`isaac.config.install` + `configurator` + `install-config-berths!` + `service-runtime/start-all!` at boot only)
+- **Production `:comms`** lives in server manifest only; agent test-resources supplies berth stub for features
+- **isaac-foundation@54a36d0**: canonical `isaac.comm.factory` + `isaac.comm.registry` (removed from agent + server src)
+- **Pins**: agent@75f4ef5, server@45a191f, foundation@54a36d0
+- **CI** (work-3): agent `bb ci` → 1110 spec + 550 feature examples; server `bb ci` → 47 feature examples (spec slice green)
+- Blockers kbzd/bju6/qokc completed; hot_reload acceptance remains in isaac-server (not monolith)
