@@ -1,13 +1,12 @@
 ---
 # isaac-vhyw
 title: 'Discord comm: comm_send target resolves by channel :name or numeric ID'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T15:38:46Z
-updated_at: 2026-06-26T15:54:53Z
+updated_at: 2026-06-26T16:04:53Z
 ---
 
 ## Context
@@ -50,3 +49,6 @@ Gaps found during orc1 test: hail bands were using non-existent name "Isaac" ins
 
 ## Handoff
 Worker can implement the resolve + tests. Planner can update band examples/docs later if needed. Verify via the comm_send feature and a Discord round-trip if possible.
+
+## Verification
+Verified on fetched GitHub `isaac-discord` `main` at `860af32`. The comm now resolves outbound targets by channel ID or configured `:name`, and current head also includes the namespaced `:discord/target` migration from `isaac-97bf`. Proofs passed: `bb spec spec/isaac/comm/discord_spec.clj` → `63 examples, 0 failures, 129 assertions, 1 pre-existing pending` (unrelated `discord_app_spec.clj` hot-reload pending), and `bb features features/comm/discord/comm_send_target.feature` → `2 examples, 0 failures, 2 assertions`. README also documents the name-based target form.

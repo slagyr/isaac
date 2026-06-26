@@ -5,9 +5,9 @@ status: in-progress
 type: feature
 priority: normal
 tags:
-    - unverified
+    - feature-red
 created_at: 2026-06-26T03:33:53Z
-updated_at: 2026-06-26T04:24:20Z
+updated_at: 2026-06-26T16:04:53Z
 blocked_by:
     - isaac-hoaq
 ---
@@ -74,3 +74,6 @@ Definition of done:
 - unset config still yields bare short-uuid ids
 - sequential mode resumes after existing `hail-N` files and applies to reach-`:all` children
 - `bb spec` and `bb features` are green in `isaac-hail`
+
+## Verification
+Verified against fetched GitHub `isaac-hail` head `b5f3db2` (feature commit `41a3cfd` plus follow-up dep bump). The core queue logic looks right and `bb spec spec/isaac/hail/queue_spec.clj` passed (`8 examples, 0 failures, 22 assertions`). The bean is not complete because its own acceptance feature task is still red: `bb features features/hail-naming.feature` fails before scenarios run with `ambiguous step match: "config:" matches: config-applied, configure`. On this head, the `:features` alias loads both `isaac.session.session-steps` and `isaac.server.server-steps`, and each defines `Given "config:"`, so `hail-naming.feature` is not verifier-green yet.
