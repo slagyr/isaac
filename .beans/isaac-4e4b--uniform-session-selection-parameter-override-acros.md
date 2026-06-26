@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-06-26T04:14:17Z
-updated_at: 2026-06-26T17:06:35Z
+updated_at: 2026-06-26T19:39:26Z
 ---
 
 DESIGN (exploratory, 2026-06-25). Session SELECTION and PARAMETER OVERRIDE are a cross-cutting concern shared by hail, the prompt command, ACP, and chat. Each rolls its own. Unify into one mechanism.
@@ -90,3 +90,26 @@ spawn/new/neither are mutually exclusive, so model them as ONE enum, not two boo
 - **prompt default = `:create :if-missing`** (when not conflicting with --session). hail default = `:never` unless the band/flag says otherwise.
 - `--session` (exact address) remains mutually exclusive with `--create` (and the describe flags). When creating with describe flags, those attrs become the new session's identity.
 - Reads as a sentence: "create: if-missing" / "create: never" / "create: always". Supersedes the earlier --spawn/--new section.
+
+## REVISION (2026-06-26): flat input map + `--prefer` priority selector
+
+Two contract refinements settled with Micah after B1 (prompt) shipped:
+
+### 1. Flat normalized map (NOT a `:select`/`:override` split)
+The adapter<->core contract is ONE flat map, not two. Rationale: override keys are already `--with-*`-prefixed, so in a flat namespace `:crew` (select: the session OF crew X) and `:with-crew` (override: process the turn AS crew X) never collide — the split was guarding a problem the naming already solves.
+- Each surface (CLI flags, ACP protocol params, chat) normalizes its input into one flat map: `{:session :session-tags :crew :reach :create :prefer :with-crew :with-model :with-effort :with-context-mode ...}`.
+- The CORE does the projection internally: select-keys -> `resolve-session-targets`; `--with-*` keys -> translate to behavioral-keys -> `create-with-resolved-behavior!`.
+- This puts the one genuine subtlety (crew dual-meaning + the `--with-crew`->`:crew` translation) ONCE in the core — the reusability goal. `build-select`/`build-override` collapse into the core's internal projection; `selector-cli` keeps only the tools.cli option-specs + string parsing.
+
+### 2. `--prefer recent|oldest` replaces `--resume` (priority/tiebreak selector)
+`--resume` was a false friend: in Claude Code / most agents `--resume` = pick a specific prior session = our `--session`. Renamed to reflect what it actually is — the tiebreak that collapses a multi-match set under `:reach :one`.
+- `--prefer recent|oldest`, default `recent` (recent = `:updated-at` desc). Extensible vocabulary later (`created`, `name`) if needed.
+- Pure tiebreak: a NO-OP when the match is already unambiguous (`--session`, or a single-match `--crew`) — like `ORDER BY` on a one-row result. Only consequential on multi-match. Applies to ANY filter (crew, tags, or unfiltered), so it's orthogonal to the filter, not an empty-case thing.
+- `--session` stays the exact selector (== the industry "resume").
+- Kills the current `prompt_cli` bypass (`resolve-via-resume` -> `store/most-recent-session`); `--prefer` folds into the shared selector as the multi-match collapse rule.
+
+### Separate, still-open point: empty-filter default
+What to target when NO filter is given is a DISTINCT decision (not `--prefer`'s job): named `prompt-default` | most-recent-of-all | new. Keep `prompt-default` as the predictable default; "resume my last session globally" = `--prefer recent` over an all-sessions filter (however we express "all"). Settle on its own before B2/B3.
+
+### Test placement
+`--prefer` is a CORE selection concern -> selection-suite, CLI side, and LAST (lowest-risk, mechanical). Per the module-boundary rule: behavior once at the core; wiring/transport per surface (CLI in isaac-agent, server/ACP+chat in isaac-acp), so a future CLI/server module split stays clean.
