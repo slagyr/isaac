@@ -1,13 +1,12 @@
 ---
 # isaac-o8gk
 title: Project-root prompt roots and AGENTS boot-file resolution stay consistent
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T19:52:18Z
-updated_at: 2026-06-26T21:11:00Z
+updated_at: 2026-06-26T21:16:45Z
 ---
 
 Current behavior is inconsistent: prompt discovery uses a discovered project root, but boot-file loading reads only <cwd>/AGENTS.md, and project-local prompts currently default to <project-root>/prompts. We want one contract: discover the nearest project root by walking up from session cwd, then load boot instructions from <project-root>/AGENTS.md and project-local prompt content from <project-root>/.isaac/prompts. No ancestor prompt merging; no cwd-only prompt resolution.\n\nAcceptance ideas:\n- project-local prompt discovery reads from <project-root>/.isaac/prompts\n- a session started in a nested subdirectory still discovers the nearest ancestor project root\n- AGENTS.md is read from that discovered project root, not just the literal cwd\n- prompts remain categorized by type: > user-invocable: > directory inference (commands/skills/rules)\n- there is no merging of prompt roots from multiple ancestors\n
@@ -84,3 +83,15 @@ feature scenario. Left for a future planning pass if desired.
 
 Tagged unverified for verifier confirmation on a fresh checkout of
 isaac-agent main @ 75f4ef5.
+
+## Verification (recheck)
+
+Re-verified on fetched `isaac-agent` `main` at `75f4ef5de312c93e5d5b2bd9c325f8f06433ca2e`.
+
+Focused proofs were green:
+
+- `clojure -M:spec spec/isaac/prompt/catalog_spec.clj spec/isaac/session/context_spec.clj` -> `33 examples, 0 failures`
+- `clojure -M:features features/prompts/catalog.feature features/session/boot.feature` -> `11 examples, 0 failures`
+
+That covers the landed contract scenarios for project `.isaac/prompts` root
+discovery and `AGENTS.md` boot-file discovery from nested cwd.
