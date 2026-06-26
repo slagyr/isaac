@@ -1,11 +1,11 @@
 ---
 # isaac-nbgn
 title: Shared session selector + resolver + override (isaac-agent) — proven by migrating prompt
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-26T16:28:33Z
-updated_at: 2026-06-26T17:38:07Z
+updated_at: 2026-06-26T17:42:49Z
 parent: isaac-4e4b
 ---
 
