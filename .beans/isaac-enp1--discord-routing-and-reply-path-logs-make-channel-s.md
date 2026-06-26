@@ -1,13 +1,12 @@
 ---
 # isaac-enp1
 title: Discord routing and reply-path logs make channel-session resolution diagnosable
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T16:24:37Z
-updated_at: 2026-06-26T17:49:55Z
+updated_at: 2026-06-26T18:02:28Z
 ---
 
 ## Context
@@ -80,3 +79,7 @@ Discord message to establish a channel mapping.
 ## Acceptance commands
 
 - `cd isaac-discord && bb features features/comm/discord/routing.feature features/comm/discord/reply.feature`
+
+## Verification
+
+Verified on fetched GitHub `isaac-discord` `main` at `406e72a`. The acceptance command is green: `bb features features/comm/discord/routing.feature features/comm/discord/reply.feature` passed with `12 examples, 0 failures, 15 assertions`. That covers the routing breadcrumb, created-session breadcrumb, config-load failure logging, and the unmapped-session reply warning without changing the routing contract.

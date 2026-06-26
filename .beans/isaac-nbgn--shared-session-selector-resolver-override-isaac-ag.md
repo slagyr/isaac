@@ -1,13 +1,12 @@
 ---
 # isaac-nbgn
 title: Shared session selector + resolver + override (isaac-agent) — proven by migrating prompt
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T16:28:33Z
-updated_at: 2026-06-26T17:51:14Z
+updated_at: 2026-06-26T18:02:28Z
 parent: isaac-4e4b
 ---
 
@@ -58,3 +57,7 @@ Also rewrote the two pre-existing `--crew` scenarios (model-resolution, soul) �
 - `prompt` migrated: `--crew`/`--session-tag` select, `--create`, `--with-*` override; `-M/--model` alias kept
 - `features/bridge/cli-prompt.feature` — selector scenarios added; crew scenarios fixed for crew-owned sessions
 - `bb ci` green on isaac-agent @ 8a7f7a2+
+
+## Verification
+
+Verified on fetched GitHub `isaac-agent` head `e7c46f3`. The delivered acceptance proof is green: `bb ci` passed with `1109` spec examples, `0` failures, `2184` assertions, plus `549` feature examples, `0` failures, `1227` assertions. That covers the shared session selector/resolver/override module, prompt migration onto it, the tri-state `--create` surface, selector validation rules, `--with-*` override behavior, and preservation of existing prompt behavior.
