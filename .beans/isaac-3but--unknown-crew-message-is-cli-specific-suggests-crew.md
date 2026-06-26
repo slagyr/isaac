@@ -1,13 +1,11 @@
 ---
 # isaac-3but
 title: Unknown-crew message is CLI-specific (suggests --crew on every channel)
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-21T19:49:27Z
-updated_at: 2026-05-23T17:27:58Z
+updated_at: 2026-06-26T21:10:36Z
 ---
 
 ## Gap
@@ -61,3 +59,10 @@ is cleaner separation but spreads the text. Implementer to choose.
   unknown crew, the message does NOT suggest `--crew` and instead
   offers a remediation appropriate to that channel.
 - Feature scenarios cover at least two distinct channel kinds.
+
+## Verification notes
+
+- Prior `unverified` tag (2026-05-23) was stale — no discrete handoff; verifier flagged on 2026-06-26.
+- Fix already on `isaac-agent` main since carve (`4d486f1`/`5b2fa2c`): `unknown-session-crew-message` branches on `:origin :kind` (Option 1) in `src/isaac/bridge/core.clj`.
+- work-2 acceptance (2026-06-26, `dev-local`): `bb features features/bridge/unknown_crew.feature` → 3 examples, 0 failures; `bb spec spec/isaac/bridge_spec.clj` → 50 examples, 0 failures (includes `:cli`, `:acp`, `:webhook` origin cases). ACP server spec also asserts non-CLI `/crew` wording.
+- Completed: acceptance met; no further code changes required.
