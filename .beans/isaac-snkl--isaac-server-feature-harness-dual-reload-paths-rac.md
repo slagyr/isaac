@@ -1,11 +1,13 @@
 ---
 # isaac-snkl
 title: 'isaac-server feature harness: dual reload paths race, making hot-reload comm tests nondeterministic'
-status: todo
+status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T20:40:56Z
-updated_at: 2026-06-26T20:40:56Z
+updated_at: 2026-06-26T21:40:54Z
 ---
 
 The isaac-server feature step harness (spec/isaac/server/server_steps.clj) drives config hot-reload via TWO concurrent paths on every config write, which race and make comm hot-reload feature tests ~50% flaky. Surfaced by isaac-yy88 (Discord token hot-reload): the discord `lifecycle.feature` "adding a Discord token mid-run starts the client" scenario is currently @wip'd in isaac-discord pending this fix.
@@ -37,3 +39,14 @@ NOTE: an additional gotcha that masks this locally — `clojure -M:features` doe
 - Follow-up in isaac-discord: remove the @wip from the lifecycle scenario after repinning.
 
 Surfaced 2026-06-26 from isaac-yy88.
+
+## Implementation (work-2, 2026-06-26)
+
+**Approach 1 (single consumer, sync path):** Added `:start-config-reloader?` to `app/start!` (default true). Feature harness `server-running` passes `false` so `sync-config-reload!` is the sole `poll!` consumer; watcher still starts via `runtime/start!` on the change source for activation logging.
+
+**SHAs pushed:**
+- isaac-server `f060735` — harness + `app/start!` opt
+- isaac-foundation `6e81f78` — `isaac-edn-file-exists` merges into existing file (partial writes no longer wipe config)
+- isaac-discord `abf6973` — repinned server/foundation, removed `@wip` on lifecycle add/remove scenarios, fixed log row order (`:discord.client/*` logs during reconcile before `:config/reloaded`)
+
+**Verified locally:** `isaac-server` `bb spec` 156/0; `clojure -M:test:features` 47/0 ×5 (clean `target/gherclj` between runs); `isaac-discord` `bb spec` 66/0 + `clojure -M:test:features` 47/0 (pinned deps, no dev-local).
