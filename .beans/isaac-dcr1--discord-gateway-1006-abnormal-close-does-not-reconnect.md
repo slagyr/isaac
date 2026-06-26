@@ -1,7 +1,7 @@
 ---
 # isaac-dcr1
 title: 'Discord gateway: 1006 abnormal close does not trigger reconnect (leaves comm unresponsive)'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
@@ -9,9 +9,8 @@ tags:
     - comm
     - gateway
     - hot-reload
-    - unverified
 created_at: 2026-06-25T12:00:00Z
-updated_at: 2026-06-25T18:15:01Z
+updated_at: 2026-06-26T20:02:37Z
 ---
 
 ## Context
@@ -77,3 +76,7 @@ No `:discord.gateway/error` or transport error immediately preceding the close. 
 ## Handoff
 
 Add handling in `on-close!` (and/or the reader loop when it sees nil/timeout) so 1006 triggers `reconnect! :identify`. Verify with a test that injects a 1006 close and asserts a subsequent identify + ready.
+
+## Verification
+
+Verified on fetched GitHub `isaac-discord` `main` at `406e72a`, which includes `f4b7b4b` (`isaac-dcr1: reconnect after 1006 abnormal gateway close`) plus later follow-ups. Focused proofs are green: `bb spec spec/isaac/comm/discord/gateway_spec.clj` passed with `66 examples, 0 failures, 131 assertions, 1 pre-existing pending`, and `bb features features/comm/discord/reconnect.feature` passed with `3 examples, 0 failures, 10 assertions`. Current `gateway_spec.clj` includes the non-fatal reconnect coverage and current `gateway.clj` routes non-fatal/non-resumable close codes through reconnect rather than stopping permanently.

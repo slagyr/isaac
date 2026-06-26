@@ -1,13 +1,12 @@
 ---
 # isaac-nfmo
 title: Rename log event :berth/registered -> :berth/registration
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-21T02:31:44Z
-updated_at: 2026-06-26T19:56:48Z
+updated_at: 2026-06-26T20:02:37Z
 ---
 
 Follow-up to olj5: rename the per-entry boot log event `:berth/registered` to
@@ -46,3 +45,10 @@ tests synced to the new name but has no runtime change.
 - isaac-agent: slash_extension.feature + registry_spec.clj synced; foundation SHA bumped to 8a5015c
 - No `:berth/registered` remains in either repo
 - foundation bb spec + berth_registration.feature green; agent registry_spec + slash_extension.feature green
+
+## Verification
+
+Verified on fetched GitHub heads: `isaac-foundation` `8a5015c` and `isaac-agent` `e9f9fbd`. Focused proofs are green in both repos:
+- foundation: `bb spec spec/isaac/module/loader_spec.clj` -> `33 examples, 0 failures, 78 assertions`; `bb features features/module/berth_registration.feature` -> `3 examples, 0 failures, 4 assertions`
+- agent: `bb spec spec/isaac/slash/registry_spec.clj` -> `15 examples, 0 failures, 17 assertions`; `bb features features/module/slash_extension.feature` -> `3 examples, 0 failures, 4 assertions`
+The targeted heads also match the intended rename split: foundation emits `:berth/registration` and agent only updates assertions against that event name.
