@@ -1,11 +1,13 @@
 ---
 # isaac-cov2
 title: 'isaac-cli-server: /cli websocket endpoint that runs CLI commands server-side'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T22:03:27Z
-updated_at: 2026-06-27T03:53:56Z
+updated_at: 2026-06-27T03:59:00Z
 parent: isaac-ec9q
 ---
 
@@ -62,3 +64,11 @@ Scenario: a batch command streams stdout and exits zero
 - M3 (interactive/full-duplex hold-open + reconnect) tracked separately
 
 New-territory: revisit the shape as implementation reveals constraints.
+
+
+## Implementation (work-3)
+- Repo: isaac-cli-server — `isaac.cli-server.ws/handler` + `dispatch` (in-process `main/run` for M1).
+- Features: `features/cli/endpoint.feature` — locked batch scenario + empty argv, CLI errors, stdin acceptance.
+- Steps: `the handler sends frames:` with TABLES.md matchers (base64 `data` decoded for assertions).
+- Auth intentionally omitted in handler (server layer); M3 interactive/reconnect deferred.
+- Verified: `bb ci` — 1 spec + 5 features green (dev-local).
