@@ -1,11 +1,13 @@
 ---
 # isaac-7p1i
 title: 'isaac-cli-proxy: remote CLI client that ships argv+IO over /cli'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T22:03:27Z
-updated_at: 2026-06-27T04:00:00Z
+updated_at: 2026-06-27T04:49:26Z
 parent: isaac-ec9q
 ---
 
@@ -51,3 +53,16 @@ Home: `isaac-cli-proxy/features/remote.feature`. Tested against a STUB /cli serv
 - End-to-end interactive `isaac remote .../cli acp` -> the isaac-ec9q integration feature.
 
 New-territory: revisit as implementation reveals constraints.
+
+
+## Handoff (work-2)
+
+Repo: https://github.com/slagyr/isaac-cli-proxy
+SHA: 41714d2
+
+`bb spec` (6 examples) and `bb features` (5 scenarios) green.
+
+Fixes in this pass:
+- Stub table headers are strings; keywordize in `parse-reply-table` so reply frames encode correctly.
+- `bound-fn` on stub session future preserves gherclj `*state*` binding.
+- `argv->matcher-str` for frame matcher tables (avoids `(str [])` => `""` trap).
