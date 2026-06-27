@@ -4,10 +4,9 @@ title: 'Cron: build frequencies for scheduled prompts'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T17:27:18Z
+updated_at: 2026-06-27T17:33:20Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-rqlc
@@ -70,3 +69,18 @@ frequencies consumers but isn't required here.
 
 Scope honored: wiring only (per 4e4b); the create/prefer/reach matrix is rqlc's
 and not re-proven here. Tagged unverified.
+
+## Verification failed
+
+Current fetched GitHub `isaac-cron` `main` is still
+`dd2dfe2dfb053ac6dc0a19ed865e11f21a02322b`, and the `la09` cron frequencies
+work is not present on that head.
+
+Concrete current-head evidence:
+
+- [src/isaac/cron/service.clj](/Users/micahmartin/agents/verify/isaac-cron/src/isaac/cron/service.clj:78) still calls `session-ctx/create-with-resolved-behavior!` directly with `nil` session key and ad-hoc `:crew`; there is no `job->frequencies`, no shared frequencies resolution, and no `resolve-session-targets`.
+- [resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-cron/resources/isaac-manifest.edn:1) still has the old cron-job schema with only `:crew`, `:expr`, and `:prompt`; no frequencies keys are declared.
+- The current repo has no [features/frequencies.feature](/Users/micahmartin/agents/verify/isaac-cron/features/frequencies.feature) at all; only `hot_reload.feature`, `origin.feature`, `prompt.feature`, and `scheduling.feature` exist.
+
+So the behavior described in the handoff is not on current `main`, and there is
+no valid verifier proof to run yet.
