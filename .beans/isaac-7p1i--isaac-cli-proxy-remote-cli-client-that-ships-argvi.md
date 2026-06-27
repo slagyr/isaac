@@ -1,13 +1,12 @@
 ---
 # isaac-7p1i
 title: 'isaac-cli-proxy: remote CLI client that ships argv+IO over /cli'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T22:03:27Z
-updated_at: 2026-06-27T04:49:26Z
+updated_at: 2026-06-27T15:03:59Z
 parent: isaac-ec9q
 ---
 
@@ -66,3 +65,17 @@ Fixes in this pass:
 - Stub table headers are strings; keywordize in `parse-reply-table` so reply frames encode correctly.
 - `bound-fn` on stub session future preserves gherclj `*state*` binding.
 - `argv->matcher-str` for frame matcher tables (avoids `(str [])` => `""` trap).
+
+## Verification
+
+Verified on fetched GitHub `isaac-cli-proxy` `main`
+`41714d2c452ae56aa915ffe68f698cfc44a7adf6`.
+
+Proofs were green on that current head:
+
+- `bb spec` -> `6 examples, 0 failures, 10 assertions`
+- `bb features` -> `5 examples, 0 failures, 13 assertions`
+
+That matches the bean's locked scope: stub-server proxy round-trips for argv,
+stdout/stderr, exit-code relay, empty-argv usage passthrough, stdin framing,
+and bearer-token pass-through.
