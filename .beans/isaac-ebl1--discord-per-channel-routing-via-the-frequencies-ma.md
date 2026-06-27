@@ -4,9 +4,10 @@ title: 'Discord: per-channel routing via the frequencies map'
 status: in-progress
 type: feature
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T18:06:32Z
+updated_at: 2026-06-27T18:30:00Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-rqlc
@@ -62,3 +63,14 @@ That still fails before scenarios load:
 `Could not locate isaac/foundation/harness_config_steps__init.class ...`
 
 The failure comes from `isaac.session.session-steps` requiring `isaac.foundation.harness-config-steps`, which is not present on the pinned foundation head. So this is not a verifier-layout miss; the current pinned feature harness is not green.
+
+## Fix (work-2, 2026-06-27)
+Repo: isaac-discord @ a5c1f79
+
+- Bumped all `isaac-foundation` pins from `6e81f780` → `f9be40b` (includes `harness_config_steps.clj` in spec-support).
+- Added `isaac-foundation-test-support` to `:spec` alias (features already had it at the old SHA).
+
+Verification with `ISAAC_GIT=1` on pinned heads (discord `a5c1f79`, agent `10093b4`, foundation `f9be40b`, server `eb51cc4`):
+
+- `bb spec spec/isaac/comm/discord_spec.clj` → 66 examples, 0 failures
+- `bb features features/comm/discord/routing.feature features/comm/discord/frequencies.feature` → 11 examples, 0 failures
