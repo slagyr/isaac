@@ -1,10 +1,11 @@
 ---
 # isaac-cov2
 title: 'isaac-cli-server: /cli websocket endpoint that runs CLI commands server-side'
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-06-26T22:03:27Z
-updated_at: 2026-06-26T22:03:27Z
+updated_at: 2026-06-27T03:53:56Z
 parent: isaac-ec9q
 ---
 
@@ -27,3 +28,37 @@ NON-NEGOTIABLE — `/cli` is remote-shell/RCE-equivalent (server privileges, sto
 
 ## Coordination
 Shares the wire/framing protocol with isaac-cli-proxy (client) — define once, keep in lockstep. Subsumes the bespoke acp `/acp` proxy server.
+
+## Feature design (2026-06-26, reviewed with Micah)
+
+Home: `isaac-cli-server/features/cli/endpoint.feature`.
+
+### Test level — handler-level (NOT a booted server)
+Drive `isaac.cli-server.ws/handler` directly with a fake ws connection (capturing channel); no real server, no port. Fast/isolated. The real-server boot is reserved for ONE end-to-end integration feature under isaac-ec9q (real server + real `isaac remote` proxy, @slow).
+
+### Handler responsibilities
+- Performs the **ws upgrade** itself (like acp's handler: require `:websocket?`, upgrade, then frame loop).
+- Does **NO auth** — the Isaac server authenticates all inbound HTTP at the layer BEFORE the handler (the `server.auth.token` check that already guards `/acp`, isaac-g69y). `/cli` inherits it. 401s are server behavior, asserted once at the ec9q integration level, not here.
+- After upgrade: read `{:type "start" :argv [...] :cwd ...}`, run the main CLI dispatch, frame stdout/stderr + exit.
+
+### Assertion convention (TABLES.md matcher DSL)
+One reusable step `the handler sends frames:` + a subsequence-ordered table; cells are matchers (`#"regex"`, `#*` any-non-nil, exact, blank = no constraint). Covers stdout/stderr/exit/error rows.
+
+### Scenario 1 (LOCKED) — M1 batch round-trip
+```
+Scenario: a batch command streams stdout and exits zero
+  Given the cli-server handler
+  When a /cli client sends start with argv ["--version"]
+  Then the handler sends frames:
+    | type   | data     | code |
+    | stdout | #"isaac" |      |
+    | exit   |          | 0    |
+```
+
+### Remaining scenarios to drive (same style)
+- M1: empty argv -> usage frame + exit 0
+- M2: stderr framed separately; nonzero exit relayed
+- M2: stdin frames piped to the command's stdin (+ stdin-close = EOF)
+- M3 (interactive/full-duplex hold-open + reconnect) tracked separately
+
+New-territory: revisit the shape as implementation reveals constraints.
