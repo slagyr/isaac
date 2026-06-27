@@ -1,11 +1,13 @@
 ---
 # isaac-0u8l
 title: 'Hooks: build frequencies for hook-triggered prompts'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T17:17:17Z
+updated_at: 2026-06-27T18:04:47Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-rqlc
