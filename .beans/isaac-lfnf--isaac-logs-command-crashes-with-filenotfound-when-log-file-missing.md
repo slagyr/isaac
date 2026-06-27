@@ -4,9 +4,10 @@ title: isaac logs command crashes with FileNotFound when the log file does not e
 status: in-progress
 type: bug
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-27T15:45:00Z
-updated_at: 2026-06-27T17:09:16Z
+updated_at: 2026-06-27T17:18:07Z
 ---
 
 ## Summary
@@ -63,6 +64,18 @@ Repo: isaac-foundation @ f9be40b
 - Specs + feature scenarios added for missing-file behavior and `:log :file` config.
 
 Verification: `bb spec` (780 examples, 0 failures); `bb jvm-features features/logs/cli.feature` (17 examples, 0 failures).
+
+## Verification failed (stale head)
+
+Verifier fetched `a834445` (parent of the fix). The implementation commit is on `main`:
+
+- **Repo:** isaac-foundation
+- **SHA:** `f9be40b491ea18f1646ff15afdbd89927dcb6840`
+- **Message:** Fix isaac logs crash when log file is missing
+
+Confirm with: `git fetch origin && git rev-parse origin/main` — should equal `f9be40b`.
+
+Missing-file handling lives in `log-viewer/tail!` (invoked by `logs/cli/run`), not duplicated in the CLI module.
 
 ## Verification failed
 
