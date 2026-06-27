@@ -1,12 +1,13 @@
 ---
 # isaac-opc4
 title: Ambiguous gherclj step "config:" collides across isaac-agent and isaac-server
-status: completed
+status: in-progress
 type: bug
 priority: high
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-26T21:45:52Z
-updated_at: 2026-06-26T22:16:12Z
+updated_at: 2026-06-27T04:38:29Z
 blocking:
     - isaac-c58s
 ---
@@ -68,3 +69,107 @@ The original `config:` ambiguity is resolved on current heads. The first bare
 hail worktree run failed only because its `:features` alias resolves
 `../isaac-agent`, `../isaac-server`, and `../isaac-foundation`; once verified
 in that intended sibling layout, the suite was green.
+
+
+
+## Reopened 2026-06-26 — fix was incomplete (masked by dev-local verification)
+
+The original fix put the canonical config: step in foundation harness-config-
+steps in BOTH spec/ (foundation-spec) AND spec-support/src (foundation-test-
+support). Those are two separately-resolvable coords (different :deps/root).
+Any git consumer that pulls BOTH — directly or transitively via agent-spec/
+server-spec — loads isaac.foundation.harness-config-steps (and log-steps, etc.)
+TWICE → "ambiguous step match: config-applied, config-applied" (and
+log-entries-match, ...). This is the same class of failure opc4 set out to fix,
+just relocated into foundation's own spec/spec-support split.
+
+Why opc4's verification missed it: hail was verified via the dev-local sibling
+layout (../isaac-* :local/root), which collapses foundation-spec and
+foundation-test-support onto overlapping local paths and dedupes; real git
+pins do NOT dedupe them. Under git pins, cron/discord/hail/etc. feature suites
+fail with the ambiguous-step error.
+
+## Root cause (precise)
+Foundation step namespaces (cli/fs/harness-config/log/root-steps) existed as
+duplicate, drifted real files in BOTH foundation spec/ and spec-support/src.
+Consumers pull both coords → double registration.
+
+## Fix (foundation-side: DONE, proven)
+isaac-foundation v0.1.11 (28aa7f080bcfee3c727071e42bd4003e1c898091): the step
+namespaces now live ONLY in spec-support/ (foundation-test-support). spec/
+(foundation-spec) keeps foundation's own *_spec.clj + marigold fixtures, no
+step defs. foundation's own bb ci stays green (spec-support/src added to its
+test paths): 777/0 spec + 117/0 features.
+PROOF the dup is resolved for a both-coords consumer: isaac-cron bumped to
+foundation v0.1.11 → clojure -M:features = 14/0 (previously crashed with the
+ambiguous-step error).
+
+## Remaining (consumer-side cascade)
+Every consumer must (a) be on foundation v0.1.11, and (b) pull foundation-
+test-support for steps:
+- Consumers already pulling BOTH foundation-spec + foundation-test-support
+  (cron, discord, ...) → bumping to v0.1.11 alone resolves the dup.
+- Consumers pulling ONLY foundation-spec for steps (isaac-agent) → must ADD
+  foundation-test-support, since v0.1.11 foundation-spec no longer ships steps.
+- -spec subprojects that transitively provide foundation steps (agent-spec,
+  server-spec, *-test-support) must pull foundation-test-support, not -spec.
+Then re-tag/re-pin the chain (foundation v0.1.11 -> agent -> server -> leaves
+-> hail).
+
+NOTE: foundation-spec/deps.edn in v0.1.11 has an inert
+isaac-foundation-test-support {:local/root ".."} dep — tools.deps ignores
+:local/root in git-fetched subprojects, so it does nothing for remote
+consumers (harmless; can be dropped in a later foundation commit).
+
+Cross-link: this is the blocker for isaac-4onv's leaf module bump.
+
+
+
+## Resolution 2026-06-26 — fixed at the source + verified on real git pins
+
+Root cause (precise): the opc4 fix shipped the canonical foundation gherclj
+steps (harness-config-steps, log-steps, cli/fs/root-steps) as duplicate real
+files in BOTH foundation spec/ (foundation-spec) and spec-support/src
+(foundation-test-support). Those resolve as two separate coords, so any git
+consumer pulling both — directly or transitively via agent-spec/server-spec —
+double-registered the steps → "ambiguous step match". opc4's original
+verification ran in a dev-local sibling layout that dedupes the two, masking it
+under real git pins.
+
+Fix (published):
+- isaac-foundation v0.1.12 (a8344457b8b187738092072e92e0776a0128c721): step
+  namespaces live ONLY in spec-support (foundation-test-support). foundation-spec
+  ships foundation's own *_spec.clj + marigold fixtures, no step defs.
+  foundation's own bb ci stays green via spec-support/src on its test paths
+  (777/0 spec + 117/0 features).
+  [Intermediate tags v0.1.10 (steps in both) and v0.1.11 (had an inert
+   :local/root test-support dep that broke tools.deps version comparison) were
+   superseded by v0.1.12; nothing pins them.]
+- isaac-agent v0.1.8 (115ed52d18d481fec709f6cbb8460cafc9ffcd82): pulls
+  isaac-foundation-test-support for steps in :test/:spec/:features; foundation v0.1.12.
+- isaac-server v0.1.9 (8eaa76841698b90e57232fc3d5afd2e9169395c3): server-test-support
+  (spec-support) pulls foundation-test-support; foundation v0.1.12, telly agent v0.1.8.
+- isaac-cron (dd2dfe2): foundation v0.1.12 / agent v0.1.8 / server v0.1.9.
+- isaac-hail (f186ec9): foundation v0.1.12 / agent v0.1.8 / server v0.1.9.
+
+Verification — against REAL git pins (NOT dev-local), the original failure mode:
+- isaac-hail   clojure -M:features -> 80/0 (2 pre-existing pending = the c58s
+  @wip scenarios this bean blocked) ; -M:spec 71/0.   <-- opc4's original repro
+- isaac-cron   -M:features 14/0 ; -M:spec 19/0
+- isaac-server -M:test:features 47/0 ; -M:test:spec 155/156 *
+- isaac-agent  -M:features 554/0 ; -M:spec 1117/0
+- isaac-foundation bb ci 777/0 + 117/0
+
+* The one server spec failure ("deletes config keys with #delete") is a
+  PRE-EXISTING opc4 config-delete issue (red on server origin/main before any
+  of this work) — separate from the step-collision fix. Flagging for a
+  follow-up; not a regression.
+
+Scope note: the only opc4 victims were repos pinned to the opc4-era foundation
+(hail, cron). isaac-discord/imessage/hooks/acp pin OLDER foundation that
+predates the duplication and are GREEN on their current pins (verified) — they
+are NOT affected and were left untouched; they'll pick up v0.1.12 cleanly
+whenever they next bump foundation.
+
+Unblocks isaac-c58s (hail selector conforming) — hail features build/run again.
+Tagged unverified for confirmation on fetched GitHub heads.
