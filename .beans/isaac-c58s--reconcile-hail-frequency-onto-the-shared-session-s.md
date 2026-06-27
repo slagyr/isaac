@@ -4,8 +4,10 @@ title: Reconcile hail frequency onto the shared session selector
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T16:28:54Z
-updated_at: 2026-06-27T16:32:02Z
+updated_at: 2026-06-27T18:26:34Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-nbgn
