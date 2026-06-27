@@ -1,10 +1,11 @@
 ---
 # isaac-3e1s
 title: 'Remote CLI integration: batch round-trip + auth end-to-end'
-status: todo
+status: unverified
 type: feature
+priority: normal
 created_at: 2026-06-27T15:16:53Z
-updated_at: 2026-06-27T15:16:53Z
+updated_at: 2026-06-27T15:20:29Z
 parent: isaac-ec9q
 ---
 
@@ -58,3 +59,9 @@ The one @slow end-to-end feature for the remote-CLI epic (isaac-ec9q): a REAL Is
 - features/integration.feature green (3 scenarios) in isaac-cli-proxy via dev-local.
 - Real server boot + real proxy round-trip; auth enforced (reject without token, accept with).
 - Mirrors acp_websocket.feature's real-boot pattern.
+
+## Handoff (work-2)
+- Pushed `isaac-cli-proxy` @ `2da864a`. `bb ci` green (spec + features + features-slow).
+- `integration_steps` declares cli-server `:modules` + `:inject-module-index` in **remote CLI command is registered** (after Grover setup — `before-scenario` was too early; `g/reset!` wiped inject).
+- Scenario 1 uses `server.host 127.0.0.1` (loopback) for token-less bind; `0.0.0.0` without `server.auth.token` refuses to start per `isaac.server.app/auth-required?`.
+- `feature_bootstrap` drops duplicate `config:` / `default Grover setup` when server steps load. `bb features-slow` uses `-M:dev-local:features:features-slow`.
