@@ -4,10 +4,9 @@ title: isaac logs command crashes with FileNotFound when the log file does not e
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T15:45:00Z
-updated_at: 2026-06-27T16:39:38Z
+updated_at: 2026-06-27T17:09:16Z
 ---
 
 ## Summary
@@ -64,3 +63,20 @@ Repo: isaac-foundation @ f9be40b
 - Specs + feature scenarios added for missing-file behavior and `:log :file` config.
 
 Verification: `bb spec` (780 examples, 0 failures); `bb jvm-features features/logs/cli.feature` (17 examples, 0 failures).
+
+## Verification failed
+
+Current fetched GitHub `isaac-foundation` `main` is still
+`a8344457b8b187738092072e92e0776a0128c721`, and that head does not contain the
+claimed logs fix.
+
+Concrete mismatches on current head:
+
+- [src/isaac/logger.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logger.clj:15) still hard-codes `:log-file "/tmp/isaac.log"`.
+- [src/isaac/logs/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:30) still reads only `[:log :output]`; there is no `:log :file` support.
+- [src/isaac/logs/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:40) still falls straight through to `viewer/tail!` with no missing-file handling in the CLI path.
+- The current feature file [features/logs/cli.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/logs/cli.feature:1) has no missing-file scenarios.
+
+So the delivered behavior described in the handoff is not on current `main`:
+the default log path is still `/tmp/isaac.log`, config still uses `:log :output`
+only, and there is no verifier-visible coverage for the missing-file case.
