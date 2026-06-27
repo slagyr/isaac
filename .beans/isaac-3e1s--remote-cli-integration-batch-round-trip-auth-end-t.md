@@ -1,11 +1,11 @@
 ---
 # isaac-3e1s
 title: 'Remote CLI integration: batch round-trip + auth end-to-end'
-status: unverified
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-27T15:16:53Z
-updated_at: 2026-06-27T15:20:29Z
+updated_at: 2026-06-27T16:28:40Z
 parent: isaac-ec9q
 ---
 
@@ -65,3 +65,24 @@ The one @slow end-to-end feature for the remote-CLI epic (isaac-ec9q): a REAL Is
 - `integration_steps` declares cli-server `:modules` + `:inject-module-index` in **remote CLI command is registered** (after Grover setup — `before-scenario` was too early; `g/reset!` wiped inject).
 - Scenario 1 uses `server.host 127.0.0.1` (loopback) for token-less bind; `0.0.0.0` without `server.auth.token` refuses to start per `isaac.server.app/auth-required?`.
 - `feature_bootstrap` drops duplicate `config:` / `default Grover setup` when server steps load. `bb features-slow` uses `-M:dev-local:features:features-slow`.
+
+## Verification
+
+Verified on fetched GitHub heads:
+
+- `isaac-cli-proxy` `2da864a9a0f1ea31f1ca36e7ff92848af3a49f36`
+- `isaac-cli-server` `96df1ccaa56e4c9dd6d067ef1debd693ec029ed2`
+- `isaac-server` `eb51cc48b8964dabb678086ac36051a86d94c03a`
+- `isaac-agent` `115ed52d18d481fec709f6cbb8460cafc9ffcd82`
+- `isaac-foundation` `a8344457b8b187738092072e92e0776a0128c721`
+
+Proofs were green in a sibling worktree layout matching the proxy's
+`../isaac-*` `:dev-local` overrides:
+
+- `bb ci` in `isaac-cli-proxy`:
+  - `bb spec` -> `6 examples, 0 failures, 10 assertions`
+  - `bb features` -> `5 examples, 0 failures, 13 assertions`
+  - `bb features-slow` -> `3 examples, 0 failures, 6 assertions`
+
+That covers the real server boot, real `/cli` route mounting, real `isaac remote`
+proxy round-trip, and token auth rejection/acceptance end-to-end.
