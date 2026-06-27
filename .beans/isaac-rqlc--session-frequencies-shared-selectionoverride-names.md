@@ -1,13 +1,12 @@
 ---
 # isaac-rqlc
 title: 'Session frequencies: shared selection+override namespace and map schema'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T16:43:46Z
+updated_at: 2026-06-27T16:55:16Z
 parent: isaac-4e4b
 ---
 
@@ -44,3 +43,24 @@ Acceptance:
 - isaac.session.selector -> isaac.session.frequencies; isaac.session.selector-cli -> isaac.session.frequencies-cli; all callers (prompt bridge, hail) updated.
 - frequencies-map schema hosted in the core + speclj specs above green.
 - Full prompt + hail suites green under the new names.
+
+## Verification
+
+Verified on fetched GitHub heads:
+
+- `isaac-agent` `10093b4e62af2bec1baf92213dc50223d70b959a`
+- `isaac-hail` `438fc3e1725fbca0e49ea2168912c98669c08f02`
+- supporting sibling proof heads:
+  - `isaac-foundation` `a8344457b8b187738092072e92e0776a0128c721`
+  - `isaac-server` `eb51cc48b8964dabb678086ac36051a86d94c03a`
+
+Proofs were green:
+
+- `isaac-agent` `bb spec spec/isaac/session/frequencies_spec.clj spec/isaac/session/frequencies_cli_spec.clj` -> `37 examples, 0 failures, 61 assertions`
+- `isaac-agent` `bb features features/bridge/cli-prompt.feature` -> `29 examples, 0 failures, 59 assertions`
+- `isaac-hail` `bb spec spec/isaac/config/hail_loader_spec.clj spec/isaac/hail/router_spec.clj spec/isaac/hail/cli_spec.clj` -> `27 examples, 0 failures, 70 assertions`
+- `isaac-hail` `bb features features/router.feature features/send-addressing.feature features/spawn-session.feature` in a sibling worktree layout matching its `../isaac-*` local-root feature alias -> `27 examples, 0 failures, 117 assertions`
+
+That covers the new shared frequencies schema, CLI adapter rename, prompt
+regression surface, and hail's downstream consumer rename under the new
+vocabulary.
