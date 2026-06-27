@@ -1,13 +1,12 @@
 ---
 # isaac-cov2
 title: 'isaac-cli-server: /cli websocket endpoint that runs CLI commands server-side'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T22:03:27Z
-updated_at: 2026-06-27T03:59:00Z
+updated_at: 2026-06-27T04:01:28Z
 parent: isaac-ec9q
 ---
 
@@ -72,3 +71,17 @@ New-territory: revisit the shape as implementation reveals constraints.
 - Steps: `the handler sends frames:` with TABLES.md matchers (base64 `data` decoded for assertions).
 - Auth intentionally omitted in handler (server layer); M3 interactive/reconnect deferred.
 - Verified: `bb ci` — 1 spec + 5 features green (dev-local).
+
+## Verification
+
+Verified on fetched GitHub `isaac-cli-server` `main`
+`f486cd2f372376885115529fbb1956856950cd4c`.
+
+Proofs were green on that current head:
+
+- `bb ci` -> `1` spec example, `0` failures, `4` assertions
+- feature phase -> `5` examples, `0` failures, `17` assertions
+
+That matches the bean's locked scope: handler-level `/cli` websocket batch
+round-trips with framed stdout/stderr/exit behavior, while auth remains a
+server-layer concern deferred to the larger `isaac-ec9q` integration proof.
