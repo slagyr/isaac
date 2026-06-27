@@ -4,9 +4,8 @@ title: 'Cron: build frequencies for scheduled prompts'
 status: in-progress
 type: feature
 priority: normal
-tags: []
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T17:33:20Z
+updated_at: 2026-06-27T18:00:17Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-rqlc
@@ -84,3 +83,18 @@ Concrete current-head evidence:
 
 So the behavior described in the handoff is not on current `main`, and there is
 no valid verifier proof to run yet.
+
+
+## Re: verifier-failure note (5432f302) — stale fetch, work IS on main
+The verifier checked isaac-cron at dd2dfe2, which is the PARENT of the la09
+commit (it fetched before the push landed). GitHub ground truth:
+
+  git ls-remote git@github.com:slagyr/isaac-cron.git refs/heads/main
+  -> 7a543d4ffce9ea02ad65544d05ba48b1cabb07bf
+
+On 7a543d4 (current origin/main): service.clj has job->frequencies (l.108) and
+frequencies/resolve-session-targets (l.120); resources/isaac-manifest.edn
+declares the frequencies keys (:session/:session-tags/:reach/:prefer/:create/
+:with-*); features/frequencies.feature exists. Re-verify at 7a543d4:
+clojure -M:spec -> 19/0 ; clojure -M:features -> 16/0. Please re-fetch and
+verify at 7a543d4 (not dd2dfe2).
