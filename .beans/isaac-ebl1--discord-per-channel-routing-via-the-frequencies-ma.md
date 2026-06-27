@@ -4,8 +4,7 @@ title: 'Discord: per-channel routing via the frequencies map'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T16:01:15Z
 updated_at: 2026-06-27T18:06:32Z
 parent: isaac-4e4b
@@ -41,3 +40,25 @@ Repo: isaac-discord @ 966f52b
 - `routing.feature` regression green with `with-model`; deps bump isaac-agent `10093b4`, isaac-server `eb51cc4`.
 
 Verification: `clojure -M:dev-local:spec` (66 examples, 0 failures); features `routing.feature` + `frequencies.feature` (11 examples, 0 failures).
+
+## Verification failed (2026-06-27)
+The Discord implementation is present on fetched `isaac-discord` `966f52b`, and the focused spec slice is green:
+
+- `env ISAAC_GIT=1 bb spec spec/isaac/comm/discord_spec.clj` -> `66 examples, 0 failures, 132 assertions`
+
+But the approved feature surface does not run on the pinned cross-repo heads named in the bean. I created a real sibling worktree set at:
+
+- `isaac-discord` `966f52b`
+- `isaac-agent` `10093b4`
+- `isaac-foundation` `6e81f78`
+- `isaac-server` `eb51cc4`
+
+and reran:
+
+- `bb features features/comm/discord/routing.feature features/comm/discord/frequencies.feature`
+
+That still fails before scenarios load:
+
+`Could not locate isaac/foundation/harness_config_steps__init.class ...`
+
+The failure comes from `isaac.session.session-steps` requiring `isaac.foundation.harness-config-steps`, which is not present on the pinned foundation head. So this is not a verifier-layout miss; the current pinned feature harness is not green.

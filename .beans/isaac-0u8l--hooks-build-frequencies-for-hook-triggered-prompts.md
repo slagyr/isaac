@@ -1,11 +1,10 @@
 ---
 # isaac-0u8l
 title: 'Hooks: build frequencies for hook-triggered prompts'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T16:01:15Z
 updated_at: 2026-06-27T18:04:47Z
 parent: isaac-4e4b
@@ -30,3 +29,11 @@ hook config/hooks/garden.md frontmatter {crew: main, create: if-missing, prefer:
 frontmatter {crew: main, with-model: grover2}; existing main session garden-wk; POST -> the dispatched turn runs on echo-alt (proves :with-* override wires from frontmatter).
 
 Regression net: existing hooks.feature scenarios (cwd defaults, auth) stay green — their crew:/session-key: frontmatter folds into the flat frequencies set (session-key -> session). Scope: wiring only (per 4e4b). New steps: none (hooks loads agent session-steps + server-test-support + its own /hooks POST step).
+
+## Verification (2026-06-27)
+Verified on fetched GitHub `isaac-hooks` `main` at `734f71e`.
+
+- `bb spec spec/isaac/hooks_spec.clj` -> `26 examples, 0 failures, 37 assertions`
+- `bb features features/hooks.feature` -> `12 examples, 0 failures, 20 assertions`
+
+The landed code builds a frequencies map from hook frontmatter and routes hook-triggered prompts through the shared resolver. The focused spec and the real hooks feature surface are both green on the delivered head.
