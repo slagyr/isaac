@@ -7,7 +7,7 @@ priority: low
 tags:
     - unverified
 created_at: 2026-06-26T15:17:03Z
-updated_at: 2026-06-26T16:40:16Z
+updated_at: 2026-06-27T16:42:22Z
 ---
 
 ## Purpose
@@ -73,3 +73,10 @@ Subsequent workers and verifiers should treat the process steps themselves as th
 
 ## Follow-up
 - Created follow-up bean to track the bootstrap/skill-discovery gap observed in this run.
+
+
+### Replayed hail / idempotency check (2026-06-27)
+- A later autonomous `isaac-work` hail for the same bean arrived after the bean was already `in-progress` + `unverified`.
+- After syncing the actual `isaac-1` checkout, the worker saw the existing claimed/handoff state and did not try to re-claim the bean.
+- This is a useful process signal: replayed/autonomous work hails need an explicit idempotency rule, but the current git+beans state was enough to avoid a duplicate claim.
+- The repo-local fallback docs now exist in `.toolbox/commands/work.md`, which helped recover even though `load_skill "work-bean"` was still unavailable in-session.
