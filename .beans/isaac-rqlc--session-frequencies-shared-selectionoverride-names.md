@@ -1,11 +1,11 @@
 ---
 # isaac-rqlc
 title: 'Session frequencies: shared selection+override namespace and map schema'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T16:32:02Z
+updated_at: 2026-06-27T16:38:53Z
 parent: isaac-4e4b
 ---
 
@@ -22,3 +22,23 @@ Foundational. Every consumer (cli, hail, cron, hooks, discord, acp, chat) builds
 
 ## Validation: strict + fail-loud (no legacy tests)
 The frequencies-map schema validates strictly at config load/boot; non-conforming config fails LOUDLY with a clear error. Scenarios cover the NEW shape ONLY — a valid frequencies map loads; a malformed one is rejected. Per Micah: do NOT write legacy-shape or migration scenarios. Old-shape config just fails as ordinary invalid config; operators migrate via each consumer's Deploy checklist.
+
+## DoD / scenarios (2026-06-27)
+
+Rename is mechanical; the existing prompt (cli-prompt.feature) + hail features are the REGRESSION NET — they must stay green under the new namespaces. No new gherkin for the rename itself.
+
+NEW coverage = speclj specs on the isaac.session.frequencies schema (NEW shape only, per no-legacy-tests):
+- validates a complete valid frequencies map (all keys, valid enum values)
+- rejects :create outside #{:never :if-missing :always}
+- rejects :prefer outside #{:recent :oldest}
+- rejects :reach outside #{:one :all}
+- rejects an unrecognized key (strict -> this is what makes a missed migration fail loud; no legacy shape named)
+
+The schema must be usable in BOTH places the frequencies map appears:
+- CONFIG (discord channels, cron jobs, hooks, hail bands) — referenceable via :isaac.config/schema so consumers get fail-loud validation at boot.
+- RUNTIME flat-map (CLI args, protocol params) — frequencies-cli cross-field validation (--session exclusivity, enum values) already exists; keep it.
+
+Acceptance:
+- isaac.session.selector -> isaac.session.frequencies; isaac.session.selector-cli -> isaac.session.frequencies-cli; all callers (prompt bridge, hail) updated.
+- frequencies-map schema hosted in the core + speclj specs above green.
+- Full prompt + hail suites green under the new names.
