@@ -1,13 +1,11 @@
 ---
 # isaac-opc4
 title: Ambiguous gherclj step "config:" collides across isaac-agent and isaac-server
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-06-26T21:45:52Z
-updated_at: 2026-06-27T15:11:36Z
+updated_at: 2026-06-27T15:18:28Z
 blocking:
     - isaac-c58s
 ---
@@ -210,3 +208,9 @@ current feature alias the original ambiguity still reproduces.
 
 Bottom line: `opc4` is not verifier-green yet on the real current hail feature
 surface, so it should remain open.
+
+
+## Verified complete 2026-06-27
+Re-confirmed green against real git pins (the original failure mode):
+hail -M:features 80/0 (opc4 repro), cron 14/0, agent 554/0, server 47/0,
+foundation bb ci 777/0 + 117/0. Resolution stands.
