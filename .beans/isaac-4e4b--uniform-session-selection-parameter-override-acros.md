@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: normal
 created_at: 2026-06-26T04:14:17Z
-updated_at: 2026-06-26T19:39:26Z
+updated_at: 2026-06-27T16:53:26Z
 ---
 
 DESIGN (exploratory, 2026-06-25). Session SELECTION and PARAMETER OVERRIDE are a cross-cutting concern shared by hail, the prompt command, ACP, and chat. Each rolls its own. Unify into one mechanism.
@@ -113,3 +113,6 @@ What to target when NO filter is given is a DISTINCT decision (not `--prefer`'s 
 
 ### Test placement
 `--prefer` is a CORE selection concern -> selection-suite, CLI side, and LAST (lowest-risk, mechanical). Per the module-boundary rule: behavior once at the core; wiring/transport per surface (CLI in isaac-agent, server/ACP+chat in isaac-acp), so a future CLI/server module split stays clean.
+
+## Consumer test scope (2026-06-27): wiring, not the matrix
+Each frequencies CONSUMER (cron, hooks, discord, acp, chat) tests only that it builds a frequencies map from ITS input and the resolved target + override take effect — typically ~2 scenarios (one selection-wiring, one override-wiring) + the consumer's existing features as regression net. The policy MATRIX (create tri-state, prefer, reach, tags, --session exclusivity) is owned by isaac-rqlc (core + schema specs) and proven once on prompt. Do NOT re-prove it per consumer. Config consumers use the flat structure (frequencies keys flat in their config). Report new-vs-reused steps per scenario.
