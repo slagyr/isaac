@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-06-26T16:28:54Z
-updated_at: 2026-06-26T21:29:53Z
+updated_at: 2026-06-27T16:32:02Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-nbgn
@@ -67,3 +67,6 @@ Existing ebm2/kt1m router/delivery scenarios MUST stay green (selector == shared
 
 ### Write entanglement
 The 3 new scenarios are @wip-safe to write now. The `:frequencies` rename + `:create` rewrites of EXISTING scenarios CANNOT be gherkin-only — they break the passing suite unless the code changes too, so they land WITH the implementation, not before.
+
+## Deploy
+Migrate zanebot hail config: :frequency -> :frequencies, :spawn-session -> :create before deploy (one-time, ops). Strict validation will fail loud if missed.

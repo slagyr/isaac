@@ -3,8 +3,9 @@
 title: 'Session frequencies: shared selection+override namespace and map schema'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T16:01:15Z
+updated_at: 2026-06-27T16:32:02Z
 parent: isaac-4e4b
 ---
 
@@ -18,3 +19,6 @@ Rename the shared selection/override code to the unified 'frequencies' vocabular
 
 ## Why
 Foundational. Every consumer (cli, hail, cron, hooks, discord, acp, chat) builds a frequencies map from its own input and feeds the same core; the schema-in-core gives one validated shape. Do this before/with the consumer migrations.
+
+## Validation: strict + fail-loud (no legacy tests)
+The frequencies-map schema validates strictly at config load/boot; non-conforming config fails LOUDLY with a clear error. Scenarios cover the NEW shape ONLY — a valid frequencies map loads; a malformed one is rejected. Per Micah: do NOT write legacy-shape or migration scenarios. Old-shape config just fails as ordinary invalid config; operators migrate via each consumer's Deploy checklist.
