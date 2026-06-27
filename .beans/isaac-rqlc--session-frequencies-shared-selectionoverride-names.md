@@ -1,11 +1,13 @@
 ---
 # isaac-rqlc
 title: 'Session frequencies: shared selection+override namespace and map schema'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T16:38:53Z
+updated_at: 2026-06-27T16:43:46Z
 parent: isaac-4e4b
 ---
 
