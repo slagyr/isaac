@@ -1,11 +1,13 @@
 ---
 # isaac-ebl1
 title: 'Discord: per-channel routing via the frequencies map'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T17:32:55Z
+updated_at: 2026-06-27T18:06:32Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-rqlc
@@ -28,3 +30,14 @@ config comms.discord.discord/channels.C999.session-tags ["project/coil"]; sessio
 channels.C999.{session=kitchen, with-model=grover2}; grover2 -> echo-alt; MESSAGE_CREATE -> kitchen turn runs on echo-alt.
 
 Regression net: routing.feature (default discord-<channel-id> session, .session override, .crew, same-channel-same-session) stays green; .session/.crew fold into the flat frequencies map; .model -> .with-model. Scope: wiring only (per 4e4b). New steps: none (config:/sessions-exist/MESSAGE_CREATE/transcript reused); confirm the foundation 'isaac EDN file' fs-step loads in discord's harness for the model entity in S2.
+
+
+## Implementation (work-2)
+Repo: isaac-discord @ 966f52b
+
+- Inbound routing builds channel frequencies and resolves via `isaac.session.frequencies/resolve-session-targets`.
+- `:discord/channels` manifest schema uses frequencies keys (`:session`, `:session-tags`, `:with-model`, …); `:model` → `:with-model`.
+- New `features/comm/discord/frequencies.feature` (session-tags + with-model wiring).
+- `routing.feature` regression green with `with-model`; deps bump isaac-agent `10093b4`, isaac-server `eb51cc4`.
+
+Verification: `clojure -M:dev-local:spec` (66 examples, 0 failures); features `routing.feature` + `frequencies.feature` (11 examples, 0 failures).
