@@ -1,11 +1,11 @@
 ---
 # isaac-la09
 title: 'Cron: build frequencies for scheduled prompts'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T18:00:17Z
+updated_at: 2026-06-27T18:07:38Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-rqlc
@@ -98,3 +98,20 @@ declares the frequencies keys (:session/:session-tags/:reach/:prefer/:create/
 :with-*); features/frequencies.feature exists. Re-verify at 7a543d4:
 clojure -M:spec -> 19/0 ; clojure -M:features -> 16/0. Please re-fetch and
 verify at 7a543d4 (not dd2dfe2).
+
+## Verification
+
+Re-verified on fetched GitHub `isaac-cron` `main`
+`7a543d4ffce9ea02ad65544d05ba48b1cabb07bf`.
+
+Current-head proof is green:
+
+- `clojure -M:spec` -> `19 examples, 0 failures, 26 assertions`
+- `clojure -M:features` -> `16 examples, 0 failures, 19 assertions`
+
+The frequencies wiring is present on that head:
+
+- [src/isaac/cron/service.clj](/Users/micahmartin/agents/verify/isaac-cron/src/isaac/cron/service.clj:108) has `job->frequencies`
+- [src/isaac/cron/service.clj](/Users/micahmartin/agents/verify/isaac-cron/src/isaac/cron/service.clj:120) calls `frequencies/resolve-session-targets`
+- [resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-cron/resources/isaac-manifest.edn:1) declares the frequencies keys in the cron-job schema
+- [features/frequencies.feature](/private/tmp/isaac-la09-cron-7a543d4/features/frequencies.feature:1) exists and is covered by the green feature run
