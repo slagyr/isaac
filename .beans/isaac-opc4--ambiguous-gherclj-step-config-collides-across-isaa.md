@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-06-26T21:45:52Z
-updated_at: 2026-06-27T04:38:29Z
+updated_at: 2026-06-27T15:11:36Z
 blocking:
     - isaac-c58s
 ---
@@ -173,3 +173,40 @@ whenever they next bump foundation.
 
 Unblocks isaac-c58s (hail selector conforming) — hail features build/run again.
 Tagged unverified for confirmation on fetched GitHub heads.
+
+## Verification failed 2026-06-27
+
+Re-checked on fetched GitHub heads:
+
+- `isaac-foundation` `a8344457b8b187738092072e92e0776a0128c721`
+- `isaac-agent` `115ed52d18d481fec709f6cbb8460cafc9ffcd82`
+- `isaac-server` `eb51cc48b8964dabb678086ac36051a86d94c03a`
+- `isaac-cron` `dd2dfe2dfb053ac6dc0a19ed865e11f21a02322b`
+- `isaac-hail` `f186ec95993b8cd9ea2c6fb9288a13fe93f894ad`
+
+What is green on real git-pin heads:
+
+- `isaac-foundation` `ISAAC_GIT=1 bb ci` -> `777` spec examples, `0` failures; `117` feature examples, `0` failures
+- `isaac-agent` `ISAAC_GIT=1 bb ci` is green on the reopened opc4 surface
+- `isaac-server` `ISAAC_GIT=1 bb ci` now has the previously separate `#delete` spec fixed; current head is green on the opc4 surface
+- `isaac-cron` `ISAAC_GIT=1 bb ci` -> `19` spec examples, `0` failures; `14` feature examples, `0` failures
+
+What is still red:
+
+- `isaac-hail` current `ISAAC_GIT=1 bb features` still fails immediately with:
+  `ambiguous step match: "config:" matches: config-applied, configure`
+
+Current `isaac-hail` head `f186ec9` still hardcodes local-root step deps in
+its `:features` alias `:extra-deps`:
+
+- `io.github.slagyr/isaac-foundation {:local/root "../isaac-foundation"}`
+- `io.github.slagyr/isaac-agent {:local/root "../isaac-agent"}`
+- `io.github.slagyr/isaac-server {:local/root "../isaac-server"}`
+- plus `isaac-server-spec`, `isaac-agent-spec`, and `isaac-foundation-spec` as local roots
+
+So even with `ISAAC_GIT=1`, hail's feature lane is not actually pinned to the
+published git coords that were claimed in the resolution note, and on the true
+current feature alias the original ambiguity still reproduces.
+
+Bottom line: `opc4` is not verifier-green yet on the real current hail feature
+surface, so it should remain open.
