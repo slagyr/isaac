@@ -1,11 +1,13 @@
 ---
 # isaac-la09
 title: 'Cron: build frequencies for scheduled prompts'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-27T16:01:15Z
-updated_at: 2026-06-27T16:53:26Z
+updated_at: 2026-06-27T17:27:18Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-rqlc
@@ -28,3 +30,43 @@ config: cron.health-check.{expr,prompt,crew=main,create=if-missing,prefer=recent
 config: cron.health-check.{...,with-model=grover2}; grover2 -> echo-alt; scheduler ticks -> session-1 turn runs on echo-alt (proves :with-* override wires from config).
 
 Scope: wiring only (per 4e4b). The create/prefer/reach matrix is rqlc's, not re-proven here. New steps: none.
+
+
+
+## Resolution 2026-06-27 — committed isaac-cron 7a543d4
+
+cron/service.clj fire-job! now wires session frequencies:
+- job->frequencies builds the map from the FLAT job config (select-keys of
+  :session :session-tags :crew :reach :prefer :create + :with-crew/:with-model/
+  :with-effort/:with-context-mode), defaulting :create :always (preserves the
+  historical "fresh session per tick" — jobs opt into resume via :create).
+- resolve-session-key! calls isaac.session.frequencies/resolve-session-targets;
+  on :create? it projects :with-* via behavioral-override into
+  create-with-resolved-behavior!, else it resumes the selected session-key.
+- dispatch passes :model-override (:with-model freq) and crew
+  (or :with-crew, session crew, job crew).
+- manifest (resources/isaac-manifest.edn) cron-job schema gains the frequencies
+  keys (mirrors isaac.session.frequencies/frequencies-schema) so strict config
+  validation accepts the new shape.
+
+Scenarios (features/frequencies.feature, no new step defs — cron loads agent
+session-steps + foundation fs-steps + its scheduler step):
+- S1 selection: crew=main, create=if-missing, prefer=recent; sessions
+  morning/last-night seeded with updated-at; tick -> last-night (most-recent)
+  gets the prompt appended, morning untouched. Proves cron resolves frequencies
+  instead of always-create.
+- S2 override: with-model=grover2 (-> echo-alt via config/models/grover2.edn);
+  tick -> session-1 turn runs on echo-alt. Proves :with-* wires from config.
+
+Verification: cd isaac-cron && clojure -M:spec -> 19/0 ; -M:features -> 16/0
+(14 existing regression + 2 new). service_spec: the 3 charge/delivery unit
+specs install a session store for the resolve path.
+
+Dep note: bumped isaac-cron's isaac-agent pin to 10093b4 — the rqlc
+"frequencies" rename commit on agent main (foundation v0.1.12). It is the agent
+head but UNTAGGED (latest agent tag v0.1.8 predates the rename); cron pins it by
+sha. Cutting agent v0.1.9 at 10093b4 would be a tidy follow-up for other
+frequencies consumers but isn't required here.
+
+Scope honored: wiring only (per 4e4b); the create/prefer/reach matrix is rqlc's
+and not re-proven here. Tagged unverified.
