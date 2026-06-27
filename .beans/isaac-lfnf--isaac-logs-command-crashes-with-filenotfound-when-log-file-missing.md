@@ -1,12 +1,15 @@
 ---
 # isaac-lfnf
-title: 'isaac logs command crashes with FileNotFound when the log file does not exist'
-status: todo
+title: isaac logs command crashes with FileNotFound when the log file does not exist
+status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-27T15:45:00Z
-updated_at: 2026-06-27T15:45:00Z
+updated_at: 2026-06-27T16:39:38Z
 ---
+
 ## Summary
 `isaac logs -f` (and plain `isaac logs`) fails with a `java.io.FileNotFoundException` for the default log path (`/tmp/isaac.log`) when that file has never been written.
 
@@ -50,3 +53,14 @@ isaac.log-viewer/tail!
 - Update/add specs in `isaac-foundation/spec/isaac/logs/cli_spec.clj` (and log_viewer if unit-testable).
 - Change the hard-coded default away from `/tmp/isaac.log` (or document why /tmp is intentional and make the CLI robust).
 - Bonus: `isaac logs` without a log file prints the path it would watch and how to generate entries.
+
+
+## Implementation (work-2)
+Repo: isaac-foundation @ f9be40b
+
+- `log-viewer/tail!` prints a friendly message when the log file is missing; with `:follow?` true it waits for the file then tails.
+- `logs/cli` reads `:log :file` (preferred) or `:log :output` from config; default path is `<root>/logs/isaac.log`.
+- Logger default log file moved from `/tmp/isaac.log` to `~/.isaac/logs/isaac.log`.
+- Specs + feature scenarios added for missing-file behavior and `:log :file` config.
+
+Verification: `bb spec` (780 examples, 0 failures); `bb jvm-features features/logs/cli.feature` (17 examples, 0 failures).
