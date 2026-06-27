@@ -5,10 +5,11 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-06-26T16:28:54Z
-updated_at: 2026-06-26T22:03:46Z
+updated_at: 2026-06-27T16:01:47Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-nbgn
+    - isaac-rqlc
 ---
 
 Child of isaac-4e4b. Migrate the ACP command/surface (isaac-acp cli/server) onto the shared session selector/resolver/override from isaac-nbgn (B1). Replace ACP's ad-hoc session attach with the shared --session/--crew/--session-tag/--spawn/--new/--with-* flags + resolver. ACP attaches to ONE session (no --reach). Flag contract per isaac-4e4b.
@@ -22,3 +23,7 @@ Blocked by isaac-nbgn (B1). Independent of B2 (chat). Surfaced 2026-06-26.
 
 ## Pending revision (2026-06-26)
 Will be revised once the remote-CLI epic (isaac-ec9q: isaac-cli-server + isaac-cli-proxy) lands. With a generic `/cli` channel, the over-the-wire story is handled by remote-cli (server runs the real command), so this bean narrows to "the LOCAL command uses the shared selector" like prompt. Re-scope when ec9q is built.
+
+## REPURPOSED (2026-06-27): acp accepts the full frequencies CLI args
+
+Narrowed per Micah. ACP-over-the-wire moved to remote-CLI (isaac-ec9q); the proxy-removal is isaac-uek0. This bean is now ONLY: the `acp` command accepts the full frequencies set of CLI args (--session/--crew/--session-tag/--reach?/--prefer/--create/--with-*) by consuming the REUSABLE frequencies-cli adapter (isaac-rqlc), same as prompt. The acp session is then resolved via the shared core. No bespoke acp selection logic.
