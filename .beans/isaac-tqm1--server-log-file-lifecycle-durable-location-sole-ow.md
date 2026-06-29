@@ -4,8 +4,10 @@ title: 'Server log file lifecycle: durable location, sole ownership, rotation'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-29T17:13:24Z
-updated_at: 2026-06-29T22:39:06Z
+updated_at: 2026-06-29T22:52:35Z
 ---
 
 First-principles model (2026-06-29, with Micah). Consolidates the file-LIFECYCLE concerns (was isaac-bwjb rotation + isaac-tykw ownership + log location) into one coherent piece. Content/serialization concerns stay separate (gexx throwable, x2po one-line).
@@ -70,3 +72,12 @@ Root cause (code):
 - log-file resolves as (or (lfile/active-log-path) (:log-file @state)). For the server, the rotating active-log-path is never initialized (log/file.clj prepare-active-log!), and :log-file is nil -> no target file. server/cli.clj:65 does set-output! :file but with no path it falls back to stderr.
 
 Must-fix before completing: on `isaac server` startup, initialize the rotating active log at <root>/logs/server.log (create logs/, prepare-active-log! with the resolved root, set the active path) so server logs land in the file, not stderr. Acceptance S1 ("the isaac file logs/server.log exists" after server start) must actually pass against a booted server, not just the harness.
+
+## Implementation (2026-06-29, work-3)
+
+Addresses verifier failure: server sink now initializes on every `app/start!` and writes to `<root>/logs/server.log` regardless of harness `:memory` output.
+
+- **isaac-foundation** `979737a` (v0.1.14): `save-entry` routes through active server sink first; `:memory` harness still captures entries for log assertions.
+- **isaac-server** `bf8392c`: `server-logging/configure!` in `app/start!` and `server/cli`; `log_lifecycle.feature` no longer needs `log.output file` background; `logging_spec` covers stderr-default production path.
+
+CI green locally and on GitHub for both repos.
