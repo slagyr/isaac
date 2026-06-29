@@ -50,6 +50,8 @@ Requirements for the source path: Java 21+ and
 | [isaac-agent](https://github.com/slagyr/isaac-agent) | Crew, LLM providers, sessions, bridge, tools, comm delivery | [![CI](https://github.com/slagyr/isaac-agent/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-agent/actions/workflows/ci-tests.yml) |
 | [isaac-server](https://github.com/slagyr/isaac-server) | HTTP host, boot orchestration, reconciler, `isaac server` | [![CI](https://github.com/slagyr/isaac-server/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-server/actions/workflows/ci-tests.yml) |
 | [isaac-acp](https://github.com/slagyr/isaac-acp) | ACP stdio agent, `isaac chat`, `/acp` WebSocket transport | [![CI](https://github.com/slagyr/isaac-acp/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-acp/actions/workflows/ci-tests.yml) |
+| [isaac-cli-server](https://github.com/slagyr/isaac-cli-server) | Remote CLI server, `/cli` WebSocket endpoint, server-side command execution with streamed process I/O | [![CI](https://github.com/slagyr/isaac-cli-server/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-cli-server/actions/workflows/ci-tests.yml) |
+| [isaac-cli-proxy](https://github.com/slagyr/isaac-cli-proxy) | Remote CLI client, `isaac remote <url>/cli <cmd...>`, local stdio proxy to a server `/cli` endpoint | [![CI](https://github.com/slagyr/isaac-cli-proxy/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-cli-proxy/actions/workflows/ci-tests.yml) |
 | [isaac-cron](https://github.com/slagyr/isaac-cron) | Scheduled prompt jobs | [![CI](https://github.com/slagyr/isaac-cron/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-cron/actions/workflows/ci-tests.yml) |
 | [isaac-hail](https://github.com/slagyr/isaac-hail) | Out-of-band interrupt delivery | [![CI](https://github.com/slagyr/isaac-hail/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-hail/actions/workflows/ci-tests.yml) |
 | [isaac-hooks](https://github.com/slagyr/isaac-hooks) | Webhook ingress | [![CI](https://github.com/slagyr/isaac-hooks/actions/workflows/ci-tests.yml/badge.svg)](https://github.com/slagyr/isaac-hooks/actions/workflows/ci-tests.yml) |
@@ -63,13 +65,18 @@ declaring it under `:modules` in your Isaac config.
 
 1. Run `isaac init` to scaffold `~/.isaac/config/isaac.edn`.
 2. Add modules (at minimum **isaac-agent** for crew/sessions and **isaac-server**
-   for the HTTP host):
+   for the HTTP host; add **isaac-cli-server** and **isaac-cli-proxy** if you
+   want remote CLI over `/cli`):
 
 ```clojure
 {:modules {:isaac.agent {:git/url "https://github.com/slagyr/isaac-agent.git"
                          :git/sha "<pin>"}
            :isaac.server {:git/url "https://github.com/slagyr/isaac-server.git"
-                          :git/sha "<pin>"}}}
+                          :git/sha "<pin>"}
+           :isaac.cli-server {:git/url "https://github.com/slagyr/isaac-cli-server.git"
+                              :git/sha "<pin>"}
+           :isaac.cli-proxy {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
+                             :git/sha "<pin>"}}}
 ```
 
 3. Configure crew, providers, and comms in `~/.isaac/config/`, then run
