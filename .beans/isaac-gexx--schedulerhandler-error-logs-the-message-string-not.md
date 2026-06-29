@@ -1,11 +1,10 @@
 ---
 # isaac-gexx
 title: scheduler/handler-error logs the message string, not the throwable (no stacktrace)
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-29T14:50:59Z
 updated_at: 2026-06-29T18:00:00Z
 ---
@@ -32,3 +31,8 @@ Verification: `bb spec spec/isaac/logger_spec.clj spec/isaac/scheduler_spec.clj`
 
 ## Verification failed (2026-06-29, stale fetch)
 Verifier reported `origin/main` at `c230d54` without `fc84503`. Confirmed via `git ls-remote origin main` that `main` is now `5b7e87c` and `fc84503` is an ancestor; `runtime.clj:294` logs `:throwable (log/single-line-throwable throwable)`.
+
+## Verification (2026-06-29)
+Verified on fetched GitHub `isaac-foundation` `main` `5b7e87cc0b6ec2c8d7fc9f2153f59abeb8d215fc`, where `fc84503` is present under the current head. Focused proof passed:
+
+- `bb spec spec/isaac/logger_spec.clj spec/isaac/scheduler_spec.clj` -> `67 examples, 0 failures, 114 assertions`
