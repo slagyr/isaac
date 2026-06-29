@@ -4,8 +4,7 @@ title: Discord gateway does not recover after a network-error disconnect (bot of
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-29T15:11:00Z
 updated_at: 2026-06-29T15:33:23Z
 ---
@@ -25,3 +24,17 @@ Reconnect with backoff that KEEPS RETRYING until the gateway re-establishes (nev
 
 ## Related
 isaac-gkx9 (heartbeat leak symptom), isaac-dcr1 (reconnect after 1006), isaac-9rdk (ACP proxy never-give-up reconnect — the model).
+
+## Verification failed (2026-06-29)
+Fetched GitHub `isaac-discord` `main` is `b9fc6c480bd9295d354d9bf7aba17060f3188057`, and the delivered reconnect code is present there.
+
+But the current proof lane is not verifier-green yet because the repo does not load cleanly:
+
+- `bb spec spec/isaac/comm/discord/gateway_spec.clj`
+- `bb features features/comm/discord/reconnect.feature`
+
+Both fail before scenarios/examples run with:
+
+`Could not locate isaac/session/frequencies__init.class ...`
+
+That failure originates from [src/isaac/comm/discord.clj](/Users/micahmartin/agents/verify/isaac-discord/src/isaac/comm/discord.clj:16), which now requires `isaac.session.frequencies`. So `86qy` may be functionally correct, but current `isaac-discord` `main` is not in a verifier-acceptable state until this classpath/pin issue is resolved.
