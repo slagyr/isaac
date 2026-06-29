@@ -1,11 +1,13 @@
 ---
 # isaac-tqm1
 title: 'Server log file lifecycle: durable location, sole ownership, rotation'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-29T17:13:24Z
-updated_at: 2026-06-29T18:00:06Z
+updated_at: 2026-06-29T18:25:52Z
 ---
 
 First-principles model (2026-06-29, with Micah). Consolidates the file-LIFECYCLE concerns (was isaac-bwjb rotation + isaac-tykw ownership + log location) into one coherent piece. Content/serialization concerns stay separate (gexx throwable, x2po one-line).
