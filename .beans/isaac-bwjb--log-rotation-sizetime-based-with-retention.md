@@ -1,10 +1,11 @@
 ---
 # isaac-bwjb
 title: 'Log rotation: size/time-based with retention'
-status: draft
+status: scrapped
 type: feature
+priority: normal
 created_at: 2026-06-29T16:06:16Z
-updated_at: 2026-06-29T16:06:16Z
+updated_at: 2026-06-29T17:13:24Z
 ---
 
 The file logger (isaac-foundation logger.clj save-entry) appends every entry to the log file forever — no rotation. zanebot's /tmp/isaac.log was 13MB+ and growing unbounded.
@@ -17,3 +18,6 @@ The file logger (isaac-foundation logger.clj save-entry) appends every entry to 
 
 ## Coupling
 Rotation is cleanest when ONE process owns the log file. Today many processes share /tmp/isaac.log (see the origin bean) — concurrent appends + a rotating server race. Pair with the origin-separation bean: the server owns/rotates its file; CLI commands don't fight it.
+
+## Reasons for Scrapping
+Consolidated into  (Server log file lifecycle) — location + rotation + ownership are one cohesive file-sink concern per the first-principles model.
