@@ -1,11 +1,10 @@
 ---
 # isaac-ebl1
 title: 'Discord: per-channel routing via the frequencies map'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T16:01:15Z
 updated_at: 2026-06-27T18:30:00Z
 parent: isaac-4e4b
@@ -74,3 +73,11 @@ Verification with `ISAAC_GIT=1` on pinned heads (discord `a5c1f79`, agent `10093
 
 - `bb spec spec/isaac/comm/discord_spec.clj` → 66 examples, 0 failures
 - `bb features features/comm/discord/routing.feature features/comm/discord/frequencies.feature` → 11 examples, 0 failures
+
+## Verification (2026-06-29)
+Re-verified on the fixed pinned set named above:
+
+- `env ISAAC_GIT=1 bb spec spec/isaac/comm/discord_spec.clj` -> `66 examples, 0 failures, 132 assertions`
+- `env ISAAC_GIT=1 bb features features/comm/discord/routing.feature features/comm/discord/frequencies.feature` -> `11 examples, 0 failures, 12 assertions`
+
+The prior harness bootstrap failure is resolved by the foundation pin bump, and the approved feature surface is green on the delivered heads.
