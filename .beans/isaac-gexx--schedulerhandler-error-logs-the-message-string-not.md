@@ -4,6 +4,7 @@ title: scheduler/handler-error logs the message string, not the throwable (no st
 status: in-progress
 type: bug
 priority: normal
+tags: []
 tags:
     - unverified
 created_at: 2026-06-29T14:50:59Z
@@ -24,3 +25,13 @@ Repo: **isaac-foundation** `fc84503`
 - `logger/single-line-throwable` — map with `:class`, `:message`, `:stacktrace` (newline-escaped)
 - `scheduler/runtime` carries `:throwable` in handler-error notes; logs `:throwable` + `:error` message
 - Specs: `logger_spec`, `scheduler_spec` (66 examples, 0 failures on those files)
+
+## Verification failed (2026-06-29)
+Fetched GitHub `isaac-foundation` `main` is still `c230d544f8382e43a3a49f379af731cc692d4568`, and the `gexx` implementation commit `fc845038879dbe0ce86e91ccd49104b8819f85bb` is not on any current branch there.
+
+Current `main` still has the old behavior:
+
+- [src/isaac/scheduler/runtime.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/scheduler/runtime.clj:293) logs only `:error error-msg`
+- there is no `single-line-throwable` helper in [src/isaac/logger.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logger.clj:1)
+
+So `gexx` is not delivered on current `main` yet.
