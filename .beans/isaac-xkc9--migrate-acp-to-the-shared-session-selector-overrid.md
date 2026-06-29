@@ -1,11 +1,13 @@
 ---
 # isaac-xkc9
 title: Migrate ACP to the shared session selector + override
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-26T16:28:54Z
-updated_at: 2026-06-27T17:42:50Z
+updated_at: 2026-06-29T14:48:11Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-nbgn
@@ -38,3 +40,50 @@ crew ketch; sessions ketch-old/ketch-recent (updated-at); stdin initialize + ses
 existing session bridge; grover2 -> echo-alt; stdin initialize + session/load bridge + session/prompt; `acp --session bridge --with-model grover2` -> session "bridge" turn runs on echo-alt.
 
 Regression net: cli-resume.feature migrated — acp's --resume -> --prefer; --crew/--session fold into the frequencies adapter. Scope: wiring only (per 4e4b). New steps: none (existing acp cli-resume + agent steps; session/load+session/prompt are JSON-RPC content in the existing stdin step). Pairs with isaac-uek0 (remove the acp --remote proxy).
+
+
+
+## Resolution 2026-06-29 — committed isaac-acp 0886361
+
+Two parts; both landed on isaac-acp main.
+
+### Wiring (the bean's actual ask)
+- isaac.comm.acp.cli now consumes the reusable frequencies-cli adapter (rqlc),
+  same as prompt: option-spec = frequencies-option-spec + override-option-spec
+  (--session/--crew/--session-tag/--resume/--prefer/--create + --with-*). Removed
+  the bespoke find-most-recent-session / --resume / resolve-attach-key logic.
+- run-local resolves the single attach session via
+  frequencies/resolve-session-targets; session/new returns the resolved key (or
+  the server opens a fresh one per :create). Projects --with-model (model-override)
+  and --with-crew (turn crew). Explicit --session still errors "session not found";
+  unknown --with-model still errors. Illegal combos validated by the shared rules
+  (local only — the --remote proxy forwards flags untouched; proxy removal = uek0).
+- features/comm/acp/cli-resume.feature migrated to the new contract:
+  * --resume -> most-recent; --crew -> crew-scoped most-recent (S1);
+    --crew create-new; --session+--crew rejected (shared rule);
+    --with-model grover2 -> echo-alt on the attached turn (S2).
+  * cli.feature / proxy.feature crew+session scenarios moved to --with-crew /
+    proxy forwarding.
+
+### Prerequisite modernization (acp was ~10 foundation versions behind)
+The frequencies adapter only exists at agent 10093b4 (foundation v0.1.12), so acp
+had to move from foundation v0.1.2 to the current chain. Fixed the resulting
+drift: provider-template list; SessionStore gained get-transcript; should-compact?
+is now 3-arg; check-compaction! estimates prompt tokens (tests mock
+estimate-prompt-tokens) and the compaction loop recurses-on-progress; prompt/
+command discovery moved to prompts/commands (isaac-o8gk).
+
+Pins (after rebasing onto origin which had also bumped agent/server): foundation
+v0.1.12 (a834445), agent 10093b4, server eb51cc48.
+
+### Verification (real git pins)
+cd isaac-acp && clojure -M:spec -> 199/0 ; -M:features -> 84/0 (10 pre-existing
+pending). Regression net cli-resume.feature green (5/0 incl. S1 + S2).
+
+Note: a block of session-resolution tests in spec/isaac/comm/acp/cli_spec.clj
+(the "feature harness reproductions" describe) does not execute in the full
+suite (a pre-existing loading quirk, not introduced here); the same behavior is
+covered by cli-resume.feature which does run. Worth a follow-up to re-enable.
+
+Scope honored: wiring only for the selection/override; no bespoke acp selection
+logic. Pairs with isaac-uek0 (remove the --remote proxy). Tagged unverified.
