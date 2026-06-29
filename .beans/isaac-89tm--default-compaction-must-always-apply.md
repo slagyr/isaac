@@ -4,9 +4,10 @@ title: Default compaction configuration must always be present; never skip if no
 status: in-progress
 type: bug
 priority: high
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-27T18:00:00Z
-updated_at: 2026-06-29T15:10:00Z
+updated_at: 2026-06-29T16:00:00Z
 ---
 
 ## Summary
@@ -59,3 +60,6 @@ But the changed foundation repo is not green on its own head. Running `bb spec` 
 - got `{:crew :main :model :grover, :compaction {:async? false, :strategy :rubberband, :head 0.3, :threshold 0.8}}`
 
 So the new default-compaction behavior is real, but the foundation suite still contains an outdated expectation. `89tm` is not verifier-green until that repo is green too.
+
+## Fix (work-2, 2026-06-29)
+**isaac-foundation** `c230d54`: update `loader_spec.clj:896` to expect injected `:defaults :compaction` alongside `:crew` and `:model`.
