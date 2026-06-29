@@ -1,11 +1,13 @@
 ---
 # isaac-ey73
 title: ACP tool results are delivered but thin clients can still render them empty
-status: todo
+status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-27T19:35:18Z
-updated_at: 2026-06-29T17:40:00Z
+updated_at: 2026-06-29T14:43:53Z
 ---
 
 ## Problem
