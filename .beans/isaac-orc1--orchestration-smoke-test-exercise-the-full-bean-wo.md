@@ -4,8 +4,10 @@ title: 'Orchestration smoke test: exercise the full bean workflow with a deliber
 status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-06-26T15:17:03Z
-updated_at: 2026-06-29T17:52:41Z
+updated_at: 2026-06-29T17:53:58Z
 ---
 
 ## Purpose
@@ -98,3 +100,31 @@ Triggering full chain:
 - Verifier (perceptor) should review and complete or feedback.
 
 Using hail-driven flow with the deployed hail-bean-work / hail-bean-verify skills and updated crews/bands.
+
+
+### Worker pass (scrapper, hail-driven, fresh run 2026-06-29T17:52Z)
+- Claimed the bean from the repo-backed `isaac` checkout and exercised the current hail-driven worker path as a no-op process run.
+- Minimal work performed on this pass: claim + observations + follow-up bean creation + unverified handoff.
+
+### Friction in claiming / status updates (fresh run)
+- The delivered hail payload contained `:bean-id` and `:summary` but no `:repo`, even though the worker/bootstrap docs describe bean-work payloads as carrying repo context. I had to infer the repo from the local checkout and bean file location.
+- `load_skill "hail-bean-verify"` still has no repo-local fallback file in this checkout, so the verify handoff contract remains partly implicit from higher-level docs instead of discoverable in one local place.
+
+### Clarity of acceptance criteria (fresh run)
+- The bean body and repo-local `hail-bean-work` fallback now make the no-op/process-test intent clear enough to execute without touching product code.
+- The worker handoff mechanics are still clearer than the verifier handoff mechanics; worker docs say to hail verify, but the exact local payload contract is not documented beside the work fallback.
+
+### Tooling / git / notifications (fresh run)
+- `hail-get` was useful for recovering the actual structured hail record and confirming what payload fields were really present.
+- The repo-local fallback docs in `.toolbox/commands/work.md` and `.toolbox/skills/hail-bean-work/SKILL.md` materially improved recovery compared to the earlier run.
+
+### Communication / hand-off (fresh run)
+- Prompt text was sufficient to continue once the bean record was synced.
+- Missing explicit `:repo` in the delivered payload increases ambiguity for any future multi-repo bean-work hail.
+
+### Missing / unclear workflow rules (fresh run)
+- The bean-work hail contract should either always include `:repo` or the worker docs should explicitly say that monorepo/process-test hails may omit it and how to derive the target repo.
+- The repo-local worker bootstrap should include a sibling verifier-handoff note or skill so the expected verify hail payload shape is discoverable without searching older bean history.
+
+## Follow-up
+- Created follow-up bean `isaac-reg1` to track the missing `:repo` / verifier-handoff-contract gap surfaced by this fresh run.
