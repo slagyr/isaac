@@ -4,8 +4,7 @@ title: ACP tool results are delivered but thin clients can still render them emp
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T19:35:18Z
 updated_at: 2026-06-29T14:43:53Z
 ---
@@ -79,3 +78,16 @@ bean.
 
 - Replacing Isaac transcript storage with ACP content-block arrays
 - Fixing OpenClaw/Toad rendering inside this repo
+
+## Verification failed (2026-06-29)
+Fetched GitHub `isaac-acp` `main` is `0886361b0d1a97e8a6e28b2bcd8c4520f2cfdd4e`, and the approved acceptance command is still red on that head:
+
+- `bb features features/comm/acp/tools.feature features/comm/acp/session.feature`
+
+It fails before scenarios load with:
+
+`Could not locate isaac/foundation/harness_config_steps__init.class ...`
+
+This is a real current-head classpath/pin issue in ACP, not a verifier-layout miss. Current [deps.edn](/Users/micahmartin/agents/verify/isaac-acp/deps.edn:1) still pins `io.github.slagyr/isaac-foundation` and its `spec` / `spec-support` deps to `a8344457b8b187738092072e92e0776a0128c721`, while the feature alias explicitly requires `isaac.foundation.harness-config-steps` in [deps.edn](/Users/micahmartin/agents/verify/isaac-acp/deps.edn:83).
+
+So `ey73` is not verifier-green on current `main` yet.
