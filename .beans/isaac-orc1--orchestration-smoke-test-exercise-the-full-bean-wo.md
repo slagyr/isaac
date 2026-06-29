@@ -7,7 +7,7 @@ priority: low
 tags:
     - unverified
 created_at: 2026-06-26T15:17:03Z
-updated_at: 2026-06-29T17:53:58Z
+updated_at: 2026-06-29T17:55:42Z
 ---
 
 ## Purpose
@@ -128,3 +128,9 @@ Using hail-driven flow with the deployed hail-bean-work / hail-bean-verify skill
 
 ## Follow-up
 - Created follow-up bean `isaac-reg1` to track the missing `:repo` / verifier-handoff-contract gap surfaced by this fresh run.
+
+
+### Autonomous replay after fresh-run handoff (2026-06-29T17:55Z)
+- Received a second `isaac-work` hail (`ca9e82b6`) for `orc1` after the bean was already `in-progress` + `unverified` from the fresh run handoff.
+- Pulled first, confirmed the existing claimed/unverified state in git-backed bean data, and did not attempt a duplicate claim.
+- Treated this replay as an idempotent no-op worker pass: documented the replay and re-handoffed to verify without changing product code.
