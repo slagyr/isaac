@@ -3,8 +3,9 @@
 title: isaac logs viewer mishandles multi-line throwable / error entries
 status: todo
 type: bug
+priority: normal
 created_at: 2026-06-29T14:51:00Z
-updated_at: 2026-06-29T14:51:00Z
+updated_at: 2026-06-29T14:57:05Z
 ---
 
 isaac logs -> isaac.log-viewer/tail! -> format-line is LINE-ORIENTED: it EDN-parses one line at a time (format-entry dissocs known keys, renders the rest). Multi-line :throwable #error{...} blocks are a partial EDN form per line -> parse fails -> raw fallback, and the throwable's continuation lines render raw too. Result: error entries with throwables don't format (and may desync surrounding lines).
@@ -13,3 +14,9 @@ Reported by Micah: isaac logs doesn't format the scheduler 'Output closed' error
 
 ## Fix
 Make the viewer entry-aware (read a full EDN form spanning lines) rather than strictly line-at-a-time, and render :throwable. Confirm the log path isaac logs reads matches where errors land.
+
+## REVISED fix (2026-06-29, per Micah): one physical line per entry at the WRITER
+Root cause is the WRITER pretty-printing :throwable #error{...} across multiple physical lines. Fix at the source, not the reader:
+- WRITER: guarantee exactly ONE physical line per log entry. Serialize the throwable single-line (escape embedded newlines -> \n; stacktrace as \n-escaped text or a vector of frame strings). No pretty-printing in the file.
+- VIEWER: keep it line-oriented (correct once the invariant holds) and EXPAND the throwable for display (un-escape \n, indent the stack) — machine-friendly on disk, pretty on screen.
+This makes one-line-per-entry an invariant so grep/tail/jq-per-line all work. Couples with isaac-gexx (the throwable it adds MUST be written single-line per this invariant — land together).
