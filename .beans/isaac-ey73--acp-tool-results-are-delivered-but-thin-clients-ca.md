@@ -1,11 +1,11 @@
 ---
 # isaac-ey73
 title: ACP tool results are delivered but thin clients can still render them empty
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-06-27T19:35:18Z
-updated_at: 2026-06-27T19:35:18Z
+updated_at: 2026-06-29T17:40:00Z
 ---
 
 ## Problem
@@ -49,26 +49,29 @@ Keep core storage transport-neutral:
 ACP should continue translating that canonical form into ACP payloads at the
 transport boundary.
 
-## Isaac-side improvements
+## Approved scenarios
 
-Track Isaac-side compatibility hardening only. Full end-user resolution still
-requires an OpenClaw/Toad change.
+- `isaac-acp/features/comm/acp/tools.feature:74`
+  - `tool result updates repeat title, kind, and rawInput for thin ACP clients`
+- `isaac-acp/features/comm/acp/session.feature:102`
+  - `session/load replays a string tool result as ACP content and rawOutput`
 
-Potential scope:
+## Decision (2026-06-29, Micah)
 
-1. Make live `tool_call_update` payloads more self-contained for thin clients.
-   Include fields such as `title`, `kind`, and `rawInput` when available so an
-   update can be rendered without cached state from the initial `tool_call`.
+Keep `ey73` on the Isaac side of the compatibility seam:
 
-2. Audit `session/load` / replay / resume paths so stored string tool results
-   always become ACP-compatible `content` blocks on the wire, with preserved
-   tool identity.
+- do not change canonical transcript storage to ACP-style content arrays
+- add self-contained fields on live `tool_call_update` payloads for thin clients
+- keep replay/resume/session-load responsible for translating stored string
+  tool results into ACP-compatible `rawOutput` plus `content`
+- no new steps
 
-3. Document the ACP contract clearly: clients must render result text from
-   `update.content` or `update.rawOutput` on `tool_call_update`.
+OpenClaw/Toad rendering changes are a separate concern and stay out of this
+bean.
 
-4. Add feature/spec coverage that pins the interoperability surface, not just
-   the raw payload shape.
+## Acceptance commands
+
+- `cd isaac-acp && bb features features/comm/acp/tools.feature features/comm/acp/session.feature`
 
 ## Out of scope
 
