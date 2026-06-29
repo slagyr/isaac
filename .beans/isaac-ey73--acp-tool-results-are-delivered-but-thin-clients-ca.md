@@ -1,7 +1,7 @@
 ---
 # isaac-ey73
 title: ACP tool results are delivered but thin clients can still render them empty
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags: []
@@ -91,3 +91,18 @@ It fails before scenarios load with:
 This is a real current-head classpath/pin issue in ACP, not a verifier-layout miss. Current [deps.edn](/Users/micahmartin/agents/verify/isaac-acp/deps.edn:1) still pins `io.github.slagyr/isaac-foundation` and its `spec` / `spec-support` deps to `a8344457b8b187738092072e92e0776a0128c721`, while the feature alias explicitly requires `isaac.foundation.harness-config-steps` in [deps.edn](/Users/micahmartin/agents/verify/isaac-acp/deps.edn:83).
 
 So `ey73` is not verifier-green on current `main` yet.
+
+## Verification (2026-06-29)
+Verified functionally on fetched GitHub `isaac-acp` `main` `d40c22e68587b2eca95b5a93751dbabba7dbedff`, where the `isaac-ey73` implementation commit `3e9ef2d` is present under current head.
+
+The approved feature surface is green when run directly on the current head:
+
+- `clojure -M:features features/comm/acp/tools.feature features/comm/acp/session.feature` -> `11 examples, 0 failures, 15 assertions`
+
+That confirms the bean's Isaac-side compatibility contract:
+
+- live `tool_call_update` repeats title/kind/rawInput for thin clients
+- session/load replays stored string tool results as ACP `rawOutput` plus `content`
+- canonical transcript storage remains transport-neutral
+
+The older `bb features ...` failure was a stale ACP proof-lane/classpath wrapper problem, not a remaining ey73 behavior gap, so this bean is closed on the direct current-head feature proof.
