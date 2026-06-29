@@ -1,11 +1,11 @@
 ---
 # isaac-wirv
 title: 'Session mutation CLI: isaac sessions set/unset with schema validation'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-05-23T03:03:06Z
-updated_at: 2026-05-24T05:35:32Z
+updated_at: 2026-06-29T17:34:10Z
 blocked_by:
     - isaac-wr7d
     - isaac-x0b5
@@ -199,3 +199,12 @@ Checks run:
 • Direct acceptance repros confirmed the wording gap above.
 
 So the mutation surface mostly works, but the unknown-field diagnostic does not yet meet the bean contract.
+
+
+
+## Verification passed
+
+HEAD (isaac-agent): 3839528
+Working tree: clean
+
+Verified 2026-06-29. Unknown-field mutations now emit `no such field: <segment>` via `path-error` in session/cli.clj. `bb spec spec/isaac/session/cli_spec.clj` and `bb features features/session/mutation.feature` green.
