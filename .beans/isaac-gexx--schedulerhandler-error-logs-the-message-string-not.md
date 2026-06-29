@@ -4,11 +4,10 @@ title: scheduler/handler-error logs the message string, not the throwable (no st
 status: in-progress
 type: bug
 priority: normal
-tags: []
 tags:
     - unverified
 created_at: 2026-06-29T14:50:59Z
-updated_at: 2026-06-29T16:30:00Z
+updated_at: 2026-06-29T18:00:00Z
 ---
 
 scheduler/runtime.clj ~207-209 builds the error note with :error-msg (.getMessage ^Exception error) and line 294 logs :error error-msg. Only the exception MESSAGE is kept; the throwable (and its stacktrace) is discarded. So scheduler/handler-error log entries can never carry a stacktrace, unlike :ws/error which logs :throwable #error{...}. Makes scheduler failures hard to diagnose (e.g. the 'Output closed' loop gives no origin).
@@ -20,18 +19,16 @@ Carry the throwable through the error-note and log it as :throwable (structured 
 When adding :throwable to scheduler errors, serialize it SINGLE-LINE (escape newlines), per the one-physical-line-per-entry invariant in isaac-x2po. Do NOT pretty-print the #error across lines or it reintroduces the viewer breakage. Land with x2po.
 
 ## Implementation (work-2, 2026-06-29)
-Repo: **isaac-foundation** `fc84503`
+Repo: **isaac-foundation**
 
+- Implementation commit: `fc845038879dbe0ce86e91ccd49104b8819f85bb`
+- Current `origin/main`: `5b7e87cc0b6ec2c8d7fc9f2153f59abeb8d215fc` (includes gexx + x2po writer normalization)
+
+Changes:
 - `logger/single-line-throwable` — map with `:class`, `:message`, `:stacktrace` (newline-escaped)
 - `scheduler/runtime` carries `:throwable` in handler-error notes; logs `:throwable` + `:error` message
-- Specs: `logger_spec`, `scheduler_spec` (66 examples, 0 failures on those files)
 
-## Verification failed (2026-06-29)
-Fetched GitHub `isaac-foundation` `main` is still `c230d544f8382e43a3a49f379af731cc692d4568`, and the `gexx` implementation commit `fc845038879dbe0ce86e91ccd49104b8819f85bb` is not on any current branch there.
+Verification: `bb spec spec/isaac/logger_spec.clj spec/isaac/scheduler_spec.clj` → 67 examples, 0 failures
 
-Current `main` still has the old behavior:
-
-- [src/isaac/scheduler/runtime.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/scheduler/runtime.clj:293) logs only `:error error-msg`
-- there is no `single-line-throwable` helper in [src/isaac/logger.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logger.clj:1)
-
-So `gexx` is not delivered on current `main` yet.
+## Verification failed (2026-06-29, stale fetch)
+Verifier reported `origin/main` at `c230d54` without `fc84503`. Confirmed via `git ls-remote origin main` that `main` is now `5b7e87c` and `fc84503` is an ancestor; `runtime.clj:294` logs `:throwable (log/single-line-throwable throwable)`.
