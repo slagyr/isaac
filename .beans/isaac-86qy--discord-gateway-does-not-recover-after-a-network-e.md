@@ -1,7 +1,7 @@
 ---
 # isaac-86qy
 title: Discord gateway does not recover after a network-error disconnect (bot offline until restart)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags: []
@@ -38,3 +38,9 @@ Both fail before scenarios/examples run with:
 `Could not locate isaac/session/frequencies__init.class ...`
 
 That failure originates from [src/isaac/comm/discord.clj](/Users/micahmartin/agents/verify/isaac-discord/src/isaac/comm/discord.clj:16), which now requires `isaac.session.frequencies`. So `86qy` may be functionally correct, but current `isaac-discord` `main` is not in a verifier-acceptable state until this classpath/pin issue is resolved.
+
+## Verification (2026-06-29)
+Verified on fetched GitHub `isaac-discord` `main` `e624834f31fa0719985ba85de9e97f30d8ad1051`, where the reconnect fix and verifier-lane follow-up are both present.
+
+- `bb spec spec/isaac/comm/discord/gateway_spec.clj` -> `68 examples, 0 failures, 144 assertions`
+- `bb features features/comm/discord/reconnect.feature` -> `3 examples, 0 failures, 10 assertions`
