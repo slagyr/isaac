@@ -5,7 +5,7 @@ status: scrapped
 type: feature
 priority: normal
 created_at: 2026-06-29T16:06:17Z
-updated_at: 2026-06-29T17:13:24Z
+updated_at: 2026-06-29T17:13:41Z
 ---
 
 Every process using the logger (server, each CLI command in its own process, spec runs) writes to the SAME default /tmp/isaac.log. Watching the server log shows entries from unrelated CLI-command processes interleaved — and is why the prod log looked full of test/CLI noise.
@@ -23,4 +23,4 @@ Lean: tag origin (a) for filtering + default CLI commands to NOT write into the 
 Directly fixes "when I watch the server logs I don't want CLI-command entries." Also unblocks clean rotation (the other bean) by giving the server sole ownership of its file.
 
 ## Reasons for Scrapping
-Consolidated into  (Server log file lifecycle) — location + rotation + ownership are one cohesive file-sink concern per the first-principles model.
+Consolidated into isaac-tqm1 (Server log file lifecycle) — location + rotation + ownership are one cohesive file-sink concern per the first-principles model.
