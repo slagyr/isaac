@@ -4,8 +4,10 @@ title: CLI logs to <root>/logs/cli.log (not stderr)
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-29T22:39:06Z
-updated_at: 2026-06-29T22:50:54Z
+updated_at: 2026-06-29T22:52:25Z
 ---
 
 Refinement of the CLI-logging decision in isaac-tqm1. tqm1 shipped CLI structured logs defaulting to :stderr (main.clj configure-cli-logging! -> set-output! :stderr when no --log-file). Micah now wants CLI structured logs collected in their own file: <root>/logs/cli.log (e.g. ~/.isaac/logs/cli.log), separate from the server's server.log.
