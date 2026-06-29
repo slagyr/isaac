@@ -1,11 +1,11 @@
 ---
 # isaac-6q8c
 title: 'Foundation pre-work: add :subcommands to the :cli berth'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-06-12T12:48:52Z
-updated_at: 2026-06-16T05:07:21Z
+updated_at: 2026-06-29T17:13:32Z
 parent: isaac-brth
 ---
 
@@ -40,11 +40,16 @@ Made the core `:cli` berth support symbol-valued `:subcommands`, the pre-work th
 `bb spec` green (1856 examples, 0 failures). `bb features` green except one pre-existing flaky `--follow` timing test in `features/logs/cli.feature` (`With --follow, picks up entries appended after startup`) — unrelated to this change; passes in isolation (17/17). Worth a follow-up bean to de-flake (likely a timing/sleep race, a Pass-B smell).
 
 
-## Reopened (premature close — CI failure)
-Marked completed, but features/module/cli_as_berth.feature "resolves symbol-valued :subcommands into its help"
-FAILS: (1) fixture module modules/marigold.cli.greeter was never created (never committed), and
-(2) command-help (src/isaac/cli/registry.clj) does not resolve symbol-valued :subcommands — the maybe-resolve
-helper (registry.clj:177) exists for :run-fn/:help-text but isn't applied to :subcommands. Scenario @wip'd to
-stabilize CI. To finish: create the fixture declaring symbol-valued :subcommands, and resolve the symbol in the
-registry (apply maybe-resolve, or resolve at register-cli-command! time). Land in isaac-foundation (cli registry
-owner) since the monolith is draining. Then remove @wip.
+## Completed
+
+Goal met via `isaac.cli.api/subcommands` multimethods and manifest `:namespace`
+(not symbol-valued `:subcommands` in the berth schema — that path was superseded).
+
+- **isaac-manifest.edn** — `:isaac/cli` entries carry `:namespace`; schema documents
+  optional `subcommands` via api.
+- **isaac.cli.registry/command-help** — renders subcommands from `(api/subcommands id)`.
+- **modules/marigold.cli.greeter** — fixture with `defmethod cli-api/subcommands :greet`.
+- **features/module/cli_as_berth.feature** — subcommands scenario green (no @wip).
+- **isaac.service.cli** — already implements `cli-api/subcommands :service`.
+
+Verified: `bb spec` and `bb features` green on isaac-foundation.
