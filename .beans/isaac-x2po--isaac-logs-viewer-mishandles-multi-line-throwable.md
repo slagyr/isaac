@@ -1,11 +1,10 @@
 ---
 # isaac-x2po
 title: isaac logs viewer mishandles multi-line throwable / error entries
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-29T14:51:00Z
 updated_at: 2026-06-29T17:00:00Z
 ---
@@ -30,3 +29,8 @@ Repo: **isaac-foundation** (on top of gexx `fc84503`)
 - **Viewer** (`log_viewer.clj`): line-oriented parsing unchanged; `format-entry` shows `:class`/`:message` inline and expands escaped `:stacktrace` on indented continuation lines
 
 Verification: `bb spec spec/isaac/logger_spec.clj spec/isaac/log_viewer_spec.clj` → 67 examples, 0 failures
+
+## Verification (2026-06-29)
+Verified on fetched GitHub `isaac-foundation` `main` `5b7e87cc0b6ec2c8d7fc9f2153f59abeb8d215fc`. Focused proof passed:
+
+- `bb spec spec/isaac/logger_spec.clj spec/isaac/log_viewer_spec.clj` -> `67 examples, 0 failures, 118 assertions`
