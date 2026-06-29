@@ -66,3 +66,9 @@ Deferred. Track here so the design conversation isn't lost.
 
 Session sidecar implementation is complete and the rewritten storage.feature scenario passes. Full bb features still has unrelated runtime-state regressions now tracked in isaac-t4oj; this bead should not stay open for that separate issue.
 
+## Scenarios (in isaac-agent/features/session/storage.feature)
+1. "Session sidecars are keyed by session id" (features/session/storage.feature:205)
+   reuses: "the session store uses the file implementation", "the following sessions exist", "the file {path:string} exists"; no new steps.
+   Review: rewrite (2026-06-29). Use general root-relative file existence checks ("the file \"sessions/<id>.edn\" exists") instead of dedicated "the session sidecars exist for" collector. The special step is now unused (only ever referenced here). Still directly proves per-id .edn sidecars are created. Supports decoupling goals.
+   (Feature scenario text updated on review approval.)
+

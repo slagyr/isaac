@@ -27,5 +27,3 @@ Hail delivery interacts with session-store abstraction in some places but also h
 - Session activation (sidecar creation) must integrate properly with delivery (or document the activation path).
 - Create additional beans as needed for related cleanups (e.g., sidecar vs live activation, band matching using only abstract store).
 - Update tests for delivery without sidecar knowledge.
-BEAN
-echo "Fixed hail sidecar bean."

@@ -29,3 +29,8 @@ Compaction config resolution in session/context.clj and compaction.clj only merg
 - Existing unconfigured sessions start compacting.
 - Tests/docs confirm default is always active.
 - Verify with prowl/scrapper/perceptor crews that compaction triggers and reduces context.
+
+## Scenarios (in isaac-agent/features/session/compaction_strategies.feature)
+1. "default compaction is used when no compaction key in crew or session config" @wip (features/session/compaction_strategies.feature:24)
+   reuses: the isaac EDN file "config/models/local.edn" exists with, the isaac EDN file "config/crew/main.edn" exists with, the following sessions exist, session "no-config-test" has transcript, the following model responses are queued, When the user sends "new input" on session "no-config-test", Then session "no-config-test" has compaction, And session "no-config-test" has 3 active transcript entries; no new steps invented.
+   Review: keep. Directly exercises the AC that default compaction must apply (rubberband at 0.8/0.3) even with no :compaction key at all in crew config. Covers the "no auto-compaction for unconfigured crews/sessions" root cause. Fictional content, right abstraction.
