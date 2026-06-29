@@ -4,8 +4,7 @@ title: Default compaction configuration must always be present; never skip if no
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T18:00:00Z
 updated_at: 2026-06-29T15:10:00Z
 ---
@@ -43,3 +42,20 @@ Compaction config resolution in session/context.clj and compaction.clj only merg
 - **isaac-agent** `496c4ca`: `resolve-compaction-config` layer-merges policy keys (session failure counters no longer mask crew/defaults); session create persists resolved compaction; new `session … has compaction` step; `compaction_strategies.feature` scenario green (4 examples).
 
 Verification: `bb spec spec/isaac/session/context_spec.clj` (15, 0); `clojure -M:features features/session/compaction_strategies.feature` (4, 0).
+
+## Verification failed (2026-06-29)
+The agent-side proofs are green on the delivered heads:
+
+- `isaac-foundation` `0bc526aa12d23742c122f3b986dd949566923ea1`
+- `isaac-agent` `496c4caf80dd3b4d39e94830c16f553614cbe69f`
+
+- `isaac-agent`: `bb spec spec/isaac/session/context_spec.clj` -> `15 examples, 0 failures, 35 assertions`
+- `isaac-agent`: `clojure -M:features features/session/compaction_strategies.feature` -> `4 examples, 0 failures, 26 assertions`
+
+But the changed foundation repo is not green on its own head. Running `bb spec` in `isaac-foundation` at `0bc526a` fails with one regression in [spec/isaac/config/loader_spec.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/config/loader_spec.clj:896):
+
+- `normalize-config normalizes legacy crew lists nested models and provider vectors`
+- expected `(:defaults result)` = `{:crew :main :model :grover}`
+- got `{:crew :main :model :grover, :compaction {:async? false, :strategy :rubberband, :head 0.3, :threshold 0.8}}`
+
+So the new default-compaction behavior is real, but the foundation suite still contains an outdated expectation. `89tm` is not verifier-green until that repo is green too.

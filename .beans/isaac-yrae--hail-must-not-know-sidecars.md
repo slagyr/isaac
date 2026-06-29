@@ -1,11 +1,10 @@
 ---
 # isaac-yrae
 title: Hail delivery must not depend on or know about session sidecars (impl detail of store)
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T18:00:00Z
 updated_at: 2026-06-29T15:07:46Z
 ---
@@ -29,3 +28,18 @@ Hail delivery interacts with session-store abstraction in some places but also h
 - Session activation (sidecar creation) must integrate properly with delivery (or document the activation path).
 - Create additional beans as needed for related cleanups (e.g., sidecar vs live activation, band matching using only abstract store).
 - Update tests for delivery without sidecar knowledge.
+
+## Verification (2026-06-29)
+Verified on fetched GitHub heads:
+
+- `isaac-hail` `86329412d081870a7762e6277b1b42d4e031cf94`
+- `isaac-agent` `0b7b928b27be21ba5b457d0455083d8e0c3bdd8e`
+
+Proofs were green:
+
+- `isaac-hail`: `env ISAAC_GIT=1 bb spec spec/isaac/hail/router_spec.clj spec/isaac/hail/delivery_worker_spec.clj` -> `25 examples, 0 failures, 54 assertions`
+- `isaac-hail`: `bb features features/router.feature` in a real sibling worktree layout with pinned `foundation` / `agent` / `server` -> `16 examples, 0 failures, 64 assertions`
+- `isaac-agent`: `bb spec spec/isaac/session/cli_spec.clj` -> `15 examples, 0 failures, 37 assertions`
+- `isaac-agent`: `clojure -M:features features/session/mutation.feature` -> `11 examples, 0 failures, 30 assertions`
+
+I also confirmed `rg -n "sidecar" src spec features` is clean in `isaac-hail` on the delivered head. Hail now requires a registered session store and routes entirely through the store SPI, while agent `sessions set` activates missing sessions so hail can see them without any sidecar-specific path.
