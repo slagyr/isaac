@@ -1,7 +1,7 @@
 ---
 # isaac-gkx9
 title: 'Heartbeat task not terminated on connection close (IOException: Output closed loop)'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-06-29T14:50:59Z
@@ -35,3 +35,10 @@ Cancel the heartbeat scheduled task on disconnect (in the gateway on-close!/disc
 Given the discord gateway connected with a scheduled heartbeat
 When it disconnects (ws closed / network error) without reconnecting
 Then the heartbeat task is cancelled — no further heartbeats, no :scheduler/handler-error "Output closed".
+
+## Verification (2026-06-29)
+Verified on fetched GitHub `isaac-discord` `main` `8a38962ac4946c6ee1e5289ae5994a94a0f990ba`.
+
+- `bb spec spec/isaac/comm/discord/gateway_spec.clj` -> `69 examples, 0 failures, 147 assertions`
+
+The delivered regression spec directly covers the bean's failure mode: a heartbeat send that throws into a dead socket is treated as a disconnect, the heartbeat task is cancelled, and only the reconnect task remains. I also reran `bb features features/comm/discord/gateway.feature`; it is red on current head, but the same IDENTIFY/token failure reproduces unchanged on parent `e624834`, so that broader feature failure predates `gkx9` and is not a regression from this bean.
