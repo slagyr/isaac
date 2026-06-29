@@ -1,11 +1,10 @@
 ---
 # isaac-xkc9
 title: Migrate ACP to the shared session selector + override
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T16:28:54Z
 updated_at: 2026-06-29T15:18:58Z
 parent: isaac-4e4b
@@ -107,3 +106,13 @@ skipped for --remote. Fixed so stdio and --remote agree:
   selection flag forwards + resolves remotely.
 
 Re-verified: clojure -M:spec 199/0 ; -M:features 85/0.
+
+## Verification (2026-06-29)
+Verified on fetched GitHub `isaac-acp` `main` at `d40c22e68587b2eca95b5a93751dbabba7dbedff`.
+
+Proofs were green:
+
+- `clojure -M:spec` -> `199 examples, 0 failures, 502 assertions, 1 pre-existing pending`
+- `clojure -M:features` -> `85 examples, 0 failures, 182 assertions, 10 pre-existing pending`
+
+This includes the remote-path follow-up, so current `main` now honors the shared frequencies contract for both local and `--remote` ACP.
