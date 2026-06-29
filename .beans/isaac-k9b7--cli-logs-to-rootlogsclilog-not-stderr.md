@@ -1,11 +1,10 @@
 ---
 # isaac-k9b7
 title: CLI logs to <root>/logs/cli.log (not stderr)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-29T22:39:06Z
 updated_at: 2026-06-29T22:52:25Z
 ---
@@ -22,3 +21,12 @@ Many short-lived CLI processes appending to one cli.log interleaves (violates th
 
 ## Related
 isaac-tqm1 (server log lifecycle; server -> server.log). Pairs with it: server.log + cli.log both under <root>/logs/.
+
+## Verification (2026-06-29)
+Verified on fetched GitHub `isaac-foundation` `main` `90c29e8efb5e90674c91a86d9daf5ed4ffa1dc7c`, which contains commit `90c29e8` (`Default CLI structured logs to <root>/logs/cli.log`).
+
+Focused proof passed:
+
+- `bb spec spec/isaac/log_file_spec.clj spec/isaac/logger_spec.clj spec/isaac/main_spec.clj` -> `63 examples, 0 failures, 112 assertions`
+
+Current `src/isaac/main.clj` now defaults CLI structured logging to `<root>/logs/cli.log` when neither `--log-file` nor `ISAAC_LOG_FILE` is set, while preserving explicit overrides and leaving interactive stderr UX separate.

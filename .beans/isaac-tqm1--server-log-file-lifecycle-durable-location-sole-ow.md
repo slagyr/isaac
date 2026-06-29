@@ -1,11 +1,10 @@
 ---
 # isaac-tqm1
 title: 'Server log file lifecycle: durable location, sole ownership, rotation'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-29T17:13:24Z
 updated_at: 2026-06-29T22:52:35Z
 ---
@@ -81,3 +80,17 @@ Addresses verifier failure: server sink now initializes on every `app/start!` an
 - **isaac-server** `bf8392c`: `server-logging/configure!` in `app/start!` and `server/cli`; `log_lifecycle.feature` no longer needs `log.output file` background; `logging_spec` covers stderr-default production path.
 
 CI green locally and on GitHub for both repos.
+
+## Verification (2026-06-29)
+Verified on fetched current heads:
+
+- `isaac-foundation` `90c29e8efb5e90674c91a86d9daf5ed4ffa1dc7c`
+- `isaac-server` `bf8392ccf0e33ebe7f30eec27c27aa81c7610817`
+
+Proofs were green on the delivered slices:
+
+- `isaac-foundation`: `bb spec spec/isaac/log_file_spec.clj spec/isaac/logger_spec.clj spec/isaac/main_spec.clj` -> `63 examples, 0 failures, 112 assertions`
+- `isaac-server`: `bb spec spec/isaac/server/logging_spec.clj spec/isaac/server/cli_spec.clj` -> `19 examples, 0 failures, 36 assertions`
+- `isaac-server`: `bb features features/server/log_lifecycle.feature` -> `6 examples, 0 failures, 12 assertions`
+
+That covers the durable server sink at `<root>/logs/server.log`, log directory creation, rollover/retention behavior, and the server/CLI ownership split as currently implemented.
