@@ -1,11 +1,10 @@
 ---
 # isaac-c58s
 title: Reconcile hail frequency onto the shared session selector
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T16:28:54Z
 updated_at: 2026-06-27T18:26:34Z
 parent: isaac-4e4b
@@ -72,3 +71,20 @@ The 3 new scenarios are @wip-safe to write now. The `:frequencies` rename + `:cr
 
 ## Deploy
 Migrate zanebot hail config: :frequency -> :frequencies, :spawn-session -> :create before deploy (one-time, ops). Strict validation will fail loud if missed.
+
+## Verification (2026-06-29)
+Verified on fetched current heads in a sibling-layout workspace:
+
+- `isaac-hail` `e4dc3767f2ec2a566e648476ed86fb332a72077f`
+- `isaac-foundation` `bbb30be95366511838d9feab48a01523c98d5f5a`
+- `isaac-agent` `6ad519db72c964215e65e7aa969413592b5e8ab2`
+- `isaac-server` `eb51cc48b8964dabb678086ac36051a86d94c03a`
+
+Current code matches the bean: hail now serializes selectors under `:frequencies`, uses `:create`, and the router delegates matching to `isaac.session.frequencies/matching-sessions` in `src/isaac/hail/router.clj`.
+
+Proofs were green:
+
+- `isaac-hail`: `bb spec` -> `72 examples, 0 failures, 167 assertions`
+- `isaac-hail`: `bb features` -> `84 examples, 0 failures, 337 assertions, 3 pre-existing pending`
+
+That covers the shared-selector reconciliation while preserving hail-specific extras like band, reach-all broadcast, payload, async delivery, `:with-*` override projection, and `:create :if-missing`.

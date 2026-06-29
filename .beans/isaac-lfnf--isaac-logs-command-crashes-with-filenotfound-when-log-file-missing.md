@@ -1,11 +1,10 @@
 ---
 # isaac-lfnf
 title: isaac logs command crashes with FileNotFound when the log file does not exist
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-27T15:45:00Z
 updated_at: 2026-06-27T17:18:07Z
 ---
@@ -93,3 +92,11 @@ Concrete mismatches on current head:
 So the delivered behavior described in the handoff is not on current `main`:
 the default log path is still `/tmp/isaac.log`, config still uses `:log :output`
 only, and there is no verifier-visible coverage for the missing-file case.
+
+## Verification (2026-06-29)
+Re-verified on fetched GitHub `isaac-foundation` `main` `bbb30be95366511838d9feab48a01523c98d5f5a`, which includes the missing-file logs fix and a follow-up ensuring the log directory exists before writing.
+
+Proofs were green:
+
+- `bb spec spec/isaac/logs/cli_spec.clj spec/isaac/log_viewer_spec.clj spec/isaac/logger_spec.clj` -> `81 examples, 0 failures, 135 assertions`
+- `bb features features/logs/cli.feature` -> `17 examples, 0 failures, 38 assertions`

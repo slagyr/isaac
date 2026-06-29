@@ -1,11 +1,10 @@
 ---
 # isaac-4onv
 title: Remove dynamic fs/*fs*; specs install :fs via nexus
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T21:18:52Z
 updated_at: 2026-06-27T15:12:52Z
 parent: isaac-jw6d
@@ -96,3 +95,23 @@ discord feature tests go token=nil) — that's an opc4 config-harness adoption,
 tracked separately, NOT a fs/*fs* concern.
 
 Tagged unverified.
+
+## Verification (2026-06-29)
+Verified on fetched current heads:
+
+- `isaac-foundation` `bbb30be95366511838d9feab48a01523c98d5f5a`
+- `isaac-agent` `6ad519db72c964215e65e7aa969413592b5e8ab2`
+- `isaac-server` `eb51cc48b8964dabb678086ac36051a86d94c03a`
+- exact-sha code scan also checked `isaac-discord` `bd5584831cc4d95ca49bb7804e639c20de871334`, `isaac-imessage` `0c54131ea9bdb76fc52570b8250601e5e657cc93`, `isaac-hooks` `734f71e828d375fea6b78e1e44df4947a850ff82`, and `isaac-cron` `7a543d4ffce9ea02ad65544d05ba48b1cabb07bf`
+
+Proofs were green on the current heads:
+
+- `isaac-foundation`: `bb spec` -> `785 examples, 0 failures, 1376 assertions`
+- `isaac-agent`: `bb spec` -> `1125 examples, 0 failures, 2208 assertions`
+- `isaac-server`: `bb spec` -> `156 examples, 0 failures, 280 assertions`
+
+The exact-sha ecosystem scan over `src/` and `spec/` returned no live `*fs*` code matches:
+
+- `rg -n '\*fs\*' <foundation/agent/server/discord/imessage/hooks/cron src+spec worktrees>` -> exit `1`
+
+The earlier hits I saw were from stale local Discord/iMessage trees, not from the fetched current heads.

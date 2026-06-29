@@ -1,11 +1,10 @@
 ---
 # isaac-orc1
 title: 'Orchestration smoke test: exercise the full bean workflow with a deliberate no-op'
-status: in-progress
+status: completed
 type: task
 priority: low
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-26T15:17:03Z
 updated_at: 2026-06-27T16:42:22Z
 ---
@@ -80,3 +79,13 @@ Subsequent workers and verifiers should treat the process steps themselves as th
 - After syncing the actual `isaac-1` checkout, the worker saw the existing claimed/handoff state and did not try to re-claim the bean.
 - This is a useful process signal: replayed/autonomous work hails need an explicit idempotency rule, but the current git+beans state was enough to avoid a duplicate claim.
 - The repo-local fallback docs now exist in `.toolbox/commands/work.md`, which helped recover even though `load_skill "work-bean"` was still unavailable in-session.
+
+## Verification (2026-06-29)
+Closed as a process-test bean. The acceptance is met from the bean body itself:
+
+- planner created it as a process-test bean
+- worker claimed it, handed it off, and appended process observations
+- the body documents friction, tooling gaps, hand-off clarity, and workflow-rule gaps
+- a follow-up item was created and recorded
+
+No product-code or test proof was required for this bean by design.
