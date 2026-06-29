@@ -4,9 +4,8 @@ title: 'Server log file lifecycle: durable location, sole ownership, rotation'
 status: in-progress
 type: feature
 priority: normal
-tags: []
 created_at: 2026-06-29T17:13:24Z
-updated_at: 2026-06-29T18:25:52Z
+updated_at: 2026-06-29T22:39:06Z
 ---
 
 First-principles model (2026-06-29, with Micah). Consolidates the file-LIFECYCLE concerns (was isaac-bwjb rotation + isaac-tykw ownership + log location) into one coherent piece. Content/serialization concerns stay separate (gexx throwable, x2po one-line).
@@ -62,3 +61,12 @@ This is not verifier-ready and not delivered on the true current heads.
 - Current server code does have service-side `~/Library/Logs/isaac/server.log` surfaces for launchd plumbing, but that is not the tqm1 lifecycle feature described here: there is no delivered server-log rotation/retention implementation or verifier-visible schema/config support matching this bean's acceptance.
 
 So this should go back to workers as not yet implemented, not to verifier close-out.
+
+## VERIFICATION FAILED (2026-06-29, deployed to zanebot)
+After deploy, the SERVER does NOT write <root>/logs/server.log — all server logs go to stdout/stderr. Confirmed on zanebot: ~/.isaac/logs/ does not exist; /tmp/isaac.log still being touched; server output lands on stderr.
+
+Root cause (code):
+- logger.clj default is now :output :stderr, :log-file nil (commit d78d768 "CLI stderr default").
+- log-file resolves as (or (lfile/active-log-path) (:log-file @state)). For the server, the rotating active-log-path is never initialized (log/file.clj prepare-active-log!), and :log-file is nil -> no target file. server/cli.clj:65 does set-output! :file but with no path it falls back to stderr.
+
+Must-fix before completing: on `isaac server` startup, initialize the rotating active log at <root>/logs/server.log (create logs/, prepare-active-log! with the resolved root, set the active path) so server logs land in the file, not stderr. Acceptance S1 ("the isaac file logs/server.log exists" after server start) must actually pass against a booted server, not just the harness.

@@ -72,7 +72,7 @@ Subsequent workers and verifiers should treat the process steps themselves as th
 - There should be an explicit statement in the worker docs for process-test beans that no product-code/test changes are expected, so the worker does not have to infer whether normal red/green rules are intentionally suspended.
 
 ## Follow-up
-- Created follow-up bean to track the bootstrap/skill-discovery gap observed in this run.
+- (Historical) Created follow-up for bootstrap gap in prior run.
 
 
 ### Replayed hail / idempotency check (2026-06-27)
@@ -127,7 +127,7 @@ Using hail-driven flow with the deployed hail-bean-work / hail-bean-verify skill
 - The repo-local worker bootstrap should include a sibling verifier-handoff note or skill so the expected verify hail payload shape is discoverable without searching older bean history.
 
 ## Follow-up
-- Created follow-up bean `isaac-reg1` to track the missing `:repo` / verifier-handoff-contract gap surfaced by this fresh run.
+- Gaps noted in observations below (missing explicit `:repo` in bean-work hail payload, incomplete repo-local verifier handoff docs). These are documented here for the process test rather than spun into a separate bean.
 
 
 ### Autonomous replay after fresh-run handoff (2026-06-29T17:55Z)
