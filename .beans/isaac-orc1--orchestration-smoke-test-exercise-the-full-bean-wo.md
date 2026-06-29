@@ -7,7 +7,7 @@ priority: low
 tags:
     - unverified
 created_at: 2026-06-26T15:17:03Z
-updated_at: 2026-06-29T17:55:42Z
+updated_at: 2026-06-29T17:56:41Z
 ---
 
 ## Purpose
@@ -134,3 +134,9 @@ Using hail-driven flow with the deployed hail-bean-work / hail-bean-verify skill
 - Received a second `isaac-work` hail (`ca9e82b6`) for `orc1` after the bean was already `in-progress` + `unverified` from the fresh run handoff.
 - Pulled first, confirmed the existing claimed/unverified state in git-backed bean data, and did not attempt a duplicate claim.
 - Treated this replay as an idempotent no-op worker pass: documented the replay and re-handoffed to verify without changing product code.
+
+
+### Autonomous hail replay (2026-06-29T17:56Z, 8aa51b82)
+- Another `isaac-work` autonomous hail arrived for `orc1` after the bean was already claimed and tagged `unverified`.
+- Bootstrap still worked: `hail-bean-work` + repo pull + bean read were sufficient to confirm state without guessing.
+- No duplicate claim or product change was needed; this pass only records the replay and re-hands off to verify.
