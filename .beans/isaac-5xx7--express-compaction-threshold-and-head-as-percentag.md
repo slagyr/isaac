@@ -1,11 +1,11 @@
 ---
 # isaac-5xx7
 title: Express compaction :threshold and :head as percentages of context-window
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-05-16T23:56:24Z
-updated_at: 2026-05-18T00:17:10Z
+updated_at: 2026-06-29T17:17:34Z
 ---
 
 ## Problem
@@ -109,3 +109,20 @@ Restored percentage semantics by:
 - `compaction.clj` → `should-compact?` and `compaction-target` multiply by context-window
 - All test values updated to percentages (context_spec.clj, cli_spec.clj, compaction_spec.clj, compaction_schema_spec.clj)
 - All feature files updated: behavior_funnel.feature, compaction_strategies.feature, async_compaction.feature, context/compaction.feature
+
+
+
+## Verification passed
+
+HEAD (isaac-agent): 6ad519db72c964215e65e7aa969413592b5e8ab2
+Working tree: clean
+
+Verified 2026-06-29 by work-3.
+
+- `bb ci` green: 1125 speclj examples, 556 feature examples, 0 failures
+- Schema: `:threshold`/`:head` are `:double` with `:percentage?` validation in `[0.0, 1.0)`
+- Defaults: `0.8`/`0.3` in `context.clj`; resolved at use time via `* context-window` in `compaction.clj`
+- Feature files recalibrated: `compaction_strategies.feature`, `async_compaction.feature`, `behavior_funnel.feature`
+- `features/context/compaction.feature` not present in isaac-agent (pre-split monolith path; N/A)
+- `features/session/compaction_percentages.feature` still deferred per bean
+- Changelog entry for hard-break migration not yet written (follow-up if desired)
