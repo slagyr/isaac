@@ -1,11 +1,13 @@
 ---
 # isaac-yrae
-title: 'Hail delivery must not depend on or know about session sidecars (impl detail of store)'
-status: todo
+title: Hail delivery must not depend on or know about session sidecars (impl detail of store)
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-27T18:00:00Z
-updated_at: 2026-06-27T18:00:00Z
+updated_at: 2026-06-29T15:07:46Z
 ---
 
 ## Summary
