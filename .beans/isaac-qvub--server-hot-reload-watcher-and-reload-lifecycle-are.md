@@ -4,8 +4,6 @@ title: Server hot-reload watcher and reload lifecycle are visible in logs
 status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 tags: []
 created_at: 2026-06-26T16:24:30Z
 updated_at: 2026-06-26T17:34:29Z

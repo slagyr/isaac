@@ -4,8 +4,7 @@ title: 'Release hygiene: sync a module''s inter-module deps.edn pins to the regi
 status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-20T15:26:29Z
 updated_at: 2026-06-20T19:50:47Z
 ---
