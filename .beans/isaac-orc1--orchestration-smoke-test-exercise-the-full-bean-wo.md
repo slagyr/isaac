@@ -1,7 +1,7 @@
 ---
 # isaac-orc1
 title: 'Orchestration smoke test: exercise the full bean workflow with a deliberate no-op'
-status: completed
+status: todo
 type: task
 priority: low
 tags: []
@@ -89,3 +89,13 @@ Closed as a process-test bean. The acceptance is met from the bean body itself:
 - a follow-up item was created and recorded
 
 No product-code or test proof was required for this bean by design.
+
+## Fresh run (2026-06-29)
+Reset to `todo` for clean orchestration test after recent pulls, gitlib updates on zanebot, service reload, and code deploys.
+
+Triggering full chain:
+- Planner (prowl, channel "isaac") will hail work for this bean via isaac-work band.
+- Worker (scrapper) should claim, do minimal no-op (note + observations), handoff with unverified to verify band.
+- Verifier (perceptor) should review and complete or feedback.
+
+Using hail-driven flow with the deployed hail-bean-work / hail-bean-verify skills and updated crews/bands.
