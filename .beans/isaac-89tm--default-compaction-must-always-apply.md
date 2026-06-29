@@ -1,11 +1,13 @@
 ---
 # isaac-89tm
-title: 'Default compaction configuration must always be present; never skip if not configured'
-status: todo
+title: Default compaction configuration must always be present; never skip if not configured
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-27T18:00:00Z
-updated_at: 2026-06-27T18:00:00Z
+updated_at: 2026-06-29T15:10:00Z
 ---
 
 ## Summary
@@ -34,3 +36,10 @@ Compaction config resolution in session/context.clj and compaction.clj only merg
 1. "default compaction is used when no compaction key in crew or session config" @wip (features/session/compaction_strategies.feature:24)
    reuses: the isaac EDN file "config/models/local.edn" exists with, the isaac EDN file "config/crew/main.edn" exists with, the following sessions exist, session "no-config-test" has transcript, the following model responses are queued, When the user sends "new input" on session "no-config-test", Then session "no-config-test" has compaction, And session "no-config-test" has 3 active transcript entries; no new steps invented.
    Review: keep. Directly exercises the AC that default compaction must apply (rubberband at 0.8/0.3) even with no :compaction key at all in crew config. Covers the "no auto-compaction for unconfigured crews/sessions" root cause. Fictional content, right abstraction.
+
+## Implementation (work-2, 2026-06-29)
+
+- **isaac-foundation** `0bc526a`: `normalize-config` injects `:defaults :compaction` (`rubberband`, `0.8`, `0.3`); minimal feature config seeds same.
+- **isaac-agent** `496c4ca`: `resolve-compaction-config` layer-merges policy keys (session failure counters no longer mask crew/defaults); session create persists resolved compaction; new `session … has compaction` step; `compaction_strategies.feature` scenario green (4 examples).
+
+Verification: `bb spec spec/isaac/session/context_spec.clj` (15, 0); `clojure -M:features features/session/compaction_strategies.feature` (4, 0).
