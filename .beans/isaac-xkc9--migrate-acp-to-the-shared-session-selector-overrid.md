@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-26T16:28:54Z
-updated_at: 2026-06-29T14:48:11Z
+updated_at: 2026-06-29T15:18:58Z
 parent: isaac-4e4b
 blocked_by:
     - isaac-nbgn
@@ -87,3 +87,23 @@ covered by cli-resume.feature which does run. Worth a follow-up to re-enable.
 
 Scope honored: wiring only for the selection/override; no bespoke acp selection
 logic. Pairs with isaac-uek0 (remove the --remote proxy). Tagged unverified.
+
+
+## Verifier follow-up 2026-06-29 — --remote path now honors the contract (isaac-acp d40c22e)
+
+Verifier flagged (correctly) that the proxy path had diverged from the local
+contract: remote-query-params forwarded only model/crew/session/resume (dropping
+--with-model/--with-crew/--session-tag/--prefer/--create) and validation was
+skipped for --remote. Fixed so stdio and --remote agree:
+- run validates frequencies options for BOTH transports up front.
+- remote-query-params forwards the FULL flag set (selection + all --with-*).
+- the websocket SERVER (websocket.clj) resolves via the shared core:
+  requested-session-key builds a frequencies map from the query and calls
+  resolve-session-targets (no more bespoke session/resume lookup); server-opts
+  honors --with-model / --with-crew.
+- parse-option-map coerces --create to a keyword.
+- proxy.feature: illegal --crew+--session scenario migrated (now rejected),
+  --model -> --with-model, and a new --session-tag scenario proves a fresh
+  selection flag forwards + resolves remotely.
+
+Re-verified: clojure -M:spec 199/0 ; -M:features 85/0.
