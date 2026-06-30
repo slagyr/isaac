@@ -10,7 +10,7 @@ tags:
     - unverified
     - config
 created_at: 2026-06-30T20:11:18Z
-updated_at: 2026-06-30T20:58:13Z
+updated_at: 2026-06-30T21:24:13Z
 ---
 
 ## Problem
@@ -96,3 +96,11 @@ foundation, discord, server, hooks — no violations. Other module repos scanned
 ### Verification
 - `bb spec` green: foundation (807), discord (69).
 - `bb config-bypass-lint` ok on foundation + discord/server/hooks/agent src.
+
+
+### Lint delivery fix (deps, not vendored copies)
+- `isaac.foundation.config-bypass-lint` in `spec-support/src/` (single implementation).
+- Exposed via `io.github.slagyr/isaac-foundation-test-support` (`:deps/root "spec-support"`).
+- Module `bb.edn` depends on test-support coord; `bb config-bypass-lint` requires the ns.
+- Foundation `:config-bypass-lint` deps alias for `clj -M:config-bypass-lint`.
+- Test-support sha bumped to `44e824c` across modules after foundation push.
