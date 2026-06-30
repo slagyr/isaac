@@ -1,10 +1,13 @@
 ---
 # isaac-f0fq
 title: Berth log :output (file/stderr/stdout/none) in the foundation :logging config
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-06-29T23:59:42Z
-updated_at: 2026-06-29T23:59:42Z
+updated_at: 2026-06-30T00:09:52Z
 ---
 
 The foundation :logging config berth (isaac-foundation manifest) currently exposes only :max-bytes / :max-days. The log OUTPUT destination is set programmatically (logger/set-output!), not via config, and :stdout isn't a supported value at all (logger.clj save-entry has cases for :memory/:stderr/:none + a file default — no :stdout branch). Surfaced 2026-06-29 while reviewing the tqm1/k9b7 logging work.
