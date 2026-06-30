@@ -1,14 +1,15 @@
 ---
 # isaac-kxre
 title: Server logs to cli.log, not rotating server.log, on 0.1.15 (stale isaac-server pin); rename 'sink' logging vocabulary
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - logging
     - deploy
+    - unverified
 created_at: 2026-06-30T18:01:18Z
-updated_at: 2026-06-30T18:01:18Z
+updated_at: 2026-06-30T18:09:57Z
 ---
 
 ## Symptom (live 0.1.15 deploy)
