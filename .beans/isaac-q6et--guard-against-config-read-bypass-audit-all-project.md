@@ -1,7 +1,7 @@
 ---
 # isaac-q6et
 title: 'Guard against config-read bypass: audit all projects + worker rule + validator check (code must use foundation''s resolving loader)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - lint
     - foundation
 created_at: 2026-06-30T20:11:18Z
-updated_at: 2026-06-30T20:11:18Z
+updated_at: 2026-06-30T20:46:35Z
 ---
 
 ## Problem
