@@ -1,11 +1,10 @@
 ---
 # isaac-6r9l
 title: Hook routes reject non-map JSON payloads with 400
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-30T14:49:00Z
 updated_at: 2026-06-30T14:50:49Z
 ---
@@ -65,3 +64,13 @@ shape should fail as a client error, not an internal server error.
 
 Observed concretely on `zanebot` for the `workout` hook, but the fix should be
 generic for all hook routes rather than special-cased to one hook name.
+
+## Verification (2026-06-30)
+Verified on fetched GitHub `isaac-hooks` `main` `ac227a945b5018b33cc5a45cba85779d6e9d08c5`.
+
+Focused proofs were green:
+
+- `bb spec spec/isaac/hooks_spec.clj` -> `29 examples, 0 failures, 43 assertions`
+- `bb features features/hooks.feature` -> `14 examples, 0 failures, 22 assertions`
+
+That covers the new client-error behavior for top-level JSON arrays and scalars while preserving normal map-shaped hook dispatch.
