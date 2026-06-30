@@ -1,11 +1,10 @@
 ---
 # isaac-dyp7
 title: Discord send path sends unresolved ${VAR} token (live config bypasses secret resolution) -> REST 401 dead-letters
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
     - discord
     - comm
 created_at: 2026-06-30T19:59:36Z
@@ -76,3 +75,17 @@ Config ${VAR} resolution is a FOUNDATION concern, not discord's. Therefore:
 - The fix is NOT to resolve env vars inside discord — it is to make discord's live read go THROUGH foundation's resolving config loader instead of raw edn/read-string (effective-config / discord-slice-from-root / runtime-discord-cfg). Only the channel map needs live reload; the token must arrive already resolved by foundation.
 - The earlier @wip scenario (features/comm/discord/comm_send_token.feature) was REMOVED — testing foundation's resolution through discord's send path is the wrong level; that behavior belongs to foundation.
 - This bug is one instance of a class now tracked by isaac-q6et (audit all projects + worker rule + validator check against config-read bypass).
+
+## Verification (2026-06-30)
+Verified on fetched GitHub `isaac-discord` `main` `c292753189bbcd0d4757df6e45d1316ace488e48`.
+
+Current head contains the architectural correction:
+
+- the raw `discord-slice-from-root` override is gone from the live send path
+- `send!` now relies on the foundation-resolved config loader result for `:discord/token`
+- the wrong-level `comm_send_token.feature` was removed
+- the Discord spec now asserts the resolved token reaches REST
+
+Focused proof passed:
+
+- `bb spec spec/isaac/comm/discord_spec.clj` -> `71 examples, 0 failures, 150 assertions`
