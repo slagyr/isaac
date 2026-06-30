@@ -1,11 +1,13 @@
 ---
 # isaac-gfsq
 title: isaac server never binds the server.log sink (configure-server-sink! not called on boot)
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-30T01:45:03Z
-updated_at: 2026-06-30T01:45:03Z
+updated_at: 2026-06-30T01:49:29Z
 ---
 
 The server does NOT write <root>/logs/server.log on origin/main — confirmed by code, not just the stale zanebot deploy. tqm1's "verified" was a false pass: the specs exercise the rotation logic by calling configure-server-sink! directly, but the real `isaac server` boot never calls it.
