@@ -5,11 +5,12 @@ status: in-progress
 type: feature
 priority: high
 tags:
-    - config
     - lint
     - foundation
+    - unverified
+    - config
 created_at: 2026-06-30T20:11:18Z
-updated_at: 2026-06-30T20:46:35Z
+updated_at: 2026-06-30T20:58:13Z
 ---
 
 ## Problem
@@ -70,3 +71,28 @@ values" from "writes config" and "resolves the root pointer."
 
 - isaac-dyp7 — the discord instance (raw live read → unresolved `${VAR}` token → 401).
 - isaac-vhyw — the live-reload need that motivated discord's bypass.
+
+
+## Implementation notes (work-2)
+
+### Sanctioned API (`isaac-foundation`)
+- `isaac.config.api/load-resolved`, `resolved-config`, `resolved-slice` delegate to loader.
+
+### Bypass fixes
+| Repo | Site | Fix |
+|------|------|-----|
+| isaac-discord | `discord.clj` runtime/hot-reload paths | loader `load-config-result` only |
+| isaac-foundation | `main.clj`, `launcher.clj`, `modules/cli.clj` | `config-api/load-resolved` |
+
+`logs/cli.clj` no longer reads config (streams registry refactor on main).
+
+### Lint + rule
+- `bb config-bypass-lint` in foundation `src/` + wired into `bb ci`.
+- `AGENTS.md` Config Read Discipline section.
+
+### Audit (production `src/` lint clean)
+foundation, discord, server, hooks — no violations. Other module repos scanned via shared lint script.
+
+### Verification
+- `bb spec` green: foundation (807), discord (69).
+- `bb config-bypass-lint` ok on foundation + discord/server/hooks/agent src.
