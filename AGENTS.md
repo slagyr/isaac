@@ -182,7 +182,9 @@ Sanctioned exceptions (do not route product reads through these):
 - `isaac.config.root` — pointer files (`~/.config/isaac.edn`) that locate the
   root, not config values
 
-`bb config-bypass-lint` in isaac-foundation enforces this on `src/`.
+Every Isaac module repo vendors `config_bypass_lint.bb` and runs
+`bb config-bypass-lint` (wired into `bb ci`) on its own `src/`. The canonical
+script lives in isaac-foundation; keep module copies in sync when it changes.
 
 ## Logging Discipline
 
