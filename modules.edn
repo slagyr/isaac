@@ -2,7 +2,7 @@
                                :git/sha "8a7f7a2e0a8796b34dc4d2bdb85215fad622499d"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.server        {:coord {:git/url "https://github.com/slagyr/isaac-server.git"
-                               :git/sha "468c2610fba7fc702c0ea3ab174998c80143559a"}
+                               :git/sha "83706a06d2ad18e8ec367ea6e61785ce699b500d"}
                        :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp      {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
                                :git/sha "75c3d8ebfae13154a8777e31490a633f16f35b51"}
