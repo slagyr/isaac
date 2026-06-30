@@ -17,7 +17,7 @@
                                :git/sha "ac227a945b5018b33cc5a45cba85779d6e9d08c5"}
                        :desc  "Event hooks and inbound webhook routing."}
  :isaac.comm.discord  {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                               :git/sha "15c196f876201a7356cd1c390a9293f35f9bdd3d"}
+                               :git/sha "c292753189bbcd0d4757df6e45d1316ace488e48"}
                        :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                :git/sha "0c54131ea9bdb76fc52570b8250601e5e657cc93"}
