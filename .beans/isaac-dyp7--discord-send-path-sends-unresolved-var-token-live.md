@@ -8,7 +8,7 @@ tags:
     - discord
     - comm
 created_at: 2026-06-30T19:59:36Z
-updated_at: 2026-06-30T19:59:36Z
+updated_at: 2026-06-30T20:11:40Z
 ---
 
 ## Symptom (production — discord sends 401 / dead-letter)
@@ -67,3 +67,11 @@ Today this fails (sends `Bot ${...}`); after the fix it passes.
 
 - isaac-vhyw — introduced the live-config send path (the regression).
 - isaac-3ldm — the compile fix that got discord active enough to reach this 401.
+
+
+## Update (architecture correction)
+
+Config ${VAR} resolution is a FOUNDATION concern, not discord's. Therefore:
+- The fix is NOT to resolve env vars inside discord — it is to make discord's live read go THROUGH foundation's resolving config loader instead of raw edn/read-string (effective-config / discord-slice-from-root / runtime-discord-cfg). Only the channel map needs live reload; the token must arrive already resolved by foundation.
+- The earlier @wip scenario (features/comm/discord/comm_send_token.feature) was REMOVED — testing foundation's resolution through discord's send path is the wrong level; that behavior belongs to foundation.
+- This bug is one instance of a class now tracked by isaac-q6et (audit all projects + worker rule + validator check against config-read bypass).
