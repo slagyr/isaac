@@ -1,14 +1,15 @@
 ---
 # isaac-dyp7
 title: Discord send path sends unresolved ${VAR} token (live config bypasses secret resolution) -> REST 401 dead-letters
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - discord
     - comm
 created_at: 2026-06-30T19:59:36Z
-updated_at: 2026-06-30T20:11:40Z
+updated_at: 2026-06-30T20:23:50Z
 ---
 
 ## Symptom (production — discord sends 401 / dead-letter)
