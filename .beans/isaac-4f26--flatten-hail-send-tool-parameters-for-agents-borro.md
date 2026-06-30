@@ -1,13 +1,12 @@
 ---
 # isaac-4f26
 title: Flatten hail-send tool parameters for agents; borrow frequencies schema; avoid EDN strings
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-30T21:52:07Z
-updated_at: 2026-06-30T22:01:55Z
+updated_at: 2026-06-30T22:10:00Z
 ---
 
 **Goal**
@@ -66,3 +65,27 @@ Improve the `hail-send` tool (the one presented to LLMs/agents) so it is easier 
 - Cleaner agent experience for the very common "hail to the next band" pattern.
 
 See chat history on hail tool schema iterations and the orchistration happy-path verification.
+
+## Verifier review
+
+Verified on current heads:
+
+- `isaac-hail` `5762090545beaae7aa40bd5c28d67f19691f5177`
+- sibling feature proof roots:
+  - `isaac-foundation` `44e824c6eded90301ed1aba8ed3948c66725ee43`
+  - `isaac-agent` `153baa684c42c43bda46d5975e6f7f973a533568`
+  - `isaac-server` `dfa8767a440fc4c8b8bc6877ffd58ae20d028367`
+
+What checks out on current head:
+
+- `src/isaac/tool/hail.clj` exposes flat top-level snake_case address keys and no `frequencies` wrapper
+- frequency property metadata is borrowed from `isaac.session.frequencies/frequencies-schema`
+- `params` is typed/described as a JSON object, with no EDN-string option
+- the handler rebuilds the internal `:frequencies` map and preserves `thread_id` / `reply_to`
+
+Proofs:
+
+- `bb spec` -> `75 examples, 0 failures, 178 assertions`
+- `bb features` -> `84 examples, 0 failures, 337 assertions, 3 pre-existing unrelated pending`
+
+The three pending feature items are existing hail-get/delivery notes, not regressions from `isaac-4f26`.
