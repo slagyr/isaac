@@ -182,9 +182,12 @@ Sanctioned exceptions (do not route product reads through these):
 - `isaac.config.root` — pointer files (`~/.config/isaac.edn`) that locate the
   root, not config values
 
-Every Isaac module repo vendors `config_bypass_lint.bb` and runs
-`bb config-bypass-lint` (wired into `bb ci`) on its own `src/`. The canonical
-script lives in isaac-foundation; keep module copies in sync when it changes.
+Config bypass lint lives in `isaac-foundation/spec-support`
+(`isaac.foundation.config-bypass-lint`), exposed as the
+`io.github.slagyr/isaac-foundation-test-support` coordinate (`:deps/root
+"spec-support"`). Every module's `bb.edn` depends on that coord and runs
+`bb config-bypass-lint` (wired into `bb ci`) on its own `src/`. Bump the
+test-support `:git/sha` when foundation changes the lint.
 
 ## Logging Discipline
 
