@@ -1,11 +1,10 @@
 ---
 # isaac-f0fq
 title: Berth log :output (file/stderr/stdout/none) in the foundation :logging config
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-29T23:59:42Z
 updated_at: 2026-06-30T00:09:52Z
 ---
@@ -23,3 +22,17 @@ The foundation :logging config berth (isaac-foundation manifest) currently expos
 
 ## Related
 isaac-tqm1 (server log lifecycle), isaac-k9b7 (CLI -> cli.log). Defaults unchanged; this is additive config exposure.
+
+## Verification (2026-06-29)
+Verified on fetched GitHub `isaac-foundation` `main` `4c70173fc978d4168c47c61bf68ee1bdfc12a2a2`.
+
+The delivered surface matches the bean:
+
+- `:logging.output` is declared in the foundation config schema
+- `logger.clj` now has a real `:stdout` branch
+- startup sink selection is factored through `isaac.log.output`
+- CLI/server defaults remain `:file`-based while config can switch to `:stderr`, `:stdout`, or `:none`
+
+Focused proof passed:
+
+- `bb spec spec/isaac/log_output_spec.clj spec/isaac/logger_spec.clj spec/isaac/main_spec.clj spec/isaac/config/schema_spec.clj` -> `73 examples, 0 failures, 122 assertions`
