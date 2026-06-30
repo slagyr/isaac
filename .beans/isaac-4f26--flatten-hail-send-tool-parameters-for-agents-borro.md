@@ -4,8 +4,10 @@ title: Flatten hail-send tool parameters for agents; borrow frequencies schema; 
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-06-30T21:52:07Z
-updated_at: 2026-06-30T21:58:13Z
+updated_at: 2026-06-30T22:01:55Z
 ---
 
 **Goal**
