@@ -1,14 +1,15 @@
 ---
 # isaac-3ldm
 title: Discord module fails to compile (stray log/debug in send! let-binding) — comm_send to discord dead-letters; discord down in prod
-status: todo
+status: in-progress
 type: bug
 priority: critical
 tags:
     - discord
     - comm
+    - unverified
 created_at: 2026-06-30T18:04:06Z
-updated_at: 2026-06-30T18:04:06Z
+updated_at: 2026-06-30T18:09:14Z
 ---
 
 ## Symptom (production — discord fully down)
