@@ -1,13 +1,12 @@
 ---
 # isaac-3ldm
 title: Discord module fails to compile (stray log/debug in send! let-binding) — comm_send to discord dead-letters; discord down in prod
-status: in-progress
+status: completed
 type: bug
 priority: critical
 tags:
     - discord
     - comm
-    - unverified
 created_at: 2026-06-30T18:04:06Z
 updated_at: 2026-06-30T18:09:14Z
 ---
@@ -81,3 +80,15 @@ is the deeper gap here: a module that doesn't compile shipped to main and a rele
 - isaac-vhyw — the live-config change that introduced this.
 - isaac-kxre — the same 0.1.15 deploy's (separate) server-log issue.
 - Module activation-failure should be loud/fatal on a comm the config declares active.
+
+## Verification (2026-06-30)
+Verified on fetched GitHub `isaac-discord` `main` `15c196f876201a7356cd1c390a9293f35f9bdd3d`.
+
+Focused proof passed:
+
+- `bb spec spec/isaac/module_activation_spec.clj spec/isaac/comm/discord_spec.clj` -> `71 examples, 0 failures, 150 assertions`
+
+That covers both sides of the fix:
+
+- the compile/activation smoke check now catches a broken Discord module at load time
+- the outbound `send!` path and live-config target resolution specs are green on the repaired head

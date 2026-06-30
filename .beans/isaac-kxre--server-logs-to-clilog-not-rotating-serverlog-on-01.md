@@ -1,13 +1,12 @@
 ---
 # isaac-kxre
 title: Server logs to cli.log, not rotating server.log, on 0.1.15 (stale isaac-server pin); rename 'sink' logging vocabulary
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - logging
     - deploy
-    - unverified
 created_at: 2026-06-30T18:01:18Z
 updated_at: 2026-06-30T18:09:57Z
 ---
@@ -94,3 +93,12 @@ Scenario: the server log rotates at the configured threshold
 - isaac-x2po — log origin separation (goal inverted by this bug).
 - isaac-f0fq — `:logging :output` config berth.
 - The foundation 0.1.15 release (which exposed the stale pin).
+
+## Verification (2026-06-30)
+Verified on fetched GitHub `isaac-server` `main` `e16d516921a5dc9da830f8f14576be2061a9434a`.
+
+Focused acceptance proof passed:
+
+- `bb features features/server/log_lifecycle.feature` -> `8 examples, 0 failures, 15 assertions`
+
+That current head includes the server/cli.log separation scenario on top of the already-verified `gfsq` server-sink fix, so the release-coordination gap this bean described is now closed on current server `main`.
