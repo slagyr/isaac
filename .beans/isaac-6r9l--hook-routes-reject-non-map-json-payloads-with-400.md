@@ -1,12 +1,13 @@
 ---
 # isaac-6r9l
 title: Hook routes reject non-map JSON payloads with 400
-status: todo
+status: in-progress
 type: bug
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-06-30T14:49:00Z
-updated_at: 2026-06-30T14:49:00Z
+updated_at: 2026-06-30T14:50:49Z
 ---
 
 ## Problem
