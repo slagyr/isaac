@@ -1,11 +1,10 @@
 ---
 # isaac-gfsq
 title: isaac server never binds the server.log sink (configure-server-sink! not called on boot)
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-06-30T01:45:03Z
 updated_at: 2026-06-30T01:49:29Z
 ---
@@ -29,3 +28,13 @@ The server does NOT write <root>/logs/server.log on origin/main — confirmed by
 
 ## Related
 isaac-tqm1 (verification gap), isaac-k9b7 (cli.log), isaac-f0fq (:output berth).
+
+## Verification (2026-06-30)
+Verified on fetched GitHub `isaac-server` `main` `83706a06d2ad18e8ec367ea6e61785ce699b500d`, where the `gfsq` closeout commit is present on top of the earlier logging stack.
+
+Proofs were green:
+
+- `bb spec spec/isaac/server/logging_spec.clj spec/isaac/server/cli_spec.clj` -> `21 examples, 0 failures, 43 assertions`
+- `bb features features/server/log_lifecycle.feature` -> `7 examples, 0 failures, 13 assertions`
+
+That covers both the sink binding itself and the real `isaac server` CLI-dispatch acceptance path that was missing from the earlier tqm1 verification.
