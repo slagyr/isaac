@@ -166,6 +166,24 @@ pattern for negative assertions.
 
 For ACP proxy specs, always set `:acp-proxy-eof-grace-ms 0` in test opts.
 
+## Config Read Discipline
+
+Never read Isaac config **content** with raw `slurp` / `edn/read-string` on
+`config/isaac.edn`, entity files under `config/`, or `.env`. Those paths skip
+`${VAR}` resolution, schema validation, and entity merge.
+
+**Always** use `isaac.config.api` (`resolved-config`, `resolved-slice`,
+`load-resolved`) or `isaac.config.loader/load-config-result` for live reads.
+
+Sanctioned exceptions (do not route product reads through these):
+
+- `isaac.config.*` — the loader, mutate, and validation stack itself
+- `isaac.cli.registry` — `isaac init` scaffolding that **writes** config
+- `isaac.config.root` — pointer files (`~/.config/isaac.edn`) that locate the
+  root, not config values
+
+`bb config-bypass-lint` in isaac-foundation enforces this on `src/`.
+
 ## Logging Discipline
 
 See the [logging skill](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/logging/SKILL.md)
