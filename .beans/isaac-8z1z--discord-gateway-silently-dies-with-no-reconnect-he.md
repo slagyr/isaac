@@ -8,7 +8,7 @@ tags:
     - discord
     - comm
 created_at: 2026-07-01T15:50:51Z
-updated_at: 2026-07-01T15:50:51Z
+updated_at: 2026-07-01T16:53:01Z
 ---
 
 ## Symptom (production, zanebot)
@@ -67,3 +67,12 @@ no error at all — the failure is invisible.
 
 - isaac-86qy — earlier reconnect / leaked-heartbeat issue (different symptom).
 - The reconnect machinery already present in gateway.clj (`schedule-reconnect!`).
+
+
+## Explicit requirement: NO silent failures (acceptance)
+
+The fix must GUARANTEE the gateway can never stop without a log — not merely add a reconnect:
+- Every path that stops/cancels the heartbeat or closes the connection (on-close!, reader-loop exit, cancel-heartbeat!, unhandled op7/op9, ack-timeout) MUST emit a WARN/ERROR naming the reason.
+- After any drop, a reconnect attempt is always scheduled AND logged (:discord.gateway/reconnect-attempt).
+- Add a regression spec: on a simulated close / missed-ack / op7 / op9, assert the gateway logs a close+reason AND a reconnect-attempt — i.e. it provably never goes silent.
+- Add a periodic liveness log (e.g. 'gateway alive, last-ack Ns ago') so prolonged silence is detectable even if some new path is ever missed.
