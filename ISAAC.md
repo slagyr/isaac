@@ -175,6 +175,11 @@ cases (no `micahmartin@mac.com`, no real health check-in). The *behavior* under
 test stays real; only the *content* is fictional. Real PII/use-cases in a spec
 are a smell: they leak, they date, and read as config instead of a spec.
 
+**Shorthand.** "Marigold it" means (re)theme the examples and test data into the
+Marigold universe. "IRL" (in real life) flags a real-life example that has crept
+in — replace it with Marigold-fictional data. Both are directions about the
+*content* only; the behavior under test is unchanged.
+
 ### Key files to know
 
 - `src/isaac/cli/chat.clj` — `process-user-input!` is the core chat
