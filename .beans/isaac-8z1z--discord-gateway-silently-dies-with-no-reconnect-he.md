@@ -77,3 +77,22 @@ The fix must GUARANTEE the gateway can never stop without a log — not merely a
 - After any drop, a reconnect attempt is always scheduled AND logged (:discord.gateway/reconnect-attempt).
 - Add a regression spec: on a simulated close / missed-ack / op7 / op9, assert the gateway logs a close+reason AND a reconnect-attempt — i.e. it provably never goes silent.
 - Add a periodic liveness log (e.g. 'gateway alive, last-ack Ns ago') so prolonged silence is detectable even if some new path is ever missed.
+
+## Verification failed
+
+Checked on fetched GitHub `isaac-discord` `main` `466d9d04d86606c5cbc864ab925f153bdca142b7`.
+
+What is correct:
+
+- The gateway spec slice is green: `bb spec spec/isaac/comm/discord/gateway_spec.clj` -> `76 examples, 0 failures, 162 assertions`
+- Current code and spec coverage do include the intended surfaces: op7/op9 handling, heartbeat-ack timeout watchdog, reconnect-attempt logging, heartbeat-cancelled reason logging, and periodic liveness logs.
+
+What is still wrong:
+
+- The bean's own reconnect acceptance is still red on current head: `bb features features/comm/discord/reconnect.feature` -> `3 examples, 2 failures`
+- Both reconnecting scenarios fail because the reconnect payload carries no token:
+  - `resumable disconnect triggers RESUME with session_id and last sequence`
+  - `abnormal disconnect (1006) triggers IDENTIFY reconnect`
+  - failure: `Expected: "test-token" got: nil`
+
+So the "never silent" instrumentation is present, but the delivered reconnect path is still not verifier-green on the bean's approved feature proof.

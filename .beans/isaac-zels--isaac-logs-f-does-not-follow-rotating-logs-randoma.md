@@ -1,16 +1,15 @@
 ---
 # isaac-zels
 title: isaac logs -f does not follow rotating logs (RandomAccessFile held open; freezes at rotation)
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
-    - unverified
     - logging
     - foundation
     - work-2
 created_at: 2026-07-01T16:53:01Z
-updated_at: 2026-07-01T17:00:18Z
+updated_at: 2026-07-01T22:25:00Z
 ---
 
 ## Symptom
@@ -53,3 +52,19 @@ detection, and no re-open of the path.
   shrink, or brief missing path during rotation, close and re-open RAF at path.
 - Spec: rotation test moves active log to archive and creates fresh file at path.
 - Pushed: isaac-foundation `4ee7e92`
+
+## Verifier review
+
+Verified on fetched GitHub `isaac-foundation` `main` `4ee7e92560b351f6e5b7d4b16b86819ad283247c`.
+
+What checks out:
+
+- `src/isaac/log_viewer.clj` now follows by path name, not just the original file handle
+- the follow loop detects replacement/truncation via `file-key` / file-length checks
+- missing-path windows during rotation are handled by wait-and-reopen
+- the focused rotation regression is present in `spec/isaac/log_viewer_spec.clj`
+
+Proofs:
+
+- `bb spec spec/isaac/log_viewer_spec.clj spec/isaac/logs/cli_spec.clj spec/isaac/logger_spec.clj` -> `80 examples, 0 failures, 143 assertions`
+- `bb features features/logs/cli.feature` -> `15 examples, 0 failures, 36 assertions`
