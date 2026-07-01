@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-07-01T16:59:46Z
-updated_at: 2026-07-01T16:59:46Z
+updated_at: 2026-07-01T18:10:10Z
 ---
 
 ## Context / Motivation
@@ -97,3 +97,23 @@ Key files:
 Small-to-medium. Mostly in prepare + delivery enrichment. High leverage for reliable agent orchestration handoffs and exact-session flows.
 
 (Drafted 2026-07-01 per discussion on promoted hails, params visibility, and session metadata injection.)
+
+
+## Design decisions (settled with Micah 2026-07-01)
+
+Reframed from 'promote params into the prompt' to **metadata-in-preamble**:
+
+- **Home:** the hail metadata lives in the delivery turn's **system preamble** (the existing origin+autonomy preamble in delivery_worker `hail-origin`), NOT munged into the user `:input`. The user input stays the instruction only.
+- **Band templating stays.** It builds the *instruction* from `:params` (band template) or the caller's explicit `:prompt`. Distinct from the preamble, which is *context*.
+- **Params are ALWAYS echoed in the preamble as data** — even when a band template already consumed them. This is the real footgun fix: today `:params` are consumed *only* by `render-band-prompt` (band + no explicit prompt), so they silently drop on every other path. Surfacing them in the preamble closes that regardless of templating.
+- **Delivery-time enrichment.** The bound session-id is only known at delivery (reach-one binds a candidate at tick), so the preamble is built at delivery, not prepare.
+- **Metadata field set:** bound session-id, hail-id, thread-id, reply-to, submitter-session + from-crew (only when the hailer passed them — non-goal to auto-derive), and params-as-data.
+- **New record field:** `:submitter-session` (hailer-supplied return address).
+
+## Acceptance (gherkin — @wip, written)
+
+- `isaac-hail/features/hail-metadata.feature` (@wip, 5 scenarios): metadata+params in preamble; band render + params echo; exact-session handback (submitter/reply-to); reach-one bound-at-delivery session id; no-params (metadata present, no params section).
+- `hail-band-prompts.feature` line 119 extended: hail context also contains the **delivery session id**.
+- Verify `session-create.feature`'s `origin.kind` assertion still holds after adding fields to `hail-origin` (partial match — expected fine).
+- **Two new steps** introduced: `the hail turn on session "X" has a system preamble matching:` and `... not matching:`. All other steps reused.
+- Run (after un-@wip): `bb features features/hail-metadata.feature` + prepare/delivery specs.
