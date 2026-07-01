@@ -1,15 +1,14 @@
 ---
 # isaac-8z1z
 title: Discord gateway silently dies with no reconnect (heartbeat scheduler task stops; op7/op9 unhandled; no ack watchdog)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - discord
     - comm
-    - unverified
 created_at: 2026-07-01T15:50:51Z
-updated_at: 2026-07-01T18:20:41Z
+updated_at: 2026-07-01T18:55:00Z
 ---
 
 ## Symptom (production, zanebot)
@@ -78,21 +77,13 @@ The fix must GUARANTEE the gateway can never stop without a log — not merely a
 - Add a regression spec: on a simulated close / missed-ack / op7 / op9, assert the gateway logs a close+reason AND a reconnect-attempt — i.e. it provably never goes silent.
 - Add a periodic liveness log (e.g. 'gateway alive, last-ack Ns ago') so prolonged silence is detectable even if some new path is ever missed.
 
-## Verification failed
+## Verifier review
 
-Checked on fetched GitHub `isaac-discord` `main` `466d9d04d86606c5cbc864ab925f153bdca142b7`.
+Re-verified on fetched GitHub `isaac-discord` `main` `574355281fbc07e375a0fd7f29cadf9627aabf5a`.
 
-What is correct:
+Proofs:
 
-- The gateway spec slice is green: `bb spec spec/isaac/comm/discord/gateway_spec.clj` -> `76 examples, 0 failures, 162 assertions`
-- Current code and spec coverage do include the intended surfaces: op7/op9 handling, heartbeat-ack timeout watchdog, reconnect-attempt logging, heartbeat-cancelled reason logging, and periodic liveness logs.
+- `bb spec spec/isaac/comm/discord/gateway_spec.clj` -> `78 examples, 0 failures, 167 assertions`
+- `bb features features/comm/discord/reconnect.feature` -> `3 examples, 0 failures, 10 assertions`
 
-What is still wrong:
-
-- The bean's own reconnect acceptance is still red on current head: `bb features features/comm/discord/reconnect.feature` -> `3 examples, 2 failures`
-- Both reconnecting scenarios fail because the reconnect payload carries no token:
-  - `resumable disconnect triggers RESUME with session_id and last sequence`
-  - `abnormal disconnect (1006) triggers IDENTIFY reconnect`
-  - failure: `Expected: "test-token" got: nil`
-
-So the "never silent" instrumentation is present, but the delivered reconnect path is still not verifier-green on the bean's approved feature proof.
+The follow-up head restores the reconnect-feature harness token path while keeping the original 8z1z gateway hardening in place: op7/op9 handling, heartbeat-ack timeout watchdog, reconnect-attempt logging, heartbeat-cancelled reason logging, and periodic liveness logs.

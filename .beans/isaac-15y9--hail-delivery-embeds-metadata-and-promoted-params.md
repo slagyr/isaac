@@ -1,11 +1,11 @@
 ---
 # isaac-15y9
 title: Hail delivery embeds metadata and promoted params into the prompt
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-01T16:59:46Z
-updated_at: 2026-07-01T18:10:10Z
+updated_at: 2026-07-01T18:55:00Z
 ---
 
 ## Context / Motivation
@@ -117,3 +117,28 @@ Reframed from 'promote params into the prompt' to **metadata-in-preamble**:
 - Verify `session-create.feature`'s `origin.kind` assertion still holds after adding fields to `hail-origin` (partial match — expected fine).
 - **Two new steps** introduced: `the hail turn on session "X" has a system preamble matching:` and `... not matching:`. All other steps reused.
 - Run (after un-@wip): `bb features features/hail-metadata.feature` + prepare/delivery specs.
+
+## Verification failed
+
+Checked on fetched GitHub `isaac-hail` `main` `03b3e24`.
+
+What is correct:
+
+- The delivered code path is present on current head:
+  - `src/isaac/hail/delivery_worker.clj` now builds a `metadata-preamble`
+  - `:submitter-session` is surfaced
+  - the delivery turn guidance carries session / hail id / thread / reply-to / params data
+- The new acceptance feature is green in the correct sibling-worktree layout:
+  - `bb features features/hail-metadata.feature features/hail-band-prompts.feature`
+  - `10 examples, 0 failures, 51 assertions`
+
+What is still wrong:
+
+- The touched spec slice is not green on current head:
+  - `bb spec spec/isaac/hail/prepare_spec.clj spec/isaac/hail/delivery_worker_spec.clj`
+  - `17 examples, 13 failures`
+- The failures all die in `delivery_worker_spec` runtime setup before the new assertions run:
+  - `isaac.fs/instance: no filesystem available`
+  - stack enters `isaac.module.loader/foundation_index` during `loader/normalize-config`
+
+So the new metadata behavior is functionally delivered in features, but the claimed prepare/delivery spec surface is still red on the actual current head.
