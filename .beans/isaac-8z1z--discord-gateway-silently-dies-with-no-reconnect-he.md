@@ -1,14 +1,14 @@
 ---
 # isaac-8z1z
 title: Discord gateway silently dies with no reconnect (heartbeat scheduler task stops; op7/op9 unhandled; no ack watchdog)
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - discord
     - comm
 created_at: 2026-07-01T15:50:51Z
-updated_at: 2026-07-01T16:53:01Z
+updated_at: 2026-07-01T16:58:10Z
 ---
 
 ## Symptom (production, zanebot)
