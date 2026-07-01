@@ -7,8 +7,9 @@ priority: high
 tags:
     - discord
     - comm
+    - unverified
 created_at: 2026-07-01T15:50:51Z
-updated_at: 2026-07-01T16:58:10Z
+updated_at: 2026-07-01T17:13:21Z
 ---
 
 ## Symptom (production, zanebot)
