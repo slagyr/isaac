@@ -1,14 +1,16 @@
 ---
 # isaac-zels
 title: isaac logs -f does not follow rotating logs (RandomAccessFile held open; freezes at rotation)
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
+    - unverified
     - logging
     - foundation
+    - work-2
 created_at: 2026-07-01T16:53:01Z
-updated_at: 2026-07-01T16:53:01Z
+updated_at: 2026-07-01T17:00:18Z
 ---
 
 ## Symptom
@@ -43,3 +45,11 @@ detection, and no re-open of the path.
 - isaac-3692 — the `isaac logs` command redesign; rotation-aware follow should be part of the
   reworked viewer.
 - The server-log rotation feature (kxre / gfsq) that this must follow across.
+
+
+## Implementation (work-2)
+
+- `log_viewer.clj`: follow loop re-stat path via `file-key`; on inode change,
+  shrink, or brief missing path during rotation, close and re-open RAF at path.
+- Spec: rotation test moves active log to archive and creates fresh file at path.
+- Pushed: isaac-foundation `4ee7e92`
