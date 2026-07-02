@@ -4,10 +4,8 @@ title: 'modules list conflict table: wrong ✓ chosen row and undifferentiated s
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T22:55:55Z
-updated_at: 2026-07-02T23:26:58Z
+updated_at: 2026-07-02T23:29:16Z
 ---
 
 ## Problem (investigated 2026-07-02, planner)
@@ -100,3 +98,31 @@ Rendering rules:
 On zanebot's current module set, the agent-version divergence is drift-only.
 That means the output may show an ℹ drift block, but it must show **no ⚠
 conflicts block** for the 0.1.5 agent pins against loaded 0.1.6.
+
+
+
+## Verification failed
+
+HEAD: 9822bbbf62c0c24adbe17760ac471c30611ffbfa
+Working tree: clean
+
+Failing acceptance criterion: machine output contract is not implemented as specified. The bean requires severity-partitioned top-level collections in `modules list --edn / --json`: `:conflicts` for newer-than-chosen requests and `:drift` for older-than-chosen requests, omitting empty buckets.
+
+Evidence:
+- In `isaac-foundation` commit `fe2e1c0`, `src/isaac/module/loader.clj` still returns a single flat `:conflicts` collection with per-request `:severity` tags; there is no top-level `:drift` bucket.
+- `src/isaac/modules/cli.clj` still destructures only `{:keys [modules conflicts]}` from `list-configured-modules` and prints structured output as `{:modules modules :conflicts conflicts}`. No `:drift` key is emitted.
+- Fresh reproduction in `isaac-foundation`:
+  `bb isaac --root /tmp/isaac-jwvg-root modules list --edn`
+  returned:
+  `{:modules [...], :conflicts [{:id :marigold.shared, :chosen "1.0.0", :requested [{:version "1.0.0", :required-by [:marigold.app.conflict], :severity :drift} {:version "9.9.9", :required-by [:marigold.app2.conflict], :severity :warning}]}]}`
+  This violates the planner clarification and acceptance criterion that older-than-chosen requests must appear under top-level `:drift`, not inside `:conflicts`.
+
+What I validated:
+- `bb spec` in `isaac-foundation` passed: 809 examples, 0 failures, 1426 assertions.
+- `bb features` in `isaac-foundation` passed: 124 examples, 0 failures, 299 assertions.
+- The chosen-row bug itself appears fixed, and human text rendering has separate warning/drift blocks.
+
+What still needs fixing:
+- Change machine output to emit separate top-level `:conflicts` and `:drift` collections per the bean contract.
+- Update features/specs to assert that structure directly.
+- Keep quiet-by-default omission of empty buckets.
