@@ -4,10 +4,8 @@ title: Session identity in the cached system prompt (Session + Crew, every surfa
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T18:29:51Z
-updated_at: 2026-07-02T19:06:53Z
+updated_at: 2026-07-02T19:12:30Z
 ---
 
 ## Context / Motivation
