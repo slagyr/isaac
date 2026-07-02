@@ -4,8 +4,10 @@ title: Hail metadata preamble drops the Session line (ambient identity supersede
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-02T18:29:51Z
-updated_at: 2026-07-02T19:08:00Z
+updated_at: 2026-07-02T19:09:49Z
 blocked_by:
     - isaac-s0ho
 ---
