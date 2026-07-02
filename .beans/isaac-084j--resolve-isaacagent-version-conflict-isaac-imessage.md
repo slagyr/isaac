@@ -1,13 +1,11 @@
 ---
 # isaac-084j
 title: 'Resolve isaac.agent version conflict: isaac-imessage pins agent 0.1.0'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T22:05:29Z
-updated_at: 2026-07-02T22:34:31Z
+updated_at: 2026-07-02T22:39:24Z
 ---
 
 ## Problem
