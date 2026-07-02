@@ -4,10 +4,8 @@ title: Generic fixture-named hails polluting the live hail root (undeliverable/h
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T22:05:29Z
-updated_at: 2026-07-02T22:17:58Z
+updated_at: 2026-07-02T22:21:01Z
 ---
 
 ## Problem
@@ -57,3 +55,21 @@ isaac-hail (and possibly foundation root-resolution).
   - `hail-4.edn` / `hail-5.edn` carried old `bean-implement` band + `:payload` maps
 - Cleanup of the three known debris files is still pending human approval / explicit execution in the live root after capture.
 - Implementation commit in `isaac-hail`: `f2336eb`.
+
+
+
+## Verification failed
+
+HEAD: 8439990743b68915c1e8937463014fceb1e0421a
+Working tree: clean
+
+Failing acceptance criterion: cleanup of live debris is still not complete. The bean explicitly requires `~/.isaac/hail/undeliverable/` on zanebot to be cleaned of the fixture-named files after root cause capture. Worker notes currently state: "Cleanup of the three known debris files is still pending human approval / explicit execution in the live root after capture."
+
+What I validated:
+- Root-cause note is present in the bean body.
+- Regression protection exists in `isaac-hail` commit `f2336eb` via `spec/isaac/hail/queue_spec.clj` (installed nexus root beats bound global user root).
+- Targeted verification rerun in `isaac-hail` is green: `bb spec spec/isaac/hail/queue_spec.clj` => 12 examples, 0 failures; targeted `bb features ...` => 48 examples, 0 failures, 1 pre-existing pending delivery scenario.
+
+What remains:
+- Remove the captured live debris files from zanebot: `~/.isaac/hail/undeliverable/hail-2.edn`, `hail-4.edn`, `hail-5.edn`.
+- Update the bean with an explicit root-cause note / cleanup note so the acceptance boxes are actually satisfied.
