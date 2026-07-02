@@ -4,8 +4,10 @@ title: Remove unused :payload from hail send (CLI, HTTP, tool) and tests — dea
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-29T18:00:00Z
-updated_at: 2026-07-02T00:57:30Z
+updated_at: 2026-07-02T01:14:47Z
 ---
 
 ## Summary
@@ -61,3 +63,19 @@ This creates confusion (see recent `--payload` vs `--params` questions) and unne
 - `:payload` was never part of the origin/context passed to turns or the hail-bean-* skills.
 - After removal, the only ways to attach data to a hail are `--params` (for bands) or including it inside a full hail via stdin (`--from-json`).
 - This cleanup is safe because the field provided no observable behavior.
+
+
+## Worker Notes (2026-07-02)
+- Claimed and implemented in sibling repo `isaac-hail`.
+- Removed dead `:payload` / `--payload` support from:
+  - `src/isaac/hail/cli.clj`
+  - `src/isaac/hail/http.clj`
+  - `src/isaac/tool/hail.clj`
+- Updated specs/features to assert `:params` or prompt-only behavior instead of payload round-tripping.
+- Updated feature-step metadata parsing so `payload` is no longer treated as a hail-send meta key.
+- Verified in `isaac-hail`:
+  - `bb lint src/isaac/hail/cli.clj src/isaac/hail/http.clj src/isaac/tool/hail.clj`
+  - `bb spec`
+  - `bb features`
+- `bb features` result: green with 3 pre-existing pending scenarios, 0 failures.
+- Implementation commit in `isaac-hail`: `cbd55ef`.
