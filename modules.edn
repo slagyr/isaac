@@ -1,6 +1,12 @@
 {:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
                                :git/sha "a6947c4eb23c1acd03eaf8fbcfb6c9076453700b"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
+ :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
+                               :git/sha "4dda0e96793bc6df11346ca9bfc06daf399a190c"}
+                       :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
+ :isaac.cli-server    {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
+                               :git/sha "c040743bbe35f5c71321e1dc225ad558c582200b"}
+                       :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.server        {:coord {:git/url "https://github.com/slagyr/isaac-server.git"
                                :git/sha "dfa8767a440fc4c8b8bc6877ffd58ae20d028367"}
                        :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
@@ -20,5 +26,5 @@
                                :git/sha "fc5c2270d003b0b863517d4b267bb28d86df1c0d"}
                        :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
-                               :git/sha "b993bf18a648f27721a5db3365252496ae1af102"}
+                               :git/sha "96d6328516e4ecc73d357ede554b70283a7d4570"}
                        :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}}
