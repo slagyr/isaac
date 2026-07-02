@@ -1,11 +1,11 @@
 ---
 # isaac-3692
 title: 'Neutral log-stream registry: isaac logs discovers streams via a berth'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-06-30T00:52:15Z
-updated_at: 2026-07-02T01:00:22Z
+updated_at: 2026-07-02T17:34:04Z
 ---
 
 isaac logs lives in foundation but currently hardcodes log file names (isaac.log; 9e52ea8 defaults it to cli.log; and a server.log default would be just as wrong). "server" is a SERVER-MODULE concept foundation shouldn't know. The logs command needs a NEUTRAL way to view any registered log stream.
