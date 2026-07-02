@@ -4,10 +4,8 @@ title: 'Hail band metadata: band-level :data map delivered with every hail, surv
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T14:48:03Z
-updated_at: 2026-07-02T16:44:20Z
+updated_at: 2026-07-02T16:49:00Z
 ---
 
 ## Context / Motivation

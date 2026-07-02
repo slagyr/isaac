@@ -4,10 +4,8 @@ title: 'Hail band inheritance: base template bands with one-level map merge'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T15:17:57Z
-updated_at: 2026-07-02T16:21:24Z
+updated_at: 2026-07-02T16:49:08Z
 blocked_by:
     - isaac-iz3a
 ---
@@ -78,3 +76,18 @@ Gherkin written as @wip in isaac-hail `features/band-inheritance.feature` (inher
 ## Likely repo scope
 
 isaac-hail (band loading/resolution).
+
+
+
+## Verification failed
+
+HEAD: 39e94aad3ddb6083265710991dc2462cedf092b9 (isaac-hail)
+Working tree: clean
+
+Wrong:
+- `bb spec` is green, but `bb features` fails and the failure reproduces in isolation with `bb features features/band-inheritance.feature` (6 failures, 1 pass).
+- The acceptance gaps are the core inheritance behaviors in `features/band-inheritance.feature`: inherited base data is missing, blank-child body fallback is missing, transitive base-chain data is missing, and `config validate` does not surface the expected cycle / missing-base errors.
+- The isolated reproducer shows concrete misses: the child/base merge scenario persists only `{:notification-channel "engine"}` instead of also keeping base-only `:bean-repo`; the body-fallback scenario gets `nil` prompt instead of the base template body.
+
+Risky:
+- The unit/spec surface around `src/isaac/hail/band_resolve.clj` is not exercising the same end-to-end path as `hail send` / `config validate`; the implementation claims resolution at load time, but the acceptance path still behaves as if base resolution is not reaching band send/validation reliably.
