@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-07-02T22:55:55Z
-updated_at: 2026-07-02T23:29:16Z
+updated_at: 2026-07-02T23:30:36Z
 ---
 
 ## Problem (investigated 2026-07-02, planner)
