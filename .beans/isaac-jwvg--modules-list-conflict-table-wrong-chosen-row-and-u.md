@@ -4,8 +4,10 @@ title: 'modules list conflict table: wrong ✓ chosen row and undifferentiated s
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-02T22:55:55Z
-updated_at: 2026-07-02T23:30:36Z
+updated_at: 2026-07-02T23:38:18Z
 ---
 
 ## Problem (investigated 2026-07-02, planner)
