@@ -1,10 +1,11 @@
 ---
 # isaac-s0ho
 title: Session identity in the cached system prompt (Session + Crew, every surface)
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-07-02T18:29:51Z
-updated_at: 2026-07-02T18:29:51Z
+updated_at: 2026-07-02T18:36:20Z
 ---
 
 ## Context / Motivation
@@ -20,9 +21,14 @@ Decision (2026-07-02, Micah): identity is ambient (system prompt); events are pe
 - Stable ordering alongside soul/boot-files/rules so an unchanged session never busts the prompt cache.
 - Origin stays per-turn in the existing trusted block (genuinely per-turn data).
 
-## Acceptance scenarios
+## Acceptance scenarios (committed @wip)
 
-To be written @wip in isaac-agent features/ (assertion machinery: "the prompt X on session Y matches" with system[0].text + cache_control, per features/prompts/rules.feature).
+isaac-agent `features/prompts/session-identity.feature` — 3 scenarios:
+1. identity present in cached system prompt (system[0].text + cache_control)
+2. byte-identical system text across turns (cache stability) — uses one NEW step: "the system text of the last N chat requests on session X is identical" (approved 2026-07-02)
+3. transcript stays clean (exact-match user/assistant content)
+
+Acceptance: `bb features features/prompts/session-identity.feature` green (after removing @wip); `bb spec` green.
 
 ## Likely repo scope
 
