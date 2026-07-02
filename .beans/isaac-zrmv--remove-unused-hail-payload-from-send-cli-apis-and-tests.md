@@ -1,12 +1,11 @@
 ---
 # isaac-zrmv
-title: 'Remove unused :payload from hail send (CLI, HTTP, tool) and tests — dead code'
-status: todo
+title: Remove unused :payload from hail send (CLI, HTTP, tool) and tests — dead code
+status: in-progress
 type: task
 priority: normal
-tags: []
 created_at: 2026-06-29T18:00:00Z
-updated_at: 2026-06-29T18:00:00Z
+updated_at: 2026-07-02T00:57:30Z
 ---
 
 ## Summary
