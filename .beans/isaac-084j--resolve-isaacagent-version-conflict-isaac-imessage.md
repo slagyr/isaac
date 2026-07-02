@@ -4,10 +4,8 @@ title: 'Resolve isaac.agent version conflict: isaac-imessage pins agent 0.1.0'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T22:05:29Z
-updated_at: 2026-07-02T22:22:56Z
+updated_at: 2026-07-02T22:28:22Z
 ---
 
 ## Problem
@@ -48,3 +46,23 @@ isaac-imessage (dependency declaration); possibly a doc note in foundation modul
 - `bb lint` is not a defined task in this repo's `bb.edn`; not run.
 - This satisfies the dependency-alignment part of the bean. The remaining acceptance check (`isaac modules list ... reports zero conflicts`) needs verification in a root that composes imessage with the other agent consumers after this module commit is consumed.
 - Implementation commit in `isaac-imessage`: `1f080d8`.
+
+
+
+## Verification failed
+
+HEAD: 1d98c50ec96010a2a7610602e2e2b1f3ff688b2c
+Working tree: clean
+
+Failing acceptance criterion: a fresh `isaac modules list` with imessage plus other agent consumers still reports a version conflict.
+
+Evidence:
+- Verified `isaac-imessage` commit `1f080d8` updates `deps.edn` so runtime + spec-time agent coords point at agent SHA `ee0b06294e37690ba6b2f36fdd8ea660ce6b94f7`.
+- Re-ran `bb spec` in `isaac-imessage`: 50 examples, 0 failures, 81 assertions.
+- Re-ran `bb features` in `isaac-imessage`: 15 examples, 0 failures, 22 assertions, 3 pre-existing pending scenarios.
+- Composed a fresh Isaac root in `isaac-foundation` with modules `:isaac.agent` (local workspace), `:isaac.server` (local workspace), `:isaac.comm.acp` (git SHA `1d10231442299d41de9781d9a3a2bdf2602ce33c`), and `:isaac.comm.imessage` (local workspace at `1f080d8`), then ran:
+  `bb isaac --root /tmp/isaac-084j-root2 modules list --edn`
+- Result still contains a conflict:
+  `:conflicts [{:id :isaac.agent, :chosen "0.1.5", :requested [{:version "0.1.5", :required-by [:isaac.comm.acp]} {:version "0.1.6", :required-by [:isaac.comm.imessage]}]}]`
+
+So the dependency-alignment change improved imessage, but did not satisfy the bean's second acceptance criterion. The bean should return only after the composed root reports zero conflicts (likely requiring coordinated pin alignment across the remaining consumer set, not just imessage).
