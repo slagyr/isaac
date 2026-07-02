@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-02T14:48:03Z
-updated_at: 2026-07-02T16:14:53Z
+updated_at: 2026-07-02T16:21:24Z
 ---
 
 ## Context / Motivation
@@ -53,3 +53,13 @@ Wrong:
 
 Missing:
 - A regression test for the non-band-data path is missing from the new bean coverage. The existing queue/http specs caught the behavior change, but the new tests do not assert that param-only sends keep `:data` absent.
+
+## Planner resolution (verify fail 316872d3)
+
+The regression is real and the fix is a scoping rule, not a design change:
+
+- **:data exists on a hail record only when the band declares `data:`.** Never synthesize :data from bare :params — a band with no data: contributes nothing, and params-only hails must persist no :data key (this is exactly the 3 spec regressions).
+- When the band DOES declare data:, keep the implemented semantics: effective :data = (merge band-data params), params win, {{var}} interpolation in string values.
+- Consider adding a config-validate scenario: non-map :data is rejected (accept-case already covered in bands.feature).
+
+Note: the duplicate @wip features/band-data.feature (planner-authored, pre-dating the implementation) has been removed from isaac-hail — features/hail-band-data.feature is the acceptance spec.

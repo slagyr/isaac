@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-02T15:17:57Z
-updated_at: 2026-07-02T16:19:30Z
+updated_at: 2026-07-02T16:21:24Z
 blocked_by:
     - isaac-iz3a
 ---
@@ -55,6 +55,10 @@ data:
 ---
 <verify instructions>
 ```
+
+## Acceptance scenarios
+
+Gherkin written as @wip in isaac-hail `features/band-inheritance.feature` (inherited tags/data, per-key child-wins data merge, body fallback, transitive chains, cycle error, missing-base error, `_` templates not addressable). Un-@wip as implemented.
 
 ## Acceptance criteria (runnable)
 
