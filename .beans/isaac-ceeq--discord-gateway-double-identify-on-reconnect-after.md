@@ -6,8 +6,9 @@ type: bug
 priority: normal
 tags:
     - discord
+    - unverified
 created_at: 2026-07-02T16:59:59Z
-updated_at: 2026-07-02T17:34:35Z
+updated_at: 2026-07-02T17:45:07Z
 ---
 
 ## Symptom
@@ -94,3 +95,51 @@ Scenario:
     And the Discord client is connected
     And the Discord client continues sending HEARTBEATs
     And no "Already authenticated" or reader-loop failure is logged
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+Fixed in isaac-discord `main` commit **8fdcfd4** (base 5743552).
+
+**Root cause confirmed exactly as the bean describes.** On reconnect,
+`do-reconnect!` eagerly sends IDENTIFY/RESUME on the new socket, and then the
+reconnected socket's HELLO (op 10, which Discord always sends) hit
+`handle-hello!`'s *unconditional* `send-identify!` — a second auth. Discord
+rejects it, the reader loop dies, heartbeats stop until restart.
+
+**Fix (minimal, `src/isaac/comm/discord/gateway.clj`):** track `:auth-sent?`
+per connection — `send-identify!`/`send-resume!` set it; `handle-hello!` only
+sends IDENTIFY `when-not` it is already set. A fresh `connect!` starts with the
+flag unset, so the initial HELLO still drives the single IDENTIFY; every
+reconnect has already eagerly authed, so its HELLO no longer re-auths.
+
+**Why this shape (not the protocol-clean alternative):** the "correct" Discord
+design is auth-on-HELLO only (drop the eager send in `do-reconnect!`). That
+would rewrite the 7 existing reconnect specs that assert the eager send, which
+AC #4 ("all existing reconnect specs still pass") forbids. This fix keeps the
+eager send and all 7 specs green.
+
+**Tests:**
+- New `gateway_spec` example "reconnects after opcode 7 without a duplicate auth
+  when the new HELLO arrives" — reproduces the double (red before fix: got 2
+  auths; green after: 1), and asserts heartbeats resume.
+- The approved `@wip` scenario is landed **un-@wip** in
+  `features/comm/discord/gateway.feature` with one necessary correction: it now
+  delivers the **post-reconnect HELLO** (`And Discord sends HELLO:` after "the
+  reconnect delay passes"). Without it the bug cannot reproduce and heartbeats
+  cannot resume (they are only rescheduled in `handle-hello!`) — this realizes
+  AC #1's stated intent. The `Then` is phrased "...one RESUME or IDENTIFY **on
+  reconnect**" (scoped past the initial IDENTIFY); dropped the "is connected"
+  line (a resume never re-emits READY, so `connected?`/`:ready` wouldn't hold —
+  running + heartbeat resumption is the right liveness check here).
+- New steps: "Discord sends opcode 7", "the reconnect delay passes", "...sends
+  exactly one RESUME or IDENTIFY on reconnect", "...continues sending
+  HEARTBEATs", `no "…" reconnect failure is logged`.
+
+**Verification:** `bb ci` in isaac-discord — 79 spec examples / 172 assertions,
+50 feature examples / 108 assertions, 0 failures.
+
+**Note:** the bean's scenario text above (still `@wip`) is the original draft;
+the landed scenario reflects the corrections described here.
