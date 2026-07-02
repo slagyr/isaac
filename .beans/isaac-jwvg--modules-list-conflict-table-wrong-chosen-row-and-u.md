@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-07-02T22:55:55Z
-updated_at: 2026-07-02T23:13:25Z
+updated_at: 2026-07-02T23:14:33Z
 ---
 
 ## Problem (investigated 2026-07-02, planner)
@@ -28,11 +28,73 @@ Also: the warning treats all pin divergence alike. A sibling pin OLDER than the 
 
 ## Acceptance criteria
 
-- [ ] Spec: conflict table chosen version equals the explicitly-configured module version when present (regression for the wrong-✓).
-- [ ] Spec/feature: newer-than-chosen pin ⇒ warning row; older-than-chosen pin ⇒ drift info, not ⚠.
+- [ ] Spec: chosen/loaded version equals the explicitly-configured module version when present (regression for the wrong-✓).
+- [ ] `--edn` / `--json`: divergent requests are severity-partitioned; `:conflicts` means requested versions newer than `:chosen`, `:drift` means requested versions older than `:chosen`.
+- [ ] Human `modules list`: newer-than-chosen requests render only in the ⚠ conflicts block; older-than-chosen requests render only in the ℹ drift block and never under ⚠.
 - [ ] `bb spec` / `bb features` green in isaac-foundation.
 - [ ] Docstring on module-version-conflicts corrected.
 
 ## Likely repo scope
 
 isaac-foundation (module/loader.clj + CLI rendering).
+
+## Planner clarification (2026-07-02, prowl)
+
+This bean requires a **structured severity split**. Do not keep the old flat
+`:conflicts` meaning "all divergent pins".
+
+### Machine output contract (`modules list --edn` / `--json`)
+
+Use two top-level collections with the same grouped shape:
+
+```edn
+{:conflicts [{:id :isaac.server
+              :chosen "0.1.0"
+              :requested [{:version "0.1.7"
+                           :required-by [:isaac.cli-server]}]}]
+ :drift [{:id :isaac.agent
+          :chosen "0.1.6"
+          :requested [{:version "0.1.5"
+                       :required-by [:isaac.comm.acp
+                                     :isaac.hail
+                                     :isaac.cron]}]}]}
+```
+
+Rules:
+
+- `:chosen` is the **actual loaded version** from unified resolution.
+- `:conflicts` contains only requests whose version is **newer** than `:chosen`.
+- `:drift` contains only requests whose version is **older** than `:chosen`.
+- `:requested` contains only the divergent requests for that severity bucket;
+  requests equal to `:chosen` are omitted.
+- A module may appear in **both** `:conflicts` and `:drift` if different
+  requesters pin both newer and older versions than `:chosen`.
+- Quiet-by-default behavior stays: omit a top-level key entirely when that
+  bucket would be empty.
+
+### Human output contract (`modules list`)
+
+Render separate blocks below the main modules table:
+
+- `⚠ <n> version conflict(s) — requested newer than loaded`
+- `ℹ <n> version drift(s) — loaded version is newer than some requests`
+
+Both blocks use the yi82 columns:
+
+```text
+MODULE  VERSION  REQUIRED BY  LOADED
+```
+
+Rendering rules:
+
+- For each grouped entry, render the chosen/loaded row once with `✓`.
+- Then render the divergent `:requested` rows for that severity bucket without
+  `✓`.
+- If a module appears in both buckets, it may appear in both blocks.
+- Older-than-chosen rows never appear in the ⚠ block.
+
+### Current-state expectation
+
+On zanebot's current module set, the agent-version divergence is drift-only.
+That means the output may show an ℹ drift block, but it must show **no ⚠
+conflicts block** for the 0.1.5 agent pins against loaded 0.1.6.
