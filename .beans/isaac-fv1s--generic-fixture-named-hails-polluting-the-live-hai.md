@@ -4,8 +4,10 @@ title: Generic fixture-named hails polluting the live hail root (undeliverable/h
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-02T22:05:29Z
-updated_at: 2026-07-02T22:21:01Z
+updated_at: 2026-07-02T22:24:04Z
 ---
 
 ## Problem
@@ -73,3 +75,12 @@ What I validated:
 What remains:
 - Remove the captured live debris files from zanebot: `~/.isaac/hail/undeliverable/hail-2.edn`, `hail-4.edn`, `hail-5.edn`.
 - Update the bean with an explicit root-cause note / cleanup note so the acceptance boxes are actually satisfied.
+
+
+## Cleanup completed (2026-07-02)
+- Removed the captured live debris files from `~/.isaac/hail/undeliverable/` on zanebot after root-cause capture:
+  - `hail-2.edn`
+  - `hail-4.edn`
+  - `hail-5.edn`
+- Post-cleanup check: `~/.isaac/hail/undeliverable/` is now empty at the time of this handoff.
+- This satisfies the bean's live-root cleanup acceptance criterion.
