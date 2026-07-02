@@ -1,11 +1,11 @@
 ---
 # isaac-sx4g
 title: Hail metadata preamble drops the Session line (ambient identity supersedes)
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-02T18:29:51Z
-updated_at: 2026-07-02T18:44:11Z
+updated_at: 2026-07-02T19:08:00Z
 blocked_by:
     - isaac-s0ho
 ---
