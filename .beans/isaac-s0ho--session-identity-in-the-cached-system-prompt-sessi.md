@@ -1,11 +1,11 @@
 ---
 # isaac-s0ho
 title: Session identity in the cached system prompt (Session + Crew, every surface)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-02T18:29:51Z
-updated_at: 2026-07-02T19:12:30Z
+updated_at: 2026-07-02T19:35:59Z
 ---
 
 ## Context / Motivation
