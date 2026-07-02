@@ -6,9 +6,8 @@ type: bug
 priority: normal
 tags:
     - discord
-    - unverified
 created_at: 2026-07-02T16:59:59Z
-updated_at: 2026-07-02T17:45:07Z
+updated_at: 2026-07-02T17:58:21Z
 ---
 
 ## Symptom
