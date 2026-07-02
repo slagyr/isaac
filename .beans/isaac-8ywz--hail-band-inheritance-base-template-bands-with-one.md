@@ -4,10 +4,8 @@ title: 'Hail band inheritance: base template bands with one-level map merge'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T15:17:57Z
-updated_at: 2026-07-02T17:03:53Z
+updated_at: 2026-07-02T17:08:02Z
 blocked_by:
     - isaac-iz3a
 ---
