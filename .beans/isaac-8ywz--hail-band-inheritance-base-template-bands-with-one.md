@@ -1,10 +1,11 @@
 ---
 # isaac-8ywz
 title: 'Hail band inheritance: base template bands with one-level map merge'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-07-02T15:17:57Z
-updated_at: 2026-07-02T15:17:57Z
+updated_at: 2026-07-02T16:11:53Z
 blocked_by:
     - isaac-iz3a
 ---
