@@ -1,11 +1,11 @@
 ---
 # isaac-reg1
 title: Bean-work hail payload should include :repo and repo-local verify fallback should exist
-status: todo
+status: scrapped
 type: task
 priority: low
 created_at: 2026-06-29T17:53:31Z
-updated_at: 2026-06-29T17:53:31Z
+updated_at: 2026-07-02T00:32:13Z
 ---
 
 ## Summary
