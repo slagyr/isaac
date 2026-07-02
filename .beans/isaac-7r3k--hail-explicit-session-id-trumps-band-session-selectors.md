@@ -4,10 +4,8 @@ title: 'Hail: explicit session id trumps band session selectors'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T17:54:35Z
-updated_at: 2026-07-02T18:08:49Z
+updated_at: 2026-07-02T18:36:54Z
 ---
 
 ## Description
