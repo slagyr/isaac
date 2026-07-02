@@ -1,13 +1,13 @@
 ---
 # isaac-ceeq
 title: Discord gateway double-IDENTIFY on reconnect after opcode 7
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - discord
 created_at: 2026-07-02T16:59:59Z
-updated_at: 2026-07-02T16:59:59Z
+updated_at: 2026-07-02T17:34:35Z
 ---
 
 ## Symptom
@@ -94,4 +94,3 @@ Scenario:
     And the Discord client is connected
     And the Discord client continues sending HEARTBEATs
     And no "Already authenticated" or reader-loop failure is logged
-
