@@ -1,11 +1,11 @@
 ---
 # isaac-iz3a
 title: 'Hail band metadata: band-level :data map delivered with every hail, surviving prompt override'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-07-02T14:48:03Z
-updated_at: 2026-07-02T16:49:00Z
+updated_at: 2026-07-02T17:16:52Z
 ---
 
 ## Context / Motivation
