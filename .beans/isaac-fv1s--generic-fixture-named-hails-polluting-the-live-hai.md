@@ -1,13 +1,11 @@
 ---
 # isaac-fv1s
 title: Generic fixture-named hails polluting the live hail root (undeliverable/hail-2,4,5.edn)
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T22:05:29Z
-updated_at: 2026-07-02T22:24:04Z
+updated_at: 2026-07-02T22:31:02Z
 ---
 
 ## Problem
