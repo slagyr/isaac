@@ -4,10 +4,8 @@ title: 'Hail band metadata: band-level :data map delivered with every hail, surv
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-02T14:48:03Z
-updated_at: 2026-07-02T16:07:55Z
+updated_at: 2026-07-02T16:14:53Z
 ---
 
 ## Context / Motivation
@@ -41,3 +39,17 @@ Hail band files currently conflate two channels: **instructions** (the markdown 
 ## Likely repo scope
 
 isaac-hail (band parsing, send, delivery rendering).
+
+
+
+## Verification failed
+
+HEAD: 9c61eaa7c367c9243ba685e3415fc82b160d0bca (isaac-hail)
+Working tree: clean
+
+Wrong:
+- `bb spec` fails with 3 regressions. `spec/isaac/hail/queue_spec.clj:27` and `spec/isaac/hail/http_spec.clj:28,48` now observe `:data {:n 1}` on hails that only supplied `:params` and targeted a band with no declared band `:data`.
+- The broadening comes from `src/isaac/hail/prepare.clj:34-46`: `effective-data` creates `:data` whenever `:params` is non-empty, so plain params are persisted as band metadata even when the band contributed no `data:`.
+
+Missing:
+- A regression test for the non-band-data path is missing from the new bean coverage. The existing queue/http specs caught the behavior change, but the new tests do not assert that param-only sends keep `:data` absent.
