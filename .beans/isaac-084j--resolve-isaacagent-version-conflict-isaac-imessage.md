@@ -4,8 +4,10 @@ title: 'Resolve isaac.agent version conflict: isaac-imessage pins agent 0.1.0'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-02T22:05:29Z
-updated_at: 2026-07-02T22:28:22Z
+updated_at: 2026-07-02T22:34:31Z
 ---
 
 ## Problem
@@ -66,3 +68,20 @@ Evidence:
   `:conflicts [{:id :isaac.agent, :chosen "0.1.5", :requested [{:version "0.1.5", :required-by [:isaac.comm.acp]} {:version "0.1.6", :required-by [:isaac.comm.imessage]}]}]`
 
 So the dependency-alignment change improved imessage, but did not satisfy the bean's second acceptance criterion. The bean should return only after the composed root reports zero conflicts (likely requiring coordinated pin alignment across the remaining consumer set, not just imessage).
+
+
+## Rework after verify feedback (2026-07-02)
+- Verifier confirmed `isaac-imessage` alone was no longer stale, but the composed root still conflicted because `isaac-acp` was still pinned to an older `isaac-agent` SHA (`10093b4...` / version `0.1.5`).
+- Updated sibling repo `isaac-acp/deps.edn` to align both runtime and spec-time `isaac-agent` coords to the same current agent line as imessage:
+  - runtime `io.github.slagyr/isaac-agent` → `ee0b06294e37690ba6b2f36fdd8ea660ce6b94f7`
+  - spec `io.github.slagyr/isaac-agent-spec` → same commit / spec root
+- ACP verification:
+  - `bb spec` → green after updating one stale expectation in `spec/isaac/comm/acp/server_spec.clj` for now-default compaction config in `:defaults`
+  - `bb features` → green with 10 pre-existing pending scenarios, 0 failures
+- Composed-root verification rerun in `isaac-foundation`:
+  - built fresh root `/tmp/isaac-084j-root3` with local modules `isaac.agent`, `isaac.server`, `isaac.comm.acp`, `isaac.comm.imessage`
+  - ran `bb isaac --root /tmp/isaac-084j-root3 modules list --edn`
+  - result now reports `:conflicts []`
+- Implementation commits:
+  - `isaac-imessage`: `1f080d8`
+  - `isaac-acp`: `f0175f8`
