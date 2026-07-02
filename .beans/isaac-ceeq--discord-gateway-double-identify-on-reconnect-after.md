@@ -55,9 +55,43 @@ isaac-discord gateway reconnect logic. Affects resilience of Discord comm (heart
 - [ ] No duplicate auth messages in the sent payloads for reconnect cases.
 - [ ] (stretch) Add a dedicated spec or feature step exercising the opcode-7-while-ready path.
 
+## 2026-07-02 update
+Scenario added @wip to feature file (approved "good").
+Ledger: reuses existing HELLO/READY/IDENTIFY/RESUME/connected/HEARTBEAT + log checks; new: "Discord sends opcode 7", "sends exactly one RESUME or IDENTIFY" (for count), log absence assertions.
+This makes the key AC runnable once supporting step(s) added.
+
 ## References
 - Prod logs: server-20260701.log around 22:01:40 (reconnect-requested → double identify → Output closed)
 - Similar pattern in earlier 06-30 cycles
 - Code: isaac-discord/src/isaac/comm/discord/gateway.clj (do-reconnect!, handle-hello!, on-close!)
 - Specs: isaac-discord/spec/isaac/comm/discord/gateway_spec.clj (reconnect tests)
 - Feature: isaac-discord/features/comm/discord/gateway.feature
+
+## Decision (2026-07-02)
+Approved the following @wip scenario for the opcode 7 reconnect case (one at a time per playbook). 
+
+Added to gateway.feature as first new scenario.
+
+Step ledger:
+- Reuses: faked gateway, config table, connects, sends HELLO:, sends READY:, sends IDENTIFY:, sends RESUME:, is connected, sends HEARTBEAT, log checks.
+- New steps needed: "Discord sends opcode 7", precise "sends exactly one RESUME or IDENTIFY" (count + kind), log absence for the error strings.
+- This covers the exact prod failure path and proves clean single-auth reconnect + resumed heartbeats.
+
+Scenario:
+  @wip
+  Scenario: reconnects cleanly after opcode 7 without duplicate auth
+    Given the Discord Gateway is faked in-memory
+    And config:
+      | comms.discord.discord/token | test-token |
+    When the Discord client connects
+    And Discord sends HELLO:
+      | heartbeat_interval | 45000 |
+    And Discord sends READY:
+      | session_id | fake-session |
+    And Discord sends opcode 7
+    And the reconnect delay passes
+    Then the Discord client sends exactly one RESUME or IDENTIFY
+    And the Discord client is connected
+    And the Discord client continues sending HEARTBEATs
+    And no "Already authenticated" or reader-loop failure is logged
+
