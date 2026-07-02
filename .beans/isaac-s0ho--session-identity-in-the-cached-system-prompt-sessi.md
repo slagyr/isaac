@@ -4,8 +4,10 @@ title: Session identity in the cached system prompt (Session + Crew, every surfa
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-02T18:29:51Z
-updated_at: 2026-07-02T18:49:47Z
+updated_at: 2026-07-02T19:06:53Z
 ---
 
 ## Context / Motivation
@@ -33,3 +35,51 @@ Acceptance: `bb features features/prompts/session-identity.feature` green (after
 ## Likely repo scope
 
 isaac-agent (llm/prompt/builder.clj, charge plumbing for crew/session-name).
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+Implemented in isaac-agent `main` commit **0a92e22** (base 50eb225).
+
+**Where identity is rendered** — `build-system-text`
+(`src/isaac/llm/prompt/builder.clj`) gains a `session-identity-block`
+(`Session: <name>` / `Crew: <crew>`), placed in the cached system prefix after
+soul/boot-files/rules/skill-menu and before the injection guard. `build-system-text`
+keeps a 5-arg arity (delegates to the 7-arg with nil identity) so any caller I
+didn't touch degrades cleanly.
+
+**Plumbing (charge already carried both fields):** `:crew` and `:session-key`
+live on the charge. Threaded `:session-name` (= session-key) and `:crew` through
+`drive/turn` `execute-llm-turn!` → `build-chat-request` → `api/build-prompt` into
+both builders — `prompt/build` (builder, used by grover/ollama/openai/responses)
+and `messages/build` (anthropic). Because everything routes through
+`execute-llm-turn!`, all surfaces (hail/discord/imessage/cron/cli/acp) get it for
+free. Origin stays per-turn in the existing trusted block — untouched.
+
+**Feature** (`features/prompts/session-identity.feature`, landed un-@wip, 3
+scenarios all green):
+1. identity present in `system[0].text` + `cache_control.ephemeral` (synthetic
+   build path — `grover:anthropic` routes to `messages/build`, giving the block
+   shape the scenario asserts).
+2. byte-identical system text across 2 turns — the NEW step `the system text of
+   the last N chat requests on session "X" is identical`. Implemented by
+   accumulating each completed turn's chat request per session in
+   `record-turn-result!` and comparing extracted system text (tolerant of both
+   `:system` block-array and messages[0] system-role shapes).
+3. transcript stays clean — identity never persisted (exact user/assistant match).
+
+**Test-support touched:** `session_steps/build-session-prompt` now passes
+`:session-name`/`:crew`; per-turn request accumulator + the new step/extractor.
+
+**One existing spec updated (legitimately):** `drive/turn_spec` "replays prior
+transcript…" and "…context-mode reset" asserted exact `:messages` system content
+("You are Brain."/"You are Pinky."). Those exercise the real turn path, which now
+appends identity — updated the expected system text to include the Session/Crew
+lines and added `:crew` to their synthetic charges (matching the sessions' actual
+crews). No behavior change beyond the feature itself.
+
+**Verification:** isaac-agent `bb verify` — config-bypass-lint ok; **1125 spec
+examples / 2209 assertions, 0 failures**; **563 feature examples / 1260
+assertions, 0 failures**; `bb lint` clean on touched files.
