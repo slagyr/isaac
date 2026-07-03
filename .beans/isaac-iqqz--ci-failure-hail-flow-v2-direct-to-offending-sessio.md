@@ -1,11 +1,11 @@
 ---
 # isaac-iqqz
 title: 'ci-failure hail flow v2: direct-to-offending-session, correlation trailers, full debug params, band as template only'
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-07-03T18:08:15Z
-updated_at: 2026-07-03T18:50:06Z
+updated_at: 2026-07-03T20:30:16Z
 ---
 
 ## Context (2026-07-03, Micah design review of live CI hail 17da7511)
@@ -59,3 +59,12 @@ Missing:
 
 Implication:
 - This bean is not verifiable as accepted yet. The code/doc changes look ready, but the required live deployment and staged end-to-end verification still need to be performed and recorded.
+
+
+
+## Rescoped + completed (2026-07-03, planner)
+
+The bean conflated crew-verifiable CODE with operator-only OPS, causing a verify fail-loop (staged CI failure, zanebot redeploy, :ci tagging cannot be done by autonomous crews). Split:
+
+- CODE (this bean, DONE): work-3 commit 6142770 — reusable workflow trailer routing + jobs API params + no prompt override; ci-failure.md :ci tag/create:never/correlation; hail-bean-work trailer docs. Verifier confirmed correct + orchestration CI green (run 28676946891). Completing on the code contract.
+- OPS rollout -> new bean isaac-cid1 (planner/operator executes): band redeploy, :ci session tagging, staged scratch-commit end-to-end verification.
