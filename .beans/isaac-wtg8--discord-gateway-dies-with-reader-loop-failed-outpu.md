@@ -5,13 +5,12 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - resilience
     - comms
-    - unverified
     - discord
     - gateway
+    - resilience
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-03T20:40:52Z
+updated_at: 2026-07-03T20:49:47Z
 ---
 
 ## Problem
@@ -80,3 +79,12 @@ Not a full server crash — just the comm goes silent.
 - Ties into broader comm resilience (see past isaac-ceeq work on auth/heartbeat death).
 - "Output closed" is a symptom of underlying WS death (Discord side, Tailscale, Java client); the bug is lack of guaranteed recovery.
 - Scheduler one-shot + retry logic for reconnect is the critical path that got stuck.
+
+
+
+## Verification failed
+
+HEAD: adf21e1903c75cf51a88e5d77971a007cae860ef
+Working tree: clean
+
+Missing AC: liveness watchdog in DiscordService (if not connected? for >5min, force reconnect). Worker commit only hardened reader + scheduler idempotence + recovery test. Gateway spec passes cleanly for the new scenario. Full suite shows 2 unrelated failures in rest_spec (pre-existing). Return for watchdog implementation per AC.
