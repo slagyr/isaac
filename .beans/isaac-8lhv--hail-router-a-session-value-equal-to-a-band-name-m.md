@@ -1,29 +1,38 @@
 ---
 # isaac-8lhv
-title: 'Hail router: a session value equal to a band name must not dead-letter (coerce to band routing + warn)'
+title: 'hail-send tool: reject an explicit session that names no existing session (fast feedback, no dead-letter)'
 status: draft
 type: bug
 priority: high
 created_at: 2026-07-03T20:56:45Z
-updated_at: 2026-07-03T20:56:45Z
+updated_at: 2026-07-03T21:01:36Z
 ---
 
 ## Problem (evidence, 2026-07-03)
 
-Hail records show 11 hails with a session value equal to a BAND NAME (e.g. session ["isaac-work"]) — always undeliverable, because bands select real sessions (isaac-work-1/2) by tags and no session literally named "isaac-work" exists. These silently dead-letter (contributed to isaac-wtg8 appearing stuck). A band name as a session value is ALWAYS an error and is deterministically detectable — the router has the band config (isaac-ukof fixes the prose; this makes it robust regardless of model, which matters given grok-build's demonstrated prose-following wobble).
+Crews sometimes dispatch a hail with an explicit session value that names no existing session — most often the BAND NAME itself (session ["isaac-work"] appears 11x in zanebot records; a session named "isaac-work" never exists — the band selects isaac-work-1/2 by tags). These silently persist to pending and then dead-letter as undeliverable. The crew that made the mistake gets NO feedback (the send "succeeded"), so it never self-corrects, and the return is simply lost (contributed to isaac-wtg8 appearing stuck).
 
-## Design
+## Design (send-time validation in the hail-send TOOL — reject, don't coerce)
 
-In the hail router addressing/merge path (src/isaac/hail/router.clj, `merge-session-ids` / frequency resolution — the router already holds cfg band names): when a resolved :session id equals a known band name, DO NOT treat it as a session. Coerce: drop that session id and fall through to the band's own selectors (session-tags/crew/reach), and log a WARN (:hail/session-is-band-name) so the upstream prose mistake stays visible. Net effect: today's 11 dead-letters become successful band deliveries, with a warning trail.
+Rejected the earlier "router coerces session==band-name -> band routing" idea as sloppy: it makes the router guess intent from a string collision, is fragile, and hides the error. Correct fix: fail fast at the tool boundary so the model gets in-turn feedback and self-corrects on its next tool call.
 
-Chosen behavior: coerce+warn (not hard error) — the operator intent is clearly "reach the worker", and the band delivers it correctly; the warn preserves diagnosability. (Alternative — reject to undeliverable with a clear reason — was considered; it keeps the dead-letter, just louder, so coerce wins.)
+In `isaac.tool.hail` (hail-send; it already has session-store access), when the tool call carries an EXPLICIT top-level session frequency (not band-driven selection) whose value names no existing session:
+
+- Do NOT persist the hail. Return a tool ERROR result.
+- Message is actionable, e.g.: `no session "isaac-work" exists. If you meant to route by band, pass band: "isaac-work". For an exact session use a real id (e.g. "isaac-work-1", from hail_get on the thread).`
+- Special-case the common mistake: if the value equals a known BAND NAME, say so explicitly ("that is a band name, not a session").
+
+Scope notes / do-not-break:
+- Band-driven selection (session-tags/crew) and create:if-missing bands must be UNAFFECTED — this validates only an explicit session id supplied in the tool call.
+- A hail-send with a genuine, existing explicit session id still sends (regression guard).
 
 ## Acceptance scenarios (to be committed @wip after review)
 
-isaac-hail features/explicit-session-routing.feature:
-- A hail whose :session value equals a configured band name is NOT delivered to a nonexistent session; it routes via that band's session-tags to a real session, and a :hail/session-is-band-name WARN is logged.
-- A hail with a genuine (non-band) explicit :session still routes directly (existing behavior unchanged — regression guard).
+isaac-hail features/crew-tool.feature:
+- A crew hail-send whose explicit session equals a configured band name returns a tool error naming the mistake; NO hail is persisted; the turn can retry.
+- A crew hail-send with an explicit session that names no session at all returns the actionable error; no hail persisted.
+- A crew hail-send with a real existing explicit session still dispatches normally (regression).
 
 ## Scope
 
-isaac-hail (router.clj addressing merge + a log warn; features/explicit-session-routing.feature).
+isaac-hail (tool/hail.clj send-time validation + tool error result; features/crew-tool.feature). Prose counterpart: isaac-ukof.
