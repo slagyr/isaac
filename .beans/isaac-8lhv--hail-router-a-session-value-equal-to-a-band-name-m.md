@@ -1,11 +1,13 @@
 ---
 # isaac-8lhv
 title: 'hail-send tool: reject an explicit session that names no existing session (fast feedback, no dead-letter)'
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-03T20:56:45Z
-updated_at: 2026-07-03T21:09:55Z
+updated_at: 2026-07-03T21:21:00Z
 ---
 
 ## Problem (evidence, 2026-07-03)
@@ -44,3 +46,11 @@ isaac-hail (tool/hail.clj send-time validation + tool error result; features/cre
 isaac-hail features/crew-tool.feature — 3 scenarios (Marigold-themed): band-name-as-session rejected; nonexistent-session rejected; real explicit session still dispatches (regression). 2 new steps approved: the-last-hail-send-tool-result-is-an-error-matching, there-are-no-pending-hails.
 
 Acceptance: un-@wip; bb spec / bb features green in isaac-hail.
+
+## Resolution (unverified — for verifier)
+
+- `hail-send-tool` validates explicit `:session` ids before `queue/send!`; skips when `:create` is `:if-missing` or `:always`.
+- Band-name mistake gets a dedicated message; also scans `config/hail/*.edn` on disk when snapshot is thin.
+- `features/crew-tool.feature`: 3 scenarios un-@wip; fixture adds `bartholomew` crew + `engine-room` session binding.
+- New steps: `the last hail-send tool result is an error matching`, `there are no pending hails`.
+- `bb ci` green in isaac-hail (commit cdb707b).
