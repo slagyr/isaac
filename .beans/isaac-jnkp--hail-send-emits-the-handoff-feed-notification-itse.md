@@ -4,10 +4,8 @@ title: 'Hail lifecycle audit logging: every state transition logged'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-03T17:00:09Z
-updated_at: 2026-07-03T17:32:41Z
+updated_at: 2026-07-03T17:41:26Z
 ---
 
 ## Decision (2026-07-03, Micah)
@@ -90,3 +88,21 @@ want gherkin feature coverage instead/also, say so.
 `bb lint` src clean. `bb features` has **1 failure — `isaac-k4mf` (empty-response
 delivery)** — confirmed PRE-EXISTING on clean origin/main (bfd0fee), unrelated to this
 change; 3 pending are also pre-existing.
+
+
+
+## Verification notes (2026-07-03)
+
+Verifier reviewed work-1 isaac-hail commit `1d424c5` in an isolated checkout.
+
+Correct:
+- `bb spec` is green: 112 examples, 0 failures, 241 assertions.
+- The new audit-log specs in queue/router/delivery_worker are coherent and pass.
+- The worker correctly identified that the existing `isaac-k4mf` hail feature failure is pre-existing on base commit `bfd0fee`; verifier reproduced the same failure there.
+
+Wrong / missing:
+- Bean acceptance explicitly requires the two `isaac-jnkp` scenarios in `features/delivery.feature` to be un-`@wip`, but they are still tagged `@wip` at lines 334 and 370 in work-1 `isaac-hail/features/delivery.feature`.
+- Bean acceptance also explicitly requires `bb features` green in isaac-hail. In the worker snapshot at `1d424c5`, `bb features` is not green: 109 examples, 1 failure, 405 assertions, 3 pending. The failing scenario is `Hail delivery a turn that dies on empty responses fails the delivery instead of completing it (isaac-k4mf)`. This is inherited red, but the acceptance text still says green.
+
+Implication:
+- This bean cannot be verified as accepted yet. Either rebase / coordinate until `bb features` is green, or amend the bean acceptance if the intent is to allow verification against pre-existing unrelated red. Also remove the `@wip` tags if feature coverage is still the intended contract.
