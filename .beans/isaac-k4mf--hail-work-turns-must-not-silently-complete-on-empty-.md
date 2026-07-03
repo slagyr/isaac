@@ -1,11 +1,13 @@
 ---
 # isaac-k4mf
 title: Hail work turns must not silently complete on empty terminal model responses
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-03T15:55:00Z
-updated_at: 2026-07-03T16:29:00Z
+updated_at: 2026-07-03T16:50:50Z
 ---
 
 ## Problem
@@ -104,3 +106,9 @@ Worker must root-cause this alongside the guard:
 - isaac-hail `features/delivery.feature` — 1 scenario: empty-terminal turn failure ⇒ attempts increment + back-off to deliveries/ (existing dead-letter convention), never delivered/. Zero new steps.
 
 Acceptance: un-@wip all 4; `bb spec`/`bb features` green in isaac-agent and isaac-hail; provider-normalization root cause written into this bean (fix at provider layer if classifiable).
+
+## Implementation (work-3, 2026-07-03)
+
+- **isaac-agent `9c27a7b`:** `guard-empty-terminal-response` in `drive/turn.clj` — one continuation nudge, then `:error :empty-terminal-response`. Responses API `incomplete-responses-stream?` surfaces degenerate streams (nil model, no `response.completed`, empty content/tool-calls) as `:llm-error` at the provider layer. Match DSL `messages[-1]` path support in `spec/isaac/step_tables.clj`.
+- **isaac-hail `c0ecab7`:** un-@wip delivery scenario; agent pin bumped. Existing delivery worker `:error` → `reschedule!` path covers turn failures — no hail code change required.
+- **Provider root cause:** zanebot's nil-model empty payload matches a Responses API stream that never emitted `response.completed`; previously normalized to empty success. Now classified as `:llm-error` at provider; turn guard is defense-in-depth.
