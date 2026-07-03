@@ -1,11 +1,11 @@
 ---
 # isaac-n5r2
 title: last-input-tokens stores turn-cumulative sum — compaction gauge lies (compaction itself is correct)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T15:01:38Z
+updated_at: 2026-07-03T15:24:10Z
 ---
 
 ## Investigation findings (2026-07-03, planner — supersedes original problem statement)
