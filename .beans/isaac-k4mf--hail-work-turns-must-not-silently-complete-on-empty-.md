@@ -4,8 +4,10 @@ title: Hail work turns must not silently complete on empty terminal model respon
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-03T15:55:00Z
-updated_at: 2026-07-03T16:58:47Z
+updated_at: 2026-07-03T18:37:17Z
 ---
 
 ## Problem
@@ -110,3 +112,40 @@ Acceptance: un-@wip all 4; `bb spec`/`bb features` green in isaac-agent and isaa
 - **isaac-agent `9c27a7b`:** `guard-empty-terminal-response` in `drive/turn.clj` — one continuation nudge, then `:error :empty-terminal-response`. Responses API `incomplete-responses-stream?` surfaces degenerate streams (nil model, no `response.completed`, empty content/tool-calls) as `:llm-error` at the provider layer. Match DSL `messages[-1]` path support in `spec/isaac/step_tables.clj`.
 - **isaac-hail `c0ecab7`:** un-@wip delivery scenario; agent pin bumped. Existing delivery worker `:error` → `reschedule!` path covers turn failures — no hail code change required.
 - **Provider root cause:** zanebot's nil-model empty payload matches a Responses API stream that never emitted `response.completed`; previously normalized to empty success. Now classified as `:llm-error` at provider; turn guard is defense-in-depth.
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+No new product edits were required in this session: the implementation already landed and was verified on current heads.
+
+### Landed implementation
+
+- `isaac-agent` introduced the generic empty-terminal guard in **9c27a7b**:
+  - one continuation nudge for a terminal empty assistant response
+  - explicit `:error :empty-terminal-response` on a second empty response
+  - provider-side detection in Responses API for degenerate streams that ended without `response.completed`
+- `isaac-hail` accepted the delivery-side behavior in **c0ecab7**:
+  - un-`@wip` delivery scenario
+  - existing delivery `:error` → reschedule/dead-letter path handles the failed turn; no extra hail logic was needed
+
+### Provider root cause
+
+The zanebot nil-model / tiny-payload death shape matches a Responses API stream that terminated without `response.completed`. Previously that normalized into an empty success; now it is surfaced as `:llm-error` at the provider layer, with the turn guard acting as defense-in-depth for any remaining empty-terminal shapes.
+
+### Re-verified in this session
+
+Current heads tested:
+
+- `isaac-agent` `19a7f9e` (contains `9c27a7b`)
+- `isaac-hail` `03cdf46` (contains `c0ecab7`)
+
+Commands/results:
+
+- `isaac-agent: bb spec` — green
+- `isaac-agent: bb features` — green
+- `isaac-hail: bb spec` — green
+- `isaac-hail: bb features` — green with **3 existing pending scenarios**, **0 failures**
+
+This satisfies the bean contract: all four committed `isaac-k4mf` acceptance scenarios are no longer `@wip`, both repos are green on verification runs, and the provider-normalization root cause is documented here for the verifier.
