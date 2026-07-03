@@ -1,7 +1,7 @@
 ---
 # isaac-hi5n
 title: CLI and core formatters must emit plain text (MD wrapping only in comms)
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - formatting
     - comm
 created_at: 2026-07-03T15:35:26Z
-updated_at: 2026-07-03T16:35:04Z
+updated_at: 2026-07-03T19:55:11Z
 ---
 
 ## Problem

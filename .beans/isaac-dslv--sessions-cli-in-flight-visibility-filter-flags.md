@@ -1,11 +1,11 @@
 ---
 # isaac-dslv
 title: 'Sessions CLI: in-flight visibility (✈️ + filter flags)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-05-23T04:09:25Z
-updated_at: 2026-05-24T05:21:29Z
+updated_at: 2026-07-03T19:55:11Z
 blocked_by:
     - isaac-a1nu
 ---
