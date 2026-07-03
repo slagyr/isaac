@@ -1,11 +1,11 @@
 ---
 # isaac-895i
 title: 'cli-server: run commands as subprocesses with streaming duplex IO'
-status: todo
+status: draft
 type: feature
 priority: high
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T15:34:23Z
+updated_at: 2026-07-03T15:35:22Z
 ---
 
 ## Context
