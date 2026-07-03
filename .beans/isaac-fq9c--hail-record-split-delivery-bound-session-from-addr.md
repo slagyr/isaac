@@ -1,11 +1,13 @@
 ---
 # isaac-fq9c
 title: 'Hail record: split delivery-bound session from addressing :session'
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-03T18:07:50Z
-updated_at: 2026-07-03T18:15:48Z
+updated_at: 2026-07-03T18:24:23Z
 ---
 
 ## Problem (2026-07-03, Micah review of a live CI hail)
