@@ -6,11 +6,10 @@ type: bug
 priority: normal
 tags:
     - tools
-    - unverified
     - cli
     - sessions
 created_at: 2026-07-03T15:35:26Z
-updated_at: 2026-07-03T16:40:26Z
+updated_at: 2026-07-03T16:58:47Z
 ---
 
 ## Problem

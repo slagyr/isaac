@@ -4,10 +4,8 @@ title: Hail work turns must not silently complete on empty terminal model respon
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-03T15:55:00Z
-updated_at: 2026-07-03T16:50:50Z
+updated_at: 2026-07-03T16:58:47Z
 ---
 
 ## Problem
