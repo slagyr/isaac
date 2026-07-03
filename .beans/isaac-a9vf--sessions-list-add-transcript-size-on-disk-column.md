@@ -1,13 +1,11 @@
 ---
 # isaac-a9vf
 title: 'Sessions list: add transcript size-on-disk column'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T18:29:51Z
+updated_at: 2026-07-03T18:33:14Z
 ---
 
 ## Problem
