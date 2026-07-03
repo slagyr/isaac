@@ -1,11 +1,11 @@
 ---
 # isaac-8lhv
 title: 'hail-send tool: reject an explicit session that names no existing session (fast feedback, no dead-letter)'
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-07-03T20:56:45Z
-updated_at: 2026-07-03T21:01:36Z
+updated_at: 2026-07-03T21:09:55Z
 ---
 
 ## Problem (evidence, 2026-07-03)
@@ -36,3 +36,11 @@ isaac-hail features/crew-tool.feature:
 ## Scope
 
 isaac-hail (tool/hail.clj send-time validation + tool error result; features/crew-tool.feature). Prose counterpart: isaac-ukof.
+
+
+
+## Acceptance scenarios (committed @wip, 2026-07-03)
+
+isaac-hail features/crew-tool.feature — 3 scenarios (Marigold-themed): band-name-as-session rejected; nonexistent-session rejected; real explicit session still dispatches (regression). 2 new steps approved: the-last-hail-send-tool-result-is-an-error-matching, there-are-no-pending-hails.
+
+Acceptance: un-@wip; bb spec / bb features green in isaac-hail.
