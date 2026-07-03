@@ -1,11 +1,11 @@
 ---
 # isaac-exi2
 title: 'isaac-acp: pure stdio module — delete websocket transport and chat command'
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-03T15:35:22Z
+updated_at: 2026-07-03T16:17:10Z
 blocked_by:
     - isaac-lcay
 ---
@@ -32,12 +32,14 @@ Decisions (2026-07-03, Micah):
 
 - run-local stdio path, session-selection flags, verbose mode, the module berths otherwise.
 
-## Acceptance (scenarios after review)
+## Acceptance criteria (one-time checks — deliberately NO scenarios)
 
-- `isaac acp --remote x` -> unknown option error.
-- `isaac chat` -> unknown command.
-- /acp route absent from resolved config routes.
-- Local stdio scenarios keep passing untouched.
-- bb spec / bb features green in isaac-acp.
+Decision (2026-07-03, Micah): absence-of-behavior is never a committed scenario (tombstone tests accrete forever). The verifier runs these ONCE at verification:
 
-Blocked by the e2e proof bean.
+- [ ] `isaac acp --remote wss://example` -> unknown option error, exit 1 (must NOT be silently ignored — stale editor configs would quietly run a local agent).
+- [ ] `isaac chat` -> unknown command, exit 1.
+- [ ] Resolved config route listing contains no `/acp`.
+- [ ] `features/cli/chat` feature file and all --remote/websocket specs/features are DELETED (not retained, not @wip).
+- [ ] Existing local-stdio scenarios pass untouched; `bb spec` / `bb features` green in isaac-acp.
+
+Blocked by the e2e proof bean (isaac-lcay).

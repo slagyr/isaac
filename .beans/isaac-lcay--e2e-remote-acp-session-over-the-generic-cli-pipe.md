@@ -1,11 +1,11 @@
 ---
 # isaac-lcay
 title: 'e2e: remote ACP session over the generic cli pipe'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-03T15:35:22Z
+updated_at: 2026-07-03T16:17:10Z
 blocked_by:
     - isaac-895i
 ---
@@ -29,3 +29,9 @@ Decision (2026-07-03, Micah): this is the gating proof for the acp cutover bean.
 ## Likely repo scope
 
 isaac-cli-proxy (integration feature), possibly small fixtures in isaac-cli-server. Blocked by the subprocess bean.
+
+## Acceptance scenario (committed @wip, 2026-07-03)
+
+isaac-cli-proxy `features/integration.feature` — remote ACP e2e (initialize -> session/new -> prompt -> streamed response before EOF -> clean shutdown). New steps approved: interactive-driver family (5), command-agnostic — ACP specifics live in scenario data only.
+
+Acceptance: un-@wip; `bb features features/integration.feature` green in isaac-cli-proxy.
