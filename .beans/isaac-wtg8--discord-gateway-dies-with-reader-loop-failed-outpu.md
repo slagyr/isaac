@@ -89,3 +89,34 @@ HEAD: adf21e1903c75cf51a88e5d77971a007cae860ef
 Working tree: clean
 
 Missing AC: liveness watchdog in DiscordService (if not connected? for >5min, force reconnect). Worker commit only hardened reader + scheduler idempotence + recovery test. Gateway spec passes cleanly for the new scenario. Full suite shows 2 unrelated failures in rest_spec (pre-existing). Return for watchdog implementation per AC.
+
+## Verification failed (2)
+
+HEAD (isaac-discord): 5b0389d99197b143c7e5a4c1ac26a1b5fa6ad88d — Working tree clean.
+
+Compile error: `start-liveness-watchdog!` (defined at line 77 in
+`src/isaac/comm/discord/service.clj`) references `server-running?` at line 100,
+but `server-running?` is not defined until line 122 — no `declare` forward.
+This is a forward-reference compile failure:
+`Unable to resolve symbol: server-running? in this context` (verified via
+direct `clojure -M:spec` load of the namespace, and confirmed by running
+`bb spec spec/isaac/server/discord_app_spec.clj` — 80 examples, 5 failures,
+all NullPointerException from `DiscordIntegration.on-load` because
+`requiring-resolve` on the (broken-compile) `isaac.comm.discord.service`
+namespace resolves to nil, then gets invoked.
+
+Confirmed root cause by reverting only `service.clj` to prior commit
+(ba7ec50) — discord_app_spec drops to only 1 (pre-existing/unrelated)
+failure. The watchdog code itself is otherwise reasonable but must move
+`server-running?` above `start-liveness-watchdog!` (or forward-declare it)
+so the namespace compiles.
+
+Also note: gateway_spec.clj passes fine (doesn't touch service.clj), but
+`bb spec` (which appears to run the full :spec suite) breaks on
+discord_app_spec compile failure. Full suite gate is broken by this bug.
+
+Return to worker: fix the forward-reference ordering in service.clj (move
+`server-running?` above `start-liveness-watchdog!`, or add
+`(declare server-running?)` near the top), re-run
+`bb spec` and `spec/isaac/server/discord_app_spec.clj` to confirm clean,
+then re-hand-off.
