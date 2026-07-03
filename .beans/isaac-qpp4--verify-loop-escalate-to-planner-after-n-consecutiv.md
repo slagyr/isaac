@@ -1,11 +1,11 @@
 ---
-# isaacz78q
-title: 'Verify loop: escalate to planner after N verify-fails instead of infinite worker bounce'
+# isaac-qpp4
+title: 'Verify loop: escalate to planner after N consecutive verify-fails instead of infinite worker bounce'
 status: draft
 type: feature
 priority: normal
-created_at: 2026-07-03T20:30:51Z
-updated_at: 2026-07-03T20:30:51Z
+created_at: 2026-07-03T20:42:11Z
+updated_at: 2026-07-03T20:42:11Z
 ---
 
 ## Problem (observed on isaac-iqqz, 2026-07-03)
