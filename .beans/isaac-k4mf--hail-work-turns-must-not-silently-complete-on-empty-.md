@@ -1,11 +1,11 @@
 ---
 # isaac-k4mf
 title: Hail work turns must not silently complete on empty terminal model responses
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-07-03T15:55:00Z
-updated_at: 2026-07-03T16:22:28Z
+updated_at: 2026-07-03T16:29:00Z
 ---
 
 ## Problem
@@ -88,3 +88,19 @@ Do not allow unbounded reprompt loops. (Resolved by the contract above: inner re
   still a bad terminal state for hail-driven work.
 - This bean is intentionally `draft` until we settle the exact acceptance
   contract and bounded-retry behavior in scenarios.
+
+## Provider-normalization suspect (added 2026-07-03, from Micah)
+
+isaac-n5r2's death had a stranger final provider shape: **:model nil and a tiny final payload** — suggesting the responses-API stream may have terminated abnormally (e.g. ended without a proper response.completed) and the provider layer normalized the partial into an EMPTY SUCCESS instead of an error.
+
+Worker must root-cause this alongside the guard:
+
+- If a degenerate stream termination (missing response.completed / nil model / empty accumulated response) is detectable at the provider layer (`isaac.llm.api.responses`), it should surface as an :error response THERE — errors already fail turns via the existing path, and the empty-terminal guard then serves as defense-in-depth rather than primary detection.
+- The runtime guard (scenarios below) stands regardless: it catches every shape the provider layer cannot classify.
+
+## Acceptance scenarios (committed @wip, 2026-07-03)
+
+- isaac-agent `features/session/error_handling.feature` — 3 scenarios: nudge recovery, bounded explicit fail (retry=1, queue-enforced boundedness), post-tool-execution variant. Dry-run reproduced the bug (`Expected "done.", got: ""`). Zero new steps.
+- isaac-hail `features/delivery.feature` — 1 scenario: empty-terminal turn failure ⇒ attempts increment + back-off to deliveries/ (existing dead-letter convention), never delivered/. Zero new steps.
+
+Acceptance: un-@wip all 4; `bb spec`/`bb features` green in isaac-agent and isaac-hail; provider-normalization root cause written into this bean (fix at provider layer if classifiable).
