@@ -4,10 +4,8 @@ title: 'ci-failure hail flow v2: direct-to-offending-session, correlation traile
 status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-03T18:08:15Z
-updated_at: 2026-07-03T18:13:39Z
+updated_at: 2026-07-03T18:50:06Z
 ---
 
 ## Context (2026-07-03, Micah design review of live CI hail 17da7511)
@@ -42,3 +40,22 @@ orchestration repo: `.github/workflows/ci-failure-hail-reusable.yml`, `isaac-ci/
 - `hail-bean-work/SKILL.md` — documents both trailers; README/REUSE updated.
 
 **Verifier / ops follow-up:** redeploy band via `isaac-ci/install.sh` on zanebot, tag CI fallback sessions `:ci`, run staged scratch-commit verification per acceptance checklist.
+
+## Verification notes (2026-07-03)
+
+Verifier reviewed work-3 orchestration commit `6142770`.
+
+Correct:
+- The repo changes match the design intent: no prompt override, `Isaac-Session` drives direct routing via `frequencies.session`, `Isaac-Bean` becomes `params.bean_id`, and the band template now carries `run_id`, failing job names, and failing step names.
+- `hail-bean-work` and the surrounding README / REUSE docs were updated to document the trailer convention.
+- Orchestration CI for the implementation commit is green: GitHub run `28676946891` (`CI Tests`) completed successfully on 2026-07-03.
+
+Missing:
+- Acceptance is explicitly staged/live and was not completed. The bean body itself leaves verifier/ops follow-up undone: redeploy the band on zanebot, tag fallback sessions `:ci`, and run the scratch-commit verification checklist.
+- There is no evidence in the repo or bean that the two staged CI-failure checks were run:
+  - with both trailers, confirming direct delivery to the named session with `bean_id`, failing job/step params, and the band-rendered prompt
+  - without trailers, confirming fallback to the `:ci`-scoped band with no session creation
+- There is no evidence that the live zanebot band was updated/redeployed after the config and skill changes.
+
+Implication:
+- This bean is not verifiable as accepted yet. The code/doc changes look ready, but the required live deployment and staged end-to-end verification still need to be performed and recorded.
