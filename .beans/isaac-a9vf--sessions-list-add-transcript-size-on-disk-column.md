@@ -1,6 +1,6 @@
 ---
 # isaac-a9vf
-title: Sessions list: add transcript size-on-disk column
+title: "Sessions list: add transcript size-on-disk column"
 status: draft
 type: feature
 priority: normal
