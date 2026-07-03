@@ -1,11 +1,11 @@
 ---
 # isaac-k4mf
-title: 'Hail work turns must not silently complete on empty terminal model responses'
+title: Hail work turns must not silently complete on empty terminal model responses
 status: draft
 type: bug
 priority: high
 created_at: 2026-07-03T15:55:00Z
-updated_at: 2026-07-03T15:55:00Z
+updated_at: 2026-07-03T16:22:28Z
 ---
 
 ## Problem
@@ -34,6 +34,16 @@ unfinished.
   - no runtime error
 - Isaac currently accepts that shape as a normal completed turn.
 
+## Contract (refined 2026-07-03, planner + Micah review)
+
+**Layer split — the runtime never learns about beans or hails:**
+
+1. **Agent runtime (isaac-agent, generic):** "terminal model response with empty content and no error" is a suspicious terminal shape for ANY turn (with or without prior tool calls). Guard: exactly ONE bounded retry — re-request with a continuation nudge appended. If the retry is also empty, the turn FAILS explicitly with `:error :empty-terminal-response` (an error result, never a normal completion). No bean/hail knowledge in the runtime.
+2. **Hail delivery (isaac-hail):** a turn that fails means the delivery FAILED — it flows into the existing failed/retry/undeliverable machinery (attempts increment, redelivery, undeliverable + notification at exhaustion) instead of silently freeing the session. Redelivery is the outer retry loop.
+3. **Completion evidence (verify-band hail sent, .beans pushed) is skill/prompt discipline** — checked by crews per hail-bean-* skills, NOT by the runtime. Cut from the runtime contract deliberately: it keeps the fix small, generic, and loop-safe.
+
+Retry budget is 1 (not "small"): the minimum that distinguishes a transient provider hiccup from a dead turn; hail redelivery provides the outer retries.
+
 ## Desired behavior
 
 For hail-driven bean work, an empty terminal model response is not enough to
@@ -61,7 +71,7 @@ Any recovery behavior must be bounded and outcome-based. Likely shape:
 - allow at most a small bounded retry budget
 - then fail the turn explicitly if completion evidence is still missing
 
-Do not allow unbounded reprompt loops.
+Do not allow unbounded reprompt loops. (Resolved by the contract above: inner retry = exactly 1; outer retries = existing bounded hail redelivery.)
 
 ## Likely repo scope
 
