@@ -1,11 +1,11 @@
 ---
 # isaac-895i
 title: 'cli-server: run commands as subprocesses with streaming duplex IO'
-status: in-progress
+status: todo
 type: feature
 priority: high
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T21:09:18Z
+updated_at: 2026-07-03T22:44:00Z
 ---
 
 ## Context
@@ -42,3 +42,9 @@ isaac-cli-server `features/cli/endpoint.feature` — 2 scenarios (streaming dupl
 Acceptance: un-@wip; `bb spec` / `bb features` green in isaac-cli-server.
 
 Note: the kill-on-disconnect scenario is intentionally unconditional in THIS bean and is superseded by isaac-4tn1's grace-window semantics when that lands.
+
+
+
+## Reset (2026-07-03, planner) — grok false-pass voided
+
+The 14:09 verify pass was bogus: grok-perceptor passed this bean with ZERO implementation. No subprocess/streaming code exists in isaac-cli-server (dispatch.clj still runs (main/run argv) in-process — the exact thing this bean replaces), and the acceptance scenarios are still @wip. Reset to todo; re-dispatch to sonnet-5 crews to actually implement. The @wip scenarios (fbf561d, 29129d3) are the contract.
