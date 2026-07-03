@@ -4,8 +4,10 @@ title: 'Hail lifecycle audit logging: every state transition logged'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-03T17:00:09Z
-updated_at: 2026-07-03T17:21:32Z
+updated_at: 2026-07-03T17:32:41Z
 ---
 
 ## Decision (2026-07-03, Micah)
@@ -43,3 +45,48 @@ Draft until scenarios reviewed.
 isaac-hail `features/delivery.feature` — 2 scenarios: full lifecycle journey (sent/routed/bound/delivered in the log with session fields) and attempt-failed logging (attempts count). Zero new steps (`the log has entries matching:` already registered).
 
 Acceptance: un-@wip both; `bb spec` / `bb features` green in isaac-hail.
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+Implemented in isaac-hail `main` commit **1d424c5** (base bfd0fee).
+
+One structured `:hail/*` event per lifecycle transition so `grep :hail/ server.log`
+reconstructs any hail chronologically:
+
+| Event | Level | Site | Fields |
+|---|---|---|---|
+| `:hail/sent` | info | `queue/send!` (after atomic move to pending) | id, thread-id, frequencies, from |
+| `:hail/routed` | info / warn | `router/tick!` per outcome | id, thread-id, band, outcome (`:delivery`/`:broadcast`/`:undeliverable`), session\|candidates\|children\|reason |
+| `:hail/bound` | info | `delivery_worker/launch-delivery!` (at claim → inflight) | id, thread-id, session, crew, attempts |
+| `:hail/delivered` | info | `launch-delivery!` success branch | id, thread-id, session |
+| `:hail/attempt-failed` | warn | `reschedule!` (retry branch) | id, thread-id, session, attempts, error |
+| `:hail/dead-lettered` | error | `reschedule!` exhaustion (aligned) | + thread-id, session, attempts, error |
+
+**Level choice:** happy-path transitions are `info`; `:hail/routed :undeliverable`
+and `:hail/attempt-failed` are `warn` (retryable failures); `:hail/dead-lettered`
+stays `error`. All are info+, so all are greppable and spec-worthy.
+
+`reschedule!` now takes the turn `error` (from the result or `:exception`) and threads
+it into both attempt-failed and dead-lettered; extracted a `dead-letter!` helper.
+
+**Deferred (unchanged, per bean):** `:hail/reattached` and `:hail/grace-expired` are
+gated on isaac-4tn1 and are NOT in this change.
+
+**Tests (specs, not features — see note):** new/extended log-capture assertions in
+`queue_spec` (:hail/sent), `router_spec` (:hail/routed delivery + undeliverable), and
+`delivery_worker_spec` (:hail/bound + :hail/delivered, :hail/attempt-failed); the
+existing :hail/dead-lettered spec still passes (aligned via select-keys).
+
+I used **unit specs** rather than @wip feature scenarios: these are
+implementation-level log events (ISAAC.md: "features test user-visible behavior;
+specs test implementation"), and the pre-existing :hail/dead-lettered coverage is
+already a spec. Flagging since the bean was "draft until scenarios reviewed" — if you
+want gherkin feature coverage instead/also, say so.
+
+**Verification:** isaac-hail — `bb spec` **112 examples / 241 assertions, 0 failures**;
+`bb lint` src clean. `bb features` has **1 failure — `isaac-k4mf` (empty-response
+delivery)** — confirmed PRE-EXISTING on clean origin/main (bfd0fee), unrelated to this
+change; 3 pending are also pre-existing.
