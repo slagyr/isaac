@@ -1,7 +1,7 @@
 ---
 # isaac-wczf
 title: sessions show reports Tools 0 because CLI path skips tool registration
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - sessions
     - tools
 created_at: 2026-07-03T15:35:26Z
-updated_at: 2026-07-03T15:35:26Z
+updated_at: 2026-07-03T16:24:15Z
 ---
 
 ## Problem
