@@ -1,11 +1,11 @@
 ---
 # isaac-jnkp
 title: 'Hail lifecycle audit logging: every state transition logged'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-03T17:00:09Z
-updated_at: 2026-07-03T17:08:44Z
+updated_at: 2026-07-03T17:19:48Z
 ---
 
 ## Decision (2026-07-03, Micah)
@@ -37,3 +37,9 @@ INFO-level log events for every state transition, one per move, :hail/* naming, 
 isaac-hail (queue, router, delivery_worker).
 
 Draft until scenarios reviewed.
+
+## Acceptance scenarios (committed @wip, 2026-07-03)
+
+isaac-hail `features/delivery.feature` — 2 scenarios: full lifecycle journey (sent/routed/bound/delivered in the log with session fields) and attempt-failed logging (attempts count). Zero new steps (`the log has entries matching:` already registered).
+
+Acceptance: un-@wip both; `bb spec` / `bb features` green in isaac-hail.
