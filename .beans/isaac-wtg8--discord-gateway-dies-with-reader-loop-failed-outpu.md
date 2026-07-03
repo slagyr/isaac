@@ -5,12 +5,13 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - discord
-    - gateway
     - resilience
     - comms
+    - unverified
+    - discord
+    - gateway
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-03T20:20:27Z
+updated_at: 2026-07-03T20:40:52Z
 ---
 
 ## Problem
