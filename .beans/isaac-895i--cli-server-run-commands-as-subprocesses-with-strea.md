@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T15:41:14Z
+updated_at: 2026-07-03T15:52:15Z
 ---
 
 ## Context
@@ -19,8 +19,10 @@ Decision (2026-07-03, Micah): commands run as SUBPROCESSES. Rationale: streaming
 - Server spawns the isaac launcher with the handshake argv; cwd from handshake (subject to policy), env inherited.
 - stdout/stderr piped and framed AS PRODUCED (streaming, not buffered); stdin frames written to the process; stdin-close closes its stdin.
 - Process exit -> {"type":"exit","code":N} -> socket close. Socket drop -> process destroyed (until the resume bean lands).
-- **Injectable spawn command** (config, default = the real isaac launcher): the test seam — features can spawn `cat` to prove duplex, `sh -c "exit 3"` to prove containment.
-- PROTOCOL.md: no wire change; semantics notes updated (streaming, cwd honored).
+- **Contract: argv never selects the binary.** The server always spawns the configured isaac launcher; `isaac` is implied and the client argv is applied to isaac main verbatim. There is no way to run an arbitrary program.
+- **Injectable spawn stub is TEST SCAFFOLDING ONLY** (proving transport properties — duplex via `cat`, containment via `sh` — without a full isaac install in the test sandbox). Production configuration has no binary override.
+- **cwd REMOVED from the wire protocol** (decision 2026-07-03, Micah): the proxy's cwd is a client-machine path, meaningless on the server filesystem; isaac commands use the server's root. Delete the `cwd` field from the start frame in PROTOCOL.md (both repos, lockstep); server ignores/rejects it.
+- PROTOCOL.md: semantics notes updated (streaming; cwd field removed).
 
 ## Acceptance (scenarios to be committed after review)
 
@@ -35,6 +37,6 @@ isaac-cli-server (dispatch.clj rewrite, ws.clj wiring, PROTOCOL.md semantics).
 
 ## Acceptance scenarios (committed @wip, 2026-07-03)
 
-isaac-cli-server `features/cli/endpoint.feature` — 2 scenarios (streaming duplex via `cat`; exit containment via `sh -c "exit 3"` + follow-up command). New step approved: `the cli-server handler with spawn command {cmd}` (injectable spawn seam). Two more scenarios (cwd honored, socket-drop destroys subprocess) pending review.
+isaac-cli-server `features/cli/endpoint.feature` — 2 scenarios (streaming duplex via `cat`; exit containment via `sh -c "exit 3"` + follow-up command). All 4 scenarios committed @wip: streaming duplex (`cat`), exit containment (`sh -c "exit 3"`), isaac-implied argv contract (recording spawn stub), kill-on-disconnect. New steps approved: spawn-command stub Given, recording-stub Given + spawn assertion, client-disconnects When, subprocess-not-running Then.
 
 Acceptance: un-@wip; `bb spec` / `bb features` green in isaac-cli-server.
