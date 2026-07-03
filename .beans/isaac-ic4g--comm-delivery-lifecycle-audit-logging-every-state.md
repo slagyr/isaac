@@ -4,8 +4,10 @@ title: 'Comm delivery lifecycle audit logging: every state transition logged'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-03T17:41:02Z
-updated_at: 2026-07-03T17:45:06Z
+updated_at: 2026-07-03T17:50:33Z
 ---
 
 ## Context (sister of isaac-jnkp)
