@@ -1,13 +1,11 @@
 ---
 # isaac-k4mf
 title: Hail work turns must not silently complete on empty terminal model responses
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-03T15:55:00Z
-updated_at: 2026-07-03T18:37:17Z
+updated_at: 2026-07-03T18:49:42Z
 ---
 
 ## Problem
