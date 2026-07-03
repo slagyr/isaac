@@ -1,11 +1,11 @@
 ---
 # isaac-a9vf
 title: "Sessions list: add transcript size-on-disk column"
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T06:20:00Z
+updated_at: 2026-07-03T06:32:00Z
 blocked_by: []
 ---
 
@@ -53,7 +53,25 @@ This should be an operator-facing metric, separate from token accounting.
 - This likely belongs next to the current context/token columns, but exact
   layout can be decided during implementation.
 
-## Acceptance
+## Acceptance scenarios (committed @wip, 2026-07-03)
 
-Scenarios deferred. Promote to `todo` once the display shape and verification
-approach are pinned.
+`isaac-agent/features/session/cli.feature`
+- `@wip Scenario: sessions list SIZE comes from transcript bytes, not token usage`
+
+`isaac-agent/features/tagging/session_tags.feature`
+- `@wip Scenario: isaac sessions list shows a Size column when tags are present`
+
+Focused check:
+
+```sh
+cd isaac-agent && bb features features/session/cli.feature features/tagging/session_tags.feature
+```
+
+Current result with scenarios still `@wip`: `29 examples, 0 failures, 85 assertions`.
+
+Definition of done:
+
+- remove `@wip` from both scenarios
+- `sessions list` shows a size-on-disk column in both the plain and tagged table layouts
+- the size value is sourced from transcript bytes on disk, not token counters
+- `bb features features/session/cli.feature features/tagging/session_tags.feature` passes
