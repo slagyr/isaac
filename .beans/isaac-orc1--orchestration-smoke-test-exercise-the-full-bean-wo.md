@@ -1,13 +1,11 @@
 ---
 # isaac-orc1
 title: 'Orchestration smoke test: exercise the full bean workflow with a deliberate no-op'
-status: in-progress
+status: completed
 type: task
 priority: low
-tags:
-    - unverified
 created_at: 2026-06-26T15:17:03Z
-updated_at: 2026-06-29T17:56:41Z
+updated_at: 2026-07-03T19:53:07Z
 ---
 
 ## Purpose

@@ -4,10 +4,8 @@ title: Comm modules build charges at inbound (no more request map)
 status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-21T00:22:13Z
-updated_at: 2026-05-21T19:47:49Z
+updated_at: 2026-07-03T19:53:07Z
 parent: isaac-895
 blocked_by:
     - isaac-a9y0
