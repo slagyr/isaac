@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T15:52:15Z
+updated_at: 2026-07-03T16:02:16Z
 ---
 
 ## Context
@@ -40,3 +40,5 @@ isaac-cli-server (dispatch.clj rewrite, ws.clj wiring, PROTOCOL.md semantics).
 isaac-cli-server `features/cli/endpoint.feature` — 2 scenarios (streaming duplex via `cat`; exit containment via `sh -c "exit 3"` + follow-up command). All 4 scenarios committed @wip: streaming duplex (`cat`), exit containment (`sh -c "exit 3"`), isaac-implied argv contract (recording spawn stub), kill-on-disconnect. New steps approved: spawn-command stub Given, recording-stub Given + spawn assertion, client-disconnects When, subprocess-not-running Then.
 
 Acceptance: un-@wip; `bb spec` / `bb features` green in isaac-cli-server.
+
+Note: the kill-on-disconnect scenario is intentionally unconditional in THIS bean and is superseded by isaac-4tn1's grace-window semantics when that lands.

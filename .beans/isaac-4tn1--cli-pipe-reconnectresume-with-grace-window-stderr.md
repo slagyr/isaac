@@ -1,11 +1,11 @@
 ---
 # isaac-4tn1
 title: 'cli pipe: reconnect/resume with grace window + stderr status lines'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T15:35:22Z
+updated_at: 2026-07-03T16:02:16Z
 blocked_by:
     - isaac-895i
 ---
@@ -34,3 +34,14 @@ Decision (2026-07-03, Micah): reconnect lives in the GENERIC pipe — no dedicat
 ## Likely repo scope
 
 isaac-cli-server + isaac-cli-proxy (+ PROTOCOL.md in lockstep).
+
+## Acceptance scenarios (committed @wip, 2026-07-03)
+
+- isaac-cli-proxy `features/remote.feature` — reattach after drop, render-once replay, status on stderr, attach frame with stream-id.
+- isaac-cli-server `features/cli/endpoint.feature` — grace window holds subprocess, expiry destroys (injectable clock, not wall-clock sleeps).
+
+New steps (approved 2026-07-03, full set of 6): stub stream-id Given, scripted drop, scripted replay (proxy); grace-window Given, still-running predicate, grace-elapses clock advance (server).
+
+Interaction: the grace-window scenario SUPERSEDES isaac-895i's unconditional kill-on-disconnect scenario — when this bean lands, that scenario is updated (disconnect → grace, expiry → destroy), not retained alongside.
+
+Acceptance: un-@wip; bb spec / bb features green in BOTH repos; PROTOCOL.md updated in lockstep (stream-id ack, attach frame, grace semantics).
