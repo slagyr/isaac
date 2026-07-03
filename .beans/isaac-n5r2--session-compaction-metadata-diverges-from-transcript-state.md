@@ -4,8 +4,10 @@ title: last-input-tokens stores turn-cumulative sum — compaction gauge lies (c
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T15:24:10Z
+updated_at: 2026-07-03T18:16:42Z
 ---
 
 ## Investigation findings (2026-07-03, planner — supersedes original problem statement)
@@ -39,3 +41,41 @@ isaac-agent (`drive/turn.clj` token persistence, `session/schema.clj`). The tool
 
 - isaac-a9vf (sessions list size-on-disk column) — complementary observability.
 - Original divergence observations retained in git history of this bean file.
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+Implemented in `isaac-agent` **main** commit **e098ac1**.
+
+### What changed
+
+- `drive/turn.clj`
+  - preserved whole-turn accumulated usage for cumulative billing fields.
+  - stored `:last-input-tokens` from the **final request usage block** (`response :usage`) instead of the tool-loop sum.
+  - stored the whole-turn accumulated prompt sum in new session field `:turn-input-tokens`.
+- `session/schema.clj`
+  - added system-managed `:turn-input-tokens`.
+- session stores / defaults
+  - initialized and defaulted `:turn-input-tokens` in memory and sidecar-backed sessions.
+  - updated sidecar token persistence helpers and spec helpers so explicit updates can set both `:turn-input-tokens` and `:last-input-tokens` independently.
+- tests
+  - removed `@wip` from the committed acceptance scenario in `features/session/context_management.feature`.
+  - added/updated specs covering multi-request persistence and sidecar behavior.
+
+### Verified
+
+- `bb lint src/isaac/drive/turn.clj src/isaac/session/schema.clj src/isaac/session/store/memory.clj src/isaac/session/store/impl_common.clj src/isaac/session/store/sidecar.clj`
+  - 0 errors, 3 pre-existing warnings (`unused binding session-key`; unused requires in `session/store/memory.clj`).
+- `bb spec`
+  - green: **1137 examples, 0 failures, 2236 assertions**.
+- `clojure -M:features features/session/context_management.feature`
+  - green: **11 examples, 0 failures, 12 assertions**.
+
+### Notes
+
+- `bb features` / full `clojure -M:features` is currently red on this repo **before and after** this fix due to unrelated baseline feature failures:
+  - three `features/session/cli.feature` session-list layout expectations still fail from the already-landed SIZE-column change (`isaac-a9vf` lineage), and
+  - one unrelated `cancel_aborts_in_flight_turn_work` feature is also red on current main.
+- This bean's committed acceptance target was the focused `context_management.feature` scenario plus `bb spec`; both now pass.
