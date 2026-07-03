@@ -120,3 +120,16 @@ Return to worker: fix the forward-reference ordering in service.clj (move
 `(declare server-running?)` near the top), re-run
 `bb spec` and `spec/isaac/server/discord_app_spec.clj` to confirm clean,
 then re-hand-off.
+
+## CI failure repair (d434dd2)
+
+GitHub Actions CI (run 28684162650) flagged this same compile break on
+5b0389d. Fix applied in isaac-discord: added `(declare server-running?
+reconcile-registration!)` near the top of service.clj, right after
+`watchdog-stale-since`. Verified clean:
+- `bb spec`: 80 examples, 0 failures, 181 assertions
+- `bb features`: 50 examples, 0 failures, 108 assertions
+
+Pushed to isaac-discord main as `d434dd2` (trailers: Isaac-Session
+isaac-work-1, Isaac-Bean isaac-wtg8). Bean remains in-progress/unverified;
+re-verification should confirm the watchdog behavior + full green suite.
