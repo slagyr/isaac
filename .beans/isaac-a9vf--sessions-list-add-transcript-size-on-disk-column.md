@@ -4,8 +4,10 @@ title: 'Sessions list: add transcript size-on-disk column'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T17:42:52Z
+updated_at: 2026-07-03T18:29:51Z
 ---
 
 ## Problem
@@ -99,3 +101,34 @@ No narrowing: the intended acceptance is the focused feature slice already named
 - Focused spec passed: `clojure -M:spec spec/isaac/session/cli_spec.clj` (16 examples, 0 failures).
 - Focused features remain red after implementation because older pre-existing session list expectations in `features/session/cli.feature` still assert the old column layout without SIZE, and one updated size scenario still needs regex alignment cleanup. Current focused feature run: `clojure -M:features features/session/cli.feature features/tagging/session_tags.feature` -> 3 failures (`sessions list shows one flat table sorted alphabetically with a CREW column`, `sessions list output has aligned columns with a header row`, `sessions list SIZE comes from transcript bytes, not token usage`).
 - This bean therefore is not ready for verify yet; planning/requirements adjustment is needed because the committed acceptance scenarios for a9vf conflict with still-active baseline list scenarios that were not updated for the new column.
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+Implemented in `isaac-agent` **main** commit **19a7f9e** on top of prior landed SIZE-column work in **df97091**.
+
+### What changed in this final pass
+
+- updated the two pre-existing baseline plain-layout scenarios in `features/session/cli.feature` so their expected table/header patterns include the new `SIZE` column.
+- kept the focused size-specific scenario proving `SIZE` is sourced from transcript bytes on disk rather than token counters.
+- tagged-layout acceptance remains covered in `features/tagging/session_tags.feature`.
+- no product-code change was needed in this pass; the implementation from `df97091` already rendered SIZE correctly. This pass completed the feature contract by aligning the older expectations with the new list layout.
+
+### Verified
+
+- `bb lint src/isaac/session/cli.clj`
+  - 0 errors, 1 warning: existing unused binding `options` in `src/isaac/session/cli.clj`.
+- `clojure -M:spec spec/isaac/session/cli_spec.clj`
+  - green: **16 examples, 0 failures, 43 assertions**.
+- `clojure -M:features features/session/cli.feature features/tagging/session_tags.feature`
+  - green: **32 examples, 0 failures, 98 assertions**.
+- `bb spec`
+  - green: **1138 examples, 0 failures, 2237 assertions**.
+
+### Scope summary
+
+- plain sessions list layout now expects `SESSION AGE SIZE USED WINDOW PCT CREW`
+- tagged sessions list layout continues to expect `Name AGE Size USED WINDOW PCT Crew Tags`
+- size-on-disk remains separate from token accounting and is still formatted compactly (`B`, `K`, `M`)
