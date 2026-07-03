@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T17:41:35Z
+updated_at: 2026-07-03T17:42:52Z
 ---
 
 ## Problem
@@ -55,6 +55,8 @@ This should be an operator-facing metric, separate from token accounting.
 ## Acceptance scenarios (committed @wip, 2026-07-03)
 
 `isaac-agent/features/session/cli.feature`
+- `@wip Scenario: sessions list shows one flat table sorted alphabetically with a CREW column`
+- `@wip Scenario: sessions list output has aligned columns with a header row`
 - `@wip Scenario: sessions list SIZE comes from transcript bytes, not token usage`
 
 `isaac-agent/features/tagging/session_tags.feature`
@@ -66,15 +68,28 @@ Focused check:
 cd isaac-agent && bb features features/session/cli.feature features/tagging/session_tags.feature
 ```
 
-Current result with scenarios still `@wip`: `29 examples, 0 failures, 85 assertions`.
-
 Definition of done:
 
-- remove `@wip` from both scenarios
+- remove `@wip` from all four scenarios above
+- update the two pre-existing baseline `features/session/cli.feature` scenarios so their expected plain-table header/alignment includes the new `SIZE` column
 - `sessions list` shows a size-on-disk column in both the plain and tagged table layouts
 - the size value is sourced from transcript bytes on disk, not token counters
 - `bb features features/session/cli.feature features/tagging/session_tags.feature` passes
 
+## Planner clarification (2026-07-03, prowl)
+
+The bean's scope explicitly includes **updating the baseline session-list feature expectations** that cover the plain table layout. This is not optional fallout; those scenarios are part of the contract for the same surface and must move with the new column.
+
+Required feature-set adjustments:
+
+- Treat these existing plain-layout scenarios as in-scope acceptance for this bean:
+  - `sessions list shows one flat table sorted alphabetically with a CREW column`
+  - `sessions list output has aligned columns with a header row`
+- Their expected output must be revised to include the new `SIZE` column in the plain layout.
+- The size-specific scenario must continue to prove that `SIZE` comes from transcript bytes on disk rather than token counters.
+- Tagged layout acceptance remains in-scope via `isaac sessions list shows a Size column when tags are present`.
+
+No narrowing: the intended acceptance is the focused feature slice already named above, with the baseline list scenarios updated to the new contract.
 
 ## Worker notes (scrapper)
 
