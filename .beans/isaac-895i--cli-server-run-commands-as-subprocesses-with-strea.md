@@ -1,11 +1,11 @@
 ---
 # isaac-895i
 title: 'cli-server: run commands as subprocesses with streaming duplex IO'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T15:35:22Z
+updated_at: 2026-07-03T15:41:14Z
 ---
 
 ## Context
@@ -32,3 +32,9 @@ Decision (2026-07-03, Micah): commands run as SUBPROCESSES. Rationale: streaming
 ## Likely repo scope
 
 isaac-cli-server (dispatch.clj rewrite, ws.clj wiring, PROTOCOL.md semantics).
+
+## Acceptance scenarios (committed @wip, 2026-07-03)
+
+isaac-cli-server `features/cli/endpoint.feature` — 2 scenarios (streaming duplex via `cat`; exit containment via `sh -c "exit 3"` + follow-up command). New step approved: `the cli-server handler with spawn command {cmd}` (injectable spawn seam). Two more scenarios (cwd honored, socket-drop destroys subprocess) pending review.
+
+Acceptance: un-@wip; `bb spec` / `bb features` green in isaac-cli-server.
