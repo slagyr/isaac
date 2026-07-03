@@ -4,10 +4,8 @@ title: 'cli-server: run commands as subprocesses with streaming duplex IO'
 status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T21:04:35Z
+updated_at: 2026-07-03T21:09:18Z
 ---
 
 ## Context
