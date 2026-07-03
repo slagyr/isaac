@@ -1,11 +1,11 @@
 ---
 # isaac-ic4g
 title: 'Comm delivery lifecycle audit logging: every state transition logged'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-03T17:41:02Z
-updated_at: 2026-07-03T17:44:00Z
+updated_at: 2026-07-03T17:45:06Z
 ---
 
 ## Context (sister of isaac-jnkp)
