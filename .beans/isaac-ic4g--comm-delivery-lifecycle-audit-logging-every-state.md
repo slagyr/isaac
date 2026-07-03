@@ -1,10 +1,11 @@
 ---
 # isaac-ic4g
 title: 'Comm delivery lifecycle audit logging: every state transition logged'
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-07-03T17:41:02Z
-updated_at: 2026-07-03T17:41:02Z
+updated_at: 2026-07-03T17:44:00Z
 ---
 
 ## Context (sister of isaac-jnkp)
@@ -27,3 +28,11 @@ INFO-level events for every state transition, structured fields (id, comm, targe
 isaac-agent (comm/delivery/queue.clj, comm/delivery/worker.clj).
 
 Draft until scenarios reviewed.
+
+## Acceptance scenarios (committed @wip, 2026-07-03)
+
+isaac-agent `features/comm/delivery/queue.feature` — 2 scenarios (delivered logged with id; transient attempt-failed logged with attempts). Zero new steps.
+
+:comm.delivery/queued has no feature (no enqueue-driving step exists) — covered by unit spec per this acceptance instead. Dead-lettered rename (:delivery/dead-lettered -> :comm.delivery/dead-lettered, clean cutover) is in scope.
+
+Acceptance: un-@wip both; `bb spec` / `bb features` green in isaac-agent; queued-event unit spec present.
