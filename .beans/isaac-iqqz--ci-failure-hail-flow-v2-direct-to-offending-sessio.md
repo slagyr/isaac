@@ -1,11 +1,13 @@
 ---
 # isaac-iqqz
 title: 'ci-failure hail flow v2: direct-to-offending-session, correlation trailers, full debug params, band as template only'
-status: todo
+status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-03T18:08:15Z
-updated_at: 2026-07-03T18:08:15Z
+updated_at: 2026-07-03T18:13:39Z
 ---
 
 ## Context (2026-07-03, Micah design review of live CI hail 17da7511)
@@ -30,3 +32,13 @@ orchestration repo: `.github/workflows/ci-failure-hail-reusable.yml`, `isaac-ci/
 - [ ] Same staged failure without trailers -> falls back to the `:ci`-scoped band; no session created; undeliverable if no tagged session.
 - [ ] Live CI-failure band on zanebot updated; orchestration + per-repo workflows in lockstep (per-repo ymls unchanged — inputs already suffice).
 - [ ] hail-bean-work skill documents the trailer convention; redeployed.
+
+## Implementation (work-3, 2026-07-03)
+
+**orchestration** (pushed to `main`):
+
+- `ci-failure-hail-reusable.yml` — `frequencies.session` when `Isaac-Session:` trailer present; `params.bean_id` from `Isaac-Bean:`; GH jobs API → `run_id`, `failing_jobs`, `failing_steps`; no prompt override.
+- `isaac-ci/config/hail/ci-failure.md` — `:ci` tag, `create: :never`, correlation instruction, new template vars.
+- `hail-bean-work/SKILL.md` — documents both trailers; README/REUSE updated.
+
+**Verifier / ops follow-up:** redeploy band via `isaac-ci/install.sh` on zanebot, tag CI fallback sessions `:ci`, run staged scratch-commit verification per acceptance checklist.
