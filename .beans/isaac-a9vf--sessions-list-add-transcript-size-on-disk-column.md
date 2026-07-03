@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T15:07:31Z
+updated_at: 2026-07-03T17:41:35Z
 ---
 
 ## Problem
@@ -74,3 +74,13 @@ Definition of done:
 - `sessions list` shows a size-on-disk column in both the plain and tagged table layouts
 - the size value is sourced from transcript bytes on disk, not token counters
 - `bb features features/session/cli.feature features/tagging/session_tags.feature` passes
+
+
+## Worker notes (scrapper)
+
+- Salvaged prior uncommitted a9vf WIP from `/Users/zane/agents/isaac/work-1/isaac-agent` and ported it cleanly onto current `isaac-agent` main as commit `df97091`.
+- Implemented SIZE column in `isaac sessions list` for both plain and tagged layouts, sourced from transcript bytes via session transcript content rather than token counters.
+- Removed `@wip` from the two a9vf acceptance scenarios.
+- Focused spec passed: `clojure -M:spec spec/isaac/session/cli_spec.clj` (16 examples, 0 failures).
+- Focused features remain red after implementation because older pre-existing session list expectations in `features/session/cli.feature` still assert the old column layout without SIZE, and one updated size scenario still needs regex alignment cleanup. Current focused feature run: `clojure -M:features features/session/cli.feature features/tagging/session_tags.feature` -> 3 failures (`sessions list shows one flat table sorted alphabetically with a CREW column`, `sessions list output has aligned columns with a header row`, `sessions list SIZE comes from transcript bytes, not token usage`).
+- This bean therefore is not ready for verify yet; planning/requirements adjustment is needed because the committed acceptance scenarios for a9vf conflict with still-active baseline list scenarios that were not updated for the new column.
