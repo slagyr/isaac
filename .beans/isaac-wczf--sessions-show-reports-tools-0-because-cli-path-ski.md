@@ -5,11 +5,12 @@ status: in-progress
 type: bug
 priority: normal
 tags:
+    - tools
+    - unverified
     - cli
     - sessions
-    - tools
 created_at: 2026-07-03T15:35:26Z
-updated_at: 2026-07-03T16:24:15Z
+updated_at: 2026-07-03T16:40:26Z
 ---
 
 ## Problem
@@ -54,3 +55,46 @@ Observed in `isaac-work-1` / `isaac-work-2` on zanebot while debugging session s
 - Tests: extend bridge spec and add CLI-specific test for `sessions show` with a crew that has `:tools :allow`.
 
 This keeps the CLI path lightweight while ensuring the reported count matches what the live session would have.
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+Implemented in isaac-agent `main` commit **5bca5a8** (per the refined design).
+
+**status.clj** — `status-data*` now reports `:tool-count (session-tool-count ctx)`:
+- new public `session-allowed-tools` derives the crew's allow-list as a name set,
+  preferring an explicit `:allowed-tools` on the ctx (CLI path), else the crew's
+  `:tools :allow` from `:crew-cfg` (lightweight/CLI) or `:crew-members` (live
+  charge).
+- `session-tool-count` = `(count (tool-registry/all-tools allowed))` — the
+  process registry **filtered** by the allow-list (the same view turn/prompt code
+  uses for that crew). Falls back to the whole registry when the crew declares no
+  `:tools` (so the existing "tool-count from registry" behavior is preserved).
+
+**session/cli.clj** — `run-show` now, after `install-cli!`, resolves the crew's
+allow-list via `bridge/session-allowed-tools`, **activates just those tools** from
+the loaded config's `:module-index` (`tool-registry/tool-definitions allowed
+module-index` → `activate-missing-tool!`), and passes `(assoc ctx :allowed-tools
+allowed)` to `status-data`. So the lightweight CLI path (which never boots
+modules) now populates exactly the crew's tools and reports the correct filtered
+count instead of 0.
+
+**Consistency:** the count is the registry ∩ crew allow-list — identical to what
+`turn.clj`'s `active-tools`/`allowed-tool-names` resolves for the same crew.
+
+**Tests:**
+- `bridge_spec`: three new examples — filtered count via `:crew-cfg`, via
+  `:crew-members`, and via explicit `:allowed-tools`; the existing "tool-count
+  from registry" (no crew `:tools`) still asserts the whole-registry fallback.
+- `features/session/cli.feature`: new scenario drives `isaac sessions show`
+  end-to-end for a crew with `tools.allow read,write` and asserts `Tools .* 2`
+  (proves activation + filtering through the real CLI + module-index).
+
+**Verification:** isaac-agent `bb verify` — config-bypass-lint ok; **1128 spec
+examples / 2212 assertions, 0 failures**; **564 feature examples / 1263
+assertions, 0 failures**.
+
+Note: rebased over the concurrent `isaac-hi5n` change to `format-status`
+(plain-text output); no conflict with the tool-count work.
