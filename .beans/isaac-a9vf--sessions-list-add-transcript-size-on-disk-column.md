@@ -1,12 +1,11 @@
 ---
 # isaac-a9vf
-title: "Sessions list: add transcript size-on-disk column"
-status: todo
+title: 'Sessions list: add transcript size-on-disk column'
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-03T06:20:00Z
-updated_at: 2026-07-03T06:32:00Z
-blocked_by: []
+updated_at: 2026-07-03T15:07:31Z
 ---
 
 ## Problem
