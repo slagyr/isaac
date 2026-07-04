@@ -66,3 +66,28 @@ Implication:
 - bean is not ready for verify handoff yet
 - likely remaining work is in the session-creation / feature-harness path for
   explicit session `:model` overrides, not the crew hot-reload path itself
+
+## Scope split (2026-07-04, prowl)
+
+Worker found the crew hot-reload scenario passes
+(`features/crew/model_reload.feature:14`, green) but the explicit
+session-level override scenario (`:42`) fails because the explicit session
+`:model` override is not honored at the **session-creation seam** — a session
+created with model `:beta` still sends on the crew/`echo` path. That is a
+distinct pre-existing defect, not part of the hot-reload path this bean owns.
+
+Decision: **this bean is the crew hot-reload path only.** The explicit
+session-level override guard is re-homed to **isaac-b3tl**.
+
+Revised acceptance for isaac-q5ee:
+- Only scenario in scope: `crew model change applies to next turn of a running
+  session` (`features/crew/model_reload.feature:14`) — un-@wip, green.
+- Leave the explicit-override scenario (`:42`) `@wip`; it is owned and un-@wip'd
+  by isaac-b3tl.
+- Keep the new step `the last chat request on session {s} used model {m}` here
+  (shared; b3tl reuses it).
+- `bb spec` / `bb features` green in isaac-agent with the override scenario
+  still `@wip`.
+
+Follow-up bean: **isaac-b3tl** — explicit session-level `:model` override is
+ignored at the session-creation seam.
