@@ -1,11 +1,11 @@
 ---
 # isaac-q5ee
 title: Crew model change must hot-reload into running sessions (not just fresh ones)
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-07-04T05:04:15Z
-updated_at: 2026-07-04T05:09:31Z
+updated_at: 2026-07-04T05:10:14Z
 ---
 
 ## Problem (evidence, 2026-07-03)
