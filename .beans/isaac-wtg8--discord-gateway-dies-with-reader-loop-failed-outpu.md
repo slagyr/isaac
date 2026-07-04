@@ -5,13 +5,12 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - discord
     - gateway
-    - unverified
     - resilience
     - comms
-    - discord
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-04T01:45:31Z
+updated_at: 2026-07-04T01:49:30Z
 ---
 
 ## Problem
@@ -181,3 +180,29 @@ Test evidence:
 
 Implication:
 - The watchdog / compile-fix work is present, and features are green, but the full spec suite is not reliably green under rerun. This bean is **not verifiable as accepted yet** because the acceptance/full-suite gate is still flaky after `d434dd2`.
+
+
+## Verification failed (4)
+
+HEAD (isaac-discord): `cf9de7b584a9e36df653d1349ad17beb231bd7f4` — working tree clean.
+
+Verified in code:
+- `src/isaac/comm/discord/service.clj:15` still forward-declares `server-running?` / `reconcile-registration!`.
+- `src/isaac/comm/discord/service.clj:79-105` still provides the >5 minute disconnected watchdog with WARN + forced reconnect.
+- `src/isaac/comm/discord/gateway.clj:14-20` introduces per-attempt reconnect task ids.
+- `src/isaac/comm/discord/gateway.clj:264-285` now tracks `:reconnect-task-id`, cancels the prior pending reconnect, and schedules the next reconnect as a fresh task.
+- `src/isaac/comm/discord/gateway.clj:317-320` and `413-417` cancel the tracked reconnect task on fatal close / stop.
+- `spec/isaac/comm/discord/gateway_spec.clj:509-543` now expects transport-error disconnect state, and `658-708` still covers the opcode-7 + reader `Output closed` recovery path.
+
+Fresh verification evidence on this HEAD:
+- `bb features` passed cleanly: **50 examples, 0 failures, 108 assertions**.
+- But **fresh `bb spec` reruns are still not stable**. I reproduced failures twice in a row after pulling `cf9de7b`:
+  1. `spec/isaac/comm/discord/gateway_spec.clj:526`
+     - run 1 expected `{:reason "transport-error", :status 1006}` but got `{:reason "reader-loop-failed", :status 1006}`
+     - run 2 expected `{:reason "transport-error", :status 1006}` but got `{:status-code 4000, :reason "resume"}`
+  2. `spec/isaac/comm/discord/rest_spec.clj:31`
+     - run 1 expected `{:event :discord.reply/http-error, :channelId "C999", :status 403}` but got `{:event :discord.gateway/identify}`
+
+Implication:
+- The reconnect-task follow-up repair is present, but the full spec suite is still flaky / cross-contaminated under rerun.
+- This bean is **not verifiable as accepted yet** because the acceptance/full-suite gate is still not reliably green.
