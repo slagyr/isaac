@@ -1,11 +1,11 @@
 ---
 # isaac-jnkp
 title: 'Hail lifecycle audit logging: every state transition logged'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-03T17:00:09Z
-updated_at: 2026-07-03T17:41:26Z
+updated_at: 2026-07-04T03:55:01Z
 ---
 
 ## Decision (2026-07-03, Micah)
