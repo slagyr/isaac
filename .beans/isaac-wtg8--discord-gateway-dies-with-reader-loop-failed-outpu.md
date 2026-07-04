@@ -5,12 +5,13 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - gateway
+    - unverified
     - resilience
     - comms
     - discord
-    - gateway
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-04T01:27:28Z
+updated_at: 2026-07-04T01:45:31Z
 ---
 
 ## Problem
@@ -132,6 +133,31 @@ reconcile-registration!)` near the top of service.clj, right after
 Pushed to isaac-discord main as `d434dd2` (trailers: Isaac-Session
 isaac-work-1, Isaac-Bean isaac-wtg8). Bean remains in-progress/unverified;
 re-verification should confirm the watchdog behavior + full green suite.
+
+## Follow-up repair (cf9de7b)
+
+While reworking verification, the new transport-error recovery path still
+implicitly depended on duplicate-id replacement semantics in the scheduler.
+The pinned `isaac-foundation` git SHA used by this module in CI does **not**
+provide that behavior, so reconnect scheduling could still be fragile under
+close storms.
+
+Fix applied in `isaac-discord/src/isaac/comm/discord/gateway.clj`:
+- generate a fresh reconnect task id per attempt
+- store that id in client state as `:reconnect-task-id`
+- cancel the prior pending reconnect before scheduling the next one
+- cancel the tracked reconnect task on fatal close / stop
+
+Specs updated in `spec/isaac/comm/discord/gateway_spec.clj` to assert tracked
+reconnect state instead of a fixed reconnect task id, while preserving the
+transport-error close-trigger behavior.
+
+Verified clean:
+- `bb spec`: 80 examples, 0 failures, 182 assertions
+- `bb features`: 50 examples, 0 failures, 108 assertions
+
+Pushed to isaac-discord main as `cf9de7b` (trailers: Isaac-Session
+isaac-work-1, Isaac-Bean isaac-wtg8). Ready for verify handoff.
 
 
 ## Verification failed (3)
