@@ -1,11 +1,13 @@
 ---
 # isaac-0tf3
 title: 'Hail delivery: recover orphaned inflight deliveries after a mid-drive crash'
-status: draft
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-04T14:35:52Z
-updated_at: 2026-07-04T14:35:52Z
+updated_at: 2026-07-04T14:41:00Z
 ---
 
 ## Problem
@@ -34,3 +36,12 @@ isaac-hail: `src/isaac/hail/delivery_worker.clj` (startup recovery of inflight/ 
 - Given an inflight hail that has been orphaned across N worker starts, then it dead-letters rather than retrying forever.
 
 Priority: HIGH — silent permanent loss of queued work.
+
+## Resolution (unverified — for verifier)
+
+- `recover-orphaned-inflight!` sweeps `hail/inflight/` on every tick and at `start!`.
+- Orphan = `:claimed-at` older than threshold (default 5m; override via `:inflight-recovery-ms` or `:hail-settings :inflight-recovery-ms`).
+- Recovery clears session in-flight, calls `reschedule!` with `:worker-crash` (increments attempts; dead-letters at 5).
+- `claim-delivery!` now stamps `:claimed-at`.
+- `delivery.feature`: 2 scenarios (recover+deliver; dead-letter at attempts 4).
+- `bb ci` green in isaac-hail.
