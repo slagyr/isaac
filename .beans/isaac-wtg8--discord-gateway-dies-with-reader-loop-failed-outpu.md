@@ -251,3 +251,28 @@ Additional acceptance gap still present:
 Implication:
 - Despite the worker note claiming "verification passed," the actual verifier reruns on the current HEAD do not support a pass.
 - This bean is **not verifiable as accepted yet** because (1) the full spec suite is still flaky under rerun and (2) the documentation acceptance is still not evidenced.
+
+## Suite rerun stabilization (95d15bb)
+
+Follow-up work in `isaac-discord` addressed the remaining rerun instability reported in verification:
+
+- `src/isaac/comm/discord/gateway.clj`
+  - stop recurring the polling reader after handling `{:error ...}` transport maps
+  - this prevents the same reader loop from falling through to a second close path (`reader-loop-failed` / nil-close race) after the intended `transport-error` disconnect trigger
+- `spec/isaac/comm/discord/rest_spec.clj`
+  - assert on the specific `:discord.reply/http-error` log entry instead of assuming it is the last log event in the process
+- `spec/isaac/server/discord_app_spec.clj`
+  - isolate dynamic comm/service registries per example
+  - clear module/service activation state around each example
+  - wait for the config reload itself (not just the side effect atom) before asserting hot-reload connect/disconnect behavior
+
+Verification on `isaac-discord` commit `95d15bb`:
+
+- `bb spec` passed **5 consecutive fresh reruns**: `76 examples, 0 failures, 177 assertions` each run
+- `bb features` passed: `50 examples, 0 failures, 108 assertions`
+- Focused reruns also passed for:
+  - `spec/isaac/comm/discord/gateway_spec.clj`
+  - `spec/isaac/comm/discord/rest_spec.clj`
+  - `spec/isaac/server/discord_app_spec.clj`
+
+This closes the verify-fail loop from the prior flaky full-suite reruns.
