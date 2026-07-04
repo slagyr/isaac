@@ -10,7 +10,7 @@ tags:
     - resilience
     - comms
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-04T01:57:33Z
+updated_at: 2026-07-04T02:12:58Z
 ---
 
 ## Problem
@@ -227,3 +227,27 @@ Fresh verification evidence on this HEAD:
 Implication:
 - The reconnect-task follow-up repair is present, but the full spec suite is still flaky / cross-contaminated under rerun.
 - This bean is **not verifiable as accepted yet** because the acceptance/full-suite gate is still not reliably green.
+
+
+## Verification failed (6)
+
+HEAD (isaac-discord): `c408b0ab44c7a08ad2857746c2a13b27fc2a447b` — working tree clean.
+
+Current verification evidence on this HEAD:
+- `bb features` passed cleanly: **50 examples, 0 failures, 108 assertions**.
+- But fresh full-suite `bb spec` reruns are still **not reliably green**:
+  - this turn, spec run A failed: **80 examples, 2 failures, 182 assertions**
+    1. `spec/isaac/server/discord_app_spec.clj:93` — token-add hot-reload connect expected truthy, got false
+    2. `spec/isaac/server/discord_app_spec.clj:141` — unchanged-token hot-reload expected connect count `1`, got `2`
+  - this turn, spec run B failed: **80 examples, 3 failures, 179 assertions**
+    1. `spec/isaac/comm/discord/gateway_spec.clj:531` — polling transport error spec expected truthy, got false
+    2. `spec/isaac/server/discord_app_spec.clj:93` — token-add hot-reload connect expected truthy, got false
+    3. `spec/isaac/server/discord_app_spec.clj:141` — unchanged-token hot-reload expected connect count `1`, got `2`
+- A focused run of `bb spec spec/isaac/server/discord_app_spec.clj` can pass, but the acceptance/full-suite gate is the real requirement, and the full suite is still order-/state-sensitive under rerun.
+
+Additional acceptance gap still present:
+- I found no documentation update in the module repo describing the observed `Output closed` / `reader-loop-failed` recovery expectations. Grep across repo docs/code found no documentation matches outside test/spec naming, so the explicit documentation AC remains unproven.
+
+Implication:
+- Despite the worker note claiming "verification passed," the actual verifier reruns on the current HEAD do not support a pass.
+- This bean is **not verifiable as accepted yet** because (1) the full spec suite is still flaky under rerun and (2) the documentation acceptance is still not evidenced.
