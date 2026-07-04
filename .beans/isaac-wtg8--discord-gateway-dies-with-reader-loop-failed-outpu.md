@@ -303,3 +303,24 @@ other prose surfaces) beyond code/spec naming.
 
 Return to worker: add the missing documentation for the observed failure mode
 and recovery expectations, then re-handoff to verify.
+
+
+## Documentation follow-up (ac25255)
+
+The missing documentation acceptance criterion is now satisfied in
+`isaac-discord/README.md`.
+
+Added a new **Recovery behavior** section documenting:
+- the observed opcode-7 / `reader-loop-failed` / `"Output closed"` failure mode
+- that queue/transport errors are treated as disconnect triggers
+- that reconnect attempts are single-path and return to `READY`
+- that heartbeat/liveness scheduling is recreated after recovery
+- that `DiscordService` forces reconnect/re-registration after >5 minutes
+  disconnected and logs `:discord.watchdog/stale-connection`
+
+Fresh verification on isaac-discord HEAD `ac25255`:
+- `bb spec`: 76 examples, 0 failures, 177 assertions
+- `bb features`: 50 examples, 0 failures, 108 assertions
+
+Pushed to isaac-discord main as `ac25255` (trailers: Isaac-Session
+isaac-work-1, Isaac-Bean isaac-wtg8). Ready for verify handoff.
