@@ -60,3 +60,14 @@ Definition of done:
 
 - Split out of isaac-q5ee (2026-07-04, prowl). q5ee owns the crew hot-reload
   path; this bean owns the explicit session-level override seam.
+
+
+## Work notes (2026-07-04)
+
+Initial verification of the split-off seam in `isaac-agent`:
+- the shared step `the last chat request on session "..." used model "..."` is already present in `spec/isaac/session/session_steps.clj` and remains available for this bean
+- the scenario remains `@wip` in `features/crew/model_reload.feature` pending implementation
+- `bb spec` is green: `1138 examples, 0 failures, 2237 assertions`
+- `bb features` is green for the scoped q5ee state with only the hot-reload scenario active: `573 examples, 0 failures, 1284 assertions`
+
+No new product change has been made for `isaac-b3tl` yet in this turn; this note records the starting state after the planner scope split.
