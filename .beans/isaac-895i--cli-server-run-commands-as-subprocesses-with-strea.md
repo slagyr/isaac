@@ -5,7 +5,10 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-03T22:44:00Z
+updated_at: 2026-07-04T05:15:04Z
+blocking:
+    - isaac-4tn1
+    - isaac-lcay
 ---
 
 ## Context

@@ -5,7 +5,9 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-03T16:17:10Z
+updated_at: 2026-07-04T05:15:04Z
+blocking:
+    - isaac-exi2
 blocked_by:
     - isaac-895i
 ---
