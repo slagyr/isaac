@@ -1,11 +1,11 @@
 ---
 # isaac-7r3k
 title: 'Hail: explicit session id trumps band session selectors'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-02T17:54:35Z
-updated_at: 2026-07-02T18:36:54Z
+updated_at: 2026-07-04T05:18:12Z
 ---
 
 ## Description
