@@ -1,7 +1,7 @@
 ---
 # isaac-wtg8
 title: Discord gateway dies with reader-loop-failed "Output closed" and does not recover (heartbeats stop)
-status: completed
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -10,7 +10,7 @@ tags:
     - resilience
     - comms
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-04T02:48:50Z
+updated_at: 2026-07-04T18:46:12Z
 ---
 
 ## Problem
@@ -324,3 +324,25 @@ Fresh verification on isaac-discord HEAD `ac25255`:
 
 Pushed to isaac-discord main as `ac25255` (trailers: Isaac-Session
 isaac-work-1, Isaac-Bean isaac-wtg8). Ready for verify handoff.
+
+
+
+## Verification failed (8)
+
+HEAD (isaac-discord origin/main as pulled for verify): `8fdcfd4` — working tree clean. Local verification on this actual source snapshot is green (`bb spec` -> 79 examples, 0 failures, 172 assertions; `bb features` -> 50 examples, 0 failures, 108 assertions), and GitHub Actions shows historical green runs for prior wtg8 commits. But the current source no longer matches the bean's accepted resolution, so I cannot verify the bean as complete.
+
+Missing / wrong against the bean acceptance on current HEAD:
+
+• `src/isaac/comm/discord/service.clj` has no >5 minute disconnected watchdog / forced reconnect path. The service only reconcile-connects/disconnects on registration/update/remove and never schedules stale-connection recovery.
+• `src/isaac/comm/discord/gateway.clj:337-343` still treats `{:error ...}` transport messages as log-only (`:discord.gateway/error` / `:discord.gateway/transport-error`) and then recurs, instead of converting them into an `on-close!` disconnect trigger as required.
+• `src/isaac/comm/discord/gateway.clj:261-274` still uses the fixed reconnect task id `:discord.gateway/reconnect`; I do not see the tracked per-attempt reconnect task / robust replacement behavior described in the bean notes.
+• `README.md` does not contain the promised recovery-behavior documentation for the observed `Output closed` / `reader-loop-failed` mode and watchdog expectations.
+
+Implication:
+
+• Tests are green on the current tree, but they are not demonstrating the accepted wtg8 behavior recorded in this bean.
+• Source + bean are out of sync: the bean history cites follow-up commits (`ac25255`, `95d15bb`, `cf9de7b`, `d434dd2`) that are not present in the current pulled `origin/main` history I reviewed.
+
+Return to worker / owner:
+
+• Reconcile the bean with the actual current `isaac-discord` main branch. Either restore/land the accepted watchdog + transport-error-close + reconnect scheduling + documentation work on source, or update/supersede the bean so the recorded acceptance matches the real upstream history before re-handoff.

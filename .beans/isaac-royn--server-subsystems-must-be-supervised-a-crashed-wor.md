@@ -1,13 +1,11 @@
 ---
 # isaac-royn
 title: 'Server subsystems must be supervised: a crashed worker thread must not silently wedge the pipeline'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-04T14:35:52Z
-updated_at: 2026-07-04T15:18:15Z
+updated_at: 2026-07-04T18:46:00Z
 ---
 
 ## Problem
