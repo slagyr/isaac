@@ -43,3 +43,26 @@ features/crew/model-reload.feature (or session/context):
 ## Acceptance scenarios (committed @wip, 2026-07-03)
 
 isaac-agent features/crew/model_reload.feature — 2 @wip scenarios: crew model change applies to next turn of a running session; explicit session-level :model override still wins after reload. 1 new step: the-last-chat-request-on-session-used-model. Acceptance: un-@wip + bb spec/features green in isaac-agent.
+
+## Work notes (2026-07-04)
+
+Progress in `isaac-agent`:
+- added the new step `the last chat request on session "..." used model "..."`
+  in `spec/isaac/session/session_steps.clj`
+- added step coverage in `spec/isaac/session/session_steps_spec.clj`
+- added/adjusted `session.context` specs to document current behavior around
+  model resolution across config changes and explicit session-level overrides
+- un-`@wip`'d the primary crew-reload scenario in `features/crew/model_reload.feature`
+
+Current result:
+- the primary acceptance scenario passes: a running session picks up the crew
+  model change on the next turn
+- the explicit session-level override scenario still FAILS in the feature
+  harness: a session created with explicit model `:beta` still sends requests
+  using `alpha`/`echo`, so the override path in this acceptance seam is not yet
+  behaving as intended
+
+Implication:
+- bean is not ready for verify handoff yet
+- likely remaining work is in the session-creation / feature-harness path for
+  explicit session `:model` overrides, not the crew hot-reload path itself
