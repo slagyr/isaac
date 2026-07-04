@@ -9,9 +9,8 @@ tags:
     - gateway
     - resilience
     - comms
-    - unverified
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-04T01:56:48Z
+updated_at: 2026-07-04T01:57:33Z
 ---
 
 ## Problem
