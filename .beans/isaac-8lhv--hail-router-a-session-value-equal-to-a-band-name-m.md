@@ -4,10 +4,8 @@ title: 'hail-send tool: reject an explicit session that names no existing sessio
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-03T20:56:45Z
-updated_at: 2026-07-03T21:21:00Z
+updated_at: 2026-07-04T02:45:55Z
 ---
 
 ## Problem (evidence, 2026-07-03)
