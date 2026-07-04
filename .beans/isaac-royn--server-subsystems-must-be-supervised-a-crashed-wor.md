@@ -4,8 +4,10 @@ title: 'Server subsystems must be supervised: a crashed worker thread must not s
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-04T14:35:52Z
-updated_at: 2026-07-04T15:05:58Z
+updated_at: 2026-07-04T15:18:15Z
 ---
 
 ## Problem
@@ -31,3 +33,58 @@ isaac-agent / isaac-server (subsystem lifecycle + supervision), isaac-hail (deli
 - `service status` (or a health endpoint) reports a subsystem as unhealthy when its thread is dead.
 
 Priority: HIGH — this is the overnight-outage root cause (silent whole-pipeline wedge).
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+Implemented the **generic supervision layer** in isaac-server `main` commit **fb0731c**.
+
+**What landed (isaac-server):**
+- `isaac.service.protocol/Supervised` — an optional protocol (`alive?`) a
+  long-lived `Service` implements to opt into supervision. Non-supervised
+  services behave exactly as before.
+- `isaac.service.supervisor` — polls the supervised subset of started services
+  (`supervise-once!` is a pure, deterministic pass; a daemon loop drives it every
+  `poll-ms`, crash-proof). On a dead probe: logs `:service/died` at ERROR,
+  restarts via stop+start with **exponential backoff (1s→30s cap)** and a
+  **circuit breaker** (`:service/supervision-exhausted` + status `:down` after
+  `default-max-restarts` = 5). Recovery after `stable-polls` healthy checks
+  resets the breaker. Per-service isolation: one service's death/crash never
+  blocks another (each supervised independently; a probe that throws is caught
+  and the others still run).
+- Boot wiring (`server/app.clj`): supervisor starts right after `start-all!` and
+  stops before `stop-all!`, reading `service-runtime/started-services`.
+- Health surface (`server/status.clj` `/status`): reports `:subsystems` health;
+  overall `"degraded"` while a subsystem is restarting, `"unhealthy"` + **HTTP
+  503** once one is circuit-broken `:down` — no more green-while-wedged.
+
+**How the proposed acceptance is met (via the generic mechanism, spec-proven):**
+- *A supervised worker that throws is restarted (backoff) + ERROR; work resumes* →
+  supervisor_spec "restarts a supervised service that dies…" + "waits out the
+  backoff…" + "resets the breaker after recovery".
+- *Killing one comm gateway does not stop another subsystem (isolation)* →
+  supervisor_spec "restarts only the dead service, leaving healthy siblings
+  untouched" + "keeps supervising the others when one service's probe throws".
+- *service status reports a subsystem unhealthy when its thread is dead* →
+  status_spec "degraded while restarting" + "unhealthy with 503 once down".
+
+**Scope decision (flagged) — generic layer now, per-subsystem opt-in as follow-ups.**
+The only current `:isaac.server/service` implementations are the comm gateways
+(`:discord`, `:imessage`); the hail delivery worker and cron are scheduler tasks,
+not Services. A *meaningful* `alive?` for the discord gateway (detecting the dead
+reader-loop) is exactly isaac-wtg8's hardening — wiring it here before wtg8 would
+give an `alive?` that returns true while wedged. So this bean delivers the generic
+supervision mechanism (fully tested), and the real per-subsystem opt-in is
+sequenced as follow-ups. **NOT YET SUPERVISED (needs beans/approval):**
+1. discord gateway → implement `Supervised` once wtg8 exposes reader-loop liveness.
+2. imessage gateway → same.
+3. hail delivery worker + cron → promote to supervised workers with a heartbeat
+   liveness signal (coordinates with the inflight-recovery bean).
+Until at least one real subsystem opts in, the overnight outage class is not yet
+prevented end-to-end — the mechanism is in place and ready.
+
+**Verification:** isaac-server `bb ci` — config-bypass-lint ok; **169 spec
+examples / 316 assertions, 0 failures**; **55 feature examples / 135 assertions,
+0 failures**. `bb lint` src clean.
