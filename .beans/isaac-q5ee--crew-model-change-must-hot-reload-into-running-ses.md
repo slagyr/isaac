@@ -1,7 +1,8 @@
 ---
 # isaac-q5ee
 title: Crew model change must hot-reload into running sessions (not just fresh ones)
-status: completed
+status: in-progress
+tags: [unverified]
 type: bug
 priority: normal
 created_at: 2026-07-04T05:04:15Z
@@ -95,17 +96,21 @@ ignored at the session-creation seam.
 
 ## Resolution (unverified — for verifier)
 
-Applied the planner scope split and completed the in-scope work in `isaac-agent` commit `7c777b5` (`isaac-q5ee: verify crew model hot-reload on running sessions`).
+Prior commit `7c777b5` added acceptance coverage only; production still pinned
+model via `charge/build` passing stale `:config` and resolved `:model` into
+`resolve-behavior`. Fixed in `isaac-agent` commit `95e1cc5`.
 
-What changed:
-- kept `features/crew/model_reload.feature:14` un-`@wip` and green
-- left `features/crew/model_reload.feature:42` `@wip` for follow-up bean `isaac-b3tl`
-- kept the shared step `the last chat request on session "..." used model "..."` in `spec/isaac/session/session_steps.clj`
-- added focused step coverage in `spec/isaac/session/session_steps_spec.clj`
-- removed out-of-scope exploratory specs tied to the override seam so this bean matches the revised acceptance exactly
+What changed (`95e1cc5`):
+- `src/isaac/charge.clj` — `behavior-opts` forwards only crew + explicit
+  overrides (`:model-override`, `:model-ref`, session-entry `:model`); omits
+  caller `:config` and resolved `:model` so `resolve-behavior` reads live snapshot
+- `spec/isaac/charge_spec.clj` — unit test proving stale passed config still
+  picks up reloaded crew model on next turn
 
-Verification in `isaac-agent` on HEAD `7c777b5`:
-- `bb spec` → `1138 examples, 0 failures, 2237 assertions`
-- `bb features` → `573 examples, 0 failures, 1284 assertions`
+Acceptance (unchanged from scope split):
+- `features/crew/model_reload.feature:14` un-`@wip`, green
+- `features/crew/model_reload.feature:42` stays `@wip` (isaac-b3tl)
 
-The crew hot-reload path is now ready for verification under the revised scope.
+Verification in `isaac-agent` on HEAD `95e1cc5`:
+- `bb spec` → `1146 examples, 0 failures, 2250 assertions`
+- `bb features features/crew/model_reload.feature` → `1 examples, 0 failures`
