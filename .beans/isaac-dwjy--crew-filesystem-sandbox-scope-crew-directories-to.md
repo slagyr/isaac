@@ -1,13 +1,11 @@
 ---
 # isaac-dwjy
 title: 'Crew filesystem sandbox: scope crew directories to the role workspace'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-04T14:35:53Z
-updated_at: 2026-07-04T14:55:43Z
+updated_at: 2026-07-04T15:12:29Z
 ---
 
 ## Problem
