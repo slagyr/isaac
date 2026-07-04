@@ -91,3 +91,21 @@ Revised acceptance for isaac-q5ee:
 
 Follow-up bean: **isaac-b3tl** — explicit session-level `:model` override is
 ignored at the session-creation seam.
+
+
+## Resolution (unverified — for verifier)
+
+Applied the planner scope split and completed the in-scope work in `isaac-agent` commit `7c777b5` (`isaac-q5ee: verify crew model hot-reload on running sessions`).
+
+What changed:
+- kept `features/crew/model_reload.feature:14` un-`@wip` and green
+- left `features/crew/model_reload.feature:42` `@wip` for follow-up bean `isaac-b3tl`
+- kept the shared step `the last chat request on session "..." used model "..."` in `spec/isaac/session/session_steps.clj`
+- added focused step coverage in `spec/isaac/session/session_steps_spec.clj`
+- removed out-of-scope exploratory specs tied to the override seam so this bean matches the revised acceptance exactly
+
+Verification in `isaac-agent` on HEAD `7c777b5`:
+- `bb spec` → `1138 examples, 0 failures, 2237 assertions`
+- `bb features` → `573 examples, 0 failures, 1284 assertions`
+
+The crew hot-reload path is now ready for verification under the revised scope.
