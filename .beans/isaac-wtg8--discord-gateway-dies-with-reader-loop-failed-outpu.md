@@ -5,13 +5,12 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - resilience
+    - comms
     - discord
     - gateway
-    - resilience
-    - unverified
-    - comms
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-03T21:29:14Z
+updated_at: 2026-07-04T01:27:28Z
 ---
 
 ## Problem
@@ -133,3 +132,26 @@ reconcile-registration!)` near the top of service.clj, right after
 Pushed to isaac-discord main as `d434dd2` (trailers: Isaac-Session
 isaac-work-1, Isaac-Bean isaac-wtg8). Bean remains in-progress/unverified;
 re-verification should confirm the watchdog behavior + full green suite.
+
+
+## Verification failed (3)
+
+HEAD (isaac-discord): `d434dd2b719f7d5ef531fa7d950b70370519c2f4` — working tree clean.
+
+Verified in code:
+- `src/isaac/comm/discord/service.clj:15` forward-declares `server-running?` / `reconcile-registration!`, fixing the compile break.
+- `src/isaac/comm/discord/service.clj:79-105` adds the liveness watchdog: every 60s, if `connected?` stays false for >5 minutes, log `:discord.watchdog/stale-connection`, stop the client, clear conn, and reconcile to reconnect.
+- `src/isaac/comm/discord/gateway.clj:261-274` now cancel+reschedule the reconnect task.
+- `src/isaac/comm/discord/gateway.clj:337-341` treats `{:error ...}` transport messages as a close trigger (`transport-error`, status 1006).
+- `spec/isaac/comm/discord/gateway_spec.clj:657-707` contains the new opcode-7 + reader `Output closed` recovery scenario.
+
+Test evidence:
+- `bb features` passed cleanly: **50 examples, 0 failures, 108 assertions**.
+- One fresh `bb spec` run also passed: **80 examples, 0 failures, 181 assertions**.
+- However, repeated fresh `bb spec` reruns were **not stable**. I reproduced failures in the official suite after the CI fix:
+  1. `spec/isaac/comm/discord/gateway_spec.clj:525` — "treats polling transport error maps as structured gateway errors" expected `{:status-code 4000, :reason "resume"}` but got `{:reason "transport-error", :status 1006}`; on another rerun it got `{:reason "reader-loop-failed", :status 1006}`.
+  2. `spec/isaac/comm/discord/rest_spec.clj:31` — expected `{:event :discord.reply/http-error, :channelId "C999", :status 403}` but saw unrelated gateway events instead.
+  3. `spec/isaac/server/discord_app_spec.clj:93` — "connects Discord gateway when token is added via config hot-reload" expected truthy but was false.
+
+Implication:
+- The watchdog / compile-fix work is present, and features are green, but the full spec suite is not reliably green under rerun. This bean is **not verifiable as accepted yet** because the acceptance/full-suite gate is still flaky after `d434dd2`.
