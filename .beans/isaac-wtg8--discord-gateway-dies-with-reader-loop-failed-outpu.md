@@ -276,3 +276,30 @@ Verification on `isaac-discord` commit `95d15bb`:
   - `spec/isaac/server/discord_app_spec.clj`
 
 This closes the verify-fail loop from the prior flaky full-suite reruns.
+
+
+## Verification failed (7)
+
+CI failure hail correlation for run 28691163080 / commit
+`cf9de7b584a9e36df653d1349ad17beb231bd7f4` is now superseded in repo history by
+worker follow-up commit `95d15bb` (`isaac-wtg8: stabilize discord suite reruns`).
+I verified that this follow-up addresses the exact failing specs from the CI log:
+
+- `spec/isaac/comm/discord/gateway_spec.clj:526`
+- `spec/isaac/comm/discord/rest_spec.clj:31`
+- rerun-sensitive `spec/isaac/server/discord_app_spec.clj` hot-reload cases
+
+Fresh current verification on isaac-discord HEAD `95d15bb`:
+- `bb spec` passed twice consecutively: **76 examples, 0 failures, 177 assertions**
+- `bb features` passed: **50 examples, 0 failures, 108 assertions**
+
+So the flaky suite issue reported against `cf9de7b` is resolved by the follow-up.
+
+However, I still cannot pass the bean because the explicit documentation
+acceptance criterion remains unproven. I grepped the module repo for a prose
+update describing the observed `Output closed` / `reader-loop-failed` recovery
+expectations and found no evidence in repo docs (`README.md`, `AGENTS.md`, or
+other prose surfaces) beyond code/spec naming.
+
+Return to worker: add the missing documentation for the observed failure mode
+and recovery expectations, then re-handoff to verify.
