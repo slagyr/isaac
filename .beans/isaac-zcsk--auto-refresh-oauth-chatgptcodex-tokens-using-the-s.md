@@ -1,13 +1,13 @@
 ---
 # isaac-zcsk
 title: Auto-refresh OAuth (chatgpt/codex) tokens using the stored refresh token
-status: in-progress
+status: todo
 type: bug
 priority: high
 tags:
     - unverified
 created_at: 2026-07-05T16:29:17Z
-updated_at: 2026-07-05T16:44:38Z
+updated_at: 2026-07-05T17:17:02Z
 ---
 
 ## Problem
@@ -40,3 +40,23 @@ isaac-agent: `llm/auth/store.clj` (add refresh-token! using /oauth/token + `-pos
 - Given the refresh token itself is invalid, then isaac errors with the clear "run isaac auth login" message (no silent hang).
 
 Priority: HIGH — recurring silent codex outage; every token expiry kills the codex crews.
+
+
+## Design (approved 2026-07-05)
+
+Proactive refresh (check token-expired? before the request) + reactive 401-retry backstop; single-flight (one refresh, others wait); refresh updates the LIVE in-memory auth store the provider reads AND persists to auth.json (a disk-only refresh reproduces the stale-in-memory failure that forced a restart on 2026-07-05).
+
+## Acceptance (spec-level, spec/isaac/llm/auth/ — stub /oauth/token via with-redefs; matches existing auth-test pattern)
+
+1. Proactive refresh: expired token + valid refresh -> POST grant_type=refresh_token to /oauth/token; store new :access + FUTURE :expires (+ new :refresh if returned).
+2. No-op when valid: non-expired token -> no HTTP, unchanged.
+3. In-memory + disk (crux): after refresh, both auth.json AND the live auth store the provider reads return the new token (no stale in-memory copy).
+4. Refresh failure clear: rejected refresh token -> clear "run isaac auth login --provider chatgpt" error; no hang/loop.
+5. Single-flight: two concurrent refresh-if-needed! calls -> exactly one token POST.
+6. Provider path integration: chatgpt/responses provider calls refresh-if-needed! before building the request; expired token refreshes transparently and the request uses the refreshed token.
+
+Optional @slow live feature line alongside the existing codex live scenario. Definition of done: the six specs green; bb spec green.
+
+## Scope
+
+isaac-agent: llm/auth/store.clj (refresh-if-needed! using /oauth/token + -post-form!, single-flight, persist + in-memory), llm/api/openai/shared.clj (call refresh before use + 401 retry).
