@@ -1,11 +1,11 @@
 ---
 # isaac-63f3
 title: Session history offset drifts mid-line and bricks the session (JsonParseException)
-status: completed
+status: todo
 type: bug
 priority: high
 created_at: 2026-07-05T16:16:48Z
-updated_at: 2026-07-05T17:12:11Z
+updated_at: 2026-07-05T17:19:41Z
 ---
 
 ## Problem
