@@ -110,3 +110,24 @@ ACCEPTANCE = the unit specs (green): spec/isaac/llm/auth/store_spec.clj + spec/i
 Decision: the gherkin features/llm/auth/oauth_refresh.feature was CUT — it ran 2 pending / 0 assertions after 3 author rewrites; auth is spec-tested by convention here and the unit specs cover more than the feature attempted. A pending feature is fake coverage.
 
 Known gap (accepted, low priority): single-flight is implemented (refresh-locks*) but has no concurrency test. Optional follow-up.
+
+
+## Reconciliation (2026-07-05, worker — after feature cut)
+
+Aligned with the planner's final acceptance: the gherkin feature is cut; the
+**unit specs are the acceptance**. One correction to the "known gap" above — the
+single-flight concurrency test is **already present**, not missing. isaac-agent
+main commit **af90bd1** (landed before the feature cut) added two tests to
+`store_spec.clj`:
+
+- "refreshes exactly once when two callers race (single-flight)" — promise-
+  coordinated, deterministic: the 2nd caller blocks on `refresh-locks*` and
+  re-uses the token the 1st fetched → exactly one `/oauth/token` POST.
+- "exposes the refreshed token on both disk and the next read (no stale copy)"
+  — the in-memory/disk crux, asserted explicitly.
+
+So the planner's "accepted gap" is closed. Re-verified on current isaac-agent
+`main` (7929dc6, i.e. after the feature cut + isaac-0h7b orphan-toolResult read
+change + foundation bump): `store_spec`, `shared_spec`, and `impl_common_spec`
+all green. No code change was needed — this is a docs/acceptance reconciliation
+only.
