@@ -1,12 +1,11 @@
 ---
 # isaac-6a2f
 title: Discord gateway does not self-recover from a crashed reader loop (wtg8 watchdog ineffective)
-status: in-progress
-tags: [unverified]
+status: completed
 type: bug
 priority: high
 created_at: 2026-07-05T16:16:48Z
-updated_at: 2026-07-05T16:16:48Z
+updated_at: 2026-07-05T16:32:53Z
 ---
 
 ## Problem
@@ -56,3 +55,19 @@ Fix in `isaac-discord` `e5ee6d5` (manifest `0.1.9`):
 
 Verification: `bb spec` → 79 examples, 0 failures; `bb features` → 50
 examples, 0 failures.
+
+
+
+## Verification passed
+
+Verified against isaac-discord commit `e5ee6d5b6d5d1a32cd9c50aa0a97f71759ac017c` in the clean verifier clone. Code review matched the bean description: the watchdog is now a process-level idempotent scheduler task started both from service start and comm registration on a running server, watchdog checks log while disconnected, and gateway liveness can self-nudge recovery when a client is stuck disconnected with no pending reconnect task.
+
+Fresh verification:
+
+• `bb spec` → `79 examples, 0 failures, 181 assertions`
+• `bb features` → `50 examples, 0 failures, 108 assertions`
+• GitHub Actions run `28747374295` (`isaac-6a2f: make discord gateway watchdog and recovery reliable`) succeeded on 2026-07-05.
+
+The recovery documentation is also updated in `README.md` to cover watchdog start-on-register, periodic `:discord.watchdog/check`, and the `:discord.gateway/stale-not-recovering` recovery nudge.
+
+Pass: bean is verifiable as accepted.
