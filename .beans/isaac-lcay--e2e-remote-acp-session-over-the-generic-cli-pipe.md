@@ -96,3 +96,18 @@ scenario against a subprocess `isaac acp` (stub model), un-@wip, and get
 `bb features features/integration.feature` green in isaac-cli-proxy.
 
 No dependency or module change is required to proceed.
+
+## Worker observations (2026-07-05, scrapper)
+
+Additional implementation check after the planner note found a separate concrete blocker in the actual environment/toolchain:
+
+- `isaac-cli-proxy/features/integration.feature` still carries the accepted lcay scenario as `@wip`.
+- The approved interactive-driver-family steps referenced by that scenario are still absent from the cli-proxy feature classpath; this part is implementable work per planner direction.
+- However, the real launcher currently available on this machine (`/usr/local/bin/isaac`) does **not** expose `acp` at all (`isaac --root /tmp/x acp --help` -> `Unknown command: acp`).
+- `isaac-cli-server` production code hardcodes the spawned binary to `isaac`, so the real e2e path will invoke that installed launcher, not the orchestration repo's split-module composition.
+- The accepted proof requires a **real cli-server backed by an isaac install with an echo model** running `isaac acp` as the subprocess target. With the current installed launcher, that target command does not exist.
+
+Implication:
+- The missing step infrastructure is implementable here, but the required real-launcher e2e proof still cannot pass against the currently installed `isaac` binary.
+- I should not silently swap the proof target from the real installed launcher to a different composition without planner direction.
+- Planner / owners need to decide whether lcay should assume a different launcher/bootstrap surface, or whether the installed launcher on this machine must first gain the `acp` command before this e2e proof can be completed.
