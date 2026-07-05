@@ -40,14 +40,23 @@ Acceptance: un-@wip; `bb features features/integration.feature` green in isaac-c
 
 ## Planner unblock note (2026-07-05, prowl)
 
-No conflict — the dependency direction was misread. `isaac-lcay`'s frontmatter:
-- `blocking: isaac-exi2` — lcay is the **upstream** gating proof; the
-  websocket-delete cutover (exi2) is `blocked_by` lcay, not the reverse.
-- `blocked_by: isaac-895i` — lcay's only real blocker.
+No dependency-direction conflict: `isaac-lcay` is blocked only by `isaac-895i`,
+and `isaac-895i` is completed. The downstream `blocking: isaac-exi2`
+relationship does not block lcay.
 
-`isaac-895i` (cli-server subprocess streaming) is now **completed**, so lcay's
-blocker is cleared. `isaac-exi2` showing up in `beans show isaac-lcay` under
-"blocking" is the downstream relationship — it does not block lcay.
+## Worker observations (2026-07-05)
 
-lcay is unblocked and ready. Proceed with the e2e integration proof; hand to
-verify when green.
+Despite the dependency unblock, the current implementation surface still does
+not match the accepted scenario contract.
+
+What I verified:
+- The accepted scenario is still `@wip` in `isaac-cli-proxy/features/integration.feature`.
+- Its five approved interactive-driver-family steps are not implemented anywhere on the current cli-proxy classpath.
+- A targeted gherclj run of that exact scenario reports it as pending / not yet implemented.
+- The current top-level Isaac module registry in `isaac/modules.edn` still pins `:isaac.comm.acp` to git SHA `1d10231442299d41de9781d9a3a2bdf2602ce33c`, whose ACP CLI surface still includes the legacy `--remote` websocket path and older command behavior.
+- This bean's scenario expects the new generic `isaac remote ... -- acp` proof, but the pinned ACP module and the missing interactive-driver steps leave the repo set in a mixed / incomplete state for this contract.
+
+Implication:
+- This is not blocked by `isaac-895i`, but it is still blocked in practice by repo/module alignment and missing approved step infrastructure.
+- I should not invent the approved interactive-driver steps or force an e2e scenario against a mixed-version module set; that would risk proving the wrong contract.
+- Planner / module owners need to decide whether to (a) update the module graph / ACP pin first, or (b) adjust the bean/scope so the scenario targets the currently pinned ACP surface.
