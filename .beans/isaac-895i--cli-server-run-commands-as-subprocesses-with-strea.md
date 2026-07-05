@@ -84,3 +84,19 @@ Additional note:
 
 
 ## Verify fail (attempt 1, 2026-07-05): acceptance scenarios remain @wip/pending and production path still runs in-process
+
+## Repair attempt 2 (2026-07-05)
+
+Addressed verifier findings in `isaac-cli-server`:
+- removed `@wip` from the four satisfied `isaac-895i` scenarios in `features/cli/endpoint.feature`
+- made `/cli` always spawn the implied `isaac` launcher subprocess in production (no in-process fallback)
+- kept spawn override as test scaffolding only via `*spawn-process*`
+- wired websocket `:on-close` to `dispatch/disconnect!`
+- updated `PROTOCOL.md` to document always-subprocess execution and disconnect cleanup
+- expanded feature-step harness to cover spawn-command stub, recording spawn stub, and disconnect cleanup assertions
+- updated dispatch specs for implied-launcher spawn and stdout/stderr framing under subprocess execution
+
+Local verification on repaired worktree:
+- `bb spec` ✅
+- `bb features` ✅ (`9 examples, 0 failures, 36 assertions`)
+- `bb ci` ✅
