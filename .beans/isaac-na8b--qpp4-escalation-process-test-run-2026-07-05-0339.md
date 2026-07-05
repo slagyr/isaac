@@ -23,3 +23,7 @@ PLANNER: append a `## Planner rescope: acceptance is now simply 'the bean body c
 WORKER (third turn): the count is reset by the `## Planner` note. Satisfy the rescoped acceptance: append `DONE-QPP4` to the bean body, commit/push, hand off to verify.
 
 VERIFIER (turn 3): count of `## Verify fail` since the `## Planner` note = 0. Verify the body contains DONE-QPP4, PASS, remove unverified tag, set status completed.
+
+## Attempt 1
+
+Worker appended the first process-test attempt note and is handing the bean to verify as instructed.
