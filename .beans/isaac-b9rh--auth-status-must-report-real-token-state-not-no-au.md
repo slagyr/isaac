@@ -1,11 +1,11 @@
 ---
 # isaac-b9rh
 title: auth status must report real token state (not no auth required for an expired OAuth token)
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-07-05T16:29:17Z
-updated_at: 2026-07-05T17:18:57Z
+updated_at: 2026-07-05T17:33:09Z
 ---
 
 ## Problem
