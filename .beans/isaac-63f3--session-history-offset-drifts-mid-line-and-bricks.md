@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-07-05T16:16:48Z
-updated_at: 2026-07-05T16:48:06Z
+updated_at: 2026-07-05T17:12:11Z
 ---
 
 ## Problem
@@ -83,3 +83,29 @@ add one if you want it.
 **Verification:** isaac-agent `bb verify` — config-bypass-lint ok; **1150 spec
 examples / 2254 assertions, 0 failures**; **576 feature examples / 1292
 assertions, 0 failures**; `bb lint` src clean.
+
+
+## Merged: isaac-0h7b (orphaned tool-result) — same root code path
+
+Both bugs are `read-transcript-from-offset` (isaac.session.store.impl-common) producing an INVALID effective head from a raw byte offset. Two failure modes:
+
+1. **Mid-line offset** → partial first line → `JsonParseException` (crashes every turn; model-agnostic). [original 63f3]
+2. **Tool-pair split** → the offset begins after a `toolResult` whose `toolCall` precedes it → orphaned `function_call_output` → codex Responses API rejects `invalid_request_error: No tool call found for function call output with call_id ...`. Opus (messages API) tolerates it, so it only surfaces on codex. [was 0h7b]
+
+Compaction itself pairs tool_call/result correctly (see features/session/compaction_logging.feature "Compaction keeps toolCall and toolResult together"). The orphan is introduced by the OFFSET READ, not compaction — hence same fix site.
+
+## Desired behavior (unified)
+
+`read-transcript-from-offset` (and the effective-head assembly) must always emit a valid, self-consistent head:
+- snap the offset to a line boundary (never parse a partial line), AND
+- ensure tool-call/result consistency — drop an orphaned tool-result (a function_call_output with no matching call in the head), or extend the head to include the call.
+
+Prefer: store the boundary as an entry id / line index (not a raw byte offset) so it can neither drift mid-line nor mid-pair; plus a defensive drop of any orphaned result at render.
+
+## Acceptance scenarios (isaac-agent) — reuse features/session/compaction_logging.feature machinery
+
+1. Given a session whose effective-history-offset falls mid-line, when a turn builds the prompt, then it reads from the next line boundary and does NOT throw (no partial-line parse).
+2. Given the effective head begins after a toolResult whose toolCall precedes the offset, when the prompt is built, then the orphaned toolResult is omitted from the active head (assert via `session has active transcript matching:` — orphan absent; no dangling function_call_output; request valid for the responses API).
+3. Given a normally paired toolCall/result in the head, both are preserved (regression).
+
+Reuses `session has transcript:` (toolCall id + toolResult call-id columns) and `session has active transcript matching:`. Net new steps: ~0.

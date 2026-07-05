@@ -1,11 +1,11 @@
 ---
 # isaac-0h7b
 title: Compaction/offset can orphan a tool-result; codex Responses API rejects it
-status: draft
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-07-05T16:46:48Z
-updated_at: 2026-07-05T16:46:48Z
+updated_at: 2026-07-05T17:12:11Z
 ---
 
 ## Problem
@@ -34,3 +34,7 @@ isaac-agent: compaction splice (session/compaction or drive/turn), `llm/prompt/b
 - Given a normal paired tool_call/result in the head, both are preserved.
 
 Priority: HIGH — silently makes a session unusable on codex; only surfaces as a provider-specific rejection.
+
+
+
+## Scrapped — merged into isaac-63f3 (same read-transcript-from-offset fix site).
