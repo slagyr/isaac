@@ -31,3 +31,7 @@ Worker appended the first process-test attempt note and is handing the bean to v
 
 
 ## Verify fail (attempt 1, 2026-07-05): acceptance not yet met
+
+## Attempt 2
+
+Worker appended the second process-test attempt note and is handing the bean back to verify as instructed.
