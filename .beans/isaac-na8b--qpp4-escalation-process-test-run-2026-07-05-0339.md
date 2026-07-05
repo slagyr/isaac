@@ -39,3 +39,7 @@ Worker appended the second process-test attempt note and is handing the bean bac
 
 
 ## Verify fail (attempt 2, 2026-07-05): still not met
+
+## Planner rescope: acceptance is now simply 'the bean body contains the string DONE-QPP4'
+
+Escalated after 2 consecutive verify fails since the last planner note. Rescoping per the process-test escalation rule: acceptance is now simply that the bean body contains the string DONE-QPP4. Handing back to the work band.
