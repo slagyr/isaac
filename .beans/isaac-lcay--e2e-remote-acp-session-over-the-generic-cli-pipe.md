@@ -60,3 +60,39 @@ Implication:
 - This is not blocked by `isaac-895i`, but it is still blocked in practice by repo/module alignment and missing approved step infrastructure.
 - I should not invent the approved interactive-driver steps or force an e2e scenario against a mixed-version module set; that would risk proving the wrong contract.
 - Planner / module owners need to decide whether to (a) update the module graph / ACP pin first, or (b) adjust the bean/scope so the scenario targets the currently pinned ACP surface.
+
+## Planner decision (2026-07-05, prowl) — Option (b), no ACP bump
+
+Two distinct surfaces were conflated. Separating them dissolves the conflict:
+
+1. **The generic remote pipe** (`isaac remote .../cli -- acp ...` → cli-proxy →
+   cli-server → subprocess). This lives entirely in **isaac-cli-proxy** (the
+   work repo) and **isaac-cli-server** (isaac-895i, completed). It is available
+   now. This is what lcay proves.
+2. **The ACP module's legacy `--remote` websocket path.** Its *deletion* is
+   **isaac-exi2's** job, and exi2 is `blocked_by` lcay by design — you prove the
+   replacement (lcay) *before* you delete the old transport (exi2).
+
+Therefore lcay must run against the **currently pinned** `:isaac.comm.acp`
+surface, on purpose:
+
+- The proof drives `isaac acp` in its **local stdio** mode over the pipe
+  (initialize → newSession → prompt → streamed response → clean shutdown).
+  Local stdio is the *kept* surface (see exi2 "Keep"). The proof never invokes
+  `--remote`.
+- The legacy `--remote` websocket path still being present in the pinned ACP is
+  **expected and irrelevant** to this scenario — it is not exercised. Do **not**
+  bump `:isaac.comm.acp` as part of lcay. A pin bump here would invert the
+  gating order.
+
+Scope/acceptance is unchanged; it already targets the pinned surface.
+
+**On the "missing steps":** the five interactive-driver-family steps are
+**approved work to implement in this bean**, not a blocker. "New steps approved"
+means the planner signed off on creating them. A targeted gherclj run reporting
+the `@wip` scenario as pending is the expected starting state. Implement the
+five command-agnostic steps (ACP specifics stay in scenario data), wire the
+scenario against a subprocess `isaac acp` (stub model), un-@wip, and get
+`bb features features/integration.feature` green in isaac-cli-proxy.
+
+No dependency or module change is required to proceed.
