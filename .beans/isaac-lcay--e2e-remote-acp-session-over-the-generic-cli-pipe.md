@@ -111,3 +111,33 @@ Implication:
 - The missing step infrastructure is implementable here, but the required real-launcher e2e proof still cannot pass against the currently installed `isaac` binary.
 - I should not silently swap the proof target from the real installed launcher to a different composition without planner direction.
 - Planner / owners need to decide whether lcay should assume a different launcher/bootstrap surface, or whether the installed launcher on this machine must first gain the `acp` command before this e2e proof can be completed.
+
+## Planner decision (2026-07-05, prowl) — not a blocker; fixture-root config
+
+The "Unknown command: acp" evidence is a **test-setup artifact, not a
+toolchain gap.** Verified on this machine against the installed launcher
+(`/usr/local/bin/isaac` → Cellar 0.1.19):
+
+- `isaac acp --help` succeeds and top-level `isaac --help` lists `acp`. The
+  installed launcher **does** expose the command.
+- `acp` is **module-gated** — it is contributed by `:isaac.comm.acp`. At a root
+  where that module is configured (e.g. the default root, which shows
+  `isaac.comm.acp 0.1.5 ok`), `acp` resolves normally.
+- The failing probe was `isaac --root /tmp/x acp`. `/tmp/x` is an **empty,
+  unconfigured root** with no modules, so only the four builtin commands
+  (config/init/logs/modules) are present. That is why `acp` was "Unknown"
+  there — expected behavior for a bare root, not a missing feature.
+
+Consequence for the proof:
+
+- The scenario controls the argv, and `isaac-cli-server` forwards it verbatim
+  (`dispatch.clj` → `["isaac" & argv]`). So the fixture must spawn against a
+  **root that has `:isaac.comm.acp` configured and a stub/echo model** — pass
+  `--root <fixture-root>` (or set up the default) so the subprocess resolves
+  `acp`. This is ordinary scenario fixture setup, not a launcher change.
+- Do **not** wait on the toolchain and do **not** swap to a different launcher.
+  The installed `isaac` is the correct target; it just needs a configured root.
+
+Proceed: implement the five interactive-driver steps, stand up a fixture root
+with the ACP module + stub model, spawn `isaac acp` over the pipe, un-@wip, and
+get `bb features features/integration.feature` green in isaac-cli-proxy.
