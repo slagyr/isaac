@@ -4,10 +4,8 @@ title: Session history offset drifts mid-line and bricks the session (JsonParseE
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-05T16:16:48Z
-updated_at: 2026-07-05T16:37:11Z
+updated_at: 2026-07-05T16:47:37Z
 ---
 
 ## Problem
