@@ -45,3 +45,17 @@ Worker appended the second process-test attempt note and is handing the bean bac
 Escalated after 2 consecutive verify fails since the last planner note. Rescoping per the process-test escalation rule: acceptance is now simply that the bean body contains the string DONE-QPP4. Handing back to the work band.
 
 DONE-QPP4
+
+
+## Attempt 1
+
+Process-test worker work completed while also investigating unrelated CI-failure hail context delivered in the same session.
+
+CI investigation notes (isaac-hail run 28726317325 / commit 1d2cae3):
+- Reproduced the reported target revision locally on detached HEAD `1d2cae3` in `isaac-hail`.
+- `gh run view 28726317325 --log-failed` showed two feature failures in CI (`commands.feature` unknown-command delivery and `delivery.feature` single-turn-per-session serialization), both under `bb ci`.
+- Local reruns on the same revision did **not** reproduce the failures:
+  - focused feature reruns passed
+  - `bb ci` passed repeatedly on local machine at `1d2cae3`
+- Compared against parent worktree and found no code delta needed in `isaac-hail`; current local evidence points to a non-reproducible / environment-sensitive CI flake rather than a durable code defect in this repo revision.
+- Because this bean is a process-test with no product change and because the CI hail carried no correlated bean-id for isaac-hail work, no isaac-hail code change was committed in this turn.
