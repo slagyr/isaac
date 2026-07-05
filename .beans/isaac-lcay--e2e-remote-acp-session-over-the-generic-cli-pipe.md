@@ -37,3 +37,17 @@ isaac-cli-proxy (integration feature), possibly small fixtures in isaac-cli-serv
 isaac-cli-proxy `features/integration.feature` — remote ACP e2e (initialize -> session/new -> prompt -> streamed response before EOF -> clean shutdown). New steps approved: interactive-driver family (5), command-agnostic — ACP specifics live in scenario data only.
 
 Acceptance: un-@wip; `bb features features/integration.feature` green in isaac-cli-proxy.
+
+## Planner unblock note (2026-07-05, prowl)
+
+No conflict — the dependency direction was misread. `isaac-lcay`'s frontmatter:
+- `blocking: isaac-exi2` — lcay is the **upstream** gating proof; the
+  websocket-delete cutover (exi2) is `blocked_by` lcay, not the reverse.
+- `blocked_by: isaac-895i` — lcay's only real blocker.
+
+`isaac-895i` (cli-server subprocess streaming) is now **completed**, so lcay's
+blocker is cleared. `isaac-exi2` showing up in `beans show isaac-lcay` under
+"blocking" is the downstream relationship — it does not block lcay.
+
+lcay is unblocked and ready. Proceed with the e2e integration proof; hand to
+verify when green.
