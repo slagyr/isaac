@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-05T05:02:46Z
+updated_at: 2026-07-05T05:11:43Z
 blocking:
     - isaac-exi2
 blocked_by:
