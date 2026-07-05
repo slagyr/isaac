@@ -1,11 +1,11 @@
 ---
 # isaac-na8b
 title: qpp4 escalation process-test (run-2026-07-05-0339)
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-05T03:39:44Z
-updated_at: 2026-07-05T03:39:44Z
+updated_at: 2026-07-05T03:40:42Z
 ---
 
 PROCESS TEST for the verify-loop escalation guard (isaac-qpp4). Follow these steps exactly; this bean has no real code.
