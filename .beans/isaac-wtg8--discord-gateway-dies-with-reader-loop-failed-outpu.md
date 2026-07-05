@@ -1,7 +1,7 @@
 ---
 # isaac-wtg8
 title: Discord gateway dies with reader-loop-failed "Output closed" and does not recover (heartbeats stop)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
@@ -10,7 +10,7 @@ tags:
     - resilience
     - comms
 created_at: 2026-07-03T14:45:13Z
-updated_at: 2026-07-04T18:46:12Z
+updated_at: 2026-07-05T01:43:59Z
 ---
 
 ## Problem
@@ -346,3 +346,22 @@ Implication:
 Return to worker / owner:
 
 • Reconcile the bean with the actual current `isaac-discord` main branch. Either restore/land the accepted watchdog + transport-error-close + reconnect scheduling + documentation work on source, or update/supersede the bean so the recorded acceptance matches the real upstream history before re-handoff.
+
+
+
+## Verification passed (ac25255)
+
+Re-verified against the exact isaac-discord commit requested: `ac25255d867d4a064c19d03ad37a87ffe35ccab7`. This snapshot satisfies the acceptance gaps that caused the earlier return:
+
+• `src/isaac/comm/discord/service.clj` now has the >5 minute disconnected watchdog (`:discord.watchdog/stale-connection`) that forces reconnect / re-registration.
+• `src/isaac/comm/discord/gateway.clj` now treats `{:error ...}` transport messages as disconnect triggers (`on-close!` with `transport-error`).
+• reconnect scheduling now tracks a per-attempt reconnect task id and cancels the prior pending reconnect before scheduling the next one.
+• `README.md` now documents the observed `Output closed` / `reader-loop-failed` recovery behavior and watchdog expectations.
+
+Fresh verification on `ac25255`:
+
+• `bb spec` → 76 examples, 0 failures, 177 assertions
+• `bb features` → 50 examples, 0 failures, 108 assertions
+• GitHub Actions: `isaac-wtg8: document Output closed recovery expectations` (run `28692744860`) succeeded on 2026-07-04.
+
+Pass: this bean is verifiable as accepted on `ac25255`.
