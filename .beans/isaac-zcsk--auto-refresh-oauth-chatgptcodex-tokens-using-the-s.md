@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-05T16:29:17Z
-updated_at: 2026-07-05T17:29:29Z
+updated_at: 2026-07-05T17:30:51Z
 ---
 
 ## Problem
@@ -99,3 +99,14 @@ assertions, 0 failures**.
 
 Note: the bean was `todo` with a leftover `unverified` tag from the prior handoff;
 re-claimed and re-handed-off here.
+
+
+## Final acceptance (2026-07-05, reviewed — planner final authority)
+
+Implementation landed (commits a8241cc, 9d3743f) and covers the approved design: proactive (5-min lead via token-needs-refresh?), reactive (with-oauth-refresh-retry on :auth-failed), single-flight (refresh-locks* per-provider lock), fresh read of auth.json each call (no stale in-memory copy — disk persist suffices), clear failure guidance.
+
+ACCEPTANCE = the unit specs (green): spec/isaac/llm/auth/store_spec.clj + spec/isaac/llm/api/openai/shared_spec.clj ("refreshes expired tokens before resolving", "returns nil when refresh fails", "retries once after auth-failed", token-needs-refresh? window, persistence). 22 examples green.
+
+Decision: the gherkin features/llm/auth/oauth_refresh.feature was CUT — it ran 2 pending / 0 assertions after 3 author rewrites; auth is spec-tested by convention here and the unit specs cover more than the feature attempted. A pending feature is fake coverage.
+
+Known gap (accepted, low priority): single-flight is implemented (refresh-locks*) but has no concurrency test. Optional follow-up.
