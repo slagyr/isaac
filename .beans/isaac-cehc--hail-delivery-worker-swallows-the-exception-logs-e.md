@@ -1,11 +1,11 @@
 ---
 # isaac-cehc
 title: Hail delivery worker swallows the exception (logs :error :exception, not class/message)
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-07-05T16:23:33Z
-updated_at: 2026-07-05T16:23:33Z
+updated_at: 2026-07-05T17:34:34Z
 ---
 
 ## Problem
@@ -31,3 +31,19 @@ isaac-hail: `src/isaac/hail/delivery_worker.clj` — `reschedule!` / `dead-lette
 - Given a delivery attempt that throws with a known message, when it fails, then the `hail/attempt-failed` (and `hail/dead-lettered`) log event includes the exception class and message (not a bare `:exception` keyword).
 
 Priority: HIGH — observability; this swallowing turned a findable bug into a multi-hour hunt.
+
+
+## Design (approved 2026-07-05)
+
+The catch at delivery_worker.clj:377-379 captures `.getMessage e` into a result map, but line 369 passes only `(:error result)` (the keyword `:exception`) to reschedule!, discarding the message before it reaches the `:hail/attempt-failed` (276) and `:hail/dead-lettered` (245) log events. Fix: capture `:ex-class` (+ existing `:ex-message`) at the catch, thread the full error info through reschedule!/dead-letter!, and log `:ex-class`/`:ex-message` — never a bare `:error :exception`.
+
+## Acceptance (isaac-hail; reuse jnkp/ic4g :hail/* log-event assertions)
+
+1. Given a delivery whose turn throws with message "boom-xyz", when the worker attempts it, then the `:hail/attempt-failed` log event includes ex-class and ex-message "boom-xyz" (not a bare :exception keyword).
+2. Given a delivery that throws on every attempt, when it exhausts retries, then the `:hail/dead-lettered` log event includes ex-class and ex-message.
+
+New steps: a fixture "a delivery whose turn throws with message X" (~1), plus a log-event field assertion likely extending the jnkp/ic4g machinery. Definition of done: both scenarios green; bb spec/features green in isaac-hail.
+
+## Scope
+
+isaac-hail: src/isaac/hail/delivery_worker.clj (catch ~377, reschedule! ~276, dead-letter! ~245); features under features/ reusing hail lifecycle log assertions.
