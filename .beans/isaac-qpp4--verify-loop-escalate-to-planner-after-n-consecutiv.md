@@ -1,11 +1,11 @@
 ---
 # isaac-qpp4
 title: 'Verify loop: escalate to planner after N consecutive verify-fails instead of infinite worker bounce'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-03T20:42:11Z
-updated_at: 2026-07-03T20:42:11Z
+updated_at: 2026-07-05T03:55:28Z
 ---
 
 ## Problem (observed on isaac-iqqz, 2026-07-03)
@@ -41,3 +41,14 @@ Acceptance = run test/verify-escalation.md through the live loop on the deployme
 - no infinite work<->verify bounce; bean completes after the planner rescope.
 
 No gherkin step ledger — prose-skill work, tested behaviorally like happy-path / plan-review. N=2 is tunable; intentional first-fail process-test beans never trip it (single fail).
+
+
+## Verified live (2026-07-04, zanebot, process-test isaac-na8b)
+
+Ran test/verify-escalation.md end-to-end on the freshly-deployed stack:
+- worker attempt 1 -> verify fail #1 -> back to work
+- worker attempt 2 -> verify fail #2 -> ESCALATED to the plan band (delivered hail `band="isaac-plan"`), NOT a third worker bounce
+- planner appended a `## Planner` rescope note (count reset) -> handback to work band
+- worker satisfied rescoped acceptance -> verify turn 3 (0 fails since planner note) -> PASS -> completed
+
+Escalation evidence: the 2nd verify-fail's outbound hail targeted `isaac-plan`; the 🆙 escalation notification fired. Deployed in orchestration skills (hail-bean-verify/plan) on zanebot.
