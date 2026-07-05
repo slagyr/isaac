@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-04T05:15:04Z
+updated_at: 2026-07-05T04:08:44Z
 blocking:
     - isaac-4tn1
     - isaac-lcay
@@ -80,3 +80,7 @@ Local verification on current HEAD `af187f3`:
 
 Additional note:
 - This repair also addresses the reported CI regression on default-branch commit `1d2cae331f100e15972ce5a09542ac72f7e8dfe6` by reproducing the current branch state locally and confirming `bb ci` passes after the subprocess implementation commit above.
+
+
+
+## Verify fail (attempt 1, 2026-07-05): acceptance scenarios remain @wip/pending and production path still runs in-process
