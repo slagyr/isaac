@@ -1,11 +1,13 @@
 ---
 # isaac-63f3
 title: Session history offset drifts mid-line and bricks the session (JsonParseException)
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-05T16:16:48Z
-updated_at: 2026-07-05T17:19:41Z
+updated_at: 2026-07-05T17:32:04Z
 ---
 
 ## Problem
@@ -45,43 +47,33 @@ Priority: HIGH — a drifted offset silently bricks a session permanently.
 
 ## Resolution (unverified — for verifier)
 
-Implemented in isaac-agent `main` commit **1625017** (base 96c164d), both in
+Implemented in isaac-agent `main` commits **1625017** (mid-line + write-side) and
+**7929dc6** (merged isaac-0h7b orphan tool-result), all in
 `src/isaac/session/store/impl_common.clj`:
 
-**Read-side snap (the highest-value fix, per the bean).** `read-transcript-from-offset`
-now snaps the offset **back to the start of the line it lands in** (byte after the
-preceding newline, or 0) before splitting/parsing — new `snap-to-line-start`
-helper. This is exactly what the manual fix did (snap 9273989 → 9273657, the line
-start) and it preserves all history. Robust to a drifted offset from ANY source,
-so it unbricks the session and can never parse a partial line.
+**Read-side snap (isaac-63f3).** `read-transcript-from-offset` snaps the offset
+back to the start of the line it lands in (`snap-to-line-start`) before
+split/parsing — never parses a partial JSON line (JsonParseException).
 
-**Write-side correctness (root cause, bean option #3).** `splice-compaction!` now
-computes the stored `:effective-history-offset` over the **actual written prefix**
-(`take-while` up to the compaction entry in `new-transcript`), not a
-re-serialization of the raw `before`. `drop-orphan-toolcalls` + parentId
-reparenting mutate what lands on disk, so measuring the real prefix keeps the
-offset byte-exact on an entry boundary.
+**Write-side correctness (isaac-63f3).** `splice-compaction!` stores
+`:effective-history-offset` over the actual written prefix (up to the compaction
+entry), not a re-serialization of raw `before`.
+
+**Orphan tool-result drop (isaac-0h7b, merged).** After line snap + parse,
+`drop-orphan-toolresults` removes any `toolResult` whose `toolCall` is not in the
+active slice — fixes codex Responses `function_call_output` without matching call.
 
 **Tests:**
-- `spec/isaac/session/store/impl_common_spec.clj` (new) — read-side: reads from
-  offset 0 / an exact boundary / **a mid-line offset (real regression: red before
-  the fix — JsonParseException — green after)** / past-EOF.
-- `index_impl_spec.clj` — write-side invariant: after a `:retain` compaction the
-  stored offset lands exactly on a line boundary and `read-transcript-from-offset`
-  round-trips cleanly (compaction entry first).
+- `spec/isaac/session/store/impl_common_spec.clj` — mid-line snap; orphan drop;
+  paired preserve (offset 0).
+- `index_impl_spec.clj` — compaction offset lands on line boundary + round-trip.
+- `features/session/compaction_logging.feature` — two new scenarios (file store +
+  `effective history starts after transcript entry index` step): orphan drop at
+  split boundary; paired toolCall/toolResult preserved. Existing "Compaction keeps
+  toolCall and toolResult together" still covers compaction splice regression.
 
-**On the acceptance's "gherkin":** the fault is in the transcript byte-reading
-layer, so the two scenarios are tested precisely as unit specs (scenario 1 =
-mid-line regression; scenario 2 = boundary+round-trip invariant). The happy-path
-offset round-trip is *already* exercised by existing features
-(`history_retention` / `compaction_strategies` "active transcript matching",
-which read via the compaction-stored offset). A gherkin scenario that injects a
-raw mid-line byte offset would need a new contrived step poking a byte value into
-a session — implementation detail in gherkin, which the project avoids. Happy to
-add one if you want it.
-
-**Verification:** isaac-agent `bb verify` — config-bypass-lint ok; **1150 spec
-examples / 2254 assertions, 0 failures**; **576 feature examples / 1292
+**Verification:** isaac-agent `bb verify` — config-bypass-lint ok; **1165 spec
+examples / 2281 assertions, 0 failures**; **580 feature examples / 1295
 assertions, 0 failures**; `bb lint` src clean.
 
 
