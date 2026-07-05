@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-05T16:29:17Z
-updated_at: 2026-07-05T17:22:41Z
+updated_at: 2026-07-05T17:29:29Z
 ---
 
 ## Problem
@@ -60,3 +60,42 @@ Optional @slow live feature line alongside the existing codex live scenario. Def
 ## Scope
 
 isaac-agent: llm/auth/store.clj (refresh-if-needed! using /oauth/token + -post-form!, single-flight, persist + in-memory), llm/api/openai/shared.clj (call refresh before use + 401 retry).
+
+
+---
+
+## Resolution (unverified — for verifier)
+
+The auto-refresh implementation was **already present** on isaac-agent main; this
+handoff **closes the acceptance-spec coverage gap**. isaac-agent commit **af90bd1**.
+
+**Implementation reviewed (already in place, correct + wired):**
+- Proactive: `openai/shared.clj/resolve-oauth-tokens` (called per-request by
+  `auth-headers`) checks `token-needs-refresh?` (expired or within a 5-min lead
+  window) and calls `refresh-oauth-tokens!` before building the request.
+- Reactive backstop: `with-oauth-refresh-retry` force-refreshes once on
+  `:auth-failed` and retries — **wired** at `llm/api/responses.clj:137` around the
+  send.
+- `refresh-oauth-tokens!` (`llm/auth/store.clj`): single-flight via
+  `(locking (refresh-lock …))` + a re-check of `token-needs-refresh?` after
+  acquiring the lock; POSTs `grant_type=refresh_token` via
+  `device-code/refresh-tokens!`; persists via `save-tokens!`; on failure returns
+  the clear "run `isaac auth login`" message.
+- No stale-in-memory risk: tokens are read fresh from `auth.json` on every request
+  (`load-tokens` → `fs/slurp`), so persisting to disk IS updating what the
+  provider reads.
+
+**Acceptance — all six spec-level criteria now green:**
+1. Proactive refresh → `store_spec` "refreshes expired tokens and persists a future expiry" (pre-existing).
+2. No-op when valid → `store_spec` "returns existing tokens when not yet due" (pre-existing).
+3. In-memory + disk crux → `store_spec` "exposes the refreshed token on both disk and the next read (no stale copy)" (**added**).
+4. Refresh failure clear → `store_spec` "returns login guidance when refresh fails" (pre-existing).
+5. Single-flight → `store_spec` "refreshes exactly once when two callers race" (**added**; promise-coordinated, deterministic: the 2nd caller blocks on the lock and re-uses the 1st fetch → exactly one POST).
+6. Provider path integration → `shared_spec` "refreshes expired tokens before resolving" + "retries once after auth-failed" (pre-existing).
+
+**Verification:** isaac-agent `bb verify` — config-bypass-lint ok; **1165 spec
+examples / 2285 assertions, 0 failures**; **578 feature examples / 1294
+assertions, 0 failures**.
+
+Note: the bean was `todo` with a leftover `unverified` tag from the prior handoff;
+re-claimed and re-handed-off here.
