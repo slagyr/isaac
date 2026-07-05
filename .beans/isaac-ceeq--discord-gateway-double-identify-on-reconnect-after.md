@@ -1,13 +1,13 @@
 ---
 # isaac-ceeq
 title: Discord gateway double-IDENTIFY on reconnect after opcode 7
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - discord
 created_at: 2026-07-02T16:59:59Z
-updated_at: 2026-07-02T17:58:21Z
+updated_at: 2026-07-05T01:50:33Z
 ---
 
 ## Symptom
@@ -142,3 +142,18 @@ eager send and all 7 specs green.
 
 **Note:** the bean's scenario text above (still `@wip`) is the original draft;
 the landed scenario reflects the corrections described here.
+
+
+
+## Verification passed
+
+Verified against isaac-discord commit `8fdcfd4` in the clean verifier clone. Code review matched the bean description: reconnect auth now sets `:auth-sent?`, and `handle-hello!` only sends IDENTIFY on fresh connects, preventing the duplicate auth on the reconnected socket while preserving the eager reconnect path expected by the existing specs. The new gateway spec and feature coverage exercise the opcode-7 reconnect path directly.
+
+Fresh verification:
+
+• `bb ci` passed:
+  • specs: `79 examples, 0 failures, 172 assertions`
+  • features: `50 examples, 0 failures, 108 assertions`
+• GitHub Actions run `28610127186` (`isaac-ceeq: stop double-auth on reconnect after opcode 7`) succeeded on 2026-07-02.
+
+Pass: bean is verifiable as accepted.

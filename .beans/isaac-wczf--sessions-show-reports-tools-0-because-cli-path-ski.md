@@ -1,7 +1,7 @@
 ---
 # isaac-wczf
 title: sessions show reports Tools 0 because CLI path skips tool registration
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - cli
     - sessions
 created_at: 2026-07-03T15:35:26Z
-updated_at: 2026-07-03T16:58:47Z
+updated_at: 2026-07-05T01:50:33Z
 ---
 
 ## Problem
@@ -97,3 +97,19 @@ assertions, 0 failures**.
 
 Note: rebased over the concurrent `isaac-hi5n` change to `format-status`
 (plain-text output); no conflict with the tool-count work.
+
+
+
+## Verification passed
+
+Verified against isaac-agent commit `5bca5a8` in the clean verifier clone. Code review matched the bean description: `status-data*` now derives the session crew allow-list and filters registry count through it, and `sessions show` activates just the allowed tools on the lightweight CLI path before formatting status.
+
+Fresh verification:
+
+• `bb verify` passed (rerun unsandboxed because the sandbox blocked writes to `/Users/micahmartin/.isaac/logs/isaac.log` in unrelated logger paths):
+  • `config-bypass-lint: ok`
+  • specs: `1132 examples, 0 failures, 2215 assertions`
+  • features: `564 examples, 0 failures, 1263 assertions`
+• GitHub Actions run `28673129556` (`isaac-wczf: sessions show reports the crew's tool count, not the process registry`) succeeded on 2026-07-03.
+
+Pass: bean is verifiable as accepted.
