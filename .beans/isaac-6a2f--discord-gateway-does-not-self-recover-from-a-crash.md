@@ -1,7 +1,8 @@
 ---
 # isaac-6a2f
 title: Discord gateway does not self-recover from a crashed reader loop (wtg8 watchdog ineffective)
-status: draft
+status: in-progress
+tags: [unverified]
 type: bug
 priority: high
 created_at: 2026-07-05T16:16:48Z
@@ -36,3 +37,22 @@ The Discord gateway still crashes and does NOT self-recover, despite isaac-wtg8 
 isaac-discord (gateway.clj watchdog + reconnect; service.clj liveness). Coordinate with isaac-royn (subsystem supervision + health surface). Add an integration test that kills the reader and asserts auto-recovery.
 
 Priority: HIGH — repeated real outages; a gateway crash wedges the whole pipeline.
+
+## Resolution (unverified — for verifier)
+
+Root cause: wtg8 watchdog only started in `DiscordService.start` (skipped on
+hot-reload token-add path) and gated ticks on `@running?*` instead of
+`server-running?`. A failed `on-close!` reconnect schedule left clients stuck
+`:disconnected` with no pending task and no recovery nudge.
+
+Fix in `isaac-discord` `e5ee6d5` (manifest `0.1.9`):
+- `service.clj` — idempotent `ensure-liveness-watchdog!` on comm register +
+  service start; `:discord.watchdog/started` + `:discord.watchdog/check` logs;
+  ticks use `server-running?`
+- `gateway.clj` — `ensure-recovery!` / `check-liveness!` for disconnected
+  clients with no pending reconnect; hardened `on-close!` + reader-loop paths
+- tests in `service_spec.clj`, `gateway_spec.clj`; `service_spec` added to
+  `:spec` main-opts in `deps.edn`
+
+Verification: `bb spec` → 79 examples, 0 failures; `bb features` → 50
+examples, 0 failures.
