@@ -4,8 +4,10 @@ title: 'cli-server: run commands as subprocesses with streaming duplex IO'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-05T04:29:49Z
+updated_at: 2026-07-05T04:46:06Z
 blocking:
     - isaac-4tn1
     - isaac-lcay
