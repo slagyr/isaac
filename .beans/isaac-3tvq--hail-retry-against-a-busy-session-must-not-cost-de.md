@@ -1,11 +1,11 @@
 ---
 # isaac-3tvq
 title: Provider walls defer hail deliveries instead of burning attempts
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-07-06T16:32:20Z
-updated_at: 2026-07-06T18:20:29Z
+updated_at: 2026-07-06T18:30:28Z
 ---
 
 ## Goal
@@ -27,3 +27,23 @@ Hail delivery must not be concerned with retry pricing or provider semantics. Tw
 - **Genuine-failure path untouched**: attempts++, backoff, 5-attempt dead-letter.
 - **Dead-letter records carry the error keyword + message** (isaac-cehc parity on the record, not just the log).
 - **Interim default**: `default-inflight-recovery-ms` 300000 → 7200000 (2h) — the age-only orphan heuristic steals live turns longer than 5 min (clears their in-flight guard, burns attempts as :worker-crash, enables double-drive on the same session). 2h makes theft unrealistic; crash recovery just takes longer. This heuristic is deleted entirely by isaac-7li9/isaac-vdfc.
+
+## Scenarios (approved one-by-one, 2026-07-06)
+
+Committed @wip:
+- isaac-hail `features/delivery.feature` (commit 129d733): unavailable-defer (line 535), 2h recovery window boundary (line 568), cehc dead-letter record detail amended (line 418). 0tf3 scenarios' claimed-at moved 09:00Z -> 07:00Z (forward-compatible with the 2h default; green now and after).
+- isaac-agent `features/llm/provider_walls.feature` (commit 93c1180): 429 + Retry-After classification (line 16), usage-limit default (line 38).
+
+New machinery (approved): Grover scripted response types `unavailable` (pre-classified result, hail-side) and `http-error` (raw status/retry-after/message, drive-side); step `the turn result is unavailable with retry-after-ms N`. Config key `:defaults :provider-retry-after-ms` (default 1800000, hot-reloadable). New log events: `:hail/delivery-deferred` (warn, hail) and `:chat/provider-walled` (warn, drive).
+
+Classification triggers: HTTP 429, OR known wall messages (`usage_limit_reached`, credit-balance exhaustion — anthropic's arrives as a 400 invalid_request_error, so message-matching is required for it).
+
+## Acceptance
+
+- [ ] `bb features features/delivery.feature:535` green (isaac-hail)
+- [ ] `bb features features/delivery.feature:568` green (isaac-hail)
+- [ ] `bb features features/delivery.feature:418` green (isaac-hail)
+- [ ] `bb features features/llm/provider_walls.feature:16` green (isaac-agent)
+- [ ] `bb features features/llm/provider_walls.feature:38` green (isaac-agent)
+- [ ] `default-inflight-recovery-ms` = 7200000 in delivery_worker.clj
+- [ ] Full suites green in both repos; @wip removed from all five scenarios
