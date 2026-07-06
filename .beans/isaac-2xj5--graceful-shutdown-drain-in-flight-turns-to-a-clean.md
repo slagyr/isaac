@@ -1,11 +1,11 @@
 ---
 # isaac-2xj5
-title: 'Graceful shutdown: drain in-flight turns to a clean step boundary'
+title: 'Graceful shutdown: suspend in-flight turns at a clean step boundary'
 status: draft
 type: feature
 priority: normal
 created_at: 2026-07-06T15:44:33Z
-updated_at: 2026-07-06T15:44:33Z
+updated_at: 2026-07-06T18:39:42Z
 parent: isaac-wq8m
 blocked_by:
     - isaac-7li9
@@ -29,3 +29,14 @@ On clean shutdown (SIGTERM / service stop):
 
 - This makes the common case (deploy) yield CLEAN boundaries: every tool call either has a persisted result or provably never started. The hard-crash path (sibling resume bean) handles the dirty case.
 - Interacts with the tool loop in isaac.drive.turn (`execute-llm-turn!` / `tool-loop/run`): needs an interrupt check between steps.
+
+## Design (2026-07-06, Micah-approved) — vocabulary: SUSPEND
+
+"Suspend" (not "drain" — drain implies letting work finish): stop uncompleted turns at their next step boundary so they can be resumed. Turns are parked mid-stride at a safe footstep, neither finished nor lost.
+
+- **F1 — Suspend = cancel-all + bounded wait.** Reuses the existing cooperative cancellation (bridge/cancellation.clj; tool loop checks at turn.clj:823; LLM streams abort mid-stride opt-in). On stop!, after intake is refused: cancel! every in-flight session, await the in-flight set emptying, bounded by the cap. The current tool/step finishes and persists; the loop stops instead of taking the next step.
+- **F2 — Marker disposition.** completed → marker deleted; user-cancelled → deleted (resuming would be wrong); suspended → STAMPED, not deleted: `:suspended true` + `:boundary :clean` (stopped at a step boundary) or `:unclean` (cap expired mid-step). A server-wide suspend flag makes the shared clear path convert delete → stamp. isaac-vdfc resumes clean boundaries directly, repairs unclean ones.
+- **F3 — Cap**: config `:server :suspend-timeout-ms`, default 15000 (launchd SIGKILLs ~20s after SIGTERM; leave headroom for the rest of stop!).
+- **F4 — A suspended hail turn must not reschedule.** The delivery thread outlives the stopped worker; today a cancelled result would route into reschedule! (attempts++ or dead-letter). Suspend guard: a :suspended result leaves the marker for resume — no reschedule, no delivered/, no attempts. The delivery's fate is decided at next startup by isaac-vdfc.
+- **F5 — Placement in stop!**: after delivery-worker/router stop (nothing new starts), before supervisor/module/scheduler teardown (turns still need tools/config). Phase 1.5 of the existing sequence.
+- **Limitation (recorded)**: SIGKILL / kill -9 / kernel panic never runs this — that is isaac-vdfc's hard-crash path.
