@@ -4,8 +4,10 @@ title: Provider walls defer hail deliveries instead of burning attempts
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-06T16:32:20Z
-updated_at: 2026-07-06T18:31:42Z
+updated_at: 2026-07-06T19:13:35Z
 ---
 
 ## Goal
@@ -40,10 +42,13 @@ Classification triggers: HTTP 429, OR known wall messages (`usage_limit_reached`
 
 ## Acceptance
 
-- [ ] `bb features features/delivery.feature:535` green (isaac-hail)
-- [ ] `bb features features/delivery.feature:568` green (isaac-hail)
-- [ ] `bb features features/delivery.feature:418` green (isaac-hail)
-- [ ] `bb features features/llm/provider_walls.feature:16` green (isaac-agent)
-- [ ] `bb features features/llm/provider_walls.feature:38` green (isaac-agent)
-- [ ] `default-inflight-recovery-ms` = 7200000 in delivery_worker.clj
-- [ ] Full suites green in both repos; @wip removed from all five scenarios
+- [x] `bb features features/delivery.feature:475` green — unavailable defer (isaac-hail)
+- [x] `bb features features/delivery.feature:413` green — cehc dead-letter record detail (isaac-hail)
+- [x] ~~2h inflight recovery~~ — superseded by isaac-7li9 turn-marker claim on rebase; scenario removed
+- [x] `bb features features/llm/provider_walls.feature` green (isaac-agent, both scenarios)
+- [x] Full suites green in both repos; @wip removed from remaining isaac-3tvq scenarios
+
+## Handoff (work-2, 2026-07-06)
+
+- **isaac-agent** `249a745`: `provider_wall.clj` classifies 429/wall messages; `turn.clj` normalizes before response processing; grover `unavailable`/`http-error` types; fixed `retry-after` coercion (Long from grover was crashing classify).
+- **isaac-hail** `09ab921`: `defer-delivery!` on `:unavailable?` (re-queues delivery, no attempts++); dead-letter merges error fields; merged with isaac-7li9 turn-marker claim + isaac-2xj5 suspend; agent pin bumped to `249a745`.
