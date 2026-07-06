@@ -1,13 +1,11 @@
 ---
 # isaac-zcsk
 title: Auto-refresh OAuth (chatgpt/codex) tokens using the stored refresh token
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-05T16:29:17Z
-updated_at: 2026-07-05T17:30:51Z
+updated_at: 2026-07-06T13:38:09Z
 ---
 
 ## Problem
