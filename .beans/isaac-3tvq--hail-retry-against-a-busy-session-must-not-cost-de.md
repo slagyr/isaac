@@ -1,13 +1,11 @@
 ---
 # isaac-3tvq
 title: Provider walls defer hail deliveries instead of burning attempts
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-06T16:32:20Z
-updated_at: 2026-07-06T19:13:35Z
+updated_at: 2026-07-06T19:22:09Z
 ---
 
 ## Goal
