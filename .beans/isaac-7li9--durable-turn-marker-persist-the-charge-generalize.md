@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-06T15:43:54Z
-updated_at: 2026-07-06T18:05:47Z
+updated_at: 2026-07-06T18:22:22Z
 parent: isaac-wq8m
 ---
 
@@ -66,3 +66,38 @@ Design note (2026-07-06, approved): the stale-delivery dedup guard runs in the d
 - [ ] delivery.feature verdicts applied (rewrites done, 0tf3 pair removed); full suites green in both repos
 - [ ] One-time removal checks (not scenarios): hail/inflight/ directory unused; recover-orphaned-inflight! gone; no caller outside SessionStore touches sessions/turns/
 - [ ] @wip removed from all five scenarios
+
+
+---
+
+## Progress (worker) — Phase A DONE, Phase B remaining
+
+**Phase A (isaac-agent) — landed, green, on `main` `909af70`:**
+- SessionStore protocol gains `record-turn-marker!` / `clear-turn-marker!` /
+  `get-turn-marker` / `turn-markers` (memory = atom; index/sidecar = files at
+  `sessions/turns/<id>.edn` via impl_common helpers). `spi/orphaned-turn-markers`
+  = markers with no live in-flight entry (D4).
+- The **bridge** is the single writer: `dispatch-charge!` records the marker after
+  `mark-in-flight!` and clears it in the same `finally`. Marker holds source +
+  (hail) delivery-id/embedded payload + started-at; resolved values NOT stored.
+- `features/session/turn_markers.feature` un-@wip, 3 scenarios GREEN; new steps
+  registered (marker matches / no marker / seed orphan / orphaned set).
+- Additive: `bb verify` 1173 specs / 582 features / 0 failures. Existing paths
+  unchanged; isaac-hail unaffected (still pins the pre-Phase-A agent).
+
+**Phase B (isaac-hail) — NOT yet done:**
+1. Bump the isaac-agent pin to `909af70` (main + marigold subprojects).
+2. Delivery worker `launch-delivery!`: dispatch via the **bridge** with the full
+   delivery record embedded in the charge (`:hail-delivery`, carrying attempts/
+   backoff/claimed-at) so the bridge writes the marker; delete
+   `hail/deliveries/<id>.edn` only AFTER the record returns. Stop the worker
+   managing `hail/inflight/` and `mark/clear-in-flight!` directly.
+3. **Remove** `hail/inflight/` and `recover-orphaned-inflight!` (isaac-0tf3).
+4. Stale-delivery guard in the delivery **tick**: skip+remove any delivery a turn
+   marker already references; log `:hail/stale-delivery-removed` at warn.
+5. `features/turn-marker-claim.feature` un-@wip (2 scenarios) + register the
+   marker assert/seed steps in the hail suite (share with isaac-agent).
+6. delivery.feature verdicts: `:27` rewrite (inflight → marker), the isaac-0tf3
+   orphan pair REMOVE, other `inflight/` refs → marker equivalents.
+7. Removal checks: `hail/inflight/` unused; `recover-orphaned-inflight!` gone;
+   no caller outside SessionStore touches `sessions/turns/`.
