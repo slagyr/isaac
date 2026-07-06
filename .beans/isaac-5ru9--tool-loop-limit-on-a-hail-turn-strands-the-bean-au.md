@@ -1,11 +1,11 @@
 ---
 # isaac-5ru9
 title: 'Tool-loop limit on a hail turn strands the bean: auto-continue instead of completing'
-status: in-progress
+status: unverified
 type: bug
 priority: normal
 created_at: 2026-07-06T21:23:48Z
-updated_at: 2026-07-06T21:49:37Z
+updated_at: 2026-07-06T22:12:00Z
 ---
 
 
@@ -34,15 +34,19 @@ Comm/cron turns: out of scope here — the limit message reaches an actual user 
 
 ## Scenarios (approved one-by-one, 2026-07-06)
 
-Committed @wip:
-- isaac-hail `features/delivery.feature` (commit 3e134fc): continuation re-queue (line 544), continuations-exhausted dead-letter (line 583).
-- isaac-agent `features/tool/tool_loop_limit.feature` (commit d22d007): crew-level tool-loop-max knob (line 15).
+- isaac-hail `features/delivery.feature`: continuation re-queue (line 544), continuations-exhausted dead-letter (line 583).
+- isaac-agent `features/tool/tool_loop_limit.feature`: crew-level tool-loop-max knob (line 15).
 
 ## Acceptance
 
-- [ ] `bb features features/delivery.feature:544` green (isaac-hail)
-- [ ] `bb features features/delivery.feature:583` green (isaac-hail)
-- [ ] `bb features features/tool/tool_loop_limit.feature:15` green (isaac-agent)
-- [ ] Continuation prompt carries the continuation notice (N of M + do-not-restart + 🔁 instruction)
-- [ ] Comm/cron turns unchanged (limit message reaches a real user)
-- [ ] Full suites green in both repos; @wip removed from all three scenarios
+- [x] `bb features features/delivery.feature:544` green (isaac-hail)
+- [x] `bb features features/delivery.feature:583` green (isaac-hail)
+- [x] `bb features features/tool/tool_loop_limit.feature:15` green (isaac-agent)
+- [x] Continuation prompt carries the continuation notice (N of M + do-not-restart + 🔁 instruction)
+- [x] Comm/cron turns unchanged (limit message reaches a real user)
+- [x] Full suites green in both repos; @wip removed from all three scenarios
+
+## Handoff
+
+- isaac-agent `6336cb4`: crew `:tool-loop-max`, `:ended-by :tool-loop-limit`, loop-limit reply hardening
+- isaac-hail `1fc9fbd`: continuation re-queue / continuations-exhausted dead-letter; agent pin bumped
