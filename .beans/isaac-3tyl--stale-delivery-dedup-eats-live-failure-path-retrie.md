@@ -1,11 +1,11 @@
 ---
 # isaac-3tyl
 title: 'Stale-delivery dedup eats live failure-path retries: guard must require an orphaned marker'
-status: todo
+status: unverified
 type: bug
 priority: high
 created_at: 2026-07-06T22:13:19Z
-updated_at: 2026-07-06T22:13:19Z
+updated_at: 2026-07-06T22:15:14Z
 ---
 
 
@@ -32,6 +32,13 @@ Extend D4's orphan philosophy to the dedup guard: **the stale-delivery guard fir
 - Live case (failure-reschedule): the turn's in-flight entry still exists at tick time → guard hands off; the finally clears the marker moments later and the retry proceeds normally.
 - The reschedule-then-clear-marker ordering stays as-is (crash-safe).
 
-## Acceptance sketch (spec to confirm)
+## Acceptance
 
-Scenario: a failed turn's rescheduled delivery survives the next tick — Given a wait-gated turn claimed via marker whose queued response errors, When the turn fails and the worker ticks within the marker-teardown window, Then deliveries/<id>.edn exists with attempts 1 and no :hail/stale-delivery-removed is logged. Plus a regression run of 7li9's S4 (orphaned-marker case still dedups).
+- [x] `features/turn-marker-claim.feature` — failure-reschedule survives tick while in-flight (new scenario)
+- [x] `features/turn-marker-claim.feature:47` — orphaned-marker stray still deduped (7li9 S4 regression)
+- [x] `delivery_worker_spec` — live-marker vs orphan-marker unit coverage
+- [x] Full hail spec + features green (`-M:dev-local`)
+
+## Resolution (work-3, 2026-07-06)
+
+**isaac-hail** — stale-delivery guard in `tick!` now requires an orphaned turn marker (`store/in-flight?` false) before removing a delivery file referenced by a marker. Live failure-reschedule pairs (marker + in-flight + deliveries/) are left alone until finally clears the marker.
