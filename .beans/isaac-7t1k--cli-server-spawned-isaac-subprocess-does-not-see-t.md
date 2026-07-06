@@ -4,8 +4,10 @@ title: cli-server-spawned isaac subprocess does not see the fixture root's modul
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-06T23:26:27Z
-updated_at: 2026-07-06T23:28:17Z
+updated_at: 2026-07-06T23:44:09Z
 blocking:
     - isaac-lcay
 ---
@@ -24,3 +26,19 @@ Blocks isaac-lcay's accepted proof (the real remote path is the point of that e2
 ## Planner decision (2026-07-06, Micah)
 
 The proof seam is NOT relaxed — lcay proves the real path or nothing. This bean is the prerequisite, mirroring the isaac-gnji play. Suspect seam first: how cli-server builds the subprocess invocation (launcher path, environment, root forwarding into the module loader's bootstrap).
+
+## Findings (2026-07-06, scrapper)
+
+Root cause confirmed: module discovery for `:modules` local roots is cwd-sensitive. The spawned `/cli` subprocess forwarded `--root <fixture-root>` correctly, but cli-server launched `isaac` from the `isaac-cli-server` checkout. That made the fixture config's relative module coord `{:local/root "modules/isaac-acp"}` resolve against the cli-server checkout instead of the fixture root, so `isaac --root <fixture-root> modules` showed `isaac.comm.acp` invalid from that cwd and `isaac --root <fixture-root> acp` collapsed to `Unknown command: acp`.
+
+Fix shipped in `isaac-cli-server` commit `00f5ec8`: when `/cli` argv carries `--root`, the spawned subprocess now runs with process `:dir` set to that explicit root. Verified locally:
+
+- from fixture cwd, `isaac --root <fixture-root> modules` shows `isaac.comm.acp` ok
+- from cli-server cwd, pre-fix it showed `isaac.comm.acp` invalid and `acp` unknown
+- through `isaac.cli-server.dispatch/receive-line!` after the fix, `argv ["--root" <fixture-root> "modules"]` emits module rows with `isaac.comm.acp` ok
+- same path with `argv ["--root" <fixture-root> "acp"]` now starts ACP (`stderr` frame `isaac acp ready`, exit 0 after stdin-close)
+
+Unit + feature coverage added in `isaac-cli-server`:
+
+- `bb spec`
+- `bb features`
