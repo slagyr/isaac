@@ -4,8 +4,10 @@ title: 'e2e: remote ACP session over the generic cli pipe'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - plan-review-loop
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-06T21:53:06Z
+updated_at: 2026-07-06T22:59:46Z
 blocking:
     - isaac-exi2
 blocked_by:
@@ -188,3 +190,19 @@ Implication:
 - Completing lcay as written would require either an unapproved workaround (`ISAAC_ROOT` env injection / default-root mutation / pointer-file harnessing) or a product fix so `isaac --root <fixture-root> acp` actually uses that root for runtime behavior.
 - So from `isaac-cli-proxy` alone I can implement the missing interactive-driver steps, but I still cannot satisfy the accepted *real subprocess + isolated echo-model fixture* proof hermetically.
 - Returning to planner remains the correct handoff until scope or prerequisites are adjusted.
+
+## Worker observations (2026-07-06, scrapper) — interactive steps implemented, real /cli subprocess still mismatched
+
+I implemented the approved interactive-driver family locally in `isaac-cli-proxy` and wired a real slow-feature harness around a live cli-server plus ACP JSON-RPC stdin/stdout driving so the accepted scenario is no longer pending from missing steps alone.
+
+What I verified this turn:
+- `bb spec spec/isaac/cli_proxy/proxy_spec.clj spec/isaac/cli_proxy/integration_steps.clj` passes in `isaac-cli-proxy`.
+- Existing repo suites still pass with the local harness work present: `bb spec`, `bb features`, and `bb features-slow` are green in `isaac-cli-proxy`.
+- A disposable fixture root with `:isaac.comm.acp` pinned to `3b48d97` and model provider `"grover:openai"` works when driven directly through the installed launcher: `isaac --root <fixture-root> acp` accepts ACP JSON-RPC, returns initialize/session/new results, and streams a `ping` response from the Grover echo path.
+- The same fixture root also resolves the command surface directly: `isaac --root <fixture-root> acp --help` succeeds and `isaac --root <fixture-root> modules` reports `isaac.comm.acp 0.1.5 ok`.
+- But the accepted **real** path (`isaac remote ...` -> cli-proxy -> cli-server -> spawned subprocess `isaac --root <fixture-root> acp`) still fails before ACP initialize: the subprocess stdout returns `Unknown command: acp` plus a top-level command list that lacks `acp` entirely.
+- This failure is stricter than the earlier root-propagation suspicion: on the cli-server-spawned subprocess path, even explicitly forwarded `--root <fixture-root>` does not yield the same command/module surface that direct launcher invocation sees.
+
+Implication:
+- The approved interactive-driver work is implementable and mostly done, but the accepted proof is still blocked by a real subprocess launcher/bootstrap mismatch behind cli-server, not by pending steps anymore.
+- To finish lcay as written, planner/module owners need to decide whether the proof may use a different launcher/bootstrap seam, or whether a prerequisite fix is required so the cli-server-spawned `isaac` process sees the configured fixture-root ACP module surface consistently.
