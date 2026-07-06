@@ -1,11 +1,11 @@
 ---
 # isaac-7li9
 title: 'Durable turn marker: persist the charge, generalize hail/inflight to all turn sources'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-06T15:43:54Z
-updated_at: 2026-07-06T17:13:29Z
+updated_at: 2026-07-06T18:05:47Z
 parent: isaac-wq8m
 ---
 
