@@ -1,11 +1,11 @@
 ---
 # isaac-vdfc
 title: 'Startup resume: repair transcript tail and re-drive interrupted turns (generalize 0tf3)'
-status: unverified
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-06T15:44:51Z
-updated_at: 2026-07-06T19:04:43Z
+updated_at: 2026-07-06T19:49:37Z
 parent: isaac-wq8m
 blocked_by:
     - isaac-7li9
