@@ -169,3 +169,37 @@ Implication:
   ACP root propagation in product code outside the approved bean scope).
 - Returning to planner for scope/unblock decision is safer than baking the wrong
   proof harness.
+
+## Worker observations (2026-07-06, scrapper) — root selection narrowed further
+
+I reduced the disposable-root ACP setup to the launcher seam the accepted proof
+must rely on and confirmed the conflict is specifically about root selection on
+that real subprocess path.
+
+What I verified:
+- `/usr/local/bin/isaac` does expose `acp` when the selected root has
+  `:isaac.comm.acp` configured; the command remains root/module-gated as
+  expected.
+- A disposable fixture root at `/tmp/lcay-fixture` with `:isaac.comm.acp` plus
+  Grover echo-model config works when launched through environment-root
+  selection: `ISAAC_ROOT=/tmp/lcay-fixture isaac acp`.
+- The accepted `/cli` proof path cannot rely on that environment workaround;
+  `isaac-cli-server` forwards argv to `isaac` and the scenario contract expects
+  the disposable root to be selected from the forwarded command line.
+- On that path, `isaac --root /tmp/lcay-fixture acp` still appears to
+  initialize ACP against the default `~/.isaac` model/provider state instead of
+  the fixture echo-model state.
+- The observed failure mode is a live default-root provider/model being used
+  during initialize/prompt rather than the fixture echo-model response, which is
+  consistent with ACP CLI ignoring the top-level `:root` chosen by
+  `isaac.main/run` once ACP runtime resolves its config.
+
+Implication:
+- The generic cli pipe is present, but the accepted disposable-fixture-root ACP
+  proof cannot be completed via forwarded argv alone on the current product
+  behavior.
+- Completing lcay as written would require an unapproved workaround
+  (`ISAAC_ROOT` env injection / default-root mutation) or a product fix for ACP
+  root propagation outside this bean's accepted scope.
+- Returning to planner remains the correct handoff until scope or prerequisites
+  are adjusted.
