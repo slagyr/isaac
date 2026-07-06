@@ -1,11 +1,11 @@
 ---
 # isaac-2xj5
 title: 'Graceful shutdown: suspend in-flight turns at a clean step boundary'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-06T15:44:33Z
-updated_at: 2026-07-06T18:39:42Z
+updated_at: 2026-07-06T18:48:44Z
 parent: isaac-wq8m
 blocked_by:
     - isaac-7li9
@@ -40,3 +40,21 @@ On clean shutdown (SIGTERM / service stop):
 - **F4 — A suspended hail turn must not reschedule.** The delivery thread outlives the stopped worker; today a cancelled result would route into reschedule! (attempts++ or dead-letter). Suspend guard: a :suspended result leaves the marker for resume — no reschedule, no delivered/, no attempts. The delivery's fate is decided at next startup by isaac-vdfc.
 - **F5 — Placement in stop!**: after delivery-worker/router stop (nothing new starts), before supervisor/module/scheduler teardown (turns still need tools/config). Phase 1.5 of the existing sequence.
 - **Limitation (recorded)**: SIGKILL / kill -9 / kernel panic never runs this — that is isaac-vdfc's hard-crash path.
+
+## Scenarios (approved one-by-one, 2026-07-06)
+
+Committed @wip:
+- isaac-agent `features/bridge/suspend.feature` (commit 1ada929): suspend stamps :clean (line 17), cancel deletes marker (line 37), cap expiry stamps :unclean (line 52).
+- isaac-hail `features/delivery.feature` (commit e599cc4): suspended hail turn keeps marker, no reschedule/attempts (line 548).
+
+New machinery (approved): step `in-flight turns are suspended` + parameterized variant `...with timeout Nms` (registered in BOTH suites); marker stamp keys `:suspended` / `:boundary` (:clean | :unclean); log event `:hail/delivery-suspended` (info); config `:server :suspend-timeout-ms` default 15000. Suspend rides the existing cooperative-cancellation path — a server-wide suspend flag converts the marker clear into a stamp and the turn result into :suspended.
+
+## Acceptance
+
+- [ ] `bb features features/bridge/suspend.feature:17` green (isaac-agent)
+- [ ] `bb features features/bridge/suspend.feature:37` green (isaac-agent)
+- [ ] `bb features features/bridge/suspend.feature:52` green (isaac-agent)
+- [ ] `bb features features/delivery.feature:548` green (isaac-hail)
+- [ ] app/stop! (isaac-server) invokes suspend as phase 1.5: after delivery-worker/router stop, before supervisor/module/scheduler teardown
+- [ ] :server :suspend-timeout-ms wired, default 15000
+- [ ] Full suites green in both repos; @wip removed from all four scenarios
