@@ -4,8 +4,10 @@ title: 'cli pipe: reconnect/resume with grace window + stderr status lines'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-06T15:49:28Z
+updated_at: 2026-07-06T16:34:06Z
 blocked_by:
     - isaac-895i
 ---
@@ -45,3 +47,17 @@ New steps (approved 2026-07-03, full set of 6): stub stream-id Given, scripted d
 Interaction: the grace-window scenario SUPERSEDES isaac-895i's unconditional kill-on-disconnect scenario — when this bean lands, that scenario is updated (disconnect → grace, expiry → destroy), not retained alongside.
 
 Acceptance: un-@wip; bb spec / bb features green in BOTH repos; PROTOCOL.md updated in lockstep (stream-id ack, attach frame, grace semantics).
+
+## Implementation Notes
+
+- `isaac-cli-proxy` now treats `start-ack` as the stream bootstrap, reconnects with `attach`, keeps stdin pumping against the current socket, and prints reconnect status lines to stderr only.
+- `isaac-cli-server` now tracks live streams by `stream-id`, buffers frames while detached, preserves subprocesses through a grace window, and destroys them on expiry.
+- Accepted scenarios are un-`@wip` in both repos; the old unconditional kill-on-disconnect server scenario was removed per bean interaction note.
+- Lockstep docs updated in both repos.
+
+## Verification
+
+- `isaac-cli-proxy` commit: `4b36aed` (`isaac-4tn1: reconnect remote cli proxy streams`)
+- `isaac-cli-server` commit: `39ea91e` (`isaac-4tn1: retain cli streams across reconnect`)
+- `isaac-cli-proxy`: `bb ci`
+- `isaac-cli-server`: `bb ci`
