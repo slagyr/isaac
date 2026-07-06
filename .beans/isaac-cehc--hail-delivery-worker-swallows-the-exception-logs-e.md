@@ -4,8 +4,10 @@ title: Hail delivery worker swallows the exception (logs :error :exception, not 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-05T16:23:33Z
-updated_at: 2026-07-06T14:23:38Z
+updated_at: 2026-07-06T14:31:58Z
 ---
 
 ## Problem
