@@ -4,8 +4,10 @@ title: Hail delivery worker swallows the exception (logs :error :exception, not 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-05T16:23:33Z
-updated_at: 2026-07-06T14:51:09Z
+updated_at: 2026-07-06T15:01:00Z
 ---
 
 ## Problem
@@ -70,3 +72,23 @@ Feature edit: only additions (new scenarios + step), no removal/weaken of existi
 
 Recommend: fix the test setup in the new scenarios (ensure model/crew config makes charge resolve so the throw stub is exercised) or adjust the fixture. Re-run features/delivery.feature until the two cehc scenarios pass.
 
+## Resolution (unverified — for verifier)
+
+Implemented in `isaac-hail` commits **cee16f2** (production fix) and **6cb529f** (feature harness fix).
+
+### Production (`cee16f2`)
+
+- `src/isaac/hail/delivery_worker.clj` — `exception-error-info` captures `:ex-class`/`:ex-message` at the catch; `failure-log-context` threads the error map through `reschedule!`/`dead-letter!`; `:hail/attempt-failed` and `:hail/dead-lettered` log those fields (not a bare `:error :exception`).
+- `spec/isaac/hail/delivery_worker_spec.clj` — unit coverage for thrown-turn attempt-failed and dead-lettered log shapes.
+
+### Feature harness (`6cb529f`)
+
+Verifier failure was `:no-model` before the throw stub — charge never reached `run-turn!`. Fixed by mirroring the jnkp scenario setup:
+
+- `features/delivery.feature` — both cehc scenarios now lead with `default Grover setup`, queue a grover response, then apply the throw stub; log tables assert `:ex-class` + `:ex-message`.
+- `feature-steps/isaac/hail_steps.clj` — `a delivery whose turn throws with message X` installs grover fixture + var-root `run-turn!` stub (async-safe); after-scenario restores.
+
+### Verified
+
+- `bb spec` — 122 examples, 0 failures.
+- `clojure -A:dev-local:features -M:features features/delivery.feature` — both cehc scenarios green; two pre-existing flaky scenarios in the same file (`bound delivery dispatches`, `serializing ticks`) still fail intermittently on this tree (present before cehc).
