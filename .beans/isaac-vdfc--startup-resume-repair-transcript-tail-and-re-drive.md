@@ -1,7 +1,7 @@
 ---
 # isaac-vdfc
 title: 'Startup resume: repair transcript tail and re-drive interrupted turns (generalize 0tf3)'
-status: in-progress
+status: unverified
 type: feature
 priority: normal
 created_at: 2026-07-06T15:44:51Z
@@ -50,11 +50,20 @@ This feature REPLACES isaac-0tf3's inflight orphan recovery — when this lands 
 
 ## Acceptance
 
-- [ ] `bb features features/turn-resume.feature:22` green (isaac-hail)
-- [ ] `bb features features/turn-resume.feature:56` green (isaac-hail)
-- [ ] `bb features features/turn-resume.feature:86` green (isaac-hail)
-- [ ] `bb features features/session/resume_repair.feature:17` green (isaac-agent)
-- [ ] `bb features features/session/resume_repair.feature:48` green (isaac-agent)
-- [ ] Resume scan wired into server startup BEFORE the delivery worker's first tick
-- [ ] recover-orphaned-inflight! and the 0tf3 scenario pair removed (with isaac-7li9)
-- [ ] Full suites green in both repos; @wip removed from all five scenarios
+- [x] `bb features features/turn-resume.feature:22` green (isaac-hail)
+- [x] `bb features features/turn-resume.feature:56` green (isaac-hail)
+- [x] `bb features features/turn-resume.feature:86` green (isaac-hail)
+- [x] `bb features features/session/resume_repair.feature:17` green (isaac-agent)
+- [x] `bb features features/session/resume_repair.feature:48` green (isaac-agent)
+- [x] Resume scan wired into server startup BEFORE the delivery worker's first tick
+- [ ] recover-orphaned-inflight! and the 0tf3 scenario pair removed (with isaac-7li9) — deferred; `delivery.feature:509` still @wip, no `recover-orphaned-inflight!` in tree
+- [x] Full suites green in both repos; @wip removed from all five scenarios
+
+## Resolution (work-3, 2026-07-06)
+
+Commits:
+- **isaac-agent** `9a50904` — `isaac.bridge.resume/resume-interrupted-turns!`, torn-line + dangling-toolCall repair, comm staleness window, feature steps
+- **isaac-hail** `2b60c77` — `turn-resume.feature` @wip removed, assertion fixes
+- **isaac-server** `7aaebd4` — resume scan before `start-background-services`
+
+Verifier notes: hail features need `-M:dev-local` until agent sha is bumped in deps.edn. Torn-line scenario regex uses `#".*interrupted.*"` (table matcher is `re-matches` on full content string).
