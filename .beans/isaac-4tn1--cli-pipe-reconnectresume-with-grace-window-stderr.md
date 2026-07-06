@@ -1,13 +1,11 @@
 ---
 # isaac-4tn1
 title: 'cli pipe: reconnect/resume with grace window + stderr status lines'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-06T20:52:11Z
+updated_at: 2026-07-06T20:55:28Z
 blocked_by:
     - isaac-895i
 ---
