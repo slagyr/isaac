@@ -4,8 +4,10 @@ title: 'Durable turn marker: persist the charge, generalize hail/inflight to all
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-06T15:43:54Z
-updated_at: 2026-07-06T18:22:22Z
+updated_at: 2026-07-06T18:47:54Z
 parent: isaac-wq8m
 ---
 
@@ -101,3 +103,40 @@ Design note (2026-07-06, approved): the stale-delivery dedup guard runs in the d
    orphan pair REMOVE, other `inflight/` refs → marker equivalents.
 7. Removal checks: `hail/inflight/` unused; `recover-orphaned-inflight!` gone;
    no caller outside SessionStore touches `sessions/turns/`.
+
+
+---
+
+## Phase B DONE — bean complete (unverified)
+
+**isaac-hail `main` `4242b74`** (pin bumped to isaac-agent `9e44e47`):
+- Delivery worker claims via the **bridge**: the delivery record is embedded in
+  the charge (`:hail-delivery`), the bridge records the durable turn marker, then
+  the worker deletes `hail/deliveries/<id>.edn`. Marker cleared (+ in-flight gate
+  released) in the finally.
+- **Stale-delivery guard** in `tick!`: a delivery already referenced by a turn
+  marker is a claim-time-crash stray — removed + `:hail/stale-delivery-removed`
+  (warn), never re-dispatched.
+- **Removed** `hail/inflight/` (dir/paths/list) and `recover-orphaned-inflight!`
+  (isaac-0tf3); "inflight" dropped from `hail-subdirs`. Deliveries re-queue to
+  `deliveries/`; delivered/failed + dead-letter accounting unchanged.
+
+**Acceptance — all met:**
+- turn_markers.feature (isaac-agent) 3/3 green; turn-marker-claim.feature
+  (isaac-hail) 2/2 green; **@wip removed from all five**.
+- delivery.feature verdicts applied: the two isaac-0tf3 scenarios REMOVED; the
+  now-vacuous `hail/inflight/…` file assertions dropped (mechanism gone); header
+  reworded. delivery_worker_spec orphan-recovery unit tests + `write-inflight!`
+  removed.
+- Removal checks: `hail/inflight/` unused; `recover-orphaned-inflight!` gone; the
+  only `sessions/turns/` access is inside the SessionStore impl (impl_common).
+- Both suites green: isaac-agent `bb verify` 1173 spec / 582 feature (Phase A;
+  B1 kept turn_markers green); isaac-hail `bb ci` 118 spec / 118 feature, 0 fail.
+
+**Cross-bean flag (for verifier/planner):** the concurrently-landed **isaac-3tvq**
+added `@wip` scenarios to delivery.feature, one of which — "the inflight recovery
+window defaults to 2h" — asserts on the `hail/inflight/` recovery mechanism this
+bean **removes**. It's `@wip` (excluded, suite still green), but when 3tvq is
+worked it must be reconciled with 7li9's design (recovery moves to the resume
+bean isaac-vdfc, keyed off turn markers — NOT inflight/). Left untouched (not my
+bean). Rebased over 3tvq's delivery.feature edits (kept my 0tf3 removal).
