@@ -4,10 +4,8 @@ title: Hail delivery worker swallows the exception (logs :error :exception, not 
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-05T16:23:33Z
-updated_at: 2026-07-06T14:31:58Z
+updated_at: 2026-07-06T14:51:09Z
 ---
 
 ## Problem
@@ -49,3 +47,26 @@ New steps: a fixture "a delivery whose turn throws with message X" (~1), plus a 
 ## Scope
 
 isaac-hail: src/isaac/hail/delivery_worker.clj (catch ~377, reschedule! ~276, dead-letter! ~245); features under features/ reusing hail lifecycle log assertions.
+
+
+## Verification failed
+
+HEAD: 3ac1f999c343b675f4db9be2a4886f5c1e6bcd91
+Working tree: clean
+
+The gherkin acceptance scenarios added for isaac-cehc in features/delivery.feature are not green (3 failures in delivery.feature run).
+
+- New cehc scenarios fail with error: :no-model , ex-message: nil (instead of :exception / boom-xyz). The 'a delivery whose turn throws' stub is not reached; charge/unresolved? returns :no-model for the 'grover' setup in the scenario before hitting run-turn! stub.
+
+- Other pre-existing failures in delivery.feature (bound delivery dispatch, serializing ticks) also present in this tree.
+
+Unit spec (delivery_worker_spec) is green (22 ex, 0 fail) and directly tests the log events with ex-class/ex-message.
+
+Code in delivery_worker.clj matches the Design (exception-error-info with :ex-class, threads err map with ex-class/ex-message to reschedule/dead-letter, logs include them).
+
+However, the bean's Acceptance requires the gherkin scenarios green. Bean body still lacks a 'Resolution (unverified — for verifier)' section documenting the implementation commit (cee16f2 in hail).
+
+Feature edit: only additions (new scenarios + step), no removal/weaken of existing.
+
+Recommend: fix the test setup in the new scenarios (ensure model/crew config makes charge resolve so the throw stub is exercised) or adjust the fixture. Re-run features/delivery.feature until the two cehc scenarios pass.
+
