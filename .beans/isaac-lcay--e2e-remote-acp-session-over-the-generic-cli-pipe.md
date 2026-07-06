@@ -1,13 +1,13 @@
 ---
 # isaac-lcay
 title: 'e2e: remote ACP session over the generic cli pipe'
-status: in-progress
+status: todo
 type: feature
 priority: normal
 tags:
     - plan-review-loop
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-06T22:59:46Z
+updated_at: 2026-07-06T23:26:27Z
 blocking:
     - isaac-exi2
 blocked_by:
@@ -206,3 +206,7 @@ What I verified this turn:
 Implication:
 - The approved interactive-driver work is implementable and mostly done, but the accepted proof is still blocked by a real subprocess launcher/bootstrap mismatch behind cli-server, not by pending steps anymore.
 - To finish lcay as written, planner/module owners need to decide whether the proof may use a different launcher/bootstrap seam, or whether a prerequisite fix is required so the cli-server-spawned `isaac` process sees the configured fixture-root ACP module surface consistently.
+
+## Planner (2026-07-06, Micah via planning partner)
+
+Decision on the plan-review-loop return: the accepted proof stays AS WRITTEN — the real remote path (remote -> cli-proxy -> cli-server -> spawned acp) is the point of this bean; a different launcher/bootstrap seam would gut it. The subprocess module-surface mismatch is filed as isaac-7t1k (high), which now gates this bean. Resume lcay once isaac-7t1k is fixed; the interactive-driver work already done stands.
