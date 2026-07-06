@@ -1,11 +1,11 @@
 ---
 # isaac-5ru9
 title: 'Tool-loop limit on a hail turn strands the bean: auto-continue instead of completing'
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-07-06T21:23:48Z
-updated_at: 2026-07-06T21:23:48Z
+updated_at: 2026-07-06T21:48:39Z
 ---
 
 
@@ -25,3 +25,24 @@ Comm/cron turns: out of scope here — the limit message reaches an actual user 
 
 - Mitigation deployed meanwhile: hail-bean-work skill now instructs "never end a turn in limbo" (send continuation hail early). Helps voluntary endings; cannot fix involuntary cap endings — hence this bean.
 - The session transcript preserves all prior investigation (compaction permitting), so continuations resume warm.
+
+## Design refinements (2026-07-06, approved)
+
+- **R1**: `:max-loops` (tool_loop.clj, default 100) becomes crew-configurable as `:tool-loop-max` — same layering as compaction config. Signal already exists: `:loop-request? true` on the loop result (tool_loop.clj:80); the drive propagates it into the turn result; the worker reacts.
+- **R2**: `:max-continuations` (config `:hail-settings`, default 3); exhaustion dead-letters with distinct `:reason :continuations-exhausted` — failed/ triage distinguishes poison (:exhausted) from won't-converge.
+- **R3**: notification rides the continuation delivery's prompt ("continuation N of 3; send the 🔁 at-a-glance, then continue — do not restart"), keeping comms model-side; the worker only logs `:hail/continuation-queued` (warn).
+
+## Scenarios (approved one-by-one, 2026-07-06)
+
+Committed @wip:
+- isaac-hail `features/delivery.feature` (commit 3e134fc): continuation re-queue (line 544), continuations-exhausted dead-letter (line 583).
+- isaac-agent `features/tool/tool_loop_limit.feature` (commit d22d007): crew-level tool-loop-max knob (line 15).
+
+## Acceptance
+
+- [ ] `bb features features/delivery.feature:544` green (isaac-hail)
+- [ ] `bb features features/delivery.feature:583` green (isaac-hail)
+- [ ] `bb features features/tool/tool_loop_limit.feature:15` green (isaac-agent)
+- [ ] Continuation prompt carries the continuation notice (N of M + do-not-restart + 🔁 instruction)
+- [ ] Comm/cron turns unchanged (limit message reaches a real user)
+- [ ] Full suites green in both repos; @wip removed from all three scenarios
