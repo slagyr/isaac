@@ -1,11 +1,11 @@
 ---
 # isaac-cehc
 title: Hail delivery worker swallows the exception (logs :error :exception, not class/message)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-07-05T16:23:33Z
-updated_at: 2026-07-05T17:34:34Z
+updated_at: 2026-07-06T14:23:38Z
 ---
 
 ## Problem
