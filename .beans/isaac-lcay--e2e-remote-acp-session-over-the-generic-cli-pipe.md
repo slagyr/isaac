@@ -141,3 +141,31 @@ Consequence for the proof:
 Proceed: implement the five interactive-driver steps, stand up a fixture root
 with the ACP module + stub model, spawn `isaac acp` over the pipe, un-@wip, and
 get `bb features features/integration.feature` green in isaac-cli-proxy.
+
+## Worker observations (2026-07-06, scrapper)
+
+A concrete contract conflict remains on the real subprocess path the accepted
+proof requires.
+
+What I verified in the live environment:
+- `/usr/local/bin/isaac` does expose `acp`, and the command is module-gated.
+- A fixture root can be prepared with `:isaac.comm.acp` and ACP test config.
+- The real proof path still depends on selecting that disposable root from the
+  spawned `isaac` subprocess behind `/cli`.
+- Driving the installed launcher as `isaac acp` against a disposable fixture did
+  not stay inside the fixture's intended model/provider state for ACP runtime:
+  initialize/prompt behavior surfaced the default user-root Anthropic model and
+  returned a live-credit error instead of the fixture echo-model response.
+- The prior lcay investigation already established the likely seam: `isaac
+  --root <fixture-root> acp` appears to resolve the command but ACP runtime does
+  not honor the top-level root consistently from `isaac.main/run`.
+
+Implication:
+- The accepted e2e scenario cannot currently prove a disposable fixture-root ACP
+  session via forwarded argv alone, even though the generic cli pipe itself is
+  present.
+- Finishing lcay as written would require an unreviewed workaround (mutating the
+  real default root, injecting process env for the spawned launcher, or fixing
+  ACP root propagation in product code outside the approved bean scope).
+- Returning to planner for scope/unblock decision is safer than baking the wrong
+  proof harness.
