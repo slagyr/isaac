@@ -4,8 +4,10 @@ title: 'Graceful shutdown: suspend in-flight turns at a clean step boundary'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-06T15:44:33Z
-updated_at: 2026-07-06T18:51:39Z
+updated_at: 2026-07-06T18:58:17Z
 parent: isaac-wq8m
 blocked_by:
     - isaac-7li9
@@ -51,10 +53,28 @@ New machinery (approved): step `in-flight turns are suspended` + parameterized v
 
 ## Acceptance
 
-- [ ] `bb features features/bridge/suspend.feature:17` green (isaac-agent)
-- [ ] `bb features features/bridge/suspend.feature:37` green (isaac-agent)
-- [ ] `bb features features/bridge/suspend.feature:52` green (isaac-agent)
-- [ ] `bb features features/delivery.feature:548` green (isaac-hail)
-- [ ] app/stop! (isaac-server) invokes suspend as phase 1.5: after delivery-worker/router stop, before supervisor/module/scheduler teardown
-- [ ] :server :suspend-timeout-ms wired, default 15000
-- [ ] Full suites green in both repos; @wip removed from all four scenarios
+- [x] `bb features features/bridge/suspend.feature:17` green (isaac-agent)
+- [x] `bb features features/bridge/suspend.feature:37` green (isaac-agent)
+- [x] `bb features features/bridge/suspend.feature:52` green (isaac-agent)
+- [x] `bb features features/delivery.feature:548` green (isaac-hail)
+- [x] app/stop! (isaac-server) invokes suspend as phase 1.5: after delivery-worker/router stop, before supervisor/module/scheduler teardown
+- [x] :server :suspend-timeout-ms wired, default 15000
+- [x] Full suites green in both repos; @wip removed from all four scenarios
+
+## Resolution (work-3)
+
+**isaac-agent** (`60726e9`): `isaac.bridge.suspend` — cooperative cancel-all +
+bounded wait; `release-turn-marker!` stamps `:suspended`/`:boundary` instead of
+deleting on suspend; `:suspended` turn result via `interrupt-result`; exec skips
+process teardown while session is suspended (cap can expire mid-exec → `:unclean`).
+Steps `in-flight turns are suspended` (+ timeout variant) in session-steps;
+`@wip` removed from `suspend.feature`.
+
+**isaac-hail** (`b1518c4`): `:suspended` turn result logs `:hail/delivery-suspended`
+and does not reschedule; `@wip` removed from delivery scenario.
+
+**isaac-server** (`d44831d`): `stop!` phase 1.5 calls `isaac.bridge.suspend/suspend!`
+(runtime resolve) with `:server :suspend-timeout-ms` default 15000.
+
+Verified: `clojure -M:features features/bridge/suspend.feature` (3/3),
+`features/delivery.feature:548` (1/1), `bb spec` isaac-server (170/170).
