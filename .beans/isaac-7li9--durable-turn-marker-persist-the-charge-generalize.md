@@ -1,11 +1,11 @@
 ---
 # isaac-7li9
 title: 'Durable turn marker: persist the charge, generalize hail/inflight to all turn sources'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-06T15:43:54Z
-updated_at: 2026-07-06T16:32:03Z
+updated_at: 2026-07-06T17:13:29Z
 parent: isaac-wq8m
 ---
 
@@ -38,3 +38,31 @@ Promote the inflight concept from hail-private to runtime-wide: a durable per-tu
 - **D4 — Orphan = marker with no live in-memory in-flight entry.** Never age-based: markers live for the whole turn, so age cannot distinguish a live 4-minute turn from an abandoned one. At startup the atom is empty → all surviving markers are orphans (correct). At runtime a live turn always has its atom entry → can never be stolen/double-driven.
 - **D5 — Bridge owns resume, per source:** `:hail` → hand embedded delivery back to the hail store (attempts+1, backoff, dead-letter budget intact); `:cron` → rebuild charge and dispatch; `:comm` → dispatch only if interruption is fresh (config `:turn-resume-window-ms`, default 10 min, hot-reloadable), else drop marker and log.
 - **SessionStore abstraction (constraint):** the bridge delegates to the SessionStore to record inflight turns, clear them, and find orphaned turns. No caller touches `sessions/turns/` directly. `hail/inflight/` is deleted; 0tf3's `recover-orphaned-inflight!` is removed, not generalized.
+
+## Scenarios (approved one-by-one, 2026-07-06)
+
+Committed @wip:
+- isaac-agent `features/session/turn_markers.feature` (commit 988b245)
+- isaac-hail `features/turn-marker-claim.feature` (commit dbebf03)
+
+New steps (approved): `a turn marker exists for session "..." with:` (assert), `no turn marker exists for session "..."`, `a turn marker exists for session "..." referencing delivery "..."` (Given seed), `the orphaned turn markers are:` (exact-set orphan query). The assert steps must be registered for BOTH isaac-agent and isaac-hail feature suites. Reuses the Grover `wait` gate + `the turn ends on session` machinery from concurrency.feature.
+
+Design note (2026-07-06, approved): the stale-delivery dedup guard runs in the delivery worker's TICK (owner of deliveries/), not a startup pass — an every-tick invariant: never dispatch a delivery a turn marker already references; remove it and log `:hail/stale-delivery-removed` at warn.
+
+## Verdicts on existing scenarios (implementation contract)
+
+- isaac-hail delivery.feature:27 "a bound delivery dispatches..." — REWRITE: inflight/ file assertions become turn-marker assertions.
+- isaac-hail delivery.feature:445 + :477 (isaac-0tf3 orphan recovery pair) — REMOVE: recover-orphaned-inflight! is deleted; orphan recovery moves to the resume bean (isaac-vdfc) keyed off turn markers.
+- isaac-hail delivery.feature: any other inflight/ file references — REWRITE to marker equivalents.
+- isaac-agent concurrency.feature — KEEP unchanged: in-memory in-flight semantics are unaffected (atom stays the runtime gate; D3).
+
+## Acceptance
+
+- [ ] `bb features features/session/turn_markers.feature:17` green (isaac-agent)
+- [ ] `bb features features/session/turn_markers.feature:33` green (isaac-agent)
+- [ ] `bb features features/session/turn_markers.feature:44` green (isaac-agent)
+- [ ] `bb features features/turn-marker-claim.feature:18` green (isaac-hail)
+- [ ] `bb features features/turn-marker-claim.feature:49` green (isaac-hail)
+- [ ] delivery.feature verdicts applied (rewrites done, 0tf3 pair removed); full suites green in both repos
+- [ ] One-time removal checks (not scenarios): hail/inflight/ directory unused; recover-orphaned-inflight! gone; no caller outside SessionStore touches sessions/turns/
+- [ ] @wip removed from all five scenarios
