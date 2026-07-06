@@ -1,11 +1,11 @@
 ---
 # isaac-gnji
 title: 'ACP runtime loses the top-level --root: isaac --root <dir> acp resolves the default user root'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-07-06T19:55:07Z
-updated_at: 2026-07-06T19:55:07Z
+updated_at: 2026-07-06T20:06:24Z
 blocking:
     - isaac-lcay
 ---
