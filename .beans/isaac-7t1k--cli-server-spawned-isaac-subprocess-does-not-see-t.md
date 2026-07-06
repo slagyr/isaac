@@ -1,13 +1,11 @@
 ---
 # isaac-7t1k
 title: cli-server-spawned isaac subprocess does not see the fixture root's module surface
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-06T23:26:27Z
-updated_at: 2026-07-06T23:44:09Z
+updated_at: 2026-07-06T23:46:07Z
 blocking:
     - isaac-lcay
 ---
