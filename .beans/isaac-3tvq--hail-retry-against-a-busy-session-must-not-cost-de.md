@@ -1,30 +1,29 @@
 ---
 # isaac-3tvq
-title: Hail retry against a busy session must not cost dead-letter budget
+title: Provider walls defer hail deliveries instead of burning attempts
 status: draft
 type: bug
 priority: normal
 created_at: 2026-07-06T16:32:20Z
-updated_at: 2026-07-06T17:46:53Z
+updated_at: 2026-07-06T18:20:29Z
 ---
 
+## Goal
 
-## Gap
+**Dead-letter poison, wait out weather — never confuse the two.** The 5-attempt dead-letter loop exists to stop poison hails (a hail that breaks its target every delivery). Today `attempts` increments on ANY turn failure, including environmental ones that say nothing about the hail. When a provider hits a usage wall, every hail on the board dead-letters within minutes — and each retry re-drives a giant turn into a known wall.
 
-Observed live on zanebot (2026-07-06, hail a6dd1076 / bean isaac-4tn1): while a worker session is actively working a bean, each retry redelivery hits the busy session, gets refuse-dispatch, and increments :attempts. A hail can dead-letter at 5 attempts even though the work it requested is proceeding normally. Busy-session refusal is backpressure, not failure — it should reschedule with backoff WITHOUT consuming dead-letter budget. Attempts should count only genuine delivery failures (exceptions, dead sessions, band resolution errors).
+## Observed (2026-07-06, zanebot)
 
-## Notes
+codex `usage_limit_reached` + anthropic credit exhaustion dead-lettered 6 hails across every band (work, verify, plan, ci-failure) in ~30 minutes, including the isaac-4tn1→verify handoff and three legitimate lcay planner escalations. None were poison. The failed/*.edn records carried no error detail (diagnosis required log archaeology).
 
-- Fix likely in isaac-hail delivery_worker.clj reschedule path: distinguish :refused-busy from failure errors; reschedule busy refusals without attempts++ (possibly with a separate, much higher busy-retry ceiling or none).
-- Related to isaac-wq8m epic (D4: a live turn can never be stolen) but independently shippable — this is delivery-side accounting, not turn markers.
+Note: busy sessions were NOT part of the burn — `session-available?` gates before any attempt and leaves the delivery pending at zero cost (existing scenario "a delivery to an in-flight session is left pending"). The original premise of this bean was wrong. Part of the observed churn was the age-based inflight recovery stealing live >5-min turns (see Interim default below); the durable fix for that is isaac-7li9/isaac-vdfc.
 
-## Scope extension (2026-07-06, Micah-approved): failure-class-aware retry accounting
+## Design (2026-07-06, Micah-approved)
 
-Observed live: codex usage_limit_reached failures burned 5 attempts in ~5 minutes per hail across every band (work, verify, plan, ci-failure) — the wall lasts hours, the retries were pure waste, and each retry re-drove a turn re-sending a ~120K head against the same wall.
+Hail delivery must not be concerned with retry pricing or provider semantics. Two-outcome contract:
 
-Classify delivery failures and price retries accordingly:
-- **:refused-busy** (session in-flight) — backpressure, not failure: reschedule with backoff, NO attempts increment (original scope).
-- **:provider-limit** (usage limits, 429s, quota/credit exhaustion — e.g. "usage_limit_reached", "credit balance is too low") — the world is broken, not the hail: park with LONG backoff (tens of minutes, configurable), NO attempts increment.
-- **genuine failure** (exceptions, dead sessions, band resolution errors) — today's semantics: attempts++, 5-attempt dead-letter.
-
-Also carry the failure class + message into the dead-letter record — the failed/*.edn files from this incident had no :error detail at all; diagnosis required log archaeology (the isaac-cehc fix put it in logs; put it on the record too).
+- **The drive (isaac-agent) classifies.** A provider wall (429 / usage_limit_reached / quota-credit exhaustion) makes the turn result `{:unavailable? true, :retry-after-ms N}` — N from the 429 `Retry-After` header when present, else a drive-side default. Genuine failures return `{:error ...}` exactly as today.
+- **The hail worker treats `:unavailable?` like busy**: the delivery returns to pending with `:next-attempt-at` = now + retry-after — NO attempts increment, no class table, no provider knowledge in hail. New log event `:hail/delivery-deferred` (warn) for visibility. A walled provider means hails wait indefinitely rather than dead-letter — the hail isn't broken.
+- **Genuine-failure path untouched**: attempts++, backoff, 5-attempt dead-letter.
+- **Dead-letter records carry the error keyword + message** (isaac-cehc parity on the record, not just the log).
+- **Interim default**: `default-inflight-recovery-ms` 300000 → 7200000 (2h) — the age-only orphan heuristic steals live turns longer than 5 min (clears their in-flight guard, burns attempts as :worker-crash, enables double-drive on the same session). 2h makes theft unrealistic; crash recovery just takes longer. This heuristic is deleted entirely by isaac-7li9/isaac-vdfc.
