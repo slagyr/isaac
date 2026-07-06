@@ -1,11 +1,11 @@
 ---
 # isaac-2xj5
 title: 'Graceful shutdown: suspend in-flight turns at a clean step boundary'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-06T15:44:33Z
-updated_at: 2026-07-06T18:48:44Z
+updated_at: 2026-07-06T18:51:39Z
 parent: isaac-wq8m
 blocked_by:
     - isaac-7li9
