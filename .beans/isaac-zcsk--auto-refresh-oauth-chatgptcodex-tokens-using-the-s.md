@@ -129,3 +129,17 @@ So the planner's "accepted gap" is closed. Re-verified on current isaac-agent
 change + foundation bump): `store_spec`, `shared_spec`, and `impl_common_spec`
 all green. No code change was needed — this is a docs/acceptance reconciliation
 only.
+
+
+## Exceptions
+
+- `features/llm/auth/oauth_refresh.feature` — **DELETED** (both scenarios removed),
+  in isaac-agent `main` commit `120ec36`. Authorized by the planner's "Final
+  acceptance" (2026-07-05) and the worker "Reconciliation" above. Reason: after 3
+  author rewrites the feature ran 2 pending / 0 assertions (fake coverage);
+  OAuth/auth is spec-tested by convention in this repo, and the unit specs
+  (`spec/isaac/llm/auth/store_spec.clj` + `spec/isaac/llm/api/openai/shared_spec.clj`)
+  cover more than the feature attempted. Acceptance for this bean is those unit
+  specs. Formalizing here per the verify tamper protocol (retroactive: the
+  deletion was authorized inline in the bean body but lacked this `## Exceptions`
+  entry; flagged on the passing verify of 2026-07-06).
