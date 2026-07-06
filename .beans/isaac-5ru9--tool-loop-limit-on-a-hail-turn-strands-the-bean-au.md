@@ -1,11 +1,11 @@
 ---
 # isaac-5ru9
 title: 'Tool-loop limit on a hail turn strands the bean: auto-continue instead of completing'
-status: unverified
+status: completed
 type: bug
 priority: normal
 created_at: 2026-07-06T21:23:48Z
-updated_at: 2026-07-06T22:12:00Z
+updated_at: 2026-07-06T22:15:31Z
 ---
 
 
