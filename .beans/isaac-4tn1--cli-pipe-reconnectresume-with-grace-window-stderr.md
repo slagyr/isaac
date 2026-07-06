@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-03T15:34:23Z
-updated_at: 2026-07-06T16:34:06Z
+updated_at: 2026-07-06T20:07:45Z
 blocked_by:
     - isaac-895i
 ---
@@ -61,3 +61,7 @@ Acceptance: un-@wip; bb spec / bb features green in BOTH repos; PROTOCOL.md upda
 - `isaac-cli-server` commit: `39ea91e` (`isaac-4tn1: retain cli streams across reconnect`)
 - `isaac-cli-proxy`: `bb ci`
 - `isaac-cli-server`: `bb ci`
+
+
+
+## Verify fail (attempt 1, 2026-07-06): test smell — Thread/sleep in modified proxy acceptance steps without justification
