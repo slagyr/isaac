@@ -1,11 +1,11 @@
 ---
 # isaac-3tyl
 title: 'Stale-delivery dedup eats live failure-path retries: guard must require an orphaned marker'
-status: unverified
+status: completed
 type: bug
 priority: high
 created_at: 2026-07-06T22:13:19Z
-updated_at: 2026-07-06T22:15:14Z
+updated_at: 2026-07-06T22:25:22Z
 ---
 
 
