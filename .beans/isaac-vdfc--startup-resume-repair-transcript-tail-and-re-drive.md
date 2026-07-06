@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-07-06T15:44:51Z
-updated_at: 2026-07-06T15:44:51Z
+updated_at: 2026-07-06T18:54:55Z
 parent: isaac-wq8m
 blocked_by:
     - isaac-7li9
@@ -29,3 +29,11 @@ One unified startup resume path, keyed off the durable turn markers (isaac-7li9)
 
 - Replaces isaac-0tf3's recovery as a special case; there must be exactly ONE re-drive path so hail turns cannot be double-driven.
 - Mid-tool ambiguity is irreducible on hard crash (did the `git push` land?): the synthesized tool-result must instruct the model to verify side effects rather than blindly repeat them.
+
+## Design (2026-07-06, Micah-approved)
+
+- **F1 — Resume pricing.** `:suspended` marker (clean deploy) → re-queue with attempts UNCHANGED (suspend is planned, not evidence). Unstamped orphan (hard crash) → attempts+1: if a poison turn crashed the server, dead-letter budget is the only crash-loop breaker. Crash is evidence.
+- **F2 — Per source.** `:hail` → write the embedded delivery back to deliveries/, delete marker, normal worker delivers (redelivery re-appends the hail prompt over partial work — existing post-0tf3 semantics). `:comm`/`:cron` → dispatch a resume charge whose prompt is an interruption note ("interrupted by a restart; continue from the transcript"); a user message after trailing toolResults is structurally valid on all providers.
+- **F3 — Transcript repair (durable + logged, never silent).** Dangling toolCalls (assistant msg with calls, no results) → synthesize a toolResult per call: "Interrupted before/during execution; result unknown — verify side effects before repeating." Kills the orphaned-tool-result provider rejection (isaac-63f3/0h7b family). Torn trailing JSONL line (crash mid-append) → truncate to last complete line, log what was dropped.
+- **F4 — Ordering.** Resume scan runs at startup BEFORE the delivery worker's first tick. Per marker: re-queue/dispatch FIRST, delete marker SECOND — crash between leaves both, which converges (stale-delivery dedup removes the stray; marker resumes next boot). Reverse order + crash = lost turn.
+- **F5 — Comm staleness.** `:turn-resume-window-ms` default 600000, measured from `:interrupted-at` (suspend stamp), fallback `:started-at` (crash). Inside → resume with note; outside → drop marker, log `:resume/comm-stale`. Hail and cron never go stale — they are work orders.
