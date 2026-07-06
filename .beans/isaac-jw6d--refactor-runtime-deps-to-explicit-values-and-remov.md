@@ -1,11 +1,11 @@
 ---
 # isaac-jw6d
 title: Refactor runtime deps to explicit values and remove thread-local system/fs
-status: in-progress
+status: completed
 type: epic
 priority: high
 created_at: 2026-05-21T15:54:56Z
-updated_at: 2026-06-26T21:18:55Z
+updated_at: 2026-07-06T15:01:37Z
 ---
 
 Problem
@@ -34,3 +34,9 @@ Exit Criteria
 - Ambient fs wrappers are either gone or clearly deprecated and no longer used by runtime paths.
 
 Implementation plan lands as small child beans, not one large rewrite.
+
+
+
+## Completed (2026-07-06) — exit criteria audit-confirmed
+
+Cross-module audit: 0 thread-local `*fs*` / `*system*` references and 0 dynamic bindings across all 10 repos (isaac-agent + hail, server, discord, cli-server, cli-proxy, acp, cron, hooks, imessage); explicit fs-as-value pattern is universal (116 fs* param refs in isaac-agent alone). Foundation retains isaac.system only as the process-edge holder, by design/intent. Child isaac-5zfv (selectable bb/JVM runtime) is a separate scope and stands alone.
