@@ -1,11 +1,11 @@
 ---
 # isaac-vdfc
 title: 'Startup resume: repair transcript tail and re-drive interrupted turns (generalize 0tf3)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-06T15:44:51Z
-updated_at: 2026-07-06T18:54:55Z
+updated_at: 2026-07-06T19:00:59Z
 parent: isaac-wq8m
 blocked_by:
     - isaac-7li9
@@ -37,3 +37,24 @@ One unified startup resume path, keyed off the durable turn markers (isaac-7li9)
 - **F3 — Transcript repair (durable + logged, never silent).** Dangling toolCalls (assistant msg with calls, no results) → synthesize a toolResult per call: "Interrupted before/during execution; result unknown — verify side effects before repeating." Kills the orphaned-tool-result provider rejection (isaac-63f3/0h7b family). Torn trailing JSONL line (crash mid-append) → truncate to last complete line, log what was dropped.
 - **F4 — Ordering.** Resume scan runs at startup BEFORE the delivery worker's first tick. Per marker: re-queue/dispatch FIRST, delete marker SECOND — crash between leaves both, which converges (stale-delivery dedup removes the stray; marker resumes next boot). Reverse order + crash = lost turn.
 - **F5 — Comm staleness.** `:turn-resume-window-ms` default 600000, measured from `:interrupted-at` (suspend stamp), fallback `:started-at` (crash). Inside → resume with note; outside → drop marker, log `:resume/comm-stale`. Hail and cron never go stale — they are work orders.
+
+## Scenarios (approved one-by-one, 2026-07-06)
+
+Committed @wip:
+- isaac-hail `features/turn-resume.feature` (commit e3fb5c3): suspended re-queue attempts-intact (line 22), crash orphan attempts+1 (line 56), dangling-toolCall repair before re-queue (line 86).
+- isaac-agent `features/session/resume_repair.feature` (commit 825e97e): torn-line truncation + fresh-comm resume-with-note (line 17), stale-comm drop (line 48).
+
+New machinery (approved): step `interrupted turns are resumed at "<instant>"` (pinned now; registered in BOTH suites); step `session "..." has a torn trailing transcript line "..."` (raw bytes, no newline — agent suite); log events `:resume/crash-orphan` (warn), `:resume/transcript-repair` (warn, with `repair` field :dangling-tool-call | :torn-line), `:resume/comm-stale` (info); config `:turn-resume-window-ms` default 600000.
+
+This feature REPLACES isaac-0tf3's inflight orphan recovery — when this lands with isaac-7li9, delivery.feature's 0tf3 scenario pair and `recover-orphaned-inflight!` are removed (verdicts recorded on isaac-7li9).
+
+## Acceptance
+
+- [ ] `bb features features/turn-resume.feature:22` green (isaac-hail)
+- [ ] `bb features features/turn-resume.feature:56` green (isaac-hail)
+- [ ] `bb features features/turn-resume.feature:86` green (isaac-hail)
+- [ ] `bb features features/session/resume_repair.feature:17` green (isaac-agent)
+- [ ] `bb features features/session/resume_repair.feature:48` green (isaac-agent)
+- [ ] Resume scan wired into server startup BEFORE the delivery worker's first tick
+- [ ] recover-orphaned-inflight! and the 0tf3 scenario pair removed (with isaac-7li9)
+- [ ] Full suites green in both repos; @wip removed from all five scenarios
