@@ -170,36 +170,21 @@ Implication:
 - Returning to planner for scope/unblock decision is safer than baking the wrong
   proof harness.
 
-## Worker observations (2026-07-06, scrapper) — root selection narrowed further
+## Worker observations (2026-07-06, scrapper) — root propagation blocker confirmed
 
-I reduced the disposable-root ACP setup to the launcher seam the accepted proof
-must rely on and confirmed the conflict is specifically about root selection on
-that real subprocess path.
+Fresh verification this turn narrowed the conflict to real ACP root selection on
+the accepted subprocess path.
 
 What I verified:
-- `/usr/local/bin/isaac` does expose `acp` when the selected root has
-  `:isaac.comm.acp` configured; the command remains root/module-gated as
-  expected.
-- A disposable fixture root at `/tmp/lcay-fixture` with `:isaac.comm.acp` plus
-  Grover echo-model config works when launched through environment-root
-  selection: `ISAAC_ROOT=/tmp/lcay-fixture isaac acp`.
-- The accepted `/cli` proof path cannot rely on that environment workaround;
-  `isaac-cli-server` forwards argv to `isaac` and the scenario contract expects
-  the disposable root to be selected from the forwarded command line.
-- On that path, `isaac --root /tmp/lcay-fixture acp` still appears to
-  initialize ACP against the default `~/.isaac` model/provider state instead of
-  the fixture echo-model state.
-- The observed failure mode is a live default-root provider/model being used
-  during initialize/prompt rather than the fixture echo-model response, which is
-  consistent with ACP CLI ignoring the top-level `:root` chosen by
-  `isaac.main/run` once ACP runtime resolves its config.
+- A targeted gherclj run of the accepted scenario still reports it pending (`bb -m gherclj.main -f features -s isaac.**-steps -s isaac.cli-proxy.feature-bootstrap -t slow -t wip features/integration.feature:41`), so the approved interactive-driver steps remain unimplemented work in `isaac-cli-proxy`.
+- The installed launcher is not the blocker by itself: `/usr/local/bin/isaac acp --help` succeeds, and `/usr/local/bin/isaac --root /tmp/lcay-fixture acp --help` also resolves the command.
+- A disposable fixture root at `/tmp/lcay-fixture` with `:isaac.comm.acp` plus Grover echo-model config works when the launcher root is supplied via environment: `ISAAC_ROOT=/tmp/lcay-fixture isaac acp` starts, accepts ACP JSON-RPC over stdio, and prompt turns use the fixture echo model.
+- The accepted `/cli` proof path cannot rely on that environment workaround; `isaac-cli-server` forwards only argv to `isaac`, and the scenario contract expects disposable-root selection from the launched command path.
+- On that path, real turns launched as `isaac --root /tmp/lcay-fixture acp` still appear to initialize against the default `~/.isaac` model/provider state rather than the fixture config. The observed failure mode is a live default-root provider/model being used during initialize/prompt instead of the fixture echo-model response.
+- This is consistent with the durable suspicion that ACP runtime setup is not honoring the top-level `:root` chosen by `isaac.main/run` once ACP runtime resolves its config.
 
 Implication:
-- The generic cli pipe is present, but the accepted disposable-fixture-root ACP
-  proof cannot be completed via forwarded argv alone on the current product
-  behavior.
-- Completing lcay as written would require an unapproved workaround
-  (`ISAAC_ROOT` env injection / default-root mutation) or a product fix for ACP
-  root propagation outside this bean's accepted scope.
-- Returning to planner remains the correct handoff until scope or prerequisites
-  are adjusted.
+- The generic cli pipe is present, but the accepted disposable-fixture-root ACP proof cannot currently be completed via forwarded argv alone on the current product behavior.
+- Completing lcay as written would require either an unapproved workaround (`ISAAC_ROOT` env injection / default-root mutation / pointer-file harnessing) or a product fix so `isaac --root <fixture-root> acp` actually uses that root for runtime behavior.
+- So from `isaac-cli-proxy` alone I can implement the missing interactive-driver steps, but I still cannot satisfy the accepted *real subprocess + isolated echo-model fixture* proof hermetically.
+- Returning to planner remains the correct handoff until scope or prerequisites are adjusted.
