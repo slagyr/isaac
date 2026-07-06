@@ -4,8 +4,10 @@ title: Explicit session-level :model override is ignored at the session-creation
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-04T05:04:15Z
-updated_at: 2026-07-04T05:47:43Z
+updated_at: 2026-07-06T14:28:22Z
 ---
 
 ## Problem (surfaced 2026-07-04 during isaac-q5ee)
@@ -71,3 +73,28 @@ Initial verification of the split-off seam in `isaac-agent`:
 - `bb features` is green for the scoped q5ee state with only the hot-reload scenario active: `573 examples, 0 failures, 1284 assertions`
 
 No new product change has been made for `isaac-b3tl` yet in this turn; this note records the starting state after the planner scope split.
+
+---
+
+## Resolution (unverified — for verifier)
+
+isaac-agent `main` commit **113b633**:
+
+**Root cause.** Session `:model` refs like `":beta"` were stored/resolved without
+canonical id coercion (`->id`), so config lookup missed `models` entries. Feature
+turns also passed a resolved `:model` on the dispatch request, bypassing
+`charge/build`'s live `resolve-behavior` path (same stale-pin class as q5ee).
+
+**Fix.**
+- `normalize-model-ref` in `session/context.clj` — coerce keyword-ish refs to
+  canonical ids at create + `resolve-behavior*`.
+- `charge/behavior-opts` — forward normalized session `:model` to resolve-behavior.
+- Feature harness — parse `model` gherkin values as refs; lookup via
+  `normalize-model-ref`; omit `:model` from `user-sends` dispatch opts.
+
+**Tests.** `@wip` removed; `model_reload.feature` override scenario green (crew
+`flipper` + session `:beta` override survives crew reload). New
+`context_spec` covers override precedence + post-reload stability.
+
+**Verification:** `bb verify` — 1168 spec / 581 feature examples, 0 failures;
+`model_reload.feature` green.
