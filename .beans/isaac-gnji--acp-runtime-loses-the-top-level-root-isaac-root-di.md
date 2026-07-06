@@ -4,8 +4,10 @@ title: 'ACP runtime loses the top-level --root: isaac --root <dir> acp resolves 
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-06T19:55:07Z
-updated_at: 2026-07-06T20:06:24Z
+updated_at: 2026-07-06T21:30:12Z
 blocking:
     - isaac-lcay
 ---
