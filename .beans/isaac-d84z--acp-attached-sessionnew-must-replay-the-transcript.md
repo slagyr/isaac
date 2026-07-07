@@ -1,11 +1,11 @@
 ---
 # isaac-d84z
 title: 'ACP: attached session/new must replay the transcript like session/load'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-07-07T19:01:30Z
-updated_at: 2026-07-07T19:01:30Z
+updated_at: 2026-07-07T19:33:35Z
 parent: isaac-zt4h
 ---
 
