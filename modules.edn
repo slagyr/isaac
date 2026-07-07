@@ -2,10 +2,10 @@
                                :git/sha "fb46da619207e845730ecd5a7066c458597309d1"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
-                               :git/sha "4dda0e96793bc6df11346ca9bfc06daf399a190c"}
+                               :git/sha "c07896a8eee1d434596f87d65bae320f0507b652"}
                        :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
  :isaac.cli-server    {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
-                               :git/sha "c040743bbe35f5c71321e1dc225ad558c582200b"}
+                               :git/sha "cf80a294fc60b4f45f7d68a7dc559a22af2c27f2"}
                        :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.server        {:coord {:git/url "https://github.com/slagyr/isaac-server.git"
                                :git/sha "04f6b9b148a1b49be0a801f9c4b32ab0e1ff315c"}
