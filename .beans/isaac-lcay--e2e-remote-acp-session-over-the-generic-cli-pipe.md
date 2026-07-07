@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-07T01:16:25Z
+updated_at: 2026-07-07T01:24:51Z
 blocking:
     - isaac-exi2
 blocked_by:
@@ -231,3 +231,7 @@ Observed result:
 - the accepted remote ACP proof is green end-to-end through `remote -> cli-proxy -> cli-server -> spawned isaac acp`
 - argv forwarding includes explicit `--root <fixture-root>` and the spawned subprocess resolves ACP from that fixture root
 - initialize response arrives before EOF, session/new returns a session id, prompt response streams before exit, stdin close yields exit code 0
+
+
+
+## Verify fail (attempt 1, 2026-07-07): documented acceptance command runs 0 examples because integration.feature is tagged @slow
