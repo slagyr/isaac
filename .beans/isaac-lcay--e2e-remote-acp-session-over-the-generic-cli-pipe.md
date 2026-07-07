@@ -1,13 +1,13 @@
 ---
 # isaac-lcay
 title: 'e2e: remote ACP session over the generic cli pipe'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - plan-review-loop
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-06T23:26:27Z
+updated_at: 2026-07-07T00:05:12Z
 blocking:
     - isaac-exi2
 blocked_by:
