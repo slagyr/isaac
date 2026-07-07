@@ -2,16 +2,16 @@
                                :git/sha "fb46da619207e845730ecd5a7066c458597309d1"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
-                               :git/sha "c07896a8eee1d434596f87d65bae320f0507b652"}
+                               :git/sha "7db9791b604d53ccd35c2aefdf8e412f2c34bae3"}
                        :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
  :isaac.cli-server    {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
-                               :git/sha "cf80a294fc60b4f45f7d68a7dc559a22af2c27f2"}
+                               :git/sha "496bb004e63726791636be6523e39dd1ca8c841a"}
                        :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.server        {:coord {:git/url "https://github.com/slagyr/isaac-server.git"
                                :git/sha "04f6b9b148a1b49be0a801f9c4b32ab0e1ff315c"}
                        :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp      {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                               :git/sha "1d10231442299d41de9781d9a3a2bdf2602ce33c"}
+                               :git/sha "13ac636fda2073d0ac9b81d5c97ccbd29a535bb6"}
                        :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron          {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
                                :git/sha "cbb6c422d52a13eaed09b9b1b09edbb1d5daa12b"}
