@@ -1,13 +1,11 @@
 ---
 # isaac-w106
 title: Startup resume scan failed to re-queue a suspended delivery in production
-status: in-progress
+status: completed
 type: bug
 priority: critical
-tags:
-    - unverified
 created_at: 2026-07-07T18:28:44Z
-updated_at: 2026-07-07T20:18:05Z
+updated_at: 2026-07-07T20:25:35Z
 ---
 
 
