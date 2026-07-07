@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-07-07T15:42:13Z
-updated_at: 2026-07-07T15:42:13Z
+updated_at: 2026-07-07T15:56:32Z
 ---
 
 
@@ -17,13 +17,20 @@ Observed live (2026-07-07): isaac-exi2's verify handoff (eb08500f) targeted the 
 
 This is the third silent terminal state found this campaign (limbo turns → isaac-5ru9; eaten retries → isaac-3tyl; now this). Same design lesson each time: **a hail that stops moving must make noise.**
 
-## Fix
+## Fix (descoped 2026-07-07, Micah)
 
-When a hail is parked as undeliverable:
-1. Log `:hail/undeliverable` at WARN with the hail id, band, and the frequencies that matched nothing.
-2. Send an at-a-glance notification to the configured notification-comm: `<hail-id> ⚠️ undeliverable — no recipients for <band/frequencies> (bean <bean-id> if present)`. The router/worker has config access; if runtime-side comm sending is architecturally off-limits, deliver the notice via a fallback band or surface it in `isaac hail list` + heartbeat tooling — but the default should be an active notification, not a passive file.
-3. Consider (spec-time decision): a `--dry-run`/recipient-count check in hail-send so a sender can detect zero-recipient addressing at send time and correct itself.
+Log `:hail/undeliverable` at WARN with the hail id, band, and reason when the router parks a hail. **No comm post** — runtime events triggering comm notifications is a general observability design (which events, which comms, throttling, configuration) that is deliberately NOT being opened here. Parked as a possible future epic if silent-state pain recurs despite the warning.
 
 ## Mitigation deployed meanwhile (2026-07-07)
 
 All three hail-bean skills now rule: band handoffs carry `band` + `params` ONLY — no session-tags/crew/filters.
+
+## Scenario (approved 2026-07-07)
+
+Committed @wip: isaac-hail `features/router.feature` line 395 — same setup shape as the existing :no-recipients parking scenarios, plus the WARN log assertion. All steps reuse.
+
+## Acceptance
+
+- [ ] `bb features features/router.feature:395` green (isaac-hail)
+- [ ] Existing router.feature undeliverable scenarios remain green
+- [ ] @wip removed
