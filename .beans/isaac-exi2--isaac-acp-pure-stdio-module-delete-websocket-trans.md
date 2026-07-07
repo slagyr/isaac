@@ -1,11 +1,11 @@
 ---
 # isaac-exi2
 title: 'isaac-acp: pure stdio module — delete websocket transport and chat command'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-03T16:17:10Z
+updated_at: 2026-07-07T02:10:57Z
 blocked_by:
     - isaac-lcay
 ---
