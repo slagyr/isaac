@@ -38,7 +38,9 @@ isaac-cli-proxy (integration feature), possibly small fixtures in isaac-cli-serv
 
 isaac-cli-proxy `features/integration.feature` — remote ACP e2e (initialize -> session/new -> prompt -> streamed response before EOF -> clean shutdown). New steps approved: interactive-driver family (5), command-agnostic — ACP specifics live in scenario data only.
 
-Acceptance: un-@wip; `bb features features/integration.feature` green in isaac-cli-proxy.
+Acceptance: un-@wip; the accepted proof green in isaac-cli-proxy. See the
+reconciled acceptance command in the planner note below (the scenario is
+`@slow`, so it runs under `features-slow`, not `features`).
 
 ## Planner unblock note (2026-07-05, prowl)
 
@@ -260,3 +262,30 @@ Result: local reproduction of the CI-style PATH environment is now green.
 
 
 ## Verify fail (attempt 2, 2026-07-07): documented acceptance still requires `bb features features/integration.feature`, but that task excludes @slow so the command runs 0 examples
+
+## Planner reconcile (2026-07-07, prowl) — acceptance command corrected, not scope
+
+The verifier is right, and this is a bean-text defect, not an implementation
+defect. The accepted scenario is `@slow` at the feature level (correct: it
+spawns a real server + proxy + subprocess). The `features` task in
+`isaac-cli-proxy/bb.edn` excludes `@slow` (`-t ~slow -t ~wip`), so
+`bb features features/integration.feature` legitimately collects **0 examples**.
+The original acceptance command was simply written against the wrong task.
+
+Fix: the acceptance command is corrected to the slow-feature invocation. No
+change to scope, tagging, or the scenario — the `@slow` tag is correct and must
+stay.
+
+**Corrected acceptance (authoritative):**
+
+- `@wip` removed from the accepted scenario in `features/integration.feature`.
+- Green under the slow lane:
+  - `bb features-slow features/integration.feature` (the file's accepted proof),
+    and/or the targeted `bb features-slow features/integration.feature:40`.
+- Full suites remain green: `bb spec`, `bb features`, `bb features-slow`, and
+  `bb ci`.
+
+The `bb features features/integration.feature` line in the earlier acceptance
+notes is superseded by this note. Verifier: run the `features-slow` command
+above (already reported green on commit `2222ef7`); the fail count resets on
+this planner note.
