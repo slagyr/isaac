@@ -11,7 +11,7 @@
                                :git/sha "04f6b9b148a1b49be0a801f9c4b32ab0e1ff315c"}
                        :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp      {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                               :git/sha "13ac636fda2073d0ac9b81d5c97ccbd29a535bb6"}
+                               :git/sha "006a634222c0c1fa256745f1632201465cb3d136"}
                        :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron          {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
                                :git/sha "cbb6c422d52a13eaed09b9b1b09edbb1d5daa12b"}
