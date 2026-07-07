@@ -4,8 +4,10 @@ title: Startup resume scan failed to re-queue a suspended delivery in production
 status: in-progress
 type: bug
 priority: critical
+tags:
+    - unverified
 created_at: 2026-07-07T18:28:44Z
-updated_at: 2026-07-07T18:36:37Z
+updated_at: 2026-07-07T20:18:05Z
 ---
 
 
@@ -30,3 +32,27 @@ The existing vdfc scenarios pass at the resume-fn level; this bug is about the S
 ## Recovery applied meanwhile
 
 Fresh verify hail d4e5730a sent for isaac-axzg (2026-07-07 ~18:2xZ); stale marker preserved as evidence.
+
+## Implementation Notes
+
+- Confirmed `isaac-server` already had the startup resume wiring on `main` (`04f6b9b`), so the open acceptance gap was not missing boot invocation but missing boot-summary visibility from the resume scan.
+- In clean sibling checkout `isaac-agent-w106` (branched from pinned `fb46da6` as `bean/isaac-w106`), updated `src/isaac/bridge/resume.clj` so `resume-interrupted-turns!` emits `:resume/scan-complete` with structured counts: `:markers`, `:requeued`, and `:dropped`.
+- Added focused unit coverage in `isaac-agent-w106/spec/isaac/bridge/resume_spec.clj` covering:
+  - zero-marker boot scan logs `:resume/scan-complete`
+  - suspended hail marker increments `:requeued`
+  - stale comm marker increments `:dropped`
+- Verified the existing agent feature still passes: `bb features features/session/resume_repair.feature`.
+- Also finished the small `isaac-server` cleanup noted in the prior memory: `src/isaac/server/app.clj` now uses local `resolve-var` consistently for startup resume lookup, and `spec/isaac/server/app_spec.clj` proves the resume boot phase runs before `worker/start!`.
+- Commits:
+  - `isaac-agent` branch `bean/isaac-w106`: `94db1f9` — `Log startup resume scan summary`
+  - `isaac-server` `main`: `fb6dcd5` — `Use resolve-var for startup resume wiring`
+- Verification run:
+  - `isaac-agent-w106`: `clojure -M:spec spec/isaac/bridge/resume_spec.clj`
+  - `isaac-agent-w106`: `bb features features/session/resume_repair.feature`
+  - `isaac-agent-w106`: `bb verify`
+  - `isaac-server`: `bb spec spec/isaac/server/app_spec.clj`
+  - `isaac-server`: `bb spec`
+  - `isaac-server`: `bb features`
+- Suite results:
+  - `isaac-agent-w106` verify: `1176 examples, 0 failures, 2316 assertions` and `590 examples, 0 failures, 1329 assertions`
+  - `isaac-server` specs/features: `171 examples, 0 failures, 319 assertions` and `55 examples, 0 failures, 135 assertions`
