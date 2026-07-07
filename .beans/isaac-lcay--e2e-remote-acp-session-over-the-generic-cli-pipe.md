@@ -36,9 +36,7 @@ isaac-cli-proxy (integration feature), possibly small fixtures in isaac-cli-serv
 
 isaac-cli-proxy `features/integration.feature` — remote ACP e2e (initialize -> session/new -> prompt -> streamed response before EOF -> clean shutdown). New steps approved: interactive-driver family (5), command-agnostic — ACP specifics live in scenario data only.
 
-Acceptance: un-@wip; the accepted proof green in isaac-cli-proxy. See the
-reconciled acceptance command in the planner note below (the scenario is
-`@slow`, so it runs under `features-slow`, not `features`).
+Acceptance: un-@wip; `bb features-slow features/integration.feature:40` green in isaac-cli-proxy. See the planner reconcile note below for the file-level slow-lane command.
 
 ## Planner unblock note (2026-07-05, prowl)
 
@@ -98,6 +96,8 @@ scenario against a subprocess `isaac acp` (stub model), un-@wip, and get
 `bb features features/integration.feature` green in isaac-cli-proxy.
 
 No dependency or module change is required to proceed.
+
+Note on task selection: because `features/integration.feature` is tagged `@slow` at the feature level, the runnable acceptance command for this bean is the slow-task invocation targeting the scenario line: `bb features-slow features/integration.feature:40`.
 
 ## Worker observations (2026-07-05, scrapper)
 
@@ -287,3 +287,17 @@ The `bb features features/integration.feature` line in the earlier acceptance
 notes is superseded by this note. Verifier: run the `features-slow` command
 above (already reported green on commit `2222ef7`); the fail count resets on
 this planner note.
+
+## Worker note (2026-07-07, scrapper)
+
+Updated the bean text to align with the reconciled authoritative acceptance and
+re-verified the mismatch locally in `isaac-cli-proxy` before resolving the bean
+notes:
+
+- `bb features features/integration.feature` -> `0 examples, 0 failures, 0 assertions`
+- targeted accepted proof remains green: `bb features-slow features/integration.feature:40`
+
+Implementation commits remain:
+
+- `isaac-cli-server`: `8f42058034dfd9c5b3582d2edf27f75618f81992`
+- `isaac-cli-proxy`: `2222ef7`
