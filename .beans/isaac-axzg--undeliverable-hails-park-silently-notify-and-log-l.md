@@ -4,8 +4,10 @@ title: 'Undeliverable hails park silently: notify and log loudly when a hail has
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-07T15:42:13Z
-updated_at: 2026-07-07T16:23:45Z
+updated_at: 2026-07-07T16:31:15Z
 ---
 
 
@@ -31,6 +33,17 @@ Committed @wip: isaac-hail `features/router.feature` line 395 — same setup sha
 
 ## Acceptance
 
-- [ ] `bb features features/router.feature:395` green (isaac-hail)
-- [ ] Existing router.feature undeliverable scenarios remain green
-- [ ] @wip removed
+- [x] `bb features features/router.feature:395` green (scenario now at line 337 after insertion)
+- [x] Existing router.feature undeliverable scenarios remain green
+- [x] @wip removed
+
+## Implementation Notes
+
+- Implemented in `isaac-hail` on branch `isaac-axzg-undeliverable-warn`.
+- Commit: `a1d976a83d9844885ca36d7c5b1e72fbd62ba1fd` (`Log undeliverable hails explicitly`).
+- Router now emits `WARN :hail/undeliverable` with hail id, thread id, band, and reason whenever a hail is parked in `hail/undeliverable/`.
+- Added router spec coverage for the new event and feature coverage for the no-matching-session band case.
+- Verification run in `isaac-hail`:
+  - `bb features features/router.feature:337` → 1 example, 0 failures
+  - `bb features features/router.feature` → 17 examples, 0 failures
+  - `bb spec` → 122 examples, 0 failures
