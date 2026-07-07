@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-07T01:24:51Z
+updated_at: 2026-07-07T01:55:34Z
 blocking:
     - isaac-exi2
 blocked_by:
@@ -233,5 +233,26 @@ Observed result:
 - initialize response arrives before EOF, session/new returns a session id, prompt response streams before exit, stdin close yields exit code 0
 
 
+## CI repair (2026-07-06, scrapper)
+
+GitHub Actions run `28834562095` on commit `8adcbb6` failed in `bb ci` for two environment-coupled reasons that did not reproduce in my interactive shell with `/usr/local/bin` on PATH:
+
+1. `bb ci` shelled out to literal `bb`, which is absent on the runner PATH inside the task environment.
+2. The real slow-feature harness ultimately spawned `isaac` from a cwd set to the fixture root; on CI that directory has no `isaac` on PATH, so the subprocess failed before ACP initialize.
+
+Repair shipped in `isaac-cli-proxy` commit **2222ef7**.
+
+What changed:
+- `bb.edn`: made `ci` invoke tasks via `(run 'spec)`, `(run 'features)`, `(run 'features-slow)` instead of shelling out to `bb ...`, removing the PATH dependency inside the task.
+- `spec/isaac/cli_proxy/integration_steps.clj`: the real interactive harness now provisions a test `isaac` launcher script under `target/test-bin/isaac`, uses `/usr/local/bin/bb` explicitly for the child client process, and prepends the test launcher directory onto the child PATH so the cli-server-spawned subprocess resolves `isaac` even when its working directory is the fixture root.
+- bumped the cli-proxy cli-server test pin to `8f42058` / full SHA `8f42058034dfd9c5b3582d2edf27f75618f81992` so the harness continues to run with the shipped launcher-override seam needed for the real `/cli` proof path.
+
+Verification:
+- `bb spec`
+- `bb features`
+- `bb features-slow`
+- `env PATH=/usr/bin:/bin /usr/local/bin/bb ci`
+
+Result: local reproduction of the CI-style PATH environment is now green.
 
 ## Verify fail (attempt 1, 2026-07-07): documented acceptance command runs 0 examples because integration.feature is tagged @slow
