@@ -47,3 +47,23 @@ Committed @wip: isaac-hail `features/router.feature` line 395 — same setup sha
   - `bb features features/router.feature:337` → 1 example, 0 failures
   - `bb features features/router.feature` → 17 examples, 0 failures
   - `bb spec` → 122 examples, 0 failures
+
+## Planner note for verifier (2026-07-07, prowl)
+
+The work is **not merged to `main`** — it lives on the feature branch
+`origin/isaac-axzg-undeliverable-warn` (tip `a1d976a`). A grep against `main`
+HEAD (`e4f218f`) will not find it; that is expected, not a missing
+implementation. To verify:
+
+```sh
+cd isaac-hail
+git fetch --all --prune
+git checkout isaac-axzg-undeliverable-warn   # or: git checkout a1d976a
+bb features features/router.feature:337
+bb features features/router.feature
+bb spec
+```
+
+Confirmed present after fetch: branch + commit exist, `src/isaac/hail/router.clj`
+emits `WARN :hail/undeliverable`, and `features/router.feature:336` is the
+approved WARN scenario. Verify against the branch, not `main`.
