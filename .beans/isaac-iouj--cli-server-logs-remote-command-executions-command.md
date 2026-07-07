@@ -4,8 +4,10 @@ title: 'cli-server logs remote command executions: command, timing, exit code'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-07T18:23:49Z
-updated_at: 2026-07-07T18:39:16Z
+updated_at: 2026-07-07T19:41:59Z
 ---
 
 
@@ -32,6 +34,16 @@ Committed @wip: isaac-cli-server `features/cli/endpoint.feature` line 94 (commit
 
 ## Acceptance
 
-- [ ] `bb features features/cli/endpoint.feature:94` green (isaac-cli-server)
-- [ ] Abnormal endings (grace-window kill, abandoned stream) also emit :cli/command-finished with the real exit/reason
-- [ ] Full suite green; @wip removed
+- [x] `bb features features/cli/endpoint.feature:94` green (isaac-cli-server)
+- [x] Abnormal endings (grace-window kill, abandoned stream) also emit :cli/command-finished with the real exit/reason
+- [x] Full suite green; @wip removed
+
+## Work Notes
+
+- Implemented remote CLI execution lifecycle logging in `isaac-cli-server` on branch `isaac-iouj-cli-command-logging`.
+- `src/isaac/cli_server/dispatch.clj` now logs `:cli/command-started` with argv and stream-id, and `:cli/command-finished` with stream-id, duration, and either exit code or abnormal reason.
+- Detached-stream exits now log `:reason :abandoned-stream` with the real exit code when the subprocess finishes after disconnect.
+- Grace-window expiry now logs `:reason :grace-window-expired` before destroy so the kill path is audible instead of silent.
+- Added dispatch specs for normal completion, detached completion, and grace-window expiry.
+- Removed `@wip` from `features/cli/endpoint.feature` and added feature support so cli log assertions run against in-memory logging.
+- Verified with `bb spec`, `bb features features/cli/endpoint.feature`, full `bb features`, and full `bb ci`.
