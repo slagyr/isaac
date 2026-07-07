@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-07-07T18:23:49Z
-updated_at: 2026-07-07T18:23:50Z
+updated_at: 2026-07-07T18:30:44Z
 ---
 
 
@@ -25,3 +25,13 @@ Consistent with the hail lifecycle logging precedent (isaac-jnkp): grep `:cli/` 
 ## Acceptance sketch (spec to confirm)
 
 Scenario shape (isaac-cli-server features): a remote command runs to completion → log has entries matching `:cli/command-started` (command argv) and `:cli/command-finished` (exit 0, duration present); a failing command logs its non-zero exit.
+
+## Scenario (approved 2026-07-07)
+
+Committed @wip: isaac-cli-server `features/cli/endpoint.feature` line 94 (commit 5548045). No real execution — new stub variant `a recording spawn stub that exits with code N` (records the spawn, simulates completion); everything else reuses endpoint.feature machinery. The non-zero exit proves capture, not hardcoding.
+
+## Acceptance
+
+- [ ] `bb features features/cli/endpoint.feature:94` green (isaac-cli-server)
+- [ ] Abnormal endings (grace-window kill, abandoned stream) also emit :cli/command-finished with the real exit/reason
+- [ ] Full suite green; @wip removed
