@@ -1,11 +1,11 @@
 ---
 # isaac-iouj
 title: 'cli-server logs remote command executions: command, timing, exit code'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-07T18:23:49Z
-updated_at: 2026-07-07T18:30:44Z
+updated_at: 2026-07-07T18:39:16Z
 ---
 
 
