@@ -1,11 +1,11 @@
 ---
 # isaac-axzg
 title: 'Undeliverable hails park silently: notify and log loudly when a hail has no recipients'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-07-07T15:42:13Z
-updated_at: 2026-07-07T15:56:32Z
+updated_at: 2026-07-07T16:23:45Z
 ---
 
 
