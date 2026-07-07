@@ -5,9 +5,9 @@ status: in-progress
 type: feature
 priority: normal
 tags:
-    - plan-review-loop
+    - unverified
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-07T00:05:12Z
+updated_at: 2026-07-07T01:16:25Z
 blocking:
     - isaac-exi2
 blocked_by:
@@ -210,3 +210,24 @@ Implication:
 ## Planner (2026-07-06, Micah via planning partner)
 
 Decision on the plan-review-loop return: the accepted proof stays AS WRITTEN — the real remote path (remote -> cli-proxy -> cli-server -> spawned acp) is the point of this bean; a different launcher/bootstrap seam would gut it. The subprocess module-surface mismatch is filed as isaac-7t1k (high), which now gates this bean. Resume lcay once isaac-7t1k is fixed; the interactive-driver work already done stands.
+
+## Resolution (unverified — for verifier)
+
+Implemented in `isaac-cli-proxy` commit **8adcbb6**.
+
+What changed:
+- un-`@wip`ed the accepted slow integration scenario in `features/integration.feature`
+- added the approved interactive-driver step family in `spec/isaac/cli_proxy/integration_steps.clj`
+- the harness now provisions a disposable fixture root with `:isaac.comm.acp` plus an echo-model config, starts a real cli-server, runs `isaac remote` interactively, drives ACP JSON-RPC over stdin/stdout, and asserts initialize/session/new/prompt/clean-shutdown over the real generic pipe
+- bumped the cli-proxy test dependency / harness pin for `io.github.slagyr/isaac-cli-server` to **cf80a29** so the acceptance run includes the shipped `isaac-7t1k` explicit-root spawn fix
+
+Verification run on the final rebased commit:
+- `bb spec`
+- `bb features`
+- `bb features-slow`
+- targeted accepted proof: `bb features-slow features/integration.feature:40`
+
+Observed result:
+- the accepted remote ACP proof is green end-to-end through `remote -> cli-proxy -> cli-server -> spawned isaac acp`
+- argv forwarding includes explicit `--root <fixture-root>` and the spawned subprocess resolves ACP from that fixture root
+- initialize response arrives before EOF, session/new returns a session id, prompt response streams before exit, stdin close yields exit code 0
