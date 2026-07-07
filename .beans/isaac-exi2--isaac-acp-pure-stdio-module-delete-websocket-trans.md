@@ -4,8 +4,10 @@ title: 'isaac-acp: pure stdio module — delete websocket transport and chat com
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-07T02:10:57Z
+updated_at: 2026-07-07T04:05:31Z
 blocked_by:
     - isaac-lcay
 ---
@@ -41,5 +43,19 @@ Decision (2026-07-03, Micah): absence-of-behavior is never a committed scenario 
 - [ ] Resolved config route listing contains no `/acp`.
 - [ ] `features/cli/chat` feature file and all --remote/websocket specs/features are DELETED (not retained, not @wip).
 - [ ] Existing local-stdio scenarios pass untouched; `bb spec` / `bb features` green in isaac-acp.
+
+## Implementation Notes
+
+- Implemented in `isaac-acp` on branch `isaac-exi2-pure-stdio`.
+- Commit: `a8b26e6f90679583d590fac85a4ac47b563ee095` (`Remove ACP remote/chat surfaces for pure stdio`).
+- Reworked `spec/isaac/comm/acp/acp_steps.clj` into a local-only direct-dispatch harness so kept ACP features no longer depend on websocket/chat/loopback proxy machinery.
+- Deleted remote/chat/websocket/proxy/reconnect/queue sources, specs, and features.
+- Rewrote `src/isaac/comm/acp/cli.clj` to stdio-only behavior and removed `--remote` / `--token` support.
+- Rewrote manifest/README/schema expectations to ACP stdio only; manifest no longer contributes `/acp` or chat.
+- Verification run in `isaac-acp`:
+  - `bb spec` → 0 failures, 1 pending
+  - `bb features` → 0 failures, 5 pending
+  - `isaac acp --remote wss://example` → `Unknown option: "--remote"`, exit 1
+  - `isaac chat` → `Unknown command: chat`, exit 1
 
 Blocked by the e2e proof bean (isaac-lcay).
