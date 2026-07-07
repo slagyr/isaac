@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-03T15:34:48Z
-updated_at: 2026-07-07T01:55:34Z
+updated_at: 2026-07-07T02:01:34Z
 blocking:
     - isaac-exi2
 blocked_by:
@@ -256,3 +256,7 @@ Verification:
 Result: local reproduction of the CI-style PATH environment is now green.
 
 ## Verify fail (attempt 1, 2026-07-07): documented acceptance command runs 0 examples because integration.feature is tagged @slow
+
+
+
+## Verify fail (attempt 2, 2026-07-07): documented acceptance still requires `bb features features/integration.feature`, but that task excludes @slow so the command runs 0 examples
