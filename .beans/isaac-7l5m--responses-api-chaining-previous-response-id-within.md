@@ -30,14 +30,120 @@ Use the Responses API as designed on providers that support it: within a tool-lo
 
 `store: true` means xAI retains the conversation server-side for its retention window (undocumented length). Inputs already transit xAI regardless; this adds persistence. Called out so it's a decision, not a surprise.
 
-## Scenarios (worker writes; required coverage — grover needs chaining support first)
+## Scenarios (approved by Micah, 2026-07-08)
 
-1. Chained turn: with `:stateful true`, cycle 1 sends full context and no `previous_response_id`; cycle 2 carries `previous_response_id` = cycle 1's response id, `store: true`, and input containing ONLY the new tool results (assert absence of the original history from the body).
-2. Capability off (default / chatgpt): every cycle sends full context, `store: false` — behavior identical to today.
-3. Chain reset: cycle N returns a previous-response-not-found error; the cycle retries once with full context, a new chain starts, the turn completes, `:chat/chain-reset` logged.
-4. Turn boundary: a new turn on the same session starts with full context (no id carried across turns).
+New file `features/llm/api/responses/stateful.feature` (wire-shape style of
+`api/responses/api.feature`: grover:chatgpt transport through the real
+responses adapter).
 
-Grover: scripted responses gain response ids; a scripted `previous-response-not-found` error type; request assertions can inspect `:previous_response_id` and the input contents.
+```gherkin
+Scenario: cycle 2 chains from cycle 1's response id and sends only the new tool results
+  Given the isaac EDN file "config/models/snuffy.edn" exists with:
+    | path           | value          |
+    | model          | snuffy-codex   |
+    | provider       | grover:chatgpt |
+    | context-window | 128000         |
+    | stateful       | true           |
+  And the isaac EDN file "config/crew/oscar.edn" exists with:
+    | path  | value  |
+    | model | snuffy |
+  And the crew "oscar" allows tools: "exec"
+  And the built-in tools are registered
+  And the following sessions exist:
+    | name      | crew  |
+    | trash-can | oscar |
+  And the following model responses are queued:
+    | model        | type      | id     | tool_call | arguments           | content |
+    | snuffy-codex | tool_call | resp-1 | exec      | {"command": "true"} |         |
+    | snuffy-codex | text      | resp-2 |           |                     | done    |
+  When the user sends "count the cans" on session "trash-can"
+  Then outbound HTTP request 1 matches:
+    | key        | value |
+    | body.store | true  |
+  And outbound HTTP request 1 has no body.previous_response_id
+  And outbound HTTP request 2 matches:
+    | key                       | value                |
+    | body.previous_response_id | resp-1               |
+    | body.store                | true                 |
+    | body.input.#count         | 1                    |
+    | body.input.0.type         | function_call_output |
+```
+
+```gherkin
+Scenario: without stateful, every cycle resends the full context stateless
+  (identical fixture minus the `stateful` row)
+  ...
+  Then outbound HTTP request 2 matches:
+    | key                | value                |
+    | body.store         | false                |
+    | body.input.#count  | 3                    |
+    | body.input.0.role  | user                 |
+    | body.input.2.type  | function_call_output |
+  And outbound HTTP request 2 has no body.previous_response_id
+```
+
+(The `#count 3` / `input.2` rows are the planner's read of the followup
+format — adjust values to the real item count if it differs; the contract is
+count + first-is-user + last-is-tool-output.)
+
+```gherkin
+Scenario: a previous-response-not-found reply resets state and retries with full context
+  (fixture as scenario 1, with responses queued:)
+    | model        | type       | id     | tool_call | arguments           | status | message                           | content |
+    | snuffy-codex | tool_call  | resp-1 | exec      | {"command": "true"} |        |                                   |         |
+    | snuffy-codex | http-error |        |           |                     | 404    | Response with id resp-1 not found |         |
+    | snuffy-codex | text       | resp-3 |           |                     |        |                                   | done    |
+  When the user sends "count the cans" on session "trash-can"
+  Then outbound HTTP request 2 matches:
+    | key                       | value  |
+    | body.previous_response_id | resp-1 |
+  And outbound HTTP request 3 matches:
+    | key               | value |
+    | body.store        | true  |
+    | body.input.#count | 3     |
+  And outbound HTTP request 3 has no body.previous_response_id
+  And the log has entries matching:
+    | level | event             | provider |
+    | :info | :chat/state-reset | chatgpt  |
+  And session "trash-can" has transcript matching:
+    | type    | message.role | message.content |
+    | message | user         | count the cans  |
+    | #*      | #*           | #*              |
+    | message | assistant    | done            |
+```
+
+Design point this scenario pins: the chain-miss 404 is retried locally with a
+state reset — it must NOT classify as a provider wall (`:unavailable?`, 3tvq)
+and must not defer the hail.
+
+```gherkin
+Scenario: a new turn starts a fresh chain — no previous_response_id carried across turns
+  (fixture as scenario 1, plus a third queued text response "again" id resp-3)
+  When the user sends "count the cans" on session "trash-can"
+  And the user sends "count them again" on session "trash-can"
+  Then outbound HTTP request 3 matches:
+    | key               | value |
+    | body.store        | true  |
+    | body.input.0.role | user  |
+  And outbound HTTP request 3 has no body.previous_response_id
+```
+
+State lives at most one turn: turn 2 opens with full rebuilt context and a
+fresh chain, keeping compaction/suspend-resume/transcript-as-truth untouched.
+
+Optional cheap variant (planner-suggested, not required): model
+`stateful false` overriding a provider template's `true` — the override-off
+direction of the layering.
+
+### New step machinery (worker builds)
+
+1. **`Then outbound HTTP request N matches:` / `has no <key>`** — indexed
+   variants of the existing last-request steps.
+2. **`#count` path segment** — array-length assertion in match tables.
+3. **Queued model responses gain an `id` column** — grover's responses-wire
+   replies carry scripted response ids.
+4. **Mid-loop `http-error` rows** serve as that cycle's reply (scenario 3's
+   404 must reach the adapter's chain-reset handling, not short-circuit).
 
 ## Acceptance
 
