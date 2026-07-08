@@ -232,3 +232,19 @@ This note resets the verify-fail count. Resume in work.
 - `acp_steps_spec` trailing guard green.
 - `session.feature` + `cli.feature` green; manifest `0.1.8`.
 - `isaac-acp` branch commit  `09cf9f3`.
+
+## Verify fail (attempt 1, 2026-07-08): method-scoped notification matching fixed the trailing-notification issue, but `/status` is still red and appears pre-existing
+
+Evidence:
+- The planner required method-scoped exact matching so `slash_commands.feature` `/status` would pass unchanged while replay scenarios still fail on extra `session/update` noise.
+- `isaac-acp` commit `09cf9f3` does implement method scoping in `spec/isaac/comm/acp/acp_steps.clj`: listed methods are derived from the table, only listed methods are collected, and only trailing notifications for listed methods now fail.
+- Replay-targeted proofs are green on `09cf9f3`:
+  - `bb features features/comm/acp/session.feature` → `8 examples, 0 failures, 19 assertions`
+  - `bb features features/comm/acp/cli.feature` → `17 examples, 0 failures, 37 assertions, 2 pending`
+  - `bb spec spec/isaac/comm/acp/acp_steps_spec.clj` → `1 examples, 0 failures, 1 assertions`
+  - `bb spec spec/isaac/comm/acp/cli_spec.clj` → `13 examples, 0 failures, 31 assertions`
+  - `bb config-bypass-lint` → `ok`
+- However `bb features features/comm/acp/slash_commands.feature` is still red in scenario `/status returns formatted markdown via ACP notification` with `Expected truthy but was: nil`.
+- The previous trailing-notification failure is gone, so attempt 4 did address that collision. But the planner note explicitly said `/status` should pass unchanged, and it still does not.
+- This red `/status` scenario appears pre-existing, not introduced by `09cf9f3`: the same command also fails on `origin/main` (`8e71510`) with the same `Expected truthy but was: nil` failure.
+- Because the branch now satisfies the replay-specific mechanics but the planner-directed `/status` expectation remains red for an apparently unrelated/pre-existing reason, verification needs planner clarification on whether this bean should absorb that unrelated slash-command failure or pass on the replay evidence.
