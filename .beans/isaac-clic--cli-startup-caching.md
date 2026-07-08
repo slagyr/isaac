@@ -295,3 +295,55 @@ Decision (2026-07-08): Invalidation strictly on mtimes of watched files listed i
 - May touch cli_steps.clj for new Given/Then (cache presence, basis, "used cached").
 - No change to user config schema.
 - Future: other caches under same dir.
+
+---
+
+## Worker findings (2026-07-08, isaac-work-1) — BLOCKED on approved-scenario mechanics
+
+Claimed and analyzed. The implementation target is clear (cache in the launcher
+path: `launcher/-main` → `compose-classpath!` → `module-loader/compose-config-modules!`;
+`main/run` → `register-module-cli-commands!` runs even for `--version`). But the
+**approved scenarios cannot run as written** — flagging per `/work` ("if feature
+text and implementation diverge, stop and raise it"):
+
+1. **mem-fs vs. real subprocess.** The approved scenarios use
+   `Given an empty Isaac root at "/test/cli-cache-*"`. The `empty-state` step
+   (`spec-support/.../root_steps.clj`) routes any `/test/` path to an **in-memory
+   fs** (virtual heuristic). `a module manifest at ...` writes to that mem-fs too.
+   But `the isaac launcher is run with` (`cli_steps.clj/isaac-launcher-run`)
+   **shells out to the real packaged `libexec/isaac`** subprocess, which cannot
+   see the mem-fs — it reads/writes the real filesystem. So the subprocess finds
+   no config/manifest and the `cache/cli.edn` it writes isn't visible to the
+   test's mem-fs assertions. All 5 scenarios fail.
+   - Existing launcher features (`features/module/module_deps.feature`, etc.) use
+     **real-fs roots** like `/tmp/isaac` with real module fixtures. The `/test/`
+     roots here look like a planning oversight.
+
+2. **Local manifest path convention.** Scenarios write the manifest at
+   `<local-root>/isaac-manifest.edn`, but the loader resolves a local module's
+   manifest under `<local-root>/resources/` or `<local-root>/src/`
+   (`loader/local-manifest-path`). The watched-file set for invalidation
+   (`basis.local`) must agree with where the manifest actually lives.
+
+**Recommended fix (mechanical; preserves miss/hit/config-invalidate/local-invalidate/
+--help intent):** switch the 5 scenario roots to real-fs paths (e.g.
+`/tmp/isaac-clic-*`), add a real local-module fixture (manifest + optional deps.edn)
+at a loader-resolvable path, and have the cache watch that same manifest + deps.edn
+so `basis.local` invalidation is coherent. This matches the established launcher-
+feature pattern. It edits approved scenario TEXT, so I stopped for review rather
+than rewriting unilaterally.
+
+**Design confirmed while analyzing** (for whoever implements):
+- Freshness = cache file exists AND every watched file's mtime <= the cache
+  file's own mtime. (Scenario 2 hardcodes a low `basis.config` yet expects a
+  HIT, so the stored basis value is a witness, not the comparator — the cache
+  file's mtime is.) Scenarios 3/4 rewrite a watched file *after* the cache, so
+  its mtime > cache mtime → stale → rewrite (`basis.* = #*`).
+- Cache shape: `{:version 1 :basis {:config <mtime> :local <mtime>} :data {...}}`.
+- Reuse-on-hit: cache the planned `[id coord]` pairs (output of the private
+  `loader/plan-module-classpath-pairs`); on hit, preload them via
+  `loader/preload-module-pairs!` (both currently private — expose public
+  wrappers) to skip planning while still adding deps for correctness.
+
+Bean left `in-progress` (claimed). Awaiting a call on the scenario-mechanics fix
+(see the AskUserQuestion options: fix-mechanics / re-plan / in-process).
