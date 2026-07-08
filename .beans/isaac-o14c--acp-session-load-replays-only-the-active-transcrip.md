@@ -4,9 +4,10 @@ title: ACP session load replays only the active transcript (post-compaction head
 status: in-progress
 type: feature
 priority: normal
-tags: []
+tags:
+    - unverified
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T21:36:30Z
+updated_at: 2026-07-08T22:13:23Z
 parent: isaac-zt4h
 ---
 
@@ -223,3 +224,11 @@ unlisted methods (e.g. `chat/status`) flow free unless a row lists them.
   `attach-session-result!`, exact count+order mechanics.
 
 This note resets the verify-fail count. Resume in work.
+
+
+## Resolution (attempt 4)
+
+- `acp-agent-sends-notifications`: collect only rows whose `:method` is listed in the table; exact count+order; `assert-no-trailing-listed-notifications!` throws only for listed methods (chat/status ignored when table lists session/update only).
+- `acp_steps_spec` trailing guard green.
+- `session.feature` + `cli.feature` green; manifest `0.1.8`.
+- `isaac-acp` branch commit  `09cf9f3`.
