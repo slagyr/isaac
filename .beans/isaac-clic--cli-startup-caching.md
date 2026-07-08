@@ -1,11 +1,11 @@
 ---
 # isaac-clic
 title: CLI startup caching for fast commands (cache/cli.edn with timestamp invalidation)
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-08T00:00:00Z
-updated_at: 2026-07-08T00:00:00Z
+updated_at: 2026-07-08T20:33:28Z
 ---
 
 ## Problem
@@ -295,4 +295,3 @@ Decision (2026-07-08): Invalidation strictly on mtimes of watched files listed i
 - May touch cli_steps.clj for new Given/Then (cache presence, basis, "used cached").
 - No change to user config schema.
 - Future: other caches under same dir.
-
