@@ -4,10 +4,8 @@ title: ACP session load replays only the active transcript (post-compaction head
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T21:00:53Z
+updated_at: 2026-07-08T21:11:07Z
 parent: isaac-zt4h
 ---
 
@@ -126,3 +124,17 @@ Evidence:
 - `acp_steps.clj`: `the ACP agent sends notifications` now requires the first N notifications in order (no subset window); added `the stdout session/update notifications are:` for CLI.
 - `cli_spec.clj` asserts replay chunks on attached `session/new`.
 - Implementation: `isaac-acp` `368f20f`.
+
+
+## Verify fail (attempt 2, 2026-07-08): strict notification proof is still incomplete and the ACP manifest version regressed
+
+Evidence:
+- The bean explicitly requires step amendment 2: `The "Then the ACP agent sends notifications:" step must assert the COMPLETE ordered notification set, not a subset`.
+- `spec/isaac/comm/acp/acp_steps.clj:295-310` no longer searches for a matching window, but it still stops as soon as it has the first `N` notifications and only matches `take expected-count notifications`. It never asserts that there are no additional trailing notifications, so it still does not prove the complete ordered set. Extra replay leakage after the expected prefix would still pass.
+- `features/comm/acp/cli.feature` now restores the attach-path replay assertion via `the stdout session/update notifications are:` and `src/isaac/comm/acp/cli.clj` again routes `--session` attach through `attach-session-result!`, so the first verify fail was addressed.
+- However, the branch also regresses `src/isaac-manifest.edn:2` from version `0.1.8` on `origin/main` to `0.1.6` in the bean branch. That is an unrelated version backslide in the shipping manifest.
+- Verification commands on commit `368f20f`:
+  - `bb features features/comm/acp/session.feature` → `8 examples, 0 failures, 12 assertions`
+  - `bb features features/comm/acp/cli.feature` → `17 examples, 0 failures, 37 assertions, 2 pending`
+  - `bb config-bypass-lint` → `ok`
+  These runs show the intended feature coverage is green, but they do not catch the remaining exact-notification-proof gap or the manifest version regression.
