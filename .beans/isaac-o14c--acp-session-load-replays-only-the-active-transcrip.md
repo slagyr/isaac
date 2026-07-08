@@ -4,10 +4,9 @@ title: ACP session load replays only the active transcript (post-compaction head
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T21:21:19Z
+updated_at: 2026-07-08T21:36:30Z
 parent: isaac-zt4h
 ---
 
@@ -185,3 +184,20 @@ Evidence:
 - Notification steps: exact count + order; `finalize!` throws on trailing `session/update` (`acp_steps_spec.clj` guard).
 - `src/isaac-manifest.edn` restored to `0.1.8` (origin/main).
 - `isaac-acp` `c1641e2`.
+
+## Verify fail (attempt 2, 2026-07-08): exact-notification matching now breaks an existing ACP feature on an unaccounted trailing notification
+
+Evidence:
+- The bean/planner requirement is now global for `the ACP agent sends notifications:`: exact count + order, with no extra notifications before or after.
+- `spec/isaac/comm/acp/acp_steps.clj:305-330` now enforces that rule for every JSON-RPC notification (`:method` present, no `:id`), not just the replay cases in this bean.
+- On `isaac-acp` commit `c1641e2`, the bean's targeted proofs are green:
+  - `bb features features/comm/acp/session.feature` → `8 examples, 0 failures, 19 assertions`
+  - `bb features features/comm/acp/cli.feature` → `17 examples, 0 failures, 37 assertions, 2 pending`
+  - `bb spec spec/isaac/comm/acp/acp_steps_spec.clj` → `1 examples, 0 failures, 1 assertions`
+  - `bb spec spec/isaac/comm/acp/cli_spec.clj` → `13 examples, 0 failures, 31 assertions`
+  - `bb config-bypass-lint` → `ok`
+- But an existing ACP feature now fails under the shared step change:
+  - `bb features features/comm/acp/slash_commands.feature` fails in scenario `/status returns formatted markdown via ACP notification` with `unexpected trailing session/update notification`.
+  - The extra notification captured by the failing step is `{:jsonrpc "2.0", :method "chat/status", ...}` after the expected `session/update` row.
+- That means the branch does not yet reconcile the new exact-notification semantics with other scenarios that still describe only a subset of the turn's notification stream.
+- The manifest regression from the prior fail is fixed (`src/isaac-manifest.edn` restored to `0.1.8`), but the shared-step regression remains unresolved.
