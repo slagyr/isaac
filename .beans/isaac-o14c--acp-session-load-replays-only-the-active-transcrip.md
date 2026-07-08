@@ -1,13 +1,12 @@
 ---
 # isaac-o14c
 title: ACP session load replays only the active transcript (post-compaction head)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T23:05:57Z
+updated_at: 2026-07-08T23:08:40Z
 parent: isaac-zt4h
 ---
 
