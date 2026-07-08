@@ -1,15 +1,14 @@
 ---
 # isaac-auws
 title: claude subscription provider via cli shell-out for raw completions
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - subscription
     - claude
-    - unverified
 created_at: 2026-07-08T21:44:45Z
-updated_at: 2026-07-08T22:29:46Z
+updated_at: 2026-07-08T22:45:52Z
 ---
 
 ## Problem
