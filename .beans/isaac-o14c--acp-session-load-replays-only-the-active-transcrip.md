@@ -4,8 +4,10 @@ title: ACP session load replays only the active transcript (post-compaction head
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T21:11:07Z
+updated_at: 2026-07-08T21:21:19Z
 parent: isaac-zt4h
 ---
 
@@ -176,3 +178,10 @@ Evidence:
   - `bb features features/comm/acp/cli.feature` → `17 examples, 0 failures, 37 assertions, 2 pending`
   - `bb config-bypass-lint` → `ok`
   These runs show the intended feature coverage is green, but they do not catch the remaining exact-notification-proof gap or the manifest version regression.
+
+
+## Resolution (attempt 3)
+
+- Notification steps: exact count + order; `finalize!` throws on trailing `session/update` (`acp_steps_spec.clj` guard).
+- `src/isaac-manifest.edn` restored to `0.1.8` (origin/main).
+- `isaac-acp` `c1641e2`.
