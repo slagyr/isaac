@@ -5,10 +5,8 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T20:36:18Z
+updated_at: 2026-07-08T20:50:32Z
 parent: isaac-zt4h
-tags:
-  - unverified
 ---
 
 ## Goal
@@ -103,3 +101,17 @@ Step amendments both scenarios depend on:
 - Unit: `server_spec.clj` — memory-store offset replay cases.
 - Verified: `bb features features/comm/acp/session.feature` green; `bb config-bypass-lint` ok.
 - Implementation: `isaac-acp` branch `bean/isaac-o14c` commit `38bd92b`.
+
+
+## Verify fail (attempt 1, 2026-07-08): attach-path replay acceptance was weakened and the notification assertion still subset-matches
+
+Evidence:
+- The bean explicitly requires: `Existing d84z replay scenarios still green (attach path shares the fix)`.
+- `features/comm/acp/cli.feature` was weakened instead of kept as a replay guard. In `origin/main`, scenario `--session attaches the acp command to an existing session and replays transcript history` asserted the replayed `session/update` notifications and the `sessionId` response. In commit `38bd92b`, that scenario was renamed to `--session attaches the acp command to an existing session` and reduced to a single `stdout contains "\"sessionId\":\"earlier-chat\""` assertion. The replay-notification assertions were removed.
+- The bean explicitly requires step amendment 2: `The \"Then the ACP agent sends notifications:\" step must assert the COMPLETE ordered notification set, not a subset ... Verify, and amend if it subset-matches.`
+- `spec/isaac/comm/acp/acp_steps.clj:295-317` still subset-matches. `acp-agent-sends-notifications` searches for a `matching-window` anywhere in the notification stream and accepts the first consecutive window whose rows match. That allows extra pre-offset leaked notifications to be ignored, so the new scenarios cannot prove head-only replay.
+- The bean has no `## Exceptions` section authorizing feature weakening.
+- Targeted runs were green, but they do not rescue the acceptance gap:
+  - `bb features features/comm/acp/session.feature` → `8 examples, 0 failures, 12 assertions`
+  - `bb features features/comm/acp/cli.feature` → `17 examples, 0 failures, 35 assertions, 2 pending`
+  The CLI feature stays green because the replay regression guard was removed.
