@@ -1,13 +1,11 @@
 ---
 # isaac-5a4n
 title: 'Deliverable hails never die: auth failures defer with attention; dead-letter is for poison only'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-08T22:12:23Z
-updated_at: 2026-07-08T22:57:45Z
+updated_at: 2026-07-08T23:15:26Z
 ---
 
 ## Goal
