@@ -20,7 +20,9 @@ xAI subscription token expired 21:39Z (refresh cron not yet armed). Prowl's isaa
 
 - **Drive classifies auth failures as weather**: HTTP 401 (and 403 auth/entitlement rejections) => {:unavailable? true :reason :auth :retry-after-ms N} (default shorter than walls, ~5min — retries are cheap, auth fixes are human-speed). 3tvq wall classification gains :reason :wall.
 - **Hail worker unchanged in shape**: unavailable => defer, zero attempt burn, delivery stays pending. :hail/delivery-deferred warn log gains the :reason.
-- **Attention**: an :auth-reason deferral posts to notification-comm — throttled once per provider per hour (healthy->failing transition), so a dead token pings a human instead of silently deferring forever. Wall deferrals stay log-only (expected, self-healing).
+- **Attention**: an :auth-reason deferral posts to the NEW top-level `:attention` config (Micah-approved 2026-07-08):
+  `:attention {:notify {:comm "discord" :target "isaac"} :human {:comm "imessage" :target "micah"}}`
+  (hot-reloadable; `:human` is declared-but-unused break-glass — nothing sends to it in this bean). An auth outage is a SYSTEM-scoped event, so it routes to `:attention :notify`; unset => WARN log only. Posting = enqueueing a durable file in `comm/delivery/pending/` (the existing comm outbox — the comm delivery worker drains it), so attention survives restarts. Throttled once per provider per hour. Wall deferrals stay log-only (expected, self-healing).
 - **Still dead-letters**: genuine turn errors (non-wall model errors, tool blowups) and :continuations-exhausted — poison budget unchanged.
 
 ## Scenarios (approved by Micah, 2026-07-08)
@@ -46,18 +48,23 @@ failed files do not. Two tick→turn-end cycles in one scenario (sequential
 steps; worker verifies the second tick re-binds).
 
 **S3 — attention, throttled per outage** (isaac-hail):
-NEW test machinery: `a recording comm "discord" is registered` (in-memory Comm
-capturing sends) + `the comm "discord" has exactly N message(s)[, matching:]`
-(count-exact per the o14c lesson; contains-matching on content). Delivery
-fixture carries the band data block: `data {:notification-comm {:id "discord"
-:channel "boiler-room"}}` — the worker posts attention to the DELIVERY'S OWN
-band coordinates (axzg philosophy; direct hails without a data block stay
-log-only, no global config). Three auth deferrals at 10:00 / 10:05:30 /
-11:06:00 → exactly 1 message after the first two (throttle: once per provider
-per hour, in-memory — restart re-posts, acceptable noise), exactly 2 after the
-third (window expiry proven). Content: at-a-glance style containing the
-provider name and "auth".
+fixture sets config `attention.notify` = `{:comm "discord" :target "boiler-room"}`
+(no band data block needed — system-scoped event). Three auth deferrals at
+10:00 / 10:05:30 / 11:06:00. After the first two:
+```
+Then the directory "comm/delivery/pending" has exactly 1 file
+And the only file in "comm/delivery/pending" EDN contains:
+  | path    | value                        |
+  | comm    | discord                      |
+  | target  | boiler-room                  |
+  | content | contains "auth" and "grover" |
+```
+After the third (window expired): exactly 2 files. Throttle: once per provider
+per hour, in-memory (restart re-posts — acceptable noise). NEW steps (generic):
+`the directory "…" has exactly N file(s)` and `the only file in "…" EDN
+contains:` (dodges random outbox filenames). NO comm fake/registration — the
+durable outbox IS the assertion surface.
 
 **S4 — walls stay silent** (isaac-hail): one `unavailable/60000/wall` deferral
-with the recording comm registered → attempts 0, `the comm "discord" has
-exactly 0 messages`. Only auth outages page a human.
+with `attention.notify` configured => attempts 0, `the directory
+"comm/delivery/pending" has exactly 0 files`. Only auth outages page a human.

@@ -18,7 +18,25 @@ The o14c handback dead-letter was invisible in discord (thread ended at "handed 
 
 ## Design
 
-- **`:hail/dead-lettered` posts to notification-comm**: bean-id, thread, attempts, error keyword — the at-a-glance channel shows the death, not just server.log. (Undeliverables stay WARN-log-only per isaac-axzg descope; dead-letter is terminal failure of claimed work — higher severity.)
+- **`:hail/dead-lettered` posts attention**: bean-id, thread, attempts, error keyword — the at-a-glance channel shows the death, not just server.log. WORK-scoped event routing: the delivery's band `:notification-comm` (data block) first, falling back to the `:attention :notify` config (isaac-5a4n), else WARN log only. Posting = enqueue in `comm/delivery/pending/` (durable outbox). Unthrottled — deaths are individually newsworthy. (Undeliverables stay WARN-log-only per isaac-axzg descope; dead-letter is terminal failure of claimed work — higher severity.)
+
+**Blocked by isaac-5a4n**: shares the `:attention` config and the outbox-assertion steps.
+
+## Approved scenario A (Micah, 2026-07-08)
+
+Genuine failure (grover `error` type) on attempt 5 with `data
+{:notification-comm {:id "discord" :channel "boiler-room"}}` on the delivery:
+failed/hail-1.edn contains attempts 5 + error :llm-error (cehc detail), and:
+```
+Then the directory "comm/delivery/pending" has exactly 1 file
+And the only file in "comm/delivery/pending" EDN contains:
+  | path    | value                                  |
+  | comm    | discord                                |
+  | target  | boiler-room                            |
+  | content | contains "isaac-zzz" and "dead-letter" |
+```
+(bean-id from params, front and center). Fallback-to-`:attention` variant may
+be added by the worker cheaply — same shape, config row instead of data block.
 - **`isaac hail requeue <id>`**: moves `failed/<id>.edn` back to pending with attempts reset to 0, original prompt/params/thread intact, provenance stamped (`:requeued-from`, `:requeued-at`). Works for any failed record.
 - Consider: a requeue-all-by-reason flag for mass weather recoveries (e.g. everything dead-lettered as `:api-error` during an outage window).
 
