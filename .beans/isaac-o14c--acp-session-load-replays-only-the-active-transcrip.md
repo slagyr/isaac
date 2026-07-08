@@ -23,11 +23,70 @@ ACP session load replays only the **active transcript** (post-compaction head), 
 - The compaction summary entry at the offset boundary should replay (it's the context the user needs to make sense of the head).
 - Sessions with no compaction offset must replay exactly as today.
 
-## Scenarios (worker writes these — required coverage)
+## Scenarios (approved by Micah, 2026-07-08)
 
-1. Session with a compaction offset: `session/load` replays only entries from the offset (summary first), none from before it.
-2. Session without compaction: full replay, unchanged behavior.
-3. Truncated view containing a toolCall whose result landed pre-offset: replay completes without error.
+Add to `features/comm/acp/session.feature`:
+
+```gherkin
+Scenario: session/load replays only history from the effective offset
+  Given the following sessions exist:
+    | name        |
+    | resume-test |
+  And session "resume-test" has transcript:
+    | type       | message.role | message.content | summary                 |
+    | message    | user         | old question    |                         |
+    | message    | assistant    | old answer      |                         |
+    | compaction |              |                 | Earlier we discussed X. |
+    | message    | user         | what next?      |                         |
+  When the ACP client sends request 5:
+    | key              | value        |
+    | method           | session/load |
+    | params.sessionId | resume-test  |
+  Then the ACP agent sends notifications:
+    | method         | params.update.sessionUpdate | params.update.content.text |
+    | session/update | agent_message_chunk         | Earlier we discussed X.    |
+    | session/update | user_message_chunk          | what next?                 |
+```
+
+```gherkin
+Scenario: session/load tolerates a head beginning with an orphaned tool result
+  Given the following sessions exist:
+    | name        |
+    | resume-test |
+  And session "resume-test" has transcript:
+    | type       | id   | message.role | message.content | name | arguments     | summary            |
+    | toolCall   | tc-1 |              |                 | grep | {"q":"error"} |                    |
+    | compaction |      |              |                 |      |               | Earlier: log hunt. |
+    | toolResult | tc-1 |              | 3 matches       |      |               |                    |
+    | message    |      | assistant    | found 3 errors  |      |               |                    |
+  When the ACP client sends request 7:
+    | key              | value        |
+    | method           | session/load |
+    | params.sessionId | resume-test  |
+  Then the ACP agent sends notifications:
+    | method         | params.update.sessionUpdate | params.update.content.text |
+    | session/update | agent_message_chunk         | Earlier: log hunt.         |
+    | session/update | agent_message_chunk         | found 3 errors             |
+```
+
+Full-replay regression guard: the existing scenario "session/load replays the
+transcript as session/update notifications" (session.feature:42, no compaction)
+must stay green — `active-transcript` falls back to the whole file when no
+offset exists. Do not duplicate it.
+
+Step amendments both scenarios depend on:
+
+1. **The transcript fixture step's `compaction` row must ALSO set the session's
+   `:effective-history-offset`** (production-faithful: a compaction entry
+   without the offset is an unrepresentable state). The existing scenario
+   "session/load replays the compaction summary in place of pre-compaction
+   history" (session.feature:63) must stay green under this change — it then
+   finally tests what its title claims. If the fixture change is impractical,
+   retitle that scenario honestly instead.
+2. **The "Then the ACP agent sends notifications:" step must assert the
+   COMPLETE ordered notification set**, not a subset — otherwise pre-offset
+   leakage and the orphan's silence cannot fail any scenario. Verify, and
+   amend if it subset-matches.
 
 ## Acceptance
 
