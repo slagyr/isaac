@@ -1,13 +1,11 @@
 ---
 # isaac-clic
 title: CLI startup caching for fast commands (cache/cli.edn with timestamp invalidation)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-08T00:00:00Z
-updated_at: 2026-07-08T21:45:49Z
+updated_at: 2026-07-08T21:55:26Z
 ---
 
 ## Problem
