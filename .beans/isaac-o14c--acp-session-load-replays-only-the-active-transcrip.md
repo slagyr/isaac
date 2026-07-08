@@ -7,6 +7,8 @@ priority: normal
 created_at: 2026-07-08T20:32:13Z
 updated_at: 2026-07-08T20:36:18Z
 parent: isaac-zt4h
+tags:
+  - unverified
 ---
 
 ## Goal
@@ -90,6 +92,14 @@ Step amendments both scenarios depend on:
 
 ## Acceptance
 
-- [ ] Scenarios above green in isaac-acp features
-- [ ] Existing d84z replay scenarios still green (attach path shares the fix)
+- [x] Scenarios above green in isaac-acp features
+- [x] Existing d84z replay scenarios still green (attach path shares the fix)
 - [ ] One-time: load a large compacted zanebot session in Toad — load time drops from full-history replay to head-only
+
+## Resolution
+
+- `attach-session-result!` now uses `store/active-transcript` (shared by `session/load` and `--session` attach).
+- Gherkin: `features/comm/acp/session.feature` — compaction splice active-head replay, full replay unchanged, tool result before offset replays assistant only.
+- Unit: `server_spec.clj` — memory-store offset replay cases.
+- Verified: `bb features features/comm/acp/session.feature` green; `bb config-bypass-lint` ok.
+- Implementation: `isaac-acp` branch `bean/isaac-o14c` commit `38bd92b`.
