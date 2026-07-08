@@ -15,13 +15,13 @@ Use the Responses API as designed on providers that support it: within a tool-lo
 ## Probe evidence (2026-07-08, live)
 
 - **xAI (api.x.ai/v1/responses, subscription token): chaining works.** r1 `store:true` → r2 sent only the follow-up + `previous_response_id`, model answered from server-side state (561 input tokens vs a resent transcript).
-- **chatgpt codex backend: hard-rejects statefulness** — `400 {"detail":"Store must be set to false"}`. Chaining is impossible there; capability must be per-provider.
+- **chatgpt codex backend: statefulness disabled entirely** — `store:true` → `400 "Store must be set to false"`; `previous_response_id` (even with store:false) → `400 "Unsupported parameter: previous_response_id"`. The subscription funnel is a deliberately stateless proxy; OpenAI's platform API (api.openai.com, API-key) supports chaining fully — relevant only if an openai API-key provider is ever added.
 - Isaac today: `responses.clj:48` hard-codes `:store false`, no `previous_response_id` anywhere.
 
 ## Design
 
 - **Scope: within-turn only.** Each turn's first request sends the full context exactly as today (fresh chain); tool-loop cycles 2..N send `{:input <tool results only> :previous_response_id <last completed response id> :store true}`. Turn boundaries, compaction, suspend/resume, and transcript-as-truth are all untouched — the transcript is still written locally from streamed events; the chain is a transport optimization inside one turn.
-- **Provider capability flag**: `:response-chaining true` on the provider config/template (set it on :grok / :xai templates). Default false; chatgpt stays false (backend policy). Non-Responses APIs ignore it.
+- **Capability flag resolves through the standard config layering** (provider template < model file < crew < session), so it is per-model gateable per Micah: `:response-chaining true` on the :grok / :xai provider templates; any model file can override it off (or on, e.g. a future openai API-key provider). Default false; chatgpt stays false (backend disables statefulness). Non-Responses APIs ignore it.
 - **Chain from the last COMPLETED response id only** (captured from the stream's `response.created`/`completed` events). A failed/aborted cycle re-chains from the prior good id.
 - **Self-healing fallback**: on a `previous_response_id ... not found` error (server-side expiry/eviction — xAI retention is undocumented), transparently retry that cycle with full context and start a new chain. Log `:chat/chain-reset` (info).
 - **Token accounting unchanged**: the server still bills stored context as input tokens (561 above included the chained history), so this saves upload bandwidth, client prompt-build time, and TTFT — not tokens. On subscription providers tokens are flat-rate anyway.
