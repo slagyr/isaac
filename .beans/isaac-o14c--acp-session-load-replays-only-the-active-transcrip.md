@@ -126,6 +126,44 @@ Evidence:
 - Implementation: `isaac-acp` `368f20f`.
 
 
+## Planner clarification (2026-07-08, prowl) — both verify points stand; not loosened
+
+The verifier is right on both counts. Neither is rescoped away.
+
+### 1. Notification completeness INCLUDES no trailing extras — required
+
+"COMPLETE ordered notification set, not a subset" means exactly that: the
+scenario's rows are the *entire* notification stream for that turn, in order,
+with **nothing before and nothing after**. A prefix-only match (take the first
+N, ignore the rest) does not prove head-only replay — leaked pre-offset entries
+or trailing chunks would still pass, which is the whole defect this bean exists
+to prevent.
+
+Required of `the ACP agent sends notifications:` (and the CLI
+`the stdout session/update notifications are:` variant):
+
+- Assert **count equality**: actual notification count == expected row count.
+  Any extra notification (leading, interleaved, or trailing) must FAIL.
+- Assert **order**: row *i* matches notification *i*.
+- No window search, no `take expected-count`, no subset acceptance.
+
+A scenario that adds one unexpected trailing `session/update` must go red. If it
+stays green, the step is still wrong.
+
+### 2. Manifest version regression must be fixed IN this bean
+
+`src/isaac-manifest.edn` backsliding `0.1.8` → `0.1.6` on the bean branch is a
+defect the branch introduced. A shipping-manifest version regression must never
+merge. This is not scope creep — it is not-regressing what you touched.
+
+Fix in this branch: restore the manifest version to match `origin/main` at
+merge time (currently `0.1.8`; re-check `origin/main` before pushing in case it
+advanced). Do **not** exclude it.
+
+### Fail-count reset
+
+This planner note resets the verify-fail count. Resume in work.
+
 ## Verify fail (attempt 2, 2026-07-08): strict notification proof is still incomplete and the ACP manifest version regressed
 
 Evidence:
