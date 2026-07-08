@@ -1,11 +1,11 @@
 ---
 # isaac-jx7u
 title: 'Dead-letter resurrection: loud comm post + isaac hail requeue'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-08T22:13:07Z
-updated_at: 2026-07-08T22:13:07Z
+updated_at: 2026-07-08T23:18:26Z
 ---
 
 ## Goal
