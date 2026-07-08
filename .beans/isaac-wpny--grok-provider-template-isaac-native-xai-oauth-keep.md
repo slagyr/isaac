@@ -56,3 +56,43 @@ Evidence:
 - The implementation still returns `{:error :refresh-failed ...}` from `src/isaac/llm/auth/store.clj:73-75` and `96-106`, not a provider-wall/unavailable shape.
 - Targeted feature run `clojure -M:features features/llm/auth/oauth_refresh.feature` was green but reported `1 examples, 0 failures, 0 assertions`, which is also a no-assertion smell for a newly added acceptance feature.
 - Other verification commands were green (`bb spec ...`, descriptor feature, commands feature, and `bb ci`), so the fail is acceptance coverage, not build breakage.
+
+## Resolution (attempt 2, 2026-07-08)
+
+Addressed the verify fail in both production behavior and acceptance coverage.
+
+### Behavior changes
+- `src/isaac/llm/auth/store.clj`
+  - Refresh failures now classify as provider-wall style unavailability instead of returning `{:error :refresh-failed ...}`.
+  - Explicit 429 / usage-limit refresh responses preserve retry-after via `isaac.drive.provider-wall/classify`.
+  - Non-429 refresh failures now default to `{:unavailable? true :retry-after-ms 1800000}` so hail work defers per `isaac-3tvq`.
+- `src/isaac/llm/api/openai/shared.clj`
+  - `resolve-oauth-tokens` now propagates refresh results rather than dropping unavailable classification.
+  - `missing-auth-error` now passes through provider-wall unavailability and only returns `:auth-missing` when credentials are truly absent.
+  - `with-oauth-refresh-retry` now returns the refresh result when the forced refresh fails, instead of silently collapsing to nil.
+
+### Acceptance coverage added
+- `features/llm/auth/oauth_refresh.feature`
+  - retained expired-token refresh persistence scenario
+  - added rotated refresh-token persistence scenario
+  - added concurrent refresher scenario proving both refreshers converge on the single rotated refresh token
+  - added refresh-failure default-delay provider-wall scenario
+  - added refresh-provider-wall explicit retry-after scenario
+- `spec/isaac/agent/auth_steps.clj`
+  - added real asserting gherclj helpers for rotated token persistence, concurrent refreshers, default provider-wall delay, and explicit retry-after preservation
+  - fixed feature helper FS/nexus wrapping so oauth feature steps actually exercise persisted in-memory auth state
+
+### Unit/spec reinforcement
+- `spec/isaac/llm/auth/store_spec.clj`
+  - now asserts non-429 refresh failures defer with the default retry window
+  - now asserts 429 refresh failures classify with explicit retry-after
+- `spec/isaac/llm/api/openai/shared_spec.clj`
+  - now asserts shared auth plumbing surfaces unavailable/provider-wall results from refresh paths
+
+### Verification
+- `bb config-bypass-lint`
+- `clojure -M:spec`
+- `clojure -M:features`
+- `clojure -M:features features/llm/auth/oauth_refresh.feature`
+
+All green after the fix. Acceptance feature now reports assertions (`5 examples, 0 failures, 18 assertions`).
