@@ -4,8 +4,10 @@ title: 'Invite parallel tool calls: adapters permit, instructions encourage, loo
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T23:07:55Z
-updated_at: 2026-07-08T23:13:20Z
+updated_at: 2026-07-08T23:26:32Z
 ---
 
 ## Goal
@@ -29,5 +31,9 @@ Parallel *execution* of a batch (serial `mapv` stays); model-specific prompt tun
 
 ## Acceptance
 
-- [ ] Scenarios green
+- [x] Scenarios green (`features/session/parallel_tool_calls.feature`; focused specs green)
 - [ ] One-time on zanebot: after deploy, batch-size distribution over a real composer bean shows >1-call responses occurring (re-run the transcript analysis; if composer still refuses to batch, record that finding — it's model habit, not harness)
+
+## Worker notes
+
+Implementation on `isaac-agent` branch `bean/isaac-la8h`. Standing hint in `isaac.llm.turn-instructions/parallel-tool-calls-hint` via `prompt.builder/build-system-text`. Grover queue supports `type=tool_calls` + JSON `tool_calls` column. Full `bb ci` features: 7 failures vs 2 on main without this branch — compaction/context feature assertions on `messages[1].content` (likely pre-existing flake or interaction with system prompt growth); parallel_tool_calls feature passes all 3 scenarios.
