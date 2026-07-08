@@ -1,11 +1,11 @@
 ---
 # isaac-7l5m
-title: 'Responses API chaining: previous_response_id within tool-loop turns (provider-gated)'
+title: 'Stateful Responses API conversations: previous_response_id within tool-loop turns (provider/model-gated)'
 status: draft
 type: feature
 priority: normal
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-07-08T20:46:12Z
+updated_at: 2026-07-08T21:24:32Z
 ---
 
 ## Goal
@@ -21,7 +21,7 @@ Use the Responses API as designed on providers that support it: within a tool-lo
 ## Design
 
 - **Scope: within-turn only.** Each turn's first request sends the full context exactly as today (fresh chain); tool-loop cycles 2..N send `{:input <tool results only> :previous_response_id <last completed response id> :store true}`. Turn boundaries, compaction, suspend/resume, and transcript-as-truth are all untouched — the transcript is still written locally from streamed events; the chain is a transport optimization inside one turn.
-- **Capability flag resolves through the standard config layering** (provider template < model file < crew < session), so it is per-model gateable per Micah: `:response-chaining true` on the :grok / :xai provider templates; any model file can override it off (or on, e.g. a future openai API-key provider). Default false; chatgpt stays false (backend disables statefulness). Non-Responses APIs ignore it.
+- **Capability flag resolves through the standard config layering** (provider template < model file < crew < session), so it is per-model gateable per Micah: `:stateful true` on the :grok / :xai provider templates; any model file can override it off (or on, e.g. a future openai API-key provider). Default false; chatgpt stays false (backend disables statefulness). Non-Responses APIs ignore it.
 - **Chain from the last COMPLETED response id only** (captured from the stream's `response.created`/`completed` events). A failed/aborted cycle re-chains from the prior good id.
 - **Self-healing fallback**: on a `previous_response_id ... not found` error (server-side expiry/eviction — xAI retention is undocumented), transparently retry that cycle with full context and start a new chain. Log `:chat/chain-reset` (info).
 - **Token accounting unchanged**: the server still bills stored context as input tokens (561 above included the chained history), so this saves upload bandwidth, client prompt-build time, and TTFT — not tokens. On subscription providers tokens are flat-rate anyway.
@@ -32,7 +32,7 @@ Use the Responses API as designed on providers that support it: within a tool-lo
 
 ## Scenarios (worker writes; required coverage — grover needs chaining support first)
 
-1. Chained turn: with `:response-chaining true`, cycle 1 sends full context and no `previous_response_id`; cycle 2 carries `previous_response_id` = cycle 1's response id, `store: true`, and input containing ONLY the new tool results (assert absence of the original history from the body).
+1. Chained turn: with `:stateful true`, cycle 1 sends full context and no `previous_response_id`; cycle 2 carries `previous_response_id` = cycle 1's response id, `store: true`, and input containing ONLY the new tool results (assert absence of the original history from the body).
 2. Capability off (default / chatgpt): every cycle sends full context, `store: false` — behavior identical to today.
 3. Chain reset: cycle N returns a previous-response-not-found error; the cycle retries once with full context, a new chain starts, the turn completes, `:chat/chain-reset` logged.
 4. Turn boundary: a new turn on the same session starts with full context (no id carried across turns).
