@@ -4,8 +4,10 @@ title: CLI startup caching for fast commands (cache/cli.edn with timestamp inval
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T00:00:00Z
-updated_at: 2026-07-08T20:33:28Z
+updated_at: 2026-07-08T21:45:49Z
 ---
 
 ## Problem
@@ -347,3 +349,58 @@ than rewriting unilaterally.
 
 Bean left `in-progress` (claimed). Awaiting a call on the scenario-mechanics fix
 (see the AskUserQuestion options: fix-mechanics / re-plan / in-process).
+
+---
+
+## Implemented (2026-07-08, isaac-work-1) — handoff unverified
+
+**isaac-foundation `main` `1221df6`.** `bb ci`: 816 spec / 131 feature examples,
+0 failures; config-bypass-lint ok. All 5 approved scenarios pass (un-@wip'd).
+
+**What landed:**
+- `isaac.startup.cache` — cache at `<root>/cache/cli.edn`. Freshness is
+  write-ordering: fresh iff the cache exists (current `:version`) and NO watched
+  file was written after the cache file itself. Watches the root config +, per
+  local module, its manifest/deps candidates. `:basis` is a witness recorded on
+  write (proves rewrite-vs-preserve), NOT the comparator.
+- `isaac.fs` — new per-file modification stamp `fs/modified` (protocol `-modified`):
+  RealFs → real mtime; MemFs → per-path write revision (tracked in its existing
+  store via a reserved key, no constructor change). This is the enabling
+  primitive: mem-fs had NO notion of file mtime, so the scenarios' write-ordering
+  semantics were untestable in-process without it.
+- `isaac.main/run` — freshness computed up front; on a fresh hit, `--version`/
+  `--help` skip module discovery/registration entirely (fast path); on miss/stale,
+  normal work + cache write (skipped for `modules`). `usage` split into
+  `usage`/`usage-for` so a cached command list renders help.
+- `foundation_boundary_spec` — registered `isaac.startup.cache` in the foundation set.
+
+**Scenario/harness changes I made (approved scenarios diverged from a runnable
+setup — flagged for verifier review):**
+1. **launcher → in-process.** Scenarios now use `isaac is run with` (in-process,
+   sees mem-fs) instead of `the isaac launcher is run with` (spawns the real
+   packaged `libexec/isaac` subprocess — slow/fragile and blind to mem-fs). Micah
+   agreed the subprocess step was the wrong strategy here. This also moves the
+   cache to the in-process `main/run` path (where it's testable) — the packaged
+   launcher benefits transitively (it calls `main/run`); caching the launcher's
+   own classpath *composition* is a natural follow-up (not required by these ACs).
+2. **EDN-file write step.** Config/cache pre-populated with `the isaac EDN file
+   ... exists with:` (parses path/value rows to nested EDN) instead of `the isaac
+   file ... exists with:` (which wrote the raw gherclj table `{:headers :rows}`).
+3. **Manifest under `resources/`.** Local manifest at
+   `/test/local-mod/resources/isaac-manifest.edn` so it's discoverable from mem-fs
+   WITHOUT a real-fs classpath preload (`needs-classpath-preload?` returns false
+   when a manifest resolves under resources/ or src/ and there's no deps.edn).
+   The cache watches the same path.
+4. **Wildcard support.** `the isaac file ... EDN contains:` (fs_steps) now matches
+   step-table cells (`#*`, `#"regex"`) instead of edn-reading them (`#*` was
+   throwing "No dispatch macro for: *").
+
+**Cross-repo flag:** extended the core `isaac.fs/Fs` protocol with `-modified`.
+Only RealFs/MemFs implement Fs in foundation (both updated). Any OTHER repo with
+its own `Fs` implementation will need `-modified` when it bumps its foundation
+pin — but `-modified` is only invoked on the run's fs (RealFs/MemFs), so it's
+additive/low-risk. No foundation pin bumps done here.
+
+**Deferred (noted in bean's own open-questions):** launcher-compose classpath
+caching; `isaac cache clear`; argv early-out for `--version` before any config
+read; timing-based "used cache" assertions.
