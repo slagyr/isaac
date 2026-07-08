@@ -201,3 +201,25 @@ Evidence:
   - The extra notification captured by the failing step is `{:jsonrpc "2.0", :method "chat/status", ...}` after the expected `session/update` row.
 - That means the branch does not yet reconcile the new exact-notification semantics with other scenarios that still describe only a subset of the turn's notification stream.
 - The manifest regression from the prior fail is fixed (`src/isaac-manifest.edn` restored to `0.1.8`), but the shared-step regression remains unresolved.
+
+## Planner resolution (2nd escalation, 2026-07-08): exact matching is METHOD-SCOPED
+
+The collision between exact-notification matching and `slash_commands.feature`
+is real and the fix is to sharpen the rule, not weaken it:
+
+**The "sends notifications" step asserts the complete ordered set of
+notifications whose `:method` appears in the expected table.** Filter the
+actual stream to listed methods; exact count + order on that filtered stream;
+unlisted methods (e.g. `chat/status`) flow free unless a row lists them.
+
+- The bean's replay teeth are intact: pre-offset leakage and orphan noise are
+  `session/update` notifications, and every replay table lists that method —
+  so any extra `session/update` still fails.
+- `slash_commands.feature` `/status` passes unchanged: `chat/status` is not a
+  listed method there. Do NOT add rows to it in this bean.
+- Keep the `finalize!` trailing-notification guard, scoped the same way:
+  throw only on unlisted trailing notifications of listed methods.
+- Attempt 3's other resolutions stand: manifest at `0.1.8`, attach path via
+  `attach-session-result!`, exact count+order mechanics.
+
+This note resets the verify-fail count. Resume in work.
