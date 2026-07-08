@@ -7,8 +7,9 @@ priority: normal
 tags:
     - subscription
     - claude
+    - unverified
 created_at: 2026-07-08T21:44:45Z
-updated_at: 2026-07-08T21:54:33Z
+updated_at: 2026-07-08T22:11:16Z
 ---
 
 ## Problem
