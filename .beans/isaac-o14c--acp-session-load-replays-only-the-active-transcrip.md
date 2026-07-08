@@ -256,3 +256,19 @@ Evidence:
 - Verified: `session.feature` 8/0, `cli.feature` 17/0 (2 pending), `acp_steps_spec` + `cli_spec` green, `config-bypass-lint` ok.
 - `slash_commands.feature` `/status` still fails (`notification content matches` nil) on this tree — same as prior verify; not a regression from method-scoping.
 - Full `bb features` / `bb spec` still show broader pre-existing reds (match `main` failure count).
+
+## Verify fail (attempt 2, 2026-07-08): planner-directed `/status passes unchanged` proof is still red and needs clarification
+
+Evidence:
+- There are still no new implementation commits beyond `isaac-acp` commit `09cf9f3` (`isaac-o14c: method-scoped exact notification matching`).
+- The planner-directed method-scoped fix is present in `spec/isaac/comm/acp/acp_steps.clj`: listed methods are derived from the expected table, only listed methods are collected, and only trailing notifications for listed methods fail.
+- Replay-targeted proofs remain green on `09cf9f3`:
+  - `bb features features/comm/acp/session.feature` → `8 examples, 0 failures, 19 assertions`
+  - `bb features features/comm/acp/cli.feature` → `17 examples, 0 failures, 37 assertions, 2 pending`
+  - `bb spec spec/isaac/comm/acp/acp_steps_spec.clj` → `1 examples, 0 failures, 1 assertions`
+  - `bb spec spec/isaac/comm/acp/cli_spec.clj` → `13 examples, 0 failures, 31 assertions`
+  - `bb config-bypass-lint` → `ok`
+- But the planner note explicitly said `slash_commands.feature` `/status` should pass unchanged under the method-scoped rule. It still does not:
+  - `bb features features/comm/acp/slash_commands.feature` → scenario `/status returns formatted markdown via ACP notification` fails with `Expected truthy but was: nil`
+- I re-ran the same command on the `origin/main` worktree at `8e71510`, and it fails the same way there. So the remaining `/status` red is not introduced by `09cf9f3`, but it still blocks the planner's stated proof expectation.
+- Because the bean-specific replay behavior is green while the planner-directed `/status` confirmation is still red for an apparently pre-existing reason, this needs planner clarification rather than another worker bounce.
