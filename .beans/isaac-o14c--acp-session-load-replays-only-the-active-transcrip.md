@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T22:57:39Z
+updated_at: 2026-07-08T23:05:57Z
 parent: isaac-zt4h
 ---
 
@@ -272,3 +272,57 @@ Evidence:
   - `bb features features/comm/acp/slash_commands.feature` → scenario `/status returns formatted markdown via ACP notification` fails with `Expected truthy but was: nil`
 - I re-ran the same command on the `origin/main` worktree at `8e71510`, and it fails the same way there. So the remaining `/status` red is not introduced by `09cf9f3`, but it still blocks the planner's stated proof expectation.
 - Because the bean-specific replay behavior is green while the planner-directed `/status` confirmation is still red for an apparently pre-existing reason, this needs planner clarification rather than another worker bounce.
+
+## Planner disposition (2026-07-08, prowl) — PASS o14c on replay evidence; /status red is pre-existing, filed separately
+
+The verifier is right, and my prior note was wrong on one factual point.
+
+### My error, corrected
+
+My earlier note asserted "`slash_commands.feature` `/status` should pass
+unchanged under this rule." That assumed `/status` was green on `origin/main`.
+It was not. Verified this turn on a clean `isaac-acp` `origin/main` checkout
+(`8e71510`): `bb features features/comm/acp/slash_commands.feature` fails the
+`/status returns formatted markdown via ACP notification` scenario with the
+identical `Expected truthy but was: nil`. The failure predates o14c. "Passes
+unchanged" was the correct intent — it just means "o14c must not make it worse,"
+which it doesn't — not "o14c must make it green."
+
+### Root cause of the /status red (orthogonal to o14c)
+
+The `/status` scenario asserts via `the notification content matches:`, which
+reads a `session/update` `agent_message_chunk`'s markdown text. But the server
+emits `/status` output as a **`chat/status`** notification (structured data) —
+`emit-status-notification!`, `src/isaac/comm/acp/server.clj:181`. The content
+step reads `:params :update :content :text`, which is empty for `chat/status`,
+so every pattern returns nil. Scenario and server disagree about how `/status`
+surfaces output. Filed as **isaac-l1vb** (bug, todo).
+
+### o14c is not the owner of that scenario
+
+o14c's change surface: `replay-transcript!` transcript source
+(`get-transcript` → `active-transcript`) and the method-scoped notification-set
+step. It did **not** touch `slash_commands.feature`, `emit-status-notification!`,
+or the `chat/status` path. `chat/status` is an unlisted method in that scenario,
+so the method-scoped rule leaves it untouched by design.
+
+### Disposition: PASS
+
+o14c is verifiable **PASS** on its own acceptance:
+
+- `bb features features/comm/acp/session.feature` → 8/0 (19 assertions)
+- `bb features features/comm/acp/cli.feature` → 17/0 (2 pending)
+- `bb spec spec/isaac/comm/acp/acp_steps_spec.clj` → 1/0
+- `bb spec spec/isaac/comm/acp/cli_spec.clj` → 13/0
+- `bb config-bypass-lint` → ok
+- manifest at `0.1.8` (matches `origin/main`)
+
+Do **NOT** rescope o14c to absorb the `/status` failure — that is scope creep
+onto an orthogonal pre-existing defect now tracked by isaac-l1vb.
+
+Verifier: complete o14c — remove the `unverified` tag, set status completed,
+merge `bean/isaac-o14c`. The `/status` red does not block this bean.
+
+### Fail-count reset
+
+This planner note resets the verify-fail count.
