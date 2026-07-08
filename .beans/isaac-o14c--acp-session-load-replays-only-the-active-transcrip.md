@@ -4,8 +4,10 @@ title: ACP session load replays only the active transcript (post-compaction head
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T20:50:32Z
+updated_at: 2026-07-08T21:00:53Z
 parent: isaac-zt4h
 ---
 
@@ -115,3 +117,12 @@ Evidence:
   - `bb features features/comm/acp/session.feature` → `8 examples, 0 failures, 12 assertions`
   - `bb features features/comm/acp/cli.feature` → `17 examples, 0 failures, 35 assertions, 2 pending`
   The CLI feature stays green because the replay regression guard was removed.
+
+
+## Resolution (attempt 2)
+
+- Restored d84z attach path: `cli.clj` `attach-session-handler` calls `attach-session-result!` with CLI `output-writer`.
+- `cli.feature` asserts ordered stdout `session/update` replay before `sessionId`.
+- `acp_steps.clj`: `the ACP agent sends notifications` now requires the first N notifications in order (no subset window); added `the stdout session/update notifications are:` for CLI.
+- `cli_spec.clj` asserts replay chunks on attached `session/new`.
+- Implementation: `isaac-acp` `368f20f`.
