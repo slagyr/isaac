@@ -4,10 +4,8 @@ title: 'grok provider template: Isaac-native xAI OAuth keeps the subscription to
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-08T16:00:30Z
-updated_at: 2026-07-08T18:13:32Z
+updated_at: 2026-07-08T18:22:50Z
 ---
 
 ## Goal
@@ -47,3 +45,14 @@ Write gherkin scenarios covering at minimum:
 4. Refresh failure classifies as a provider wall per the isaac-3tvq contract (hail defers, no dead-letter burn).
 
 No absence tests — the stopgap-retirement items are one-time acceptance checks, not permanent scenarios.
+
+
+## Verify fail (attempt 1, 2026-07-08): required gherkin coverage is incomplete for oauth refresh and provider-wall behavior
+
+Evidence:
+- The bean explicitly requires gherkin scenarios for (a) single-use refresh rotation with concurrent refreshers and (b) refresh failure classifying as a provider wall.
+- `features/llm/auth/oauth_refresh.feature:1-13` contains only one scenario for refreshing an expired chatgpt token and persisting the new access token. It does not cover rotated refresh-token persistence under concurrency and does not cover provider-wall classification on refresh failure.
+- `grep -RIn 'refresh-failed' src spec features` found only `src/isaac/llm/auth/store.clj` and `spec/isaac/llm/auth/store_spec.clj`; there is no gherkin coverage for the refresh-failure path.
+- The implementation still returns `{:error :refresh-failed ...}` from `src/isaac/llm/auth/store.clj:73-75` and `96-106`, not a provider-wall/unavailable shape.
+- Targeted feature run `clojure -M:features features/llm/auth/oauth_refresh.feature` was green but reported `1 examples, 0 failures, 0 assertions`, which is also a no-assertion smell for a newly added acceptance feature.
+- Other verification commands were green (`bb spec ...`, descriptor feature, commands feature, and `bb ci`), so the fail is acceptance coverage, not build breakage.
