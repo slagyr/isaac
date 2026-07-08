@@ -1,11 +1,11 @@
 ---
 # isaac-wpny
 title: 'grok provider template: Isaac-native xAI OAuth keeps the subscription token fresh'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-08T16:00:30Z
-updated_at: 2026-07-08T16:00:30Z
+updated_at: 2026-07-08T16:09:59Z
 ---
 
 ## Goal
@@ -35,6 +35,13 @@ Isaac's oauth machinery is already generic (per-provider auth.json entries, sing
 - [ ] Token survives its 6h expiry unattended (proactive refresh observed in logs)
 - [ ] Stopgap retired: `~/bin/xai-token-sync.sh`, its crontab entry, and the `~/.grok/auth.json` mirroring are removed; Isaac holds its own token pair independent of the Grok CLI login
 
-## Scenarios
+## Scenarios (worker writes these — required coverage)
 
-To be specced one at a time (planner + Micah) before dispatch. Expected coverage: device-code flow against a scripted OIDC endpoint, single-use refresh rotation persisted under concurrent refreshers, chatgpt behavior unchanged, provider-walls (3tvq) classification on 401-after-refresh-failure.
+Write gherkin scenarios covering at minimum:
+
+1. Device-code login flow against a scripted OIDC endpoint (no real network) — descriptor-driven endpoints/client-id, tokens persisted per provider.
+2. Single-use refresh rotation: the rotated refresh token is persisted before the refresh lock releases; a concurrent second refresher does not consume/clobber it.
+3. chatgpt regression guard: existing chatgpt oauth behavior unchanged (its descriptor produces today's endpoints, headers, and refresh path).
+4. Refresh failure classifies as a provider wall per the isaac-3tvq contract (hail defers, no dead-letter burn).
+
+No absence tests — the stopgap-retirement items are one-time acceptance checks, not permanent scenarios.
