@@ -1,11 +1,11 @@
 ---
 # isaac-wpny
 title: 'grok provider template: Isaac-native xAI OAuth keeps the subscription token fresh'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-08T16:00:30Z
-updated_at: 2026-07-08T18:22:50Z
+updated_at: 2026-07-08T18:59:14Z
 ---
 
 ## Goal
