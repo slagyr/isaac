@@ -40,6 +40,40 @@ be added by the worker cheaply — same shape, config row instead of data block.
 - **`isaac hail requeue <id>`**: moves `failed/<id>.edn` back to pending with attempts reset to 0, original prompt/params/thread intact, provenance stamped (`:requeued-from`, `:requeued-at`). Works for any failed record.
 - Consider: a requeue-all-by-reason flag for mass weather recoveries (e.g. everything dead-lettered as `:api-error` during an outage window).
 
-## Scenarios (spec with Micah before dispatch)
+## Approved scenarios B + C (Micah, 2026-07-08)
 
-Coverage to spec: dead-letter emits the comm post with bean-id and error; requeue restores a failed record to pending with attempts 0 and provenance; requeued delivery binds and delivers normally; requeue of a nonexistent id errors cleanly.
+**B — requeue resurrects and redelivers**: fixture plants `hail/failed/hail-1.edn`
+(attempts 5, error :api-error, original prompt/crew/bound-session). Then:
+
+```gherkin
+When isaac is run with "hail requeue hail-1"
+Then the exit code is 0
+And the isaac file "hail/failed/hail-1.edn" does not exist
+And the isaac file "hail/deliveries/hail-1.edn" EDN contains:
+  | path           | value          | #comment                     |
+  | id             | hail-1         |                              |
+  | attempts       | 0              | fresh budget                 |
+  | prompt         | Seal the leak. | original content intact      |
+  | requeued-error | :api-error     | provenance: why it died      |
+  | requeued-at    | #".+"          | provenance: when resurrected |
+When the hail delivery worker ticks at "2026-04-21T10:00:00Z"
+And the turn ends on session "engine-room"
+Then the isaac file "hail/delivered/hail-1.edn" EDN contains:
+  | path | value  |
+  | id   | hail-1 |
+```
+
+Design: record returns to `deliveries/` (it IS a delivery; worker re-binds
+normally, no band re-route); `:error` cleared but preserved as
+`:requeued-error`; the tick→delivered leg proves the record is live, not just
+relocated. Queue a grover `text` success for the redelivery.
+
+**C — unknown id fails cleanly**:
+
+```gherkin
+When isaac is run with "hail requeue nope99"
+Then the stderr contains "nope99"
+And the exit code is 1
+```
+
+All CLI steps existing (bands.feature machinery); the command itself is the feature.

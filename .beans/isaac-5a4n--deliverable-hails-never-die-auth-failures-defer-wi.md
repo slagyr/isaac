@@ -21,8 +21,8 @@ xAI subscription token expired 21:39Z (refresh cron not yet armed). Prowl's isaa
 - **Drive classifies auth failures as weather**: HTTP 401 (and 403 auth/entitlement rejections) => {:unavailable? true :reason :auth :retry-after-ms N} (default shorter than walls, ~5min — retries are cheap, auth fixes are human-speed). 3tvq wall classification gains :reason :wall.
 - **Hail worker unchanged in shape**: unavailable => defer, zero attempt burn, delivery stays pending. :hail/delivery-deferred warn log gains the :reason.
 - **Attention**: an :auth-reason deferral posts to the NEW top-level `:attention` config (Micah-approved 2026-07-08):
-  `:attention {:notify {:comm "discord" :target "isaac"} :human {:comm "imessage" :target "micah"}}`
-  (hot-reloadable; `:human` is declared-but-unused break-glass — nothing sends to it in this bean). An auth outage is a SYSTEM-scoped event, so it routes to `:attention :notify`; unset => WARN log only. Posting = enqueueing a durable file in `comm/delivery/pending/` (the existing comm outbox — the comm delivery worker drains it), so attention survives restarts. Throttled once per provider per hour. Wall deferrals stay log-only (expected, self-healing).
+  `:attention {:notify {:comm "discord" :target "isaac"} :break-glass {:comm "imessage" :target "micah"}}`
+  (hot-reloadable; `:break-glass` is declared-but-unused — nothing sends to it in this bean). An auth outage is a SYSTEM-scoped event, so it routes to `:attention :notify`; unset => WARN log only. Posting = enqueueing a durable file in `comm/delivery/pending/` (the existing comm outbox — the comm delivery worker drains it), so attention survives restarts. Throttled once per provider per hour. Wall deferrals stay log-only (expected, self-healing).
 - **Still dead-letters**: genuine turn errors (non-wall model errors, tool blowups) and :continuations-exhausted — poison budget unchanged.
 
 ## Scenarios (approved by Micah, 2026-07-08)
