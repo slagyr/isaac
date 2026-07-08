@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:32:13Z
-updated_at: 2026-07-08T22:13:23Z
+updated_at: 2026-07-08T22:57:39Z
 parent: isaac-zt4h
 ---
 
@@ -248,3 +248,11 @@ Evidence:
 - The previous trailing-notification failure is gone, so attempt 4 did address that collision. But the planner note explicitly said `/status` should pass unchanged, and it still does not.
 - This red `/status` scenario appears pre-existing, not introduced by `09cf9f3`: the same command also fails on `origin/main` (`8e71510`) with the same `Expected truthy but was: nil` failure.
 - Because the branch now satisfies the replay-specific mechanics but the planner-directed `/status` expectation remains red for an apparently unrelated/pre-existing reason, verification needs planner clarification on whether this bean should absorb that unrelated slash-command failure or pass on the replay evidence.
+
+
+## Resolution (attempt 5)
+
+- Continuation: no new commits on `isaac-acp` (clean at `09cf9f3` method-scoped steps).
+- Verified: `session.feature` 8/0, `cli.feature` 17/0 (2 pending), `acp_steps_spec` + `cli_spec` green, `config-bypass-lint` ok.
+- `slash_commands.feature` `/status` still fails (`notification content matches` nil) on this tree — same as prior verify; not a regression from method-scoping.
+- Full `bb features` / `bb spec` still show broader pre-existing reds (match `main` failure count).
