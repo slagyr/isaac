@@ -38,6 +38,10 @@ Parallel *execution* of a batch (serial `mapv` stays); model-specific prompt tun
 
 Implementation on `isaac-agent` branch `bean/isaac-la8h`. Standing hint in `isaac.llm.turn-instructions/parallel-tool-calls-hint` via `prompt.builder/build-system-text`. Grover queue supports `type=tool_calls` + JSON `tool_calls` column. Full `bb ci` features: 7 failures vs 2 on main without this branch — compaction/context feature assertions on `messages[1].content` (likely pre-existing flake or interaction with system prompt growth); parallel_tool_calls feature passes all 3 scenarios.
 
+## Worker notes (verify-fail fix, 2026-07-09)
+
+Root cause: global `parallel-tool-calls-hint` in `build-system-text` inflated `estimate-prompt-tokens` and shifted compaction thresholds (extra grover queue consumption). Fix: optional `include-tool-batching-hint?` on `prompt.builder/build` (default true for agent turns); `compaction/estimate-prompt-tokens` passes false. Updated specs: `turn_spec` context-mode system strings, `anthropic_spec` system block contains hint. Evidence: `bb ci` green on branch (config-bypass-lint + full spec + features).
+
 ## Verify fail (attempt 1, 2026-07-08): branch leaves the known prompt/content regressions unresolved and does not prove the worker's claimed CI baseline
 
 Evidence:
