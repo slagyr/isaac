@@ -4,8 +4,10 @@ title: 'Tool output caps: declare :tools :defaults in the config schema; halve t
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T23:13:08Z
-updated_at: 2026-07-09T17:49:14Z
+updated_at: 2026-07-09T17:59:15Z
 ---
 
 ## Goal
@@ -25,4 +27,14 @@ Note: zanebot currently carries an explicit override (400 lines / 32KB) in isaac
 
 ## Acceptance
 
-- [ ] Scenarios green; existing output-cap spec numbers updated to the halved defaults
+- [x] Scenarios green; existing output-cap spec numbers updated to the halved defaults
+
+## Worker notes
+
+`isaac-agent` branch `bean/isaac-08r9` @ `d762b55`:
+- `resources/isaac-manifest.edn`: `:tools :defaults` with `:max-lines` / `:max-bytes` (ints)
+- `output_cap.clj`: defaults 1000 / 131072
+- `features/config/set_unset.feature`: config set `tools.defaults.max-lines 500`
+- `features/tool/output_cap_halved_defaults.feature`: 1020-line read → `[ 20 lines truncated; line cap hit ]`
+- `output_cap_spec`, `schema_spec` (root `field-tools`), `registry_spec` updated
+- `bb config-bypass-lint` ok; specs 1197/0; features 610/0
