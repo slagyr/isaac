@@ -4,8 +4,10 @@ title: 'Context-window guard: compaction-disable pages attention; over-window tu
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-09T16:13:11Z
-updated_at: 2026-07-09T18:21:35Z
+updated_at: 2026-07-09T19:04:21Z
 ---
 
 ## Goal
