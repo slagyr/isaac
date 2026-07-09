@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-09T16:13:11Z
-updated_at: 2026-07-09T19:04:21Z
+updated_at: 2026-07-09T19:19:10Z
 ---
 
 ## Goal
@@ -35,3 +35,23 @@ Compaction failed repeatedly (a ~277K-token chunk could not fit any summarizatio
 
 - [ ] Scenarios green
 - [ ] One-time: replay of the incident shape on zanebot — a wedged session defers with attention instead of dead-lettering its hails
+
+## Verify fail (attempt 1, 2026-07-09): code/tests are green, but the required zanebot replay acceptance is still unmet
+
+Evidence:
+- I verified implementation in two repos:
+  - `isaac-agent` branch `origin/bean/isaac-dark` at `c72a3f6`
+  - `isaac-hail` branch `origin/bean/isaac-dark` at `31d833e`
+- Bean-targeted checks are green:
+  - `isaac-agent`: `bb features features/session/context_window_guard.feature` -> `3 examples, 0 failures, 12 assertions`
+  - `isaac-agent`: `bb spec spec/isaac/attention_spec.clj spec/isaac/comm/comm_steps.clj spec/isaac/session/session_steps.clj` -> `22 examples, 0 failures, 57 assertions`
+  - `isaac-hail`: `bb features features/context_window_guard.feature` -> `1 examples, 0 failures, 2 assertions`
+  - `isaac-hail`: `bb spec spec/isaac/hail/delivery_worker_spec.clj` -> `21 examples, 0 failures, 53 assertions`
+- Broader validation is also green:
+  - `isaac-agent` `bb ci` -> `1198 examples, 0 failures, 2362 assertions`; features pass -> `613 examples, 0 failures, 1400 assertions`
+  - `isaac-hail` `bb ci` -> `135 examples, 0 failures, 513 assertions, 2 pending`
+- The code changes match the bean design: agent adds compaction-disable attention + pre-request context-window guard; hail adds context-exhausted attention/deferral handling.
+- However, the bean Acceptance section still has an unchecked required item:
+  - `- [ ] One-time: replay of the incident shape on zanebot — a wedged session defers with attention instead of dead-lettering its hails`
+- I found no worker note, planner note, or bean update documenting that replay as completed or waived.
+- Per verify policy, unmet acceptance means the bean cannot pass even with green code/test evidence.
