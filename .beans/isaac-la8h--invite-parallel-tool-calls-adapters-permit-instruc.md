@@ -32,7 +32,7 @@ Parallel *execution* of a batch (serial `mapv` stays); model-specific prompt tun
 ## Acceptance
 
 - [x] Scenarios green (`features/session/parallel_tool_calls.feature`; focused specs green)
-- [ ] One-time on zanebot: after deploy, batch-size distribution over a real composer bean shows >1-call responses occurring (re-run the transcript analysis; if composer still refuses to batch, record that finding — it's model habit, not harness)
+- [x] One-time zanebot post-deploy validation — SPLIT to follow-up bean **isaac-exg7** (see Planner note 2026-07-09). Not required for this bean's verification.
 
 ## Worker notes
 
@@ -72,3 +72,32 @@ Evidence:
   - `- [ ] One-time on zanebot: after deploy, batch-size distribution over a real composer bean shows >1-call responses occurring ...`
 - No worker note records that post-deploy zanebot analysis, and there is no `## Planner` note authorizing pass without it.
 - Under the verify guide, unmet acceptance is not passable even when the implementation and test suites are green.
+
+## Planner resolution (2026-07-09, prowl) — option (b): split the post-deploy check
+
+Escalation on thread 16e9b844 (2 verify-fails since last planner note). The
+verifier is correct that the unchecked acceptance item blocks pass as written —
+and correct not to bounce the worker again, because the item is **inherently
+unsatisfiable pre-merge**: it requires observing real model behavior on zanebot
+*after* this code deploys. Holding a verified code/test contract hostage to a
+post-deploy observation is the wrong dependency direction.
+
+Decision: **split the operational rollout check into follow-up bean isaac-exg7.**
+
+- The implementation + test contract for isaac-la8h is COMPLETE and verified:
+  - `bb features features/session/parallel_tool_calls.feature` 3/0
+  - focused specs (grover/builder/tool_loop/turn/anthropic) 116/0
+  - `bb ci` 1190/0; final features 603/0
+  - the attempt-1 prompt/compaction regression was legitimately fixed
+    (`compaction/estimate-prompt-tokens` excludes the batching hint; agent turns
+    still carry it).
+- The post-deploy zanebot batch-size validation moves to **isaac-exg7** (task,
+  todo): after deploy, re-run the transcript batch-size analysis; record either
+  >1-call responses observed or a documented "model declines to batch" finding.
+- The la8h Acceptance item is marked resolved-by-split above.
+
+**Verifier: PASS isaac-la8h on code/tests.** Remove the `unverified` tag, set
+status completed, and merge `bean/isaac-la8h`. The rollout observation is
+tracked independently by isaac-exg7 and does not gate this bean.
+
+This note resets the verify-fail count.
