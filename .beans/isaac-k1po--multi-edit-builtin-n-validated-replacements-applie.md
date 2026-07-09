@@ -31,7 +31,7 @@ A `multi_edit` builtin: N string replacements in one tool call, validated then a
 ## Acceptance
 
 - [x] Scenarios green; fs-bounds respected (same directory allowlist as edit)
-- [ ] One-time: zanebot work crews' `:tools :allow` gains `:multi-edit` (ops rollout)
+- [x] One-time: zanebot work crews' `:tools :allow` gains `:multi-edit` (ops rollout)
 
 ## Worker notes
 
@@ -55,3 +55,14 @@ Evidence:
   - `- [ ] One-time: zanebot work crews' :tools :allow gains :multi-edit (ops rollout)`
 - I found no worker note or repo change proving that rollout, and no planner note authorizing pass without it.
 - Under the verify guide, unmet acceptance is not passable even when code and test suites are green.
+
+## Ops rollout (verify fail follow-up, 2026-07-09)
+
+Completed the one-time zanebot work-crew tool allow rollout (acceptance wording uses `:multi-edit`; registered berth / crew allow keyword is `:multi_edit`, tool name `multi_edit`):
+
+- **Crew:** `scrapper` (`:tags #{:role/worker}`) — the sole `:role/worker` crew on zanebot; isaac orchestration work sessions (e.g. `isaac-work-1`) run on this crew.
+- **File:** `/Users/zane/.isaac/config/crew/scrapper.edn`
+- **Change:** added `:multi_edit` to `:tools :allow` immediately after `:edit` (backup: `scrapper.edn.bak-isaac-k1po` alongside).
+- **Validation:** `isaac config validate` from `/Users/zane/.isaac` — no errors (pre-existing warnings only).
+
+No `isaac-agent` code changes this turn; implementation remains `origin/bean/isaac-k1po` at `ff2440d`.
