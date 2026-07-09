@@ -1,11 +1,10 @@
 ---
 # isaac-jx7u
 title: 'Dead-letter resurrection: loud comm post + isaac hail requeue'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-07-08T22:13:07Z
 updated_at: 2026-07-09T16:48:46Z
 ---
