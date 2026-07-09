@@ -1,11 +1,10 @@
 ---
 # isaac-la8h
 title: 'Invite parallel tool calls: adapters permit, instructions encourage, loop already executes'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-07-08T23:07:55Z
 updated_at: 2026-07-08T23:26:32Z
 ---
