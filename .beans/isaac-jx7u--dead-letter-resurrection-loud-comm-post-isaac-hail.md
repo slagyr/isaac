@@ -1,12 +1,21 @@
 ---
 # isaac-jx7u
 title: 'Dead-letter resurrection: loud comm post + isaac hail requeue'
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T22:13:07Z
-updated_at: 2026-07-08T23:18:26Z
+updated_at: 2026-07-09T16:48:46Z
 ---
+
+## Worker notes (2026-07-09)
+
+- `isaac.hail.attention/maybe-notify-dead-letter!` on exhausted attempts and continuations-exhausted; unthrottled comm outbox enqueue.
+- `isaac hail requeue <id>` CLI + `delivery-worker/requeue!`.
+- `features/dead_letter_resurrection.feature`: scenario A (notification-comm + pending comm), B (requeue + redeliver), C (unknown id).
+- Evidence: `bb ci` green on `bean/isaac-jx7u` (spec + features; 2 pre-existing pending elsewhere).
 
 ## Goal
 
