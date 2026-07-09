@@ -126,3 +126,7 @@ Evidence:
 - I re-ran `isaac config validate` after the planner resolution and it still fails with `error: crew.scrapper.tools.allow - must be a registered contribution to :isaac.agent/tools [bad value: multi_edit]`.
 - The planner note split the rollout acceptance to `isaac-6eo4` and explicitly authorized pass on `isaac-k1po` only **after** the premature live-config edit is reverted.
 - Therefore `isaac-k1po` is not yet passable in the current machine state, but the remaining action is limited to reverting the stray `~/.isaac/config/crew/scrapper.edn` edit (remove `:multi_edit`) and deleting `scrapper.edn.bak-isaac-k1po`, then re-validating config.
+
+## Revert premature live config (planner follow-up, 2026-07-09)
+
+Per planner resolution: removed `:multi_edit` from `~/.isaac/config/crew/scrapper.edn`, deleted `scrapper.edn.bak-isaac-k1po`. `isaac config validate` from `~/.isaac` → **OK - config is valid** (warnings only). Rollout deferred to **isaac-6eo4** post-merge. No `isaac-agent` changes; branch remains `bean/isaac-k1po` @ `ff2440d`.
