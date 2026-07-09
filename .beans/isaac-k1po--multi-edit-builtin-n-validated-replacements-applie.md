@@ -1,13 +1,11 @@
 ---
 # isaac-k1po
 title: 'multi_edit builtin: N validated replacements applied atomically in one call'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-08T23:07:55Z
-updated_at: 2026-07-09T17:28:07Z
+updated_at: 2026-07-09T17:35:25Z
 ---
 
 ## Goal
