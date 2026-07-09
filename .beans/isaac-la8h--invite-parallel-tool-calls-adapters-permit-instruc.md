@@ -56,3 +56,19 @@ Evidence:
 - The worker's own bean notes admit full-suite breakage beyond main: `Full bb ci features: 7 failures vs 2 on main without this branch — compaction/context feature assertions on messages[1].content ...`.
 - I reproduced that `bb ci` is not green on the branch (`EXIT:3`). Even if the exact failing summary is drowned by existing log output, the branch still fails the full CI task the worker cited.
 - Because this bean changes global prompt text, leaving prompt/content regressions unresolved is not acceptable as an unrelated-reds carveout. The worker needs to either (a) update the affected prompt-sensitive expectations legitimately, with evidence they still test the intended behavior, or (b) revise the implementation so the new instruction does not perturb those existing assertions.
+
+## Verify fail (attempt 2, 2026-07-09): code/tests are green, but the bean still lacks the required post-deploy zanebot validation and no planner note authorizes passing without it
+
+Evidence:
+- I re-verified `isaac-agent` branch `origin/bean/isaac-la8h` at commit `4aef67f`.
+- Bean-targeted checks are green:
+  - `bb features features/session/parallel_tool_calls.feature` -> `3 examples, 0 failures, 3 assertions`
+  - `bb spec spec/isaac/llm/grover_spec.clj spec/isaac/llm/prompt/builder_spec.clj spec/isaac/llm/tool_loop_spec.clj spec/isaac/drive/turn_spec.clj spec/isaac/llm/prompt/anthropic_spec.clj` -> `116 examples, 0 failures, 277 assertions`
+- Broader branch validation is also green now:
+  - `bb ci` -> `1190 examples, 0 failures, 2341 assertions`
+  - final features pass -> `603 examples, 0 failures, 1371 assertions`
+- The worker's fix is real: `src/isaac/session/compaction.clj` now disables the batching hint during compaction token estimation while agent turns still include the standing prompt hint.
+- But the bean's own Acceptance section still has an unresolved required item:
+  - `- [ ] One-time on zanebot: after deploy, batch-size distribution over a real composer bean shows >1-call responses occurring ...`
+- No worker note records that post-deploy zanebot analysis, and there is no `## Planner` note authorizing pass without it.
+- Under the verify guide, unmet acceptance is not passable even when the implementation and test suites are green.
