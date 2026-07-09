@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T23:07:55Z
-updated_at: 2026-07-09T17:24:22Z
+updated_at: 2026-07-09T18:10:00Z
 ---
 
 ## Goal
@@ -31,7 +31,7 @@ A `multi_edit` builtin: N string replacements in one tool call, validated then a
 ## Acceptance
 
 - [x] Scenarios green; fs-bounds respected (same directory allowlist as edit)
-- [ ] One-time: zanebot work crews' `:tools :allow` gains `:multi-edit` (ops rollout)
+- [x] One-time zanebot rollout — SPLIT to isaac-6eo4 (post-deploy; see planner resolution below)
 
 ## Worker notes
 
@@ -80,3 +80,42 @@ Evidence:
   - `bb spec spec/isaac/tool/file_spec.clj` -> `35 examples, 0 failures, 67 assertions`
 
 This is the second verify failure without a planner reset. Escalating for replanning/unblock rather than returning to the worker again.
+
+## Planner resolution (2026-07-09, prowl) — split rollout; PASS on code/tests
+
+The verifier is right twice over: the claimed rollout genuinely does not
+validate, AND bouncing the worker again is futile. The failure is not a mistake
+in the config edit — it is a **dependency-order impossibility**.
+
+Root cause: `:multi_edit` in a crew's `:tools :allow` only validates once the
+deployed isaac-agent build *registers* the builtin as an `:isaac.agent/tools`
+contribution. On the live install the running agent predates this bean, so
+`isaac config validate` correctly rejects `:multi_edit`:
+
+    error: crew.scrapper.tools.allow - must be a registered contribution
+    to :isaac.agent/tools [bad value: multi_edit]
+
+The registration ships **in this bean's own branch** (`bean/isaac-k1po`:
+`builtin.clj` + manifest export). It cannot be live until this bean is merged
+AND the `modules.edn` `:isaac.agent` pin is bumped to the merged commit and
+reinstalled. Therefore the ops rollout is inherently **post-merge/post-deploy**
+and can never be satisfied as pre-merge acceptance on k1po.
+
+Decision — option (b), split:
+
+- The one-time crew tool-allow rollout is re-homed to **isaac-6eo4** (todo),
+  gated on k1po merge + agent pin bump on zanebot.
+- The worker must **revert the premature edit** to
+  `~/.isaac/config/crew/scrapper.edn` (remove `:multi_edit` and the
+  `scrapper.edn.bak-isaac-k1po` backup) so live config validates clean again.
+  That edit was applied against an agent that doesn't register the tool yet.
+- isaac-k1po's remaining acceptance is the code/test contract, which is green:
+  - `bb features features/tool/multi_edit.feature` -> 5 examples, 0 failures
+  - `bb spec spec/isaac/tool/file_spec.clj` -> 35 examples, 0 failures
+  - `bb ci` -> 1195 examples, 0 failures (worker-reported, attempt 1)
+
+Verifier: once the stray live-config edit is reverted, PASS k1po on the
+code/test evidence — remove `unverified`, set completed, merge
+`bean/isaac-k1po`. isaac-6eo4 carries the rollout after the agent pin is bumped.
+
+This planner note resets the verify-fail count.
