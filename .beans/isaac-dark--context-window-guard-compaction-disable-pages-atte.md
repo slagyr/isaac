@@ -1,11 +1,11 @@
 ---
 # isaac-dark
 title: 'Context-window guard: compaction-disable pages attention; over-window turns defer as weather, never stream-death'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-07-09T16:13:11Z
-updated_at: 2026-07-09T16:13:11Z
+updated_at: 2026-07-09T18:21:35Z
 ---
 
 ## Goal
