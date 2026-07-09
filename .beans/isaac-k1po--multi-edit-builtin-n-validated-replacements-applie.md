@@ -4,8 +4,10 @@ title: 'multi_edit builtin: N validated replacements applied atomically in one c
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T23:07:55Z
-updated_at: 2026-07-09T16:49:16Z
+updated_at: 2026-07-09T16:56:22Z
 ---
 
 ## Goal
@@ -28,5 +30,9 @@ A `multi_edit` builtin: N string replacements in one tool call, validated then a
 
 ## Acceptance
 
-- [ ] Scenarios green; fs-bounds respected (same directory allowlist as edit)
-- [ ] One-time: zanebot work crews' `:tools :allow` gains `:multi-edit`
+- [x] Scenarios green; fs-bounds respected (same directory allowlist as edit)
+- [ ] One-time: zanebot work crews' `:tools :allow` gains `:multi-edit` (ops rollout)
+
+## Worker notes
+
+`isaac-agent` branch `bean/isaac-k1po`: `multi_edit` builtin, validate-all-then-apply-all with `edit entry N:` errors, `features/tool/multi_edit.feature` + `file_spec`. Relative paths under `:state_dir` when no session cwd. `bb ci` green.
