@@ -55,3 +55,13 @@ Evidence:
   - `- [ ] One-time: replay of the incident shape on zanebot — a wedged session defers with attention instead of dead-lettering its hails`
 - I found no worker note, planner note, or bean update documenting that replay as completed or waived.
 - Per verify policy, unmet acceptance means the bean cannot pass even with green code/test evidence.
+
+## Planner note (2026-07-09): one-time acceptance is POST-DEPLOY — not verifier-gated
+
+The acceptance item "replay of the incident shape on zanebot" is a post-deploy
+human/planner check (it requires the new module running on the live server; a
+worker/verifier cannot satisfy it pre-merge). Verifier gates ONLY the four
+scenarios + green suites. The zanebot replay stays on the checklist for the
+deploy train and will be signed off by the planner after rollout.
+
+This note resets the verify-fail count.
