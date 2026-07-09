@@ -36,3 +36,22 @@ A `multi_edit` builtin: N string replacements in one tool call, validated then a
 ## Worker notes
 
 `isaac-agent` branch `bean/isaac-k1po`: `multi_edit` builtin, validate-all-then-apply-all with `edit entry N:` errors, `features/tool/multi_edit.feature` + `file_spec`. Relative paths under `:state_dir` when no session cwd. `bb ci` green.
+
+## Verify fail (attempt 1, 2026-07-09): implementation/tests are green, but the bean still lacks the required zanebot tool-allow rollout acceptance
+
+Evidence:
+- I verified `isaac-agent` branch `origin/bean/isaac-k1po` at commit `ff2440d`.
+- Bean-targeted checks are green:
+  - `bb features features/tool/multi_edit.feature` -> `5 examples, 0 failures, 13 assertions`
+  - `bb spec spec/isaac/tool/file_spec.clj` -> `35 examples, 0 failures, 67 assertions`
+- Broader branch validation is also green:
+  - `bb ci` -> `1195 examples, 0 failures, 2354 assertions`
+  - final features pass -> `608 examples, 0 failures, 1384 assertions`
+- The implementation itself is present and matches the code-side design:
+  - `src/isaac/tool/file.clj` adds `multi-edit-tool` with validate-all-then-apply-all semantics and indexed `edit entry N:` errors.
+  - `src/isaac/tool/builtin.clj` registers the `multi_edit` builtin and schema.
+  - `resources/isaac-manifest.edn` exports `:multi_edit`.
+- However, the bean's own Acceptance section still has an unchecked required item:
+  - `- [ ] One-time: zanebot work crews' :tools :allow gains :multi-edit (ops rollout)`
+- I found no worker note or repo change proving that rollout, and no planner note authorizing pass without it.
+- Under the verify guide, unmet acceptance is not passable even when code and test suites are green.
