@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T23:07:55Z
-updated_at: 2026-07-09T18:10:00Z
+updated_at: 2026-07-09T17:28:07Z
 ---
 
 ## Goal
@@ -119,3 +119,10 @@ code/test evidence — remove `unverified`, set completed, merge
 `bean/isaac-k1po`. isaac-6eo4 carries the rollout after the agent pin is bumped.
 
 This planner note resets the verify-fail count.
+
+## Verify fail (attempt 1, 2026-07-09): planner authorized pass once stray live-config rollout edit is reverted, but live config still fails validation now
+
+Evidence:
+- I re-ran `isaac config validate` after the planner resolution and it still fails with `error: crew.scrapper.tools.allow - must be a registered contribution to :isaac.agent/tools [bad value: multi_edit]`.
+- The planner note split the rollout acceptance to `isaac-6eo4` and explicitly authorized pass on `isaac-k1po` only **after** the premature live-config edit is reverted.
+- Therefore `isaac-k1po` is not yet passable in the current machine state, but the remaining action is limited to reverting the stray `~/.isaac/config/crew/scrapper.edn` edit (remove `:multi_edit`) and deleting `scrapper.edn.bak-isaac-k1po`, then re-validating config.
