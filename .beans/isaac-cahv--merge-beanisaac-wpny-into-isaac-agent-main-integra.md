@@ -1,11 +1,11 @@
 ---
 # isaac-cahv
 title: Merge bean/isaac-wpny into isaac-agent main (integration only)
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-07-10T11:54:14Z
-updated_at: 2026-07-10T11:54:14Z
+updated_at: 2026-07-10T11:57:55Z
 ---
 
 ## Goal
