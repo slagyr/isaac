@@ -132,3 +132,13 @@ never succeed against a standards-compliant OIDC provider.
 ### Fail-count reset
 
 This planner note resets the verify-fail count. Resume in work.
+
+## Verify fail (attempt 1, 2026-07-10): focused OIDC fixes are correct, but the canonical branch still leaves bean acceptance red in full features
+
+Evidence:
+- Canonical implementation is `isaac-agent` `origin/bean/isaac-tzgb` at `260c31f`, based on current `origin/main` `bc94616` (`git merge-base --is-ancestor origin/main 260c31f` -> exit 0).
+- Code-side OIDC fixes are present and independently reproduced:
+  - `src/isaac/llm/auth/cli.clj` now branches by `:flow`; `:oidc-device-code` saves poll tokens directly and skips `exchange-tokens!`, while `:openai-device-auth` still exchanges auth-code + verifier.
+  - Focused specs are green: `bb spec spec/isaac/llm/auth/device_code_spec.clj spec/isaac/llm/auth/cli_spec.clj` -> `73 examples, 0 failures, 148 assertions`.
+  - Independent repro of the direct-token success path is green under a nested mem-fs nexus: stubbing Grok poll success as `{:access_token "at" :refresh_token "rt" :expires_in 3600}` produced `rc 0`, `exchange-calls 0`, saved Grok tokens directly, and printed `Authentication successful!`.
+  - The beans
