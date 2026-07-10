@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-10T16:45:53Z
-updated_at: 2026-07-10T16:51:42Z
+updated_at: 2026-07-10T16:53:21Z
 ---
 
 ## Bug
@@ -40,3 +40,17 @@ isaac auth login --provider grok: device code issued correctly (isaac-88ol form-
 ## Context
 
 Third and hopefully last blocker on the isaac-wpny cutover: encoding (isaac-88ol) -> error surfacing (fixed with it, revealed this) -> pending classification. Micah's login is waiting on it.
+
+## Verify fail (attempt 1, 2026-07-10): branch code is green, but implementation targets an outdated integration repo that is already behind current main
+
+Evidence:
+- The worker implemented this on `isaac-agent-wpny` branch `origin/bean/isaac-tzgb` at commit `f62b4a2`.
+- Focused checks are green:
+  - `bb spec spec/isaac/llm/auth/device_code_spec.clj spec/isaac/llm/auth/cli_spec.clj` -> `73 examples, 0 failures, 143 assertions`
+- Broader branch validation is green on that repo/branch:
+  - `bb ci` -> `1186 examples, 0 failures, 2359 assertions`
+  - final features pass -> `598 examples, 0 failures, 1354 assertions`
+- However, the bean is now being verified after `isaac-88ol` already passed and integrated into **current** `isaac-agent` main (`origin/main` is `bc94616` / mainline has since advanced further in related work), while this bean's branch lives on the stale integration checkout `isaac-agent-wpny` and is **not based on current main**.
+- I confirmed `origin/bean/isaac-tzgb` is not an ancestor of `origin/main` in `isaac-agent-wpny` (`git merge-base --is-ancestor origin/bean/isaac-tzgb origin/main` -> exit 1), so this bean cannot be fast-forward merged as-is.
+- The patch itself appears mergeable by content, but verify does not implement or manually reconcile integration drift; the worker must rebase/retarget the bean onto the current canonical repo/mainline and rerun checks there.
+- Passing from an outdated sibling checkout would validate the wrong integration target and risks shipping an unrebased branch.
