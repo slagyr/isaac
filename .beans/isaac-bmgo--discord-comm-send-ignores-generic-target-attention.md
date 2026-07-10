@@ -1,11 +1,13 @@
 ---
 # isaac-bmgo
 title: Discord comm send! ignores generic :target — attention posts 405 with nil channel
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-10T12:32:20Z
-updated_at: 2026-07-10T12:32:20Z
+updated_at: 2026-07-10T12:38:30Z
 ---
 
 ## Bug
@@ -25,3 +27,9 @@ Every isaac-5a4n/isaac-dark attention post dead-lettered: :discord.reply/http-er
 ## Context
 
 Found by the isaac-o9me post-deploy replay of the context-window guard. The guard works (hail deferred, zero attempts, comm queued); this bug kills the attention delivery at the last hop.
+
+## Worker note (2026-07-10, scrapper@isaac-work-1)
+
+- `isaac-discord` branch `bean/isaac-bmgo` @ `71f305e`: `send!` uses `(or :discord/target :target)`; blank resolved channel → `{:ok false :transient? false}` + `:discord.send/missing-target` warn (no HTTP).
+- Specs + `features/comm/discord/comm_send_target.feature` extended for generic `:target` id and channel name.
+- `bb ci` green on branch.
