@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-10T16:45:53Z
-updated_at: 2026-07-10T17:11:05Z
+updated_at: 2026-07-10T17:38:22Z
 ---
 
 ## Bug
@@ -34,8 +34,8 @@ isaac auth login --provider grok: device code issued correctly (isaac-88ol form-
 
 ## Worker notes
 
-- **Canonical repo:** `isaac-agent` `bean/isaac-tzgb` at **`260c31f`** (planner rescope: `login-device-code` branches on `:flow` — OIDC saves poll result, OpenAI still exchanges).
-- Pending classification at `f43758d`; success-path fix in `260c31f`. `bb ci` green on `260c31f`.
+- **Canonical repo:** `isaac-agent` `bean/isaac-tzgb` at **`611fb5d`** (`260c31f` OIDC login path; `611fb5d` `auth_steps` flow-aware stubs for grok features).
+- Full `clojure -M:features` green (621) after stub fix; `bb ci` green on `611fb5d`.
 
 ## Context
 
