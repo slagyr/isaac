@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-10T16:45:53Z
-updated_at: 2026-07-10T17:15:00Z
+updated_at: 2026-07-10T17:11:05Z
 ---
 
 ## Bug
@@ -29,14 +29,13 @@ isaac auth login --provider grok: device code issued correctly (isaac-88ol form-
 
 ## Scenario coverage (worker)
 
-- `device_code_spec`: authorization_pending x2 then success; slow_down sleeps 5s then 10s; access_denied terminal; chatgpt 403 pending regression unchanged.
-- `cli_spec`: full grok login through `-post-form!` stub with authorization_pending x2 then auth code (proves poll loop in login path).
+- `device_code_spec`: authorization_pending x2 then direct `access_token`/`refresh_token` (no `authorization_code`); slow_down; access_denied; chatgpt 403 pending regression.
+- `cli_spec`: grok OIDC login — pending x2 then direct token response; `exchange-tokens!` not called; `save-tokens!` gets poll tokens, exit 0. Chatgpt auth-code + exchange scenarios unchanged.
 
 ## Worker notes
 
-- **Canonical repo:** `isaac-agent` branch `bean/isaac-tzgb` at `f43758d` (rebased on `origin/main` `bc94616` after verify-fail; replaces stale `isaac-agent-wpny` `f62b4a2`).
-- `classify-oidc-poll-result` maps OAuth `error` body field; poll loop tracks mutable sleep interval for `slow_down` (+5s).
-- Re-verify: `bb ci` green on `isaac-agent` at `f43758d` (1212 specs + 621 features).
+- **Canonical repo:** `isaac-agent` `bean/isaac-tzgb` at **`260c31f`** (planner rescope: `login-device-code` branches on `:flow` — OIDC saves poll result, OpenAI still exchanges).
+- Pending classification at `f43758d`; success-path fix in `260c31f`. `bb ci` green on `260c31f`.
 
 ## Context
 
