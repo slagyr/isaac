@@ -1,13 +1,11 @@
 ---
 # isaac-88ol
 title: 'OIDC device-code flow: send form-encoded requests (RFC 8628) — xAI 415s on JSON'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-10T13:40:06Z
-updated_at: 2026-07-10T13:47:30Z
+updated_at: 2026-07-10T13:52:22Z
 ---
 
 ## Bug
