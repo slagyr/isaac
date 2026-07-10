@@ -34,8 +34,9 @@ isaac auth login --provider grok: device code issued correctly (isaac-88ol form-
 
 ## Worker notes
 
-- Repo: `isaac-agent-wpny` branch `bean/isaac-tzgb`.
+- **Canonical repo:** `isaac-agent` branch `bean/isaac-tzgb` at `f43758d` (rebased on `origin/main` `bc94616` after verify-fail; replaces stale `isaac-agent-wpny` `f62b4a2`).
 - `classify-oidc-poll-result` maps OAuth `error` body field; poll loop tracks mutable sleep interval for `slow_down` (+5s).
+- Re-verify: `bb ci` green on `isaac-agent` at `f43758d` (1212 specs + 621 features).
 
 ## Context
 
