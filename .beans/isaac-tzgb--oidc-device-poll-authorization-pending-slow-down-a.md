@@ -1,13 +1,11 @@
 ---
 # isaac-tzgb
 title: 'OIDC device poll: authorization_pending / slow_down are pending, not terminal'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-10T16:45:53Z
-updated_at: 2026-07-10T17:38:22Z
+updated_at: 2026-07-10T17:48:25Z
 ---
 
 ## Bug
