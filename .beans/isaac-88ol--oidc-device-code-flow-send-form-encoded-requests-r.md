@@ -1,11 +1,13 @@
 ---
 # isaac-88ol
 title: 'OIDC device-code flow: send form-encoded requests (RFC 8628) — xAI 415s on JSON'
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-10T13:40:06Z
-updated_at: 2026-07-10T13:40:06Z
+updated_at: 2026-07-10T13:47:30Z
 ---
 
 ## Bug
@@ -26,6 +28,17 @@ isaac auth login --provider grok fails at step 1. Curl confirms: JSON body -> 41
 - The scripted OIDC endpoint ASSERTS the request Content-Type is application/x-www-form-urlencoded for device-code request, poll, and refresh (the missing tooth that let this ship).
 - openai flow still sends JSON (regression guard).
 - A 4xx with a message body surfaces the message in the CLI error, not :unknown.
+
+## Scenario coverage (worker)
+
+- `device_code_spec`: OIDC request/poll use `-post-form!`; chatgpt regression uses JSON; scripted `http/post` asserts `application/x-www-form-urlencoded` on device-code request, poll, and refresh; 415 plain-text body surfaces `:message`.
+- `cli_spec`: grok login failure prints HTTP 415 + form-urlencoded message, not `:unknown`.
+
+## Worker notes
+
+- Repo: `isaac-agent-wpny` branch `bean/isaac-88ol`.
+- `:oidc-device-code` routes request + poll through form encoding; OpenAI `:openai-device-auth` unchanged (JSON).
+- `parse-response` tolerates non-JSON error bodies; CLI `format-device-code-error` includes status + message.
 
 ## Context
 
