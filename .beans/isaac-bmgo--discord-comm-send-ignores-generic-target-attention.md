@@ -1,13 +1,11 @@
 ---
 # isaac-bmgo
 title: Discord comm send! ignores generic :target — attention posts 405 with nil channel
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-10T12:32:20Z
-updated_at: 2026-07-10T12:44:41Z
+updated_at: 2026-07-10T12:55:43Z
 ---
 
 ## Bug
