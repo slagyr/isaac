@@ -51,3 +51,8 @@ Evidence:
   - return was only `{:ok false, :transient? false}` after the stubbed HTTP response; no `:discord.send/missing-target` log entry was emitted
 - Root cause in code: `resolve-target-channel` returns the original target unchanged when no configured channel name matches, so `send!` only treats blank targets as invalid and still attempts HTTP for unknown names.
 - That leaves the bad-target path silent/misclassified relative to the bean requirement.
+
+## Worker note (verify-fail fix, 2026-07-10)
+
+- `c514443`: when `:discord/channels` is configured, unknown nonblank names (e.g. `bogus-name`) resolve to nil — no HTTP; `:discord.send/missing-target` includes `:target`. Snowflake-shaped ids still pass through; empty channels map keeps legacy pass-through.
+- Spec + feature for unknown `:target`; `bb ci` green.
