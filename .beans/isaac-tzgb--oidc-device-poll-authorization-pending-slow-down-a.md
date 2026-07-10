@@ -1,11 +1,13 @@
 ---
 # isaac-tzgb
 title: 'OIDC device poll: authorization_pending / slow_down are pending, not terminal'
-status: todo
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-10T16:45:53Z
-updated_at: 2026-07-10T16:45:53Z
+updated_at: 2026-07-10T16:51:42Z
 ---
 
 ## Bug
@@ -25,12 +27,15 @@ isaac auth login --provider grok: device code issued correctly (isaac-88ol form-
 - Classify from the OAuth error body field, not the HTTP status (pending arrives as 400).
 - Respect the interval from the device-code response when present (xAI returns interval 5).
 
-## Scenario coverage (worker writes)
+## Scenario coverage (worker)
 
-- Scripted OIDC endpoint returns authorization_pending twice then success: login completes (proves loop survives pending).
-- slow_down increases the poll interval.
-- access_denied terminates with that message.
-- OpenAI flow pending behavior unchanged (regression guard).
+- `device_code_spec`: authorization_pending x2 then success; slow_down sleeps 5s then 10s; access_denied terminal; chatgpt 403 pending regression unchanged.
+- `cli_spec`: full grok login through `-post-form!` stub with authorization_pending x2 then auth code (proves poll loop in login path).
+
+## Worker notes
+
+- Repo: `isaac-agent-wpny` branch `bean/isaac-tzgb`.
+- `classify-oidc-poll-result` maps OAuth `error` body field; poll loop tracks mutable sleep interval for `slow_down` (+5s).
 
 ## Context
 
