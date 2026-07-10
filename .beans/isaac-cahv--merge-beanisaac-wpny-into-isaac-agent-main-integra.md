@@ -1,11 +1,11 @@
 ---
 # isaac-cahv
 title: Merge bean/isaac-wpny into isaac-agent main (integration only)
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-07-10T11:54:14Z
-updated_at: 2026-07-10T11:57:55Z
+updated_at: 2026-07-10T12:02:15Z
 ---
 
 ## Goal
@@ -19,3 +19,10 @@ Land isaac-wpny's VERIFIED work (grok provider template + OAuth descriptors) on 
 - Reconcile wpny's per-provider oauth descriptors with zcsk's auto-refresh so both behaviors survive: descriptors parameterize client-id/endpoints per provider; zcsk's refresh flows through them (single-use refresh-token persistence rules from the wpny bean apply).
 - Run isaac-agent bb spec + bb features under pinned siblings; fix only integration fallout. Push main.
 - Do NOT bump the manifest version (release train pending on this merge).
+
+## Integration notes (isaac-work-2)
+
+- Merged origin/bean/isaac-wpny into /Users/zane/Projects/isaac-agent main (1815523).
+- Resolved resources/isaac-manifest.edn: chatgpt :oauth descriptors + :grok oauth-device template + retained :claude-code from main.
+- bb spec + bb features green on shared sibling checkout.
+- Pushed isaac-agent main. Manifest version unchanged (0.1.11).
