@@ -1,5 +1,5 @@
 {:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                               :git/sha "24efdfd3a5d8aa06159f744206eefbfef165084b"}
+                               :git/sha "bc94616e9a7c154d7b17d7aa27547b0f1353f8bd"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
                                :git/sha "f8cf2d6e9b1fbe93a5b284eefee714965716fd98"}
@@ -23,7 +23,7 @@
                                :git/sha "14b78a91b9e832d90421dc4ce6b14c2daaea5e54"}
                        :desc  "Event hooks and inbound webhook routing."}
  :isaac.comm.discord  {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                               :git/sha "fd785701e4679e7be5b1008b96923a2195666de9"}
+                               :git/sha "661eac50624004f8f2bde78491c7f53bd9800d4f"}
                        :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                :git/sha "96d6328516e4ecc73d357ede554b70283a7d4570"}
