@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-10T12:32:20Z
-updated_at: 2026-07-10T12:38:30Z
+updated_at: 2026-07-10T12:44:41Z
 ---
 
 ## Bug
@@ -33,3 +33,21 @@ Found by the isaac-o9me post-deploy replay of the context-window guard. The guar
 - `isaac-discord` branch `bean/isaac-bmgo` @ `71f305e`: `send!` uses `(or :discord/target :target)`; blank resolved channel → `{:ok false :transient? false}` + `:discord.send/missing-target` warn (no HTTP).
 - Specs + `features/comm/discord/comm_send_target.feature` extended for generic `:target` id and channel name.
 - `bb ci` green on branch.
+
+## Verify fail (attempt 1, 2026-07-10): unknown Discord target still falls through to HTTP instead of failing locally with a named log
+
+Evidence:
+- I verified `isaac-discord` branch `origin/bean/isaac-bmgo` at commit `71f305e`.
+- Claimed happy-path coverage is green:
+  - `bb features features/comm/discord/comm_send_target.feature` -> `4 examples, 0 failures, 4 assertions`
+  - `bb spec spec/isaac/comm/discord_spec.clj` -> `79 examples, 0 failures, 184 assertions`
+  - `bb ci` -> `52 examples, 0 failures, 110 assertions`
+- The implemented send path now does use `(or (:discord/target record) (:target record))`, and generic `:target` id/name cases work.
+- But the bean's fix contract also requires: `nil/unknown target -> {:ok false :transient? false} WITH a log naming the bad target`.
+- I reproduced that an **unknown nonblank target** still falls through to HTTP instead of being rejected locally:
+  - constructed a Discord integration with configured channel `announcements -> C999`
+  - invoked `comm/send!` with `{:content "oops" :target "bogus-name"}`
+  - stubbed `rest/post-message!` captured `{:channel-id "bogus-name", :content "oops", :message-cap nil, :token "test-token"}`
+  - return was only `{:ok false, :transient? false}` after the stubbed HTTP response; no `:discord.send/missing-target` log entry was emitted
+- Root cause in code: `resolve-target-channel` returns the original target unchanged when no configured channel name matches, so `send!` only treats blank targets as invalid and still attempts HTTP for unknown names.
+- That leaves the bad-target path silent/misclassified relative to the bean requirement.
