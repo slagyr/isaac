@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-11T00:55:25Z
-updated_at: 2026-07-11T01:12:20Z
+updated_at: 2026-07-11T01:25:41Z
 ---
 
 ## Bug
@@ -35,3 +35,18 @@ request-user-code! sends only client_id to the device endpoint. auth.x.ai grants
 ## Post-deploy note
 
 Existing grok store tokens are scope-less and must be discarded: Micah re-runs isaac auth login --provider grok once after this ships (attempt #5, the one that works).
+
+
+## Verify fail (attempt 1, 2026-07-11): branch acceptance scenarios pass in isolation, but the branch cannot pass verification because spec/isaac/llm/auth/device_code_spec.clj has an unmatched delimiter and breaks the canonical spec/CI gate
+
+Evidence:
+- Canonical implementation is `isaac-agent` `origin/bean/isaac-zyvx` at `a770371`, based on current `origin/main` `92775a4` (`git merge-base --is-ancestor origin/main origin/bean/isaac-zyvx` -> exit 0).
+- Bean acceptance scenarios themselves are present and green when targeted:
+  - `clojure -M:features features/bridge/cli-prompt.feature:16 features/llm/provider_walls.feature:75` -> `2 examples, 0 failures, 5 assertions`.
+  - Full feature suite rerun also went green: `clojure -M:features` -> `623 examples, 0 failures, 1430 assertions`.
+- However, the branch does **not** satisfy the bean's required CI gate because the spec source is malformed:
+  - `clojure -M:spec` on the bean branch exits `255` with `Syntax error reading source` / `Unmatched delimiter: )` at `spec/isaac/llm/auth/device_code_spec.clj:396:105`.
+  - `bb ci` therefore fails immediately after `config-bypass-lint: ok` with exit `255`.
+- The regression is branch-specific, not a pre-existing mainline failure:
+  - `clojure -M:spec` on current `isaac-agent` `origin/main` exits `0` (`1212 examples, 0 failures, 2417 assertions`).
+- The malformed file is inside the bean diff (`origin/main..origin/bean/isaac-zyvx`), so the worker must fix the broken spec file on the bean branch and rerun `bb ci`.
