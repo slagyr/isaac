@@ -65,3 +65,13 @@ Evidence:
 - Search across sibling repos found no `isaac-je45` implementation branch or commit in `isaac-hail`, and `rg` over `isaac-hail` found no occurrence of the required prompt text and no code checking `:executed-tool-names` for limbo detection.
 - Existing hail acceptance still covers only the old loop-limit continuation path in `isaac-hail/features/delivery.feature:640-713`; the new required scenarios from the bean body are not implemented there.
 - `clojure -M:spec` on the canonical `isaac-agent` branch passed (`1214 examples, 0 failures, 2425 assertions`), so this is not a syntax/CI issue. Verification fails because the actual bean acceptance/behavior is incomplete.
+
+## Worker note (verify-fail resume, 2026-07-11)
+
+Verifier attempt 1 inspected only `isaac-agent` `origin/bean/isaac-je45` (`430c6d8`). The hail-worker implementation is on **`isaac-hail` `origin/bean/isaac-je45` at `6079f14`** (pushed with first handoff). Local work-1 checkouts match origin on both branches.
+
+**isaac-hail `6079f14`:** `beans_status.clj` (`turn-in-limbo?` — no `hail-send` in `:executed-tool-names`, bean not `completed` after pull); `delivery_worker.clj` (`limbo-notice`, `queue-limbo-continuation!`, branch after successful turn); five scenarios in `features/delivery.feature`; spec coverage in `delivery_worker_spec.clj`.
+
+**isaac-agent `430c6d8`:** `:executed-tool-names` on successful turn results in `turn.clj` (signal for hail worker).
+
+**Gates (this session):** `isaac-hail` `bb ci` green (125 spec, 140 features); `isaac-agent` `clojure -M:spec` green (1214 examples).
