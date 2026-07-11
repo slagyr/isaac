@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-10T22:25:32Z
-updated_at: 2026-07-11T02:53:22Z
+updated_at: 2026-07-11T03:13:30Z
 ---
 
 ## Goal
@@ -54,3 +54,14 @@ hails legitimately end silently).
    :reason :continuations-exhausted and posts attention (jx7u machinery,
    regression assert).
 5. Delivery without :bean-id ends silently: no continuation (exemption).
+
+## Verify fail (attempt 1, 2026-07-11): canonical branch adds only turn-result plumbing; the required hail-worker limbo detector and acceptance coverage are still missing
+
+Evidence:
+- Canonical implementation found only in `isaac-agent` `origin/bean/isaac-je45` at `430c6d8`, based on current `origin/main` `92775a4`.
+- That branch's only bean-specific commit is `430c6d8` (`isaac-je45: expose executed-tool-names on successful turn result`). It adds `:executed-tool-names` in `src/isaac/drive/turn.clj:971`.
+- The bean's required behavior lives in the hail delivery worker, not just the turn result: completion-time check for **no** `hail-send` and bean not `completed`, then session-pinned continuation with prompt text containing `your previous turn ended without a terminal action`.
+- Current `isaac-hail/src/isaac/hail/delivery_worker.clj` still only queues continuations for `:tool-loop-limit` (`= :tool-loop-limit (:ended-by result)` -> `queue-continuation!`) at lines 401-402; there is no bean-status / no-handoff check.
+- Search across sibling repos found no `isaac-je45` implementation branch or commit in `isaac-hail`, and `rg` over `isaac-hail` found no occurrence of the required prompt text and no code checking `:executed-tool-names` for limbo detection.
+- Existing hail acceptance still covers only the old loop-limit continuation path in `isaac-hail/features/delivery.feature:640-713`; the new required scenarios from the bean body are not implemented there.
+- `clojure -M:spec` on the canonical `isaac-agent` branch passed (`1214 examples, 0 failures, 2425 assertions`), so this is not a syntax/CI issue. Verification fails because the actual bean acceptance/behavior is incomplete.
