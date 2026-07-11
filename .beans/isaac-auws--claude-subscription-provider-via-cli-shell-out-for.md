@@ -12,10 +12,10 @@ updated_at: 2026-07-08T22:45:52Z
 ---
 
 ## Problem
-Isaac needs a first-class way to drive the Claude Code / Max subscription (via logged-in claude CLI) for raw request/response completions. The current "claude-code" hack (type:anthropic + oat token as api-key) fails auth. Direct HTTP with the subscription token is rejected as invalid x-api-key.
+Isaac needs a first-class way to drive the Claude Code / Max subscription (via logged-in claude CLI) for raw request/response completions. The previous "claude-code" hack (type:anthropic + oat token as api-key) fails auth. The subscription token is rejected as an invalid x-api-key for direct HTTP.
 
 ## Goal
-A "claude-code" (or claude) provider that execs the claude binary with raw full-prompt text each turn. Isaac owns the transcript, tool loop, and sessions. The binary is invoked with:
+A "claude" provider that execs the claude binary with raw full-prompt text each turn. Isaac owns the transcript, tool loop, and sessions. The binary is invoked with:
 - --print
 - --output-format text|stream-json
 - --disallowed-tools all
@@ -46,7 +46,7 @@ The claude binary must be logged in (subscription) for the process user; no raw 
 ## Files
 - isaac-agent/features/llm/api/claude_cli.feature (wip)
 - New provider impl in isaac-agent (claude-cli api)
-- Update manifest for claude-code template
+- Update manifest for claude template
 - Docs / examples if needed
 
 ## Notes

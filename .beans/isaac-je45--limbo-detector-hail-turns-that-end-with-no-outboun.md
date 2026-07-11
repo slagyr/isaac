@@ -1,11 +1,11 @@
 ---
 # isaac-je45
 title: 'Limbo detector: hail turns that end with no outbound hail and no ledger change auto-continue'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-07-10T22:25:32Z
-updated_at: 2026-07-10T22:25:32Z
+updated_at: 2026-07-11T02:42:35Z
 ---
 
 ## Goal
@@ -27,6 +27,28 @@ Skill rules ('never end a turn in limbo') exist in all three band skills and dem
 - Session-pinned re-queue (avoid the cold-sibling takeover observed on isaac-wpny).
 - Out of scope: judging whether the terminal action was CORRECT — only that one exists.
 
-## Scenarios
+## Detection signal (planner-decided, Micah-approved 2026-07-11)
 
-Spec with Micah before dispatch.
+At delivery completion the hail worker checks: (a) the turn executed NO
+hail-send tool call (the drive already returns the executed tool list), AND
+(b) the delivery's bean (params :bean-id, when present) is not `completed`
+after a beans-repo pull. Both true => re-queue as a session-pinned
+continuation (5ru9 counter, existing cap; exhaustion dead-letters loudly per
+isaac-jx7u) with prompt: "your previous turn ended without a terminal action
+(no handoff hail, bean not completed) — complete the handoff or escalation
+your skill prescribes." Deliveries without a :bean-id are exempt (chat/ad-hoc
+hails legitimately end silently).
+
+## Scenarios (worker writes; required coverage)
+
+1. Bean-band turn ends with no hail-send and bean not completed: delivery
+   re-queued as continuation to the SAME session, continuations counter
+   incremented, prompt contains "terminal action".
+2. Turn ends with a verify-band handoff hail sent: delivered normally, no
+   continuation (terminal action present).
+3. Turn completes the bean (status completed, no outbound hail): delivered
+   normally — completion is terminal.
+4. Continuation budget exhaustion via repeated limbo: dead-letters with
+   :reason :continuations-exhausted and posts attention (jx7u machinery,
+   regression assert).
+5. Delivery without :bean-id ends silently: no continuation (exemption).
