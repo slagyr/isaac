@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-11T00:55:25Z
-updated_at: 2026-07-11T01:25:41Z
+updated_at: 2026-07-11T03:23:21Z
 ---
 
 ## Bug
@@ -50,3 +50,10 @@ Evidence:
 - The regression is branch-specific, not a pre-existing mainline failure:
   - `clojure -M:spec` on current `isaac-agent` `origin/main` exits `0` (`1212 examples, 0 failures, 2417 assertions`).
 - The malformed file is inside the bean diff (`origin/main..origin/bean/isaac-zyvx`), so the worker must fix the broken spec file on the bean branch and rerun `bb ci`.
+
+
+## Worker resume (isaac-work-2, 2026-07-11)
+
+- Checked out isaac-agent bean/isaac-zyvx at d6bb586 (spec delimiter fix already on branch).
+- bb ci green: 1214 specs + 623 features, 0 failures.
+- origin/bean/isaac-zyvx up to date; re-handoff to verify.
