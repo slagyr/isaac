@@ -1,13 +1,11 @@
 ---
 # isaac-kn7y
 title: 'claude provider: real-binary correctness (isaac-auws follow-up)'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-11T02:43:49Z
-updated_at: 2026-07-11T03:05:47Z
+updated_at: 2026-07-11T15:53:52Z
 ---
 
 ## Goal
