@@ -4,8 +4,10 @@ title: 'claude provider: real-binary correctness (isaac-auws follow-up)'
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-11T02:43:49Z
-updated_at: 2026-07-11T02:51:16Z
+updated_at: 2026-07-11T03:05:47Z
 ---
 
 ## Goal
@@ -39,3 +41,53 @@ claude setup-token on zanebot (headless subscription login) before the @real smo
 - [ ] Login-failure output -> loud error (prompt) + :reason :auth classification (hail)
 - [ ] All auws scenarios still green under the corrected spec
 - [ ] Real answer from a real logged-in claude binary, witnessed in the bean notes
+
+---
+
+## Implemented (2026-07-10, isaac-work-1) — handoff unverified
+
+**isaac-agent branch `bean/isaac-kn7y` (`399b233`).** `bb ci` CI-faithful:
+1216 spec / 622 feature examples, 0 failures, 1 pending (the @real smoke);
+config-bypass-lint ok.
+
+**Fixes (validated against the real binary, claude 2.1.206):**
+- **Flags** — replaced `--disallowed-tools all` with **`--tools ""`** (the real
+  "disable all tools" flag; `all` denied a tool literally named "all" → nothing).
+  **`--max-turns` does NOT exist in this CLI version**, so it is deliberately NOT
+  added — with no tools the `--print` run is already a pure completion. (Spec-vs-
+  reality drift beyond what the bean assumed; confirmed from `claude --help`.)
+- **Process** — `@(process/shell {:command argv})` → `@(process/process argv {...})`.
+- **Error classification** — nonzero exit OR login/auth-failure output now
+  surfaces a loud error on the prompt path (`:error` + `:message`) AND classifies
+  `{:unavailable? true :reason :auth}` for hail defer+attention (provider_wall
+  convention). `:llm-result` carries the classification (verified in a feature
+  scenario). The "Not logged in · Please run /login" text no longer vanishes.
+- **@real smoke** — `spec/isaac/llm/claude_cli_real_spec.clj` execs the actual
+  binary, asserts a non-empty answer. Opt-in + self-skipping: runs only when
+  `ISAAC_CLAUDE_REAL` is set AND the binary is installed AND a login is present;
+  otherwise `pending` (never a failure) — so normal CI never shells out.
+
+**Scenario/spec changes:** all 9 auws scenarios amended to the corrected argv;
+added a login-failure feature scenario (loud error + `:auth` classification);
+unit spec adds flag-correctness + auth-vs-generic-error tests + the @real smoke.
+
+## Acceptance
+
+- [x] Corrected argv asserted in gherkin AND proven by the @real smoke on a
+  logged-in box
+- [x] Login-failure output → loud error (prompt) + `:reason :auth` classification (hail)
+- [x] All auws scenarios still green under the corrected spec
+- [x] **Real answer witnessed** (this box has a working login):
+  `claude --print --output-format text --tools "" --no-session-persistence
+  --model sonnet "Reply with exactly the word: pong"` → **`pong`** (exit 0).
+  Also green end-to-end through the provider's `chat` via the @real smoke
+  (`ISAAC_CLAUDE_REAL=1`, 2 assertions).
+
+**Notes for verifier:**
+- Code is on branch **`bean/isaac-kn7y`** (isaac-agent uses `bean/<id>` branches),
+  not main — merge per the usual flow.
+- The `claude setup-token` prerequisite still applies to **zanebot** so the @real
+  smoke can run *there*; it's already witnessed locally, so acceptance is met.
+- Exact real login-failure text/exit couldn't be captured here (login present —
+  logging out would be destructive); used the bean's documented "Not logged in ·
+  Please run /login" as the fixture. `auth-failure?` matches that + common variants.
