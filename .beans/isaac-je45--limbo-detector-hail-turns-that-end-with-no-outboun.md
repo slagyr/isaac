@@ -1,11 +1,13 @@
 ---
 # isaac-je45
 title: 'Limbo detector: hail turns that end with no outbound hail and no ledger change auto-continue'
-status: todo
+status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-10T22:25:32Z
-updated_at: 2026-07-11T02:42:35Z
+updated_at: 2026-07-11T02:53:22Z
 ---
 
 ## Goal
