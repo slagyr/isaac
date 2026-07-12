@@ -18,12 +18,65 @@ A read-side companion to isaac config set: 'isaac config list providers' (or any
 - isaac config list providers.xai -> that one map
 - isaac config list attention -> notify/break-glass structure
 
-## Design questions to settle at spec time (with Micah, after the claude cli provider work settles)
+## Settled design (specced with Micah, 2026-07-12)
 
-1. Value display policy: mask only sensitive keys (api-key/token/secret/password patterns) and show benign scalars? Or keys-only / type-only for everything? Note: ${ENV_VAR} interpolation refs are NOT secrets and should print verbatim (they document where the value comes from).
-2. Raw file vs effective view: {:type :grok} is nearly empty on disk but resolves against the manifest template — show raw, resolved, or both (flag)?
-3. Entity files: providers/models/crew live in per-entity files — should output name the source file per entry?
-4. Depth control / recursion for nested maps.
+Two subcommands, clean division:
+- **`isaac config keys <path>`** — bare key names at the path, one level. Minimal, pipeable.
+- **`isaac config list <path>`** — keys + config source file per entry, table by default.
+- Both support `--edn` / `--json` (`keys` -> `["xai","grok"]`; `list` -> `[{"key":"xai","source":"config/providers/xai.edn"}]`).
+- **Leaf paths print nothing**, exit 0. Values are NEVER printed by either command (no masking policy needed — nothing to mask).
+- **Family retrofit beachhead**: `config validate --json` emits warnings/errors as structured data; the pattern extends to the rest of the config family in follow-ups.
+- Home: isaac-foundation (config CLI lives there — ships via the brew train, not a module upgrade).
+
+## Approved scenarios
+
+```gherkin
+Scenario: config keys prints bare key names at a path
+  Given config file "providers/xai.edn" containing:
+    """
+    {:api "responses" :base-url "https://api.x.ai/v1" :auth "api-key" :api-key "sk-real-secret-value"}
+    """
+  And config file "providers/grok.edn" containing:
+    """
+    {:type :grok}
+    """
+  When isaac is run with "config keys providers"
+  Then the stdout contains "xai"
+  And the stdout contains "grok"
+  And the stdout does not contain "config/providers"
+  And the stdout does not contain "https://api.x.ai/v1"
+  And the exit code is 0
+
+Scenario: config list prints keys with their config source
+  (same fixture)
+  When isaac is run with "config list providers"
+  Then the stdout contains "xai"
+  And the stdout contains "config/providers/xai.edn"
+  And the stdout does not contain "sk-real-secret-value"
+  And the exit code is 0
+
+Scenario: a leaf path prints nothing
+  (same fixture)
+  When isaac is run with "config keys providers.xai.base-url"
+  Then the stdout is empty
+  And the exit code is 0
+
+Scenario: keys and list emit structured output under --json
+  (same fixture)
+  When isaac is run with "config keys providers --json"
+  Then the stdout contains "[\"grok\", \"xai\"]" (order: sorted; worker may adjust exact whitespace assertion)
+  When isaac is run with "config list providers --json"
+  Then the stdout contains "\"source\""
+  And the stdout does not contain "sk-real-secret-value"
+
+Scenario: config validate --json emits structured warnings
+  Given a config with one known-warning entry (e.g. an unknown key)
+  When isaac is run with "config validate --json"
+  Then the stdout parses as JSON with a warnings array naming the offending path
+  And the exit code is 0
+```
+
+New steps: `the stdout does not contain "…"` (negative assertion), `the stdout is empty` (worker confirms whether it already exists). Values never printed is load-bearing: both benign and secret values asserted absent.
 
 ## Non-goals
 
