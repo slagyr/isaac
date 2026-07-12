@@ -4,8 +4,10 @@ title: 'CLI classpath cache: every command skips redundant startup planning (cli
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-12T20:38:59Z
-updated_at: 2026-07-12T20:40:32Z
+updated_at: 2026-07-12T20:51:04Z
 ---
 
 ## Goal (Micah, 2026-07-12)
@@ -29,3 +31,5 @@ Caching the registered command table for dispatch (running a command needs modul
 2. Any watched input changes (config mtime, version) -> full replan, cache rewritten.
 3. Cached path failure (e.g. plan references a missing artifact) -> silent full replan, command succeeds, cache refreshed.
 4. Timing evidence recorded per design point 4 (one-time acceptance note, not a permanent scenario).
+
+- Worker (isaac-work-2): classpath-pairs in cache/cli.edn v2; compose-with-cache on main+launcher; bb ci green (816 spec, 131 features). Timing: not measured on this host — verifier may capture cold/warm isaac config keys providers.
