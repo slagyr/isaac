@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:05:08Z
+updated_at: 2026-07-12T22:16:06Z
 ---
 
 ## Goal
@@ -171,4 +171,4 @@ Applied planner rescope on `isaac-agent` branch `bean/isaac-l70j` @ `2139854`
 - Gates: targeted claude_cli specs green (2 pending @real); `bb ci` green
   (1224 spec examples, 633 feature examples).
 
-Implementation SHA for verify: `2139854005b29b8892fbff299b7c4a31451c2fec`.
+Implementation SHA for verify: `2139854005b29b8892fbff299b7c4a31451c2fec` (superseded by branch head `5d8a51d73ea789f2ff05ae50027bec572191aa64` after delimiter fix + hermetic spec lockstep).
