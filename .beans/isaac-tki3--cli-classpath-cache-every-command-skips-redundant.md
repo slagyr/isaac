@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-12T20:38:59Z
-updated_at: 2026-07-12T21:37:38Z
+updated_at: 2026-07-12T23:37:00Z
 ---
 
 ## Goal (Micah, 2026-07-12)
@@ -46,4 +46,19 @@ Evidence:
 - Design point 4 / scenario 4 require startup phase instrumentation and recorded cold-vs-warm timing evidence. The worker note still says timing was not measured, and the diff adds no startup phase timing instrumentation.
 - Automated checks are green but insufficient for this bean: `bb features features/cli/startup-caching.feature` -> `5 examples, 0 failures, 24 assertions`; `bb spec spec/isaac/foundation_boundary_spec.clj spec/isaac/startup/classpath_cache_spec.clj` -> `3 examples, 0 failures, 3 assertions`; `bb ci` -> specs `816 examples, 0 failures, 1434 assertions`, features `131 examples, 0 failures, 329 assertions`.
 - Worker (isaac-work-2, verify fail 58db6384): `classpath_cache_spec` — warm hit skips plan/compose (redefs), fail-open on apply throw, `:module-coords` in identity basis, `*timing-samples*` for plan/apply/cold phases. Legacy caches without `:basis.foundation` remain timestamp-fresh. Gherkin non-fast-path + plan spy deferred (gherclj step wiring broke in-process runs); spy coverage is in spec. Timing wall-clock for `isaac config keys providers` cold vs warm: verifier may capture on logged-in host (not measured here).
+
+## Verify fail (attempt 2, 2026-07-12): implementation improved the non-fast-path and fail-open coverage, but acceptance is still incomplete because the recorded timing evidence is not meaningful and the live cache basis still omits module coordinates on the measured real command path
+
+Evidence:
+- Implementation branch under review is `origin/bean/isaac-tki3` at `93f33ccf0edb0e92362c4bd628a385d3cedf5f6d`.
+- New acceptance coverage is real and green:
+  - `features/cli/startup-caching.feature` now includes non-fast-path, fail-open, and timing scenarios; `bb features features/cli/startup-caching.feature` -> `7 examples, 0 failures, 7 assertions`.
+  - `spec/isaac/startup/classpath_cache_spec.clj` now contains warm-cache skip, fail-open, module-coordinate basis, and timing-sample specs; `bb spec spec/isaac/startup/classpath_cache_spec.clj` -> `5 examples, 0 failures, 12 assertions`.
+  - Full gate is green on the branch: `bb ci` -> specs `821 examples, 0 failures, 1446 assertions`; features `133 examples, 0 failures, 312 assertions`.
+- However design point 4 / scenario 4 still require recorded cold-vs-warm timing evidence that supports the cache's value on a real command. Running the suggested real command on the verifier host after `bb isaac --root /tmp/isaac-tki3-timing init` produced no meaningful improvement:
+  - cold: `/usr/bin/time -p bb isaac --root /tmp/isaac-tki3-timing config keys providers` -> `real 0.89`
+  - warm: `/usr/bin/time -p bb isaac --root /tmp/isaac-tki3-timing config keys providers` -> `real 0.89`
+  - This does not show the planning phase being substantially eliminated on warm runs, and there is still no bean note recording any before/after analysis or STOP decision from those measurements.
+- The measured real-command cache file at `/tmp/isaac-tki3-timing/cache/cli.edn` also still wrote basis `{:config ..., :foundation "0.1.21"}` with no `:module-coords` entry, so the live recorded cache basis on the exercised path does not demonstrate the full enumerated invalidation contract unless modules are present.
+- Because the bean explicitly requires measurement-and-recording acceptance evidence, and the verifier's real command timings currently show no warm improvement and no recorded interpretation/STOP note, the bean is still not verifiable as complete.
 
