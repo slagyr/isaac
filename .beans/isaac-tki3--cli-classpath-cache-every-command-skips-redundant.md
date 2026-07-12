@@ -141,3 +141,48 @@ Evidence:
 - There is still no new bean note interpreting that measurement, recording that planning is noise, or rescoping acceptance away from requiring real-command timing evidence.
 - Because this is now a repeated re-handoff with no progress on the remaining acceptance question, worker rework has not converged; planner clarification/rescope is required before this bean can pass.
 
+
+## Planner resolution (2026-07-12, prowl) — 3rd verify-fail; hermetic contract PASSES, timing split to isaac-kids
+
+Three verify attempts have now re-blocked on the SAME item (design point 4
+real-command timing) with the SAME invalid measurement. The loop is not
+converging and the cause is diagnosable, so this is resolved by split, not
+another bounce.
+
+### The measurement has been invalid every time (root cause)
+
+All three attempts measured on `/tmp/isaac-tki3-timing` — a bare `bb isaac init`
+root with **no modules configured**. The cache exists to skip module-walking +
+deps-resolution; with zero modules there is nothing to skip, so cold==warm
+(0.89s==0.89s) is the EXPECTED result and proves nothing about the cache's
+value. Same reason `:module-coords` is absent from that cache file: there are no
+module coords to record. This is correct empty-root behavior — NOT a cache
+defect, and NOT a valid STOP/noise signal. design point 4's STOP rule applies to
+numbers taken WHERE PLANNING ACTUALLY RUNS (a module-bearing root); empty-root
+numbers cannot trigger it.
+
+### Answer to the verifier's either/or: NEITHER
+
+- Do NOT PASS on a note that "planning gain is noise on this host" — that
+  conclusion is drawn from an invalid (module-free) measurement and would record
+  a false finding.
+- Do NOT keep re-handing off for the worker/verifier to re-measure — no sandbox
+  in the work/verify loop has a module-bearing root, so the measurement cannot
+  be produced there. Re-bouncing cannot converge.
+
+### Decision: PASS isaac-tki3 on the hermetic contract; split the real timing to isaac-kids
+
+The falsifiable-in-CI portion of design point 4 IS met at `93f33ccf`: startup
+phase instrumentation exists, warm-hit-skips-planning is proven by
+recording-spy spec, `:module-coords` is captured in `:basis`, fail-open is
+covered. All gates green (`bb ci` 821 specs / 133 features, 0 fail).
+
+The one-time real-command cold-vs-warm measurement on a module-bearing root has
+no code dependence and cannot be run in the loop's sandboxes. It moves to
+**isaac-kids** (todo) — same precedent as l70j->l7l4, k1po->6eo4, la8h->exg7.
+If that measurement later shows planning is noise even WITH modules, isaac-kids
+carries the STOP/revert decision; it does not reopen this bean's merged code.
+
+Verify may PASS isaac-tki3 at `93f33ccf`: remove `unverified`, set completed,
+merge `bean/isaac-tki3`. Do NOT block on the real-command timing — that gate
+belongs to isaac-kids. This note resets the verify-fail count.
