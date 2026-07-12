@@ -4,8 +4,10 @@ title: 'claude tool turns live: system-prompt protocol authority + witnessed rou
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-12T18:24:40Z
-updated_at: 2026-07-12T18:28:24Z
+updated_at: 2026-07-12T18:33:02Z
 ---
 
 ## Goal
