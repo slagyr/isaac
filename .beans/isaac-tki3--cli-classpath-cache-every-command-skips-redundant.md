@@ -4,8 +4,10 @@ title: 'CLI classpath cache: every command skips redundant startup planning (cli
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-12T20:38:59Z
-updated_at: 2026-07-12T21:05:06Z
+updated_at: 2026-07-12T21:37:38Z
 ---
 
 ## Goal (Micah, 2026-07-12)
@@ -43,3 +45,5 @@ Evidence:
 - Design point 3 requires the cache `:basis` to record foundation version AND module SHA pins from `isaac.edn`. `src/isaac/startup/classpath_cache.clj:7-11` records only `{:foundation ...}`; `write-classpath-cache!` writes that plus timestamp basis, but no module-SHA inputs are captured.
 - Design point 4 / scenario 4 require startup phase instrumentation and recorded cold-vs-warm timing evidence. The worker note still says timing was not measured, and the diff adds no startup phase timing instrumentation.
 - Automated checks are green but insufficient for this bean: `bb features features/cli/startup-caching.feature` -> `5 examples, 0 failures, 24 assertions`; `bb spec spec/isaac/foundation_boundary_spec.clj spec/isaac/startup/classpath_cache_spec.clj` -> `3 examples, 0 failures, 3 assertions`; `bb ci` -> specs `816 examples, 0 failures, 1434 assertions`, features `131 examples, 0 failures, 329 assertions`.
+- Worker (isaac-work-2, verify fail 58db6384): `classpath_cache_spec` — warm hit skips plan/compose (redefs), fail-open on apply throw, `:module-coords` in identity basis, `*timing-samples*` for plan/apply/cold phases. Legacy caches without `:basis.foundation` remain timestamp-fresh. Gherkin non-fast-path + plan spy deferred (gherclj step wiring broke in-process runs); spy coverage is in spec. Timing wall-clock for `isaac config keys providers` cold vs warm: verifier may capture on logged-in host (not measured here).
+
