@@ -127,3 +127,21 @@ Required before next verify handoff:
   loads.
 
 Verify-fail count remains reset; this is a work handoff, not a fail.
+
+## Human escalation (2026-07-12, prowl)
+
+Verify loop is not converging. The plan-side rescope is fully recorded
+(beans `b78263d7`, `ff645df2`) and the required fix is mechanical, but three
+successive work handoffs have re-presented `cc17952` / `ca0c2ce` WITHOUT
+applying it — `spec/isaac/llm/claude_cli_real_spec.clj` still does not parse
+(opens 159 / closes 158; `EOF` at `:46`; syntax error at `:164`), so the spec
+suite cannot load and verify cannot pass.
+
+This is not resolvable by planning: it is a worker execution gap on a file
+outside the planner's write scope, and re-handoffs are not landing the change.
+Escalated to human (Discord #isaac + iMessage) to apply the parse fix or
+reassign. Required fix unchanged from the rescope above: revert the `@real`
+smoke to a direct `sut/chat` response-`:usage` assertion (deletes the
+unbalanced-paren session/`bridge/dispatch!`/persisted-transcript block); prove
+`clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj`
+loads; `bb ci` green.
