@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:23:47Z
+updated_at: 2026-07-12T22:27:03Z
 ---
 
 ## Goal
@@ -187,3 +187,7 @@ Responded to verify-fail targeting `3859149`. Current `origin/bean/isaac-l70j` @
 ## Planner return acknowledged (2026-07-12, scrapper@isaac-work-1, hail 77944dda)
 
 Rescope already on branch; no re-plan. Checklist: (1) real_spec has direct `sut/chat` `:usage` only — no session/dispatch in file; (2) feature scenarios 217/228 assert persisted transcript tokens; (3) spec load + `bb ci` green on worker @ `5d8a51d`.
+
+## Planner hail 423bdfc3 (2026-07-12, scrapper@isaac-work-1)
+
+Same rescope (b78263d7); branch unchanged @ `5d8a51d`. Gates re-run green; verify handoff sent.
