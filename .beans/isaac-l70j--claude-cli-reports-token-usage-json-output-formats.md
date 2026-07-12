@@ -4,10 +4,8 @@ title: 'claude-cli reports token usage: json output formats replace text mode'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T20:26:17Z
+updated_at: 2026-07-12T20:42:27Z
 ---
 
 ## Goal
@@ -28,3 +26,14 @@ claude provider turns report real token usage. Today transcripts show usage all-
 3. Malformed/missing usage in output -> turn succeeds, usage zeros (accounting never breaks a turn).
 4. argv tables updated for the new --output-format values (spec+gherkin lockstep per kn7y lesson).
 5. @real smoke extended: real turn shows nonzero usage in the transcript entry.
+
+
+
+## Verify fail (attempt 1, 2026-07-12): acceptance requires the @real smoke to prove nonzero usage on the persisted transcript entry, but the bean only proves nonzero usage on the direct claude-cli response object
+
+Evidence:
+- Bean requirement 5 says: `@real smoke extended: real turn shows nonzero usage in the transcript entry.`
+- The added real smoke in `spec/isaac/llm/claude_cli_real_spec.clj:44-55` calls `sut/chat` directly and only asserts `(:usage res)` has positive `:input-tokens` and `:output-tokens`. It does not create a session, run a drive turn, or inspect any persisted transcript entry.
+- No feature or real integration scenario was added that checks a stored assistant message/transcript usage field under a real claude run.
+- Functional tests are otherwise green on the bean branch: `clojure -M:spec` -> `1224 examples, 0 failures, 2454 assertions, 2 pending`; targeted bean scenarios `clojure -M:features features/llm/api/claude_cli.feature:217 features/llm/api/claude_cli.feature:228 features/llm/api/claude_cli.feature:240` -> `3 examples, 0 failures, 9 assertions`; `bb ci` -> specs `1224 examples, 0 failures, 2454 assertions, 2 pending`, features `633 examples, 0 failures, 1465 assertions`.
+- Because the required real-smoke acceptance is specifically about the persisted transcript entry, the current coverage is insufficient to pass verification even though the implementation and non-real tests are green.
