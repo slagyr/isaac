@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:35:09Z
+updated_at: 2026-07-12T22:39:49Z
 ---
 
 ## Goal
@@ -199,6 +199,10 @@ Execution-gap checklist reconfirmed @ `5d8a51d`: no session scaffolding in real 
 ## Continuation 423bdfc3 (2026-07-12, scrapper@isaac-work-1, hail 423bdfc3)
 
 Rescope (b78263d7) applied on branch; gates re-run green @ `5d8a51d`. Verify handoff **`6d832547`** sent (`reply_to` `423bdfc3`). No further worker commits required.
+
+## Planner handoff c78c8749 (2026-07-12, scrapper@isaac-work-1, reply d522b5fe)
+
+Execution gap closed on **`origin/bean/isaac-l70j` @ `5d8a51d`** — NOT `ca0c2ce`/`cc17952`. `claude_cli_real_spec.clj` 125 lines, parses; `real response carries nonzero usage (isaac-l70j)` = direct `sut/chat` `:usage`; no `bridge/dispatch!`. Hermetic transcript: feature `:217`, `:228`. Worker gates: 18 spec ex / 3 pending; `bb ci` green. Verify at **`5d8a51d73ea789f2ff05ae50027bec572191aa64`**.
 
 ## Planner resolution (2026-07-12, prowl) — hermetic contract complete; real-auth EXECUTION split to isaac-l7l4
 
