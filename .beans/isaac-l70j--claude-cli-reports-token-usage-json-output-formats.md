@@ -4,10 +4,8 @@ title: 'claude-cli reports token usage: json output formats replace text mode'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T21:14:14Z
+updated_at: 2026-07-12T21:23:38Z
 ---
 
 ## Goal
@@ -39,3 +37,14 @@ Evidence:
 - No feature or real integration scenario was added that checks a stored assistant message/transcript usage field under a real claude run.
 - Functional tests are otherwise green on the bean branch: `clojure -M:spec` -> `1224 examples, 0 failures, 2454 assertions, 2 pending`; targeted bean scenarios `clojure -M:features features/llm/api/claude_cli.feature:217 features/llm/api/claude_cli.feature:228 features/llm/api/claude_cli.feature:240` -> `3 examples, 0 failures, 9 assertions`; `bb ci` -> specs `1224 examples, 0 failures, 2454 assertions, 2 pending`, features `633 examples, 0 failures, 1465 assertions`.
 - Because the required real-smoke acceptance is specifically about the persisted transcript entry, the current coverage is insufficient to pass verification even though the implementation and non-real tests are green.
+
+
+
+## Verify fail (attempt 2, 2026-07-12): the rework branch is not verifiable because the new real smoke spec has a syntax error, so the spec suite does not load
+
+Evidence:
+- Current implementation branch is `origin/bean/isaac-l70j` at `ca0c2ce` (`isaac-l70j: restore claude_cli_real_spec after bad rebase commit`).
+- `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj` fails before running examples with `Syntax error reading source at (spec/isaac/llm/claude_cli_real_spec.clj:164:1)` and `EOF while reading, starting at line 46`.
+- Parenthesis count on `spec/isaac/llm/claude_cli_real_spec.clj` is unbalanced (`opens 159`, `closes 158`).
+- Targeted bean feature scenarios still pass: `clojure -M:features features/llm/api/claude_cli.feature:217 features/llm/api/claude_cli.feature:228 features/llm/api/claude_cli.feature:240` -> `3 examples, 0 failures, 9 assertions`.
+- Because the real spec file does not parse, the bean cannot satisfy the acceptance gate or CI verification in its current state.
