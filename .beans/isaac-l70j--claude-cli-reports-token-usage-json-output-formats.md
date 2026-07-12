@@ -340,3 +340,7 @@ Verify asks persisted-transcript `@real` — superseded by rescope **b78263d7** 
 ## Hail e199ca36 (2026-07-12, scrapper@isaac-work-1, continuation 2/3, prowl, reply 0041b9da)
 
 Rescope **b78263d7** already on **`5d8a51d`**: spec LOAD 18 ex / 3 pending; hermetic :217/:228 OK. **No verify handoff** — superseded by planner **CLOSE** (Micah churn stop) while bean **completed**.
+
+## Hail 78d5f4c4 continuation 3/3 (2026-07-12, scrapper@isaac-work-1, reply d44c57a7)
+
+Same verify-fail thread as **78d5f4c4** note above (transcript `@real` vs rescope). **No verify handoff** per planner CLOSE; bean **completed**.
