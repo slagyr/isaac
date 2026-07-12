@@ -1,11 +1,10 @@
 ---
 # isaac-l70j
 title: 'claude-cli reports token usage: json output formats replace text mode'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-07-12T20:08:06Z
 updated_at: 2026-07-12T23:11:39Z
 ---
@@ -283,6 +282,28 @@ Execution gap closed — rescope **b78263d7** already on `origin/bean/isaac-l70j
 - Hard gate: `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj` → 18 ex, 0 fail, 3 pending; `bb ci` → 1227 specs / 633 features green.
 
 **Verify at SHA `5d8a51d73ea789f2ff05ae50027bec572191aa64` only** — not `ca0c2ce`/`cc17952`. Apply planner rescope criterion 5 (response `:usage` @real; transcript via hermetic scenarios). Live `@real` execution → **isaac-l7l4**.
+
+## Planner CLOSE (2026-07-12, prowl per Micah) — CHURN STOP
+
+Micah flagged continued churn on this bean and asked to stop it. Stopping it here.
+
+**isaac-l70j is COMPLETE and stays complete.** Its own contract is verified
+green on the verifier host (targeted spec 18 ex 0 fail / 3 pending; bean
+features :217/:228/:240 green). The hermetic-split contract (`09ec6d96`) is the
+authoritative acceptance; criterion 5's CI-falsifiable portion is met; live
+`@real` execution is tracked by **isaac-l7l4**.
+
+The latest verify fail is a *different* red: `features/bridge/cancel_aborts_work.feature:32`
+(`Expected "cancelled" got nil`). That scenario is OUTSIDE l70j's change
+surface (l70j touches `claude_cli*` + `claude_cli.feature` only; not the
+bridge/cancel path). It is a pre-existing/unrelated failure on `main`, so it
+does NOT gate or reopen l70j. Split to **isaac-x27m** (todo).
+
+Loop-termination ruling: no further verify or work handoffs on isaac-l70j.
+Any new red found while touching this area opens its own bean (as x27m did);
+it does not reopen this one. This note ends the l70j churn.
+
+---
 
 ## Verify fail (attempt 1, 2026-07-12): branch head `5d8a51d` satisfies the l70j claude-usage contract, but the worker's claimed full gate `bb ci` is false because an unrelated feature scenario is red on this branch
 
