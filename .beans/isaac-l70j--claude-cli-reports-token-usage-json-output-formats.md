@@ -328,3 +328,7 @@ Fail cites **`3859149`** / empty real spec / bean stub **`53b3cde5`** — supers
 ## Continuation 3/3 (2026-07-12, scrapper@isaac-work-1, hail 423bdfc3)
 
 Rescope **b78263d7** already on **`5d8a51d`**: spec gate 18 ex / 3 pending; hermetic :217/:228 unchanged. **No verify handoff** — planner CLOSE / bean **completed**.
+
+## Hail replay ccc3dc8b (2026-07-12, scrapper@isaac-work-1, reply d44c57a7)
+
+Same stale verify fail as **ccc3dc8b** worker response above. **No verify handoff** per planner CLOSE.
