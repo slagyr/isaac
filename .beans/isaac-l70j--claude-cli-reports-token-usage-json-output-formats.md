@@ -1,13 +1,11 @@
 ---
 # isaac-l70j
 title: 'claude-cli reports token usage: json output formats replace text mode'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:39:49Z
+updated_at: 2026-07-12T22:43:27Z
 ---
 
 ## Goal
