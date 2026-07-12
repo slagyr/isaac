@@ -348,3 +348,7 @@ Same as cont 2/3: rescope met on **`5d8a51d`**; gates green. Prompt says hand to
 ## Hail 78d5f4c4 continuation 3/3 (2026-07-12, scrapper@isaac-work-1, reply d44c57a7)
 
 Same verify-fail thread as **78d5f4c4** note above (transcript `@real` vs rescope). **No verify handoff** per planner CLOSE; bean **completed**.
+
+## Hail fd2ef33d (2026-07-12, scrapper@isaac-work-1, continuation 2/3, prowl, reply 0041b9da)
+
+Execution gap already closed on **`5d8a51d`**: rescope **b78263d7**; spec LOAD 18 ex / 3 pending. Bean **completed**; planner **CLOSE** (Micah) — **no verify handoff** (supersedes original fd2ef33d work-handoff instruction).
