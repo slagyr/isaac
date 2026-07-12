@@ -35,3 +35,7 @@ Every reader subcommand of 'isaac config' accepts --edn and --json and emits str
 4. set --json emits a structured result; exit codes unchanged.
 5. Regression: keys/list/validate structured output unchanged (grof scenarios stay green).
 6. An unknown flag on any subcommand still errors cleanly (no silent swallow).
+7. Help text documents the formats (Micah, 2026-07-12): 'isaac config --help'
+   lists --edn/--json in Options, and each supporting subcommand's
+   'isaac config help <sub>' mentions them. Scenario: help output contains
+   "--json".
