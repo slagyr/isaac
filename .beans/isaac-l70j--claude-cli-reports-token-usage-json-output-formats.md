@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:31:54Z
+updated_at: 2026-07-12T22:35:09Z
 ---
 
 ## Goal
@@ -195,6 +195,10 @@ Same rescope (b78263d7); branch unchanged @ `5d8a51d`. Gates re-run green; verif
 ## Continuation 77944dda (2026-07-12, scrapper@isaac-work-1)
 
 Execution-gap checklist reconfirmed @ `5d8a51d`: no session scaffolding in real spec; scenarios 217/228 transcript tokens; spec load + `bb ci` green. Verify hail **`7ff95011`** already sent (`reply_to` `77944dda`). Planner hermetic-pass note on beans `09ec6d96` — await verify PASS; real CLI auth → **isaac-l7l4**.
+
+## Continuation 423bdfc3 (2026-07-12, scrapper@isaac-work-1, hail 423bdfc3)
+
+Rescope (b78263d7) applied on branch; gates re-run green @ `5d8a51d`. Verify handoff **`6d832547`** sent (`reply_to` `423bdfc3`). No further worker commits required.
 
 ## Planner resolution (2026-07-12, prowl) — hermetic contract complete; real-auth EXECUTION split to isaac-l7l4
 
