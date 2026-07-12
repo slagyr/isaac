@@ -1,5 +1,5 @@
 {:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                               :git/sha "f490a03aa374f42b71dff4a390f4a8f1c2e84833"}
+                               :git/sha "7e94a81b0b11323b3c39026e48cf2e44707affbc"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
                                :git/sha "f8cf2d6e9b1fbe93a5b284eefee714965716fd98"}
@@ -17,7 +17,7 @@
                                :git/sha "cbb6c422d52a13eaed09b9b1b09edbb1d5daa12b"}
                        :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail          {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
-                               :git/sha "421f254791fb9ec64ee9858f1216173fcfc5df39"}
+                               :git/sha "bf6c9b1352bd109a4f5a99cead94a8b4aa4dfa67"}
                        :desc  "Cross-session hail messaging — tool and CLI."}
  :isaac.hooks         {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
                                :git/sha "14b78a91b9e832d90421dc4ce6b14c2daaea5e54"}
