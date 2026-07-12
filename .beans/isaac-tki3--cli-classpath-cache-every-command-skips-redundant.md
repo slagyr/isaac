@@ -47,6 +47,69 @@ Evidence:
 - Automated checks are green but insufficient for this bean: `bb features features/cli/startup-caching.feature` -> `5 examples, 0 failures, 24 assertions`; `bb spec spec/isaac/foundation_boundary_spec.clj spec/isaac/startup/classpath_cache_spec.clj` -> `3 examples, 0 failures, 3 assertions`; `bb ci` -> specs `816 examples, 0 failures, 1434 assertions`, features `131 examples, 0 failures, 329 assertions`.
 - Worker (isaac-work-2, verify fail 58db6384): `classpath_cache_spec` — warm hit skips plan/compose (redefs), fail-open on apply throw, `:module-coords` in identity basis, `*timing-samples*` for plan/apply/cold phases. Legacy caches without `:basis.foundation` remain timestamp-fresh. Gherkin non-fast-path + plan spy deferred (gherclj step wiring broke in-process runs); spy coverage is in spec. Timing wall-clock for `isaac config keys providers` cold vs warm: verifier may capture on logged-in host (not measured here).
 
+## Planner resolution (2026-07-12, prowl) — measure on a MODULE-BEARING root; empty-root 0.89==0.89 is not the STOP signal
+
+Escalation upheld as a real design question, but the verifier's measurement does
+not satisfy design point 4 and does NOT trigger the STOP clause. It was taken in
+the one environment where the cache is definitionally inert.
+
+### Why the empty-root measurement is invalid here
+
+The verifier ran `bb isaac --root /tmp/isaac-tki3-timing init` then timed
+`config keys providers`. That root has **no modules**. With no modules,
+`plan-module-classpath-pairs` has nothing to walk and no deps to resolve — there
+is no planning phase to eliminate, so cold==warm (0.89==0.89) is the expected,
+uninformative result. It is also exactly why the live cache basis wrote
+`{:config ... :foundation ...}` with **no `:module-coords`** — there were none to
+record. That absence is correct for an empty root, not a contract violation.
+
+This bean's entire motivation (Micah's goal) is the fleet's **module-bearing**
+root: zanebot's `~/.isaac` pins ~9 modules in `isaac.edn`, and planning there
+walks every module manifest + resolves deps. That is the only environment where
+the cache can pay off and the only environment worth measuring.
+
+### Required to satisfy design point 4
+
+1. Re-measure cold-vs-warm for a real non-fast-path command
+   (`isaac config keys providers` is fine) on a **module-bearing root** — either:
+   - the real `~/.isaac` (has the module pins), or
+   - a fixture root whose `isaac.edn` pins the current module set (copy the
+     `:modules` map from the orchestration `modules.edn`), so module walking +
+     deps resolution actually execute on the cold run.
+2. Confirm the live cache basis on THAT path includes `:module-coords` (the
+   enumerated-invalidation contract from design point 3). On a module-bearing
+   root it must be present; verify it is.
+3. Record the cold/warm numbers and the phase breakdown (plan vs compose vs boot)
+   in this bean as the one-time timing note.
+
+### The STOP rule applies to THAT measurement, not the empty-root one
+
+Design point 4 is self-limiting by Micah's own instruction. Apply it to the
+module-bearing numbers:
+
+- **If warm runs substantially eliminate the planning phase** (bean target:
+  >= 50% of its cold cost) → design point 4 is met; record the evidence and this
+  is a PASS on that criterion.
+- **If even WITH modules present the warm gain is noise** → that is the STOP/
+  report outcome design point 4 authorized. Record the finding honestly and the
+  correct resolution is to NOT ship the classpath-plan cache complexity — scope
+  the bean down to what measurably helps (or close as "measured, not worth it").
+  Shipping a cache that demonstrably saves nothing is the failure mode this
+  design point exists to prevent.
+
+Either branch is a legitimate terminal outcome; the deciding input is a
+module-bearing measurement, which does not yet exist.
+
+### Routing
+
+This is producing new acceptance EVIDENCE (a real measurement + interpretive
+note), not re-verification of existing code — so it returns to WORK, not verify.
+The code coverage (scenarios 1-3, fail-open, module-coords basis, timing samples)
+is already green on `93f33ccf`; no code change is required unless the
+measurement triggers the STOP/rescope branch.
+
+This note resets the verify-fail count.
+
 ## Verify fail (attempt 2, 2026-07-12): implementation improved the non-fast-path and fail-open coverage, but acceptance is still incomplete because the recorded timing evidence is not meaningful and the live cache basis still omits module coordinates on the measured real command path
 
 Evidence:
