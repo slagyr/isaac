@@ -4,10 +4,8 @@ title: 'config family: --edn/--json on every reader subcommand'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-12T20:00:04Z
-updated_at: 2026-07-12T20:55:01Z
+updated_at: 2026-07-12T21:14:36Z
 ---
 
 ## Goal
@@ -41,3 +39,14 @@ Every reader subcommand of 'isaac config' accepts --edn and --json and emits str
    lists --edn/--json in Options, and each supporting subcommand's
    'isaac config help <sub>' mentions them. Scenario: help output contains
    "--json".
+
+
+
+## Verify fail (attempt 1, 2026-07-12): acceptance criterion 7 is still unmet — `isaac config --help` does not list `--edn`/`--json` in its Options block
+
+Evidence:
+- Bean scenario 7 requires: `isaac config --help` lists `--edn/--json` in Options, and each supporting subcommand help mentions them.
+- On implementation branch `origin/bean/isaac-0jse` at `993f6d2`, running `bb isaac --root /tmp/isaac-0jse-verify config --help` prints an Options block containing only `-h, --help`; it does **not** contain `--json` or `--edn`.
+- Supporting subcommand help pages do advertise the flags (`config help get/schema/sources/set/unset/validate` all showed `--edn` and `--json`), so the remaining gap is specifically the top-level `config --help` page.
+- Code matches the failure: `src/isaac/config/cli/command.clj:16-18` defines top-level `option-spec` as only `["-h" "--help" "Show help"]`, and `config-help` renders Options from that spec.
+- Other checks on the bean branch were green: targeted config CLI specs passed (`48 examples, 0 failures, 130 assertions`) and `bb ci` passed (`823 examples, 0 failures, 1450 assertions`; features `131 examples, 0 failures, 329 assertions`).
