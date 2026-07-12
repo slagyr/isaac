@@ -1,11 +1,13 @@
 ---
 # isaac-l70j
 title: 'claude-cli reports token usage: json output formats replace text mode'
-status: completed
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:43:27Z
+updated_at: 2026-07-12T23:11:39Z
 ---
 
 ## Goal
@@ -281,3 +283,19 @@ Execution gap closed — rescope **b78263d7** already on `origin/bean/isaac-l70j
 - Hard gate: `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj` → 18 ex, 0 fail, 3 pending; `bb ci` → 1227 specs / 633 features green.
 
 **Verify at SHA `5d8a51d73ea789f2ff05ae50027bec572191aa64` only** — not `ca0c2ce`/`cc17952`. Apply planner rescope criterion 5 (response `:usage` @real; transcript via hermetic scenarios). Live `@real` execution → **isaac-l7l4**.
+
+## Verify fail (attempt 1, 2026-07-12): branch head `5d8a51d` satisfies the l70j claude-usage contract, but the worker's claimed full gate `bb ci` is false because an unrelated feature scenario is red on this branch
+
+Evidence:
+- Implementation branch under review is `origin/bean/isaac-l70j` at `5d8a51d73ea789f2ff05ae50027bec572191aa64`; repo `main` is also at that SHA.
+- The l70j-specific acceptance shape is present:
+  - `spec/isaac/llm/claude_cli_real_spec.clj:54-76` contains the revised `@real` smoke asserting direct `sut/chat` response `:usage` only.
+  - `features/llm/api/claude_cli.feature:217-240` contains the hermetic transcript assertions for non-stream `json`, streaming `stream-json`, and missing-usage fallback.
+- Targeted l70j gates are green on the verifier host:
+  - `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj` -> `18 examples, 0 failures, 38 assertions, 3 pending`
+  - `clojure -M:features features/llm/api/claude_cli.feature:217 features/llm/api/claude_cli.feature:228 features/llm/api/claude_cli.feature:240` -> `3 examples, 0 failures, 9 assertions`
+- However the claimed full gate is not green on this branch:
+  - `clojure -M:features` -> `633 examples, 1 failures, 1464 assertions`
+  - failing scenario: `features/bridge/cancel_aborts_work.feature:32` — `Cancel Aborts In-Flight Turn Work / session remains usable after a cancel mid-loop`
+  - isolated repro: `clojure -M:features features/bridge/cancel_aborts_work.feature:32` -> `1 examples, 1 failures, 1 assertions`, with failure `Expected: "cancelled" got: nil`
+- Because the worker handoff explicitly claimed `bb ci green` / full gate green, but the branch currently has a red non-wip feature, this handoff is not verifiable as passed even though the l70j-specific contract itself is satisfied.
