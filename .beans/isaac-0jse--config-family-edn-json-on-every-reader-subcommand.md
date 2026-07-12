@@ -1,11 +1,11 @@
 ---
 # isaac-0jse
 title: 'config family: --edn/--json on every reader subcommand'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-07-12T20:00:04Z
-updated_at: 2026-07-12T21:14:36Z
+updated_at: 2026-07-12T21:39:39Z
 ---
 
 ## Goal
