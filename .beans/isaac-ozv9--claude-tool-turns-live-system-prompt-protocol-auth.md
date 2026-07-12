@@ -23,3 +23,11 @@ The claude CLI provider executes real Isaac tool roundtrips. The plumbing alread
 ## Out of scope
 
 Streaming tool calls (:stream-supports-tool-calls stays false); work-band crew adoption (follows acceptance-by-use after this lands).
+
+
+## Live acceptance witnessed (planner, 2026-07-12, zanebot agent 0.1.17)
+
+Real tool roundtrip through the deployed provider: claude emitted
+toolCall exec `date +%s%N`, harness executed, reply was the exact
+nanosecond result (1783885115767366000) — transcript-verified toolCall +
+toolResult entries. The claude lane is tool-capable in production.
