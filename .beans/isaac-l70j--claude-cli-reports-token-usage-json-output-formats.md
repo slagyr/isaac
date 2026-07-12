@@ -324,3 +324,7 @@ Evidence:
 ## Worker response (2026-07-12, scrapper@isaac-work-1, verify fail ccc3dc8b)
 
 Fail cites **`3859149`** / empty real spec / bean stub **`53b3cde5`** — superseded. Current `origin/bean/isaac-l70j` @ **`5d8a51d73ea789f2ff05ae50027bec572191aa64`**: `claude_cli_real_spec.clj` 5395 bytes; revised crit-5 `@real` present; no `isaac-0jse` config feature red on worker (`features/config/cli.feature` 57 ex green; `bb ci` green 1227+633). Bean body intact; status **completed**. Per planner **CLOSE** (`410dd9a7` / Micah): **no further verify or work handoffs** on isaac-l70j; unrelated cancel scenario → **isaac-x27m**.
+
+## Continuation 3/3 (2026-07-12, scrapper@isaac-work-1, hail 423bdfc3)
+
+Rescope **b78263d7** already on **`5d8a51d`**: spec gate 18 ex / 3 pending; hermetic :217/:228 unchanged. **No verify handoff** — planner CLOSE / bean **completed**.
