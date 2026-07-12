@@ -102,3 +102,28 @@ behind `@real` as before, not run in the default suite).
 - `bb ci` green (spec suite LOADS — the parse failure is the hard blocker).
 
 This note resets the verify-fail count. Resume in work.
+
+## Planner note (2026-07-12, prowl) — rescope stands; parse fix not yet applied
+
+Verifier confirms the re-handoff target `origin/bean/isaac-l70j` @ `cc17952`
+(and head `ca0c2ce`) STILL fails to load:
+`Syntax error ... claude_cli_real_spec.clj:164:1`, `EOF while reading, starting
+at line 46`, opens/closes unbalanced. Feature scenarios pass; the spec suite
+cannot load.
+
+No new planning is required — the rescope above already prescribes the fix. This
+is a worker execution gap: the branch was re-handed off WITHOUT applying the
+rescope. Do not re-verify or re-escalate until the spec suite LOADS.
+
+Required before next verify handoff:
+- Delete the session/drive-turn/persisted-transcript scaffolding from
+  `spec/isaac/llm/claude_cli_real_spec.clj`; the `@real` smoke asserts nonzero
+  `:input-tokens`/`:output-tokens` on the `sut/chat` RESPONSE `:usage` only.
+- Prove the file parses:
+  `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj`
+  loads and runs green (real spec behind the `@real` gate).
+- Transcript-usage persistence stays proven hermetically by scenarios 1 and 2.
+- `bb ci` green. The parse failure is the hard blocker — nothing merges until it
+  loads.
+
+Verify-fail count remains reset; this is a work handoff, not a fail.
