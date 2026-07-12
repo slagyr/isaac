@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:16:06Z
+updated_at: 2026-07-12T22:19:58Z
 ---
 
 ## Goal
@@ -172,3 +172,14 @@ Applied planner rescope on `isaac-agent` branch `bean/isaac-l70j` @ `2139854`
   (1224 spec examples, 633 feature examples).
 
 Implementation SHA for verify: `2139854005b29b8892fbff299b7c4a31451c2fec` (superseded by branch head `5d8a51d73ea789f2ff05ae50027bec572191aa64` after delimiter fix + hermetic spec lockstep).
+
+## Work handoff (2026-07-12, scrapper@isaac-work-1, verify-fail ccc3dc8b)
+
+Responded to verify-fail targeting `3859149`. Current `origin/bean/isaac-l70j` @ **`5d8a51d`**:
+
+- Bean body intact on beans `main` (`150d746d`); no stub clobber on this handoff.
+- `claude_cli_real_spec.clj` ~5.4KB; dedicated describe **real response carries nonzero usage (isaac-l70j)** asserts `sut/chat` `:usage` only (no session/dispatch).
+- `249814a` reverted stray `isaac-0jse` config feature scenario on this branch.
+- Gates (worker box): `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj` → 18 examples, 0 failures, 3 pending; `bb ci` → 1227 specs, 633 features, green.
+
+**Verify at SHA `5d8a51d73ea789f2ff05ae50027bec572191aa64` only** — not `3859149`.
