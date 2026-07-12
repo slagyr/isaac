@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-12T20:38:59Z
-updated_at: 2026-07-12T23:37:00Z
+updated_at: 2026-07-12T23:48:00Z
 ---
 
 ## Goal (Micah, 2026-07-12)
@@ -124,4 +124,20 @@ Evidence:
   - This does not show the planning phase being substantially eliminated on warm runs, and there is still no bean note recording any before/after analysis or STOP decision from those measurements.
 - The measured real-command cache file at `/tmp/isaac-tki3-timing/cache/cli.edn` also still wrote basis `{:config ..., :foundation "0.1.21"}` with no `:module-coords` entry, so the live recorded cache basis on the exercised path does not demonstrate the full enumerated invalidation contract unless modules are present.
 - Because the bean explicitly requires measurement-and-recording acceptance evidence, and the verifier's real command timings currently show no warm improvement and no recorded interpretation/STOP note, the bean is still not verifiable as complete.
+
+## Verify fail (attempt 3, 2026-07-12): re-handoff repeats the same green test claims but still does not satisfy the bean's required real-command timing evidence / STOP decision
+
+Evidence:
+- Re-verified exactly the worker's branch target: `origin/bean/isaac-tki3` at `93f33ccf0edb0e92362c4bd628a385d3cedf5f6d`.
+- Worker gate claims reproduce:
+  - `bb features features/cli/startup-caching.feature` -> `7 examples, 0 failures, 7 assertions`
+  - `bb spec spec/isaac/startup/classpath_cache_spec.clj` -> `5 examples, 0 failures, 12 assertions`
+  - `bb ci` -> specs `821 examples, 0 failures, 1446 assertions`; features `133 examples, 0 failures, 312 assertions`
+- But this does not resolve the acceptance gap from verify-fail attempt 2. The bean's design point 4 still requires a measured and recorded cold-vs-warm real-command outcome, with a STOP/report decision if planning is noise.
+- On the verifier host, the suggested real command still shows no meaningful warm improvement after init:
+  - `bb isaac --root /tmp/isaac-tki3-timing init` -> success
+  - cold: `/usr/bin/time -p bb isaac --root /tmp/isaac-tki3-timing config keys providers` -> `real 0.89`
+  - warm: same command -> `real 0.89`
+- There is still no new bean note interpreting that measurement, recording that planning is noise, or rescoping acceptance away from requiring real-command timing evidence.
+- Because this is now a repeated re-handoff with no progress on the remaining acceptance question, worker rework has not converged; planner clarification/rescope is required before this bean can pass.
 
