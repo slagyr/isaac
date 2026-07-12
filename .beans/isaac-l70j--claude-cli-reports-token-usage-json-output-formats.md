@@ -336,3 +336,7 @@ Same stale verify fail as **ccc3dc8b** worker response above. **No verify handof
 ## Hail 78d5f4c4 (2026-07-12, scrapper@isaac-work-1, continuation 2/3, reply d44c57a7)
 
 Verify asks persisted-transcript `@real` — superseded by rescope **b78263d7** (response `:usage` `@real`; transcript hermetic **:217**/**:228**). Branch **`5d8a51d`**. Bean **completed**; planner **CLOSE** — **no verify handoff**, no transcript scaffolding in real spec.
+
+## Hail e199ca36 (2026-07-12, scrapper@isaac-work-1, continuation 2/3, prowl, reply 0041b9da)
+
+Rescope **b78263d7** already on **`5d8a51d`**: spec LOAD 18 ex / 3 pending; hermetic :217/:228 OK. **No verify handoff** — superseded by planner **CLOSE** (Micah churn stop) while bean **completed**.
