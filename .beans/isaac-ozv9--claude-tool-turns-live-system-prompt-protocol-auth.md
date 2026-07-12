@@ -1,11 +1,11 @@
 ---
 # isaac-ozv9
 title: 'claude tool turns live: system-prompt protocol authority + witnessed roundtrip'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-07-12T18:24:40Z
-updated_at: 2026-07-12T18:24:40Z
+updated_at: 2026-07-12T18:28:24Z
 ---
 
 ## Goal
