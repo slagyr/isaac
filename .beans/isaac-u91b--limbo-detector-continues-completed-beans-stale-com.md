@@ -24,3 +24,16 @@ The delivery worker's completion check reads a stale beans checkout (role-home c
 ## Observed churn cost
 
 Each miss = a full worker turn (model + tools) narrating 'holding' until budget exhaustion.
+
+## Planner correction (2026-07-12): real root cause is repo-key resolution, not pull staleness
+
+`resolve-beans-dir` (isaac-hail beans_status.clj) looks up the delivery's `:data :bean-repo` — which band deliveries populate with the FULL GIT URL (`git@github.com:slagyr/isaac.git`) — against `[:hail-settings :beans-repos <key>]`, a short-key fallback (`= repo "isaac"`), or `:beans-root`. The URL matches none => dir nil => `bean-completed?` ALWAYS false => the exemption has never fired in production. je45's scenarios pass because the fixture step registers the SHORT key ("isaac") — fixture-reality divergence.
+
+Rescope this bean:
+1. `resolve-beans-dir` handles bean-repo URLS: derive the repo name from the URL tail (`isaac.git` -> `isaac`) for the short-key fallback AND consult :beans-repos with the raw URL (both).
+2. Fixture step gains a URL variant so scenario 1 models production data (`bean-repo` = a git URL).
+3. The staleness concern stands as written (refresh-beans-repo! already pulls — keep it and its coverage).
+4. INTERIM (live now on zanebot, 2026-07-12): `:hail-settings {:beans-repos {"git@github.com:slagyr/isaac.git" "/Users/zane/agents/isaac/work-1/isaac"}}` added to isaac.edn — hot-reloaded, kills the l70j churn at the next turn end. Remove or keep as belt-and-braces once the URL derivation ships.
+5. Bonus config-schema gap: `hail-settings.beans-repos` is not declared (config set rejects the path) — declare it (same fix shape as isaac-08r9).
+
+This note resets any verify-fail count.
