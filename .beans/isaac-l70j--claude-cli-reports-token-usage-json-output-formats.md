@@ -332,3 +332,7 @@ Rescope **b78263d7** already on **`5d8a51d`**: spec gate 18 ex / 3 pending; herm
 ## Hail replay ccc3dc8b (2026-07-12, scrapper@isaac-work-1, reply d44c57a7)
 
 Same stale verify fail as **ccc3dc8b** worker response above. **No verify handoff** per planner CLOSE.
+
+## Hail 78d5f4c4 (2026-07-12, scrapper@isaac-work-1, continuation 2/3, reply d44c57a7)
+
+Verify asks persisted-transcript `@real` — superseded by rescope **b78263d7** (response `:usage` `@real`; transcript hermetic **:217**/**:228**). Branch **`5d8a51d`**. Bean **completed**; planner **CLOSE** — **no verify handoff**, no transcript scaffolding in real spec.
