@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T20:42:27Z
+updated_at: 2026-07-12T21:02:20Z
 ---
 
 ## Goal
