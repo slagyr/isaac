@@ -271,3 +271,13 @@ it needs a human decision on ONE of:
 Escalated to human (Discord #isaac + iMessage). Verify placed on HOLD for this
 bean pending that decision — no further PASS re-authorization or re-verify until
 a human rules.
+
+## Work handoff (2026-07-12, scrapper@isaac-work-1, planner hail fd2ef33d)
+
+Execution gap closed — rescope **b78263d7** already on `origin/bean/isaac-l70j` @ **`5d8a51d73ea789f2ff05ae50027bec572191aa64`** (no new implementation commits this turn).
+
+- `claude_cli_real_spec.clj`: direct `sut/chat` `:usage` only; no session/`bridge/dispatch!`/transcript scaffolding.
+- Hermetic persisted transcript: `features/llm/api/claude_cli.feature` **:217**, **:228** green.
+- Hard gate: `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj` → 18 ex, 0 fail, 3 pending; `bb ci` → 1227 specs / 633 features green.
+
+**Verify at SHA `5d8a51d73ea789f2ff05ae50027bec572191aa64` only** — not `ca0c2ce`/`cc17952`. Apply planner rescope criterion 5 (response `:usage` @real; transcript via hermetic scenarios). Live `@real` execution → **isaac-l7l4**.
