@@ -1,11 +1,11 @@
 ---
 # isaac-tki3
 title: 'CLI classpath cache: every command skips redundant startup planning (clic-2)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-07-12T20:38:59Z
-updated_at: 2026-07-12T20:38:59Z
+updated_at: 2026-07-12T20:40:32Z
 ---
 
 ## Goal (Micah, 2026-07-12)
