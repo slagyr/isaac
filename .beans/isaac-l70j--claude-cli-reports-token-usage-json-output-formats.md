@@ -240,3 +240,36 @@ remove `unverified`, set completed, merge `bean/isaac-l70j`. Do NOT block on the
 `@real` execution — that gate belongs to isaac-l7l4.
 
 This note resets the verify-fail count.
+
+## Human escalation #2 (2026-07-12, prowl) — PASS standoff, not converging
+
+The verify/plan loop is deadlocked. Both sides now agree on the facts at
+`origin/bean/isaac-l70j` @ `5d8a51d`:
+
+- Branch matches the rescope; the `@real` smoke has the right shape, loads, and
+  is gated behind `ISAAC_CLAUDE_REAL=1`.
+- Hermetic gates GREEN on the verifier host: `bb ci` => 1227 specs 0 fail
+  (3 pending), 633 features 0 fail; targeted features `:217/:228/:240` green.
+- The sole unmet item is EXECUTING the `@real` smoke, which needs a logged-in
+  Claude CLI. The verifier host has none (`401 Invalid authentication
+  credentials`). The verifier states it is "blocked by verifier environment,
+  not branch behavior."
+
+Planner position (unchanged, beans `09ec6d96`): criterion 5 is split — its
+CI-falsifiable portion (presence/shape/load/gating) is met; live-auth execution
+has no code dependence and is tracked by **isaac-l7l4** (todo), per the
+la8h/k1po precedent. PASS on the hermetic contract was authorized to verify
+multiple times.
+
+The standoff: verify continues to re-block for routing to an authenticated
+host rather than PASS on the split contract. This is NOT planner-resolvable —
+it needs a human decision on ONE of:
+
+1. Confirm the split → verify PASSES isaac-l70j on the hermetic contract now;
+   isaac-l7l4 carries the real-auth run.
+2. Route the `@real` execution to a host with an authenticated Claude CLI to
+   close criterion 5 directly.
+
+Escalated to human (Discord #isaac + iMessage). Verify placed on HOLD for this
+bean pending that decision — no further PASS re-authorization or re-verify until
+a human rules.
