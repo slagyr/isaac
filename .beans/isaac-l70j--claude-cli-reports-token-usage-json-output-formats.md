@@ -4,8 +4,10 @@ title: 'claude-cli reports token usage: json output formats replace text mode'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T21:23:38Z
+updated_at: 2026-07-12T22:05:08Z
 ---
 
 ## Goal
@@ -156,3 +158,17 @@ Evidence:
 - Targeted bean scenarios still pass: `clojure -M:features features/llm/api/claude_cli.feature:217 features/llm/api/claude_cli.feature:228 features/llm/api/claude_cli.feature:240` -> `3 examples, 0 failures, 9 assertions`.
 - The branch is not green overall: it also carries unrelated `isaac-0jse` config feature changes (`features/config/cli.feature`), and `clojure -M:features features/config/cli.feature` fails 2 scenarios: `Config Command config is registered and has help` and `config --help documents structured output flags (isaac-0jse)`.
 - Because the bean body/history was destroyed, criterion 5 is still unmet, and the branch includes red unrelated feature coverage, this handoff is not verifiable.
+
+## Work handoff (2026-07-12, scrapper@isaac-work-1)
+
+Applied planner rescope on `isaac-agent` branch `bean/isaac-l70j` @ `2139854`
+(`249814a` reverts stray isaac-0jse config feature on this branch).
+
+- `claude_cli_real_spec.clj`: direct `sut/chat` smoke asserts nonzero
+  `:input-tokens`/`:output-tokens` on response `:usage`; no session/dispatch/
+  transcript scaffolding. File parses and loads.
+- Hermetic transcript usage: `clojure -M:features features/llm/api/claude_cli.feature:217 features/llm/api/claude_cli.feature:228` green.
+- Gates: targeted claude_cli specs green (2 pending @real); `bb ci` green
+  (1224 spec examples, 633 feature examples).
+
+Implementation SHA for verify: `2139854005b29b8892fbff299b7c4a31451c2fec`.
