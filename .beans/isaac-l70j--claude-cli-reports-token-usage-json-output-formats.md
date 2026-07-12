@@ -48,3 +48,57 @@ Evidence:
 - Parenthesis count on `spec/isaac/llm/claude_cli_real_spec.clj` is unbalanced (`opens 159`, `closes 158`).
 - Targeted bean feature scenarios still pass: `clojure -M:features features/llm/api/claude_cli.feature:217 features/llm/api/claude_cli.feature:228 features/llm/api/claude_cli.feature:240` -> `3 examples, 0 failures, 9 assertions`.
 - Because the real spec file does not parse, the bean cannot satisfy the acceptance gate or CI verification in its current state.
+
+## Planner rescope (2026-07-12, prowl) — criterion 5 is real-binary usage on the RESPONSE; transcript persistence is proven hermetically
+
+Both verify fails are upheld as accurate. But criterion 5 as originally written is
+over-specified, and that over-specification is what pushed the worker into a
+real spec that stands up a session + drive turn and no longer parses. Settling
+the design so the fix is clean.
+
+### The seam split
+
+Two distinct things were conflated in criterion 5:
+
+1. **"Does the real claude binary actually emit usage in json/stream-json
+   mode?"** — this can ONLY be proven by a real run, and it lives on the
+   claude-cli RESPONSE object. This is the `@real` smoke's unique job.
+2. **"Does response usage get mapped into the persisted transcript token
+   fields?"** — this is deterministic wiring with no dependence on the real
+   binary, and it is ALREADY required hermetically by **scenario 1**
+   ("stubbed json output -> reply text correct AND transcript entry carries
+   nonzero input/output tokens"). Scenario 2 covers the streaming terminal-usage
+   case the same way.
+
+A `@real` test that spins up a session, runs a drive turn, and inspects a
+persisted transcript entry duplicates scenario 1's coverage while adding real-
+binary latency and flake. That is a testing anti-pattern, not stronger proof.
+
+### Revised criterion 5
+
+- [ ] 5. `@real` smoke: a real claude turn returns **nonzero `:input-tokens`
+      and `:output-tokens` on the claude-cli response** (`sut/chat` result
+      `:usage`). No session/drive-turn/persisted-transcript scaffolding in the
+      real spec.
+- The response-usage → transcript-token-field mapping is proven by **scenario 1**
+  (non-stream) and **scenario 2** (streaming terminal usage), hermetically, with
+  stubs. Confirm both assert the persisted transcript entry's nonzero token
+  fields; if either only asserts the response object, strengthen THAT hermetic
+  scenario — do not push it into the `@real` smoke.
+
+### Consequence for the syntax error
+
+Deleting the session/drive-turn scaffolding from
+`spec/isaac/llm/claude_cli_real_spec.clj` (reverting the real smoke to a direct
+`sut/chat` usage assertion) should remove the unbalanced-paren block entirely.
+Whatever remains must parse: `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj
+spec/isaac/llm/claude_cli_real_spec.clj` loads and runs green (real spec gated
+behind `@real` as before, not run in the default suite).
+
+### Acceptance (unchanged except crit 5)
+
+- Scenarios 1-4 green (hermetic).
+- Revised crit 5 real smoke green under the `@real` gate only.
+- `bb ci` green (spec suite LOADS — the parse failure is the hard blocker).
+
+This note resets the verify-fail count. Resume in work.
