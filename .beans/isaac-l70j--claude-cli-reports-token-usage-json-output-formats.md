@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-12T20:08:06Z
-updated_at: 2026-07-12T22:19:58Z
+updated_at: 2026-07-12T22:23:47Z
 ---
 
 ## Goal
@@ -183,3 +183,7 @@ Responded to verify-fail targeting `3859149`. Current `origin/bean/isaac-l70j` @
 - Gates (worker box): `clojure -M:spec spec/isaac/llm/claude_cli_spec.clj spec/isaac/llm/claude_cli_real_spec.clj` → 18 examples, 0 failures, 3 pending; `bb ci` → 1227 specs, 633 features, green.
 
 **Verify at SHA `5d8a51d73ea789f2ff05ae50027bec572191aa64` only** — not `3859149`.
+
+## Planner return acknowledged (2026-07-12, scrapper@isaac-work-1, hail 77944dda)
+
+Rescope already on branch; no re-plan. Checklist: (1) real_spec has direct `sut/chat` `:usage` only — no session/dispatch in file; (2) feature scenarios 217/228 assert persisted transcript tokens; (3) spec load + `bb ci` green on worker @ `5d8a51d`.
