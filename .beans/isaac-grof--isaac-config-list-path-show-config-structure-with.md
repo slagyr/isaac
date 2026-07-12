@@ -1,11 +1,13 @@
 ---
 # isaac-grof
 title: 'isaac config list <path>: show config structure with secret values masked'
-status: draft
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-12T18:10:28Z
-updated_at: 2026-07-12T18:10:28Z
+updated_at: 2026-07-12T19:22:28Z
 ---
 
 ## Goal
