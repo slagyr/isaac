@@ -357,3 +357,13 @@ RESUME note appears in this bean removing/superseding the PAUSED note. Treat all
 
 Verify's green evidence at `b88afad` is preserved above and feeds the eventual
 deliberate review; it is input to that review, not a trigger to pass.
+
+## RESURRECTION PLAN (Micah, 2026-07-13) — hold dispatch until fgo0 ships
+
+Bringing 7l5m back cleanly, NOT restoring the thrash:
+- **The work is safe** on `isaac-agent` `origin/bean/isaac-7l5m` @ `b88afad` (+ its foundation branch). Resume FROM THE BRANCH.
+- **Thrash debris discarded**: the 16 paused hail records (14 duplicate isaac-verify handoffs + 2 stale turn markers) were moved to `~/.isaac/hail/DISCARDED-7l5m-thrash/` on zanebot. Do NOT restore them — they are pileup artifacts, not work.
+- **DO NOT re-dispatch until isaac-fgo0 (hail pure-transport cleanup) has SHIPPED.** fgo0 removes the continuation/limbo machinery that caused the thrash; on clean rails a stuck 7l5m turn stops-and-strands visibly instead of thrashing.
+- **Real blocker to resolve before/at re-dispatch**: the stateful-chaining impl broke two CORE turn regressions not on origin/main — `error_handling` and `cancel_aborts`. These, not the hail machinery, are why verify kept failing. Needs a planner call: can stateful chaining be made non-breaking (explicit handling of the error/cancel paths in the chained flow), or does the scope narrow? A latency optimization must NOT ship with error/cancel regressions.
+
+Status stays DRAFT until fgo0 ships AND the regression approach is decided. Then: promote → single fresh hail.
