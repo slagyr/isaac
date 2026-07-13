@@ -30,6 +30,30 @@ The unifying rule Micah's preferences reduce to: **width decides inline vs multi
 
 Micah started before.edn/after.edn examples but found hand-authoring the target tedious and his preferences width/context-dependent — which confirms this should be a WIDTH-DRIVEN formatter, not a fixed template.
 
+## Settled decisions (Micah, 2026-07-13)
+
+- **No commas** between map entries.
+- **Sort map keys** (deterministic output).
+- **Block style for broken collections** (NOT align-under-brace — that cascades indentation rightward on deep nesting): opening `{`/`[` ends the first line, each entry on its own line indented **2 spaces per nesting level**, closing brace alone on the last line. A nested collection's opening brace stays on its key's line (so 'value on same line as key' holds for structured values too).
+- **Values still vertically aligned** to the largest key within a map (justify), on the same line as the key.
+- **Inline when it fits** the width budget (small maps/lists stay single-line, no braces-on-own-line); block only when it exceeds width.
+- **Width budget**: derive from terminal columns, CLAMPED to [min, max]; when stdout is not a TTY (piped), use the default. Proposed min 40 / default 80 / max TBD — Micah to confirm whether 80 is the default or a hard max (cap wide terminals for readability). 80 is the sweet spot.
+
+### Example 1 (approved shape — block style)
+
+input:  `{:api "responses" :base-url "https://api.x.ai/v1" :auth "api-key" :api-key "${XAI_API_KEY}"}`
+output (width 80):
+```
+{
+  :api      "responses"
+  :api-key  "${XAI_API_KEY}"
+  :auth     "api-key"
+  :base-url "https://api.x.ai/v1"
+}
+```
+
+(NOTE: this block style may or may not be reachable via zprint config — the zprint evaluation must confirm zprint can do brace-on-own-line 2-space block with justify; if not, hand-roll. This is now a firmer gate on adopting zprint.)
+
 ## Evaluate zprint FIRST (likely already does this)
 
 zprint is a mature, highly-configurable Clojure/EDN formatter whose options map almost 1:1 onto the above: `:justify?` (value alignment), width-based hang/flow (inline-if-fits), same-line key-values, nested indentation, list wrapping. **First acceptance task: prototype an isaac output sample through zprint with a tuned config and see how close it gets** — if a config nails it, this bean becomes 'adopt zprint + ship the config' rather than a hand-rolled printer.
