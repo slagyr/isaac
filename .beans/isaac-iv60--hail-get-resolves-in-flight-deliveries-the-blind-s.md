@@ -1,13 +1,12 @@
 ---
 # isaac-iv60
 title: 'hail-get resolves in-flight deliveries: the blind spot behind limbo endings'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-07-12T23:29:56Z
-updated_at: 2026-07-13T01:47:56Z
+updated_at: 2026-07-13T02:02:23Z
 ---
 
 ## Bug
