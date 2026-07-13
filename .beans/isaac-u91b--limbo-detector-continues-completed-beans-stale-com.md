@@ -1,13 +1,12 @@
 ---
 # isaac-u91b
 title: 'Limbo detector continues COMPLETED beans: stale completion check (je45 bug)'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
+tags: []
 created_at: 2026-07-12T23:38:00Z
-updated_at: 2026-07-13T00:20:37Z
+updated_at: 2026-07-13T00:58:00Z
 ---
 
 ## Bug
