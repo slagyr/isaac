@@ -40,3 +40,17 @@ Every crew shells out to isaac/beans constantly (hundreds per bean). A 2.3s floo
 ## Home
 
 isaac-foundation (brew train).
+
+
+## Profile (zanebot, foundation 0.1.23, 2026-07-13) — TWO hotspots
+
+`isaac config get models` = 2.31s warm, decomposed:
+- bb boot: 0.04s | bb.edn deps warm: 0.07s — negligible.
+- **Hotspot #1 — 1.33s**: `isaac --version` (clic fast path, zero module work) STILL costs 1.33s. This is babashka loading/interpreting the isaac-foundation source every invocation (bb interprets; no AOT/compiled-namespace cache). THIS BEAN CANNOT TOUCH IT — it's a floor under every command.
+- **Hotspot #2 — ~1.0s**: `config get models` (2.31s) minus `--version` (1.33s) = the module classpath resolution + module load + config parse that real commands add. THIS is what this bean eliminates (cache the resolved classpath, skip add-deps on warm hits).
+
+So: this bean's realistic target is ~2.3s -> ~1.4s (kill Hotspot #2). Getting under 1s requires attacking Hotspot #1 separately — see the split-out bean below. Update the bean's MEASURE target accordingly: warm real command approaches the --version floor, not sub-second.
+
+## Split-out: Hotspot #1 needs its own bean (AOT / native-image / daemon)
+
+The 1.33s bb-load floor is a bigger, separate problem. Options (own bean, likely relates to parked isaac-5zfv 'selectable server runtime run as bb or jvm'): AOT-compile foundation, a GraalVM native-image CLI, or a persistent isaac daemon that commands talk to (also helps the claude-lane overhead work). Flagged here so this bean is not blamed for the residual floor.
