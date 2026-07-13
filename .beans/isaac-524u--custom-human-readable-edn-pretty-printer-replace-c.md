@@ -4,8 +4,10 @@ title: Custom human-readable EDN pretty-printer (replace clojure.pprint)
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-13T16:03:13Z
-updated_at: 2026-07-13T17:14:33Z
+updated_at: 2026-07-13T17:18:41Z
 ---
 
 ## Goal
@@ -138,3 +140,23 @@ Changing --json output; changing on-disk EDN file format (display only).
 - [ ] `config get` renders via `pretty` (feature)
 - [ ] Runs under babashka without material startup regression
 - [ ] zprint-vs-handroll decision recorded in bean notes with evidence
+
+## Work handoff (2026-07-13, scrapper@isaac-work-1)
+
+### zprint vs hand-roll decision
+
+**Hand-roll.** Evidence:
+- zprint not on bb classpath (`Could not locate zprint/core` under plain `bb`).
+- Approved style is brace-on-own-line 2-space BLOCK + per-map justify + sorted + contextual fit — not zprint's native hang/flow idiom; bean notes already flag this as a firmer gate.
+- Adding zprint would risk the bb-load floor (isaac-ogiu); pure-Clojure printer has no extra deps.
+
+### Implementation
+
+`isaac-foundation` `origin/bean/isaac-524u` @ **`bd17980b7d75b1b9f4b647bd52ecdc57f35cfe0d`**:
+
+- `src/isaac/util/edn.clj` — `pretty` / `clamp-width`
+- Specs: Examples 1–4 exact match + width/scalars/empty
+- CLI: `config/cli/common` + `cli/common` `print-edn!` → pretty
+- Feature: `features/cli/edn_pretty.feature`
+
+Gates: `bb ci` → 838 specs / 134 features green.
