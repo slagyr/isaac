@@ -274,3 +274,20 @@ Action for verify: fetch and verify agent HEAD **`c3a73c9a`** (NOT the stale
 `bb ci`/`bb verify` green at that head, PASS isaac-7l5m on the hermetic contract:
 remove `unverified`, complete, merge `bean/isaac-7l5m`. Do not block on the live
 body-size check — that is isaac-1umd. Verify-fail count reset.
+
+## Verify fail (attempt 1, 2026-07-13): updated head fixes the original arity break, but the full feature gate is still red with two regressions not present on origin/main
+
+Evidence:
+- Followed the planner update and verified the new agent head `origin/bean/isaac-7l5m` = `c3a73c9a0d88de99176c80ae4d85f3c054542ce8`; foundation remains `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`.
+- Focused changed-surface checks are green on `c3a73c9a`:
+  - `clojure -M:spec spec/isaac/llm/responses_spec.clj` -> `35 examples, 0 failures, 71 assertions`
+  - `clojure -M:features features/llm/api/responses/stateful.feature` -> `4 examples, 0 failures, 12 assertions`
+- But the branch still fails the broader feature gate:
+  - `clojure -M:features` -> `637 examples, 2 failures, 1476 assertions`
+  - failing scenarios:
+    - `features/session/error_handling.feature`: `Error Entry Handling an empty terminal response gets one continuation nudge and recovers`
+    - `features/bridge/cancel_aborts_work.feature`: `Cancel Aborts In-Flight Turn Work cancel between tool-loop iterations skips the next chat call`
+- The same full feature suite is green on canonical `origin/main` (`3e983e4`): `clojure -M:features` -> `633 examples, 0 failures, 1465 assertions`, so these reds are not an ambient baseline in the verify environment.
+- `bb ci` exits non-zero on `c3a73c9a`: specs finish green (`1228 examples, 0 failures, 2459 assertions, 3 pending`) and the subsequent features phase is the same red `637 examples, 2 failures` gate.
+- `bb verify` also exits non-zero for the same reason.
+- The planner correctly split the live zanebot body-size smoke to `isaac-1umd`, so that item is not blocking this decision; the blocking issue is the still-red full feature suite on the updated branch head.
