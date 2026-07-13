@@ -31,12 +31,24 @@ Make hail a PURE TRANSPORT / agent pub-sub. Sever the bean-orchestration tentacl
 
 This removes the code paths from isaac-je45 (limbo detector), and obsoletes its patches isaac-iv60 and isaac-u91b (they fixed the machinery we are deleting) and isaac-fi41 (escalation-halt — with continuations gone there is nothing to halt; a stuck bean simply stops). Note these as superseded. isaac-5ru9's tool-loop-limit continuation is removed here; what the tool loop does INSTEAD at its cap is the sibling bean (tool-loop rethink #2).
 
-## Scenarios (worker writes; required coverage)
+## Test strategy — mostly REMOVAL (per no-absence-tests doctrine)
 
-1. A delivered turn that ends WITHOUT a hail-send does NOT re-queue — the delivery concludes (delivered), the bean is left as-is (visible strand). NO continuation, NO beans/git shell in the path.
-2. Error still reschedules (transport retry preserved); unavailable still defers (3tvq preserved); suspend still suspends (2xj5 preserved).
-3. hail has NO dependency on beans/git — verify the delivery path issues no `beans`/`git` subprocess (spy/assert).
-4. A neutral turn-ended fact is recorded with outcome + executed-tools, taking no bean-workflow action.
+This bean deletes machinery; it is NOT scenario-heavy. Three buckets:
+
+**A. Specs to DELETE** (behavior being removed — do not preserve):
+- je45 limbo-continuation scenarios (isaac-hail `features/delivery.feature`).
+- 5ru9 tool-loop-limit continuation scenario (delivery.feature).
+- `beans_status` specs; iv60 in-flight-via-limbo and u91b completion-check scenarios (they tested the deleted machinery).
+
+**B. One-time acceptance checks — NOT permanent scenarios** (absence checks belong here, never as gherkin):
+- The delivery path issues NO `beans`/`git` subprocess (verify once, at accept).
+- No continuation branch remains in the delivery-worker cond.
+- `isaac.hail.beans-status` no longer exists / is not required by hail.
+
+**C. Existing scenarios that STAY GREEN** (regression guards for preserved transport behavior — do not touch):
+- delivered; error->reschedule; unavailable->defer (isaac-3tvq); suspend (isaac-2xj5).
+
+**D. Optional new POSITIVE scenario** (only if it adds signal, positive-framed not absence): a delivered turn whose result carried no terminal action still concludes as `:delivered` (the simplified worker's positive behavior). May simply fold into existing delivered coverage.
 
 ## Priority
 
