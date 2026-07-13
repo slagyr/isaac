@@ -1,32 +1,30 @@
 ---
 # isaac-3ueo
-title: Minimize claude-lane per-turn overhead for Fable on zanebot
+title: Reduce claude-CLI subscription overhead so Fable is usable on zanebot
 status: draft
 type: feature
 priority: normal
 created_at: 2026-07-13T16:03:13Z
-updated_at: 2026-07-13T16:03:13Z
+updated_at: 2026-07-13T16:27:57Z
 ---
 
 ## Goal
 
 Minimize per-turn overhead on the claude subscription lane so Fable (claude-fable-5) is usable as a worker model on zanebot. Measured 2026-07-13: claude CLI turns run ~15.7s vs grok ~10.4s for the same one-sentence prompt — a ~5s fixed per-turn tax from spawning the `claude` binary cold (config load, subscription session re-establish) every turn, since Isaac runs it with --no-session-persistence.
 
-## Two paths to Fable on zanebot — Micah to choose
+## Scope: subscription only (Micah, 2026-07-13)
 
-**Path A — Fable via the metered anthropic provider (:api "messages", api-key).**
-Fable model id `claude-fable-5` over api.anthropic.com is a normal HTTPS request — same low overhead as grok, no CLI spawn. Cost: metered per-token (not subscription). If the anthropic provider already has a key in ~/.isaac/.env, this is a config-only change: a `models/fable.edn` {:model "claude-fable-5" :provider :anthropic}. FASTEST to Fable; costs money.
+Fable MUST run on Micah's Claude subscription (WAY cheaper than metered API) — the metered anthropic-API path is OFF the table. This bean is squarely about reducing the claude-CLI per-turn cold-start (~5s: spawn `claude`, load config, re-establish subscription session, since Isaac runs --no-session-persistence).
 
-**Path B — reduce the claude CLI cold-start (subscription, free-at-margin).**
-Investigation, not a foregone fix. Candidates:
-- A warm/persistent claude process (daemon) that turns feed, instead of spawn-per-turn — biggest potential win, most complexity; needs lifecycle mgmt in the adapter.
-- claude --output-format stream-json with a persisted session id (reuse subscription session across turns) — trades the isaac-owns-everything stance (auws) for speed; evaluate.
-- Trim what the CLI loads per invocation (skip MCP/plugins/settings discovery if flags allow).
-Each candidate: measure the delta before committing. Fable via CLI is only worth it if B gets the tax well under grok's latency.
+First: confirm the subscription/claude CLI can even SELECT Fable (claude-fable-5) — the --model flag must accept it and the subscription must grant it. Probe before optimizing.
 
-## Recommendation for spec time
+## Overhead-reduction candidates (investigate + measure each delta before committing)
 
-Confirm whether the goal is subscription-Fable (Path B research) or just Fable-fast (Path A, likely a same-day config change if a key exists). If Path A satisfies, B becomes a lower-priority optimization for the whole claude lane rather than a Fable blocker.
+1. **Warm/persistent claude process** — a long-lived `claude` the adapter feeds turns to, instead of spawn-per-turn. Biggest potential win; needs process lifecycle mgmt in claude_cli.clj. Likely shares design with a future isaac daemon (isaac-ogiu Hotspot #1 split-out).
+2. **Session reuse** — --output-format stream-json with a persisted session id across turns (drop --no-session-persistence). Trades the auws 'Isaac owns everything' stance for speed; evaluate the correctness cost.
+3. **Trim per-invocation load** — skip MCP/plugin/settings discovery via flags if the CLI supports it.
+
+Target: claude-lane turn latency near grok's (~10s) rather than ~16s, so Fable is practical for real work turns.
 
 ## Note
 
