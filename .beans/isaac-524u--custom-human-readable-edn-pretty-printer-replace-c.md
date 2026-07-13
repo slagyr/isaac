@@ -81,6 +81,22 @@ Pins: outer breaks + sorted + justified to `:compaction`; `:compaction` value FI
 
 **Per-map-local justification (approved):** each map aligns to ITS OWN largest key; alignment never crosses nesting levels (inner map justifies to `:directories`, independent of outer's justify to `:compaction`).
 
+### Example 4 (approved — sequence wrapping)
+
+input:  `{:directories ["/Users/zane/agents" "/Users/zane/Projects" "/Users/zane/.isaac/config" "/Users/zane/work"]}`
+output (width 80):
+```
+{
+  :directories [
+    "/Users/zane/agents"
+    "/Users/zane/Projects"
+    "/Users/zane/.isaac/config"
+    "/Users/zane/work"
+  ]
+}
+```
+Pins: vector inline until over budget, then block — `[` ends line, ONE ELEMENT PER LINE at +2, `]` alone. **No justification for sequences** (no key/value pairs; left-aligned at indent). **Vectors keep original order** (order is data — NOT sorted, unlike maps). Same brace-on-own-line idiom as maps for consistency.
+
 ## Evaluate zprint FIRST (likely already does this)
 
 zprint is a mature, highly-configurable Clojure/EDN formatter whose options map almost 1:1 onto the above: `:justify?` (value alignment), width-based hang/flow (inline-if-fits), same-line key-values, nested indentation, list wrapping. **First acceptance task: prototype an isaac output sample through zprint with a tuned config and see how close it gets** — if a config nails it, this bean becomes 'adopt zprint + ship the config' rather than a hand-rolled printer.
@@ -91,17 +107,34 @@ Two gates on adopting zprint:
 
 If zprint fits: adopt it as `isaac.util.edn/pretty` with the tuned config. If not: hand-roll a width-driven printer implementing the rules above.
 
-## Design questions remaining for spec time
+## Scenarios / spec (approved, 2026-07-13 — worker implements)
 
-- Line-width budget (80? terminal width? configurable?).
-- Sort map keys? (deterministic output aids diffing/agent parsing — recommend yes.)
-- Where it applies: shared `isaac.util.edn/pretty` for all human EDN output; --edn flag uses it (or stays canonical). --json unaffected.
-- Home: isaac-foundation (brew train).
+The formatter is a pure function `isaac.util.edn/pretty` (isaac-foundation): value + width -> string. Unit-spec each approved example (Examples 1-4) as input -> exact expected string. Required coverage:
+
+1. **Example 1** — wide map -> block, sorted, justified, 2-space, braces on own lines.
+2. **Example 2** — small map -> inline (no braces-on-own-line, no justify).
+3. **Example 3** — nesting -> inner map that FITS stays inline; inner map that DOESN'T breaks with per-map-LOCAL justification (+2 per level).
+4. **Example 4** — vector over budget -> block, one element per line, NO justify, ORIGINAL order.
+5. **Width** — `clamp(terminal-columns, 40, 80)`; non-TTY uses 80; a value that fits at top level but not at deep indent breaks contextually (fit measured against `width - current-indent`).
+6. **Scalars/edge** — nil, keyword, number, empty map `{}` / empty vector `[]` render sanely (inline); namespace maps `#:git{...}` handled (block or inline per fit).
+7. **CLI wiring (feature)** — `isaac config get <path>` renders through `pretty` (e.g. `config get providers.xai` shows the block form). `--json` unaffected; `--edn` uses `pretty`.
+
+## Deferred / stretch
+
+- **String-content wrapping** — pretty-printers treat strings as atomic; wrapping long string VALUES with continuation is non-standard and Micah can't even express it in source .edn without reader warnings. STRETCH, separate layer, likely only for known long-text fields. NOT required for this bean's acceptance.
+
+## zprint gate (unchanged)
+
+Evaluate zprint FIRST — but the approved style (brace-on-own-line 2-space BLOCK + justify + sorted + contextual-fit) is NOT zprint's native idiom. If a zprint config reproduces Examples 1-4 exactly under babashka without adding to the ~1.3s bb-load floor, adopt it; otherwise hand-roll the width-driven printer (rules above are complete enough to implement directly).
 
 ## Non-goals
 
-Changing --json output; changing on-disk EDN file format (only display).
+Changing --json output; changing on-disk EDN file format (display only).
 
-## Status
+## Acceptance
 
-Draft per Micah 2026-07-13; spec after he provides the desired-shape example. Candidate as the grok-4.5 shakedown bean for scrapper once promoted.
+- [ ] Examples 1-4 pass as unit specs (exact string match)
+- [ ] Width clamp + contextual-fit covered
+- [ ] `config get` renders via `pretty` (feature)
+- [ ] Runs under babashka without material startup regression
+- [ ] zprint-vs-handroll decision recorded in bean notes with evidence
