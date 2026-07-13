@@ -37,7 +37,7 @@ Micah started before.edn/after.edn examples but found hand-authoring the target 
 - **Block style for broken collections** (NOT align-under-brace — that cascades indentation rightward on deep nesting): opening `{`/`[` ends the first line, each entry on its own line indented **2 spaces per nesting level**, closing brace alone on the last line. A nested collection's opening brace stays on its key's line (so 'value on same line as key' holds for structured values too).
 - **Values still vertically aligned** to the largest key within a map (justify), on the same line as the key.
 - **Inline when it fits** the width budget (small maps/lists stay single-line, no braces-on-own-line); block only when it exceeds width.
-- **Width budget**: derive from terminal columns, CLAMPED to [min, max]; when stdout is not a TTY (piped), use the default. Proposed min 40 / default 80 / max TBD — Micah to confirm whether 80 is the default or a hard max (cap wide terminals for readability). 80 is the sweet spot.
+- **Width budget** (settled): `width = clamp(terminal-columns, 40, 80)`. 80 is a HARD MAX (never wrap wider even on a 200-col terminal — readability cap). 40 is the floor (narrower terminals clamp up; below 40 alignment is pointless). Track the terminal between. Non-TTY (piped/redirected) uses 80.
 
 ### Example 1 (approved shape — block style)
 
