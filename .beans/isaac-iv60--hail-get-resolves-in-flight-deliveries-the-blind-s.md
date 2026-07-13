@@ -50,3 +50,12 @@ Evidence:
 - The failing scenario is the bean's key observed case: `Hail get and search hail_get on an in-flight delivery id returns the record with lifecycle in-flight`.
 - Full gate is also red on this branch: `bb ci` -> `142 examples, 2 failures, 528 assertions, 2 pending`; one of the two failures is the same `hail_get` in-flight scenario above. The other failure is `Hail delivery verify handoff hail ends delivery without limbo continuation (isaac-je45)`.
 - Because scenario 4 explicitly requires that a turn's own delivery id resolves during the turn at feature level, and that scenario is not green, this bean cannot pass verification yet.
+
+## Verify fail (attempt 2, 2026-07-13): repeated re-handoff still fails the required in-flight hail_get feature scenario, so verification cannot pass and the bean must escalate to plan
+
+Evidence:
+- Re-verified exact implementation target `origin/bean/isaac-iv60` = `ffdc8a3cf6007352e6b6f751ebf5c3840c1d511c` in `isaac-hail`.
+- Targeted specs remain green: `bb spec spec/isaac/hail/store_spec.clj spec/isaac/tool/hail_get_spec.clj` -> `10 examples, 0 failures, 10 assertions`.
+- The required feature scenario still fails unchanged: `bb features features/hail-get.feature` -> `9 examples, 1 failures, 36 assertions, 2 pending`; failing scenario `Hail get and search hail_get on an in-flight delivery id returns the record with lifecycle in-flight`.
+- Full `bb ci` is also red on this branch: `142 examples, 2 failures, 528 assertions, 2 pending`; it includes the same in-flight `hail_get` failure plus unrelated `isaac-je45` red.
+- This is now a repeated verify failure on the same unresolved acceptance item, with no new branch evidence that closes scenario 4's feature-level gap.
