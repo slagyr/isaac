@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-07-13T18:06:44Z
+updated_at: 2026-07-13T18:14:00Z
 ---
 
 ## Goal
@@ -165,3 +165,16 @@ Branch `origin/bean/isaac-7l5m` on isaac-agent @ `debcbeb3dcdb1a0896bae972960f5c
 - Feature `features/llm/api/responses/stateful.feature` 4/0; responses specs green.
 
 Verify at agent SHA above. Live zanebot body-size check remains post-deploy acceptance.
+
+## Verify fail (attempt 1, 2026-07-13): branch is not verifiable yet because the changed isaac-agent spec gate is red and the required live zanebot body-size acceptance remains unverified
+
+Evidence:
+- Verified exact implementation targets named in the bean:
+  - `isaac-agent` `origin/bean/isaac-7l5m` = `debcbeb3dcdb1a0896bae972960f5cfc85acfc31`
+  - `isaac-foundation` step-table support `origin/bean/isaac-7l5m` = `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`
+- The new acceptance feature is green: `bb features features/llm/api/responses/stateful.feature` -> `4 examples, 0 failures, 12 assertions`.
+- But the changed spec surface is red on this branch. Running targeted specs fails: `clojure -M:spec spec/isaac/llm/responses_spec.clj spec/isaac/llm/tool_loop_spec.clj spec/isaac/config/resolve_spec.clj` -> `54 examples, 4 failures, 133 assertions`.
+- The primary branch regression is inside the changed response adapter spec: `spec/isaac/llm/responses_spec.clj:306` still calls `responses-request-base` with 2 args, but `src/isaac/llm/api/responses.clj:53-56` now defines it with 3 args (`model input store?`), yielding `Wrong number of args (2) passed to: isaac.llm.api.responses/responses-request-base`.
+- Full gate is also red on the implementation branch: `bb ci` -> `1227 examples, 1 failures, 2458 assertions, 3 pending`; the failing example is the same `responses_spec` arity break.
+- Separately, the bean's acceptance still includes a required one-time zanebot verification that cycle-2+ grok request bodies drop from ~1MB to KB-scale via `:llm/http-request :body-chars` in `server.log`. The bean body still lists that checkbox unchecked, and the worker note explicitly says `Live zanebot body-size check remains post-deploy acceptance`.
+- Because the changed branch is not green and the required live acceptance evidence is still missing, this bean cannot pass verification yet.
