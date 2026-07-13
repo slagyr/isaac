@@ -50,3 +50,13 @@ Evidence:
 - Supporting subcommand help pages do advertise the flags (`config help get/schema/sources/set/unset/validate` all showed `--edn` and `--json`), so the remaining gap is specifically the top-level `config --help` page.
 - Code matches the failure: `src/isaac/config/cli/command.clj:16-18` defines top-level `option-spec` as only `["-h" "--help" "Show help"]`, and `config-help` renders Options from that spec.
 - Other checks on the bean branch were green: targeted config CLI specs passed (`48 examples, 0 failures, 130 assertions`) and `bb ci` passed (`823 examples, 0 failures, 1450 assertions`; features `131 examples, 0 failures, 329 assertions`).
+
+## Work handoff (2026-07-13, scrapper@isaac-work-1, verify fail fe6afe0f)
+
+Criterion 7 fix already on **`origin/bean/isaac-0jse` @ `e3f554037f3ee79edd72d38cb001cd59def7a99d`** (supersedes fail SHA `993f6d2`):
+
+- `command.clj` top-level `option-spec` = `inspect/structured-option-spec` (`--edn` / `--json` in Options).
+- Spec: `command_spec.clj` — "lists --edn and --json in top-level Options (isaac-0jse)".
+- Worker gates: `bb spec` 824/0; `bb ci` specs + features green.
+
+**Verify at SHA `e3f554037f3ee79edd72d38cb001cd59def7a99d` only.**
