@@ -4,8 +4,10 @@ title: 'Hail becomes pure transport: sever the bean/git tentacle, remove continu
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-13T20:44:51Z
-updated_at: 2026-07-13T20:52:52Z
+updated_at: 2026-07-13T21:00:52Z
 ---
 
 ## Goal (Micah, 2026-07-13)
@@ -53,3 +55,23 @@ This bean deletes machinery; it is NOT scenario-heavy. Three buckets:
 ## Priority
 
 HIGH — this is the architectural cleanup that stops the runaway class (7l5m). Prerequisite for any later orchestration work. Pair with the tool-loop rethink bean.
+
+
+## Implementation (scrapper@isaac-work-1, 2026-07-13)
+
+Branch origin/bean/isaac-fgo0 on isaac-hail @ 984dd92daeb547d278043156c1118e0ac081467b.
+
+- Deleted isaac.hail.beans-status (git/beans CLI tentacle) and beans_status_spec.
+- Removed both continuation branches from delivery_worker (tool-loop-limit + limbo).
+- Delivery outcomes now: suspended, unavailable->defer, error->reschedule, else delivered.
+- Emits neutral :hail/turn-ended log fact with :outcome and :executed-tools on each terminal path.
+- Removed max-continuations + beans-repos from hail-settings schema; version 0.1.14.
+- Deleted je45/5ru9/u91b continuation scenarios; replaced with positive pure-transport scenarios.
+- modules.edn pins hail to 984dd92daeb547d278043156c1118e0ac081467b.
+
+### Gate
+- clojure -M:spec → 129 examples, 0 failures
+- clojure -M:features features/delivery.feature → 23/0
+- clojure -M:features → 137 examples, 0 failures, 2 pending (pre-existing hail-get stubs)
+
+Acceptance checks (one-time): no beans/git subprocess in delivery path; no continuation cond branch; beans-status gone.
