@@ -301,3 +301,10 @@ Evidence:
 - Foundation unchanged: `origin/bean/isaac-7l5m` @ `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`.
 - `modules.edn` pins agent to `b88afad66c1f069f5ec931eb069fa17a7caf7f3f`.
 - Gate evidence: specs green; `stateful.feature` 4/0; `error_handling.feature` 5/0. Live body-size remains **isaac-1umd**.
+
+
+## PAUSED / pulled from active loop (Micah, 2026-07-13)
+
+Emergency-stopped: the stateful-chaining impl broke two full-suite feature regressions (error_handling, cancel_aborts) not on origin/main; the worker kept re-handing the same commit as done while verify legitimately bounced it, thrashing through repeated limbo continuations, planner escalation, and 4+ dead-letters. HUMAN ESCALATION DID NOT HALT THE BEAN (critical orchestration bug — see follow-up).
+
+Stop actions: 13 delivery records for thread 5bf56bb2 + the isaac-work-1/isaac-verify turn markers moved to ~/.isaac/hail/PAUSED-7l5m/ on zanebot (reversible); bean set to blocked. Do NOT re-hail until: (a) the regressions are understood, and (b) the escalation-halts-bean bug is fixed. Needs deliberate planner review — stateful chaining touches core turn-driving code and must not ship with error/cancel regressions for a latency win.
