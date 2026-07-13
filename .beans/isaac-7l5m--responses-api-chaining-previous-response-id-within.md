@@ -1,13 +1,13 @@
 ---
 # isaac-7l5m
 title: 'Stateful Responses API conversations: previous_response_id within tool-loop turns (provider/model-gated)'
-status: blocked
+status: todo
 type: feature
 priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-07-13T19:28:55Z
+updated_at: 2026-07-13T22:44:49Z
 ---
 
 ## Goal
@@ -367,3 +367,16 @@ Bringing 7l5m back cleanly, NOT restoring the thrash:
 - **Real blocker to resolve before/at re-dispatch**: the stateful-chaining impl broke two CORE turn regressions not on origin/main — `error_handling` and `cancel_aborts`. These, not the hail machinery, are why verify kept failing. Needs a planner call: can stateful chaining be made non-breaking (explicit handling of the error/cancel paths in the chained flow), or does the scope narrow? A latency optimization must NOT ship with error/cancel regressions.
 
 Status stays DRAFT until fgo0 ships AND the regression approach is decided. Then: promote → single fresh hail.
+
+## Planner unblock — RESUMED (2026-07-13, fgo0 shipped)
+
+Clean rails: isaac-fgo0 is deployed (hail 0.1.14, pure transport — no continuations/limbo). A stuck turn now stops-and-strands, it will not thrash. Resuming 7l5m.
+
+Resume instructions for the worker:
+- **Resume from the existing branch**, do NOT restart: isaac-agent `origin/bean/isaac-7l5m` @ `b88afad` (+ its foundation branch). Pull it, don't rebuild.
+- **The blocker is NOT the hail machinery** (that's gone) — it is TWO CORE REGRESSIONS the stateful-chaining change introduced, red on the full suite but not on origin/main: `error_handling` and `cancel_aborts`. These are the entire reason verify kept failing.
+- **Required: make stateful chaining non-breaking.** The chained-request flow must correctly handle the error path (a mid-chain provider error must still surface/classify exactly as today) and the cancel path (session cancel must still abort cleanly mid-chain). Fix those so the FULL `bb ci` / features suite is green — not just the targeted stateful specs.
+- If error/cancel cannot be made non-breaking within the chaining design, that is a real conflict → hail the plan band with the specifics for a rescope (e.g. narrow where chaining applies, or exclude cancel/error-sensitive turns). Do NOT ship green-targeted-specs-but-red-full-suite again.
+- Acceptance unchanged (the 4 approved scenarios) PLUS full-suite green PLUS the live zanebot body-chars before/after measurement.
+
+This note resets any verify-fail count.
