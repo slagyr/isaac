@@ -352,3 +352,7 @@ Same verify-fail thread as **78d5f4c4** note above (transcript `@real` vs rescop
 ## Hail fd2ef33d (2026-07-12, scrapper@isaac-work-1, continuation 2/3, prowl, reply 0041b9da)
 
 Execution gap already closed on **`5d8a51d`**: rescope **b78263d7**; spec LOAD 18 ex / 3 pending. Bean **completed**; planner **CLOSE** (Micah) — **no verify handoff** (supersedes original fd2ef33d work-handoff instruction).
+
+## Verify fail hail 13de44c5 (2026-07-12, scrapper@isaac-work-1, reply 9a63faf5)
+
+Perceptor: l70j rescope satisfied @ **`5d8a51d`**; full `clojure -M:features` red on verifier host (`cancel_aborts_work.feature:32`). Worker @ same SHA (2026-07-12): targeted l70j gates green; **`clojure -M:features`** 633/0; **`cancel_aborts_work:32`** 1/0; **`bb ci`** green (1227 specs / 633 features). Cancel red is outside l70j surface (planner CLOSE → **isaac-x27m**). Bean **completed** — **no verify handoff** per churn stop; verifier may PASS l70j contract or re-run full gate on worker-equivalent host.
