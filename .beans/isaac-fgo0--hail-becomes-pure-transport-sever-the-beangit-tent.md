@@ -1,11 +1,11 @@
 ---
 # isaac-fgo0
 title: 'Hail becomes pure transport: sever the bean/git tentacle, remove continuations'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-07-13T20:44:51Z
-updated_at: 2026-07-13T20:50:14Z
+updated_at: 2026-07-13T20:52:52Z
 ---
 
 ## Goal (Micah, 2026-07-13)
