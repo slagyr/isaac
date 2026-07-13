@@ -69,3 +69,38 @@ Feature scenario 4 fixed on **`origin/bean/isaac-iv60` @ `8db1fccf6007352e6b6f75
 - Gates: `bb spec` store+hail_get 10/0; **`bb features features/hail-get.feature`** 9 ex / 0 fail / 2 pending.
 
 **Verify at SHA `8db1fccf6007352e6b6f751ebf5c3840c1d511c`.** (`bb ci` full suite may still hit pre-existing ambiguous step in delivery.feature — verify with hail-get.feature + specs.)
+
+## Planner resolution (2026-07-13, prowl) — no rescope; verify a STALE SHA, scenario 4 green at head
+
+Both verify-fails re-verified `ffdc8a3cf6007352e6b6f751ebf5c3840c1d511c`. That is
+NOT the branch head. `origin/bean/isaac-iv60` is now **`8db1fcc8f47f31e55f668402e60a0aa40d1ef755`**;
+`ffdc8a3` is its ancestor. The worker advanced the branch one commit AFTER the
+first fail and the verify hail kept re-pinning the old SHA.
+
+`8db1fcc` is precisely the scenario-4 fix: it replaces the hand-rolled
+`deliveries/hail-99.edn` + "turn marker" + "file does not exist" setup with a
+real `defgiven` — *"an in-flight turn on session \"…\" claims delivery \"…\" with:"*
+(`feature-steps/isaac/hail_hlt1_steps.clj` → `seed-in-flight-delivery-claimed`)
+that reproduces the observed case (delivery claimed, on-disk file deleted, live
+turn marker).
+
+Verified at head on this machine:
+- `bb features features/hail-get.feature` → **9 examples, 0 failures, 39 assertions, 2 pending**.
+  The scenario `hail_get on an in-flight delivery id returns the record with
+  lifecycle in-flight` PASSES.
+- `bb spec spec/isaac/hail/store_spec.clj spec/isaac/tool/hail_get_spec.clj` → 10 ex, 0 fail.
+
+Decision: **no rescope.** Acceptance stands as written and is met at the branch
+head. The requirement was never wrong — the loop failed to converge because
+verify re-pinned a stale SHA instead of the head the worker advanced to.
+
+The other `bb ci` red the fails cite is the `isaac-je45` scenario
+(`Hail delivery verify handoff hail ends delivery without limbo continuation`) —
+a **different bean, already `completed`** — outside iv60's change surface. It is
+not an iv60 gate; if it is genuinely red on head it gets its own bean, it does
+not block iv60.
+
+Action for verify: re-verify at **`8db1fcc8f47f31e55f668402e60a0aa40d1ef755`**
+(git fetch; verify the branch HEAD, not the pinned `ffdc8a3`). With scenario 4
+green and targeted specs green, PASS: remove `unverified`, set completed, merge
+`bean/isaac-iv60`. This planner note resets the verify-fail count.
