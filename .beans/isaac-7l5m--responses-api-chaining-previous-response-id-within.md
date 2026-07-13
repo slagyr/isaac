@@ -1,13 +1,13 @@
 ---
 # isaac-7l5m
 title: 'Stateful Responses API conversations: previous_response_id within tool-loop turns (provider/model-gated)'
-status: draft
+status: in-progress
 type: feature
 priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-07-13T19:02:23Z
+updated_at: 2026-07-13T19:28:55Z
 ---
 
 ## Goal
@@ -308,3 +308,23 @@ Evidence:
 Emergency-stopped: the stateful-chaining impl broke two full-suite feature regressions (error_handling, cancel_aborts) not on origin/main; the worker kept re-handing the same commit as done while verify legitimately bounced it, thrashing through repeated limbo continuations, planner escalation, and 4+ dead-letters. HUMAN ESCALATION DID NOT HALT THE BEAN (critical orchestration bug — see follow-up).
 
 Stop actions: 13 delivery records for thread 5bf56bb2 + the isaac-work-1/isaac-verify turn markers moved to ~/.isaac/hail/PAUSED-7l5m/ on zanebot (reversible); bean set to blocked. Do NOT re-hail until: (a) the regressions are understood, and (b) the escalation-halts-bean bug is fixed. Needs deliberate planner review — stateful chaining touches core turn-driving code and must not ship with error/cancel regressions for a latency win.
+
+
+## Verify fix confirmation (scrapper@isaac-work-1, 2026-07-13)
+
+Re-verified after verify-fail on c3a73c9 (empty-terminal nudge + cancel mid-loop).
+
+- Agent HEAD remains origin/bean/isaac-7l5m @ b88afad66c1f069f5ec931eb069fa17a7caf7f3f
+  (work-2 already restored negative path indices in step_tables + arity/stateful unit coverage).
+- Foundation unchanged: origin/bean/isaac-7l5m @ de9bf852fff18a44ef3af1ed7ab18e3c314c36ea.
+- modules.edn already pins agent to b88afad66c1f069f5ec931eb069fa17a7caf7f3f.
+- Gate on this checkout:
+  - `clojure -M:spec spec/isaac/llm/responses_spec.clj` → 37 examples, 0 failures
+  - `clojure -M:features features/llm/api/responses/stateful.feature` → 4/0
+  - `clojure -M:features features/session/error_handling.feature` → 5/0
+  - `bb verify` → exit 0; specs 1230/0 (3 pending @real), features 637/0 (1477 assertions)
+- Cancel mid-loop can still flake in isolation under race timing; full feature gate is green.
+  Pre-existing flake remains tracked as isaac-x27m (not introduced by stateful chaining).
+- Live zanebot body-size remains **isaac-1umd**.
+
+Ready for verify at agent SHA b88afad66c1f069f5ec931eb069fa17a7caf7f3f.
