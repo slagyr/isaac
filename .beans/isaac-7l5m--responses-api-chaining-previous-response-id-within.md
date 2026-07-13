@@ -4,8 +4,10 @@ title: 'Stateful Responses API conversations: previous_response_id within tool-l
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-07-13T17:44:12Z
+updated_at: 2026-07-13T18:06:44Z
 ---
 
 ## Goal
@@ -150,3 +152,16 @@ direction of the layering.
 - [ ] Scenarios green in isaac-agent
 - [ ] One-time on zanebot: a grok-composer work turn's cycle-2+ request bodies drop from ~1MB to KB-scale (verify via `:llm/http-request :body-chars` in server.log)
 - [ ] chatgpt turns byte-identical in behavior (store:false, no chaining fields)
+
+## Implementation (scrapper@isaac-work-2, 2026-07-13)
+
+Branch `origin/bean/isaac-7l5m` on isaac-agent @ `debcbeb3dcdb1a0896bae972960f5cfc85acfc31`
+(and foundation step-tables `#count` on `origin/bean/isaac-7l5m` @ `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`).
+
+- Model schema gains `:stateful` boolean; resolve merges it into provider cfg / turn request.
+- Responses adapter: `store` from stateful; cycle 2+ with `previous_response_id` send only tool outputs.
+- tool-loop tracks last completed response id; chain-miss 404 logs `:chat/state-reset` and retries full context.
+- Grover scripted responses honor `id` column; http logs simulated outbound bodies.
+- Feature `features/llm/api/responses/stateful.feature` 4/0; responses specs green.
+
+Verify at agent SHA above. Live zanebot body-size check remains post-deploy acceptance.
