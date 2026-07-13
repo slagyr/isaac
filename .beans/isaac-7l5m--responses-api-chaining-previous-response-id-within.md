@@ -198,3 +198,79 @@ Evidence:
 - Foundation unchanged: `origin/bean/isaac-7l5m` @ `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`.
 - Gate: `clojure -M:spec` via `bb ci` → 1228 examples, 0 failures, 3 pending (claude real smokes).
 - Stateful feature green (4/0). Live body-chars on zanebot is ops smoke; acceptance satisfied by wire-level `#count` shrink assertion.
+
+## Planner resolution (2026-07-13, prowl) — spec fix is UNCOMMITTED; live body-size check split to isaac-1umd
+
+Both verify-fails are accurate about the RED, and the verifier was right to
+escalate rather than bounce — but the cause is precise and not a rescope of the
+contract. Two separable things:
+
+### 1. The spec red is an uncommitted-fix / stale-commit problem, not a design gap
+
+`responses-request-base` was correctly widened to 3 args
+(`[model input store?]`) in `src/isaac/llm/api/responses.clj`, and its two spec
+callers were correctly updated to pass the third arg — BUT that spec edit was
+left **uncommitted in the worker's working tree** and never landed on the
+branch. Verified on this machine:
+
+- Committed HEAD `debcbeb3` `spec/isaac/llm/responses_spec.clj:306` still calls
+  `(responses-request-base "gpt-5.4" [...])` with 2 args → `Wrong number of
+  args (2)`. That is exactly what verify runs and correctly reports RED
+  (`34 examples, 1 failure`).
+- The worker's working tree has the fix (adds the `false` arg on :306 and a new
+  `store enabled when stateful` example passing `true`), and WITH it the spec is
+  GREEN: `35 examples, 0 failures, 71 assertions`.
+- `git log -S` confirms the fix is committed **nowhere** on `origin/bean/isaac-7l5m`.
+
+So the contract and implementation are right; the branch is red only because the
+matching spec change was never committed/pushed. This also explains why the loop
+did not converge — every re-handoff re-verified the same `debcbeb3` with the fix
+still sitting uncommitted in the work tree.
+
+**Required (work): commit the responses_spec.clj change and push**, then hand off
+with the NEW head SHA (not `debcbeb3`). Gate before handoff:
+`clojure -M:spec spec/isaac/llm/responses_spec.clj` green AND `bb ci` / `bb verify`
+green on the pushed head. Foundation `#count` step-table branch
+(`de9bf852`) is unchanged and fine.
+
+### 2. The live zanebot body-size acceptance is split out — it does not gate merge
+
+Acceptance item 2 (one-time zanebot check that grok cycle-2+ bodies drop from
+~1MB to KB-scale via `:llm/http-request :body-chars`) is a post-deploy
+observation with no code dependence. Per the l70j→l7l4 / k1po→6eo4 / la8h→exg7
+precedent it cannot hold a green, hermetically-proven code contract hostage
+pre-merge. Split to **isaac-1umd** (todo).
+
+The hermetic wire-shape proof (`features/llm/api/responses/stateful.feature`,
+4/0) already proves the chaining contract: cycle-1 full + `store:true`, cycle-2+
+`previous_response_id` + tool-outputs-only, stateless fallback, fresh chain per
+turn. That is the CI-falsifiable portion of the contract and it is met.
+
+### Net for this bean
+
+Once the spec fix is committed and the branch head is green (`bb ci`/`bb verify`),
+verify PASSES isaac-7l5m on the hermetic contract: acceptance item 1 (scenarios
+green) + item 3 (chatgpt byte-identical, covered by the stateless scenario).
+Item 2 is carried by isaac-1umd. This note resets the verify-fail count.
+
+**Route: WORK** (a commit+push is required — this is not a re-verify of the
+current head). Verify only after the worker pushes the spec fix and names the new
+head SHA.
+
+## Planner update (2026-07-13, prowl) — spec fix now COMMITTED at c3a73c9; verify at head
+
+The worker committed the spec-arity fix concurrently with this resolution: agent
+`origin/bean/isaac-7l5m` is now **`c3a73c9a0d88de99176c80ae4d85f3c054542ce8`**
+(was `debcbeb3`), foundation unchanged at `de9bf852`. Worker reports `bb ci` →
+1228 examples, 0 failures, 3 pending (unrelated claude `@real` smokes). That is
+exactly the fix item 1 required — the uncommitted 3-arg spec change is now on the
+branch.
+
+Net unchanged: item 2 (live zanebot body-size) is split to **isaac-1umd**; the
+hermetic wire-shape proof carries the chaining contract.
+
+Action for verify: fetch and verify agent HEAD **`c3a73c9a`** (NOT the stale
+`debcbeb3` in the earlier handoffs). With `responses_spec` green and
+`bb ci`/`bb verify` green at that head, PASS isaac-7l5m on the hermetic contract:
+remove `unverified`, complete, merge `bean/isaac-7l5m`. Do not block on the live
+body-size check — that is isaac-1umd. Verify-fail count reset.
