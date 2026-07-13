@@ -54,6 +54,15 @@ output (width 80):
 
 (NOTE: this block style may or may not be reachable via zprint config — the zprint evaluation must confirm zprint can do brace-on-own-line 2-space block with justify; if not, hand-roll. This is now a firmer gate on adopting zprint.)
 
+### Example 2 (approved — inline when it fits)
+
+input:  `{:model :grok-4-5 :provider :grok}`
+output (width 80): `{:model :grok-4-5 :provider :grok}`  (single line, sorted, space-separated, no braces-on-own-line, no alignment)
+
+### Fit rule (approved) — CONTEXTUAL
+
+'Fits' is measured against `width - current-indent`, NOT 80 absolute. A collection that fits inline at top level may break when it is a deeply-nested value (less remaining budget at that indent). This single contextual rule drives the whole formatter: render inline if the one-line form fits the remaining budget at the current column; otherwise block (brace ends line, entries +2 indent, sorted, justified, close brace alone).
+
 ## Evaluate zprint FIRST (likely already does this)
 
 zprint is a mature, highly-configurable Clojure/EDN formatter whose options map almost 1:1 onto the above: `:justify?` (value alignment), width-based hang/flow (inline-if-fits), same-line key-values, nested indentation, list wrapping. **First acceptance task: prototype an isaac output sample through zprint with a tuned config and see how close it gets** — if a config nails it, this bean becomes 'adopt zprint + ship the config' rather than a hand-rolled printer.
