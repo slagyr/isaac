@@ -1,13 +1,11 @@
 ---
 # isaac-524u
 title: Custom human-readable EDN pretty-printer (replace clojure.pprint)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-13T16:03:13Z
-updated_at: 2026-07-13T17:18:41Z
+updated_at: 2026-07-13T17:20:40Z
 ---
 
 ## Goal
