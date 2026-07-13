@@ -4,8 +4,10 @@ title: Classpath cache resolves the real classpath, not just coords (tki3 follow
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-13T16:03:13Z
-updated_at: 2026-07-13T17:36:35Z
+updated_at: 2026-07-13T18:03:14Z
 ---
 
 ## Goal
@@ -54,3 +56,28 @@ So: this bean's realistic target is ~2.3s -> ~1.4s (kill Hotspot #2). Getting un
 ## Split-out: Hotspot #1 needs its own bean (AOT / native-image / daemon)
 
 The 1.33s bb-load floor is a bigger, separate problem. Options (own bean, likely relates to parked isaac-5zfv 'selectable server runtime run as bb or jvm'): AOT-compile foundation, a GraalVM native-image CLI, or a persistent isaac daemon that commands talk to (also helps the claude-lane overhead work). Flagged here so this bean is not blamed for the residual floor.
+
+## Work handoff (2026-07-13, scrapper@isaac-work-1)
+
+### Implementation
+
+`isaac-foundation` `origin/bean/isaac-ogiu` @ **`c60e2922b72b4211dbfd411fc42d76cff813a620`**:
+
+- `src/isaac/startup/classpath_cache.clj` — persist/read `:data :classpath`; prefer resolved-cp apply over pairs; fail-open
+- `src/isaac/module/loader.clj` — `apply-resolved-classpath!`, delta capture on add-deps, local-manifest real-disk fallback, needs-preload deps.edn real-disk check
+- `src/isaac/main.clj` — write classpath on cold/legacy; suppress re-resolve in read-user-config, register-module-cli-commands!, and command handlers
+- Specs + features: warm apply-cp, add-deps spy=0, missing-artifact fail-open, empty classpath for no-modules
+
+### Timing (zanebot, local bb isaac vs ~/.isaac, 2026-07-13)
+
+| run | wall |
+|-----|------|
+| cold (cache wipe) | 1.64s |
+| warm 1/2/3 | 1.47s |
+| --version floor | 0.28s |
+
+Hotspot #2 (add-deps ~1s) eliminated on warm. Residual ~1.2s above --version is still bb boot / foundation load (Hotspot #1 — split-out bean). Cache now contains `:classpath` (51 segs for zanebot's 9 modules).
+
+### Gates
+
+`bb ci` → 832 specs / 136 features green.
