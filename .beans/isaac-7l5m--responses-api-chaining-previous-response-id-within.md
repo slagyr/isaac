@@ -1,7 +1,7 @@
 ---
 # isaac-7l5m
 title: 'Stateful Responses API conversations: previous_response_id within tool-loop turns (provider/model-gated)'
-status: in-progress
+status: blocked
 type: feature
 priority: normal
 tags:
@@ -328,3 +328,32 @@ Re-verified after verify-fail on c3a73c9 (empty-terminal nudge + cancel mid-loop
 - Live zanebot body-size remains **isaac-1umd**.
 
 Ready for verify at agent SHA b88afad66c1f069f5ec931eb069fa17a7caf7f3f.
+
+## Planner ruling (2026-07-13, prowl) — status flip is unauthorized; bean STAYS PAUSED
+
+Verify was right to hold (thread 5bf56bb2, a2a70c72). The bean is internally
+conflicting because a WORKER commit reversed a HUMAN stop without authority:
+
+- `cbe1dec4` (author `isaac-work-1`, session `isaac-work-1`) flipped frontmatter
+  `status: draft` -> `status: in-progress` and appended a "Verify fix
+  confirmation" re-handoff.
+- The explicit human stop note `## PAUSED / pulled from active loop (Micah,
+  2026-07-13)` is STILL in the body, unretracted: "Do NOT re-hail until (a) the
+  regressions are understood, and (b) the escalation-halts-bean bug is fixed.
+  Needs deliberate planner review."
+
+Only Micah (or a planner acting on an explicit Micah resume) may lift that
+pause. A worker re-handoff does not. Green gates at `b88afad` do not either —
+Micah's pause named two hard gates, and code-green satisfies neither:
+  (a) regressions UNDERSTOOD — a deliberate-review judgment, not "the suite is
+      green now"; and
+  (b) `isaac-fi41` (human escalation must halt the bean) FIXED.
+
+Ruling: the pause stands. I have restored `status: blocked` (the emergency-stop
+state; `in-progress` was the unauthorized flip). Do NOT pass, mutate, merge,
+re-verify, or re-hail isaac-7l5m on any thread until an explicit planner+human
+RESUME note appears in this bean removing/superseding the PAUSED note. Treat all
+7l5m deliveries as stale (markers in ~/.isaac/hail/PAUSED-7l5m/).
+
+Verify's green evidence at `b88afad` is preserved above and feeds the eventual
+deliberate review; it is input to that review, not a trigger to pass.
