@@ -63,6 +63,24 @@ output (width 80): `{:model :grok-4-5 :provider :grok}`  (single line, sorted, s
 
 'Fits' is measured against `width - current-indent`, NOT 80 absolute. A collection that fits inline at top level may break when it is a deeply-nested value (less remaining budget at that indent). This single contextual rule drives the whole formatter: render inline if the one-line form fits the remaining budget at the current column; otherwise block (brace ends line, entries +2 indent, sorted, justified, close brace alone).
 
+### Example 3 (approved — nesting, per-map-local justification)
+
+input:  `{:crew :scrapper :compaction {:head 0.15 :threshold 0.5} :tools {:allow [:read :write :edit] :directories [:cwd]}}`
+output (width 80):
+```
+{
+  :compaction {:head 0.15 :threshold 0.5}
+  :crew       :scrapper
+  :tools      {
+    :allow       [:read :write :edit]
+    :directories [:cwd]
+  }
+}
+```
+Pins: outer breaks + sorted + justified to `:compaction`; `:compaction` value FITS inline at its indent (contextual fit); `:tools` value breaks, its `{` on `:tools`'s line, entries +2, close brace under `:tools`.
+
+**Per-map-local justification (approved):** each map aligns to ITS OWN largest key; alignment never crosses nesting levels (inner map justifies to `:directories`, independent of outer's justify to `:compaction`).
+
 ## Evaluate zprint FIRST (likely already does this)
 
 zprint is a mature, highly-configurable Clojure/EDN formatter whose options map almost 1:1 onto the above: `:justify?` (value alignment), width-based hang/flow (inline-if-fits), same-line key-values, nested indentation, list wrapping. **First acceptance task: prototype an isaac output sample through zprint with a tuned config and see how close it gets** — if a config nails it, this bean becomes 'adopt zprint + ship the config' rather than a hand-rolled printer.
