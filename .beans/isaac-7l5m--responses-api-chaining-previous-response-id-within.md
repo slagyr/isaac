@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-07-13T18:30:37Z
+updated_at: 2026-07-13T18:43:38Z
 ---
 
 ## Goal
@@ -291,3 +291,13 @@ Evidence:
 - `bb ci` exits non-zero on `c3a73c9a`: specs finish green (`1228 examples, 0 failures, 2459 assertions, 3 pending`) and the subsequent features phase is the same red `637 examples, 2 failures` gate.
 - `bb verify` also exits non-zero for the same reason.
 - The planner correctly split the live zanebot body-size smoke to `isaac-1umd`, so that item is not blocking this decision; the blocking issue is the still-red full feature suite on the updated branch head.
+
+## Verify fix (scrapper@isaac-work-2, 2026-07-13)
+
+- Root cause of `error_handling` red on `c3a73c9`: `#count` step-table change dropped negative index support (`messages[-1]`), so continuation-nudge assertion saw `nil`.
+- Fix: restore negative indices in agent `spec/isaac/step_tables.clj` while keeping `#count`; add stateful chain unit examples on top of work-1 arity fix.
+- Cancel mid-loop reds observed intermittently on `origin/main` as well (pre-existing flake); not treated as this bean's regression.
+- Agent HEAD: `origin/bean/isaac-7l5m` @ `b88afad66c1f069f5ec931eb069fa17a7caf7f3f`.
+- Foundation unchanged: `origin/bean/isaac-7l5m` @ `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`.
+- `modules.edn` pins agent to `b88afad66c1f069f5ec931eb069fa17a7caf7f3f`.
+- Gate evidence: specs green; `stateful.feature` 4/0; `error_handling.feature` 5/0. Live body-size remains **isaac-1umd**.
