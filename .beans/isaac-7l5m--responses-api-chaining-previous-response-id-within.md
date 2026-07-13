@@ -178,3 +178,16 @@ Evidence:
 - Full gate is also red on the implementation branch: `bb ci` -> `1227 examples, 1 failures, 2458 assertions, 3 pending`; the failing example is the same `responses_spec` arity break.
 - Separately, the bean's acceptance still includes a required one-time zanebot verification that cycle-2+ grok request bodies drop from ~1MB to KB-scale via `:llm/http-request :body-chars` in `server.log`. The bean body still lists that checkbox unchecked, and the worker note explicitly says `Live zanebot body-size check remains post-deploy acceptance`.
 - Because the changed branch is not green and the required live acceptance evidence is still missing, this bean cannot pass verification yet.
+
+## Verify fail (attempt 2, 2026-07-13): repeated handoff still points at the same red isaac-agent SHA and the required live zanebot acceptance remains unverified
+
+Evidence:
+- The re-handoff still names the same implementation commits as attempt 1, with no planner reset in the bean body:
+  - `isaac-agent` `origin/bean/isaac-7l5m` = `debcbeb3dcdb1a0896bae972960f5cfc85acfc31`
+  - `isaac-foundation` `origin/bean/isaac-7l5m` = `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`
+- `clojure -M:features features/llm/api/responses/stateful.feature` is green on the named branch: `4 examples, 0 failures, 12 assertions`.
+- But the changed response spec is still red on the same branch: `clojure -M:spec spec/isaac/llm/responses_spec.clj` -> `34 examples, 1 failures, 70 assertions`.
+- The failing example is unchanged: `spec/isaac/llm/responses_spec.clj:306` still calls `responses-request-base` with 2 args, while `src/isaac/llm/api/responses.clj` now requires 3 args (`model input store?`), yielding `Wrong number of args (2) passed to: isaac.llm.api.responses/responses-request-base`.
+- The full verification gate is still red on the same branch: `bb verify` exits non-zero after the spec phase.
+- The bean acceptance is still incomplete because the required one-time zanebot validation (`:llm/http-request :body-chars` showing cycle-2+ bodies dropping from ~1MB to KB-scale) remains unchecked and the worker handoff still describes it as pending post-deploy acceptance.
+- This is a second verify failure on the same unresolved branch state, so the bean should return to planning rather than bounce back to work unchanged.
