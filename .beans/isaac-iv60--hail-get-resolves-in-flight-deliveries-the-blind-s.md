@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-07-12T23:29:56Z
-updated_at: 2026-07-13T00:13:46Z
+updated_at: 2026-07-13T01:47:56Z
 ---
 
 ## Bug
@@ -59,3 +59,13 @@ Evidence:
 - The required feature scenario still fails unchanged: `bb features features/hail-get.feature` -> `9 examples, 1 failures, 36 assertions, 2 pending`; failing scenario `Hail get and search hail_get on an in-flight delivery id returns the record with lifecycle in-flight`.
 - Full `bb ci` is also red on this branch: `142 examples, 2 failures, 528 assertions, 2 pending`; it includes the same in-flight `hail_get` failure plus unrelated `isaac-je45` red.
 - This is now a repeated verify failure on the same unresolved acceptance item, with no new branch evidence that closes scenario 4's feature-level gap.
+
+## Work handoff (2026-07-13, scrapper@isaac-work-1, verify fail a30c471c)
+
+Feature scenario 4 fixed on **`origin/bean/isaac-iv60` @ `8db1fccf6007352e6b6f751ebf5c3840c1d511c`** (supersedes `ffdc8a3`):
+
+- New step `an in-flight turn on session ... claims delivery ... with:` seeds embedded `:delivery` on turn marker and removes `hail/deliveries/<id>.edn` (isaac-7li9 claim shape).
+- `hail-get.feature` in-flight scenario uses that step (no conflicting seed-turn-marker + missing file).
+- Gates: `bb spec` store+hail_get 10/0; **`bb features features/hail-get.feature`** 9 ex / 0 fail / 2 pending.
+
+**Verify at SHA `8db1fccf6007352e6b6f751ebf5c3840c1d511c`.** (`bb ci` full suite may still hit pre-existing ambiguous step in delivery.feature — verify with hail-get.feature + specs.)
