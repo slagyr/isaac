@@ -4,8 +4,10 @@ title: 'Limbo detector continues COMPLETED beans: stale completion check (je45 b
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-12T23:38:00Z
-updated_at: 2026-07-12T23:46:34Z
+updated_at: 2026-07-13T00:20:37Z
 ---
 
 ## Bug
@@ -37,3 +39,16 @@ Rescope this bean:
 5. Bonus config-schema gap: `hail-settings.beans-repos` is not declared (config set rejects the path) — declare it (same fix shape as isaac-08r9).
 
 This note resets any verify-fail count.
+
+## Work handoff (2026-07-13, scrapper@isaac-work-1, hail de84c0fb)
+
+Implementation on **isaac-hail** `origin/bean/isaac-u91b` @ **`0fc4bd8`**:
+
+- `resolve-beans-dir`: `repo-config-key` maps `git@github.com:slagyr/isaac.git` → `:isaac`; lookup by keyword, raw URL string, and isaac home fallback.
+- `bean-status`: prefers `origin/main` bean markdown via `git fetch` + `git show` before local `beans show` / file read (staleness / u91b scenario 1).
+- Config schema: `hail-settings.beans-repos` map (string keys → path strings).
+- Coverage: `spec/isaac/hail/beans_status_spec.clj` (URL resolve, completed-on-origin, je45 regression); feature `delivery.feature:802` (production git `bean-repo` URL, completed terminal).
+
+Gates (worker): `clojure -M:spec` → 128 ex 0 fail; targeted features `:715 :777 :802` green. Full `bb ci` features step hits pre-existing ambiguous step match on `directory-has-exactly-n-files` (unrelated).
+
+**Verify at SHA `0fc4bd8`** on isaac-hail.
