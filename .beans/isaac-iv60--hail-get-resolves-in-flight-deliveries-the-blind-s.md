@@ -39,3 +39,14 @@ Fix on `origin/bean/isaac-iv60` @ `ffdc8a3cf6007352e6b6f751ebf5c3840c1d511c` (is
 - Spec: `store_spec`, `hail_get_spec` (10 ex, 0 fail). Features: new `hail-get.feature` scenarios for in-flight (marker, no deliveries file) and failed lifecycle.
 
 Note: full `bb ci` features lane blocked here by sibling `isaac-server` step classpath skew; targeted specs green. Verify at pinned SHA.
+
+## Verify fail (attempt 1, 2026-07-13): acceptance scenario 4 is still red on the pinned branch, so hail_get does not yet verify the in-flight delivery case at feature level
+
+Evidence:
+- Verified implementation repo `isaac-hail` at exact branch target `origin/bean/isaac-iv60` = `ffdc8a3cf6007352e6b6f751ebf5c3840c1d511c`.
+- Implementation diff is present and relevant (`src/isaac/hail/store.clj`, `src/isaac/tool/hail_get.clj`, `spec/isaac/hail/store_spec.clj`, `spec/isaac/tool/hail_get_spec.clj`, `features/hail-get.feature`).
+- Targeted specs are green: `bb spec spec/isaac/hail/store_spec.clj spec/isaac/tool/hail_get_spec.clj` -> `10 examples, 0 failures, 10 assertions`.
+- But the required feature-level acceptance is red: `bb features features/hail-get.feature` -> `9 examples, 1 failures, 36 assertions, 2 pending`.
+- The failing scenario is the bean's key observed case: `Hail get and search hail_get on an in-flight delivery id returns the record with lifecycle in-flight`.
+- Full gate is also red on this branch: `bb ci` -> `142 examples, 2 failures, 528 assertions, 2 pending`; one of the two failures is the same `hail_get` in-flight scenario above. The other failure is `Hail delivery verify handoff hail ends delivery without limbo continuation (isaac-je45)`.
+- Because scenario 4 explicitly requires that a turn's own delivery id resolves during the turn at feature level, and that scenario is not green, this bean cannot pass verification yet.
