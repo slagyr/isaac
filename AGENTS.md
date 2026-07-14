@@ -31,6 +31,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [clojure](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/clojure/SKILL.md)
 - [c3kit](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit/SKILL.md)
 - [c3kit-schema](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit-schema/SKILL.md)
+- [planning](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/planning/SKILL.md) — co-authoring beans + Gherkin with the user; the craft layer (Isaac specifics in `## Planning` below)
 - [hail-bean-work](.toolbox/skills/hail-bean-work/SKILL.md) — hail-driven worker bootstrap; repo discovery; `list_skills` fallback; process-test beans
 
 ### Commands
@@ -55,6 +56,51 @@ If verification fails, the bean returns to `in-progress` with notes appended to 
 
 **Worker rule:** implementation handoff is `beans update <id> --tag=unverified`
 while the bean stays `status=in-progress`. `completed` is verifier-only.
+
+## Planning
+
+Co-authoring beans + Gherkin scenarios with the user is governed by the
+[planning](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/planning/SKILL.md)
+skill — the craft layer (investigate before asserting, settle design before
+drafting, one scenario at a time, record decisions in the bean). **This
+replaces the former `PLANNING-PARTNER.md`.** The skill is generic; the
+Isaac-specific extensions it defers to the project are below.
+
+### Mechanics to read first
+
+- `.toolbox/commands/plan-with-features.md` — the feature-first workflow, `@wip`, bean lifecycle.
+- `.toolbox/skills/gherclj/SKILL.md` — step/helper structure, contract integrity.
+- `isaac-foundation/features/TABLES.md` — the gherclj table dialect and matchers (`#*` any-non-nil, `#"regex"`, `#index`).
+- [`ISAAC.md`](ISAAC.md) — vocabulary, working-with-the-user, Isaac-specific traps.
+
+### Repo layout
+
+Beans live in **this** repo (`isaac/.beans/`); it is the planning/coordination
+repo. Feature files live in the **module** repos they test
+(`isaac-agent/features/…`, `isaac-hail/features/…`, `isaac-foundation/features/…`,
+etc.). A planning session commits the bean here and the `@wip` feature file in
+the relevant module repo.
+
+### Fixture theme — Marigold
+
+All scenario content uses the fictional **Marigold** cast. Names live in
+per-module `marigold*` source/spec files — read them in the modules you touch
+and reuse the established names (`longwave`, `skybeam`, `logbook`, Cordelia, …).
+Inventing parallel fixtures is a smell; no real PII or real use-cases in specs.
+
+### Abstraction level
+
+Isaac is layered; a scenario must test the seam that **owns** the behavior. An
+`isaac-agent` feature describing `comm_send` must **not** assert Discord/iMessage
+specifics — agent doesn't know those comms. Test the generic seam with Marigold
+fixtures; push concrete-comm assertions down to the comm module that owns them.
+
+### Back-compat stance
+
+The user strongly prefers **clean cutover — no legacy, no back-compat**. When a
+redesign removes or renames something, take the breaking-clean path and make it
+explicit in the bean (removed keys hard-reject, no deprecated aliases, old
+scenarios deleted not retained).
 
 ## Parallel-Worker Sync
 
