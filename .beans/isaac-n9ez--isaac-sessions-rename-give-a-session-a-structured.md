@@ -31,9 +31,16 @@ Related lighter fix (consider separately, may partly relieve before rename ships
 enrich the hail-bean notification format to include the session's cwd/role
 alongside `crew@session`, so even auto-named sessions read legibly in Discord.
 
-## Sibling bug (fix together or as a blocker)
+## Correction (2026-07-15): tags ARE settable — there is NO sibling bug
 
-`isaac sessions set <id>.tags <value>` rejects `#{:tono}`, `:tono`, `[:tono]`, and stdin — always "must be a set of keywords". The tags field is meant to be mutable; its value parser does not accept a set of keywords in any form. Fix so tags are settable (this alone would unblock recreate-rename, but a first-class `rename` is the right UX).
+Earlier notes claimed `sessions set .tags` was broken. That was a syntax error on my part.
+Tags are set by a PATH SEGMENT, not a value: `isaac sessions set <id>.tags.<keyword>` adds a tag
+(see features/session/mutation.feature). So the recreate-with-a-name path already works today:
+`isaac prompt --session <key>` (captures cwd) + `sessions set <key>.crew <crew>` + `sessions set <key>.tags.<kw>`.
+
+**Therefore this feature is NOT about enabling structured names** (recreate already does that). It is about
+**in-place rename that PRESERVES the transcript/context** — renaming a live session without deleting and
+re-seeding it. That is the sole value-add over recreate.
 
 ## Design
 
