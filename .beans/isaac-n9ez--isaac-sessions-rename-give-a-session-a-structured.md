@@ -1,11 +1,11 @@
 ---
 # isaac-n9ez
 title: 'isaac sessions rename: give a session a structured key (+ fix settable tags)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-07-15T05:07:34Z
-updated_at: 2026-07-15T05:07:34Z
+updated_at: 2026-07-15T16:29:08Z
 ---
 
 ## Goal
