@@ -55,3 +55,27 @@ Coverage to settle: rename an idle session preserves crew/tags/cwd/transcript un
 ## Out of scope
 
 Auto-updating config references (discord channel mapping) — operator fixes those; the command prints the reminder.
+
+## Approved scenarios (spec'd with Micah, 2026-07-15)
+
+Home: `isaac-agent/features/session/cli.feature` (or `session/mutation.feature`). No new STEPS — `sessions rename` is a new COMMAND exercised through the existing `isaac is run with` step; every assertion reuses existing steps.
+
+### Scenario 1 (approved) — idle rename preserves state
+```gherkin
+Scenario: rename moves an idle session to the new key, preserving its state
+  Given the following sessions exist:
+    | name | crew | tags               | total-tokens | last-input-tokens |
+    | joe  | main | #{:project/x :wip} | 5000         | 5000              |
+  When isaac is run with "sessions rename joe skipper"
+  Then the exit code is 0
+  And session "joe" does not exist
+  When isaac is run with "sessions show skipper --json"
+  Then the stdout JSON contains:
+    | path         | value                |
+    | key          | skipper              |
+    | crew         | main                 |
+    | tags         | ["project/x", "wip"] |
+    | total-tokens | 5000                 |
+  And the exit code is 0
+```
+Token count is the proxy that the transcript carried across.
