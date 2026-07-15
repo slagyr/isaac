@@ -18,6 +18,19 @@ Setting up the tonotop orchestration produced auto-named sessions (calm-tapir, h
 - `:key` is **immutable** via `sessions set` ("immutable field: key") — no in-place rename.
 - Creating a chosen-key session (`isaac prompt --session <key>`, no `--create`) works and captures cwd, but `--session` is mutually exclusive with `--crew`/`--tag`, so it lands in the `main` crew with NO tags — and it cannot be fixed up because (see sibling bug) `sessions set .tags` rejects every set value. So recreate-with-a-name is a dead end too.
 
+## The real motivation — operability, not vanity (Micah, 2026-07-15)
+
+The auto-names make the orchestration UNOPERABLE from Discord. A notification like
+`scrapper@calm-tapir handed off to verify` in #tonotop conveys nothing: not the
+role (work/verify/plan), not which of two workers, not the cwd. The operator
+cannot tell what a session is or where it's rooted. Structured keys
+(`scrapper@tono-work-1`) make every notification self-explanatory. This is the
+justification for the rename — it is an operability fix, not cosmetics.
+
+Related lighter fix (consider separately, may partly relieve before rename ships):
+enrich the hail-bean notification format to include the session's cwd/role
+alongside `crew@session`, so even auto-named sessions read legibly in Discord.
+
 ## Sibling bug (fix together or as a blocker)
 
 `isaac sessions set <id>.tags <value>` rejects `#{:tono}`, `:tono`, `[:tono]`, and stdin — always "must be a set of keywords". The tags field is meant to be mutable; its value parser does not accept a set of keywords in any form. Fix so tags are settable (this alone would unblock recreate-rename, but a first-class `rename` is the right UX).
