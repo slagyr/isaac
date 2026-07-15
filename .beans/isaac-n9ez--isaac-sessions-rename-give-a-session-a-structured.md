@@ -119,3 +119,18 @@ Scenario: renaming onto an existing key is refused, clobbering nothing
     | crew | ketch |
 ```
 The `crew ketch` assertion proves the target was NOT clobbered.
+
+### Scenario 4 (approved) — help/usage
+EXACT usage string (assert verbatim): `Usage: isaac sessions rename <old-id> <new-id>`
+```gherkin
+Scenario: sessions rename --help shows the rename usage
+  When isaac is run with "sessions rename --help"
+  Then the stdout contains "Usage: isaac sessions rename <old-id> <new-id>"
+  And the exit code is 0
+```
+
+### Amendment (not a new scenario)
+The existing `session/cli.feature` scenario "sessions --help shows management help and lists subcommands" asserts `list` and `show` appear — add an assertion that `rename` also appears, so the new subcommand is discoverable in management help.
+
+## Spec complete (2026-07-15)
+Four approved scenarios (S1 idle-rename-preserves-state, S2 in-flight-refused, S3 collision-refused, S4 help) + the subcommand-list amendment. ZERO new steps across all — `sessions rename` is a new COMMAND run through the existing `isaac is run with` step; every assertion reuses existing steps. Home: `isaac-agent/features/session/cli.feature`. Below the CLI, a `store_spec.clj` unit spec should cover the store-level rename (file + index atomicity, idle-only). Shake-down after ship: rename the live tono sessions (calm-tapir->tono-work-1, spry-firefly->tono-work-2, sincere-marsh->tono-verify-1, homey-toad->tono-plan-1) and repoint the #tonotop channel :session mapping.
