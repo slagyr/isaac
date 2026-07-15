@@ -99,3 +99,23 @@ Scenario: renaming an in-flight session is refused, leaving it untouched
   When isaac is run with "sessions show joe --json"
   Then the exit code is 0
 ```
+
+### Scenario 3 (approved) — collision refused, clobbering nothing
+EXACT error message (assert verbatim): `cannot rename to 'skipper': a session with that key already exists.`
+```gherkin
+Scenario: renaming onto an existing key is refused, clobbering nothing
+  Given the following sessions exist:
+    | name    | crew  |
+    | joe     | main  |
+    | skipper | ketch |
+  When isaac is run with "sessions rename joe skipper"
+  Then the stderr contains "cannot rename to 'skipper': a session with that key already exists."
+  And the exit code is 1
+  When isaac is run with "sessions show joe --json"
+  Then the exit code is 0
+  When isaac is run with "sessions show skipper --json"
+  Then the stdout JSON contains:
+    | path | value |
+    | crew | ketch |
+```
+The `crew ketch` assertion proves the target was NOT clobbered.
