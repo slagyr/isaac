@@ -79,3 +79,23 @@ Scenario: rename moves an idle session to the new key, preserving its state
   And the exit code is 0
 ```
 Token count is the proxy that the transcript carried across.
+
+### Scenario 2 (approved) — in-flight rename refused (necessary: prevents a split-identity mid-turn)
+Rationale: an in-flight session is mid-turn; the turn machinery references it by KEY (turn marker sessions/turns/<key>.edn, in-flight flag, delivery :bound-session, the <key>.jsonl the turn is appending to). Renaming the key mid-turn orphans the turn's marker/transcript/in-flight state. Refuse; idle-only.
+
+EXACT error message (prescriptive — assert verbatim):
+`cannot rename in-flight session 'joe': a turn is in progress. Wait for it to finish or cancel it first.`
+
+```gherkin
+Scenario: renaming an in-flight session is refused, leaving it untouched
+  Given the following sessions exist:
+    | name | crew |
+    | joe  | main |
+  And session "joe" is in flight
+  When isaac is run with "sessions rename joe skipper"
+  Then the stderr contains "cannot rename in-flight session 'joe': a turn is in progress. Wait for it to finish or cancel it first."
+  And the exit code is 1
+  And session "skipper" does not exist
+  When isaac is run with "sessions show joe --json"
+  Then the exit code is 0
+```
