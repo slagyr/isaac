@@ -1,11 +1,11 @@
 ---
 # isaac-x5ru
 title: 'xapx: Re-home bb.test-tasks into shared test-support (native runner)'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-07-19T17:10:28Z
-updated_at: 2026-07-19T17:14:54Z
+updated_at: 2026-07-19T17:17:08Z
 parent: isaac-xapx
 ---
 
