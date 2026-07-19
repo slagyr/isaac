@@ -4,8 +4,10 @@ title: 'xapx: isaac-agent — native bb specs'
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-07-19T17:10:51Z
-updated_at: 2026-07-19T17:58:43Z
+updated_at: 2026-07-19T18:41:13Z
 parent: isaac-xapx
 blocked_by:
     - isaac-x5ru
@@ -24,14 +26,14 @@ Convert **isaac-agent** `bb spec` / `bb features` / `bb ci` to run natively in b
 - Wire bb.edn deps/paths so speclj + gherclj + test-support resolve natively.
 
 ## Acceptance
-- [ ] `bb spec` / `bb features` run native (no `clojure -M`) and STREAM output.
-- [ ] PARITY: full spec + non-wip features pass native with the SAME results as the JVM run; any JVM-only spec routed to `jvm-*`, not dropped.
-- [ ] `bb ci` uses the native path.
-- [ ] Before/after `bb ci` wall-clock recorded here.
+- [x] `bb spec` / `bb features` run native (no `clojure -M`) and STREAM output.
+- [x] PARITY: full spec + non-wip features pass native with the SAME results as the JVM run; any JVM-only spec routed to `jvm-*`, not dropped.
+- [x] `bb ci` uses the native path.
+- [x] Before/after `bb ci` wall-clock recorded here.
 
 ## Implementation (scrapper@isaac-work-2, 2026-07-19)
 
-Branch `origin/bean/isaac-h5xm` on isaac-agent @ `878f6fa0f0fddb3a585dc8af9c8256620a38fb18`.
+On isaac-agent `main` @ `425d8d5a7bf75698b8a9b2a0a03654d41e670143` (includes native bb.edn + flake fix).
 
 - `bb.edn` uses shared `bb.test-tasks` from `isaac-foundation-test-support` @ `43cf46e` (`run-spec!` / native features / `run-ci!` shape).
 - Product foundation pin stays at deps.edn SHA `d4a7bf10` for native/JVM parity; only test-support bumped for the runner.
@@ -46,9 +48,19 @@ Branch `origin/bean/isaac-h5xm` on isaac-agent @ `878f6fa0f0fddb3a585dc8af9c8256
 | BEFORE `bb spec` (JVM shell) | real **15.88s** (1241 ex / 0 fail / 3 pending) |
 | BEFORE `bb features` (JVM shell) | real **127.04s** (637 ex / 0 fail) |
 | AFTER `bb spec` (native) | real **9.04s** (1241 ex / 0 fail / 3 pending) |
-| AFTER `bb features` (native) | real **~109s** (637 ex / 0 fail on clean re-run) |
-| AFTER `bb ci` (native) | real **124.02s** |
+| AFTER `bb features` (native) | real **104.73s** (637 ex / 0 fail / 1481 assertions) |
+| AFTER `bb ci` (native) | real **124.02s** (prior); features alone **104.73s** after flake fix |
 
-One intermittent compaction-logging assertion (`compaction-count` 2 vs 1) observed once under native; re-run green. JVM baseline remains the parity reference.
+## Verify fail (attempt 1) + fix
 
-## Verify fail (attempt 1, 2026-07-19): native bb features are not green on the handoff commit because the compaction_logging smaller-context scenario still fails reproducibly with compaction-count 1 vs expected 2
+Verifier reproduced `compaction_logging.feature:149` failing with `compaction-count Expected 2, got: 1` on `878f6fa`.
+
+Root cause: `perform-compaction!` skipped `run-compaction-check!` when `compact!` returned `:chunked true`. Small-window model-switch fixtures often chunk the first summary request; without recheck, count stuck at 1 (also flaked 0/1/2 under race when `sessions-match` did not await the turn).
+
+Fix on `425d8d5`:
+- always recheck after successful progress (chunked or not)
+- unit spec: "rechecks after a successful chunked compaction"
+- `sessions-match` awaits in-flight turn
+- scenario comment updated
+
+Repro: scenario green 12/12 native; full native features **637/0**.
