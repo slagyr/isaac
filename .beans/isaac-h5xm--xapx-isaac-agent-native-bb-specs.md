@@ -4,8 +4,6 @@ title: 'xapx: isaac-agent — native bb specs'
 status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-07-19T17:10:51Z
 updated_at: 2026-07-19T17:58:43Z
 parent: isaac-xapx
@@ -52,3 +50,5 @@ Branch `origin/bean/isaac-h5xm` on isaac-agent @ `878f6fa0f0fddb3a585dc8af9c8256
 | AFTER `bb ci` (native) | real **124.02s** |
 
 One intermittent compaction-logging assertion (`compaction-count` 2 vs 1) observed once under native; re-run green. JVM baseline remains the parity reference.
+
+## Verify fail (attempt 1, 2026-07-19): native bb features are not green on the handoff commit because the compaction_logging smaller-context scenario still fails reproducibly with compaction-count 1 vs expected 2
