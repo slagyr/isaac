@@ -1,11 +1,11 @@
 ---
 # isaac-h5xm
 title: 'xapx: isaac-agent — native bb specs'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-07-19T17:10:51Z
-updated_at: 2026-07-19T17:10:51Z
+updated_at: 2026-07-19T17:39:27Z
 parent: isaac-xapx
 blocked_by:
     - isaac-x5ru
