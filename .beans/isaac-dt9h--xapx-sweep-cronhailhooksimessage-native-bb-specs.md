@@ -4,10 +4,8 @@ title: 'xapx: sweep cron/hooks/imessage — native bb specs'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-19T17:10:51Z
-updated_at: 2026-07-19T18:18:00Z
+updated_at: 2026-07-19T18:29:09Z
 parent: isaac-xapx
 ---
 
@@ -54,3 +52,5 @@ Convert the four **plain** module repos — **isaac-cron, isaac-hail, isaac-hook
 ## Notes
 - No copies of `test_tasks.clj` in any consumer.
 - Common JVM-only cause across modules that touch server HTTP: `clout` → `instaparse` → `Protocol not found: clojure.lang.IHashEq` under SCI.
+
+## Verify fail (attempt 1, 2026-07-19): isaac-imessage jvm-features still fails (2 lifecycle scenarios), isaac-hooks jvm-features has 2 pending scenarios, and isaac-imessage bb ci omits features so the acceptance gate is not green.
