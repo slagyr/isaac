@@ -1,11 +1,11 @@
 ---
 # isaac-xapx
 title: bb spec/features run native in babashka, not shell out to clojure
-status: todo
+status: completed
 type: epic
 priority: normal
 created_at: 2026-07-15T17:38:39Z
-updated_at: 2026-07-19T17:10:28Z
+updated_at: 2026-07-19T23:48:54Z
 ---
 
 ## Goal (Micah, 2026-07-15; scope widened 2026-07-19)
@@ -89,3 +89,14 @@ consumer repo before converting all eight.
 ## Risk
 
 Some specs may use JVM-only interop and fail natively — that is EXPECTED and is what `jvm-spec`/`jvm-features` are for. The per-module parity check surfaces them; route those to the JVM task rather than forcing them native. The wrinkled modules (server/discord/acp) are the likeliest to hold JVM-only specs.
+
+## Summary of Changes (2026-07-19)
+
+**Goal achieved: `bb spec`/`features`/`ci` run native in babashka across the isaac module fleet — no more shelling out to `clojure -M`.**
+
+- **x5ru** — re-homed the runner into foundation `spec-support` (`bb.test-tasks`), shared by all modules; pilot proven on isaac-hail. Merged to foundation main `43cf46e`.
+- Converted + verified + green CI on main: **isaac-agent** (h5xm), **isaac-server** (ykuf), **isaac-discord** (fvzo), **isaac-acp** (7ivl), **isaac-cron/hooks/imessage** (dt9h), **isaac-hail** (x5ru pilot).
+- **fq28** — confirmed isaac-cli-proxy / isaac-cli-server were already native.
+- All landed directly on each module's main (no branches, per operator directive); the ci-failure orchestration self-healed one foundation-pin skew along the way.
+
+**Follow-ups reparented OUT** (test-completeness debt surfaced, not caused, by the conversion — not part of this epic's scope): isaac-3c3z (imessage JVM feature suite), isaac-iz35 (hooks pending scenarios), isaac-h568 (acp pending scenarios).
