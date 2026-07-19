@@ -3,9 +3,9 @@
 title: 'isaac-hooks: implement pending auth-migration + config-validate feature scenarios'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-07-19T18:31:58Z
-updated_at: 2026-07-19T18:31:58Z
-parent: isaac-xapx
+updated_at: 2026-07-19T23:38:27Z
 ---
 
 Split from isaac-dt9h (xapx runner-conversion sweep). NOT a runner issue — surfaced while confirming parity.

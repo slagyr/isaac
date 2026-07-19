@@ -3,9 +3,9 @@
 title: 'isaac-acp: implement 5 pending ACP feature scenarios (missing step impls)'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-07-19T18:37:12Z
-updated_at: 2026-07-19T18:37:12Z
-parent: isaac-xapx
+updated_at: 2026-07-19T23:38:27Z
 ---
 
 Parent: isaac-xapx (spun off from the isaac-7ivl runner conversion).
