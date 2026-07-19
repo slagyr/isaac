@@ -1,10 +1,11 @@
 ---
 # isaac-dt9h
-title: 'xapx: sweep cron/hail/hooks/imessage — native bb specs'
+title: 'xapx: sweep cron/hooks/imessage — native bb specs'
 status: todo
 type: task
+priority: normal
 created_at: 2026-07-19T17:10:51Z
-updated_at: 2026-07-19T17:10:51Z
+updated_at: 2026-07-19T17:38:37Z
 parent: isaac-xapx
 blocked_by:
     - isaac-x5ru
@@ -23,3 +24,7 @@ Convert the four **plain** module repos — **isaac-cron, isaac-hail, isaac-hook
 - [ ] `bb spec` / `bb features` native (no `clojure -M`), streamed.
 - [ ] PARITY: full suite native == JVM results; JVM-only specs routed to `jvm-*`.
 - [ ] `bb ci` native; before/after wall-clock recorded here per repo.
+
+## Scope update (2026-07-19)
+
+**isaac-hail is DONE** — it was x5ru's pilot consumer, converted and merged to hail main (`a520a4f`). This sweep now covers **cron / hooks / imessage** only. Pin `isaac-foundation-test-support` `:git/sha` = `43cf46e00087bf066a9e065ccc3d48dd2814ac23` (foundation main). Use isaac-hail's merged bb.edn as the reference pattern.

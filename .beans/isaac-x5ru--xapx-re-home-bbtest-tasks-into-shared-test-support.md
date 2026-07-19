@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-07-19T17:10:28Z
-updated_at: 2026-07-19T17:23:10Z
+updated_at: 2026-07-19T17:38:37Z
 parent: isaac-xapx
 ---
 
@@ -82,3 +82,9 @@ Foundation keeps thin re-exports at `bb/test_tasks.clj` + `bb/test_timeout.clj` 
 
 - Full hail feature parity / full-suite native conversion is out of this bean's scope (acceptance is require + run-spec pilot). isaac-h5xm (agent) and the sweep children should pin foundation SHA ≥ `95cff51` (or the main SHA after this merges) and follow the wiring above.
 - Hail pilot pins foundation-test-support to the bean branch SHA; after foundation merges to main, bump consumers to the main SHA.
+
+## MERGED to main (2026-07-19)
+
+- **foundation main = `43cf46e00087bf066a9e065ccc3d48dd2814ac23`** — pin `isaac-foundation-test-support` `:git/sha` to THIS in every consumer bb.edn/deps.edn.
+- **hail main = `a520a4f`** — the isaac-hail pilot conversion is DONE and merged (native `bb spec`, pinned to foundation 43cf46e). Do NOT re-convert hail.
+- bean branches `bean/isaac-x5ru` deleted on both repos.
