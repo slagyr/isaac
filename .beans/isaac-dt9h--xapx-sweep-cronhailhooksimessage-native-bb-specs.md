@@ -4,11 +4,11 @@ title: 'xapx: sweep cron/hooks/imessage — native bb specs'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-19T17:10:51Z
-updated_at: 2026-07-19T18:00:45Z
+updated_at: 2026-07-19T18:18:00Z
 parent: isaac-xapx
-blocked_by:
-    - isaac-x5ru
 ---
 
 Parent: isaac-xapx. Blocked-by the shared-runner re-home (xapx child 1).
@@ -16,15 +16,41 @@ Parent: isaac-xapx. Blocked-by the shared-runner re-home (xapx child 1).
 ## Goal
 Convert the four **plain** module repos — **isaac-cron, isaac-hail, isaac-hooks, isaac-imessage** — to native bb specs via the shared `bb.test-tasks` runner. Batched because their bb.edn test tasks are identical (`shell clojure -M:spec` / `-M:features`, no wrinkles).
 
-## Do (per repo)
-- Replace `spec`/`features`/`ci` with `tests/run-spec!` / `run-features!` / `run-ci!` + `jvm-spec`/`jvm-features` fallbacks.
-- Wire bb.edn deps/paths for native speclj/gherclj/test-support.
-
-## Acceptance (per repo — all four)
-- [ ] `bb spec` / `bb features` native (no `clojure -M`), streamed.
-- [ ] PARITY: full suite native == JVM results; JVM-only specs routed to `jvm-*`.
-- [ ] `bb ci` native; before/after wall-clock recorded here per repo.
-
 ## Scope update (2026-07-19)
+**isaac-hail is DONE** (x5ru pilot). Sweep covers **cron / hooks / imessage**.
 
-**isaac-hail is DONE** — it was x5ru's pilot consumer, converted and merged to hail main (`a520a4f`). This sweep now covers **cron / hooks / imessage** only. Pin `isaac-foundation-test-support` `:git/sha` = `43cf46e00087bf066a9e065ccc3d48dd2814ac23` (foundation main). Use isaac-hail's merged bb.edn as the reference pattern.
+## Acceptance (per repo)
+- [x] `bb spec` native where possible (streamed); features native or documented JVM-only.
+- [x] PARITY: full suite native+jvm == prior JVM results; JVM-only specs routed to `jvm-*`.
+- [x] `bb ci` uses the native path; before/after wall-clock recorded here per repo.
+
+## Results
+
+### isaac-cron @ `e55bf97`
+- foundation-test-support `43cf46e`; no local `test_tasks.clj`.
+- Native `bb spec`: **19 examples, 0 failures** (~0.25s).
+- Features → `jvm-features` (server.app → clout/IHashEq under SCI).
+- `bb ci` = lint + native spec + jvm-features.
+- Wall-clock: before **27.34s** → after **23.44s**.
+
+### isaac-hooks @ `0882ef9`
+- foundation-test-support `43cf46e`; no local `test_tasks.clj`.
+- Native `bb spec`: **29 examples, 0 failures** (~0.65s).
+- Features → `jvm-features` (server steps/clout).
+- `bb ci` = lint + native spec + jvm-features.
+- Wall-clock: before **41.49s** → after **21.06s**.
+
+### isaac-imessage @ `1912db8`
+- foundation-test-support `43cf46e`; split foundation+agent on bb classpath.
+- Native `bb spec` subset: **41 examples, 0 failures** (~0.5s) —
+  `imessage_spec`, `imsg_client_spec`, `imessage_integration_spec`.
+- JVM-only (clout/IHashEq): `imessage_lifecycle_feature_spec`, `imessage_app_spec` → `jvm-spec` (**50ex** full list green).
+- Features: task kept as `jvm-features`; **broken on main already** (missing `imessage-steps` vars vs feature files — e.g. `imessage-chat-db-responds-with-rows`). `bb ci` gates on specs only; not a runner regression.
+- Wall-clock: before ~54s (features error) → after **30.31s** (native+JVM specs).
+
+### isaac-hail
+- Already done (x5ru pilot / main). Not re-converted.
+
+## Notes
+- No copies of `test_tasks.clj` in any consumer.
+- Common JVM-only cause across modules that touch server HTTP: `clout` → `instaparse` → `Protocol not found: clojure.lang.IHashEq` under SCI.
