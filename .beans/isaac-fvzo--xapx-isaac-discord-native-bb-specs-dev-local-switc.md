@@ -1,10 +1,11 @@
 ---
 # isaac-fvzo
 title: 'xapx: isaac-discord — native bb specs (dev-local switch)'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-07-19T17:10:52Z
-updated_at: 2026-07-19T17:10:52Z
+updated_at: 2026-07-19T17:48:29Z
 parent: isaac-xapx
 blocked_by:
     - isaac-x5ru
