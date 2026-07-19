@@ -1,13 +1,11 @@
 ---
 # isaac-fq28
 title: 'xapx: verify cli-proxy/cli-server already native'
-status: in-progress
+status: completed
 type: task
 priority: low
-tags:
-    - unverified
 created_at: 2026-07-19T17:10:52Z
-updated_at: 2026-07-19T18:45:00Z
+updated_at: 2026-07-19T23:47:38Z
 parent: isaac-xapx
 ---
 
