@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-07-08T23:05:24Z
-updated_at: 2026-07-08T23:05:24Z
+updated_at: 2026-07-19T23:45:25Z
 ---
 
 ## Problem
@@ -44,3 +44,13 @@ to listed methods; `chat/status` is unlisted in this scenario).
 - [ ] `bb features features/comm/acp/slash_commands.feature` green in isaac-acp.
 - [ ] The `/status` scenario proves the actual status output the server emits
       (reconcile scenario vs `emit-status-notification!`).
+
+## Decision — the SERVER is correct; fix the SCENARIO (Micah, 2026-07-19)
+
+Session status is rendered from a **shared bridge command** (`bridge/dispatch!` → `{:command :status :data {…}}`) used by the **CLI as well as** the ACP /status slash-command. Markdown is only desirable in clients that support MD, so the server must stay **format-neutral**: it emits the structured `:data` as a `chat/status` notification (`server.clj:214`) and lets each surface render (CLI prints; MD-capable ACP clients render markdown). Pushing markdown into a `session/update` chunk would force MD on clients that can't render it — that would be the real regression.
+
+**So the red scenario is what's wrong, not the server. Fix = rewrite the scenario, no server change:**
+- Drop the `session/update` / `agent_message_chunk` expectation and the markdown `the notification content matches:` block (Session Status / Crew / ─+ / Model / etc.).
+- Assert the **`chat/status`** notification and its structured `:data` fields instead, via the existing table-based `the ACP agent sends notifications:` step (same pattern as `cancel_tool_status.feature` uses for `params.update.*`, here with `chat/status` + `params.*` columns). Confirm the exact `:data` field paths from the bridge status command.
+
+**Specs:** no new scenario; reuse the existing notifications-table step (likely **no new step**). This is a scenario correction to match the correct contract.
