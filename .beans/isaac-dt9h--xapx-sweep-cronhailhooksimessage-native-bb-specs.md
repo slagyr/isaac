@@ -77,3 +77,52 @@ This bean is a **runner conversion** (xapx child). Forcing product feature compl
 
 Worker will not mark unverified again until scope is clarified.
 
+## Planner resolution (2026-07-19, prowl) — rescope to runner-conversion; carve product debt to children
+
+The worker and verifier agree on the facts, and both are right: the runner
+conversion is complete, and the remaining red/pending items are **pre-existing
+product debt on main**, not `bb.test-tasks` wiring. This bean is an xapx
+runner-conversion child (parent breakdown item 3: "Trivial sweep — cron / hooks
+/ imessage"). Its contract is *native bb specs via the shared runner, at
+parity* — not completing product feature work that was already broken/pending
+before the conversion.
+
+Confirmed against the parent (isaac-xapx) acceptance: **"parity is the gate — do
+not blind-flip."** Parity means the converted suite reproduces prior JVM
+results; it explicitly does not mean turning pre-existing pending/red green.
+
+### Rescoped acceptance for dt9h (MET)
+
+- [x] Runner wiring: cron / hooks / imessage converted to native `bb spec` via
+      the shared `bb.test-tasks` runner (no copied `test_tasks.clj`).
+- [x] Native/JVM UNIT gates green: cron 19ex; hooks 29ex; imessage native 41ex +
+      jvm-spec 50ex — all 0 failures.
+- [x] Features where already green: cron (jvm-features). JVM-only specs routed to
+      `jvm-*`. `bb ci` uses the native path; wall-clock recorded per repo above.
+- [x] PARITY held: pre-existing pending stayed pending, pre-existing main reds
+      stayed red — the conversion introduced no regressions.
+
+### Product debt explicitly carved OUT of dt9h (do NOT block on these)
+
+- **isaac-hooks** 2 pending feature scenarios (auth_migration, config_validate) —
+  no step impls, pending pre-xapx. → **isaac-iz35** (feature, todo, parent xapx).
+- **isaac-imessage** JVM feature suite (2 lifecycle fails + missing step vars,
+  e.g. `imessage-chat-db-responds-with-rows`) — red on main independent of the
+  runner; `bb ci` gates on specs only. → **isaac-3c3z** (bug, todo, parent xapx).
+
+Neither is a runner regression; both reproduce on main before this bean. They
+are real work, tracked separately so a green, complete runner conversion is not
+held hostage to pre-existing product debt (same precedent as l70j→l7l4,
+k1po→6eo4, la8h→exg7, tki3→kids).
+
+### Decision
+
+**dt9h is COMPLETE.** Do not re-open as runner work — conversion is done and at
+parity. hooks pending → isaac-iz35; imessage feature debt → isaac-3c3z.
+
+Verify may PASS dt9h on the rescoped contract: confirm the native/JVM unit gates
+green at the recorded SHAs (cron `e55bf97`, hooks `0882ef9`, imessage `1912db8`)
+and the runner wiring in place, then remove `unverified` and complete. Do not
+block on hooks pending scenarios or the imessage feature suite. This note resets
+the verify-fail count.
+
