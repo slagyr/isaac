@@ -46,3 +46,22 @@ Committed directly to `main` on isaac-acp @ `1a81c6c2ec108648ba6bed291ff399943a2
 | AFTER bb ci (native) | real **14.40s** |
 
 ## Verify fail (attempt 1, 2026-07-19): isaac-acp native/JVM suites still have pending scenarios (1 spec, 5 features), so the acceptance gate is not green and the bean cannot pass.
+
+## Verify fail resume (attempt 1) — worker assessment
+
+Verifier is correct that the suite reports pendings. Diagnosis: **these pendings are pre-existing product debt, not a runner regression.**
+
+### Spec pending (1)
+`spec/isaac/comm/acp/server_spec.clj:398` — explicit `(pending "investigating snapshot capture in with-nested-system scope")` since **2026-05-21** (commit db83cb30, Micah). Comment documents it as a pre-existing migration symptom left pending so it does not block CI.
+
+### Feature pendings (5) — gherclj "not yet implemented"
+1. ACP command tool notifications arrive before the final response in stdout
+2. ACP command acp uses workspace SOUL.md when no soul in crew config
+3. ACP Provider Error Surfacing connection refused error is surfaced to the client
+4. ACP Turn Cancellation session/cancel arrival is logged at info
+5. ACP Error Response Format connection refused error is sent as agent_message_chunk with end_turn
+
+These lack step implementations. Native and JVM report **identical** pending counts (bean wall-clock table already records BEFORE JVM = 1+5 pending, AFTER native = 1+5 pending). **Parity holds.**
+
+### Recommendation
+This bean is a **runner conversion** (xapx). Completing these scenarios is product work outside the conversion. Request planner rescope: accept parity with pre-existing pendings (same as old JVM gate), or spawn product children and keep 7ivl blocked. Worker will not re-mark unverified until scope is clarified.
