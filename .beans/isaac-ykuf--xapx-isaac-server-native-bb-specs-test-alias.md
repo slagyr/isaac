@@ -1,13 +1,11 @@
 ---
 # isaac-ykuf
 title: 'xapx: isaac-server — native bb specs (:test alias)'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-19T17:10:51Z
-updated_at: 2026-07-19T18:13:56Z
+updated_at: 2026-07-19T18:22:01Z
 parent: isaac-xapx
 blocked_by:
     - isaac-x5ru
