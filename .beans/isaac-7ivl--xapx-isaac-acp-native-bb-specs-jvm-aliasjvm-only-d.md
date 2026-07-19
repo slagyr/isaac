@@ -4,10 +4,8 @@ title: 'xapx: isaac-acp — native bb specs (JVM-alias/JVM-only deps)'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-19T17:10:52Z
-updated_at: 2026-07-19T18:20:03Z
+updated_at: 2026-07-19T18:34:28Z
 parent: isaac-xapx
 blocked_by:
     - isaac-x5ru
@@ -46,3 +44,5 @@ Committed directly to `main` on isaac-acp @ `1a81c6c2ec108648ba6bed291ff399943a2
 | AFTER bb spec (native) | real **7.18s** (70 ex / 0 fail / 1 pending) |
 | AFTER bb features (native) | real **16.20s** (61 ex / 0 fail / 5 pending) |
 | AFTER bb ci (native) | real **14.40s** |
+
+## Verify fail (attempt 1, 2026-07-19): isaac-acp native/JVM suites still have pending scenarios (1 spec, 5 features), so the acceptance gate is not green and the bean cannot pass.
