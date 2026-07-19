@@ -1,11 +1,11 @@
 ---
 # isaac-dt9h
 title: 'xapx: sweep cron/hooks/imessage — native bb specs'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-07-19T17:10:51Z
-updated_at: 2026-07-19T18:29:09Z
+updated_at: 2026-07-19T18:38:53Z
 parent: isaac-xapx
 ---
 
@@ -125,4 +125,3 @@ green at the recorded SHAs (cron `e55bf97`, hooks `0882ef9`, imessage `1912db8`)
 and the runner wiring in place, then remove `unverified` and complete. Do not
 block on hooks pending scenarios or the imessage feature suite. This note resets
 the verify-fail count.
-
