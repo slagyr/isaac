@@ -1,11 +1,13 @@
 ---
 # isaac-s0qs
 title: noop demo bean (run-2026-07-19)
-status: todo
+status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-07-20T03:09:09Z
-updated_at: 2026-07-20T03:09:09Z
+updated_at: 2026-07-20T03:10:00Z
 ---
 
 **No-op process/demo bean** — a live demonstration of the isaac orchestration loop for a guest. Make **NO** code, config, or repo changes beyond appending the notes described below to THIS bean. There is nothing to build; the point is to exercise and show the hail → work → verify → complete flow with clean at-a-glance notifications.
@@ -28,3 +30,7 @@ updated_at: 2026-07-20T03:09:09Z
 - [ ] Bean carries one `## Work note` and one `## Verify note`.
 - [ ] The full work → verify → complete loop ran with at-a-glance notifications at each step.
 - [ ] No source/config changes were made anywhere (this is a no-op).
+
+## Work note (scrapper@isaac-work-1, 2026-07-20)
+
+Process-test loop exercised end-to-end — claim, note, handoff to verify. No product changes.
