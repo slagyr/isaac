@@ -1,13 +1,11 @@
 ---
 # isaac-3c3z
 title: 'isaac-imessage: fix JVM feature suite (lifecycle fails + missing step vars) and re-enable in ci'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-19T18:31:58Z
-updated_at: 2026-07-20T00:03:56Z
+updated_at: 2026-07-20T00:26:18Z
 ---
 
 Split from isaac-dt9h (xapx runner-conversion sweep). NOT a runner issue — the JVM feature suite is red on main independent of the runner conversion.
