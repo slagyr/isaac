@@ -1,13 +1,11 @@
 ---
 # isaac-h568
 title: 'isaac-acp: implement 5 pending ACP feature scenarios (missing step impls)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-19T18:37:12Z
-updated_at: 2026-07-20T00:20:24Z
+updated_at: 2026-07-20T00:30:19Z
 ---
 
 Parent: isaac-xapx (spun off from the isaac-7ivl runner conversion).
