@@ -4,8 +4,10 @@ title: ACP /status content-match scenario is red on main (pre-existing)
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T23:05:24Z
-updated_at: 2026-07-20T00:06:45Z
+updated_at: 2026-07-20T00:08:16Z
 ---
 
 ## Problem
@@ -54,3 +56,13 @@ Session status is rendered from a **shared bridge command** (`bridge/dispatch!` 
 - Assert the **`chat/status`** notification and its structured `:data` fields instead, via the existing table-based `the ACP agent sends notifications:` step (same pattern as `cancel_tool_status.feature` uses for `params.update.*`, here with `chat/status` + `params.*` columns). Confirm the exact `:data` field paths from the bridge status command.
 
 **Specs:** no new scenario; reuse the existing notifications-table step (likely **no new step**). This is a scenario correction to match the correct contract.
+
+## Implementation notes (scrapper @ isaac-work-1)
+
+- Per Micah decision: server stays format-neutral (chat/status with structured
+  :data). Scenario was wrong expecting session/update markdown chunks.
+- Rewrote /status scenario to assert chat/status notification via existing
+  notifications table step: params.crew/model/provider/session-key.
+- Dropped notification content matches / SOUL.md assertions (markdown path).
+- Commit: isaac-acp `cee9aa5`. slash_commands.feature green (4/0). bb ci green
+  (70 specs + 61 features, 0 failures; pre-existing pendings unchanged).
