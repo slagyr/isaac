@@ -4,8 +4,10 @@ title: 'isaac-hooks: implement pending auth-migration + config-validate feature 
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-19T18:31:58Z
-updated_at: 2026-07-19T23:56:39Z
+updated_at: 2026-07-20T00:03:25Z
 ---
 
 Split from isaac-dt9h (xapx runner-conversion sweep). NOT a runner issue — surfaced while confirming parity.
@@ -34,3 +36,15 @@ These are pending, not failures — the runner conversion (dt9h) held parity (pr
 ## Provenance
 
 - dt9h @ isaac-hooks `0882ef9`: native `bb spec` 29ex/0; jvm-features carried these 2 pending. See dt9h "Verify fail resume" note.
+
+## Implementation notes (scrapper @ isaac-work-1)
+
+- Product schema already correct in `resources/isaac-manifest.edn`
+  (`:retired?` on hooks.auth.token; `:model-exists?` on hook model).
+- Gap was feature step loading: deps.edn `:features` listed only a subset
+  of step ns and never pulled foundation `config_steps` / `cli_steps`.
+- Aligned foundation pin to `43cf46e` + foundation-test-support; gherclj
+  now loads `isaac.**-steps` plus `isaac.hooks-feature-bootstrap` to drop
+  colliding "default Grover setup" / "config:" templates.
+- Commit: isaac-hooks `56b9291`. `bb ci` green (29 native specs, 17 JVM
+  features, 0 pending).
