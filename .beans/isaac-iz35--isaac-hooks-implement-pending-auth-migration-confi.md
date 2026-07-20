@@ -1,13 +1,11 @@
 ---
 # isaac-iz35
 title: 'isaac-hooks: implement pending auth-migration + config-validate feature scenarios'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-19T18:31:58Z
-updated_at: 2026-07-20T00:03:25Z
+updated_at: 2026-07-20T00:08:06Z
 ---
 
 Split from isaac-dt9h (xapx runner-conversion sweep). NOT a runner issue — surfaced while confirming parity.
