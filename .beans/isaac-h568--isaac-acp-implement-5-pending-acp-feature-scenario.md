@@ -4,8 +4,10 @@ title: 'isaac-acp: implement 5 pending ACP feature scenarios (missing step impls
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-19T18:37:12Z
-updated_at: 2026-07-20T00:07:55Z
+updated_at: 2026-07-20T00:20:24Z
 ---
 
 Parent: isaac-xapx (spun off from the isaac-7ivl runner conversion).
@@ -42,3 +44,17 @@ they were pending under the old JVM `bb features` path too.
   (`spec/isaac/comm/acp/server_spec.clj:398`, Micah `db83cb30`, 2026-05-21) —
   that is a deliberate "do not block CI" pending and stays as-is unless a
   dedicated bean revisits the snapshot-capture investigation.
+
+
+## Implementation (scrapper@isaac-work-2)
+
+The 5 pending scenarios lacked step-namespace wiring (and one missing phrase), not product code:
+
+1. tool notifications — needs `isaac.tool.tools-steps` (`the built-in tools are registered`)
+2. workspace SOUL.md — added `workspace {crew} in {home} has SOUL.md:` in acp_steps
+3. connection refused (provider_errors + error_response) — needs `isaac.llm.providers-steps`
+4. session/cancel log — needs `isaac.foundation.log-steps`
+
+Wired those `-s` namespaces into deps.edn :features and bb.edn features step-globs.
+
+isaac-acp main **0a6143f**. Verified: bb features 61/0 (136 asserts), bb ci green (spec 70/0 + 1 intentional pending at server_spec:398).
