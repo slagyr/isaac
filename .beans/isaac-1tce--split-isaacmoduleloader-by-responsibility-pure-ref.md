@@ -192,3 +192,16 @@ Evidence from verify on `isaac-foundation` commit `5acc54142cb40c272a2da1932258b
 
 This bean cannot pass while the required `bb ci` command fails in verify. The worker needs to fix the spec→feature interaction / state leakage so `bb ci` is reproducibly green on the verified SHA.
 
+
+## Verify fail (attempt 2, 2026-08-03): acceptance unmet — `bb ci` is non-deterministic on `isaac-foundation` `5acc541`
+
+Evidence from repeat verify on `isaac-foundation` commit `5acc54142cb40c272a2da1932258b2f2b79fc847` against the amended AC:
+- Structural ACs remain met in inspection: 1:1 module specs are present, all split `src/isaac/module/*.clj` namespaces are under 500 LOC, and temporary public `isaac.module.loader` re-exports are in-scope under amended AC #4
+- `bb scrap spec/isaac/module` ✅ no file rated `MANUAL_SPLIT`
+- `bb ci` is flaky in verify on the same SHA:
+  - run 1 ✅ specs `848 examples, 0 failures, 1514 assertions`; features `133 examples, 0 failures, 314 assertions`
+  - run 2 ❌ spec phase timed out after 60s (`bb spec` exit 124) before features ran
+  - run 3 ✅ specs `848 examples, 0 failures, 1514 assertions`; features `133 examples, 0 failures, 314 assertions`
+- Targeted and isolated reruns also passed: `bb features features/module/conflict_warning.feature:74` ✅ and standalone `bb features` ✅
+
+Because AC #1 requires full `bb ci` green, this bean cannot pass while the required gate is non-deterministic on the verified commit.
