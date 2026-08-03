@@ -9,7 +9,7 @@ tags:
     - refactor
     - unverified
 created_at: 2026-08-03T14:11:00Z
-updated_at: 2026-08-03T21:13:35Z
+updated_at: 2026-08-03T21:20:49Z
 ---
 
 ## Description
@@ -134,3 +134,26 @@ cutover bean).
    don't pollute main checkouts — they belong to mc62.
 5. Commit + push `bean/isaac-1tce`; hand to verify against amended AC #1–#5.
    Name the new head SHA. Do not re-hand `10fe7df`.
+
+
+## Landed (scrapper@isaac-work-2, 2026-08-03) — planner option A
+
+**Foundation head:** `5acc54142cb40c272a2da1932258b2f2b79fc847` on `bean/isaac-1tce` (not 10fe7df).
+
+### Done
+1. **AC #2 1:1 specs** landed:
+   - `coords_spec.clj`, `classpath_spec.clj`, `discovery_spec.clj`, `berths_spec.clj`,
+     `versions_spec.clj`, `lifecycle_spec.clj` (activation merged in), `loader_spec.clj`
+     (compose only). Shared helpers → `fixtures.clj`.
+2. **AC #4 amended:** temporary **public** re-exports remain on `isaac.module.loader`
+   (register-handler!, discover!, activate!, load-modules!, reconcile-modules!,
+   builtin-index, …). No foundation-internal callers use those shims — they require
+   owning namespaces. Removal is **isaac-mc62**.
+3. **bb ci** green: specs `848/0` (1514 assertions), features `133/0` (314 assertions).
+4. **SCRAP** `spec/isaac/module`: HIGH/MEDIUM/STABLE only — **no MANUAL_SPLIT**.
+5. Local **agent/server** rewires on `/Users/zane/Projects/{isaac-agent,isaac-server}`
+   **reverted** (clean main). Belong to mc62.
+
+### Verify against
+- Amended AC #1–#5 (public re-exports allowed for former loader surface).
+- Commit **5acc541** only.
