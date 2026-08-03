@@ -1,13 +1,11 @@
 ---
 # isaac-4lx5
 title: 'foundation/cli: surface the hidden ''help'' command + richer topic help'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-06-18T18:07:35Z
-updated_at: 2026-08-03T14:38:31Z
+updated_at: 2026-08-03T14:43:11Z
 ---
 
 ## Summary
