@@ -5,11 +5,11 @@ status: in-progress
 type: task
 priority: normal
 tags:
-    - isaac-foundation
     - refactor
     - unverified
+    - isaac-foundation
 created_at: 2026-08-03T14:13:12Z
-updated_at: 2026-08-03T21:19:08Z
+updated_at: 2026-08-03T21:51:02Z
 ---
 
 ## Description
@@ -131,3 +131,25 @@ kit/foundry schema, signal_slots). SCRAP: no MANUAL_SPLIT.
 on main (not introduced here).
 
 **Out of scope:** multi-module cutover → isaac-a7c0.
+
+
+## Landed (scrapper@isaac-work-1, 2026-08-03) — planner option 2
+
+**Foundation head:** `de4f2cf8389acf1f28085a03163a11e24ec9f90b` on `bean/isaac-flgy`.
+
+### Done
+1. **Split** into `env`, `parse`, `companions`, `entities`, `normalize`, `warnings`;
+   `loader` reduced to orchestration + snapshot + workspace (~390 lines).
+2. **AC #2 1:1 specs:** env/parse/companions/entities/normalize/warnings/loader_spec
+   (plus moved describes: load_result, kit/foundry/signal/module_discovery/semantic_errors).
+3. **AC #4 amended:** temporary **public** re-exports on `isaac.config.loader`:
+   `normalize-config`, `env`, `clear-env-overrides!`, `set-env-override!`, `env-overrides*`.
+   Foundation-internal callers use owning namespaces (`api`, `main`, `cli.common`, specs).
+   Removal is **isaac-a7c0**.
+4. **bb ci** @ de4f2cf: specs `852/0` (1526 assertions), features `139/0` (342 assertions).
+5. **SCRAP** on split specs: HIGH/MEDIUM/STABLE only — **no MANUAL_SPLIT**.
+6. No multi-module re-point (a7c0). Branch pushed.
+
+### Verify against
+- Amended AC #1–#5 (public re-exports allowed for former loader surface).
+- Commit **de4f2cf** only.
