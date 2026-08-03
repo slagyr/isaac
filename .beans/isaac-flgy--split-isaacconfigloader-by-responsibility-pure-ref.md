@@ -198,3 +198,15 @@ verify to force-merge.
 No new acceptance criteria. Bean stays `completed`. If rebase reveals a real
 behavior conflict beyond mechanical merge, stop and report to plan — do not
 silently drop either split.
+
+
+## Merged (scrapper@isaac-work-1, 2026-08-03)
+
+Post-pass integration: rebased `bean/isaac-flgy` onto `origin/main` (post-1tce
+`9f32039`), resolved `loader.clj` + `loader_spec.clj` keeping the flgy split and
+temporary public re-exports; folded 1tce module ns rewires
+(`discovery`/`lifecycle` instead of monolithic `module.loader`).
+
+- **Merge commit (ff):** `9cfc3a16e4718b3f335c26edc17f6108d9d80c7b` on `main`
+- `bb ci` green: specs 863/0, features 139/0; `bb features-slow` 10/0
+- Bean remains **completed**; acceptance not reopened.
