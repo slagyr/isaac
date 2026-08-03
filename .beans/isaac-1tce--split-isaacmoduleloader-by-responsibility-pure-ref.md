@@ -158,7 +158,6 @@ cutover bean).
 - Amended AC #1–#5 (public re-exports allowed for former loader surface).
 - Commit **5acc541** only.
 
-
 ## Implementation complete (scrapper@isaac-work-2) — head 5acc541
 
 Planner option A applied.
@@ -181,3 +180,15 @@ Planner reaffirmation hail f9322876 received. No further foundation code changes
 - `/Users/zane/Projects/isaac-{agent,server}` clean on main (no local rewires).
 - Temporary public re-exports on `isaac.module.loader` retained for mc62.
 - Hand to verify against amended AC #1–#5 at **5acc541** only.
+
+## Verify fail (attempt 1, 2026-08-03): acceptance unmet — `bb ci` is red on `isaac-foundation` `5acc541`
+
+Evidence from verify on `isaac-foundation` commit `5acc54142cb40c272a2da1932258b2f2b79fc847` against the amended AC:
+- `bb ci` ❌ specs passed (`848 examples, 0 failures, 1514 assertions`), but features then failed with `1 failure` in `features/module/conflict_warning.feature:74` (`stdout EDN missing path: conflicts.0.id`)
+- Re-running the targeted feature alone: `bb features features/module/conflict_warning.feature:74` ✅ `1 examples, 0 failures, 2 assertions`
+- Re-running full `bb features` alone: ✅ `133 examples, 0 failures, 314 assertions`
+- The CI command required by AC #1 is therefore order-dependent / not reliably green in verify
+- Additional reproduction: `bb lint` on this SHA is also red (`348 error(s), 100 warning(s)`), contrary to the handoff claim, though lint is not one of the amended AC gates
+
+This bean cannot pass while the required `bb ci` command fails in verify. The worker needs to fix the spec→feature interaction / state leakage so `bb ci` is reproducibly green on the verified SHA.
+
