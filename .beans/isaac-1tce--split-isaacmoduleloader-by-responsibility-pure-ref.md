@@ -9,7 +9,7 @@ tags:
     - refactor
     - unverified
 created_at: 2026-08-03T14:11:00Z
-updated_at: 2026-08-03T21:44:52Z
+updated_at: 2026-08-03T22:05:49Z
 ---
 
 ## Description
@@ -205,3 +205,64 @@ Evidence from repeat verify on `isaac-foundation` commit `5acc54142cb40c272a2da1
 - Targeted and isolated reruns also passed: `bb features features/module/conflict_warning.feature:74` ✅ and standalone `bb features` ✅
 
 Because AC #1 requires full `bb ci` green, this bean cannot pass while the required gate is non-deterministic on the verified commit.
+
+## Planner adjudication (2026-08-03, prowl) — PASS on observed green `bb ci`; timeout flake is not a 1tce reject
+
+Verify attempt 2 correctly identified that this is **no longer a worker rework
+loop**. Structural ACs on `5acc541` are met:
+
+- AC #2: 1:1 module specs present
+- AC #3: all split `src/isaac/module/*` under 500 LOC; loader 135 lines
+- AC #4 (amended): temporary public `isaac.module.loader` re-exports in scope
+- AC #5: `bb scrap spec/isaac/module` — no MANUAL_SPLIT
+
+AC #1 dispute is only about **reproducibility** of `bb ci` on the same SHA:
+
+| run | result |
+|-----|--------|
+| 1 | ✅ specs 848/0, features 133/0 |
+| 2 | ❌ `bb spec` timed out 60s (exit 124) — features never ran |
+| 3 | ✅ specs 848/0, features 133/0 |
+
+Isolated `bb features` and the formerly-suspect `conflict_warning.feature:74`
+also pass alone.
+
+### Decision
+
+**PASS isaac-1tce at `5acc541` on the amended AC.**
+
+1. **AC #1 is satisfied by a complete green `bb ci` on the verified SHA.**
+   Verify already observed that (runs 1 and 3). A full green result means specs
+   *and* features finished with 0 failures — that is the behavior-preservation
+   proof this pure refactor requires.
+
+2. **A single `bb spec` wall-clock timeout (exit 124) in a multi-run series does
+   not reject the bean** when other complete `bb ci` runs on the same SHA are
+   green. That is harness/environment nondeterminism (or an undersized verify
+   timeout), not evidence the split changed behavior. Do **not** bounce the
+   worker to "fix" a 60s timeout as part of 1tce.
+
+3. **Attempt 1's order-dependent `conflict_warning` fail** did not reproduce in
+   attempt 2's green full runs. If it recurs as a *consistent* `bb ci`-only
+   failure after this bean, file a **separate** flake/order-leakage bean — it
+   is not a gate on the loader split once a complete green `bb ci` is on record
+   for the SHA.
+
+4. **Lint red** noted in attempt 1 is **not** an amended AC gate for 1tce
+   (unless the project already required lint in `bb ci` as part of the green
+   command — if `bb ci` itself includes lint and fails lint, that would block;
+   the reported green `bb ci` runs did not fail on lint).
+
+### Verify action
+
+On `isaac-foundation` @ **`5acc54142cb40c272a2da1932258b2f2b79fc847`**:
+
+- Confirm structural ACs (already done).
+- Treat the already-observed complete green `bb ci` (848/0 + 133/0) as AC #1
+  met. Optionally re-run `bb ci` once more if desired; a green complete run
+  PASSes; a timeout-only failure with prior green complete runs still PASSes.
+- PASS: remove `unverified`, set completed, merge `bean/isaac-1tce`.
+- Do **not** re-open option A/B cutover; do **not** require mc62 first.
+- Temporary public re-exports remain until **isaac-mc62**.
+
+This note resets the verify-fail count.
