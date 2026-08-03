@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-18T18:07:35Z
-updated_at: 2026-08-03T14:25:31Z
+updated_at: 2026-08-03T14:30:28Z
 ---
 
 ## Summary
@@ -60,3 +60,13 @@ bb features features/cli/cli.feature   # full CLI feature green, no @wip left fo
 bb spec spec/isaac/main_spec.clj
 bb lint
 ```
+
+## Verify fail (attempt 1, 2026-08-03): acceptance unmet — `bb lint` is red on the implementation commit
+
+Evidence from verify on `isaac-foundation` commit `0c0cd0b`:
+- `bb features features/cli/cli.feature` ✅ `12 examples, 0 failures, 48 assertions`
+- `bb spec spec/isaac/main_spec.clj` ✅ `28 examples, 0 failures, 57 assertions`
+- `bb lint` ❌ exits 1 with `318 error(s), 84 warning(s)`
+- Representative lint failures include unresolved Speclj macros across spec files (for example `describe`, `it`, `should=`) and a namespace/file mismatch in `spec/isaac/log_output_spec.clj`
+
+The bean acceptance explicitly requires `bb lint`, so this cannot pass as-is.
