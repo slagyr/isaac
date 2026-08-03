@@ -8,7 +8,7 @@ tags:
     - isaac-foundation
     - refactor
 created_at: 2026-08-03T14:13:12Z
-updated_at: 2026-08-03T14:42:10Z
+updated_at: 2026-08-03T21:03:33Z
 ---
 
 ## Description
@@ -41,7 +41,13 @@ Sibling of isaac-1tce (module loader split); same principle: split the productio
 1. No behavior change: full `bb ci` green (specs + features) with no test rewrites — existing examples move, they don't change meaning.
 2. Every new `src/` namespace has a corresponding `spec/` file (1:1 maintained).
 3. No namespace exceeds ~500 lines; `isaac.config.loader` reduced to load orchestration.
-4. No back-compat aliases or re-export shims remain.
+4. **No foundation-internal back-compat aliases or re-export shims.** Temporary
+   **public** re-exports of the *former* `isaac.config.loader` public surface
+   (`normalize-config`, `env`, `clear-env-overrides!`, `set-env-override!`, and
+   any other symbol external modules currently require) are **allowed for this
+   bean only**, so published agent/agent-spec (gitlibs) keep loading. Removal of
+   those temporary public re-exports is **isaac-a7c0** (downstream cutover) —
+   not a gate on flgy.
 5. SCRAP on the resulting spec files: no file rated MANUAL_SPLIT (config/loader_spec.clj is currently HIGH 40.5 / MANUAL_SPLIT).
 
 ## Work notes / conflict (scrapper@isaac-work-1)
@@ -61,3 +67,39 @@ Downstream **isaac-agent** (and agent-spec gitlib) call:
 (and related) extensively. Clean cutover requires re-pointing those call sites in **other repos**, which this bean’s foundation-only scope does not cover. Without either (a) allowed thin re-exports on loader, or (b) scoped follow-up beans to re-point agent (+ other modules), `bb ci` fails analysis when agent code loads (`Unable to resolve symbol: loader/normalize-config`).
 
 **Ask planner:** expand bean / add follow-ups to update downstream callers, **or** amend acceptance to allow temporary public re-exports on loader for the former public surface (`normalize-config`, `env`, `clear-env-overrides!`, `set-env-override!`).
+
+## Planner resolution (2026-08-03, prowl) — option 2: temporary public re-exports allowed; cutover is isaac-a7c0
+
+The conflict is real and structural: a foundation-only clean cutover cannot
+land while published agent (gitlibs) still requires the old
+`isaac.config.loader/*` surface. Expanding this bean into a multi-module
+cutover would invert the split's scope (pure foundation refactor) and couple
+it to release/pin choreography it does not own.
+
+**Decision: option 2 — amend AC #4 (done above).**
+
+- **In scope for flgy:** the responsibility split, 1:1 specs, SCRAP clean,
+  foundation `bb ci` green, **no foundation-internal shims**. Temporary
+  **public** re-exports of the former loader public surface are allowed and
+  expected so agent/agent-spec keep loading.
+- **Out of scope for flgy / follow-up:** re-pointing all downstream callers and
+  deleting the temporary public re-exports — that is **isaac-a7c0** (todo).
+  flgy does **not** wait on a7c0.
+- Do **not** leave the split unpushed waiting on multi-module rewires. Commit +
+  push the foundation branch with the temporary public re-exports in place;
+  hand to verify against the amended AC.
+
+This is the same shape as the 1tce resolution (temporary public re-exports +
+downstream cutover bean), and matches the "parity / don't hold green work
+hostage to out-of-scope debt" precedent (dt9h, 7ivl, l70j, k1po, la8h, tki3).
+
+### Worker actions now
+
+1. Ensure temporary public re-exports on `isaac.config.loader` cover every
+   former public symbol external modules still require (at minimum
+   `normalize-config`, `env`, `clear-env-overrides!`, `set-env-override!` —
+   expand if agent-spec needs more).
+2. Confirm foundation `bb ci` green **with** those re-exports and **without**
+   foundation-internal shims.
+3. Commit + push `bean/isaac-flgy`; hand to verify against amended AC #1–#5.
+4. Do **not** start the multi-module re-point in this bean — that is a7c0.

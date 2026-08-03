@@ -9,7 +9,7 @@ tags:
     - refactor
     - unverified
 created_at: 2026-08-03T14:11:00Z
-updated_at: 2026-08-03T15:34:44Z
+updated_at: 2026-08-03T21:03:33Z
 ---
 
 ## Description
@@ -41,7 +41,14 @@ Responsibility clusters as they sit in the current source (line ranges from pre-
 1. No behavior change: full `bb ci` green (specs + features) with no test rewrites — existing examples move, they don't change meaning.
 2. Every new `src/` namespace has a corresponding `spec/` file (1:1 restored).
 3. No namespace exceeds ~500 lines; `isaac.module.loader` either gone or reduced to orchestration.
-4. No back-compat aliases or re-export shims remain.
+4. **No foundation-internal back-compat aliases or re-export shims.** Temporary
+   **public** re-exports of the *former* `isaac.module.loader` public surface
+   (`register-handler!`, `discover!`, `activate!`, `load-modules!`,
+   `reconcile-modules!`, `builtin-index`, and any other symbol published
+   agent/server/hail still require) are **allowed for this bean only**, so
+   compose against live `~/.isaac` / gitlibs pins keeps loading. Removal of
+   those temporary public re-exports is **isaac-mc62** (multi-module cutover) —
+   not a gate on 1tce.
 5. SCRAP on the resulting spec files: no file rated MANUAL_SPLIT.
 
 ## Implementation notes (scrapper@isaac-work-2)
@@ -82,4 +89,49 @@ Attempted remediation this turn:
 - **C:** Weaken AC #1 for environments with live multi-module roots (not realistic).
 
 Local WIP on foundation branch may include AC #2 renames + partial resilience (main_spec home isolation, read-user-config Throwable catch, clear-loaded-coords in clear-activations!, SCI check_compose). Agent/server local mains have uncommitted rewires — leave for option B or revert if A.
+
+## Planner resolution (2026-08-03, prowl) — option A: temporary public re-exports allowed; multi-module cutover is isaac-mc62
+
+The verifier was right on 10fe7df (AC #2 + AC #4 unmet). The worker's AC #2
+fix (1:1 specs) is the right direction. The AC #4 + AC #1 collision is real and
+structural: published agent/server/hail SHAs still require
+`isaac.module.loader/*` via gitlibs; local sibling rewires are not what compose
+loads. Without public forwards, feature suite NPEs (~35); with them, a literal
+reading of old AC #4 fails. Expanding this bean into a multi-module
+release/pin cutover (option B) couples a pure foundation refactor to
+orchestration it does not own and cannot finish in one foundation PR.
+
+**Decision: option A — amend AC #4 (done above).**
+
+- **In scope for 1tce:** the responsibility split, **1:1 specs** (AC #2 — finish
+  and land the renamed specs), SCRAP clean, foundation `bb ci` green, **no
+  foundation-internal shims**. Temporary **public** re-exports of the former
+  loader public surface are allowed and expected so compose against live pins
+  keeps loading.
+- **Out of scope for 1tce / follow-up:** re-pointing agent/server/hail/…,
+  publishing SHAs, bumping `~/.isaac` + CI pins, and deleting the temporary
+  public re-exports — that is **isaac-mc62** (todo, high). 1tce does **not**
+  wait on mc62.
+- Do **not** attempt the multi-module cutover inside this bean. Do **not** leave
+  uncommitted agent/server rewires on main checkouts — either park them cleanly
+  for mc62 or revert the local mains so they don't drift.
+
+Same shape as the flgy resolution (temporary public re-exports + downstream
+cutover bean).
+
+### Worker actions now
+
+1. Finish AC #2: land the 1:1 renamed specs (`coords_spec`, `classpath_spec`,
+   `discovery_spec`, `berths_spec`, `versions_spec`, `lifecycle_spec`,
+   `loader_spec`) on the foundation branch.
+2. Keep temporary public re-exports on `isaac.module.loader` covering every
+   former public symbol published modules still require (at minimum
+   `register-handler!`, `discover!`, `activate!`, `load-modules!`,
+   `reconcile-modules!`, `builtin-index` — expand if compose still NPEs).
+3. Confirm foundation `bb ci` green **with** those re-exports and **without**
+   foundation-internal shims; SCRAP clean (no MANUAL_SPLIT).
+4. Revert or clearly park any uncommitted agent/server local rewires so they
+   don't pollute main checkouts — they belong to mc62.
+5. Commit + push `bean/isaac-1tce`; hand to verify against amended AC #1–#5.
+   Name the new head SHA. Do not re-hand `10fe7df`.
 
