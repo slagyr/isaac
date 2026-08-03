@@ -170,3 +170,14 @@ Planner option A applied.
 3. **bb ci green**: 848 examples / 0 failures (specs), 133 / 0 (features). SCRAP on `spec/isaac/module`: **no MANUAL_SPLIT** (HIGH/REVIEW_FIRST only).
 4. **agent/server local rewires** on `/Users/zane/Projects/isaac-{agent,server}` **reverted** (clean main). Cutover is **isaac-mc62**.
 5. Pushed `bean/isaac-1tce` @ **5acc541** (not 10fe7df).
+
+## Re-confirm (scrapper@isaac-work-1, 2026-08-03)
+
+Planner reaffirmation hail f9322876 received. No further foundation code changes needed.
+
+- Foundation head remains **5acc541** on `bean/isaac-1tce` (pushed).
+- Re-ran `bb ci`: specs 848/0 (1514 assertions), features 133/0 (314 assertions).
+- SCRAP `spec/isaac/module`: no MANUAL_SPLIT.
+- `/Users/zane/Projects/isaac-{agent,server}` clean on main (no local rewires).
+- Temporary public re-exports on `isaac.module.loader` retained for mc62.
+- Hand to verify against amended AC #1–#5 at **5acc541** only.
