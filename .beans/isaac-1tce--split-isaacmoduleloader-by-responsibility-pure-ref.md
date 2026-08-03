@@ -9,7 +9,7 @@ tags:
     - refactor
     - unverified
 created_at: 2026-08-03T14:11:00Z
-updated_at: 2026-08-03T21:03:33Z
+updated_at: 2026-08-03T21:13:35Z
 ---
 
 ## Description
@@ -134,4 +134,3 @@ cutover bean).
    don't pollute main checkouts — they belong to mc62.
 5. Commit + push `bean/isaac-1tce`; hand to verify against amended AC #1–#5.
    Name the new head SHA. Do not re-hand `10fe7df`.
-
