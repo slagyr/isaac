@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-06-18T18:07:35Z
-updated_at: 2026-08-03T14:30:28Z
+updated_at: 2026-08-03T14:38:31Z
 ---
 
 ## Summary
@@ -70,3 +70,12 @@ Evidence from verify on `isaac-foundation` commit `0c0cd0b`:
 - Representative lint failures include unresolved Speclj macros across spec files (for example `describe`, `it`, `should=`) and a namespace/file mismatch in `spec/isaac/log_output_spec.clj`
 
 The bean acceptance explicitly requires `bb lint`, so this cannot pass as-is.
+
+## Work notes (scrapper@isaac-work-1)
+
+Lint acceptance fixed on foundation `74847b9` (after `0c0cd0b` feature work):
+
+- Added tracked `.clj-kondo/config.edn` so Speclj `refer :all` macros resolve under `bb lint`
+- Moved `spec/isaac/log_output_spec.clj` → `spec/isaac/log/output_spec.clj` (ns/file match)
+- `bb lint` now exits 0 (0 errors; pre-existing warnings only)
+- Re-verified: `bb features features/cli/cli.feature`, `bb spec spec/isaac/main_spec.clj` + help_spec green
