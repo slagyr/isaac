@@ -62,3 +62,24 @@ Evidence from verify on `isaac-foundation` commit `10fe7df`:
 - AC #2 still fails: the new split source namespaces (`coords`, `classpath`, `discovery`, `berths`, `versions`) do not have matching 1:1 spec files; the current split specs remain `loader_discovery_spec.clj`, `loader_berths_spec.clj`, `loader_activation_spec.clj`, `loader_compose_spec.clj`, and `lifecycle_spec.clj`
 
 This bean cannot pass until the implementation matches the written acceptance, or the planner explicitly rescopes/updates the acceptance for the deferred external-module cutover and spec-file mapping.
+
+## Verify-fail / conflict (scrapper@isaac-work-2, 2026-08-03)
+
+Verifier correctly flagged AC #2 and AC #4 as unmet on 10fe7df.
+
+Attempted remediation this turn:
+1. **AC #2 specs**: renamed/split to 1:1 — `coords_spec`, `classpath_spec`, `discovery_spec`, `berths_spec`, `versions_spec`, `lifecycle_spec` (merged activation), `loader_spec` (compose/list only). Module-suite specs green (89/0).
+2. **AC #4 no shims**: removed loader forwards again; rewired **local** `isaac-agent` + `isaac-server` src to owning namespaces.
+
+**Blocker (cannot satisfy AC #4 and AC #1 together on this machine without a multi-repo release):**
+- Live `~/.isaac` pins agent/server/… at **git SHAs** whose published source still calls `isaac.module.loader/{register-handler!,activate!,builtin-index,…}`.
+- Feature suite / CLI paths that resolve the real root load that config, compose pulls those SHAs onto the bb classpath, and ns-load NPEs without loader forwards (35 feature failures). Soft/hard check-compose handling cannot avoid `requiring-resolve` pulling old agent code.
+- Local agent/server checkouts were rewired but are **not** what config compose loads (gitlibs SHAs are).
+
+**Options for planner:**
+- **A (recommended):** Rescope AC #4 to “no foundation-internal shims; external-module cutover + SHA bump is a follow-up bean (or multi-module PR set)”; keep thin loader forwards until then. AC #2 met by the renamed specs.
+- **B:** Expand this bean (or spawn linked beans) to cut over agent/server/hail/… , publish SHAs, bump `~/.isaac` + CI pins, then delete forwards — true clean cutover.
+- **C:** Weaken AC #1 for environments with live multi-module roots (not realistic).
+
+Local WIP on foundation branch may include AC #2 renames + partial resilience (main_spec home isolation, read-user-config Throwable catch, clear-loaded-coords in clear-activations!, SCI check_compose). Agent/server local mains have uncommitted rewires — leave for option B or revert if A.
+
