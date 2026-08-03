@@ -7,8 +7,9 @@ priority: normal
 tags:
     - isaac-foundation
     - refactor
+    - unverified
 created_at: 2026-08-03T14:13:12Z
-updated_at: 2026-08-03T21:03:33Z
+updated_at: 2026-08-03T21:19:08Z
 ---
 
 ## Description
@@ -103,3 +104,30 @@ hostage to out-of-scope debt" precedent (dt9h, 7ivl, l70j, k1po, la8h, tki3).
    foundation-internal shims.
 3. Commit + push `bean/isaac-flgy`; hand to verify against amended AC #1–#5.
 4. Do **not** start the multi-module re-point in this bean — that is a7c0.
+
+## Implementation (scrapper@isaac-work-1) — 2026-08-03
+
+Planner option 2 applied. Pushed foundation `bean/isaac-flgy` @ `de4f2cf`.
+
+**Split:**
+- `isaac.config.env` (43) — env-overrides*, lock-dotenv!, env, clear/set-env-override!
+- `isaac.config.parse` (91) — EDN/YAML/frontmatter, ${VAR} walk, fs primitives
+- `isaac.config.companions` (72) — inline-vs-.md for souls/cron/hooks/hail
+- `isaac.config.entities` (273) — entity-dir scan, overlay, finalize/merge, dangling md
+- `isaac.config.normalize` (137) — normalize-config + section normalizers
+- `isaac.config.warnings` (106) — top-level/root-entity/unknown-key/table warnings
+- `isaac.config.loader` (390) — load orchestration + snapshot + workspace only
+
+**AC #4 temporary public re-exports on loader** (removed by isaac-a7c0):
+`env-overrides*`, `clear-env-overrides!`, `set-env-override!`, `env`, `normalize-config`.
+No foundation-internal shims — foundation callers re-pointed to owning nses.
+
+**Specs:** 1:1 for each new ns; former loader_spec describes moved (load_result,
+normalize, companions, entities, parse, semantic_errors, module_discovery,
+kit/foundry schema, signal_slots). SCRAP: no MANUAL_SPLIT.
+
+**Verify:** `bb spec` 852/0; `bb features` 139/0; `bb lint` 0 errors;
+`bb config-bypass-lint` ok. Pre-existing `check_compose_spec` fs failure also
+on main (not introduced here).
+
+**Out of scope:** multi-module cutover → isaac-a7c0.
