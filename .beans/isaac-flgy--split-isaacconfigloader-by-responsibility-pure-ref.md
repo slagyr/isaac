@@ -1,14 +1,14 @@
 ---
 # isaac-flgy
 title: Split isaac.config.loader by responsibility (pure refactor)
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - isaac-foundation
     - refactor
 created_at: 2026-08-03T14:13:12Z
-updated_at: 2026-08-03T14:13:12Z
+updated_at: 2026-08-03T14:42:10Z
 ---
 
 ## Description
