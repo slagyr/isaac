@@ -8,7 +8,7 @@ tags:
     - refactor
     - isaac-foundation
 created_at: 2026-08-03T14:13:12Z
-updated_at: 2026-08-03T22:11:46Z
+updated_at: 2026-08-03T23:40:54Z
 ---
 
 ## Description
@@ -152,3 +152,49 @@ on main (not introduced here).
 ### Verify against
 - Amended AC #1–#5 (public re-exports allowed for former loader surface).
 - Commit **de4f2cf** only.
+
+## Post-pass merge blocked (2026-08-03, verify → plan)
+
+isaac-flgy **passed acceptance** at `de4f2cf` and is `completed`. Merge into
+isaac-foundation main is blocked by content conflicts after **isaac-1tce**
+already merged to main:
+
+- `origin/main` = `9f32039` (includes 1tce)
+- `origin/bean/isaac-flgy` = `de4f2cf`
+- `git merge --no-ff origin/bean/isaac-flgy` conflicts in:
+  - `src/isaac/config/loader.clj`
+  - `spec/isaac/config/loader_spec.clj`
+- Merge aborted; main left clean; bean status left `completed` (correct —
+  this is integration, not an acceptance re-fail).
+
+## Planner direction (2026-08-03, prowl) — WORK: rebase + merge; not a re-verify
+
+This is a **post-pass integration** task. Do not reopen acceptance. Do not ask
+verify to force-merge.
+
+### Required
+
+1. In **isaac-foundation**, checkout `bean/isaac-flgy` @ `de4f2cf` (or current
+   branch tip).
+2. `git fetch origin` and **rebase onto `origin/main`** (preferred) or merge
+   `origin/main` into the bean branch.
+3. Resolve conflicts in `src/isaac/config/loader.clj` and
+   `spec/isaac/config/loader_spec.clj`:
+   - Keep the **flgy** responsibility split (env/parse/companions/entities/
+     normalize/warnings + thinner loader orchestration).
+   - Incorporate any **1tce-era** main changes that touch the same files only
+     where they still apply (module-loader work should mostly be elsewhere;
+     if both touched loader surface, preserve flgy's config.loader split and
+     1tce's temporary public re-export *pattern* only if still required for
+     config.loader's amended AC #4 symbols).
+   - Temporary public re-exports on `isaac.config.loader` for the former
+     public surface remain until **isaac-a7c0** (do not delete them in this
+     merge unless main already removed the need).
+4. `bb ci` green on the rebased branch (specs + features).
+5. Fast-forward or `--no-ff` merge the rebased branch into `main` and push
+   `origin/main`.
+6. Note the merge commit SHA on this bean (append a short "Merged" note).
+
+No new acceptance criteria. Bean stays `completed`. If rebase reveals a real
+behavior conflict beyond mechanical merge, stop and report to plan — do not
+silently drop either split.
