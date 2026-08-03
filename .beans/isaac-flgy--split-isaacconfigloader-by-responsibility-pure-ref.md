@@ -43,3 +43,21 @@ Sibling of isaac-1tce (module loader split); same principle: split the productio
 3. No namespace exceeds ~500 lines; `isaac.config.loader` reduced to load orchestration.
 4. No back-compat aliases or re-export shims remain.
 5. SCRAP on the resulting spec files: no file rated MANUAL_SPLIT (config/loader_spec.clj is currently HIGH 40.5 / MANUAL_SPLIT).
+
+## Work notes / conflict (scrapper@isaac-work-1)
+
+Split implemented in foundation on branch work (not yet final-pushed pending cutover decision):
+
+**New src ns (all under isaac.config.*):**
+- env, parse, companions, entities, normalize, warnings
+- loader reduced to orchestration + snapshot/workspace (~378 lines)
+
+**Specs:** 1:1 smoke/moved describes for new ns; loader_spec split so no MANUAL_SPLIT remains.
+
+**Conflict with acceptance “no re-export shims” + “bb ci green”:**
+Downstream **isaac-agent** (and agent-spec gitlib) call:
+- `isaac.config.loader/normalize-config`
+- `isaac.config.loader/env`
+(and related) extensively. Clean cutover requires re-pointing those call sites in **other repos**, which this bean’s foundation-only scope does not cover. Without either (a) allowed thin re-exports on loader, or (b) scoped follow-up beans to re-point agent (+ other modules), `bb ci` fails analysis when agent code loads (`Unable to resolve symbol: loader/normalize-config`).
+
+**Ask planner:** expand bean / add follow-ups to update downstream callers, **or** amend acceptance to allow temporary public re-exports on loader for the former public surface (`normalize-config`, `env`, `clear-env-overrides!`, `set-env-override!`).
