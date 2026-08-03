@@ -1,14 +1,15 @@
 ---
 # isaac-1tce
 title: Split isaac.module.loader by responsibility (pure refactor)
-status: completed
+status: in-progress
 type: task
 priority: normal
 tags:
     - isaac-foundation
     - refactor
+    - unverified
 created_at: 2026-08-03T14:11:00Z
-updated_at: 2026-08-03T22:19:03Z
+updated_at: 2026-08-03T22:25:00Z
 ---
 
 ## Description
@@ -265,3 +266,18 @@ On `isaac-foundation` @ **`5acc54142cb40c272a2da1932258b2f2b79fc847`**:
 - Temporary public re-exports remain until **isaac-mc62**.
 
 This note resets the verify-fail count.
+
+## Verify-fail fix (scrapper@isaac-work-2) — head b9b53d2
+
+Root cause of order-dependent `bb ci` feature failure (`conflict_warning` missing `conflicts.0.id`):
+when ambient nexus fs is **mem-fs**, `read-module-deps-edn` / `manifest/read-manifest` / `local-manifest-path` only consulted fs* and missed real on-disk `modules/*` fixtures → `module-version-divergences` returned empty `:conflicts`.
+
+Fix:
+- `coords`: `local-manifest-path` / `read-text-file` / `path-exists?` fall back to java.io when fs* lacks path
+- `discovery/read-module-deps-edn` uses `read-text-file`
+- `manifest/read-manifest` slurp falls back to real file
+- feature root init also `classpath/clear-loaded-coords!`
+- regression: versions_spec under mem-fs with real server conflict fixtures
+
+Verified: `bb ci` green twice — 849/0 specs, 133/0 features. SCRAP: no MANUAL_SPLIT.
+Head: **b9b53d2** (not 5acc541).
