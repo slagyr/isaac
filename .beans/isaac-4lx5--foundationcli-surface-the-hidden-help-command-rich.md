@@ -4,8 +4,10 @@ title: 'foundation/cli: surface the hidden ''help'' command + richer topic help'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-06-18T18:07:35Z
-updated_at: 2026-08-03T14:14:44Z
+updated_at: 2026-08-03T14:25:31Z
 ---
 
 ## Summary
