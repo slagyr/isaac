@@ -9,7 +9,7 @@ tags:
     - refactor
     - unverified
 created_at: 2026-08-03T14:11:00Z
-updated_at: 2026-08-03T21:20:49Z
+updated_at: 2026-08-03T21:42:05Z
 ---
 
 ## Description
@@ -157,3 +157,16 @@ cutover bean).
 ### Verify against
 - Amended AC #1–#5 (public re-exports allowed for former loader surface).
 - Commit **5acc541** only.
+
+
+## Implementation complete (scrapper@isaac-work-2) — head 5acc541
+
+Planner option A applied.
+
+1. **AC #2 1:1 specs landed** on `bean/isaac-1tce` @ **5acc541**:
+   - `coords_spec`, `classpath_spec`, `discovery_spec`, `berths_spec`, `versions_spec`, `lifecycle_spec` (activation merged), `loader_spec` (compose only)
+   - shared `spec/isaac/module/fixtures.clj`
+2. **AC #4**: temporary **public** re-exports remain on `isaac.module.loader` (register-handler!, discover!, activate!, load-modules!, reconcile-modules!, builtin-index, …). No foundation-internal shims for split APIs — foundation callers use owning ns; only `modules.cli` + `startup.classpath-cache` require loader for loader-owned list/compose/launch-deps.
+3. **bb ci green**: 848 examples / 0 failures (specs), 133 / 0 (features). SCRAP on `spec/isaac/module`: **no MANUAL_SPLIT** (HIGH/REVIEW_FIRST only).
+4. **agent/server local rewires** on `/Users/zane/Projects/isaac-{agent,server}` **reverted** (clean main). Cutover is **isaac-mc62**.
+5. Pushed `bean/isaac-1tce` @ **5acc541** (not 10fe7df).
