@@ -1,16 +1,14 @@
 ---
 # isaac-1tce
 title: Split isaac.module.loader by responsibility (pure refactor)
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - isaac-foundation
     - refactor
-    - unverified
 created_at: 2026-08-03T14:11:00Z
-updated_at: 2026-08-03T22:25:00Z
-updated_at: 2026-08-03T22:21:49Z
+updated_at: 2026-08-03T22:31:45Z
 ---
 
 ## Description
