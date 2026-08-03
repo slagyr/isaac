@@ -43,3 +43,12 @@ Responsibility clusters as they sit in the current source (line ranges from pre-
 3. No namespace exceeds ~500 lines; `isaac.module.loader` either gone or reduced to orchestration.
 4. No back-compat aliases or re-export shims remain.
 5. SCRAP on the resulting spec files: no file rated MANUAL_SPLIT.
+
+## Implementation notes (scrapper@isaac-work-2)
+
+- Split into: coords, classpath, discovery, lifecycle, berths, versions; loader owns list/compose/launch-deps.
+- Foundation callers rewired to owning namespaces (no foundation-internal loader usage for split APIs).
+- **Loader still forwards** the public fn surface (`register-handler!`, `discover!`, `activate!`, …) for published agent/server/hail/… modules that still require `isaac.module.loader`. Without those forwards, loading the live ~/.isaac config NPEs during `check-compose` when agent checks require the old path. Dynamics remain dual-declared (classpath owns the real bindings foundation uses). Follow-up: cut over external modules, then delete forwards (AC #4 full clean cutover).
+- SCI fix: `check_compose` resolves `:fn` via `get` / descriptor lookup — never `{:keys [fn]}`.
+- Specs: `loader_discovery` / `loader_berths` / `loader_activation` / `loader_compose` / `lifecycle_spec` + fixtures. SCRAP: HIGH/REVIEW_FIRST on some files, **no MANUAL_SPLIT**.
+- Verified: `bb spec` 838/0, `bb features` 133/0 on branch `bean/isaac-1tce` @ `10fe7df`.
