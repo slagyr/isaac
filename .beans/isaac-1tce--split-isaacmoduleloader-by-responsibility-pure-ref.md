@@ -52,3 +52,13 @@ Responsibility clusters as they sit in the current source (line ranges from pre-
 - SCI fix: `check_compose` resolves `:fn` via `get` / descriptor lookup — never `{:keys [fn]}`.
 - Specs: `loader_discovery` / `loader_berths` / `loader_activation` / `loader_compose` / `lifecycle_spec` + fixtures. SCRAP: HIGH/REVIEW_FIRST on some files, **no MANUAL_SPLIT**.
 - Verified: `bb spec` 838/0, `bb features` 133/0 on branch `bean/isaac-1tce` @ `10fe7df`.
+
+## Verify fail (attempt 1, 2026-08-03): acceptance unmet — AC #2 and AC #4 are still false on `isaac-foundation` `10fe7df`
+
+Evidence from verify on `isaac-foundation` commit `10fe7df`:
+- `bb ci` ✅ `838 examples, 0 failures, 1484 assertions` and `133 examples, 0 failures, 314 assertions`
+- `bb scrap spec/isaac/module` ✅ no file rated `MANUAL_SPLIT`
+- AC #4 still fails: `src/isaac/module/loader.clj` keeps back-compat forwards/re-exports (`register-handler!`, `discover!`, `activate!`, `load-modules!`, `reconcile-modules!`, etc.) at lines 26–58
+- AC #2 still fails: the new split source namespaces (`coords`, `classpath`, `discovery`, `berths`, `versions`) do not have matching 1:1 spec files; the current split specs remain `loader_discovery_spec.clj`, `loader_berths_spec.clj`, `loader_activation_spec.clj`, `loader_compose_spec.clj`, and `lifecycle_spec.clj`
+
+This bean cannot pass until the implementation matches the written acceptance, or the planner explicitly rescopes/updates the acceptance for the deferred external-module cutover and spec-file mapping.
