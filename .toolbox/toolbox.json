@@ -2,31 +2,71 @@
   "skills": {
     "toolbox": {
       "url": "https://raw.githubusercontent.com/slagyr/toolbox/main/SKILL.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
-      "sha256": "b45bb2a83ced2464eab209edad7b9f69889bf9c33e333585c54ba8fc24ed7c6d",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "6c731bb938f03f458d86ad23b9247eec79bef6c0ac8e6fa0ffd452b5f5fee9fc",
       "files": [
         "SKILL.md"
       ]
     },
     "tdd": {
       "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/tdd/SKILL.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
-      "sha256": "010e2b3ca1de3481de48323d8ac0bc9f325253978da3bd2da3317666e6f1a3ca",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "31ec21c23f89130519075f5f1ba88aa68661174bd1b69f74071f31ed09dc891e",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "refactor": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/refactor/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "674f6fdc59fe3c5502e3107ced535199e1a852f5a32c20d9d0f2ef30688baca7",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "smells": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/smells/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "ce6bcd99506a0ec11caf5afad53cc0144933e0972f454657857cf93fb4dfb55f",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "architecture": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/architecture/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "3c80a9d1b9b60b5b7bfa8daec22cb47acfd63d9b610ccdc36ba84278a0f9eda6",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "logging": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/logging/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "be84a4b7f5213883078d1f1f3005cbd6273031caab6db01056c8940fc88fc269",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "beans-multi-worker": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beans-multi-worker/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "74f831830119790ce183bc36ec385ae8a7e09229f97c6df349ac9ad099251b10",
       "files": [
         "SKILL.md"
       ]
     },
     "crap4clj": {
       "url": "https://raw.githubusercontent.com/unclebob/crap4clj/master/SKILL.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
-      "sha256": "87060a27c0510b646498d0d61ca8b5702abce0d30c234bf2b099a28f31d79224",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "a22525e1e968150e46520988d5b8084d69027f54eb994c73f268cbba66fd584f",
       "files": [
         "SKILL.md"
       ]
     },
     "dry4clj": {
       "url": "https://raw.githubusercontent.com/slagyr/dry4clj/refs/heads/master/SKILL.md",
-      "fetched_at": "2026-05-22T01:03:37Z",
+      "fetched_at": "2026-08-03T00:45:09Z",
       "sha256": "51c25e1b028ec5fd80ce4ff5d8d4fda8f6c24536bc3309b9f892818015fc19b5",
       "files": [
         "SKILL.md"
@@ -34,7 +74,7 @@
     },
     "clj-mutate": {
       "url": "https://raw.githubusercontent.com/slagyr/clj-mutate/master/SKILL.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
+      "fetched_at": "2026-08-03T00:45:09Z",
       "sha256": "5c7b161d9c0a729fdf3667db929fffa862cd7ed4c61432511d625b7df797a478",
       "files": [
         "SKILL.md"
@@ -42,32 +82,64 @@
     },
     "scrap": {
       "url": "https://raw.githubusercontent.com/slagyr/scrap/main/SKILL.md",
-      "fetched_at": "2026-05-05T00:00:00Z",
+      "fetched_at": "2026-08-03T00:45:09Z",
       "sha256": "69a91d95a65610ec1ea4f951784a4fb8622728e640e59dbaead8feea58866e50",
       "files": [
         "SKILL.md"
       ]
     },
     "gherclj": {
-      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/gherclj/SKILL.md",
-      "fetched_at": "2026-04-27T00:00:00Z",
-      "sha256": "58abfeeb6b3e71eb32dba502d04533c6f2c6bd56f88d243d85c78387ca163a28",
+      "url": "https://raw.githubusercontent.com/slagyr/gherclj/refs/heads/master/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "018d53a68b63b7fff79f5ada275a1aaa5ddb4bcc7608e3396a93b3d15f03ed90",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "gherkin": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/gherkin/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "f746e507eac634a823f1fd42781a63257ecd00635f6ea34e9db0bc91fafac85d",
       "files": [
         "SKILL.md"
       ]
     },
     "clojure": {
       "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/clojure/SKILL.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
-      "sha256": "4f4ea1d335987416e62f02cb1ef7384f141e854de520958de2f9dc40e8ed1c04",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "d132e61352a0a0ac6566c3fb42f7a84e55d89c86069ffad13c18f893d37f45f6",
       "files": [
         "SKILL.md"
       ]
     },
     "c3kit": {
       "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit/SKILL.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
-      "sha256": "66818ab1e1c7493d0353e0593190de6f46d811800301e443e8f572f6a4cfd60d",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "fb3137a656b8574d8b405c11378509cd9d04f07db1d821691eeb37a600cad53d",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "c3kit-schema": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit-schema/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "d9e7403f39b333cf7a3273dd04d160c285e403cc07013aed37384b8d1b1d3c8e",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "planning": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/planning/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "5ef69f997eb1aee2060f2c14c66703aaffdaf8c04349a08666995203a0e6cf68",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    "hail-bean-work": {
+      "url": ".toolbox/skills/hail-bean-work/SKILL.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "f27e05f242ea66571b1811835c82ce4a0219c1a4500519676f7d6d6735c38703",
       "files": [
         "SKILL.md"
       ]
@@ -76,34 +148,43 @@
   "commands": {
     "plan": {
       "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/plan.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
-      "sha256": "d51746614f8521098817d62e6fdab2fb66042b24fad390379c9620b2cc3fcd3c",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "49d5af02c182879be8d7aeb2ac5cdff82a419eb238a67d972d45358dc3fdb0d6",
       "files": [
         "plan.md"
       ]
     },
     "todo": {
       "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/todo.md",
-      "fetched_at": "2026-04-09T04:55:50Z",
-      "sha256": "731ad750a1e4866123d1901870d707fdb04a70dadcab27f6ffab94137e392e9d",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "88ab06f9c76d0cc6ab130930bc25ce8a2a3adbcbeaf6e7f669e80551f4373c66",
       "files": [
         "todo.md"
       ]
     },
     "work": {
       "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/work.md",
-      "fetched_at": "2026-04-22T03:00:00Z",
-      "sha256": "f0f96d6dc52cc14813140001f7e93d8c73949516b3c820304b53f903e1f5e171",
+      "fetched_at": "2026-08-03T00:45:41Z",
+      "sha256": "eeac99a50beec78c405bf82d1659ff119cfddd9d4624c4e3ef86c6c5defebb48",
       "files": [
         "work.md"
-      ]
+      ],
+      "overlay": "isaac-hail-bootstrap"
     },
     "plan-with-features": {
       "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/plan-with-features.md",
-      "fetched_at": "2026-04-27T00:00:00Z",
-      "sha256": "5f5e8674b0be18854a60024d8448405d3619cf9640abf30d579e34363c208437",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "163d07a3976381a2f9704f612d4ceed1f5d4e8f339be2e35f62db6a7a3a52380",
       "files": [
         "plan-with-features.md"
+      ]
+    },
+    "verify": {
+      "url": "https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/verify.md",
+      "fetched_at": "2026-08-03T00:45:09Z",
+      "sha256": "cda5238fc794b1716a2c928cf246916a0b93314a98759ce248d2cc06f55046be",
+      "files": [
+        "verify.md"
       ]
     }
   },

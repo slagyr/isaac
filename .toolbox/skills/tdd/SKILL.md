@@ -131,6 +131,18 @@ Sometimes it helps to write AAA in reverse:
     (should= 90 total)))
 ```
 
+## Keep the Loop Tight
+
+During RED/GREEN, prefer running the smallest spec that covers the behavior you are changing:
+
+```bash
+lein spec spec/my_app/order_spec.clj:42
+clj -M:spec spec/my_app/order_spec.clj:42
+bb spec -F spec/my_app/order_spec.clj:42
+```
+
+Use `file:line` to target the nearest enclosing Speclj form. Prefer `--focus` or `-F` with wrapper commands when they would otherwise inject default spec directories and run the whole suite.
+
 ## Test Naming Principles
 
 - Use **behavior-driven names** with domain language
@@ -273,6 +285,42 @@ If you need the return value from a function that prints:
 ```
 
 **Before closing a bead, run the full test suite and verify the output is clean** — only dots and the summary line. If you see any text that isn't from the test framework, fix it.
+
+## Test DON'Ts
+
+Tests must be fast, deterministic, and isolated. Real I/O makes tests slow, flaky, and dependent on external state.
+
+- **No `sleep` calls** — if you're waiting for something, the design needs a seam to inject timing control
+- **No filesystem access** — unless the code under test is explicitly filesystem management; prefer mocking or an in-memory implementation
+- **No HTTP requests** — mock the HTTP layer; tests should not depend on network availability or remote state
+- **No other I/O** — stdin/stdout beyond test output, sockets, message queues — prefer mocked or in-memory equivalents
+- **No external database interaction** — use an in-memory implementation or repository stub; never hit a real database in a unit test
+
+### Polling Instead of Sleeping
+
+**Never use `Thread/sleep` to wait for async state to change.** Fixed sleeps are slow on fast machines and flaky on slow ones.
+
+Instead, poll the condition directly:
+
+```clojure
+;; BAD
+(trigger-something!)
+(Thread/sleep 50)
+(should= expected (get-state))
+
+;; GOOD — exits as soon as the condition is true, up to 1s
+(trigger-something!)
+(await-condition #(= expected (get-state)))
+(should= expected (get-state))
+```
+
+Implement an `await-condition` helper in your project's test-helper namespace that polls every 1ms for up to 1 second.
+
+`Thread/sleep` is only acceptable when the spec is **explicitly testing that a function blocks for a minimum duration** (e.g. verifying a poll timeout).
+
+### When You Can't Poll a Positive Condition
+
+If you're asserting that something did *not* change, polling won't help — the negative is always true until something later proves it false. Instrument the triggering function instead. For example, wrap a polling function with a counter atom and wait for the second call — that signals the first processing cycle completed — then assert the unchanged state.
 
 ## Common Mistakes
 

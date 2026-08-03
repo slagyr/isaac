@@ -36,7 +36,7 @@ See `isaac/.toolbox/skills/hail-bean-work/SKILL.md` for the full checklist.
 
 ## Steps
 
-1. Pull the latest code with `git pull`. Beans live alongside the code, so this also syncs the latest bean state. **Run this alone.** Do not parallelize `git pull` with `beans show` / `beans list` or any other state-dependent read — the bean read can race the pull and return stale data, causing you to claim a bean that was just taken or skip one that just became ready. Sequence: pull, wait, then read. (`beans list --all` does not exist — use `beans list` or `beans list --ready`.)
+1. Pull the latest code with `git pull`. Beans live alongside the code, so this also syncs the latest bean state. **Run this alone.** Do not parallelize `git pull` with `beans show` / `beans list` or any other state-dependent read — the bean read can race the pull and return stale data, causing you to claim a bean that was just taken or skip one that just became ready. Sequence: pull, wait, then read.
 2. Branch on `$ARGUMENTS`:
    - **If a bean ID was provided** → follow "Targeted bean" below. Do not fall back to the ready queue.
    - **If no argument was provided** → follow "Pick from ready queue" below.

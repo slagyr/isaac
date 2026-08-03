@@ -63,9 +63,12 @@ A schema is a plain map. Each key maps to a spec.
 | `:message` | Default error message for coerce and validate failures |
 | `:coerce` | Function or list of functions `(fn [v] ...)` → coerced value |
 | `:validate` | Function or list of functions `(fn [v] ...)` → truthy/falsy |
-| `:validations` | List of `{:validate fn :message "..."}` maps for per-rule messages |
+| `:validations` | List of ref entries — registered ref names, factory vectors `[:ref & args]`, or `{:validate fn :message "..."}` maps (see [[refs]]) |
+| `:coercions` | Same shape as `:validations`, applied as coercions (see [[refs]]) |
 | `:present` | Single function `(fn [v] ...)` → presentable value (no list) |
 | `:value` | Exact expected value (used by `schema/kind`) |
+
+`:validate`/`:coerce` are function-only; `:validations`/`:coercions` accept the ref registry so schemas can live entirely as EDN data.
 
 ### Multiple Validations with Per-Rule Messages
 
@@ -77,6 +80,60 @@ A schema is a plain map. Each key maps to a spec.
 ```
 
 Type-validation runs first. If it fails, other validations are skipped.
+
+## Refs
+
+`:validations` and `:coercions` entries are looked up in the **ref registry** (`c3kit.apron.schema.refs`). The registry is empty by default; call `(refs/install!)` once at startup to load the standard catalog.
+
+Entries can be:
+- a registered ref name — `:pos?`, `:email?`, `:trim`
+- a factory invocation — `[:between 0 10]`, `[:max-length 3]`, `[:default 99]`
+- a map with an override — `{:validate :present? :message "Name is mandatory"}`
+
+```clojure
+{:type :string
+ :validations [:present? [:max-length 80]]
+ :coercions   [:trim]}
+```
+
+Standard catalog (abridged): type/numeric predicates (`:string?`, `:pos?`, …), apron predicates (`:present?`, `:email?`, …), comparison/shape factories (`:>`, `:between`, `:matches`, `:one-of`), string/type coercers (`:trim`, `:->int`, `:->keyword`, …), `:default`.
+
+### Combinator refs (2.8.0)
+
+Compose other refs (or inline fns): `:nil-or?`, `:not?`, `:and?`, `:or?`.
+
+```clojure
+[:nil-or? :pos?]                       ;; pass nil or any positive
+[:and? :integer? [:between 0 10]]
+[:or?  :pos? :zero?]
+[:not? :pos?]
+```
+
+Custom combinators resolve their args via `schema/->validate-fn` / `schema/->coerce-fn`:
+
+```clojure
+(schema/register-ref! :every-of?
+  (fn [pred-ref]
+    (let [pred (schema/->validate-fn pred-ref)]
+      {:validate (fn [coll] (every? pred coll))})))
+```
+
+Combinators are value-scoped only — they do not compose entity-scoped refs.
+
+### Registering refs
+
+```clojure
+(schema/register-ref! :app/non-empty-vec
+                      {:validate (every-pred vector? seq)
+                       :message  "must be a non-empty vector"})
+
+(schema/register-ref! :app/clamp                       ;; factory
+                      (fn [lo hi]
+                        {:coerce  #(max lo (min hi %))
+                         :message (str "clamped to [" lo ", " hi "]")}))
+```
+
+`schema/verify-schema-refs` walks a schema and throws on any unresolved or wrong-slot ref — call once after registration to fail fast. `schema/*ref-registry*` is a bindable dynamic var for test/plugin isolation.
 
 ## Entity-Level Specs
 
@@ -93,6 +150,41 @@ Use `:*` for cross-field rules. All functions receive the whole entity.
 ```
 
 Entity-level specs can add new computed fields or validate existing ones.
+
+### Entity-scoped refs (2.8.0)
+
+Alternative to `:*` when the cross-field rule belongs *next to* the field it constrains. A ref with `:scope :entity` receives `(entity field-key)` instead of `(value)`:
+
+```clojure
+(schema/register-ref! :required-when
+  (fn [other-key expected]
+    {:validate (fn [entity field-key]
+                 (or (not= expected (get entity other-key))
+                     (schema/present? (get entity field-key))))
+     :scope    :entity
+     :message  (str "is required when " other-key " is " expected)}))
+
+(def pet
+  {:species     {:type :string}
+   :tail-length {:type :int :validations [[:required-when :species "dog"]]}})
+```
+
+Works the same way under `:coercions` for sibling-derived values:
+
+```clojure
+(schema/register-ref! :full-name
+                      {:coerce (fn [e _k] (str (:first e) " " (:last e)))
+                       :scope  :entity})
+```
+
+**Pipeline order** for full-entity ops (`validate` / `coerce` / `conform`):
+1. Per-field, value-scoped: coerce → validate
+2. Per-field, entity-scoped: coerce → validate (after step 1 finishes for every field)
+3. `:*` entity-level: coerce → validate
+
+`validate-value!`, `coerce-value!`, `conform-value!` operate on a single value — entity-scoped entries are silently bypassed there.
+
+Inside a nested `:type :map :schema {...}`, the inner field's "entity" is the inner map. Recursion handles it automatically.
 
 ## Nested Structures
 

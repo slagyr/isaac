@@ -110,6 +110,51 @@ Append, commit, push — every time. Don't batch a session's decisions into one 
 - **Make assertions prove the behavior, not just its shape.** Two assertions that together rule out the lazy implementation beat one that a stub could satisfy. Pick the assertion that would fail if someone took the shortcut.
 - **Keep it fictional.** Real PII or real use-cases in a spec are a smell — they leak, they date, they read as config. The *behavior* is real; only the *content* is fictional. Use the project's fixture theme.
 
+### The scenario plan (present before any gherkin)
+
+Once the design is settled, present the **scenario plan**: a titled list of every scenario you intend to draft. Get it approved before the first gherkin block. The plan is what gives `X of N` meaning — and `X of N` exists for two reasons (2026-07-26, Micah): the reviewer should never sit in a review not knowing when it will end, and the agent should never wander into generating scenarios forever. The plan bounds the session for both sides.
+
+```
+<bean-id> — scenario plan (<N> scenarios):
+
+1. <scenario title> — <one-line intent>
+2. …
+
+Good?
+```
+
+Plan approval can prune or add scenarios — that's the point; a vetoed title costs nothing, a vetoed gherkin table costs a rewrite. If N changes mid-session (a scenario splits, a gap is discovered), present a revised plan (`scenario plan (rev 2)`) before continuing.
+
+### The proposal format (canonical)
+
+Every scenario proposal is presented in exactly this shape — same session, every session, every agent. The reviewer should never re-learn the layout:
+
+````
+<bean-id> — scenario <X> of <N> — <feature-file>:
+
+```gherkin
+<the scenario, verbatim as it will land in the feature file>
+```
+
+New steps invented:
+1. <step text>
+   <one line: why an existing step can't carry this>
+
+<Extra context, only if needed. Omit if in doubt.>
+
+Good?
+````
+
+Rules:
+
+- **The proposal is the whole message.** No preamble, no trailing options. When revising after feedback, one line above the block — `Revised: <what changed>` — and the header becomes `scenario <X> of <N> (rev 2)`.
+- **`X of N` tracks the approved scenario plan.** Same order, same count.
+- **The header names the destination feature file** (`features/`-relative, e.g. `admin/entities.feature`) — where-does-this-live is a standing reviewer question, so it's answered on line one, every time. Append `(new file)` when the file doesn't exist yet.
+- **The gherkin block is verbatim** — exactly what will be committed, fenced, including the `Scenario:` line. No placeholder tables.
+- **The step ledger is exhaustive and honest.** List only steps missing from the project's step registry, each with its one-line justification. When everything reuses existing steps, write `New steps invented: none` — the explicit "none" proves the ledger was checked, not skipped.
+- **Extra context earns its place.** A design consequence the reviewer must know before approving — nothing else. Omit if in doubt.
+- **End with `Good?`** — literally. It's the sentinel that the proposal is complete and awaiting a verdict.
+
 ---
 
 ## 8. Anti-patterns (the mistakes to catch)
@@ -121,7 +166,9 @@ Append, commit, push — every time. Don't batch a session's decisions into one 
 | Reusing a step that's too weak for the assertion | Judge adequacy; propose a precise new step and flag it. |
 | `Given` that hand-waves setup | Every precondition the code needs is a real, executable `Given`. |
 | Concrete-impl details in a generic component's feature | Test the generic seam; push specifics to the owning module. |
-| A wall of scenarios | One or two at a time, numbered, with the step ledger. |
+| A wall of scenarios | One at a time, in the canonical proposal format (§7). |
+| Free-form / shifting proposal layout | The canonical format — identical shape every time. |
+| Gherkin before the scenario plan is approved | Titled plan first; `X of N` tracks it. |
 | Inventing fixture names | Reuse the project's established fictional cast. |
 | Real PII / real use-cases in a spec | Fictional content, real behavior — always. |
 | Decisions left only in chat | Append to the bean, date-stamped, with the why. |
@@ -151,7 +198,7 @@ Before you present scenarios:
 - [ ] Scenarios are at the right abstraction level for this component.
 - [ ] Every `Given` is executable; no hand-waved setup.
 - [ ] Fixtures reuse the project's fictional cast; no real PII/use-cases.
-- [ ] One or two at a time, numbered, with the step ledger.
+- [ ] Scenario plan presented and approved; proposals use the canonical format (§7), `X of N` tracking the plan.
 
 Before you promote a bean to `todo`:
 - [ ] Scenarios written `@wip`, committed, pushed.

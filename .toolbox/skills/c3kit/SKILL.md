@@ -22,46 +22,9 @@ Use this skill whenever you work in a project that depends on any c3kit library.
 
 ### Schema System
 
-Schemas are plain maps. Each field is a spec with `:type`, optional `:validate`, `:coerce`, `:present`, and `:message` keys.
+Schemas are plain maps. Each field is a spec with `:type`, optional `:validate`, `:coerce`, `:present`, and `:message` keys. Four operations: `coerce`, `validate`, `conform` (coerce + validate), and `present`. Each has a bang variant that throws on failure; non-bang returns the entity with error objects embedded in failed fields.
 
-```clojure
-(def user
-  {:kind  (schema/kind :user)
-   :id    {:type :long}
-   :name  {:type :string :validate :present}
-   :email {:type :string :validate :email}
-   :role  {:type :string}})
-```
-
-**Built-in types:** `:string`, `:int`, `:long`, `:float`, `:double`, `:boolean`, `:date`, `:timestamp`, `:uuid`, `:keyword`, `:ref`, `:any`
-
-**Sequences:** Wrap a spec in a vector: `{:tags [{:type :string}]}`
-
-**Nested schemas:** Use a map as the spec: `{:address {:street {:type :string} :city {:type :string}}}`
-
-### Four-Operation Model
-
-| Operation | Purpose | Non-bang | Bang |
-|---|---|---|---|
-| **coerce** | Convert raw values to typed values | `schema/coerce` | `schema/coerce!` |
-| **validate** | Check values against rules | `schema/validate` | `schema/validate!` |
-| **conform** | Coerce then validate | `schema/conform` | `schema/conform!` |
-| **present** | Transform for display/output | `schema/present` | `schema/present!` |
-
-Non-bang returns entity with error objects in failed fields. Bang throws. Use `schema/error?` to check, `schema/message-map` or `schema/message-seq` to extract messages.
-
-```clojure
-;; Conform an entity — coerce + validate in one step
-(let [result (schema/conform user-schema raw-data)]
-  (if (schema/error? result)
-    (handle-errors (schema/message-map result))
-    (save! result)))
-
-;; Or use bang to throw on failure
-(schema/conform! user-schema raw-data)
-```
-
-More complete documentation for Schema is available here: https://github.com/cleancoders/c3kit-apron/blob/master/SCHEMA.md
+**When working with `c3kit.apron.schema`, load the [c3kit-schema](../c3kit-schema/SKILL.md) skill for full API coverage and critical guidance on avoiding silent failures.**
 
 ### Legend
 
@@ -501,7 +464,7 @@ Run: `clj -M:css once` or `clj -M:css auto`
 1. **Using `api/find` without knowing the return type** — `find` returns a seq, `ffind` returns a single entity, `entity` looks up by id
 2. **Forgetting safety guard** — `api/clear` and `api/delete-all` throw unless wrapped in `api/with-safety-off`
 3. **Skipping `conform!`** — always conform entities through their schema before persisting
-4. **Returning values from `defthen` without asserting** — produces 0 assertions (see gherclj skill)
+4. **Returning values from `defthen` without asserting** — produces 0 assertions (see the [gherclj](https://github.com/slagyr/gherclj) repo for step-definition guidance)
 5. **Using `clojure.test` assertions** — the ecosystem uses speclj (`should=`, `should-throw`, etc.)
 6. **Wrong alias for `corec`** — it's `ccc`, not `corec` or `core`
 7. **Calling protocol methods directly** — use the public API functions (`api/entity`, not `(-entity impl ...)`), protocol methods are prefixed with `-` to signal they're internal
