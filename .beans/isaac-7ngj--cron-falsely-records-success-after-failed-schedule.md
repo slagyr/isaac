@@ -1,11 +1,11 @@
 ---
 # isaac-7ngj
 title: Cron falsely records success after failed scheduled turn
-status: todo
+status: draft
 type: bug
 priority: high
 created_at: 2026-08-11T17:02:28Z
-updated_at: 2026-08-11T17:02:28Z
+updated_at: 2026-08-11T18:18:40Z
 ---
 
 Cron state can falsely record `:last-status :succeeded` even when the scheduled turn failed before any tool execution.
@@ -30,3 +30,9 @@ That makes cron health look green when the job actually failed, which hides oper
 ## Notes
 - This surfaced while investigating missing morning health updates.
 - Separate operational follow-ups exist for model swaps and migrating `tempest-vault-sync` from OpenClaw to Isaac; they are not part of this bug.
+
+## Investigation note
+
+Code inspection on current `isaac.cron` shows `fire-job!` calls `bridge/dispatch!` synchronously and records `:last-status` from the returned result (`:failed` when `:error` is present). So the bug is likely **not** that cron records success immediately upon trigger without waiting for the turn. More likely: a provider-failed turn is returning a non-error result to cron, or a later layer is swallowing the failure.
+
+That means the bean needs root-cause confirmation before dispatching implementation.
