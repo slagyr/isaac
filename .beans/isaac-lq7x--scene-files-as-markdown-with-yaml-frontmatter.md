@@ -4,8 +4,10 @@ title: Scene files as markdown with YAML frontmatter
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-17T16:45:12Z
-updated_at: 2026-08-17T16:54:56Z
+updated_at: 2026-08-17T17:00:39Z
 parent: isaac-51xy
 blocked_by:
     - isaac-rxr4
@@ -22,3 +24,17 @@ Scenes are 90% prose (distilled :text) — store them as what they read as. Repl
 ## Acceptance
 - Migrated scenes land as `<scene-id>.md` (YAML frontmatter + distilled-text body); human-readable when opened.
 - `bb features features/episodes/migrate_session.feature` green; `bb spec` green.
+
+## Implementation notes (scrapper@isaac-work-1)
+
+- `isaac.episodes.store`: scenes write/read as `<scene-id>.md`.
+  Frontmatter keys: id, start-id, end-id, started-at, ended-at, seal-reason, gist.
+  Body = distilled `:text`. `episode.edn` unchanged.
+- Frontmatter split uses the same regex as `isaac.config.loader` /
+  `isaac.config.parse` (`---\n...\n---`); YAML via `clj-yaml` (same stack as config).
+  Public parse API is private on the pinned foundation SHA (pre-flgy split on
+  classpath for bb), so the split lives next to the scene store — identical
+  contract, not a divergent parser.
+- `replace-scenes?` deletes both `.md` and legacy `.edn` scene files.
+- Commit: isaac-agent `dda1ec3`.
+- Verified: `bb spec spec/isaac/episodes/` (40/0), `bb features features/episodes/migrate_session.feature` (9/0).
