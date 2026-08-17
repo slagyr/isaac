@@ -16,8 +16,16 @@ Child of isaac-51xy (episodic memory), phase-1 bean 2. Materialize existing sess
 ## Design (settled 2026-08-16, Micah + planning session)
 - **Command:** `isaac episodes migrate-session <session-id>` — session id REQUIRED (one session per invocation; operator-paced on zanebot's large corpus; no --all yet). Never embeds — indexing is bean 3 (`transcripts → migrate → scenes → index → vectors`); live seal-time path is bean 5.
 - **1:1 mapping:** one session → one closed episode, tagged migrated. No time-gap splitting — retrieval runs over scenes/gists (own timestamps); episode grouping barely affects it.
-- **Storage:** `~/.isaac/episodes/<crew>/` with `episodes.ednl` + `scenes.ednl` — **EDNL** (edn lines, like logs; long-running intent to move formats there — transcripts stay JSONL for now). "Recall" names only the retrieval act, never storage or commands.
-- **Episode record (closed, migrated):** id = session id, crew (from session .edn metadata), timestamps, scene ids, :migrated provenance.
+- **Storage (revised same session — dir per episode, file per scene):**
+  ```
+  ~/.isaac/episodes/<crew>/<episode-id>/
+    episode.edn        ; thin record: crew, timestamps, scene ids, :migrated-from <session-id>
+    <scene-id>.edn     ; one immutable EDN file per sealed scene
+    transcript.ednl    ; phase 2, live episodes only — NOT written by migration
+  ```
+  Scenes are immutable after seal → write-once single files (no append coordination, no partial-line corruption); retrieval reads exactly the hit scene's file; the future open scene (bean 5) is one small file rewritten per turn. EDNL survives only as the future live transcript format; everything migration writes is single-EDN-record files. "Recall" names only the retrieval act, never storage or commands.
+- **Ids are timestamped:** `<yyyy-MM-dd-HHmm>-<chaos>` (few random base36 chars for same-minute uniqueness) for BOTH episode and scene ids — chronological `ls` for free. Migrated episodes use the session's FIRST-MESSAGE time (their real era), not migration time; scene ids use their span's first-message time.
+- **Episode record (closed, migrated):** timestamped id, crew (from session .edn metadata), timestamps, scene ids, `:migrated-from <session-id>` provenance.
 - **Scene record:** plain EDN — `:start-id`/`:end-id` (MESSAGE ids from the transcript — provenance only, never a retrieval lookup path; recall injects the scene's stored `:text`), timestamps, seal-reason, distilled `:text`, `:gist`. Scenes are not transcripts; the session transcript stays the only message log.
 - **Segmentation pass:** one LLM call per **compaction-span** (processing window, NOT a scene). In: distilled messages with ids + the span's existing compaction :summary (transcripts already carry these — free gist-draft context). Out: strict EDN scenes `{:start-id :end-id :gist}` tiling the span (every message in exactly one scene). The LLM draws multiple scenes per span by topic; a scene never crosses a compaction boundary — identical to the live rule (compaction is a seal trigger, epic Decision 5). No-compaction sessions: size-capped windows (matches live size-cap seal). Bad parse → one retry → flag the span and continue.
 - **Resumable/idempotent:** spans already sealed to scenes.ednl are skipped; interrupted migration continues; fully-migrated session is a no-op without --force. Migration is one sequential streaming pass — no random access even on 1M-line transcripts.
