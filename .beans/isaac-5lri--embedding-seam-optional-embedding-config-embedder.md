@@ -4,8 +4,10 @@ title: 'Embedding seam: optional :embedding config + Embedder protocol + ollama 
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-17T01:09:17Z
-updated_at: 2026-08-17T01:14:47Z
+updated_at: 2026-08-17T01:39:48Z
 parent: isaac-51xy
 ---
 
@@ -35,3 +37,22 @@ Committed @wip in isaac-agent: `features/recall/embedding.feature` (7 scenarios,
 - Quoted-argument parsing in `isaac is run with "embed \"hi there\" ..."` — if unsupported, adjust fixture, keep the one-arg-one-text assertion.
 - `the last outbound HTTP request matches:` cell dialect (substring vs exact, array rendering) — adjust cells to the step's dialect, not the semantics.
 - Exact validation-message wording may be tuned to the schema system's output; keep the path-anchored `embedding.provider` / `bad value:` shape.
+
+
+## Implementation (scrapper@isaac-work-1)
+
+**Agent head:** `7f2a925d2b1c0325bd0bb16e580b1fe546676358` on `bean/isaac-5lri`.
+
+### Delivered
+- `isaac.recall.embedding.protocol/Embedder` — batch `embed`
+- `isaac.recall.embedding` — resolve from `:embedding`, grover 4-dim vectors
+- `isaac.recall.embedding.ollama` — POST `{base}/api/embed` via `isaac.llm.http`
+- `isaac.recall.embedding.cli` — `isaac embed` (`:isaac/cli` berth)
+- Manifest: `:embedding` schema + `:embedding-provider` config check; `embed` CLI
+- Grover `post-json!` handles `/api/embed` for simulation capture
+- Feature `@wip` removed; minor step dialect tweaks (lines `text` header; url regex; source `must be one of`)
+
+### Verify
+- `bb features features/recall/embedding.feature` → 7/0
+- `bb spec` embedding + grover + http specs green
+- Full suite has pre-existing compaction/tool-loop failures also on `main` (not introduced here)
