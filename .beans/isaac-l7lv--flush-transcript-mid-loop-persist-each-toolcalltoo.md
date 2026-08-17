@@ -9,7 +9,7 @@ tags:
     - transcript
     - unverified
 created_at: 2026-08-17T22:44:47Z
-updated_at: 2026-08-17T23:14:28Z
+updated_at: 2026-08-17T23:15:39Z
 parent: isaac-wq8m
 ---
 
