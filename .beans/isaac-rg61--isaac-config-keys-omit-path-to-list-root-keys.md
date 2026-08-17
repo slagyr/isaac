@@ -69,3 +69,9 @@ GitHub Actions run 32039954834 failed at **Set up job** before any product steps
 `DeLaGuardo/setup-clojure` download hit 502 then 429 (Too Many Requests). Not a
 product regression from f6e4431. Re-ran failed jobs.
 
+## CI repair (scrapper@isaac-work-2, 2026-08-17)
+
+1. First CI fail (32039954834 attempt 1): infrastructure — `DeLaGuardo/setup-clojure` 502/429 at Set up job. Re-ran.
+2. Attempt 2: `bb ci` / `bb spec` 21 failures after pin to foundation **cbf9e37** (main tip including flgy loader split). Failures: `isaac.fs/instance` in schema entity/custom validation specs; provider-validation message drift. **Not caused by keys/list logic** — caused by pinning past d4a7bf1 onto unfinished flgy surface.
+3. Fix: rebased keys/list-only change onto **d4a7bf1** as foundation commit **c70d9e2** (tag `isaac-rg61-agent-pin`); agent pin **af85721** → c70d9e2. Local: `bb spec` 1288/0/2617 (3 pending), targeted features green. Main tip **cbf9e37** still carries the same keys/list fix for foundation consumers on flgy.
+
