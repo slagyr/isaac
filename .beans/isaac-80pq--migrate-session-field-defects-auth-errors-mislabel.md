@@ -23,3 +23,37 @@ Found 2026-08-17 field-testing isaac-rxr4 locally (first real-model contact). Th
 - bb features features/episodes/migrate_session.feature green; bb spec green.
 
 Context: gist model config is :episodes {:gist-model <ref>}; local field config used ollama/llama3.2. Grover-only testing gave false confidence on output leniency — keep the real-repro list-form as the fixture.
+
+## Contract revision (2026-08-17, Micah): replace EDN output with line format
+Supersedes defect 3's "normalize list-form maps" fix — do NOT add EDN leniency; replace the contract. The only structured thing we need from the model is boundaries; the gist is free text, which no model can get syntactically wrong.
+
+**The exact ask** (one user message per span):
+
+```
+You are segmenting a conversation into scenes: contiguous runs of
+messages about one topic. Below is a numbered list of messages.
+
+Output one line per scene, nothing else:
+<first>-<last>: <one-sentence gist of what was discussed or decided>
+
+Every message number must fall in exactly one scene, in order,
+no gaps. Start a new scene when the topic changes. A single-message
+scene is written as e.g. "7-7: ...".
+
+Preceding context (summary of the conversation before this point):
+<prior compaction summary, when present>
+
+Messages:
+1. [user] ...
+2. [assistant] ...
+```
+
+**Expected reply, in full:**
+```
+1-2: wine pairing for the pheasant dinner — settled on a light pinot noir
+3-5: regatta schedule — first race Saturday at dawn
+```
+
+**Code's side:** regex `^(\d+)-(\d+):\s*(.+)$` per line (accept bare `7` as `7-7` — one alternation); lines that don't match are IGNORED (preamble/fences/blanks are non-fatal); tiling validation over 1..N unchanged and remains the correctness gate; ordinals→message-ids unchanged; line remainder = gist. A malformed line drops one scene and breaks tiling → span flagged with a diagnosable :raw (defect 2), instead of the whole response dying on syntax.
+
+**Ripples:** SEGMENT_INSTRUCTIONS + parse-scenes rewritten; feature scenarios' queued gist responses move from EDN to line form (grover fixtures get simpler); the list-form-maps acceptance scenario becomes "reply with preamble + fenced/noisy lines around valid boundary lines → still parses". Defects 1 (auth surfacing + abort, no retry/flag), 2 (persist+log :raw on flag), 4 (1-based numbering everywhere) unchanged.
