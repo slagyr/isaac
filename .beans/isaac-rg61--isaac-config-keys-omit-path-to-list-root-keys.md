@@ -4,8 +4,10 @@ title: 'isaac config keys: omit path to list root keys'
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-17T14:23:35Z
-updated_at: 2026-08-17T14:35:34Z
+updated_at: 2026-08-17T14:42:23Z
 ---
 
 ## Goal
@@ -52,3 +54,13 @@ DoD: remove `@wip` from both scenarios; those commands pass. Help: `keys [config
 
 - Drop `require-path!` from `keys`/`list` (only callers). Blank/nil path = root, same as `config get`. Do not pass nil to `path/data-at`.
 - TDD in `isaac-foundation/spec/isaac/config/cli/` (no keys/list spec yet).
+
+## Implementation (scrapper@isaac-work-2, 2026-08-17)
+
+- **isaac-foundation** `cbf9e37`: drop `require-path!` from keys/list; blank path = resolved root via `value-at-path` (nil-safe); help `keys [config-path]` / `list [config-path]`; top-level help summary updated. Specs: `keys_spec.clj`, `list_spec.clj`.
+- **isaac-agent** `f6e4431`: pin foundation product SHAs to `cbf9e37`; remove `@wip` from both root-path scenarios.
+
+### Verified
+- `bb spec -F spec/isaac/config/cli/` (foundation) ✅ 72/0
+- `bb features features/config/cli.feature:930` ✅
+- `bb features features/config/cli.feature:963` ✅
