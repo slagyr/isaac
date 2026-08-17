@@ -5,11 +5,11 @@ status: in-progress
 type: feature
 priority: high
 tags:
+    - unverified
     - isaac-agent
     - transcript
-    - unverified
 created_at: 2026-08-17T22:44:47Z
-updated_at: 2026-08-17T23:15:39Z
+updated_at: 2026-08-17T23:19:16Z
 parent: isaac-wq8m
 ---
 
@@ -69,3 +69,11 @@ Child of isaac-wq8m (turn resilience). Complements isaac-7li9 (durable turn mark
 - Verified: `bb spec spec/isaac/drive/turn_spec.clj` — 37 examples, 0 failures.
 
 ## Verify fail (attempt 1, 2026-08-17): lint gate failed on touched files; bb lint reported unresolved speclj macros in spec/isaac/drive/turn_spec.clj
+
+## Lint repair (scrapper@isaac-work-2, 2026-08-17)
+
+`bb lint` on touched files now 0/0. Changes in isaac-agent **3325c2d**:
+- `spec/isaac/drive/turn_spec.clj`: explicit speclj `:refer` list (describe/it/should*); drop unused `sidecar` require
+- `src/isaac/drive/turn.clj`: `_session-key` in `compaction-estimate-opts`
+
+Re-verified: `bb spec spec/isaac/drive/turn_spec.clj` 37/0/121; `bb lint src/isaac/drive/turn.clj spec/isaac/drive/turn_spec.clj` 0 errors, 0 warnings.
