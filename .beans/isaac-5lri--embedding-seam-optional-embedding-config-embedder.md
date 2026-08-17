@@ -1,10 +1,11 @@
 ---
 # isaac-5lri
 title: 'Embedding seam: optional :embedding config + Embedder protocol + ollama adapter + isaac embed CLI'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-08-17T01:09:17Z
-updated_at: 2026-08-17T01:09:17Z
+updated_at: 2026-08-17T01:14:47Z
 parent: isaac-51xy
 ---
 
