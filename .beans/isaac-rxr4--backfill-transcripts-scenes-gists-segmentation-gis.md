@@ -59,3 +59,14 @@ New steps (4): `an episode exists for crew {crew} matching:` (reads episode.edn,
 ## Acceptance
 - `bb features features/episodes/migrate_session.feature` — all 7 pass, @wip removed on completion
 - `bb features` and `bb spec` — full suites stay green
+
+## Verify fail (attempt 1, 2026-08-17): acceptance unmet — full feature suite is not green on `isaac-agent` `fd8060a`
+
+Evidence from verify on `isaac-agent` `fd8060a62b9c910d3aacbd25085546d112c8c5f5`:
+- `bb features features/episodes/migrate_session.feature` ✅ `7 examples, 0 failures, 54 assertions`
+- `bb spec` ✅ `1282 examples, 0 failures, 2597 assertions, 3 pending`
+- `bb features` ❌ exits `124` after printing `features timed out after 180s`; the run also emits multiple `F` markers before timeout, so the full acceptance suite is not green in verify
+- `bb jvm-features` ❌ also exits `124` (`jvm-features timed out after 60s`), which independently confirms the full feature gate is not presently passing in verify
+- `features/episodes/migrate_session.feature` has no `@wip`, so the targeted migration scenarios are ready, but AC still requires the full feature suite green
+
+This bean cannot pass while the written acceptance still requires `bb features` green and that command is red/timing out on the verified SHA.
