@@ -28,7 +28,7 @@ Child of isaac-51xy (episodic memory), phase-1 bean 2. Materialize existing sess
 - **Episode record (closed, migrated):** timestamped id, crew (from session .edn metadata), timestamps, scene ids, `:migrated-from <session-id>` provenance.
 - **Scene record:** plain EDN — `:start-id`/`:end-id` (MESSAGE ids from the transcript — provenance only, never a retrieval lookup path; recall injects the scene's stored `:text`), timestamps, seal-reason, distilled `:text`, `:gist`. Scenes are not transcripts; the session transcript stays the only message log.
 - **Segmentation pass:** one LLM call per **compaction-span** (processing window, NOT a scene). In: distilled messages with ids + the span's existing compaction :summary (transcripts already carry these — free gist-draft context). Out: strict EDN scenes `{:start-id :end-id :gist}` tiling the span (every message in exactly one scene). The LLM draws multiple scenes per span by topic; a scene never crosses a compaction boundary — identical to the live rule (compaction is a seal trigger, epic Decision 5). No-compaction sessions: size-capped windows (matches live size-cap seal). Bad parse → one retry → flag the span and continue.
-- **Resumable/idempotent:** spans already sealed to scenes.ednl are skipped; interrupted migration continues; fully-migrated session is a no-op without --force. Migration is one sequential streaming pass — no random access even on 1M-line transcripts.
+- **Resumable/idempotent:** spans whose scenes are already sealed to files are skipped; interrupted migration continues; fully-migrated session is a no-op without --force. Migration is one sequential streaming pass — no random access even on 1M-line transcripts.
 - **Gist model:** configurable (default: defaults model); grover plays gist-writer in tests.
 - **Distillation (what the gist LLM sees / what :text stores):** user+assistant text kept; each toolCall collapsed to a one-line marker (name + truncated args); tool results dropped; compaction summaries used as span context, not scene text.
 
@@ -36,10 +36,9 @@ Child of isaac-51xy (episodic memory), phase-1 bean 2. Materialize existing sess
 Session = `~/.isaac/sessions/<key>.jsonl` + sibling `<key>.edn` metadata (carries :crew, :id, :cwd). Lines: `session` header, `message` ({:role :content[]}, stable id/parentId/timestamp), `compaction` (carries :summary). Tool calls are content items type "toolCall".
 
 ## Scope
-- In: episodes/scenes EDNL writing, distillation, windowing, LLM segmentation+gisting, resume/idempotency, CLI + config (gist model).
+- In: episode/scene EDN file writing, distillation, windowing, LLM segmentation+gisting, resume/idempotency, CLI + config (gist model).
 - Out: embedding/index (bean 3, isaac-j2p4), live sealing (bean 5), --all batch mode, time-gap episode splitting.
 
-Status draft — design settled; scenario plan next, then promote to todo once scenarios committed @wip.
 
 ## Drafting-session decisions (2026-08-16, scenario review)
 - **Segmentation LLM speaks SPAN-LOCAL ORDINALS, not message ids** — prompt numbers the span's distilled messages 1..N; response scenes `{:start :end :gist}` must tile 1..N exactly (validation catches drift); code resolves ordinals → message ids at seal. Rationale: opaque-id echo is the weakest link (silent mis-spans); ordinals are near-immune and cheaper. Ordinals count ALL span messages including dropped-from-text toolResults (tiling over, not renumbering around).
