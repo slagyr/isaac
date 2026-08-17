@@ -132,3 +132,9 @@ Shortest path to MEASURING retrieval quality on real transcripts, before any liv
 - Children (in "How we begin" order, all phase-1 work inside isaac-agent): embedding seam (`isaac.recall.*` + ollama adapter); backfill segmentation + gisting; per-crew index + hybrid retriever + recall CLI; recall port + recall-at-open composition; live write-through + scene sealing; conversation-policy port + isaac-session extraction; isaac-episode (records, router, TTL); arcs.
 
 Status draft — design substantially settled 2026-08-16 (two rounds: episodes/scenes/recall model, then conversation/policy seams + installation tiers); no scenarios yet. Next planning step: draft child bean 1 (embedding seam) with a scenario plan.
+
+## Field notes (2026-08-17, first real migrations)
+- isaac-rxr4 + isaac-80pq landed; real sessions migrate locally. Segmentation contract is line-format (`<first>-<last>: <gist>`, prompt states N, open-ended endings resolve to N, prefer-several-scenes nudge).
+- **Gist-model quality is the dominant retrieval-bar variable**: llama3.2 (3B) is format-compliant but segments inconsistently (11 sharp scenes one run, 1 lazy blob the next); llama3.3:70b segmented the same session into 6 precise scenes in 92s, first try. Checkpoint should sweep gist models; 70b-class is the local default meanwhile.
+- Scene files move to markdown + YAML frontmatter (isaac-lq7x, before bean 3 — the index must not chase a moving format).
+- **Phase-2 obligation (do not forget):** migrated episodes carry no transcript — their provenance points at session .jsonl files via :migrated-from + scene span ids. Session retirement (roadmap #7-10) MUST relocate or copy transcripts into episode directories, or migrated provenance dangles.
