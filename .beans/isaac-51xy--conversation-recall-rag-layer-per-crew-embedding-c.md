@@ -84,6 +84,30 @@ Supporting vocabulary: **gist** (per-SCENE summary written at seal — memory-sc
 2. **Policy ports + plugin modules, piloted per-crew** — define the conversation-policy port in isaac-agent (core stays put per Decision 18), extract the session policy into isaac-session and build isaac-episode beside it (both policies born as modules in the same stroke, so the port gets two real implementations the day it matters), opt one experimental crew into episodes against real traffic while others stay on sessions. Sessions are NOT deleted — they remain the Base/Remembering tier (Decision 14); episodic crews get the router and stop having session-management questions.
 3. **Arcs / consolidation at scale** — chain scenes across episodes by topic; arc consolidation merges a chain of scene gists into an arc gist so old material compresses and the index stays fast/relevant.
 
+## Roadmap (2026-08-16; bean ids assigned as created)
+
+**Phase 1 — Recall** (all `isaac.recall.*` in isaac-agent):
+| # | Bean | Depends on | Status |
+|---|---|---|---|
+| 1 | isaac-5lri — embedding seam (`isaac embed`, Embedder protocol, ollama adapter) | — | completed (post-verify float-format fix added on branch: 469a0fc) |
+| 2 | isaac-rxr4 — backfill: transcripts → scenes + gists | 1 | draft |
+| 3 | isaac-j2p4 — per-crew index + hybrid retrieval + `isaac recall` CLI | 2 | draft |
+| — | **CHECKPOINT** — retrieval quality on real history; settle blend/budget/gist-prior empirically. Gates everything below. | 3 | gate |
+| 4 | recall port + recall-at-open in prompt builder (first live change) | checkpoint | prose until checkpoint |
+| 5 | live scene sealing + write-through (rolling embed; seal on topic-shift/size/compaction; gist-at-seal) | 4 | prose until checkpoint |
+| 6 | zanebot deployment: ollama install, :embedding config, backfill on real corpus | 3 | prose until checkpoint |
+
+**Phase 2 — Episodes** (held as prose until phase 1 proves the retrieval bar):
+7. conversation-policy port + extract isaac-session module (both policies born together — Decision 18)
+8. isaac-episode module: episode records, open/fork/close lifecycle, TTL sweep, episode-owned transcripts
+9. router: message → append/fork/open resolution (live-scene matching, cache cost model)
+10. per-crew pilot: `:conversation-policy` config, one experimental crew; retroactive old-sessions-as-closed-episodes migration
+
+**Phase 3 — Arcs**:
+11. arc design + consolidation at scale (named concept only — see Terminology)
+
+Beans are created just-in-time: drafts when shape is settled enough, `todo` only after a scenario session. Beans 4–6 stay prose because their shapes depend on checkpoint findings.
+
 ## How we begin (agreed 2026-08-16)
 Shortest path to MEASURING retrieval quality on real transcripts, before any live behavior change. First child beans, dependency-ordered, all offline:
 1. **Embedding seam** — `embed` capability in the provider registry, ollama-backed, optional.
