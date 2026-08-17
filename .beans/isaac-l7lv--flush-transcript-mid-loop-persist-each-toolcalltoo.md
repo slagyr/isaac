@@ -1,14 +1,14 @@
 ---
 # isaac-l7lv
 title: 'Flush transcript mid-loop: persist each toolCall/toolResult as it happens'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - isaac-agent
     - transcript
 created_at: 2026-08-17T22:44:47Z
-updated_at: 2026-08-17T22:44:47Z
+updated_at: 2026-08-17T22:49:27Z
 parent: isaac-wq8m
 ---
 
@@ -38,13 +38,18 @@ Drop the end-of-turn `run-tool-calls!` dump so we do not double-write. Cancel pa
 
 isaac-agent: `src/isaac/drive/turn.clj` (`record-tool-call!`, remove post-loop `run-tool-calls!` persist). Specs in `spec/isaac/drive/turn_spec.clj`.
 
-## Proposed acceptance (not committed — keep draft until these exist)
+## Acceptance
 
-- `record-tool-call!` appends the `toolCall` entry before invoking the tool. A tool that reads the session transcript mid-exec sees its own `toolCall`.
-- After the tool returns, the next transcript entry is the matching `toolResult` (same id).
-- Completing a multi-tool turn does not duplicate those pairs (`run-tool-calls!` at the end is gone or no-ops already-persisted pairs).
-- Cancel after `toolCall` is written, before result: transcript has the `toolCall` and no result (resume synthesizes).
-- Runnable once specs land: `bb spec spec/isaac/drive/turn_spec.clj` plus a feature if we add one under `features/session/` that inspects the jsonl after the first tool of a grover turn (needs a hook or a tool that snapshots the file).
+Add these to `isaac-agent/spec/isaac/drive/turn_spec.clj` (describe `record-tool-call!` / execute-llm-turn). TDD: red first.
+
+1. **toolCall lands before exec** — a stub tool that reads the session transcript mid-invoke sees its own assistant `toolCall` entry (same id). `bb spec spec/isaac/drive/turn_spec.clj:LINE`
+2. **toolResult lands immediately after** — when the tool returns, the next transcript entry is `toolResult` with that id. Same file.
+3. **no double-write** — a turn that runs two tools then a final assistant has exactly two `toolCall`/`toolResult` pairs, not four. Post-loop `run-tool-calls!` dump is gone (or no-ops already-persisted pairs).
+4. **cancel mid-exec** — after `toolCall` is written, tool reports `:cancelled`: transcript has the `toolCall` and no matching result (resume synthesizes).
+
+Verify: `bb spec spec/isaac/drive/turn_spec.clj` green; `bb spec` and `bb lint` on touched files.
+
+Likely repo: isaac-agent.
 
 ## Relationship
 
