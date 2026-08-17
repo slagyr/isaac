@@ -7,8 +7,9 @@ priority: high
 tags:
     - isaac-agent
     - transcript
+    - unverified
 created_at: 2026-08-17T22:44:47Z
-updated_at: 2026-08-17T22:51:41Z
+updated_at: 2026-08-17T23:11:00Z
 parent: isaac-wq8m
 ---
 
@@ -54,3 +55,15 @@ Likely repo: isaac-agent.
 ## Relationship
 
 Child of isaac-wq8m (turn resilience). Complements isaac-7li9 (durable turn marker) and isaac-vdfc (startup resume / dangling tool-result repair): those assume the tail is on disk.
+
+## Implementation notes (scrapper@isaac-work-1)
+
+- `record-tool-call!` now takes `:ctx` and writes:
+  - assistant toolCall **before** `tool-fn*` runs
+  - toolResult immediately after a non-cancel return
+- Cancel (`:error :cancelled`) still throws; toolCall stays, no toolResult.
+- `execute-llm-turn!` no longer dumps `@executed-tools` via `run-tool-calls!`
+  on success or cancel (avoids double-write). Atom kept for loop bookkeeping.
+- `run-tool-calls!` remains as a legacy pair-dump for any leftover callers.
+- Commit: isaac-agent `875ca58`.
+- Verified: `bb spec spec/isaac/drive/turn_spec.clj` — 37 examples, 0 failures.
