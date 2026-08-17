@@ -1,11 +1,11 @@
 ---
 # isaac-rg61
 title: 'isaac config keys: omit path to list root keys'
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-08-17T14:23:35Z
-updated_at: 2026-08-17T14:31:30Z
+updated_at: 2026-08-17T14:33:06Z
 ---
 
 ## Goal
@@ -34,3 +34,21 @@ updated_at: 2026-08-17T14:31:30Z
 ## Scenario review (2026-08-17, Micah)
 
 1. keep — `config keys with no path lists root keys`. Present keys from the resolved map; `module-registry` absent because it is not in this config; values (`llama3.3`) never printed.
+
+2. keep — `config list with no path lists root keys and sources`. Root keys report `config/isaac.edn` (single-segment path; `config-source-file` has no entity id).
+
+## Acceptance
+
+Repo: **isaac-agent** (scenarios). Implement in **isaac-foundation**.
+
+```
+bb features features/config/cli.feature:930
+bb features features/config/cli.feature:963
+```
+
+DoD: remove `@wip` from both scenarios; those commands pass. Help: `keys [config-path]` / `list [config-path]`.
+
+## Worker notes
+
+- Drop `require-path!` from `keys`/`list` (only callers). Blank/nil path = root, same as `config get`. Do not pass nil to `path/data-at`.
+- TDD in `isaac-foundation/spec/isaac/config/cli/` (no keys/list spec yet).
