@@ -1,10 +1,11 @@
 ---
 # isaac-lq7x
 title: Scene files as markdown with YAML frontmatter
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-08-17T16:45:12Z
-updated_at: 2026-08-17T16:45:12Z
+updated_at: 2026-08-17T16:54:56Z
 parent: isaac-51xy
 blocked_by:
     - isaac-rxr4
