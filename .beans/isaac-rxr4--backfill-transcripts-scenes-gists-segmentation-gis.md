@@ -4,8 +4,10 @@ title: 'Backfill: transcripts -> scenes + gists (segmentation + gisting command)
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-17T03:21:48Z
-updated_at: 2026-08-17T04:29:16Z
+updated_at: 2026-08-17T05:08:11Z
 parent: isaac-51xy
 blocked_by:
     - isaac-5lri
