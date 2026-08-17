@@ -1,11 +1,10 @@
 ---
 # isaac-rxr4
 title: 'Backfill: transcripts -> scenes + gists (segmentation + gisting command)'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
+tags: []
 created_at: 2026-08-17T03:21:48Z
 updated_at: 2026-08-17T05:43:05Z
 parent: isaac-51xy
