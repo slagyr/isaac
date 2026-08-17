@@ -1,11 +1,11 @@
 ---
 # isaac-rg61
 title: 'isaac config keys: omit path to list root keys'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-08-17T14:23:35Z
-updated_at: 2026-08-17T14:33:06Z
+updated_at: 2026-08-17T14:35:34Z
 ---
 
 ## Goal
