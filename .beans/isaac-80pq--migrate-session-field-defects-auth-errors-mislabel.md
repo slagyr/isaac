@@ -4,8 +4,10 @@ title: 'migrate-session field defects: auth errors mislabeled, raw response disc
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-17T14:12:49Z
-updated_at: 2026-08-17T14:22:43Z
+updated_at: 2026-08-17T14:28:55Z
 parent: isaac-51xy
 ---
 
