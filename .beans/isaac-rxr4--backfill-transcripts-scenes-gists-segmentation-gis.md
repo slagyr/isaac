@@ -1,11 +1,11 @@
 ---
 # isaac-rxr4
 title: 'Backfill: transcripts -> scenes + gists (segmentation + gisting command)'
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-08-17T03:21:48Z
-updated_at: 2026-08-17T03:48:36Z
+updated_at: 2026-08-17T04:25:32Z
 parent: isaac-51xy
 blocked_by:
     - isaac-5lri
@@ -40,3 +40,21 @@ Session = `~/.isaac/sessions/<key>.jsonl` + sibling `<key>.edn` metadata (carrie
 - Out: embedding/index (bean 3, isaac-j2p4), live sealing (bean 5), --all batch mode, time-gap episode splitting.
 
 Status draft — design settled; scenario plan next, then promote to todo once scenarios committed @wip.
+
+## Drafting-session decisions (2026-08-16, scenario review)
+- **Segmentation LLM speaks SPAN-LOCAL ORDINALS, not message ids** — prompt numbers the span's distilled messages 1..N; response scenes `{:start :end :gist}` must tile 1..N exactly (validation catches drift); code resolves ordinals → message ids at seal. Rationale: opaque-id echo is the weakest link (silent mis-spans); ordinals are near-immune and cheaper. Ordinals count ALL span messages including dropped-from-text toolResults (tiling over, not renumbering around).
+- **Tool marker format:** `(tool <name> <arg-summary>)` inline in scene :text where the call happened.
+- **Compaction summary rides the FOLLOWING span's prompt** as preceding-context; span 1 of a session has none.
+- **Episode :status:** `:partial` (flagged spans remain) | `:closed`. Partial migration exits 1 but persists sealed scenes; plain re-run resumes flagged/missing spans only ("resumed"); fully-migrated re-run is exit-0 no-op ("already migrated"); `--force` re-runs the LLM pass and replaces in place.
+- **Retry:** one retry per span on unparseable output, then flag and continue with remaining spans.
+- **Config:** `:episodes {:gist-model <model-ref>}` (ordinary chat model — reuses models/providers; default: defaults model). Token cost ≈ one pass over the DISTILLED corpus (tool payloads stripped), once; point gist-model at local ollama on zanebot for zero API cost.
+- **Fixture dialect assumptions to verify at implementation** (adjust cells to real dialects, semantics unchanged): `summary` column on compaction rows in the transcript-fixture table; `messages` path form in `the last LLM request matches:`; queued-response content cell holding EDN; crew `cordelia` may need a minimal crew config in Background.
+
+## Scenarios
+Committed @wip: isaac-agent `features/episodes/migrate_session.feature` (7 scenarios, commit 2e98dd5).
+
+New steps (4): `an episode exists for crew {crew} matching:` (reads episode.edn, regex cells) · `that episode has scenes matching:` (scene files in id order; count+order+gist+text) · `scene {n} of that episode does not contain {string}` (absence — payload-dropped claim) · `crew {crew} has {n} episodes` (no-duplicate claim). All other steps reused (verified against session/config/ollama features).
+
+## Acceptance
+- `bb features features/episodes/migrate_session.feature` — all 7 pass, @wip removed on completion
+- `bb features` and `bb spec` — full suites stay green
