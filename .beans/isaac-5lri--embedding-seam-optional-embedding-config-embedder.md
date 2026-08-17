@@ -55,3 +55,6 @@ Committed @wip in isaac-agent: `features/recall/embedding.feature` (7 scenarios,
 - `bb features features/recall/embedding.feature` → 7/0
 - `bb spec` embedding + grover + http specs green
 - Full suite has pre-existing compaction/tool-loop failures also on `main` (not introduced here)
+
+## Merge note (2026-08-16)
+Merged to isaac-agent main @ 2e98dd5 (fast-forward; includes post-verify float-format fix 469a0fc — embed CLI zeroed real float embeddings; found trying live ollama, spec-guarded).
