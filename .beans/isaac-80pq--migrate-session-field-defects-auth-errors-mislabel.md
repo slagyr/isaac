@@ -1,13 +1,11 @@
 ---
 # isaac-80pq
 title: 'migrate-session field defects: auth errors mislabeled, raw response discarded, parser rejects list-form maps'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-17T14:12:49Z
-updated_at: 2026-08-17T14:28:55Z
+updated_at: 2026-08-17T14:33:51Z
 parent: isaac-51xy
 ---
 
