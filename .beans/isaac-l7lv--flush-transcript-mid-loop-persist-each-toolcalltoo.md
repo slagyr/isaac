@@ -9,7 +9,7 @@ tags:
     - transcript
     - unverified
 created_at: 2026-08-17T22:44:47Z
-updated_at: 2026-08-17T23:11:00Z
+updated_at: 2026-08-17T23:14:28Z
 parent: isaac-wq8m
 ---
 
@@ -67,3 +67,5 @@ Child of isaac-wq8m (turn resilience). Complements isaac-7li9 (durable turn mark
 - `run-tool-calls!` remains as a legacy pair-dump for any leftover callers.
 - Commit: isaac-agent `875ca58`.
 - Verified: `bb spec spec/isaac/drive/turn_spec.clj` — 37 examples, 0 failures.
+
+## Verify fail (attempt 1, 2026-08-17): lint gate failed on touched files; bb lint reported unresolved speclj macros in spec/isaac/drive/turn_spec.clj
