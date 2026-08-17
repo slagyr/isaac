@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-17T03:21:48Z
-updated_at: 2026-08-17T05:08:11Z
+updated_at: 2026-08-17T05:26:57Z
 parent: isaac-51xy
 blocked_by:
     - isaac-5lri
@@ -70,3 +70,40 @@ Evidence from verify on `isaac-agent` `fd8060a62b9c910d3aacbd25085546d112c8c5f5`
 - `features/episodes/migrate_session.feature` has no `@wip`, so the targeted migration scenarios are ready, but AC still requires the full feature suite green
 
 This bean cannot pass while the written acceptance still requires `bb features` green and that command is red/timing out on the verified SHA.
+
+## Worker investigation (verify-fail resume, 2026-08-17, scrapper@isaac-work-2)
+
+Reproduced on `isaac-agent` `fd8060a` (same SHA verify checked):
+
+| Gate | Result |
+|------|--------|
+| `bb features features/episodes/migrate_session.feature` | ✅ 7/0/54 |
+| `bb spec` | not re-run this turn; verify already ✅ 1282/0 |
+| Full `bb features` (no 180s kill) | ❌ **651 examples, 11 failures, 1537 assertions** in ~272s |
+| Parent pre-bean SHA `469a0fc` (pre-rxr4 impl) full features | ❌ **644 examples, 5 failures, 1496 assertions** in ~231s |
+
+### Full-suite failures on HEAD (fd8060a) — none are migrate_session
+1. `prompts/session-identity.feature:44` — system text of last 2 chat requests identical (got 1 request)
+2. `session/context_management.feature:131` — compaction truncated tool results; match saw **stale** `messages[1].content` from a prior scenario (Clojure/Babashka text), not the AAAA/ZZZZ fixture
+3. `session/context_window_guard.feature:74` — memory comm events missing
+4. `bridge/suspend.feature:31` — transcript empty/nil after suspend
+5. `session/llm_interaction.feature:103` — memory comm events missing
+6–7. `session/compaction_strategies.feature` rubberband/slinky entry counts short
+8–11. `session/compaction_logging.feature` — memory comm / compaction input misses
+
+### Baseline (469a0fc) already red
+Failures included session-identity, cancel_aborts_work, compaction_strategies rubberband, compaction_logging (2). So **full `bb features` was already not green before this bean's product code**. Suite also exceeds the 180s `bb features` budget (~230–270s), which is why verify sees exit 124.
+
+### Bean-local diffs that touch shared harness (fd8060a)
+- `spec/isaac/step_tables.clj` — `:regex` / `:regex-capture` now handle non-string actuals via `pr-str` + `re-find` (needed for migrate LLM request cells). Could widen matching but does not explain missing compaction/transcripts.
+- `spec/isaac/session/session_steps.clj` — `last-llm-request-matches` uses helper `last-llm-request` (falls back to `drive-dispatch/last-request`) instead of only `g/get :llm-request`. **Possible contributor to cross-scenario leakage** of last request / compaction request if process-global last-request is not cleared between scenarios — aligns with context_management seeing prior-scenario content.
+- Manifest + module require for episodes CLI — orthogonal to session/compaction features.
+
+### Assessment
+- Bean product AC for migrate-session is met.
+- Written AC line "`bb features` and `bb spec` — full suites stay green" cannot be satisfied without either:
+  A) fixing **pre-existing** full-suite flakes/timeouts (out of bean scope; session/bridge/compaction harness stability + possibly raise/remove 180s budget), or
+  B) **amending AC** to the gates verify already proved green: targeted `migrate_session.feature` + `bb spec` (and optionally not requiring wall-clock `bb features` under 180s until suite is healthy).
+
+Recommend planner amend AC (option B) and/or spawn a separate suite-health bean. Not fixing unrelated session/bridge flakes inside isaac-rxr4.
+
