@@ -62,3 +62,10 @@ DoD: remove `@wip` from both scenarios; those commands pass. Help: `keys [config
 - `bb spec -F spec/isaac/config/cli/` (foundation) ✅ 72/0
 - `bb features features/config/cli.feature:930` ✅
 - `bb features features/config/cli.feature:963` ✅
+
+## CI note (scrapper@isaac-work-2, 2026-08-17)
+
+GitHub Actions run 32039954834 failed at **Set up job** before any product steps:
+`DeLaGuardo/setup-clojure` download hit 502 then 429 (Too Many Requests). Not a
+product regression from f6e4431. Re-ran failed jobs.
+
