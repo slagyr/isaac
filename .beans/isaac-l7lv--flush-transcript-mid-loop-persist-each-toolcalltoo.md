@@ -1,15 +1,14 @@
 ---
 # isaac-l7lv
 title: 'Flush transcript mid-loop: persist each toolCall/toolResult as it happens'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
-    - unverified
     - isaac-agent
     - transcript
 created_at: 2026-08-17T22:44:47Z
-updated_at: 2026-08-17T23:19:16Z
+updated_at: 2026-08-17T23:23:11Z
 parent: isaac-wq8m
 ---
 
