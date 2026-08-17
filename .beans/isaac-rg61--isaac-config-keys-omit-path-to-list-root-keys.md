@@ -5,7 +5,7 @@ status: draft
 type: bug
 priority: normal
 created_at: 2026-08-17T14:23:35Z
-updated_at: 2026-08-17T14:23:35Z
+updated_at: 2026-08-17T14:31:30Z
 ---
 
 ## Goal
@@ -30,3 +30,7 @@ updated_at: 2026-08-17T14:23:35Z
 - `require-path!` in `isaac.config.cli.inspect` is the only blocker; `dotted-child-key` already handles a blank path.
 - Treat nil/blank like `config get` — do not pass nil to `path/data-at` (it throws).
 - Slash-mode `isaac config keys /` also normalizes to `""` and currently dies on `require-path!`.
+
+## Scenario review (2026-08-17, Micah)
+
+1. keep — `config keys with no path lists root keys`. Present keys from the resolved map; `module-registry` absent because it is not in this config; values (`llama3.3`) never printed.
