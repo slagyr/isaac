@@ -75,3 +75,7 @@ product regression from f6e4431. Re-ran failed jobs.
 2. Attempt 2: `bb ci` / `bb spec` 21 failures after pin to foundation **cbf9e37** (main tip including flgy loader split). Failures: `isaac.fs/instance` in schema entity/custom validation specs; provider-validation message drift. **Not caused by keys/list logic** — caused by pinning past d4a7bf1 onto unfinished flgy surface.
 3. Fix: rebased keys/list-only change onto **d4a7bf1** as foundation commit **c70d9e2** (tag `isaac-rg61-agent-pin`); agent pin **af85721** → c70d9e2. Local: `bb spec` 1288/0/2617 (3 pending), targeted features green. Main tip **cbf9e37** still carries the same keys/list fix for foundation consumers on flgy.
 
+## CI hail 894f2aca (f6e4431 bb ci) — already repaired
+
+Product regression on f6e4431 (pin cbf9e37/flgy) fixed by **af85721** → foundation **c70d9e2**. Local bb spec green. Subsequent CI reds on af85721 are **Set up job** action-download 429/503 (setup-clojure), not product. Re-ran 32040588082.
+
