@@ -1,11 +1,13 @@
 ---
 # isaac-q3uk
 title: sessions list SIZE must stat the transcript file, not parse it
-status: completed
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-18T13:48:47Z
-updated_at: 2026-08-18T17:56:13Z
+updated_at: 2026-08-18T20:22:39Z
 ---
 
 ## Goal
@@ -109,3 +111,33 @@ Verified:
 - bb features features/session/cli.feature:237 features/tool/built_in.feature features/session/storage.feature → 41/0
 
 Agent commit **145c888**.
+
+
+
+## Repair (attempt 3, 2026-08-18, scrapper@isaac-work-1)
+
+CI 32167519641 on 145c888 still failed features 655/1 on
+built_in.feature:195. Printed error was native-bb
+Constructor.newInstance — that is gherclj v1.4.0 enrich-throwable
+wrapping the real cause, not the product bug.
+
+Root cause: allowlist.feature Background (`default Grover setup` →
+initialize-root! hook) registers MemorySessionStore at
+`/target/test-state` and stubs sidecar-store/create-store.
+built_in.feature Background (`clean-test-dir`) swapped :fs/:root
+but left :sessions registered. "the following sessions exist"
+then wrote exec-cwd.jsonl into the leftover virtual root →
+FileNotFoundException: /target/test-state/sessions/exec-cwd.jsonl.
+
+Fix: tools_steps/clean-test-dir now nexus/deregister! [:sessions]
+after installing real-fs + the new root.
+
+Verified:
+- bb spec spec/isaac/tool/tools_steps_spec.clj → 3/0
+- bb spec spec/isaac/session/cli_spec.clj + store + tools_steps → 125/0
+- bb spec → 1316 examples, 0 failures, 3 pending
+- bb features allowlist.feature built_in.feature:195 → 8/0 (was 8/1)
+- bb features features/session/cli.feature:237 features/tool/built_in.feature → 25/0
+- bb lint on touched files → 0 errors (1 pre-existing unused-var warning)
+
+Agent commit **861dfdb**.
