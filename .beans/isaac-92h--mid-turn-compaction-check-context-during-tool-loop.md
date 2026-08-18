@@ -4,8 +4,10 @@ title: 'Mid-turn compaction: check context during tool loops'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-04-15T13:52:12Z
-updated_at: 2026-08-18T05:42:46Z
+updated_at: 2026-08-18T05:48:02Z
 ---
 
 Priority (2026-08-17, Micah): mid-turn compaction is required. A long hail turn can blow the context window because the live loop lives only in `@current-request` and compaction never sees it.
@@ -52,3 +54,10 @@ Verify: `bb spec spec/isaac/drive/turn_spec.clj` and `bb spec spec/isaac/llm/too
 Depends on **isaac-l7lv** (completed) — mid-loop check is a no-op if the store is still the atom-flush. Complements turn-start compaction. Child of the same resilience theme as isaac-wq8m (not strictly blocked).
 
 ## Verify fail (attempt 1, 2026-08-18): touched-file lint is still red; bb lint fails on spec/isaac/llm/tool_loop_spec.clj unresolved Speclj macros
+
+
+## Verify fail repair (attempt 1, 2026-08-18, scrapper@isaac-work-2)
+
+Touched-file lint was red on `spec/isaac/llm/tool_loop_spec.clj` because it used `[speclj.core :refer :all]`. Replaced with explicit `:refer [describe it should=]` (same pattern as turn_spec). `bb lint` on the four touched files: 0 errors, 0 warnings. Targeted specs: 55/0 (tool_loop 15 + turn 40).
+
+Agent HEAD: `6ed4b508014115f609e2a70bc93accb1aa36cf56`.
