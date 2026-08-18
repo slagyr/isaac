@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-18T13:48:47Z
-updated_at: 2026-08-18T15:36:40Z
+updated_at: 2026-08-18T15:39:38Z
 ---
 
 ## Goal
