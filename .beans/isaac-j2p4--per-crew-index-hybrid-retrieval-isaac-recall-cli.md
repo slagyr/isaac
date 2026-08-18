@@ -4,8 +4,10 @@ title: Per-crew index + hybrid retrieval + isaac recall CLI
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-17T03:21:48Z
-updated_at: 2026-08-18T20:50:14Z
+updated_at: 2026-08-18T22:09:22Z
 parent: isaac-51xy
 ---
 
@@ -55,3 +57,26 @@ bb features features/recall/query.feature
 Existing suites stay green: `bb features features/episodes/migrate_session.feature`, `bb features features/recall/embedding.feature`, `bb spec spec/isaac/episodes spec/isaac/recall`.
 
 Clean cutover — no legacy index formats, no back-compat aliases; the index file is new surface. Production module: `isaac.recall.*` for scoring/index, `isaac.episodes.cli` gains the `index` subcommand, new top-level `recall` CLI command.
+
+
+## Implementation (scrapper@isaac-work-1, 2026-08-18)
+
+Agent **1e5a4ff** on main. @wip dropped. Features + specs green.
+
+Product:
+- `isaac.recall.score` — cosine, recency 0.5^(age/half-life), lexical term-overlap, blend / Σw, resolve-weights defaults→:recall config→CLI flags.
+- `isaac.recall.index` — `<root>/episodes/<crew>/index.ednl` EDNL rows `{:episode-id :scene-id :kind :model :vector}`. Idempotent by (scene-id, kind, model). `--rebuild` drops then re-embeds. Model switch keeps old rows.
+- `isaac.recall.query` — hybrid rank; missing index / zero matching-model rows hard-error; mixed models warn + still rank; ties scene-id ascending; recency calendar age via Period (Jan 10 → Mar 10 = 60 days → rec 0.25).
+- `isaac.recall.cli` — `isaac recall [options] <query>` with --crew -n/--top --w-text --w-gist --w-lex --w-recency --half-life. Per-channel breakdown + indented gist.
+- `isaac.episodes.cli` — `index` subcommand (--crew, --rebuild).
+- Manifest `:isaac/cli :recall` + `:isaac.config/schema :recall`.
+- Grover fixture vectors corrected: race=[4 411 114 101], dawn=[4 426 100 110].
+
+Verified:
+- `bb features features/episodes/index.feature` 5/0
+- `bb features features/recall/query.feature` 6/0
+- `bb features features/episodes/migrate_session.feature` 9/0
+- `bb features features/recall/embedding.feature` 7/0
+- `bb spec spec/isaac/episodes spec/isaac/recall` 87/0
+- `bb spec` 1346/0 (3 pending claude-cli @real)
+- `bb lint` on touched recall/episodes/cli files 0/0
