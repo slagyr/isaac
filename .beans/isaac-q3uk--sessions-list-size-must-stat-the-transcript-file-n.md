@@ -1,11 +1,11 @@
 ---
 # isaac-q3uk
 title: sessions list SIZE must stat the transcript file, not parse it
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-08-18T13:48:47Z
-updated_at: 2026-08-18T17:48:20Z
+updated_at: 2026-08-18T17:56:13Z
 ---
 
 ## Goal
