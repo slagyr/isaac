@@ -1,11 +1,11 @@
 ---
 # isaac-q3uk
 title: sessions list SIZE must stat the transcript file, not parse it
-status: completed
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-18T13:48:47Z
-updated_at: 2026-08-18T15:50:31Z
+updated_at: 2026-08-18T17:48:20Z
 ---
 
 ## Goal
@@ -87,3 +87,25 @@ Verified:
 - `bb spec` (agent) → 1312 examples, 0 failures, 3 pending (claude-cli @real smokes)
 
 Do not pin agent to flgy tip until a dedicated cutover.
+
+
+## Repair (attempt 2, 2026-08-18, scrapper@isaac-work-1)
+
+CI 32157141573 on 445f593 still failed features 655/1 on built_in.feature:195
+(Constructor.newInstance). Memory persist was already pr-str; the remaining
+path is sidecar write-transcript! → write-json → cheshire generate-string.
+
+built_in.feature uses clean-test-dir (no memory-store hook), so
+"the following sessions exist" creates via sidecar/impl-common.
+
+Fix: encode transcript JSON locally in impl-common/write-json (no
+Constructor.newInstance). Specs redef generate-string to prove the
+native-bb-sensitive path is gone.
+
+Verified:
+- bb spec spec/isaac/session/store/impl_common_spec.clj → 9/0
+- bb spec spec/isaac/session/cli_spec.clj + store specs → 120/0
+- bb spec → 1315 examples, 0 failures, 3 pending
+- bb features features/session/cli.feature:237 features/tool/built_in.feature features/session/storage.feature → 41/0
+
+Agent commit **145c888**.
