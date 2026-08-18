@@ -90,12 +90,12 @@ Supporting vocabulary: **gist** (per-SCENE summary written at seal — memory-sc
 | # | Bean | Depends on | Status |
 |---|---|---|---|
 | 1 | isaac-5lri — embedding seam (`isaac embed`, Embedder protocol, ollama adapter) | — | completed (post-verify float-format fix added on branch: 469a0fc) |
-| 2 | isaac-rxr4 — backfill: transcripts → scenes + gists | 1 | draft |
-| 3 | isaac-j2p4 — per-crew index + hybrid retrieval + `isaac recall` CLI | 2 | draft |
-| — | **CHECKPOINT** — retrieval quality on real history; settle blend/budget/gist-prior empirically. Gates everything below. | 3 | gate |
-| 4 | recall port + recall-at-open in prompt builder (first live change) | checkpoint | prose until checkpoint |
+| 2 | isaac-rxr4 — backfill: transcripts → scenes + gists | 1 | completed (+ isaac-80pq defects, isaac-lq7x scene .md files, streaming/token output 0.1.22-26) |
+| 3 | isaac-j2p4 — per-crew index + hybrid retrieval + `isaac recall` CLI | 2 | todo — dispatched 2026-08-18 (hail 7a929b24) |
+| — | **CHECKPOINT** — retrieval quality on real history; settle blend/budget/gist-prior empirically. Gates everything below. | 3 | gate — next up |
+| 4 | recall port + recall-at-open in prompt builder (first live change) | checkpoint | prose until checkpoint (+ obligation: loud server-side model-drift errors, see isaac-j2p4 decision 10) |
 | 5 | live scene sealing + write-through (rolling embed; seal on topic-shift/size/compaction; gist-at-seal) | 4 | prose until checkpoint |
-| 6 | zanebot deployment: ollama install, :embedding config, backfill on real corpus | 3 | prose until checkpoint |
+| 6 | zanebot deployment: ollama install, :embedding config, backfill on real corpus | 3 | largely done ad hoc 2026-08-17/18 (embedding config live, gist = grok-4.20-non-reasoning, isaac-work-1/orchestration-plan/doughty-birch migrated); remaining: migrate the rest of the sessions + index once bean 3 lands |
 
 **Phase 2 — Episodes** (held as prose until phase 1 proves the retrieval bar):
 7. conversation-policy port + extract isaac-session module (both policies born together — Decision 18)
