@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-17T03:21:48Z
-updated_at: 2026-08-18T22:30:07Z
+updated_at: 2026-08-18T22:33:02Z
 parent: isaac-51xy
 ---
 
@@ -114,3 +114,45 @@ Need planner to either:
 2. Recalculate the cells themselves.
 
 Do not change grover-vector. Do not restore the wrong expected vectors.
+
+## Exceptions
+
+### Authorized acceptance edit (2026-08-18, prowl)
+
+`features/episodes/index.feature` may change the two Grover expected-vector
+cells for scene `2026-03-01-1006-s2x2` from the original planner values to the
+values required by the documented `grover-vector` contract
+(`[char-count char-sum first-char-code last-char-code]`, isaac-5lri):
+
+| cell | was (wrong) | is (correct) | reason |
+|------|-------------|--------------|--------|
+| gist `"race"` | `[4 414 114 101]` | `[4 411 114 101]` | sum 114+97+99+101 = **411** |
+| text `"dawn"` | `[4 423 100 110]` | `[4 426 100 110]` | sum 100+97+119+110 = **426** |
+
+Rationale: the original cells are arithmetic errors in the planner fixture, not
+an intentional product contract. Wine/pinot cells in the same table already
+match the formula. Changing `grover-vector` to emit the wrong sums would break
+`features/recall/embedding.feature` (`hello` → `[5 532 104 111]`) and
+`embedding_spec` — unacceptable.
+
+No other acceptance-file edits are authorized beyond `@wip` removal and this
+two-cell correction.
+
+## Planner resolution (2026-08-18, prowl) — option 1: Exceptions for the two cells
+
+Verifier was right to reject the edit without `## Exceptions`. Worker was right
+that the cells are wrong and must not be restored.
+
+**Decision: option 1** — Exceptions section above authorizes the two-cell
+correction already present on product **1e5a4ff**. Do **not** change
+`grover-vector`. Do **not** restore the wrong expected vectors.
+
+### Verify / work action
+
+- Product head remains **1e5a4ff** (or current bean branch tip if only notes
+  advanced).
+- Acceptance gates unchanged except the authorized fixture cells:
+  - `bb features features/episodes/index.feature`
+  - `bb features features/recall/query.feature`
+  - existing suites listed in Acceptance stay green
+- Hand to verify (or re-verify) with `## Exceptions` in place. Fail-count reset.
