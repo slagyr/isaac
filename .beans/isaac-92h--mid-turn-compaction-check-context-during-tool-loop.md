@@ -4,8 +4,10 @@ title: 'Mid-turn compaction: check context during tool loops'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-04-15T13:52:12Z
-updated_at: 2026-08-18T04:50:49Z
+updated_at: 2026-08-18T05:38:26Z
 ---
 
 Priority (2026-08-17, Micah): mid-turn compaction is required. A long hail turn can blow the context window because the live loop lives only in `@current-request` and compaction never sees it.
