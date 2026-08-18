@@ -4,8 +4,10 @@ title: sessions list SIZE must stat the transcript file, not parse it
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-18T13:48:47Z
-updated_at: 2026-08-18T15:06:12Z
+updated_at: 2026-08-18T15:28:33Z
 ---
 
 ## Goal
