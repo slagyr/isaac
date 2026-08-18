@@ -4,10 +4,8 @@ title: sessions list SIZE must stat the transcript file, not parse it
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-18T13:48:47Z
-updated_at: 2026-08-18T15:28:33Z
+updated_at: 2026-08-18T15:36:40Z
 ---
 
 ## Goal
@@ -59,3 +57,15 @@ DoD:
 - Current smell: `cli.clj` `transcript-size-bytes` → `store/get-transcript` → `transcript-byte-offset` (parse + re-serialize every line).
 - `isaac sessions list --json` already skips SIZE; table path is the bug.
 - Follow-up not in scope: `isaac session` (singular) is not a command.
+
+
+
+## Verify fail (attempt 1, 2026-08-18): foundation pin bump regresses config specs
+
+Evidence:
+- Verified acceptance still passes on isaac-agent 7ab03ab: `bb spec spec/isaac/session/cli_spec.clj`, `bb features features/session/cli.feature:237`, and isaac-foundation `bb spec spec/isaac/fs_spec.clj`.
+- Current work commit regresses config validation after the foundation bump to `4d25fb6`: `cd isaac-agent && bb spec spec/isaac/config/schema_spec.clj spec/isaac/config/provider_validation_spec.clj` -> 21 failures.
+- Same targeted config command passes on the parent checkout before this bean (`f4328f37`, prior foundation pin `c70d9e2`): 22 examples, 0 failures.
+- `cd isaac-agent && bb spec` also fails with the same 21 config failures on current HEAD.
+
+Needs fix: keep the SIZE/fs/size change without regressing config schema/provider validation.
