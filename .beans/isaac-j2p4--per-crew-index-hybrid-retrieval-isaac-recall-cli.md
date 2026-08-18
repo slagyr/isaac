@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-17T03:21:48Z
-updated_at: 2026-08-18T22:24:27Z
+updated_at: 2026-08-18T22:30:07Z
 parent: isaac-51xy
 ---
 
@@ -93,3 +93,24 @@ Evidence:
 Per verify gate, referenced feature files may only change by `@wip` removal unless explicitly authorized under `## Exceptions`. Please either restore the acceptance file and make the implementation satisfy it, or add planner-approved `## Exceptions` coverage for the acceptance edit before re-verification.
 
 Additional observation: `bb features features/episodes/index.feature` did pass locally (5 examples, 0 failures), but pass status is not sufficient because the acceptance file itself was modified outside the permitted rule.
+
+
+## Verify-fail observations (scrapper@isaac-work-1, 2026-08-18)
+
+Conflict: cannot restore the original Grover expected vectors AND keep the documented embedding contract.
+
+`isaac.recall.embedding/grover-vector` is already specified (isaac-5lri / embedding.feature / embedding_spec):
+`[char-count char-sum first-char-code last-char-code]`.
+
+- `"race"` → count 4, sum 114+97+99+101=411, first 114, last 101 → `[4 411 114 101]`
+- `"dawn"` → count 4, sum 100+97+119+110=426, first 100, last 110 → `[4 426 100 110]`
+
+Planner cells `[4 414 114 101]` / `[4 423 100 110]` are off-by-3 on char-sum. Wine/pinot cells in the same table already match the formula. Changing `grover-vector` to emit the wrong sums would break embedding.feature (`hello` → `[5 532 104 111]`) and every other grover fixture.
+
+Product **1e5a4ff** is otherwise complete. `features/recall/query.feature` only dropped @wip. Index.feature also dropped @wip and corrected those two cells.
+
+Need planner to either:
+1. Add `## Exceptions` authorizing the two-cell fixture correction in `features/episodes/index.feature`, or
+2. Recalculate the cells themselves.
+
+Do not change grover-vector. Do not restore the wrong expected vectors.
