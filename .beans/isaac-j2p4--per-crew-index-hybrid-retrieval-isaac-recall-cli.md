@@ -1,7 +1,7 @@
 ---
 # isaac-j2p4
 title: Per-crew index + hybrid retrieval + isaac recall CLI
-status: draft
+status: todo
 type: task
 created_at: 2026-08-17T03:21:48Z
 updated_at: 2026-08-17T03:21:48Z
@@ -20,3 +20,37 @@ Phase-1 bean 3 of isaac-51xy. Embed scenes/gists into the per-crew index (rows {
 6. **Backfill**: `isaac episodes index [--crew C]`, idempotent by (scene-id, kind, model); `--rebuild` re-embeds everything. Rows tagged with embedding model. **Model switch keeps old rows (confirmed 2026-08-18 over auto-prune)**: a stale index is a *forcing step* — recall hard-errors when ZERO rows match the configured model ("run isaac episodes index"), and warns when mismatched rows sit alongside matching ones. Rationale (Micah): loudly broken beats quietly diminished — auto-prune would leave the system quasi-working with half its brain missing and no signal. `--rebuild` is the cleanup.
 7. **Query CLI**: `isaac recall <query> --crew C -n N` with per-channel score breakdown in the output — the checkpoint needs to see WHY a scene ranked.
 8. **Lexical channel is new, purpose-built** term-overlap scoring over gist+text. (The "existing keyword search" — memory_search — is regex line-grep over crew memory files, not a scoring channel; nothing to reuse.)
+9. **Tie-break is scene-id ascending** (chronological — timestamped ids). Makes `--w-recency 0` observable: identical-content scenes flip from newest-first to oldest-first.
+10. **Server obligation → bean 4 (2026-08-18, Micah)**: when live recall rides the server, embedding-config drift under hot-reload must produce LOUD log entries and user-facing errors — the CLI stderr forcing-step behavior here is the model, but a running server must not degrade silently.
+
+## Scenarios (2026-08-18, committed @wip)
+
+- `features/episodes/index.feature` — 5 scenarios: help; gist+text rows with exact grover vectors; idempotent re-run + `--rebuild` (content mutation proves keyed-not-hashed); no-embedding degradation; model switch keeps old rows.
+- `features/recall/query.feature` — 6 scenarios: help (full flag surface); ranked hits with per-channel breakdown (output contract: header + `<rank>. <scene-id> score/text/gist/lex/rec` + indented gist); lexical channel with embeddings zeroed (identifier in text, not gist); weight precedence defaults→config→flags (winner flips twice); recency + `--w-recency 0` + `--half-life` (exact 0.25/0.5 decay values); missing index / model drift / stale-row warning lifecycle.
+
+## Step ledger
+
+| step | status |
+|---|---|
+| Given an Isaac root at {string} | reuse |
+| Given the isaac EDN file {string} exists with: (table) | reuse |
+| Given config file {string} containing: (docstring) | reuse |
+| When isaac is run with {string} | reuse |
+| Then the stdout matches: / stdout contains / stderr contains / exit code | reuse |
+| **Given crew {string} has a closed episode {string} with scenes: (table)** | **NEW — writes episode.edn + scene .md via store/write-episode!; synthesizes start/end-ids, :seal-reason :migrate** |
+| **Then the index for crew {string} has rows: (table)** | **NEW — reads episodes/<crew>/index.ednl; matches the EXACT row set (count included), so rebuild scenarios prove deletion** |
+| **Then no index exists for crew {string}** | **NEW — asserts index.ednl absent (no half-written file)** |
+| **Given the current time is {string}** | **NEW — pins "now" for recency math; fixtures must not rot with the calendar** |
+
+## Acceptance
+
+Remove `@wip` tags and both files pass:
+
+```
+bb features features/episodes/index.feature
+bb features features/recall/query.feature
+```
+
+Existing suites stay green: `bb features features/episodes/migrate_session.feature`, `bb features features/recall/embedding.feature`, `bb spec spec/isaac/episodes spec/isaac/recall`.
+
+Clean cutover — no legacy index formats, no back-compat aliases; the index file is new surface. Production module: `isaac.recall.*` for scoring/index, `isaac.episodes.cli` gains the `index` subcommand, new top-level `recall` CLI command.
