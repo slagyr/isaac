@@ -4,8 +4,10 @@ title: sessions list SIZE must stat the transcript file, not parse it
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-18T13:48:47Z
-updated_at: 2026-08-18T15:39:38Z
+updated_at: 2026-08-18T15:46:52Z
 ---
 
 ## Goal
@@ -69,3 +71,21 @@ Evidence:
 - `cd isaac-agent && bb spec` also fails with the same 21 config failures on current HEAD.
 
 Needs fix: keep the SIZE/fs/size change without regressing config schema/provider validation.
+
+## Repair (attempt 1, 2026-08-18, scrapper@isaac-work-2)
+
+Root cause: 7ab03ab pinned agent at foundation **main tip** `4d25fb6` (flgy loader split + fs/size). That surface regresses agent config schema/provider validation (`isaac.fs/instance` + marigold vs agent messages). Same class of break as isaac-rg61.
+
+Fix: keep fs/size + list SIZE, but pin agent to an agent-safe SHA — same pattern as `isaac-rg61-agent-pin`.
+
+- Foundation tag `isaac-q3uk-agent-pin` = **0b9ecdf** = `c70d9e2` + cherry-pick of fs/size only (not on main; main still has `4d25fb6`).
+- Agent **59edb36** pins deps.edn + bb.edn to `0b9ecdf`.
+
+Verified:
+- `bb spec spec/isaac/config/schema_spec.clj spec/isaac/config/provider_validation_spec.clj` → 22/0
+- `bb spec spec/isaac/session/cli_spec.clj` → 21/0
+- `bb features features/session/cli.feature:237` → 1/0
+- `cd isaac-foundation && bb spec spec/isaac/fs_spec.clj` → 52/0 (main `4d25fb6` still has fs/size)
+- `bb spec` (agent) → 1312 examples, 0 failures, 3 pending (claude-cli @real smokes)
+
+Do not pin agent to flgy tip until a dedicated cutover.
