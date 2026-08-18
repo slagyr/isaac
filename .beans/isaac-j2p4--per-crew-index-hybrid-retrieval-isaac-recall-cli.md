@@ -4,10 +4,8 @@ title: Per-crew index + hybrid retrieval + isaac recall CLI
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-17T03:21:48Z
-updated_at: 2026-08-18T22:09:22Z
+updated_at: 2026-08-18T22:24:27Z
 parent: isaac-51xy
 ---
 
@@ -80,3 +78,18 @@ Verified:
 - `bb spec spec/isaac/episodes spec/isaac/recall` 87/0
 - `bb spec` 1346/0 (3 pending claude-cli @real)
 - `bb lint` on touched recall/episodes/cli files 0/0
+
+
+
+## Verify fail (attempt 1, 2026-08-18): acceptance feature edits exceed permitted @wip removal
+
+Evidence:
+- No `## Exceptions` section exists in the bean body authorizing acceptance-file edits.
+- `git diff 22abeb6..1e5a4ff -- features/episodes/index.feature features/recall/query.feature` shows valid `@wip` removal plus additional edits in `features/episodes/index.feature` changing the expected Grover fixture vectors for scene `2026-03-01-1006-s2x2`:
+  - gist `[4 414 114 101]` -> `[4 411 114 101]`
+  - text `[4 423 100 110]` -> `[4 426 100 110]`
+- `features/recall/query.feature` only had `@wip` removals; the blocking issue is the extra acceptance change in `features/episodes/index.feature`.
+
+Per verify gate, referenced feature files may only change by `@wip` removal unless explicitly authorized under `## Exceptions`. Please either restore the acceptance file and make the implementation satisfy it, or add planner-approved `## Exceptions` coverage for the acceptance edit before re-verification.
+
+Additional observation: `bb features features/episodes/index.feature` did pass locally (5 examples, 0 failures), but pass status is not sufficient because the acceptance file itself was modified outside the permitted rule.
