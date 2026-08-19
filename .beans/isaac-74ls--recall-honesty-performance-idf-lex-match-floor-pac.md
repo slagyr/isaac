@@ -1,11 +1,11 @@
 ---
 # isaac-74ls
 title: 'Recall honesty + performance: IDF lex, match floor, packed vectors'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-08-19T16:10:51Z
-updated_at: 2026-08-19T20:51:01Z
+updated_at: 2026-08-19T20:53:46Z
 parent: isaac-51xy
 ---
 
@@ -162,4 +162,3 @@ unexecutable single-cell form as the sole acceptance. Do **not** change
   `bb features features/recall/query.feature`,
   `bb spec spec/isaac/recall spec/isaac/episodes`
 - PASS when those are green with `@wip` removed. Fail-count reset.
-
