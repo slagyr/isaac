@@ -1,5 +1,5 @@
 {:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                               :git/sha "5a6732cc6f7909ed944d75f84e0199e76a5d537f"}
+                               :git/sha "3d33eca896aa523e90f1c8aeacf2e8b61760c405"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
                                :git/sha "f8cf2d6e9b1fbe93a5b284eefee714965716fd98"}
