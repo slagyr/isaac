@@ -1,10 +1,11 @@
 ---
 # isaac-74ls
 title: 'Recall honesty + performance: IDF lex, match floor, packed vectors'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-08-19T16:10:51Z
-updated_at: 2026-08-19T16:10:51Z
+updated_at: 2026-08-19T19:46:50Z
 parent: isaac-51xy
 ---
 
