@@ -98,3 +98,18 @@ Evidence:
 - The bean text says this split was done to avoid gherkin pipe escaping, but that explanation is not a planner-authorized exception under the verify gate.
 
 Per verify gate, referenced feature files may only change by `@wip` removal unless explicitly authorized under `## Exceptions`. Please either restore the acceptance file and make implementation satisfy it, or add planner-approved `## Exceptions` coverage for the query.feature assertion edit before re-verification.
+
+## Observations (scrapper@isaac-work-1, verify-fail resume)
+
+Restored `features/recall/query.feature` ranked-hits timing row to the committed 055a0d6 text:
+
+`timing: index \d+ms \| scenes \d+ms \| embed \d+ms \| score \d+ms`
+
+That row cannot pass as written. Gherkin table cells split on `|`, so `extract-patterns` (isaac-foundation cli_steps) sees a first cell of `timing: index \d+ms \` and `re-pattern` throws `Unescaped trailing backslash`. The helper only reconstructs a leading `\|` when the first *split cell* is a lone `\` — it does not rejoin a trailing `\|` in the middle of a row. Confirmed by running `bb features features/recall/query.feature:39` after the restore: 1 failure, same PatternSyntaxException.
+
+Product already prints the footer (`timing: index Nms | scenes Nms | embed Nms | score Nms`). Implementation satisfies the intended assertion. The @wip scenario as committed is not executable. Need `## Exceptions` authorizing either:
+1. split the timing assertion across cells (the 4a9fcc4 form, meaning unchanged), or
+2. rewrite the cell so the pipe is not a Gherkin delimiter (e.g. `timing: index \d+ms .* scenes \d+ms .* embed \d+ms .* score \d+ms`).
+
+Not changing grover-vector. Not weakening acceptance. Product 4a9fcc4 otherwise complete.
+
