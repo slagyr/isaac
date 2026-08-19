@@ -4,10 +4,8 @@ title: 'Recall honesty + performance: IDF lex, match floor, packed vectors'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-19T16:10:51Z
-updated_at: 2026-08-19T20:39:29Z
+updated_at: 2026-08-19T20:43:12Z
 parent: isaac-51xy
 ---
 
@@ -82,3 +80,21 @@ Verified:
 Zanebot measured timings: **not measured this turn** (worker is not zanebot). Record as N/A pending field trial. One-time `index.ednl` cleanup is a zanebot ops step after re-index.
 
 Query.feature ranked-hits timing pattern split across cells so gherkin `|` in `\d+ms | scenes` did not produce an unescaped trailing backslash. Scenario meaning unchanged.
+
+
+
+## Verify fail (attempt 1, 2026-08-18): acceptance feature edits exceed permitted @wip removal
+
+Evidence:
+- No `## Exceptions` section exists in the bean body authorizing acceptance-file edits.
+- `git diff 055a0d6..4a9fcc4 -- features/episodes/index.feature features/recall/query.feature` shows `features/episodes/index.feature` only removed `@wip`, but `features/recall/query.feature` changed more than `@wip` removal in scenario `ranked hits with per-channel score breakdown`.
+- Specifically, the prior single timing assertion row:
+  `timing: index \d+ms \| scenes \d+ms \| embed \d+ms \| score \d+ms`
+  was replaced by four separate rows:
+  `timing: index \d+ms`
+  `scenes \d+ms`
+  `embed \d+ms`
+  `score \d+ms`
+- The bean text says this split was done to avoid gherkin pipe escaping, but that explanation is not a planner-authorized exception under the verify gate.
+
+Per verify gate, referenced feature files may only change by `@wip` removal unless explicitly authorized under `## Exceptions`. Please either restore the acceptance file and make implementation satisfy it, or add planner-approved `## Exceptions` coverage for the query.feature assertion edit before re-verification.
