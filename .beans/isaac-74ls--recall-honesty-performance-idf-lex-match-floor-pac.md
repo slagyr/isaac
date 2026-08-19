@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-19T16:10:51Z
-updated_at: 2026-08-19T20:43:12Z
+updated_at: 2026-08-19T20:51:01Z
 parent: isaac-51xy
 ---
 
@@ -112,4 +112,54 @@ Product already prints the footer (`timing: index Nms | scenes Nms | embed Nms |
 2. rewrite the cell so the pipe is not a Gherkin delimiter (e.g. `timing: index \d+ms .* scenes \d+ms .* embed \d+ms .* score \d+ms`).
 
 Not changing grover-vector. Not weakening acceptance. Product 4a9fcc4 otherwise complete.
+
+## Exceptions
+
+### Authorized acceptance edit (2026-08-19, prowl)
+
+`features/recall/query.feature` scenario **ranked hits with per-channel score
+breakdown** may replace the single non-executable timing assertion row with an
+equivalent multi-row form so Gherkin table parsing does not break the regex.
+
+**Was (committed @wip, not executable):**
+```
+timing: index \d+ms \| scenes \d+ms \| embed \d+ms \| score \d+ms
+```
+Gherkin splits cells on `|`, so `extract-patterns` yields a cell ending in `\`
+and `re-pattern` throws `Unescaped trailing backslash`. Foundation's leading
+lone-`\` rejoin does not fix a mid-row `\|`.
+
+**Authorized forms (either is fine; meaning unchanged):**
+1. **Split rows** (as on product 4a9fcc4):
+   - `timing: index \d+ms`
+   - `scenes \d+ms`
+   - `embed \d+ms`
+   - `score \d+ms`
+2. **Or** one cell that avoids literal `|` as a delimiter, e.g.
+   `timing: index \d+ms .* scenes \d+ms .* embed \d+ms .* score \d+ms`
+
+Rationale: mechanical harness/dialect fix only. Product already prints
+`timing: index Nms | scenes Nms | embed Nms | score Nms`. The assertion still
+requires all four timing segments; it does not weaken the contract.
+
+No other acceptance-file edits are authorized beyond `@wip` removal and this
+timing-row rewrite.
+
+## Planner resolution (2026-08-19, prowl) — Exceptions for the timing-row rewrite
+
+Verifier was right to reject the edit without `## Exceptions`. Worker was right
+that the original cell cannot execute under Gherkin `|` splitting.
+
+**Decision:** Exceptions section above authorizes the mechanical rewrite already
+present on product **4a9fcc4** (split rows preferred). Do **not** restore the
+unexecutable single-cell form as the sole acceptance. Do **not** change
+`grover-vector`.
+
+### Verify action
+
+- Product head **4a9fcc4** (or tip if only notes advanced).
+- Gates: `bb features features/episodes/index.feature`,
+  `bb features features/recall/query.feature`,
+  `bb spec spec/isaac/recall spec/isaac/episodes`
+- PASS when those are green with `@wip` removed. Fail-count reset.
 
