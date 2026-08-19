@@ -4,8 +4,10 @@ title: 'Recall honesty + performance: IDF lex, match floor, packed vectors'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-19T16:10:51Z
-updated_at: 2026-08-19T19:46:50Z
+updated_at: 2026-08-19T20:39:29Z
 parent: isaac-51xy
 ---
 
@@ -60,3 +62,23 @@ Measured on zanebot at current corpus (2,962 rows) via the recall timing footer,
 One-time cleanup (acceptance step, not a scenario): delete legacy `episodes/*/index.ednl` on zanebot after re-indexing to the packed format.
 
 Spec obligations: z-score arithmetic (leave-one-out, degenerate-sigma rules, >=5 activation) exactly tested in score_spec on synthetic distributions; packed-store round-trip in index_spec including >=1 assertion against independently computed bytes (decision 8).
+
+## Implementation (scrapper@isaac-work-1, 2026-08-19)
+
+Agent **4a9fcc4** on main. @wip dropped. Features + specs green.
+
+Product:
+- Packed store: `episodes/<crew>/index.edn` metadata + `vectors.bin` (row-major LE float32, unit-normalized at write). Legacy `index.ednl` ignored.
+- `isaac.recall.score` — IDF lex `ln(1+N/(df+1))`, live df over loaded scene texts, matched-term receipts, sample-stddev z-score (inactive <5 candidates, degenerate sigma 0.0, leave-one-out option), match floor default 2.5 / config / `--floor` (0 disables; lex >= 0.5 rare-term anchor).
+- `isaac.recall.index` — packed write/read; ByteBuffer bulk encode; independently computed bytes asserted in `index_spec`.
+- `isaac.recall.query` — IDF lex + receipts + floor warning `weak matches — nothing stands out (top z X.X)` on stderr, hits still print, exit 0.
+- `isaac.recall.cli` — `--floor`; terms suffix after rec.
+- Manifest `:recall :floor`. Row-assertion step normalizes expected grover ints and compares floats at 1e-6.
+
+Verified:
+- `bb features features/episodes/index.feature features/recall/query.feature` 15/0 (98 assertions)
+- `bb spec spec/isaac/recall spec/isaac/episodes` 108/0 (214 assertions)
+
+Zanebot measured timings: **not measured this turn** (worker is not zanebot). Record as N/A pending field trial. One-time `index.ednl` cleanup is a zanebot ops step after re-index.
+
+Query.feature ranked-hits timing pattern split across cells so gherkin `|` in `\d+ms | scenes` did not produce an unescaped trailing backslash. Scenario meaning unchanged.
