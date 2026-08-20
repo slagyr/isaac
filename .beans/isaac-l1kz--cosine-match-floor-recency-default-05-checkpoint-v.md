@@ -1,13 +1,11 @@
 ---
 # isaac-l1kz
 title: Cosine match floor + recency default 0.5 (checkpoint verdicts)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-20T20:40:32Z
-updated_at: 2026-08-20T21:54:51Z
+updated_at: 2026-08-20T22:03:15Z
 parent: isaac-51xy
 ---
 
