@@ -138,3 +138,8 @@ Verified:
 - `bb features query/index/migrate_session`: 30 examples, 0 failures, 207 assertions
 
 Zanebot post-deploy field check not run from this checkout.
+
+## Field check (2026-08-20, 0.1.34 on zanebot) — PASS
+- "marketing page" (scrapper): **warns, best cos 0.45** (predicted band 0.43-0.46).
+- "grok oauth refresh token fix": silent, rank 1 unchanged, score 0.6746 (recency 0.5 slightly lifts matched scenes as expected).
+- "weekend plans" (marvin, 31 scenes): warns, best cos 0.44 — cosine floor covers small corpora, confirming z retirement safe.

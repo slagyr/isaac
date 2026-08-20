@@ -206,3 +206,6 @@ Graded: 9 clear hits, 2 partials (recency pollution), 0 hard misses, floor corre
 4. **Deferred, non-blocking:** prefixed-embeddinggemma sweep; text-row truncation; "User directing continuation N/M" receipt-scenes as a routine-definition revision candidate.
 
 Implementation bean: floor-cos + recency default (small; revises the two 74ls floor scenarios — grover-land tests use --floor-cos 0.999 since grover cosines live at 0.9+). Then bean 4 planning.
+
+## PHASE 1 COMPLETE (2026-08-20)
+All phase-1 beans completed + verified + deployed (isaac.agent 0.1.34 on zanebot): 5lri embedding seam, rxr4 migration (+80pq/lq7x), j2p4 index+recall, 74ls honesty+perf, xl6h corpus quality, l1kz cosine floor. Checkpoint run and passed (9/11 hits, junk queries warn honestly, floors calibrated on measured data). Full corpus: 3,869+ scenes, 7 crews, per-crew indexes. Next: bean 4 — recall port + recall-at-open in the prompt builder (first live change; see decisions 1-3 for composition/cache discipline and isaac-j2p4 decision 10 + isaac-74ls for server obligations).
