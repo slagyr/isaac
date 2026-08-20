@@ -162,3 +162,14 @@ unexecutable single-cell form as the sole acceptance. Do **not** change
   `bb features features/recall/query.feature`,
   `bb spec spec/isaac/recall spec/isaac/episodes`
 - PASS when those are green with `@wip` removed. Fail-count reset.
+
+
+## Field results (2026-08-20, post-verify — planner fixes 0.1.31/0.1.32)
+
+Two post-verify field defects at corpus scale (2,962 rows on zanebot), both in paths spec-scale can't see:
+1. **float32 blob load took 38s** (not <500ms): bb's SCI doesn't allowlist FloatBuffer bulk methods, so decode was 2.3M interpreted per-element interop calls. Every byte-level alternative measured seconds. **Format changed to int-quantized JSON** (vectors.json, unit x 10000 — decision 8 made this a non-event for features): cheshire parse + int-array coercion are fully compiled. Cosine error <=1e-4; spec tolerances loosened 1e-6 -> 1e-4 accordingly; scale divides out once per dot (query side).
+2. **score phase 1.58s**: every scene's text was tokenized 3x per query (df, lexical, matched-terms) with per-token interpreted lowercase. Now: whole-string lowercase + one token-set per scene per query, shared.
+
+**Measured actuals (zanebot, 2,962 rows, 0.1.32):** index load **258ms** (bar <500 MET), scenes 314ms, embed 126ms (nightbird), score **551ms** (bar <400 near-miss; remaining = two dot sweeps ~300ms + recency instant-parsing ~150ms; acceptable for CLI, revisit in bean 4 where the index is resident — merge sweeps / cache parsed instants, and the checkpoint may halve rows). vectors.json 9.2MB. Legacy vectors.bin + index.ednl removed from zanebot (one-time acceptance step done).
+
+**FLOOR FINDING (open design question for Micah):** the z floor does not discriminate at corpus scale. Measured: junk "marketing page" top z = 4.5; real queries on embeddings alone z = 4.0-4.2. Extreme-value statistics: max of n noise samples sits ~sqrt(2 ln n) sigma above mean (~3.8 at n=1481) — top-hit z is ALWAYS ~4 regardless of relevance. What separates real from junk in the data: absolute cosine level (real 0.60-0.64 vs junk ~0.50 for nomic) and the lex rare-term anchor (which works). Candidate redesigns for checkpoint: per-model absolute cosine floor (config-calibrated), top-vs-mean absolute gap, or defer z entirely to the lex anchor. Floor semantics unchanged pending Micah.
