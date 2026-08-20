@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-20T20:40:32Z
-updated_at: 2026-08-20T21:10:45Z
+updated_at: 2026-08-20T21:49:49Z
 parent: isaac-51xy
 ---
 
@@ -70,3 +70,59 @@ Then ... stdout rank 1 is 2026-03-01-1008-s5x5 with terms [lighthouse]
 That rank-1 assertion is a leftover of the isaac-74ls z-era run (`--w-text 0 --w-gist 0 --w-recency 0`), where lex was the only ranking channel. With cosine form + `--w-lex 0`, ranking is cosine+recency. Grover 4-dim char-stat vectors put "Wine pairing" / "a light pinot noir for the pheasant" above the lighthouse scene for query "lighthouse" (best-cos ~0.9997 vs ~0.996). Lex-anchor still silences the warning (the actual floor contract). Changing grover-vector is out of scope.
 
 Need planner to drop/rephrase the rank-1 stdout row (keep warning-silence + terms [lighthouse] anywhere) or otherwise unblock. Floor-resolves scenario is green and @wip-free.
+
+## Exceptions
+
+### Authorized acceptance edit (2026-08-20, prowl)
+
+In `features/recall/query.feature` scenario
+**junk queries warn that nothing stands out; real matches stay silent**, the
+third run (`recall lighthouse --crew cordelia --floor-cos 0.999 --w-lex 0`)
+may drop or rephrase the rank-1 stdout assertion that requires scene
+`2026-03-01-1008-s5x5` in position 1 with `terms [lighthouse]`.
+
+**Was (z-era leftover, wrong under cosine ranking):**
+```
+Then the stdout matches: (rank-1 is 2026-03-01-1008-s5x5 … terms [lighthouse])
+```
+That assertion assumed pure-lex ranking (`--w-text 0 --w-gist 0 --w-recency 0`).
+With cosine form + `--w-lex 0`, ranking is cosine+recency; grover char-stat
+vectors put "Wine pairing" / pinot above the lighthouse scene for query
+"lighthouse". That is expected cosine behavior, not a product bug.
+
+**Required contract for that run (keep):**
+1. **No weak-match warning** on stderr (lex-anchor silences the floor even
+   with `--w-lex 0` — floor/anchor read raw channel values).
+2. **`terms [lighthouse]` appears somewhere** in stdout (receipt still names
+   the matched rare term), without requiring a specific rank position for the
+   lighthouse scene.
+
+Optional: assert lighthouse scene id appears somewhere in the ranked hits, or
+assert exit 0 — still no rank-1 requirement.
+
+Rationale: this bean's floor contract is cosine floor + lex anchor, not
+lex-only ranking. Pinning z-era rank order fights grover cosine and is out of
+scope. Do **not** change `grover-vector`.
+
+No other acceptance-file edits beyond `@wip` removal and this junk-warn
+rephrase.
+
+## Planner resolution (2026-08-20, prowl) — drop rank-1; keep silence + terms
+
+Worker diagnosis accepted. Floor-resolves scenario already green.
+
+**Decision:** Exceptions above authorize dropping/rephrasing the rank-1 row.
+Product **fe9537a** (or tip) stands for cosine floor + recency 0.5.
+
+### Work action
+
+1. Edit the junk-warn scenario third run: remove rank-1 lighthouse requirement;
+   keep warning-silence + `terms [lighthouse]` anywhere (and exit 0 if useful).
+2. Remove `@wip` from that scenario.
+3. Green gates:
+   ```
+   bb features features/recall/query.feature
+   bb features features/episodes/index.feature features/episodes/migrate_session.feature
+   bb spec spec/isaac/recall spec/isaac/episodes
+   ```
+4. Hand to verify. Fail-count reset.
