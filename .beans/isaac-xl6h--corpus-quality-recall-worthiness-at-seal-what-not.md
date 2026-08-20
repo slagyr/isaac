@@ -77,3 +77,12 @@ Verified locally:
 - `bb features migrate_session/index/query`: 30 examples, 0 failures, 205 assertions
 
 Zanebot rollout measurements not run from this checkout.
+
+
+## Rollout results (2026-08-20, recorded per acceptance)
+
+- 123 sessions re-migrated with --force in ~35 min (grok-4.20 via subscription; isaac-work-1 alone: 354 spans, 955k in / 45k out tokens). One designed partial: isaac-work-1 span 89 flagged (unparseable twice) -> :partial; plain re-run resumed exactly that span — **first production exercise of the rxr4 flagged-span resume path, worked as specced**.
+- **Routine fractions:** scrapper 87% (1873/2154), pinky 76%, tempest 77%, main 75%, perceptor 60%, prowl 21%, marvin 24%. Planning/chat crews mostly substantive; worker/telemetry crews mostly routine — exactly the shape the variety panel predicted. Sampled marking is well-calibrated (exploration/skill-loading routine; findings, verify-fails, completions substantive — including "hitting tool loop limit without reaching a conclusion" correctly kept).
+- **Index shrink (scrapper): 2,962 rows -> ~590 rows, 9.2MB -> 1.8MB vectors, index load 46ms, score 363ms** — the score bar (<400ms) now met as a side effect of corpus quality.
+- **Gist transformation visible:** OAuth top hit now reads "Planner rescope for isaac-tzgb: OIDC device-code success path must return tokens directly (no exchange-tokens!)" — what-not-how in production.
+- **Junk probe unchanged by design:** "marketing page" still returns confident noise (lex 0, rec-boosted) — that is the FLOOR's job (checkpoint item 4, isaac-74ls finding), now easier against a substantive-only vector space.
