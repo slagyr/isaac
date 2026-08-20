@@ -4,8 +4,10 @@ title: 'Corpus quality: recall-worthiness at seal, what-not-how gists'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-20T17:53:50Z
-updated_at: 2026-08-20T18:16:17Z
+updated_at: 2026-08-20T19:12:08Z
 parent: isaac-51xy
 ---
 
@@ -59,3 +61,21 @@ bb spec spec/isaac/episodes spec/isaac/recall
 ```
 
 Rollout (operator step after completion, recorded here): re-migrate the panel corpus on zanebot with --force (gists + routine tags regenerate via grok-4.20), re-index all crews, and record the measured routine fraction per crew (expect scrapper >50%, pinky ~100%) plus a before/after junk-query comparison.
+
+## Implementation (scrapper@isaac-work-1, 2026-08-20)
+
+Landed in isaac-agent **9341eaa** (main). Grover-vector unchanged. Foundation pin stays 0b9ecdf.
+
+- `~` gist parser + `:routine true` frontmatter (SCENE_FRONTMATTER_KEYS). Strip `~` from stored gist.
+- Empty/marker-only scenes auto-routine on sealing path (no LLM).
+- distill SEGMENT_INSTRUCTIONS: routine definition + what-not-how (`routine`, `~`, `evidence, not the subject`, `what was accomplished`).
+- index: skip routine scenes; stdout `N new rows, M routine scene(s) skipped`.
+- query: candidates = index rows OR lex>0; empty → `no hits` exit 0; `:no-rows` only on model mismatch.
+- Step: closed-episode Given passes `routine` column to frontmatter; empty cell asserts key absence.
+- @wip dropped on 6 scenarios (migrate_session 3, index 1, query 2).
+
+Verified locally:
+- `bb spec spec/isaac/episodes spec/isaac/recall`: 118 examples, 0 failures, 242 assertions
+- `bb features migrate_session/index/query`: 30 examples, 0 failures, 205 assertions
+
+Zanebot rollout measurements not run from this checkout.
