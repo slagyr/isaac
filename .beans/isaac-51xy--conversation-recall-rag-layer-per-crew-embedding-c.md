@@ -165,3 +165,33 @@ Status draft — design substantially settled 2026-08-16 (two rounds: episodes/s
 - **Embedding-model probe** (nightbird, same texts): nomic real-vs-noise separation 0.093; embeddinggemma 0.081 raw but with a much lower junk band (0.18-0.20 vs 0.42) and untested task-prefixes — include prefixed gemma in the checkpoint sweep; model swap alone won't fix dilution.
 - **Flavor results:** main retrieves excellently ("stuck hails attention needed" → the exact heartbeat distress reports, lex 1.0). pinky junk-probe returns today's empty scenes at rec 1.0 — recency dominates when content is void; floor (broken, see isaac-74ls) would not have saved it. NOTE: the deep design dialogues (terminology, caching) are NOT in any isaac corpus — they live in local Claude Code planning sessions; zanebot's prowl is worker-facing planning traffic only.
 - **Checkpoint agenda consolidated:** (1) recall-worthiness filter; (2) gist prompt revision ("tool activity is evidence, not subject"); (3) floor redesign on absolute cosine + lex anchor (z is dead — EVT); (4) model sweep incl. prefixed embeddinggemma; (5) weight sweep with per-flavor query sets; (6) revisit text-row truncation.
+
+## CHECKPOINT (2026-08-20) — query set (written blind, committed before any rankings viewed)
+
+Real queries (expect a relevant scene in top-5; grading = hit@5 + carrying channel):
+| # | crew | query | expected memory |
+|---|---|---|---|
+| R1 | scrapper | grok oauth refresh token fix | July isaac-wpny/tzgb OAuth saga |
+| R2 | scrapper | float vector zeroed embedding bug | isaac-5lri float-format defect |
+| R3 | scrapper | compaction span segmentation line format | isaac-rxr4 implementation |
+| R4 | scrapper | isaac-q3uk session store cheshire | q3uk session-store work (identifier query) |
+| R5 | scrapper | packed index vectors json quantized | isaac-74ls packed-store work (very recent) |
+| R6 | prowl | verify fail rescope acceptance criteria | planner AC rulings (rxr4/zcb9 era) |
+| R7 | prowl | CI regression default branch investigate | orchestration CI-repair scenes |
+| R8 | main | stuck hails attention needed | heartbeat distress reports |
+| R9 | main | workspace drift uncommitted changes | heartbeat findings |
+| R10 | perceptor | missing gherkin coverage oauth rotation | wpny verify-fail content |
+| R11 | perceptor | verification audit process fail | verify-session audits |
+| R12 | marvin | (exploratory) weekend plans | unknown — graded descriptively |
+| R13 | tempest | (exploratory) schedule reminder | unknown — graded descriptively |
+
+Junk controls (expect: nothing relevant exists; today they return noise — floor calibration data):
+| # | crew | query |
+|---|---|---|
+| J1 | scrapper | marketing page |
+| J2 | scrapper | whoville test data |
+| J3 | main | quarterly revenue forecast |
+| J4 | prowl | pizza delivery order |
+| J5 | perceptor | birthday cake recipe |
+
+Sweeps per real query: default weights; --w-gist 0 (text-only value); --w-text 0 (gist-only value); --w-recency 0. Floor calibration: record top-1 text/gist cosines for every run, compare real-query vs junk-query distributions, propose an absolute per-model cosine floor for nomic.
