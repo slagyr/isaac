@@ -1,13 +1,11 @@
 ---
 # isaac-xl6h
 title: 'Corpus quality: recall-worthiness at seal, what-not-how gists'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-20T17:53:50Z
-updated_at: 2026-08-20T19:12:08Z
+updated_at: 2026-08-20T19:42:08Z
 parent: isaac-51xy
 ---
 
