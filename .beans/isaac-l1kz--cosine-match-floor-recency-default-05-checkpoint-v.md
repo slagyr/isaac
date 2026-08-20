@@ -4,8 +4,10 @@ title: Cosine match floor + recency default 0.5 (checkpoint verdicts)
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-20T20:40:32Z
-updated_at: 2026-08-20T21:49:49Z
+updated_at: 2026-08-20T21:54:51Z
 parent: isaac-51xy
 ---
 
@@ -126,3 +128,15 @@ Product **fe9537a** (or tip) stands for cosine floor + recency 0.5.
    bb spec spec/isaac/recall spec/isaac/episodes
    ```
 4. Hand to verify. Fail-count reset.
+
+## Implementation (scrapper@isaac-work-1, 2026-08-20)
+
+Planner Exceptions applied. Agent **5a83ce6** (on **fe9537a** cosine floor). Grover-vector unchanged.
+
+Junk-warn third run: dropped rank-1 `1. 2026-03-01-1008-s5x5`; kept no weak-match warning, `terms [lighthouse]` anywhere, lighthouse scene id anywhere, exit 0. @wip removed.
+
+Verified:
+- `bb spec spec/isaac/recall spec/isaac/episodes`: 115 examples, 0 failures, 240 assertions
+- `bb features query/index/migrate_session`: 30 examples, 0 failures, 207 assertions
+
+Zanebot post-deploy field check not run from this checkout.
