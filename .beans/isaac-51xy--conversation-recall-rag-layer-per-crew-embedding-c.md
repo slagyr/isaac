@@ -195,3 +195,14 @@ Junk controls (expect: nothing relevant exists; today they return noise — floo
 | J5 | perceptor | birthday cake recipe |
 
 Sweeps per real query: default weights; --w-gist 0 (text-only value); --w-text 0 (gist-only value); --w-recency 0. Floor calibration: record top-1 text/gist cosines for every run, compare real-query vs junk-query distributions, propose an absolute per-model cosine floor for nomic.
+
+## CHECKPOINT VERDICTS (2026-08-20, Micah + planning session) — GATE PASSED
+
+Graded: 9 clear hits, 2 partials (recency pollution), 0 hard misses, floor correctly warned on both genuine no-answer queries (small crews). Beans 4-6 UNLOCKED.
+
+1. **Floor: absolute cosine replaces z entirely.** Junk best-cosines measured 0.39-0.462 across five controls; real winners 0.468-0.76. Rule: match iff max(text-cos, gist-cos) >= :floor-cos OR lex >= 0.5. Default :floor-cos 0.47 (nomic-calibrated; per-model config). z is RETIRED — cos floor is n-independent (it also catches the small-n cases z handled: R12 best cos 0.38). Thin margin (0.462 vs 0.468) noted; revisit with more junk samples.
+2. **Recency default: 0.5 parts** (was 1). Both partials were rec-0.95+ receipts crowding older better matches; R6's superior answer was freshness-suppressed. Half-life stays 30d.
+3. **Keep both gist and text rows** — winners stable with either zeroed (lex anchors); each channel carries hits the other misses. Routine filter already resolved the cost concern.
+4. **Deferred, non-blocking:** prefixed-embeddinggemma sweep; text-row truncation; "User directing continuation N/M" receipt-scenes as a routine-definition revision candidate.
+
+Implementation bean: floor-cos + recency default (small; revises the two 74ls floor scenarios — grover-land tests use --floor-cos 0.999 since grover cosines live at 0.9+). Then bean 4 planning.
