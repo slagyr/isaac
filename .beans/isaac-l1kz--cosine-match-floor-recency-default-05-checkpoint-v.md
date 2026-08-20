@@ -42,3 +42,31 @@ bb spec spec/isaac/recall spec/isaac/episodes
 ```
 
 Post-deploy field check (recorded here): on zanebot, "marketing page" (scrapper) warns with best cos ~0.43-0.46; "grok oauth refresh token fix" stays silent; R12/R13 exploratory queries still warn.
+
+## Implementation notes (scrapper@isaac-work-1, 2026-08-20)
+
+Product landed locally (not tagged unverified — one approved scenario still @wip). Grover-vector unchanged.
+
+- score.clj: default-weights :recency 0.5; default-floor 0.47; z-score/mean/stddev deleted; match? is best-cos ≥ floor-cos OR lex ≥ 0.5; resolve-floor reads :recall {:floor-cos} then CLI :floor-cos.
+- cli.clj: --floor removed, --floor-cos added; help updated.
+- query.clj: best-cos = max over candidates of max(text,gist); warning `weak matches — nothing stands out (best cos %.2f)`.
+- manifest :recall :floor → :floor-cos.
+- Specs: recency 0.5; cosine floor; z specs deleted. query_spec junk warning uses best-cos form.
+
+Verified:
+- bb spec spec/isaac/recall spec/isaac/episodes — 115/0 (240)
+- floor-resolves scenario, index.feature, migrate_session.feature green
+- remainder of query.feature green except the junk-warn scenario
+
+## Conflict (returning to planner)
+
+Approved scenario "junk queries warn that nothing stands out; real matches stay silent" asserts:
+
+```
+When isaac is run with "recall lighthouse --crew cordelia --floor-cos 0.999 --w-lex 0"
+Then ... stdout rank 1 is 2026-03-01-1008-s5x5 with terms [lighthouse]
+```
+
+That rank-1 assertion is a leftover of the isaac-74ls z-era run (`--w-text 0 --w-gist 0 --w-recency 0`), where lex was the only ranking channel. With cosine form + `--w-lex 0`, ranking is cosine+recency. Grover 4-dim char-stat vectors put "Wine pairing" / "a light pinot noir for the pheasant" above the lighthouse scene for query "lighthouse" (best-cos ~0.9997 vs ~0.996). Lex-anchor still silences the warning (the actual floor contract). Changing grover-vector is out of scope.
+
+Need planner to drop/rephrase the rank-1 stdout row (keep warning-silence + terms [lighthouse] anywhere) or otherwise unblock. Floor-resolves scenario is green and @wip-free.
