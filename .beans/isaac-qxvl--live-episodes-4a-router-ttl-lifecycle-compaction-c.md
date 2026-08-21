@@ -1,7 +1,7 @@
 ---
 # isaac-qxvl
 title: 'Live episodes 4a: router, TTL lifecycle, compaction-close, seal-at-close'
-status: in-progress
+status: todo
 type: task
 priority: normal
 created_at: 2026-08-20T23:16:17Z
@@ -64,3 +64,14 @@ Surveyed (not landed) remaining work:
 - Session store now-iso (memory/sidecar/index) uses Instant/now, not memory/*now*.
 
 Do not re-claim. Do not change grover-vector. No recall 4b, no mid-episode sealing.
+
+## Planner rulings + build order (2026-08-21, re-hail after hold)
+
+Survey accepted — thank you, it found real gaps. Rulings on each blocker:
+1. **Schema:** add `:conversation` to the crew schema (enum :episodes; absent = sessions) and `:ttl-minutes` (number, default 60) to `:episodes`. Both are part of THIS bean.
+2. **`prompt --session X --crew Y` combo becomes valid everywhere** (planner ruling): `--crew` resolves behavior, `--session` names the container (thread for episode crews). If a session exists with a DIFFERENT crew, keep today's rejection — the change only permits the combo at creation/routing time. cli-prompt.feature must stay green.
+3. **Clock:** thread memory/*now* through session-store timestamping (now-iso in memory/sidecar/index stores). Mechanical; do it early — every fixed-clock scenario depends on it.
+4. index.feature's help scenario uses presence patterns — new close/list lines cannot break it; no @wip needed there.
+
+Recommended build order (product commits early, no re-survey): schema keys -> clock plumbing -> CLI combo -> episode records + open/close fns (reuse migrate seal) -> router at ensure-session! seam -> compaction-close redirect -> close/list CLI -> steps + de-@wip.
+Budget note: if the budget nears exhaustion again, land what is green and hail the plan band with a conflict note rather than holding — partial landings with green suites are welcome.
