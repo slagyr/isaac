@@ -1,7 +1,7 @@
 ---
 # isaac-qxvl
 title: 'Live episodes 4a: router, TTL lifecycle, compaction-close, seal-at-close'
-status: in-progress
+status: todo
 type: task
 priority: normal
 created_at: 2026-08-20T23:16:17Z
@@ -75,3 +75,12 @@ Survey accepted — thank you, it found real gaps. Rulings on each blocker:
 
 Recommended build order (product commits early, no re-survey): schema keys -> clock plumbing -> CLI combo -> episode records + open/close fns (reuse migrate seal) -> router at ensure-session! seam -> compaction-close redirect -> close/list CLI -> steps + de-@wip.
 Budget note: if the budget nears exhaustion again, land what is green and hail the plan band with a conflict note rather than holding — partial landings with green suites are welcome.
+
+## Groundwork landed by planner (2026-08-21, commit a12c847)
+
+Attempt 2's turn died silently after ~8h (last transcript entry a benign tool result, no LLM calls after, no recorded outcome — platform defect noted for ops backlog). Its workdir held clean, spec'd groundwork (175 lines, build-order steps 1-3); planner harvested, validated (281 session/schema specs + 30 bridge/session scenarios + 36 episodes/recall scenarios green), and landed with attribution.
+
+**DONE (do not redo):** crew :conversation schema key ([:one-of? :episodes]) + :episodes :ttl-minutes; memory/now in all three store now-iso fns; --session+--crew combo permitted (mutual exclusion narrowed to --session-tag/--create; cli-prompt scenario updated).
+
+**REMAINING (this bean, re-scoped):** episode records + open/close fns (reuse migrate seal pipeline); router at the ensure-session! seam (warm/cold/absent per decisions 20, 26); compaction-close redirect with successor seeding; `episodes close` + `episodes list` CLI + help rows; the four new steps + episode-exists selection revision; de-@wip the 8 live.feature scenarios + help scenario.
+Worker guidance: start from the router — the groundwork you'd otherwise re-survey is already on main. Land incrementally; green partial landings + conflict-hail beat holds.
