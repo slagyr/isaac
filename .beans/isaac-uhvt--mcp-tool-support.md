@@ -5,7 +5,10 @@ status: draft
 type: epic
 priority: low
 created_at: 2026-06-03T06:50:37Z
-updated_at: 2026-06-03T06:50:37Z
+updated_at: 2026-08-21T23:06:16Z
+blocked_by:
+    - isaac-ek0r
+    - isaac-da0r
 ---
 
 ## Description
@@ -51,3 +54,11 @@ Initial slice should focus on MCP tools, not the full MCP surface.
 This should likely build on the existing config-driven module/tool architecture rather than invent a parallel tool system. Raw LSP support may be better served through MCP than through Isaac owning language-server protocol details directly.
 
 Because this bean has no approved feature scenarios yet, it should remain draft until /plan-with-features produces committed @wip scenarios.
+
+## Decision (2026-08-21, Micah)
+
+MCP tools are just tools on the existing crew `:tools :allow` list. No
+`:tools :mcp` field. Config tokens are namespaced keywords
+(`:linear/get_issue`, `:linear/*`); the model sees `linear__get_issue`.
+Blocked by **isaac-ek0r** (allowlist namespacing + namespace globs) —
+do not start MCP until that lands.
