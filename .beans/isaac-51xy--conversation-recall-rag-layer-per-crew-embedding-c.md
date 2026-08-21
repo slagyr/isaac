@@ -237,3 +237,41 @@ All phase-1 beans completed + verified + deployed (isaac.agent 0.1.34 on zanebot
 
 37. **max-in-flight is REMOVED in the workspace world (2026-08-21, Micah).** It conflated crew capacity with directory safety; the workspace count IS the constraint, and pool allocation means it doesn't matter which checkout serves a mission so long as it's free. No separate crew-wide throttle.
 38. **The workspace lock is ISAAC-NATIVE, at the dispatch seam** (2026-08-21, Micah's concern, resolved). Turns enter from hails, comms, ACP, cron, AND the CLI — only isaac's dispatch entry sees them all; a lock in the orchestration layer would let a Discord prompt enter a checkout mid-bean-turn. Same home as today's in-flight atom (session SPI, enforced at bridge dispatch), re-keyed by workspace; the hail layer stays a consumer (defer when busy, deliver on free). **Known gap to close when built:** the in-flight atom is in-memory in the SERVER, but `isaac prompt` turns run in a separate CLI process that cannot see it (pre-existing hole, currently masked by convention). Options: durable workspace lease (lock file w/ holder + heartbeat so crashed holders expire, not wedge the pool) or CLI turns routed through the server. Decide at build time.
+
+## Terminology v2 (2026-08-21 — supersedes the 2026-08-16 table; that table stands as historical record)
+
+**The structural ladder (small -> large):**
+| Term | Meaning | Boundary drawn by |
+|---|---|---|
+| **Message** | Atom of storage — one transcript entry (user/assistant text, tool call, tool result) | wire format |
+| **Turn** | One user message -> assistant final response, tool loop included. Unit of ADDRESS, not composition (agentic mega-turns span scenes) | conversational rhythm |
+| **Scene** | Contiguous messages on one topic; THE unit of embedding and recall. Sealed with a gist; tagged routine/substantive | topic |
+| **Episode** | Bounded container of scenes — one window of continuous engagement, crew/cwd/model-pinned; open -> warm (TTL 60m) -> closed on cooling/compaction/explicit close; NEVER resumes | time + context volume |
+| **Arc** | Chain of scenes by topic continuity, indifferent to episode boundaries (intra-episode braiding + cross-episode topics). Phase 3; seal-time `(cont ...)` marks are the entry | topic over time |
+
+**Containers, identity, routing:**
+| Term | Meaning |
+|---|---|
+| **Transcript** | Pure append-only record of messages + events (compaction, recall). The essence of what "session" always was; the shared abstraction under both policies |
+| **Chronicle** | Legacy conversation policy: one unbounded never-closing container, single ever-growing transcript. Default when :conversation absent |
+| **Thread** | Stable OUTWARD handle (Discord channel, ACP session-id, hail bound-session, --session) mapping to a chain of episodes over time. Internal term only |
+| **Session** | The INDUSTRY word, kept at all external boundaries forever; boundary translates (chronicle crews: the chronicle; episode crews: a thread) |
+| **Lineage** | :parent-episode pointer — successor's link to the episode it continues. Lineage chains episodes by time; arcs chain scenes by topic |
+| **Workspace** | (Phase-2) First-class named working directory: logical reference in hails, per-host registry resolution, THE concurrency mutex, poolable |
+| **Crew** | The owning identity: soul, model, tools, permissions, containers, recall corpus |
+
+**Memory & retrieval:**
+| Term | Meaning |
+|---|---|
+| **Gist** | One-line scene summary at seal — what was accomplished/discussed, never tool mechanics. Embedded alongside text |
+| **Distillation** | Stripping tool payloads (keeping dialogue + markers) before gisting/embedding |
+| **Seal / consolidation** | Closing a scene: boundaries fixed, gist written, routine tag applied, file immutable |
+| **Routine / substantive** | Recall-worthiness: routine scenes (test runs, skill loads, telemetry) get NO vectors, stay lex-searchable; substantive fully indexed |
+| **Span** | Compaction/size-bounded message window fed to segmentation |
+| **Segmentation** | LLM pass cutting a span into scenes via line format (`1-4: gist`, `~` routine, future `(cont ...)`) |
+| **Index** | Per-crew vector store (quantized ints) over substantive scenes' gist+text embeddings |
+| **Recall** | Retrieval of relevant scenes — automatic at episode open, on demand via tool — injected as a transcript EVENT holding REFERENCES, never copies |
+| **Channels** | text cosine, gist cosine, lex (IDF keywords), recency — blended by "parts" weights |
+| **Floor** | Honesty gate: absolute cosine (0.47 nomic) OR rare-term lex anchor; below -> "weak matches" / live recall injects nothing |
+| **Compaction** | Context-pressure summarization; in episodes, a BOUNDARY: closes the episode, seeds the successor |
+| **Router** | Dispatch-entry decision per prompt: append to warm episode / close-and-chain / open fresh |
