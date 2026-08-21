@@ -1,11 +1,11 @@
 ---
 # isaac-qxvl
 title: 'Live episodes 4a: router, TTL lifecycle, compaction-close, seal-at-close'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-20T23:16:17Z
-updated_at: 2026-08-21T00:08:44Z
+updated_at: 2026-08-21T05:20:41Z
 parent: isaac-51xy
 ---
 
