@@ -1,11 +1,11 @@
 ---
 # isaac-ek0r
 title: 'Tool allowlist: namespaced keywords and namespace globs'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-08-21T22:15:25Z
-updated_at: 2026-08-21T22:16:00Z
+updated_at: 2026-08-21T23:50:25Z
 ---
 
 Every tool has a namespace. Config uses Clojure namespaced keywords;
@@ -21,7 +21,9 @@ Likely repo: **isaac-agent**. Blocks **isaac-da0r** (cascade) and
   `:fs/read` is the config token; `fs__read` is the wire/registry/LLM name
   (`^[a-zA-Z0-9_-]{1,64}$` — `/` is illegal on the wire).
 - **Clean cutover.** Builtins are renamed; old wire names are gone (no
-  aliases). Existing crew `:allow` lists and features must move with them.
+  aliases). Existing crew `:allow` lists and features must move with them
+  (Micah 2026-08-21: this bean updates those tests and config, not a
+  follow-up). `:exec/run` → `exec__run` (not `exec__exec`).
 - Glob is namespace-only: `:fs/*` matches prefix `fs__`. Bare `*` is not
   a glob (policy token `:all` lives on isaac-da0r).
 - Policy token `:all` is **not** a tool name; it is exempt from the

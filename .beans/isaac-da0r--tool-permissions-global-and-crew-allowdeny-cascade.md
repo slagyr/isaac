@@ -1,11 +1,11 @@
 ---
 # isaac-da0r
 title: 'Tool permissions: global and crew allow/deny cascade'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-08-21T22:16:00Z
-updated_at: 2026-08-21T23:06:16Z
+updated_at: 2026-08-21T23:50:25Z
 blocked_by:
     - isaac-ek0r
 ---
@@ -24,7 +24,9 @@ Likely repo: **isaac-agent**. Needs **isaac-ek0r** (namespaced tokens,
 - **Two keys, both layers:** `:allow` and `:deny` on root `:tools` (beside
   existing `:defaults` / `:web_search`) and on crew `:tools`.
 - **Tokens:** namespaced keywords and `ns/*` (ek0r). Policy token `:all`
-  (exempt from namespace rule) means every registered tool.
+  (exempt from namespace rule) means every registered tool. `:allow`
+  / `:deny` are either the keyword `:all` or a vector of namespaced
+  tokens — never `[:all]`. `[:all]` fails validate (`:all` is the list).
 - **Cascade (last match wins), in this order:**
   1. global `:allow`
   2. global `:deny`
@@ -76,6 +78,7 @@ step. Accept for v1.
 - `bb features features/tool/permissions.feature:114`
 - `bb features features/tool/permissions.feature:147`
 - `bb features features/tool/permissions.feature:171`
+- `bb features features/tool/permissions.feature:182`
 
 New steps invented: none.
 
