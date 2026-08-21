@@ -275,3 +275,17 @@ All phase-1 beans completed + verified + deployed (isaac.agent 0.1.34 on zanebot
 | **Floor** | Honesty gate: absolute cosine (0.47 nomic) OR rare-term lex anchor; below -> "weak matches" / live recall injects nothing |
 | **Compaction** | Context-pressure summarization; in episodes, a BOUNDARY: closes the episode, seeds the successor |
 | **Router** | Dispatch-entry decision per prompt: append to warm episode / close-and-chain / open fresh |
+
+## Phase 2 roadmap — RESHAPED (2026-08-21, supersedes items 7-10 of the 2026-08-16 table; beans drafted just-in-time after 4b)
+
+The original items 7-10 assumed sessions and episodes as peer policies discovered at the port. Decisions 26-38 changed the shape: the router landed in phase 1.5 (isaac-qxvl), "session" became the external word only, and workspaces emerged as first-class. New sequence:
+
+| # | Prospective bean | Substance | From decisions |
+|---|---|---|---|
+| P2-1 | Transcript store | Extract the shared transcript abstraction (session.store -> transcript store, ednl), incl. relocating migrated episodes' transcripts out of session jsonl (recorded obligation) | 34 |
+| P2-2 | Chronicle + crew ownership | :conversation :chronicle named; per-container crew freedom + cascade removed (153/0/0 evidence); sessions-list lens ruling; model-override ruling | 33-35 |
+| P2-3 | Workspace registry + references | Per-host registry; hails carry logical project identity, not paths; crew tool bounds = registered workspaces only | 36 |
+| P2-4 | Workspace mutex + pools | In-flight re-keyed session->workspace; max-in-flight removed; pool allocation; CLI-process lock gap closed (lease vs server-routed) | 36-38 |
+| P2-5 | Module split + pilot | isaac-chronicle / isaac-episode over the transcript store; per-crew rollout | 34 + original 7-10 |
+
+Removed from the old roadmap: the router bean (landed early as isaac-qxvl); "retroactive old-sessions-as-closed-episodes migration" (already done — the panel migrated the corpus in phase 1).
