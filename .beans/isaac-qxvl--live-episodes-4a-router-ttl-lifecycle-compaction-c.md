@@ -48,3 +48,19 @@ bb features features/bridge/cli-prompt.feature features/session
 ```
 
 Field check on zanebot after deploy (recorded here): opt one test crew into :conversation :episodes, run a two-prompt warm + cold cycle via CLI, verify episodes list shows the chain and non-pilot crews are unaffected.
+
+## Held (awaiting human, 2026-08-21)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: continuation budget 5/5 exhausted with live episodes 4a still unimplemented (router/TTL/compaction-close/CLI; no product commits past @wip features at 554ab2e).
+Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
+
+Surveyed (not landed) remaining work:
+- Router at dispatch (bridge/core + prompt_cli ensure-session!): `:conversation :episodes` crews treat inbound --session as THREAD; warm append / cold close-then-open with `:parent-episode`. Honor memory/*now*.
+- Close = existing migrate/segment/seal; open records `:thread` + `:status :open`. Compaction on episode crew: close then open successor whose transcript BEGINS with compaction summary.
+- CLI: `episodes close --crew C`, `episodes list --crew C`. Help episodes close/list. index.feature help is NOT @wip and still expects only migrate-session + index.
+- NEW episode_steps: backing-session transcript Then/Given; lineage chain Given; open-episode fixture Given. REVISE episode-exists to first matching table (not newest-by-id).
+- Crew schema has no `:conversation`. `:episodes` schema has only `:gist-model`; needs `:ttl-minutes`.
+- live.feature uses `prompt ... --session reef-chat --crew cordelia` together; prompt_cli currently rejects that combo. Do not silently break cli-prompt.feature (`prompt --session bridge --crew main`).
+- Session store now-iso (memory/sidecar/index) uses Instant/now, not memory/*now*.
+
+Do not re-claim. Do not change grover-vector. No recall 4b, no mid-episode sealing.
