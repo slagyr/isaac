@@ -292,3 +292,13 @@ Removed from the old roadmap: the router bean (landed early as isaac-qxvl); "ret
 
 ## Field note (2026-08-21): gist fabrication — grounded-gist validation joins the checkpoint agenda
 grok-4.20-non-reasoning fabricated repo identifiers in gists in BOTH prompt eras: "isaac-foreman" (old prompt, Aug 18 migration; scene re-gisted cleanly later) and "isaac-food" (NEW what-not-how prompt — scene 2026-08-18-1711-nted, in the current corpus). Both are confabulated completions of "isaac-foundation" (the scene's actual subject — q3uk fs/size work; the foreman scene's test case "exists? is false for missing" is foundation's fs test). Danger is compounding: fabricated identifiers are rare tokens -> maximum IDF -> the most searchable strings in the index; and the planner repeated one as fact and nearly proposed architecture around a nonexistent repo. **Checkpoint item: grounded-gist validation at seal** — identifier-shaped tokens in a gist that appear nowhere in the scene's distilled text get flagged/regenerated. Also protects future (cont ...) marks and arc labels.
+
+## Roadmap addendum — phase 1.5 (2026-08-22)
+
+| Bean | Substance | Status |
+|---|---|---|
+| isaac-qxvl | Live episodes 4a: router, TTL, compaction-close, seal-at-close | completed + verified; 0.1.36 deployed; field check PASS (pilot crew, full lifecycle live) |
+| isaac-h5dk | Live recall 4b: recall-at-open, lineage seed, recall tools, index-at-close | todo, scenarios @wip committed — HELD, not dispatched (Micah 2026-08-22); dependency: isaac-ek0r tool namespacing |
+| isaac-e04k | Silent turn death (platform) | completed; 0.1.35 |
+| isaac-n4f9 | modules upgrade gitlib race (platform) | todo, undispatched |
+Bean 5 (live scene sealing mid-episode) and bean 6 remnants fold into post-4b work; phase 2 = P2-1..P2-5 (reshaped 2026-08-21).
