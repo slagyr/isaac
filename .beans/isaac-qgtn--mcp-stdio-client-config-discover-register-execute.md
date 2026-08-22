@@ -4,8 +4,10 @@ title: 'MCP stdio client: config, discover, register, execute'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-22T00:40:00Z
-updated_at: 2026-08-22T21:56:00Z
+updated_at: 2026-08-22T22:18:34Z
 parent: isaac-uhvt
 ---
 
@@ -88,3 +90,26 @@ Resumes only on explicit human action (re-hail the work/plan band, or re-promote
 - mcp_steps now commits feature isaac.edn into the loader snapshot before `start!`.
 - Client polls stdout (no `future` + `.readLine`) so handshake no longer parks a non-daemon reader thread.
 - Do not put `:factory` back on value-spec. Do not send continuation 6.
+
+
+## Resolution (2026-08-22, plan)
+
+HOLD unblocked on the planner isaac-mcp checkout. **Do not re-queue.** Zanebot work-1 dirty tree is superseded — discard it, do not commit.
+
+What was wrong: gherclj.main only `System/exit`s on failure, so a green run leaves Clojure's non-daemon agent pool holding the JVM (`bb features` 60s → 124). Putting `shutdown-agents` in after-scenario `stop!` lets isolated GREEN exit, then the next scenario's `builtin/register-all!` → `cmd-available?` → `sh/sh` throws `RejectedExecutionException`.
+
+Fix:
+- Product `stop!` destroys the process tree and unregisters tools. No `shutdown-agents`. Client polls stdout on the caller thread (no `future` / `.readLine`).
+- `isaac.mcp.feature-runner` always `System/exit`s after gherclj (including 0).
+- No `:factory` on the `:mcp` schema (table or value-spec) — that rewrites validate errors to `mcp[:lens].command` and the approved scenario wants `mcp.lens.command`. Reconfigurable `make` is still there for a later berth/registry bean.
+- Dropped `:features` extra-dep `isaac.comm.telly` — its `:local/root` pulled this machine's newer agent manifest (`check-crew-broad-directories`) onto the classpath against the pinned agent that lacks the fn.
+
+isaac-mcp `4bc19ac` (local, needs push). Units 16/0. Acceptance suite 7/0 in ~1.5s:
+
+- `bb features features/config_validate.feature:10`
+- `bb features features/config_validate.feature:29`
+- `bb features features/lifecycle.feature:13`
+- `bb features features/lifecycle.feature:26`
+- `bb features features/lifecycle.feature:35`
+- `bb features features/lifecycle.feature:46`
+- `bb features features/lifecycle.feature:62`
