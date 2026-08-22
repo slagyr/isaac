@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-08-22T00:40:00Z
-updated_at: 2026-08-22T16:44:59Z
+updated_at: 2026-08-22T21:56:00Z
 parent: isaac-uhvt
 ---
 
@@ -71,3 +71,20 @@ New steps invented: none.
 
 - Crew allow / prompt tools / transcript (isaac-6b5z, needs ek0r).
 - HTTP/SSE, OAuth, resources, prompts, ACP mcpServers, hot reload.
+
+
+## Held (awaiting human, 2026-08-22)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: lifecycle GREEN in isolation, RED as a suite because after-scenario process cleanup vs Clojure agent pool / JVM non-daemon linger (bb features 60s wrapper). Continuation budget exhausted.
+Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
+
+### Continuation 5/5 LAST notes (scrapper@isaac-work-1, hail 31aa64a4)
+
+- Product sibling isaac-mcp DIRTY on main (uncommitted client/runtime + specs + fixture + de-@wip features).
+- Units GREEN: `bb spec spec/isaac/mcp/` 14/0, 21.
+- `bb features features/config_validate.feature:10` and `:29` GREEN.
+- `bb features features/lifecycle.feature:13` GREEN when run alone (3 assertions).
+- All five lifecycle selectors together RED: after-scenario `stop!` + `shutdown-agents` lets isolated JVM exit, but kills the agent pool so later scenarios throw RejectedExecutionException in `builtin/register-all!` (`cmd_available?`). Without shutdown-agents, isolated GREEN hang until the 60s bb wrapper (exit 124) even though gherclj already printed 1/0.
+- mcp_steps now commits feature isaac.edn into the loader snapshot before `start!`.
+- Client polls stdout (no `future` + `.readLine`) so handshake no longer parks a non-daemon reader thread.
+- Do not put `:factory` back on value-spec. Do not send continuation 6.
