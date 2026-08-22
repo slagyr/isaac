@@ -20,3 +20,47 @@ The payoff bean: episode crews remember. Per isaac-51xy decisions 3, 20-24 + thi
 6. **Scope**: episode crews only (chronicle crews unchanged); no recall UI/comm surface changes; recall CLI untouched.
 
 7. **Rendered block carries scene ids + dates per entry (Micah 2026-08-22)** — gist-only tiers are fetchable, not dead ends: `- [<scene-id> · <date>] <gist>`. Header line is the in-band frontmatter: "Recalled from earlier conversations (fetch full detail with recall__scene <id>):" — instruction at point of use; tool descriptions carry the rest. NO system-prompt additions in 4b (would touch the cached crew prefix); held in reserve as a config-level fix if the pilot shows the model ignoring blocks or fumbling ids. Lineage seed uses the same entry format.
+
+## Amendments (2026-08-22, scenario session)
+
+- **Decision 4 amended:** for TOOL recalls, the toolResult message IS the frozen record (transcripts store tool results verbatim; a separate event would double-store). The distinct `recall` transcript event type belongs to open/lineage injection only. Both paths update :recalled-scenes refs.
+- **Lineage header:** "Previously in this conversation (fetch full detail with recall__scene <id>):" — distinct from search-recall's "Recalled from earlier conversations..." so the model distinguishes continuation from association. Lineage-seeded scenes ARE recorded in :recalled-scenes (dedupe = set membership).
+- **Embedding-unconfigured vs embedding-down:** unconfigured is a legal Base tier for episode crews — quiet skip (containers work, recall unavailable); provider FAILURE is the loud-log path. Feature scenarios cover unconfigured; provider-down loud-log + turn-survives is a SPEC obligation (redefs stub on embed-texts).
+- Scenario-6 fixture note: if open-recall pollutes the tool fixture (grover cosines uniformly high), pin :recall {:floor-cos 0.999} in that scenario's config — single-subject discipline.
+
+## Scenarios (2026-08-22, committed @wip)
+
+- features/episodes/live.feature +5: recall-at-open injects (refs + header/[id · date]/full-tier-and-ordering request patterns); below-floor injects nothing; lineage seed without duplication (exact-count step); close indexes immediately (behavioral proof via recall CLI, "indexed 2 rows" stdout); no-embedding tier + catch-up via idempotent episodes index.
+- features/recall/live_tools.feature (new) +2: recall__search mid-episode (toolResult speaks [id · date] format; refs recorded); recall__scene fetch + unknown-id "unknown scene" tool error (no embedding/index needed — Base-tier fetch; second turn doubles as warm-path coverage).
+
+## Step ledger
+
+| step | status |
+|---|---|
+| all 4a episode/transcript/lineage steps, model queue (incl. toolCall rows), crew-allows-tools, fixed clock, last-LLM-request matcher, index/no-index steps | reuse |
+| **that episode has recalled scenes:** | **NEW — reads :recalled-scenes refs (scene-id, origin-episode) from the remembered/most-recently-opened episode; exact set; regex cells ok** |
+| **that episode has no recalled scenes** | **NEW — negative twin (absent/empty refs)** |
+| **the last LLM request does not mention recall** | **NEW — outbound request contains neither the recall header nor recall__scene** |
+| **the last LLM request mentions {string} exactly {int} time(s)** | **NEW — occurrence count across messages; the dedupe proof** |
+
+## Production notes
+
+- Recall-at-open lives in the router's open path (post-4a): embed query -> score (reuse recall.query machinery server-side) -> floor -> render block -> append `recall` transcript event -> refs on episode record. Renderer: prompt/builder renders `recall` entries as user-role messages in transcript position (compaction precedent).
+- Index-at-close: close path calls index-crew! for the crew after sealing (idempotent; batch = just-sealed scenes); stdout "indexed N rows". No embedding config -> skip silently, no "indexed" line.
+- Tools :recall/search + :recall/scene registered per the isaac-ek0r namespacing convention (DEPENDENCY: if ek0r has not landed at build time, coordinate with plan band rather than inventing interim names).
+- Config: :recall {:inject {:full 1 :gists 2}} defaults; entry format `- [<scene-id> · <yyyy-MM-dd>] <gist>`.
+
+## Acceptance
+
+Remove @wip; these pass and previously-green suites stay green:
+
+```
+bb features features/episodes/live.feature
+bb features features/recall/live_tools.feature
+bb features features/episodes/migrate_session.feature features/episodes/index.feature features/recall/query.feature
+bb spec spec/isaac/episodes spec/isaac/recall spec/isaac/session
+```
+
+Spec obligations: embed-provider-error at close -> seal succeeds unindexed + loud log; embed-provider-error at open -> recall skipped + loud log + turn completes; index-model drift at open -> loud log + skip (isaac-j2p4 d10).
+
+Field check on zanebot (recorded here on completion): pilot crew — cold open with a query matching migrated corpus shows a recalled block in the reply's awareness; episodes close then immediate recall CLI hit; NOT DISPATCHED YET (Micah 2026-08-22: hold).
