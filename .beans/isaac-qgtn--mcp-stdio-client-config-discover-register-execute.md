@@ -1,11 +1,11 @@
 ---
 # isaac-qgtn
 title: 'MCP stdio client: config, discover, register, execute'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-08-22T00:40:00Z
-updated_at: 2026-08-22T06:15:00Z
+updated_at: 2026-08-22T16:44:59Z
 parent: isaac-uhvt
 ---
 
