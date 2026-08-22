@@ -4,10 +4,8 @@ title: 'Live episodes 4a: router, TTL lifecycle, compaction-close, seal-at-close
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-20T23:16:17Z
-updated_at: 2026-08-22T07:34:43Z
+updated_at: 2026-08-22T07:54:36Z
 parent: isaac-51xy
 ---
 
@@ -86,3 +84,8 @@ Attempt 2's turn died silently after ~8h (last transcript entry a benign tool re
 
 **REMAINING (this bean, re-scoped):** episode records + open/close fns (reuse migrate seal pipeline); router at the ensure-session! seam (warm/cold/absent per decisions 20, 26); compaction-close redirect with successor seeding; `episodes close` + `episodes list` CLI + help rows; the four new steps + episode-exists selection revision; de-@wip the 8 live.feature scenarios + help scenario.
 Worker guidance: start from the router — the groundwork you'd otherwise re-survey is already on main. Land incrementally; green partial landings + conflict-hail beat holds.
+
+
+## Verify fail (attempt 1, 2026-08-22): acceptance tampering in live.feature (echo→grover fixture edits) without bean Exceptions authorization
+
+Blocked at the acceptance-tampering gate. `features/episodes/live.feature` was changed beyond `@wip` removal: multiple scenario crew fixtures changed `model` from `echo` to `grover`, and the compaction scenario changed `config/models/echo.edn` to `config/models/grover.edn`. This bean has no `## Exceptions` section authorizing those acceptance edits.
