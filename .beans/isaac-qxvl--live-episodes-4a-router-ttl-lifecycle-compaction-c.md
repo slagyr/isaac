@@ -89,3 +89,15 @@ Worker guidance: start from the router — the groundwork you'd otherwise re-sur
 ## Verify fail (attempt 1, 2026-08-22): acceptance tampering in live.feature (echo→grover fixture edits) without bean Exceptions authorization
 
 Blocked at the acceptance-tampering gate. `features/episodes/live.feature` was changed beyond `@wip` removal: multiple scenario crew fixtures changed `model` from `echo` to `grover`, and the compaction scenario changed `config/models/echo.edn` to `config/models/grover.edn`. This bean has no `## Exceptions` section authorizing those acceptance edits.
+
+## Field check (2026-08-22, 0.1.36 on zanebot) — PASS
+
+Pilot crew created (:conversation :episodes, model :gist). Full lifecycle live, first try:
+- prompt 1 opened episode 2026-08-22-2048-7zqd (:open, :thread pilot-chat); prompt 2 warm-appended (still one episode).
+- `episodes close` sealed via segmentation (2 scenes, 0.5s, 472/33 tok on grok-4.20) — "closed 1 episode".
+- prompt 3 chained: successor 2026-08-22-2049-kgp0 :open with :parent-episode 7zqd. `episodes list` shows the chain.
+- Regression: main (no switch) still creates plain sessions; episode count unchanged.
+
+Two side findings, neither a 4a defect:
+1. Transient "Error building classpath / Manifest not found" on the FIRST CLI invocation after `modules upgrade` (gitlib checkout race); subsequent invocations clean. Ops note.
+2. **main crew is broken independent of 4a**: crew/main.edn pins :model :claude -> claude-sonnet-4-6 via :anthropic API key, which 400s (credit/limit) and classifies as provider wall — "provider unavailable (wall)" on every main turn, presumably including daily heartbeats. Pre-existing config issue surfaced by the regression probe; needs Micah's ruling on main's model (anthropic credit vs switch model).
