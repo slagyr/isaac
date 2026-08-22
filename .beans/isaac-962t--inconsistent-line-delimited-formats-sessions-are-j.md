@@ -1,11 +1,11 @@
 ---
 # isaac-962t
 title: 'Inconsistent line-delimited formats: sessions are JSONL, logs are EDNL'
-status: draft
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-05-23T02:49:10Z
-updated_at: 2026-05-23T02:49:10Z
+updated_at: 2026-08-22T22:00:53Z
 ---
 
 ## Gap
@@ -71,3 +71,7 @@ If JSON wins:
 Surfaced during a sanity check of the two formats while discussing
 on-disk conventions.
 
+
+## Scrapped (2026-08-22)
+
+EDN won. Superseded by **isaac-k27z** (session directories + `current.ednl` + `isaac sessions migrate`).

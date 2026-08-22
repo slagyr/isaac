@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-05-16T17:23:24Z
-updated_at: 2026-05-16T19:24:39Z
+updated_at: 2026-08-22T22:00:53Z
 blocked_by:
     - isaac-q90z
     - isaac-bv48
@@ -52,3 +52,8 @@ Or `:history-retention` stays a keyword and rotation config lives under a separa
 ## Feature file
 
 `features/session/transcript_rotation.feature` (scenarios deferred)
+
+
+## Note (2026-08-22)
+
+Rotation-at-compaction is subsumed by **isaac-k27z** (each compact freezes `n.ednl` and replaces `current.ednl`). Gzip of frozen segments can remain a later draft; do not implement rotation here.
