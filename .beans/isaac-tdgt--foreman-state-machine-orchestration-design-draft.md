@@ -13,3 +13,11 @@ Model agent orchestration as explicit state machines (idea via Micah's dad; see 
 ## Addendum (2026-08-22, Micah): external event triggering
 
 Events must be triggerable externally -> CORRECTED (2026-08-22, Micah's catch): hooks' essence is webhook -> prompt -> TURN; foreman events are non-turn, so reusing hooks would change what hooks is. Instead the foreman contributes its OWN route through the isaac-server route berth (the same extension point hooks and cli-server use — server owns HTTP): `POST /foreman/events` behind the server's existing token auth. Hooks unchanged, remains the webhook-means-wake-a-crew module (pinky telemetry untouched). Migration example: a CI webhook targets the event route and the TABLE decides whether any prompt fires. **Two doors, one intake**: the crew-side `signal` tool and the external endpoint write the same event envelope to the same durable queue. Durability rule (hails-never-die for events): persist-before-ack — append to disk, then 200; the machine consumes from disk, so an accepted event fires even across restarts. Unlocked table inputs: GitHub Actions posting :ci-passed (CI as first-class transition, not a report a crew reads), human curl for manual events, remote cron ticks, cross-host isaac signaling.
+
+
+## Addendum (2026-08-22, Micah): observability + CLI
+
+The machine's state IS the answer to "where is this bean?" — currently answered by digging logs/transcripts (the planner spent this week doing exactly that: ssh + jsonl tails + hail-dir greps for every status question; qxvl's stall took forensic reconstruction). Surface:
+- **Read endpoints** beside the event route: GET /foreman/instances/<id> -> {state, since, last-event, pending-action, accumulator basket}; GET /foreman/instances?state=held ("what needs a human" as a query). The persisted event intake doubles as an append-only TRANSITION LOG per instance — audit trail/"how it got here" for free.
+- **CLI**: `isaac foreman status <id>`, `isaac foreman list --state held`, `isaac foreman history <id>` — rides the endpoints, so it works remotely via cli-proxy (no ssh archaeology).
+- **`isaac foreman signal <id> <event>`** — the HUMAN door for manual event injection (today: edit bean status + re-hail by hand), first-class and logged like any event. Three doors, one intake: crew tool, external endpoint, CLI.
