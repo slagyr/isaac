@@ -1,11 +1,11 @@
 ---
 # isaac-ek0r
 title: 'Tool allowlist: namespaced keywords and namespace globs'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-08-21T22:15:25Z
-updated_at: 2026-08-21T23:50:25Z
+updated_at: 2026-08-22T17:08:15Z
 ---
 
 Every tool has a namespace. Config uses Clojure namespaced keywords;
