@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-08-22T22:00:26Z
-updated_at: 2026-08-22T22:00:26Z
+updated_at: 2026-08-22T23:41:59Z
 ---
 
 Likely repo: **isaac-agent** (store, CLI, features). Foundation `fs/size`, `fs/copy`, `fs/read-bytes` are already required for bounded current-file I/O.
@@ -88,3 +88,8 @@ cd isaac-agent && bb features features/session/storage.feature
 cd isaac-agent && bb features features/session/history_retention.feature
 cd isaac-agent && bb features features/session/migrate.feature
 ```
+
+
+## Decision (2026-08-22, Micah)
+
+Transcript parse uses **tonsky/fast-edn** (`io.github.tonsky/fast-edn`) on the JVM — JSON-speed EDN, not clojure.edn (≈15× slower). Native bb has no `EdnParser`; `read-edn-line` / `read-ednl` fall back to `clojure.edn`. session.edn and turn markers stay `clojure.edn` (tiny).
