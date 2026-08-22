@@ -4,8 +4,10 @@ title: 'Live episodes 4a: router, TTL lifecycle, compaction-close, seal-at-close
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-20T23:16:17Z
-updated_at: 2026-08-21T14:55:00Z
+updated_at: 2026-08-22T07:34:43Z
 parent: isaac-51xy
 ---
 
