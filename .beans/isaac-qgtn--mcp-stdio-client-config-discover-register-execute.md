@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-22T00:40:00Z
-updated_at: 2026-08-22T22:18:34Z
+updated_at: 2026-08-22T23:48:28Z
 parent: isaac-uhvt
 ---
 
@@ -113,3 +113,6 @@ isaac-mcp `4bc19ac` (local, needs push). Units 16/0. Acceptance suite 7/0 in ~1.
 - `bb features features/lifecycle.feature:35`
 - `bb features features/lifecycle.feature:46`
 - `bb features features/lifecycle.feature:62`
+
+
+Decision (2026-08-22, Micah): JVM linger is `gherclj after-all` + `shutdown-agents`, not a custom feature-runner. after-all runs once after speclj/run (suite and isolated file:LINE). Product stop! stays process teardown only. isaac-mcp `fd3a0da`. Isolated :13 GREEN 0.16s; full 7 selectors GREEN 1.5s.
