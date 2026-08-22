@@ -302,3 +302,9 @@ grok-4.20-non-reasoning fabricated repo identifiers in gists in BOTH prompt eras
 | isaac-e04k | Silent turn death (platform) | completed; 0.1.35 |
 | isaac-n4f9 | modules upgrade gitlib race (platform) | todo, undispatched |
 Bean 5 (live scene sealing mid-episode) and bean 6 remnants fold into post-4b work; phase 2 = P2-1..P2-5 (reshaped 2026-08-21).
+
+## Field note (2026-08-22): corpus completed; a persistent-tiling-hole failure mode
+
+Straggler migration (28 sessions incl. tono-work-1/2/3, isaac-work-2, tono-harden): all migrated + indexed; resume path cleared 4 of 5 partials (tono-work-1: 366 spans/1940 scenes). Corpus now COMPLETE across crews; routine filter holding (e.g. scrapper +6 rows / 5,856 routine skipped — worker crews are ~85% routine at scale).
+
+One span permanently flagged (tono-verify-1 span 34): grok-4.20 CONSISTENTLY emits a tiling hole (…20-20, then 22-25 — ordinal 21 skipped) across 4 attempts. New failure mode for the checkpoint list: **persistent single-message gaps** — candidate lenient-repair rule: auto-extend the preceding scene over a 1-message hole (with a log) rather than flagging the whole span. Not implemented; span stays honestly flagged per rxr4 contract.
