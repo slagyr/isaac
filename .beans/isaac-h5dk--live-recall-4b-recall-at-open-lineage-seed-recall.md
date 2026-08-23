@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-22T21:33:23Z
-updated_at: 2026-08-23T19:13:08Z
+updated_at: 2026-08-23T21:56:07Z
 parent: isaac-51xy
 ---
 
@@ -88,3 +88,23 @@ Landed on **isaac-agent** \`84c0a7f\`. Zanebot workers stood down — too many f
 - Grover 4-d vectors saturate ~0.999, so a floor-cos ≥ 0.99 also requires lexical overlap (the below-floor scenario).
 
 Acceptance green: live.feature h5dk scenarios + live_tools.feature; migrate/index/query regression; spec episodes/recall/session.
+
+## Planner rescope (2026-08-23, prowl) — bh17 @wip carve-out
+
+VERIFY STUCK: acceptance must not require zero @wip on entire
+`features/episodes/live.feature` and `features/episodes/migrate_session.feature`.
+
+**Carve-out:** Remaining @wip scenarios in those files owned by **isaac-bh17**
+(live.feature lines ~437, 477, 510, 541, 580; migrate_session.feature ~363) are
+**OUT OF SCOPE** for isaac-h5dk. They may remain @wip until bh17 completes.
+
+**h5dk acceptance (amended):**
+- Implementation: isaac-agent **84c0a7f** (or later main containing h5dk).
+- h5dk scenarios green; h5dk-owned @wip removed.
+- Full-file runs of live.feature / migrate_session.feature are OK with bh17
+  @wip still present (gherclj skips @wip). Do **not** fail h5dk solely because
+  bh17 tags remain.
+- Previously-green non-wip suites stay green.
+- Do **not** sequence bh17 de-@wip ahead of h5dk verify.
+
+This note resets the verify-fail escalation counter.
