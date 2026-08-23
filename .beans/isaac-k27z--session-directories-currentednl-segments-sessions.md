@@ -93,3 +93,16 @@ cd isaac-agent && bb features features/session/migrate.feature
 ## Decision (2026-08-22, Micah)
 
 Transcript parse uses **tonsky/fast-edn** (`io.github.tonsky/fast-edn`) on the JVM — JSON-speed EDN, not clojure.edn (≈15× slower). Native bb has no `EdnParser`; `read-edn-line` / `read-ednl` fall back to `clojure.edn`. session.edn and turn markers stay `clojure.edn` (tiny).
+
+## Held (awaiting human, 2026-08-23)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: continuation 5/5 exhausted on CI-failure repair of isaac-agent@ec6c66b; product DIRTY/uncommitted (pin 16f4786→75f0be5 + kebabize/legacy-turn + current-only oracles); quiet-day compaction_memory_flush still RED (summary is raw response, not queued weather text).
+Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
+
+### Continuation 5/5 LAST notes (scrapper@isaac-work-1, hail cdf34d0e)
+
+- Incoming cycle: CI hail **f93f543c** (run 32606153862). Continuations 1/5 **88ed046d**, 2/5 **5dbb1a1f**, 3/5 **dbfc805a**, 4/5 **1632a811**, 5/5 LAST **cdf34d0e**. Budget EXHAUSTED. Do NOT send continuation 6.
+- Agent-safe pin **isaac-k27z-agent-pin = 75f0be5** already on origin. Local foundation detached there — do not checkout main over it.
+- Uncommitted on isaac-agent main@ec6c66b: bb.edn/deps.edn pin; bridge_spec current.ednl; memory kebabize-on-update; leftover `sessions/turns/<id>.edn` marker fallback; current-only compaction_strategies / compaction_logging / resume_repair oracles.
+- Focused units GREEN (63/0). session_info, resume_repair, compaction_strategies GREEN. compaction_memory_flush quiet-day RED.
+- Do not re-claim. Leftover isaac-qxvl / isaac-qgtn continuations remain no-ops.
