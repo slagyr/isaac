@@ -4,8 +4,10 @@ title: MCP tools in a turn via crew allow list
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-22T00:40:00Z
-updated_at: 2026-08-23T17:15:34Z
+updated_at: 2026-08-23T20:56:07Z
 parent: isaac-uhvt
 blocked_by:
     - isaac-ek0r
@@ -86,3 +88,8 @@ viewerPermission: READ  (agent + isaac repos are write)
 `modules.edn` still pins isaac.mcp at scaffold **f1f441e**. Update to c1dbf20 only after origin has that SHA.
 
 Resumes only on explicit human action (grant push on isaac-mcp, push c1dbf20, then re-hail the work/plan band). No crew re-picks this until then.
+
+
+## HOLD resolved (2026-08-23)
+
+`slagyr-assistant` can push `isaac-mcp`. Pushed **c1dbf20** (`fd3a0da..c1dbf20`) from work-1. `modules.edn` pin updated. Handing to verify.
