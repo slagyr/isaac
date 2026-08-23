@@ -45,3 +45,5 @@ Two narrow seams, no shared internals: (1) actions -> dispatch gate — foreman 
 - **Name stays isaac-foreman** (orchestrator role, not mechanism; the foreman RUNS machines — config/machines/ coherent). Pure engine isolated in isaac.foreman.machine for a possible future standalone statemachine-clj extraction.
 - **Unhandled events**: recorded in history + warned, never fatal (:* rows are the opt-in catch) — orchestration robustness over SM strictness.
 - Roadmap: F1 engine+file store+CLI (start/signal/status/list); F2 signal tool + infra events (via isaac-bbov finalization); F3 action execution + POST /foreman/events route (+ --dry-run preserving record-only simulation — machine-testing obligation); F4 observability queries; F5 beans observer module; F6 superstates+history.
+
+(2026-08-23: **F5 held — Micah unsure about the beans observer.** Do not plan/build F5 without a fresh ruling; the file store as sole truth stands regardless. Open question: whether beans should mirror machine state at all, or humans just read `foreman list`.)
