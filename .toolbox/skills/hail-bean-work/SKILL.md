@@ -67,6 +67,13 @@ When the bean body says **process test**, **no-op**, or **orchestration smoke**
   4. `beans update <id> --tag=unverified` + push.
 - Do not infer that red/green tests are expected.
 
+## Never hail yourself to continue
+
+Finish in this turn. The tool-loop budget defaults to **500** cycles. Do
+**not** send a session-direct continuation hail, "continuation N of 5", or
+an EARLY next hail. End states: unverified handoff to verify, conflict hail
+to plan, or **HOLD + human escalate** if you still cannot finish.
+
 ## Hand off to verify
 
 - Worker: `in-progress` + `tag=unverified`, push isaac `.beans/` with any notes.
