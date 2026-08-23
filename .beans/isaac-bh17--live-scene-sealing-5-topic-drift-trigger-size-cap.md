@@ -18,3 +18,36 @@ Bean 5 of isaac-51xy: scenes seal DURING episodes, not only at close. Decisions 
 4. **Rolling open-scene vector**: running mean of distilled-exchange embeddings since last seal, persisted on the episode record (quantized ints) so CLI processes survive; updated post-turn (~100ms nightbird). Reset on seal.
 5. **(cont ...) marks are IN (Micah: very important).** Segmentation line format gains `(cont <first>-<last>)` after the ordinal: parser stores :continues on the sealed scene, RESOLVED to scene ids at seal time. Scope rule: ordinals are span-local, so :continues resolves only within the same seal batch; a (cont) pointing at the still-open last scene is dropped with a log. Cross-episode/cross-batch arc joins stay phase 3 — this bean only collects links. Prompt instruction added alongside routine/~ rules.
 6. **Sealed scenes index immediately** (same batch path as index-at-close from isaac-h5dk). **No-embedding tier: drift trigger inert (no vectors), size-cap sealing still works** — tier consistency with h5dk decision.
+
+## Scenarios (2026-08-23, committed @wip)
+
+features/episodes/live.feature +5: size-cap seals mid-episode (trailing scene stays open; sealed scene indexed — recall-CLI proof); drift seals under the cap (identical fixture to size-cap scenario, config the only variable — controlled experiment); false drift trigger absorbed (single-scene output seals nothing, exit 0); (cont 1-2) resolves to a scene id in :continues frontmatter (braided wine/regatta/wine fixture; trailing scene stays open); no-embedding tier (drift configured but inert — the trap: embedding for drift would crash; cap seals, nothing indexed).
+features/episodes/migrate_session.feature: prompt-contract scenario revised @wip — lookaheads add \(cont and resumes (shared prompt: migration collects arc links too).
+
+## Step ledger
+
+| step | status |
+|---|---|
+| all steps | reuse — one exception below |
+| **that episode has no sealed scenes** | **NEW — zero scene .md files under the remembered episode's dir (exact-count matcher cannot take an empty table)** |
+| that episode has scenes matching: | reuse — `continues` column rides the generic matcher (empty cell = key absent; regex cell matches stringified id), same as xl6h's routine column |
+
+## Production notes
+
+- New post-turn seam: `maybe-seal!` in episodes/lifecycle.clj, called after reply delivery on episode-crew turns (CLI: before process exit). Order: update rolling vector -> check triggers (drift needs embedding + tail >= :min-tail; cap always) -> segment tail (segment-span! reuse) -> seal all but last (seal-scenes reuse; hard-cap single-scene seals entirely) -> index batch (h5dk path) -> reset rolling vector.
+- Rolling open-scene vector: running mean of distilled-exchange embeddings since last seal, quantized ints persisted on episode.edn; absent when no :embedding.
+- Parser: BOUNDARY_LINE gains optional `\(cont <a>-<b>\)` group after the ordinal colon; resolve-ordinals carries :continues-ordinals; seal resolves to scene ids within the batch. store.clj SCENE_FRONTMATTER_KEYS + :continues.
+- Config schema: :episodes :seal {:size-cap :drift-threshold :min-tail} contributions.
+- SPEC OBLIGATIONS: (cont) targeting the still-open trailing scene -> mark dropped with loud log; drift cosine math on quantized vectors; rolling-mean update/reset; seal failure -> loud log, turn unharmed, retry next trigger (idempotent tail); hard-cap single-scene full-seal rule.
+
+## Acceptance
+
+Remove @wip; these pass and previously-green suites stay green:
+
+```
+bb features features/episodes/live.feature
+bb features features/episodes/migrate_session.feature features/episodes/index.feature features/recall/query.feature features/recall/live_tools.feature
+bb spec spec/isaac/episodes spec/isaac/recall
+```
+
+DEPENDENCY: isaac-h5dk (index-at-close batch path, recall live plumbing) — do not start before h5dk lands. Field check on zanebot (recorded here): pilot crew, multi-topic sitting seals mid-episode; recall finds a scene from the STILL-OPEN episode; a (cont) link appears in a live-sealed scene.
