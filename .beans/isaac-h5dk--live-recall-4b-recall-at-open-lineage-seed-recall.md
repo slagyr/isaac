@@ -1,10 +1,11 @@
 ---
 # isaac-h5dk
 title: 'Live recall 4b: recall-at-open, lineage seed, recall tools, index-at-close'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-08-22T21:33:23Z
-updated_at: 2026-08-22T21:33:23Z
+updated_at: 2026-08-23T02:11:06Z
 parent: isaac-51xy
 ---
 
