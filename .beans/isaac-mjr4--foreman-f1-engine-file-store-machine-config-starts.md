@@ -47,3 +47,7 @@ bb spec spec
 bb features features
 ```
 No dependencies — F1 is self-contained (no isaac-agent changes). NOTE: worker bootstraps CI/deps on first run (skeleton deps pins may need bumping to current agent/foundation SHAs).
+
+## Machine testing story (2026-08-23, Micah's question)
+
+Machines (the config tables) are TDD-able at three layers: (1) **speclj against the pure engine** — isaac.foreman.machine/step is (table, state, event) -> {state, actions, order}, no I/O; authors red-green their EDN entity like normal code (this is a design REQUIREMENT on machine.clj's API, not an accident). (2) **Gherkin** — F1's CLI steps (start/signal/status-matches) ARE the machine-testing DSL; an orchestration ships table + feature file, reviewed like any bean. (3) **Record-only = simulator** — scratch instances against production config are safe in F1; F3 MUST add --dry-run to preserve this once actions execute (recorded as an F3 obligation in isaac-tdgt). Runtime gap detection: unhandled-event history entries show the missing rows.
