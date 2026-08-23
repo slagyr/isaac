@@ -308,3 +308,19 @@ Bean 5 (live scene sealing mid-episode) and bean 6 remnants fold into post-4b wo
 Straggler migration (28 sessions incl. tono-work-1/2/3, isaac-work-2, tono-harden): all migrated + indexed; resume path cleared 4 of 5 partials (tono-work-1: 366 spans/1940 scenes). Corpus now COMPLETE across crews; routine filter holding (e.g. scrapper +6 rows / 5,856 routine skipped — worker crews are ~85% routine at scale).
 
 One span permanently flagged (tono-verify-1 span 34): grok-4.20 CONSISTENTLY emits a tiling hole (…20-20, then 22-25 — ordinal 21 skipped) across 4 attempts. New failure mode for the checkpoint list: **persistent single-message gaps** — candidate lenient-repair rule: auto-extend the preceding scene over a 1-message hole (with a log) rather than flagging the whole span. Not implemented; span stays honestly flagged per rxr4 contract.
+
+## P2 RECONCILIATION AUDIT (2026-08-23 — planner, solo; reviewed against the other stream's landed/in-flight work)
+
+**What the other stream landed that intersects P2:**
+- **isaac-k27z** (in-progress, mostly landed at ec6c66b): sessions are DIRECTORIES — session.edn + frozen {n}.ednl segments + current.ednl; EDNL encoding (pr-str; cheshire's custom JSON writer dies); effective-history-offset and .bak.jsonl dead; sidecar/index stores REMOVED (one fs store + memory for tests); `isaac sessions migrate` CLI; hot path reads current.ednl only; "whole chronicle" = concatenate segments (their words!). Explicitly OUT of k27z scope: session->chronicle rename, transcript-key kebab, gzip of frozen segments, auto-migrate.
+- **ek0r/da0r/ukg4** (namespaced tools; global/crew allow-deny cascade; directory ACLs): orthogonal to P2 rows but STRENGTHENS P2-2 — the permission home is now unambiguously the crew, which is the crew-owned-containers thesis arriving via another door.
+- n9ez (structured session keys, completed) — minor naming groundwork.
+
+**Revised P2 map (supersedes the 2026-08-21 P2-1..P2-5 table):**
+| Row | Was | Now |
+|---|---|---|
+| P2-1 | Transcript store extraction (storage + abstraction) | **Storage half DONE by k27z.** Remaining: the PORT half — session.store -> transcript-store SPI naming/extraction; VERIFY the episode-transcript relocation obligation (likely DISSOLVED: after `sessions migrate`, backing stores are directories, and episodes-as-managed-sessions already own segmented transcript dirs — provenance may simply hold; check, don't assume). |
+| P2-2 | Chronicle naming + crew-owned containers | UNCHANGED and RIPER: k27z deliberately left the rename to us, its frozen-segment model IS the chronicle shape, and the permissions cascade has already made crew the policy home. |
+| P2-3/P2-4 | Worksite registry / mutex+pools | **SUPERSEDED by the worksite module program**: isaac-bbov (seams) + isaac-l3ps (W1, cwd-keyed) queued; W2 (pools/band-binding/max-in-flight) and W3 (lease expiry) planned differently than these rows assumed. Rows retired. |
+| P2-5 | isaac-chronicle / isaac-episode split | UNCHANGED, now cheaper: sits on k27z storage + bbov seams; three named core forks (router, compaction-close, recall rendering) remain the extraction work. |
+**Stream-coordination flags:** (1) k27z rewrote session feature steps — any planner writing transcript assertions should re-check step semantics against current main before drafting. (2) The "scrap `sessions migrate` later" note in k27z is a one-time-tool retirement — belongs to whoever runs the final chronicle cutover (P2-2/P2-5). (3) Gzip of frozen segments stays a parked draft (k27z's ruling; do not fold into P2 rows).
