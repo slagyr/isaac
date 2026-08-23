@@ -1,10 +1,11 @@
 ---
 # isaac-mjr4
 title: 'Foreman F1: engine, file store, machine config, start/signal/status/list CLI'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-08-23T22:07:07Z
-updated_at: 2026-08-23T22:07:07Z
+updated_at: 2026-08-23T22:15:17Z
 ---
 
 First bean of isaac-foreman (repo slagyr/isaac-foreman, scaffold 4cdb1c9, scenarios @wip at 3497ace). Design record: isaac-tdgt (full design + F1 session rulings 2026-08-23), isaac-51xy decisions 30-38.
