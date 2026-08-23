@@ -4,8 +4,10 @@ title: 'Live recall 4b: recall-at-open, lineage seed, recall tools, index-at-clo
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-22T21:33:23Z
-updated_at: 2026-08-23T02:11:06Z
+updated_at: 2026-08-23T19:13:08Z
 parent: isaac-51xy
 ---
 
@@ -75,3 +77,14 @@ The overnight attempt exhausted its continuation budget with NO product commits;
 A worker resumed isaac-h5dk (scrapper@isaac-work-1, Discord 🔁) minutes before the planner's local-build note landed. **The no-op order above is VOID — the worker's attempt is authorized and owns this bean.** Planner is hands-off; the Planner Reset section (fresh start, no leftovers, land incrementally) stands as guidance.
 
 (2026-08-23 10:20 addendum: the second re-hail 1232eaed had bound to isaac-work-2 — its delivered record was removed before any turn fired, preventing a duplicate attempt. **isaac-work-1's resumed attempt is the sole owner.** Any other session receiving an h5dk delivery: no-op it.)
+
+## Implementation (plan local, 2026-08-23)
+
+Landed on **isaac-agent** \`84c0a7f\`. Zanebot workers stood down — too many failed continuation loops.
+
+- Recall-at-open + lineage seed: \`isaac.recall.inject\` after \`resolve-thread!\` (\`:opened\`/\`:chained\` only).
+- Index-at-close via existing \`index-crew!\`; stdout \`indexed N rows\` when embedding is on; quiet skip if not.
+- Tools \`:recall/search\` / \`:recall/scene\` (wire \`recall__search\` / \`recall__scene\`).
+- Grover 4-d vectors saturate ~0.999, so a floor-cos ≥ 0.99 also requires lexical overlap (the below-floor scenario).
+
+Acceptance green: live.feature h5dk scenarios + live_tools.feature; migrate/index/query regression; spec episodes/recall/session.
