@@ -65,3 +65,7 @@ bb spec spec/isaac/episodes spec/isaac/recall spec/isaac/session
 Spec obligations: embed-provider-error at close -> seal succeeds unindexed + loud log; embed-provider-error at open -> recall skipped + loud log + turn completes; index-model drift at open -> loud log + skip (isaac-j2p4 d10).
 
 Field check on zanebot (recorded here on completion): pilot crew — cold open with a query matching migrated corpus shows a recalled block in the reply's awareness; episodes close then immediate recall CLI hit; NOT DISPATCHED YET (Micah 2026-08-22: hold).
+
+## Planner reset (2026-08-23, after budget-exhausted attempt)
+
+The overnight attempt exhausted its continuation budget with NO product commits; its dirty leftovers were discarded (4c6eacae "dirty work-1 discarded"). **Worker memory notes saying "do not touch isaac-h5dk leftovers" are hereby superseded for THIS bean: there are no leftovers — start fresh.** The budget counter is reset by this note; hail 9c64340a (and any later re-hail) is a fresh attempt, not a continuation. Guidance unchanged from the bean body, plus: land incrementally (lifecycle/qxvl precedent — commit each green stage); if the budget nears exhaustion, land what is green and conflict-hail the plan band rather than holding. ek0r is COMPLETED — register tools as :recall/search + :recall/scene (wire recall__search / recall__scene) per the landed convention.
