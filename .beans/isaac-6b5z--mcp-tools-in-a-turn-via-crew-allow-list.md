@@ -1,13 +1,11 @@
 ---
 # isaac-6b5z
 title: MCP tools in a turn via crew allow list
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-22T00:40:00Z
-updated_at: 2026-08-23T20:56:07Z
+updated_at: 2026-08-23T21:58:41Z
 parent: isaac-uhvt
 blocked_by:
     - isaac-ek0r
