@@ -4,8 +4,10 @@ title: 'Server log rotate off the write path: boot+timer, fs/size, never CLI'
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-23T01:08:37Z
-updated_at: 2026-08-23T01:09:01Z
+updated_at: 2026-08-23T01:15:28Z
 ---
 
 Likely repo: **isaac-foundation** (`isaac.log.file`).
@@ -40,3 +42,15 @@ Home: `isaac-foundation` `spec/isaac/log_file_spec.clj` (`bb spec spec/isaac/log
 - Changing max-bytes / max-days defaults
 - Rotating `cli.log`
 - zanebot `:tz` (already `America/Phoenix`)
+
+
+## Implementation (plan, 2026-08-22)
+
+isaac-foundation `src/isaac/log/file.clj`:
+- `write-entry!` appends only
+- `prepare-active-log!` / `rotation-tick!` use `fs/size` + first-line date
+- `configure-server-sink!` rotates once and starts a 60s daemon timer
+- `configure-cli-sink!` / `clear-sink-config!` do not start a timer; CLI stops any leftover timer
+- `*rotation-tick-ms*` nil in tests
+
+`bb spec spec/isaac/log_file_spec.clj` — 12 examples, 0 failures.
