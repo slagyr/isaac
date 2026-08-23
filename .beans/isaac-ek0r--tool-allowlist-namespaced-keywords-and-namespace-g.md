@@ -4,8 +4,10 @@ title: 'Tool allowlist: namespaced keywords and namespace globs'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-21T22:15:25Z
-updated_at: 2026-08-22T17:08:15Z
+updated_at: 2026-08-23T02:08:31Z
 ---
 
 Every tool has a namespace. Config uses Clojure namespaced keywords;
