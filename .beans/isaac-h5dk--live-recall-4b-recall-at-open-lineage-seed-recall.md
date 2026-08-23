@@ -73,3 +73,5 @@ The overnight attempt exhausted its continuation budget with NO product commits;
 ## RETRACTED (2026-08-23, 10:09): planner local build stood down
 
 A worker resumed isaac-h5dk (scrapper@isaac-work-1, Discord 🔁) minutes before the planner's local-build note landed. **The no-op order above is VOID — the worker's attempt is authorized and owns this bean.** Planner is hands-off; the Planner Reset section (fresh start, no leftovers, land incrementally) stands as guidance.
+
+(2026-08-23 10:20 addendum: the second re-hail 1232eaed had bound to isaac-work-2 — its delivered record was removed before any turn fired, preventing a duplicate attempt. **isaac-work-1's resumed attempt is the sole owner.** Any other session receiving an h5dk delivery: no-op it.)
