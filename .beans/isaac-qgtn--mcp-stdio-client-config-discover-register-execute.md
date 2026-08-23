@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-22T00:40:00Z
-updated_at: 2026-08-22T23:48:28Z
+updated_at: 2026-08-23T15:52:13Z
 parent: isaac-uhvt
 ---
 
@@ -116,3 +116,48 @@ isaac-mcp `4bc19ac` (local, needs push). Units 16/0. Acceptance suite 7/0 in ~1.
 
 
 Decision (2026-08-22, Micah): JVM linger is `gherclj after-all` + `shutdown-agents`, not a custom feature-runner. after-all runs once after speclj/run (suite and isolated file:LINE). Product stop! stays process teardown only. isaac-mcp `fd3a0da`. Isolated :13 GREEN 0.16s; full 7 selectors GREEN 1.5s.
+
+## Planner resolution (2026-08-22, prowl) — verify at pushed HEAD; dirty work-1 discarded
+
+Verify was stuck because the only accessible checkout was a **dirty superseded
+tree** on `3cdd19d` (uncommitted WIP), while the authoritative implementation
+was already on **origin/main** and not yet fetched into that tree.
+
+### Authoritative implementation
+
+| | |
+|---|---|
+| Repo | `https://github.com/slagyr/isaac-mcp.git` (isaac-mcp) |
+| Branch | `main` |
+| **Verify SHA** | **`fd3a0da`** (`fix: shut down agents in gherclj after-all, not a custom runner`) |
+| Prior product SHA | `4bc19ac` (feat: MCP stdio client … isaac-qgtn) — ancestor of HEAD |
+
+Both SHAs are on `origin/main`. Dirty work-1 tree was stashed as
+`qgtn-superseded-dirty-work-1` and hard-reset to `origin/main` @ `fd3a0da`.
+**Do not unstash or commit that stash for this bean.**
+
+### Gates re-confirmed on clean `fd3a0da` (plan host, work-1 checkout after reset)
+
+```
+bb features features/config_validate.feature:10 \
+  features/config_validate.feature:29 \
+  features/lifecycle.feature:13 \
+  features/lifecycle.feature:26 \
+  features/lifecycle.feature:35 \
+  features/lifecycle.feature:46 \
+  features/lifecycle.feature:62
+→ 7 examples, 0 failures, 17 assertions
+
+bb spec → 16 examples, 0 failures, 32 assertions
+```
+
+### Verify procedure (mandatory)
+
+1. In the isaac-mcp checkout: `git fetch origin && git checkout main && git reset --hard origin/main` (must be **`fd3a0da`**).
+2. If the tree is dirty: **discard or stash** local changes — they are superseded; do not verify against them.
+3. Run the seven acceptance selectors above + `bb spec`.
+4. On green: remove `unverified`, set completed. Fail-count reset by this note.
+
+Do **not** re-queue work. Do **not** use any dirty tree. HOLD note above is
+superseded by this resolution for verify purposes only — implementation is
+pushed and ready.
