@@ -70,6 +70,6 @@ Field check on zanebot (recorded here on completion): pilot crew — cold open w
 
 The overnight attempt exhausted its continuation budget with NO product commits; its dirty leftovers were discarded (4c6eacae "dirty work-1 discarded"). **Worker memory notes saying "do not touch isaac-h5dk leftovers" are hereby superseded for THIS bean: there are no leftovers — start fresh.** The budget counter is reset by this note; hail 9c64340a (and any later re-hail) is a fresh attempt, not a continuation. Guidance unchanged from the bean body, plus: land incrementally (lifecycle/qxvl precedent — commit each green stage); if the budget nears exhaustion, land what is green and conflict-hail the plan band rather than holding. ek0r is COMPLETED — register tools as :recall/search + :recall/scene (wire recall__search / recall__scene) per the landed convention.
 
-## PLANNER BUILDING LOCALLY (2026-08-23, Micah's instruction)
+## RETRACTED (2026-08-23, 10:09): planner local build stood down
 
-Micah pulled this bean off the band: the planner is implementing isaac-h5dk locally (fresh clone, TDD against the committed @wip scenarios, incremental pushes to main, unverified tag + verify hail at the end as usual). **Workers: NO-OP any isaac-h5dk hails — do not claim, do not implement.** Hails 9c64340a / 1232eaed are void.
+A worker resumed isaac-h5dk (scrapper@isaac-work-1, Discord 🔁) minutes before the planner's local-build note landed. **The no-op order above is VOID — the worker's attempt is authorized and owns this bean.** Planner is hands-off; the Planner Reset section (fresh start, no leftovers, land incrementally) stands as guidance.
