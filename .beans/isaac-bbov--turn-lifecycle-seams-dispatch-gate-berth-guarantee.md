@@ -4,8 +4,10 @@ title: Turn finalization + turn-observer interface
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-23T19:19:16Z
-updated_at: 2026-08-24T16:29:11Z
+updated_at: 2026-08-24T17:40:18Z
 ---
 
 isaac-agent core seams extracted from the worksite design (2026-08-23, Micah). Prereq of worksite W1; also serves foreman turn-observation events and bh17 post-reply sealing.
