@@ -4,8 +4,10 @@ title: 'Live scene sealing 5: topic-drift trigger, size-cap backstop, (cont) mar
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-23T15:51:25Z
-updated_at: 2026-08-24T02:18:31Z
+updated_at: 2026-08-24T03:41:18Z
 parent: isaac-51xy
 ---
 
@@ -52,3 +54,19 @@ bb spec spec/isaac/episodes spec/isaac/recall
 ```
 
 DEPENDENCY: isaac-h5dk (index-at-close batch path, recall live plumbing) — do not start before h5dk lands. Field check on zanebot (recorded here): pilot crew, multi-topic sitting seals mid-episode; recall finds a scene from the STILL-OPEN episode; a (cont) link appears in a live-sealed scene.
+
+
+## Worker notes (scrapper@isaac-work-2)
+
+Live sealing shipped on isaac-agent **9f6c929**.
+
+- maybe-seal! post-reply: rolling open-scene vector → drift/cap triggers → segment tail → seal all-but-last (hard-cap single-scene seals entirely) → index-crew! → reset vector. Failure: :episodes/seal-failed, episode unharmed.
+- prompt_cli calls maybe-seal! after a successful printed reply (CLI process exit). Bridge dispatch seals after a successful non-CLI episode-crew turn.
+- Parser BOUNDARY_LINE optional (cont a-b); in-batch resolve to scene ids; still-open last scene dropped + :episodes/cont-dropped.
+- SCENE_FRONTMATTER_KEYS + :continues. Distill prompt mentions (cont) + resumes.
+- Manifest :episodes :seal {:size-cap :drift-threshold :min-tail}.
+- Grover stub: short strings keep the documented 4-dim contract; longer wine/regatta fixture texts are orthogonal so drift can fire.
+- New step: that episode has no sealed scenes.
+- @wip dropped on 5 live.feature scenarios + migrate prompt-contract.
+
+Suites: bb features live.feature 18/0; migrate+index+query+live_tools 32/0; bb spec spec/isaac/episodes spec/isaac/recall + prompt_cli_spec 178/0.
