@@ -50,3 +50,5 @@ The 2026-08-24 architecture session (recorded in isaac-tdgt and isaac-51xy) resh
 Spec obligations replace the gate-berth ones: turnstile protocol (pass/hold/refuse; token on every exit path; token isolation; null turnstile = identity), named registry (contribute/resolve/unknown-name refusal), observer firing on all four outcome shapes, observers isolated (a throwing observer logs, never breaks finalization), zero-turnstile zero-observer = no behavior change (existing suites as regression net).
 
 DEPENDED ON BY (updated): the turn-request queue bean (next session — queue + addressing resolution + candidate selection consume this protocol), worksite W1 (first real turnstile), foreman F2 (first observer).
+
+**Turnstile refs are parameterized** (2026-08-24, Micah): a submitted reference is a name OR name+params — `:worksite` (impl infers, e.g. member from turn cwd) or `[:worksite "chart-room"]` (explicit target). The registry resolves the name; params go to the impl. Same shape as foreman action refs.

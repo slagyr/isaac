@@ -60,3 +60,5 @@ Field check on zanebot (recorded here): register isaac-work-1's checkout as a wo
 STANDS UNCHANGED: registry + both config forms, `worksites list/lock/unlock` CLI, durable lock files, operator-lock sanctity, dead-pid stealing, W2/W3 split.
 SCENARIOS 4, 6, 8 SUPERSEDED — redraft next planning session around explicit gating (sharpest form asserts both directions: `prompt --turnstile worksite` in a locked member refuses; the same prompt without it runs). Scenarios 1-3, 5, 7 stand. Field demo becomes: lock -> hail defers -> CLI still works -> unlock -> hail flows.
 BLOCKED-BY updated: isaac-bbov (revised) and the turn-request queue bean.
+
+**CLI option** (2026-08-24, Micah): `isaac prompt` grows an opt-in turnstile flag; agent owns both the CLI and the abstraction, so no berth needed. Value must carry kind+argument — proposed `--turnstile worksite:chart-room` (bare `--turnstile worksite` = infer member from cwd). Scenario redraft pins the exact syntax.
