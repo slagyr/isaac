@@ -151,3 +151,16 @@ Land on isaac-agent main; leave `unverified` for verifier. Verify-fail counter r
 ## Ambient observers implemented (2026-08-24, scrapper@isaac-work-1)
 
 isaac-agent `cba7943` on `origin/main` (`b0fa9bf..cba7943`). Ambient attachment API: `attach!` / `detach!` / `ambient` / `clear-ambient!` / `for-turn`. `run-turn!` merges ambient observers ahead of `(:observers charge)` before notify. Zero ambient = identity. Throwing ambient isolated (`:turn/observer-failed`). Specs: observer_spec + turn_spec cover ambient-only, ambient+submitted, isolation, and teardown. Features unchanged (still F2). Acceptance: drive/bridge/session specs 350/0, features 51/0.
+
+## Verify fail (attempt 1, 2026-08-24): ambient observers are now implemented and the suites are green, but the `turn-died` part of the observer contract is still not wired anywhere
+
+Evidence:
+- Landed `isaac-agent` main at `cba7943` contains the ambient observer work and the acceptance commands are green:
+  - `bb spec spec/isaac/drive spec/isaac/bridge spec/isaac/session` → `350 examples, 0 failures, 848 assertions`
+  - `bb features features/bridge/cli-prompt.feature features/session features/episodes/live.feature features/turn/observers.feature` → `51 examples, 0 failures, 186 assertions`
+- The bean contract still requires observer lifecycle coverage including `turn-died {reason}`: the bean body says observers see `turn-started`, `turn-ended {outcome}`, and `turn-died {reason}`.
+- `src/isaac/drive/turn.clj:116-1200` never notifies `:on-turn-died`; `run-turn!` only calls `notify-observers!` for `:on-turn-started` and `finish-turn!`, and `finish-turn!` only emits `:on-turn-ended`.
+- Repository search for actual `on-turn-died` invocation finds only the protocol dispatch helper in `src/isaac/drive/observer.clj:97-122`; there is no call site from the turn/finalization path.
+- New ambient specs cover ambient-only, ambient+submitted, and isolation, but they still exercise `on-turn-ended` on failure, not `on-turn-died`.
+
+Result: the ambient attachment half is landed, but the observer interface described in the bean is still incomplete because the `turn-died` event is never fired.
