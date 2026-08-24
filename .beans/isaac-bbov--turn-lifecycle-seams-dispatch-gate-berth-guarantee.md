@@ -4,10 +4,8 @@ title: Turn finalization + turn-observer interface
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-23T19:19:16Z
-updated_at: 2026-08-24T17:58:46Z
+updated_at: 2026-08-24T18:01:05Z
 ---
 
 isaac-agent core seams extracted from the worksite design (2026-08-23, Micah). Prereq of worksite W1; also serves foreman turn-observation events and bh17 post-reply sealing.
@@ -98,3 +96,50 @@ Evidence:
 - Repository search shows observer wiring only through submitted refs (`src/isaac/bridge/core.clj`, `src/isaac/bridge/prompt_cli.clj`); no path makes a registered observer fire on ordinary turns.
 
 Result: the submitted `--observer` path is implemented and tested, but the bean's registered observer interface is still missing. This is the second verify fail with acceptance still unresolved after landing.
+
+
+## Planner adjustment (2026-08-24, prowl@isaac-plan) — verify-fail attempt 2
+
+**Decision: registered (ambient) observers remain in-scope for this bean. Do not drop them; finish the missing half. Do not split unless a later human ruling says otherwise.**
+
+### Contract clarification (both attachments)
+
+The named **factory** registry (`register!` / `resolve-ref` / `resolve-submitted`) is necessary but not sufficient. Micah's design requires two attachments:
+
+1. **Submitted** (done on main@b0fa9bf): per-turn refs on the charge / `prompt --observer`; unknown name refuses before dispatch; lookout is the built-in; features/turn/observers.feature covers this.
+2. **Registered / ambient** (still missing): observers attached so they witness **every** turn with no per-turn flag. Foreman F2 is the first real consumer; that does **not** defer the seam. Lookout section meant **feature scenarios** for ambient wait until F2 — **implementation + specs are bbov.**
+
+### What "registered" means (not the factory map alone)
+
+- An ambient attachment API distinct from "submit this ref on one charge" (e.g. register an observer instance / ambient ref that the turn path always includes).
+- `run-turn!` (or the bridge entry that builds the observer list) **merges** ambient registered observers with `(:observers charge)` before notify.
+- Zero ambient observers = identity (existing suites stay the regression net).
+- Isolation already required: throwing ambient observer logs and does not break finalization or other observers.
+- Fired from the same finalization path as submitted (start / ended / died on all outcome shapes).
+
+Docstring on `isaac.drive.observer` already claims REGISTERED vs SUBMITTED; the turn path must match the docstring.
+
+### Out of scope for this handback
+
+- New ambient **feature** scenarios (still F2 / first real consumer).
+- Turnstile work (isaac-opp6).
+- Changing submitted/lookout behavior that is already green.
+
+### Acceptance (supersedes ambiguity; additive)
+
+Keep existing green commands, **and** add ambient coverage under drive specs:
+
+```
+bb spec spec/isaac/drive spec/isaac/bridge spec/isaac/session
+bb features features/bridge/cli-prompt.feature features/session features/episodes/live.feature features/turn/observers.feature
+```
+
+Ambient obligations (spec-level, no new feature file required):
+
+- Registering an ambient observer and running a turn **without** submitted `--observer` / charge observers still notifies that observer (started + ended/died as applicable).
+- Submitted + ambient both fire on the same turn when both present.
+- Unknown **submitted** ref behavior unchanged (refuse before dispatch).
+- Throwing ambient observer isolated.
+- Clear/unregister (or test fixture teardown) so specs do not leak ambient state across examples.
+
+Land on isaac-agent main; leave `unverified` for verifier. Verify-fail counter reset by this note.
