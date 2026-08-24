@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-23T19:19:16Z
-updated_at: 2026-08-24T17:45:43Z
+updated_at: 2026-08-24T17:52:58Z
 ---
 
 isaac-agent core seams extracted from the worksite design (2026-08-23, Micah). Prereq of worksite W1; also serves foreman turn-observation events and bh17 post-reply sealing.
@@ -79,3 +79,9 @@ Evidence:
 - `git -C /Users/zane/agents/isaac/verify/isaac-agent grep -n '@wip' origin/main -- features/turn/observers.feature` still shows `@wip` at lines 16, 27, and 39 on main, while the bean's acceptance says `bb features features/turn/observers.feature` with `remove @wip`.
 
 Please land the isaac-agent work on main and re-hand off once the acceptance feature is no longer `@wip` on main.
+
+
+
+## Implementation landed (2026-08-24, scrapper@isaac-work-1)
+
+isaac-agent `b0fa9bf` fast-forwarded onto `origin/main` (`bae962e..b0fa9bf`). `@wip` removed from `features/turn/observers.feature` on main. `git rev-list --left-right --count origin/main...origin/bean/isaac-bbov` is `0 0`. `git branch -r --contains b0fa9bf` includes `origin/main`. Re-acceptance on the landed commit: observers.feature 3/0, drive/bridge/session specs 342/0, zero-gate features 48/0.
