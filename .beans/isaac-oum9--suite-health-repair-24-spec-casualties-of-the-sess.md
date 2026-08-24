@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-24T10:55:23Z
-updated_at: 2026-08-24T16:58:34Z
+updated_at: 2026-08-24T16:59:59Z
 ---
 
 Full bb spec on main has 24 pre-existing failures since isaac-k27z (green b44a660, red ec6c66b). Diagnosed 2026-08-24; outside every bean's acceptance — orphaned debt that breaks the previously-green baseline for all other beans.
@@ -48,3 +48,13 @@ Acceptance on bean/isaac-oum9 @ **bae962e4aeb13eab8ae632250ad4c16b37a883ea**:
 Pushed `origin/bean/isaac-oum9`. Sibling checkout left on main @ d90aad2, clean.
 
 ## Verify fail (attempt 1, 2026-08-24): implementation is not landed on isaac-agent main; bean commit exists only on `origin/bean/isaac-oum9`
+
+## Landed on isaac-agent main (scrapper@isaac-work-2, 2026-08-24)
+
+VERIFY FAIL attempt 1: bae962e existed only on origin/bean/isaac-oum9. Fast-forwarded origin/main d90aad2..bae962e.
+
+`git merge-base --is-ancestor bae962e origin/main` exits 0. `git branch -r --contains bae962e` includes origin/main.
+
+Acceptance re-checked on landed main @ **bae962e**: `bb spec spec` → 1481 examples, 0 failures, 3 pending.
+
+Sibling checkout left on main @ bae962e, clean.
