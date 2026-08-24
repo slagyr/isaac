@@ -33,3 +33,7 @@ bb spec spec/isaac/turnstile* spec/isaac/drive spec/isaac/bridge
 bb features features/bridge/cli-prompt.feature
 ```
 Pre-existing suites green (zero-turnstile = no behavior change). Integration acceptance = isaac-l3ps redrafted scenarios.
+
+## HOLD — planner recall (2026-08-24)
+
+Dispatched prematurely without reviewed scenarios (planner's miss; Micah caught it). **Workers: do not build this bean until this note is replaced by a scenario section and status returns to todo.** If you have already claimed it, stop, leave no changes, un-claim, and reply to your hail that opp6 is on planner hold.
