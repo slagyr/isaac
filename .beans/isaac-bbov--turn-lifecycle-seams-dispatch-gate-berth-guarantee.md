@@ -4,8 +4,10 @@ title: Turn finalization + turn-observer interface
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-23T19:19:16Z
-updated_at: 2026-08-24T18:01:05Z
+updated_at: 2026-08-24T18:07:45Z
 ---
 
 isaac-agent core seams extracted from the worksite design (2026-08-23, Micah). Prereq of worksite W1; also serves foreman turn-observation events and bh17 post-reply sealing.
@@ -143,3 +145,9 @@ Ambient obligations (spec-level, no new feature file required):
 - Clear/unregister (or test fixture teardown) so specs do not leak ambient state across examples.
 
 Land on isaac-agent main; leave `unverified` for verifier. Verify-fail counter reset by this note.
+
+
+
+## Ambient observers implemented (2026-08-24, scrapper@isaac-work-1)
+
+isaac-agent `cba7943` on `origin/main` (`b0fa9bf..cba7943`). Ambient attachment API: `attach!` / `detach!` / `ambient` / `clear-ambient!` / `for-turn`. `run-turn!` merges ambient observers ahead of `(:observers charge)` before notify. Zero ambient = identity. Throwing ambient isolated (`:turn/observer-failed`). Specs: observer_spec + turn_spec cover ambient-only, ambient+submitted, isolation, and teardown. Features unchanged (still F2). Acceptance: drive/bridge/session specs 350/0, features 51/0.
