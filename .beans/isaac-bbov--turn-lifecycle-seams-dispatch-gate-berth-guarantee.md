@@ -58,3 +58,11 @@ DEPENDED ON BY (updated): the turn-request queue bean (next session — queue + 
 ## SPLIT (2026-08-24, Micah): one bean per abstraction
 
 This bean now carries **guaranteed finalization + the turn-observer interface** (registered + submitted refs, `--observer`). The **turnstile protocol** moved to **isaac-opp6** (blocked by this bean — release tokens ride finalization). Everything above about turnstiles is design history; isaac-opp6 is the implementation contract. Build order: bbov -> isaac-opp6 -> queue bean -> l3ps.
+
+## Lookout + scenarios (2026-08-24, Micah)
+
+Built-in observer **`:lookout`** (agent-owned): calls out `turn started` / `turn ended (ok)` / `turn ended (error ...)` on stdout — live narration for humans on long CLI turns AND the testable double for the observer interface. Name chosen over :crier/:telltale for implying continuous watching.
+
+Scenarios @wip at isaac-agent b2f99a9, features/turn/observers.feature (3): lookout lines bracket the reply in order; failure path proves observers fire from finalization (outcome in the parentheses); unknown observer name (`foghorn:xyz`) refuses on stderr before dispatch — fresh queue entry consumed by the follow-up run proves the refused one was never eaten (abandoned deliberately, not reused). Registered-attachment (sees every turn, no flag) stays spec-level until foreman F2 gives it a real consumer. Line format pinned loosely — wording may grow (durations, tool counts) without breaking.
+
+Acceptance gains: `bb features features/turn/observers.feature` (remove @wip).
