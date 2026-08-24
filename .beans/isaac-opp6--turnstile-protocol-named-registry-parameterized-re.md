@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-24T15:44:46Z
-updated_at: 2026-08-24T21:42:06Z
+updated_at: 2026-08-24T21:43:34Z
 ---
 
 Split from isaac-bbov (2026-08-24, Micah): admission is its own bean; finalization + observers stay in bbov. Blocked by bbov — release tokens need the always-runs finalization path.
@@ -56,3 +56,9 @@ bb features features/bridge/cli-prompt.feature
 
 ## Planner note
 Dispatched once without reviewed scenarios (planner's miss, 2026-08-24); recalled, scenarios reviewed, re-dispatched. Not the worker's error.
+
+
+
+## Verify fail (attempt 1, 2026-08-24): acceptance still @wip and tide turnstile implementation is missing
+
+Verified on isaac-agent HEAD bfdc7a9. `features/turn/turnstiles.feature` still marks both acceptance scenarios `@wip`, so `bb features features/turn/turnstiles.feature` ran 0 examples / 0 failures / 0 assertions instead of executable acceptance. Code inspection on HEAD also found no built-in `:tide` implementation in `src/` or supporting specs beyond the feature file text; `rg -n "turnstile|tide" src spec features` only surfaced existing generic registry/protocol support plus the new @wip feature. Bean contract explicitly requires tide/window behavior, CLI hold/unknown surfacing, and @wip removal before pass.
