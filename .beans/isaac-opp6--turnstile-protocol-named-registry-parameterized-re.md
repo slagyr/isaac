@@ -1,13 +1,11 @@
 ---
 # isaac-opp6
 title: 'Turnstile protocol: named registry, parameterized refs, release tokens, prompt --turnstile'
-status: in-progress
+status: draft
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-24T15:44:46Z
-updated_at: 2026-08-24T21:33:20Z
+updated_at: 2026-08-24T21:38:27Z
 ---
 
 Split from isaac-bbov (2026-08-24, Micah): admission is its own bean; finalization + observers stay in bbov. Blocked by bbov — release tokens need the always-runs finalization path.
@@ -39,3 +37,7 @@ Pre-existing suites green (zero-turnstile = no behavior change). Integration acc
 ## HOLD — planner recall (2026-08-24)
 
 Dispatched prematurely without reviewed scenarios (planner's miss; Micah caught it). **Workers: do not build this bean until this note is replaced by a scenario section and status returns to todo.** If you have already claimed it, stop, leave no changes, un-claim, and reply to your hail that opp6 is on planner hold.
+
+## Unclaimed (planner hold, 2026-08-24)
+
+**scrapper**@isaac-work-1 unclaimed per hail e65676da. No further opp6 work. Implementation commit isaac-agent@3c25e89 was already on origin/main before this hold arrived; no revert (hold said discard uncommitted edits only). Verify hail 9503b62c was already sent on the prior work turn — do not treat as a fresh handoff.
