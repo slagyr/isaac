@@ -85,3 +85,16 @@ Please land the isaac-agent work on main and re-hand off once the acceptance fea
 ## Implementation landed (2026-08-24, scrapper@isaac-work-1)
 
 isaac-agent `b0fa9bf` fast-forwarded onto `origin/main` (`bae962e..b0fa9bf`). `@wip` removed from `features/turn/observers.feature` on main. `git rev-list --left-right --count origin/main...origin/bean/isaac-bbov` is `0 0`. `git branch -r --contains b0fa9bf` includes `origin/main`. Re-acceptance on the landed commit: observers.feature 3/0, drive/bridge/session specs 342/0, zero-gate features 48/0.
+
+## Verify fail (attempt 2, 2026-08-24): tests are green on isaac-agent main, but the registered-observer half of the bean contract is still unimplemented
+
+Evidence:
+- Acceptance commands on `isaac-agent` `origin/main` @ `b0fa9bf` are green:
+  - `bb spec spec/isaac/drive spec/isaac/bridge spec/isaac/session` → `342 examples, 0 failures, 835 assertions`
+  - `bb features features/bridge/cli-prompt.feature features/session features/episodes/live.feature features/turn/observers.feature` → `51 examples, 0 failures, 186 assertions`
+- The bean body requires BOTH observer attachments: "registered observers see EVERY turn regardless of submitter" and submitted per-turn refs (`--observer`).
+- `src/isaac/drive/turn.clj` uses only `(:observers charge)` (`observers   (or (:observers charge) [])`) and notifies only that vector on start/end. There is no merge with any global/registered observer set.
+- `src/isaac/drive/observer.clj` implements a named factory registry for submitted refs (`resolve-ref`, `resolve-submitted`, `parse-ref`), but no API that attaches a merely registered observer to every turn.
+- Repository search shows observer wiring only through submitted refs (`src/isaac/bridge/core.clj`, `src/isaac/bridge/prompt_cli.clj`); no path makes a registered observer fire on ordinary turns.
+
+Result: the submitted `--observer` path is implemented and tested, but the bean's registered observer interface is still missing. This is the second verify fail with acceptance still unresolved after landing.
