@@ -4,8 +4,10 @@ title: 'Suite health: repair 24 spec casualties of the session-directories cutov
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-24T10:55:23Z
-updated_at: 2026-08-24T16:30:01Z
+updated_at: 2026-08-24T16:56:50Z
 ---
 
 Full bb spec on main has 24 pre-existing failures since isaac-k27z (green b44a660, red ec6c66b). Diagnosed 2026-08-24; outside every bean's acceptance — orphaned debt that breaks the previously-green baseline for all other beans.
