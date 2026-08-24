@@ -4,10 +4,8 @@ title: 'Turnstile protocol: named registry, parameterized refs, release tokens, 
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-24T15:44:46Z
-updated_at: 2026-08-24T21:39:32Z
+updated_at: 2026-08-24T21:42:06Z
 ---
 
 Split from isaac-bbov (2026-08-24, Micah): admission is its own bean; finalization + observers stay in bbov. Blocked by bbov — release tokens need the always-runs finalization path.
