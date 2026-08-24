@@ -1,13 +1,11 @@
 ---
 # isaac-bh17
 title: 'Live scene sealing 5: topic-drift trigger, size-cap backstop, (cont) marks'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-23T15:51:25Z
-updated_at: 2026-08-24T03:41:18Z
+updated_at: 2026-08-24T03:43:23Z
 parent: isaac-51xy
 ---
 
