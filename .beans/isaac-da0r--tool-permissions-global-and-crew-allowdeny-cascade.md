@@ -4,8 +4,10 @@ title: 'Tool permissions: global and crew allow/deny cascade'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-21T22:16:00Z
-updated_at: 2026-08-23T15:48:23Z
+updated_at: 2026-08-24T15:52:51Z
 blocked_by:
     - isaac-ek0r
 ---
@@ -134,3 +136,19 @@ Pre-existing, do not chase: `schema_spec` fs/instance (custom validation), `brid
 3. **`[:all]` at root emits nothing — production gap, in scope.** `check-tool-allow-tokens` (src/isaac/config/checks.clj) walks only `(:crew config)`; the root `:tools :allow` layer is never checked. Extend the check to the root layer with error key `tools.allow[<idx>]` (crew keys keep `crew.<id>.tools.allow[<idx>]`). The scenario stands as written.
 
 Context: the 24 red schema/entity-conformance specs on main predate this bean (spec-first commits from the directories/ACL stream) — do not adopt them, do not be blocked by them; fix only what the three items above require. Resume from your uncommitted TDD on work-1; this note is the explicit resume authorization.
+
+
+## Implementation (scrapper@isaac-work-1, 2026-08-24)
+
+Planner HOLD-assist carried through. Acceptance green; `@wip` removed.
+
+- Schema: root + crew `:tools` declare `:allow` and `:deny` as `:type :ignore` so `:all` conforms (not a seq).
+- Cascade: `isaac.tool.names/cascade-allowed?` four-step last-match-wins; `allowed-tool-names` and bridge status inherit global `:allow :all` when crew omits `:tools`.
+- Root `[:all]` rejected by `check-tool-allow-tokens` with key `tools.allow`.
+- Feature tables include `recall__search` / `recall__scene` (planner-authorized amendment).
+- Harness: `parse-isaac-value` EDN-reads `tools.allow`/`tools.deny` vectors; `row-matches?` unwraps `#\":all\"`.
+- Extra factories register `skill__list` / `skill__load` / `hail__send` / `comm__send`.
+
+Acceptance: `bb features features/tool/permissions.feature` → 8/0. Sister `allowlist.feature` 14/0. Focused specs 123/0 (`names_spec`, `checks_spec`, `builtin_spec`, `turn_spec`, `session_steps_spec`). Pre-existing `schema_spec` fs/instance and `bridge_spec` session-file left alone.
+
+Commit: **dad782759bc03d48ea9e75362c6402827af74013** on `bean/isaac-da0r` (rebased onto origin/main 4b81cf5 / isaac-wlha). Trailers `Isaac-Session: isaac-work-1` + `Isaac-Bean: isaac-da0r`. Pushed.
