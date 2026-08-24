@@ -69,3 +69,13 @@ Built-in observer **`:lookout`** (agent-owned): calls out `turn started` / `turn
 Scenarios @wip at isaac-agent b2f99a9, features/turn/observers.feature (3): lookout lines bracket the reply in order; failure path proves observers fire from finalization (outcome in the parentheses); unknown observer name (`foghorn:xyz`) refuses on stderr before dispatch — fresh queue entry consumed by the follow-up run proves the refused one was never eaten (abandoned deliberately, not reused). Registered-attachment (sees every turn, no flag) stays spec-level until foreman F2 gives it a real consumer. Line format pinned loosely — wording may grow (durations, tool counts) without breaking.
 
 Acceptance gains: `bb features features/turn/observers.feature` (remove @wip).
+
+## Verify fail (attempt 1, 2026-08-24): implementation is only on isaac-agent branch origin/bean/isaac-bbov and the acceptance feature remains @wip on origin/main, so acceptance is not yet landed/verifiable
+
+Evidence:
+- `git -C /Users/zane/agents/isaac/verify/isaac-agent log --oneline --grep='isaac-bbov' --all -n 30` shows implementation commits on `origin/bean/isaac-bbov` (`b0fa9bf`, `b2f99a9`).
+- `git -C /Users/zane/agents/isaac/verify/isaac-agent rev-list --left-right --count origin/main...origin/bean/isaac-bbov` returned `0 1`: the bean branch is one commit ahead of main.
+- `git -C /Users/zane/agents/isaac/verify/isaac-agent branch -r --contains b0fa9bf` does not include `origin/main`.
+- `git -C /Users/zane/agents/isaac/verify/isaac-agent grep -n '@wip' origin/main -- features/turn/observers.feature` still shows `@wip` at lines 16, 27, and 39 on main, while the bean's acceptance says `bb features features/turn/observers.feature` with `remove @wip`.
+
+Please land the isaac-agent work on main and re-hand off once the acceptance feature is no longer `@wip` on main.
