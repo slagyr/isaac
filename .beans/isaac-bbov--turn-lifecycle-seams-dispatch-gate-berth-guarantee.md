@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-23T19:19:16Z
-updated_at: 2026-08-24T18:11:44Z
+updated_at: 2026-08-24T18:26:46Z
 ---
 
 isaac-agent core seams extracted from the worksite design (2026-08-23, Micah). Prereq of worksite W1; also serves foreman turn-observation events and bh17 post-reply sealing.
@@ -164,3 +164,11 @@ Evidence:
 - New ambient specs cover ambient-only, ambient+submitted, and isolation, but they still exercise `on-turn-ended` on failure, not `on-turn-died`.
 
 Result: the ambient attachment half is landed, but the observer interface described in the bean is still incomplete because the `turn-died` event is never fired.
+
+
+## Turn-died wired (2026-08-24, scrapper@isaac-work-1)
+
+isaac-agent fda5a1c on origin/main (cba7943..fda5a1c). finish-turn! now notifies :on-turn-died {reason} when the result is :exception (thrown Exception / Throwable). Provider error replies still fire :on-turn-ended {outcome} — lookout CLI failure scenario unchanged. Isolation unchanged (throwing died observer logs :turn/observer-failed, remaining observers still run).
+
+Specs: turn_spec covers thrown Exception, thrown Error, provider error reply stays ended-not-died, ambient died, isolation. lookout spec covers died narration. Acceptance: drive/bridge/session specs 355/0, features 51/0.
+git rev-list --left-right --count origin/main...origin/bean/isaac-bbov is 0 0. git branch -r --contains fda5a1c includes origin/main.
