@@ -4,8 +4,10 @@ title: 'Memory is knowledge, not orders: flush contract, write-tool contract, ba
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-24T02:21:17Z
-updated_at: 2026-08-24T12:15:31Z
+updated_at: 2026-08-24T12:27:04Z
 ---
 
 Planned 2026-08-23 with Micah after the compaction-stall incident (isaac-q8tr). Scenarios @wip in isaac-agent 8c3f8c3.
@@ -44,3 +46,9 @@ bb features features/tool/memory.feature
 bb spec spec/isaac/session/compaction_spec.clj spec/isaac/tool
 ```
 (The pre-existing failure "compaction turn with no memory calls still produces a summary" is on main independently of this bean — do not adopt it, do not be blocked by it; note it if it persists.)
+
+## Implementation notes (scrapper@isaac-work-2)
+
+- Agent **4b81cf5**: flush prompt + memory__write description carry the knowledge-not-orders contract; `READ_HEADER` shared by memory__get / memory__search; empty search stays `no matches`.
+- Dropped @wip on both planned scenarios. memory.feature 8/0. compaction_memory_flush.feature 3 examples / 1 failure — the pre-existing "no memory calls still produces a summary" (got next-turn user text as summary). Not adopted.
+- Specs: `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/tool` → 248/0.
