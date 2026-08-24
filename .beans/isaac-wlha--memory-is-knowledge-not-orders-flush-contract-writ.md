@@ -1,13 +1,11 @@
 ---
 # isaac-wlha
 title: 'Memory is knowledge, not orders: flush contract, write-tool contract, background-framed reads'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-24T02:21:17Z
-updated_at: 2026-08-24T12:27:04Z
+updated_at: 2026-08-24T12:30:18Z
 ---
 
 Planned 2026-08-23 with Micah after the compaction-stall incident (isaac-q8tr). Scenarios @wip in isaac-agent 8c3f8c3.
