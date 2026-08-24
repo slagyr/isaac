@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-21T22:16:00Z
-updated_at: 2026-08-24T15:52:51Z
+updated_at: 2026-08-24T15:55:57Z
 blocked_by:
     - isaac-ek0r
 ---
@@ -152,3 +152,5 @@ Planner HOLD-assist carried through. Acceptance green; `@wip` removed.
 Acceptance: `bb features features/tool/permissions.feature` → 8/0. Sister `allowlist.feature` 14/0. Focused specs 123/0 (`names_spec`, `checks_spec`, `builtin_spec`, `turn_spec`, `session_steps_spec`). Pre-existing `schema_spec` fs/instance and `bridge_spec` session-file left alone.
 
 Commit: **dad782759bc03d48ea9e75362c6402827af74013** on `bean/isaac-da0r` (rebased onto origin/main 4b81cf5 / isaac-wlha). Trailers `Isaac-Session: isaac-work-1` + `Isaac-Bean: isaac-da0r`. Pushed.
+
+## Verify fail (attempt 1, 2026-08-24): implementation is not landed on isaac-agent main; current main still has `@wip` in `features/tool/permissions.feature`
