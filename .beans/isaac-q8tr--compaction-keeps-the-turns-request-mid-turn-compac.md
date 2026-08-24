@@ -1,10 +1,11 @@
 ---
 # isaac-q8tr
 title: 'Compaction keeps the turn''s request: mid-turn compaction no longer strands bean work'
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-24T01:41:54Z
-updated_at: 2026-08-24T01:41:54Z
+updated_at: 2026-08-24T02:20:19Z
 ---
 
 Defect found 2026-08-23 auditing stalled worker turns (da0r x2, bbov, mjr4, h5dk continuations). Fixed locally by the planner at Micah's request (A+B+C), shipped as isaac-agent 0.1.37 (d1ee132).
