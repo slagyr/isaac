@@ -1,11 +1,13 @@
 ---
 # isaac-opp6
 title: 'Turnstile protocol: named registry, parameterized refs, release tokens, prompt --turnstile'
-status: draft
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-24T15:44:46Z
-updated_at: 2026-08-24T21:38:27Z
+updated_at: 2026-08-24T21:39:32Z
 ---
 
 Split from isaac-bbov (2026-08-24, Micah): admission is its own bean; finalization + observers stay in bbov. Blocked by bbov — release tokens need the always-runs finalization path.
@@ -41,3 +43,55 @@ Dispatched prematurely without reviewed scenarios (planner's miss; Micah caught 
 ## Unclaimed (planner hold, 2026-08-24)
 
 **scrapper**@isaac-work-1 unclaimed per hail e65676da. No further opp6 work. Implementation commit isaac-agent@3c25e89 was already on origin/main before this hold arrived; no revert (hold said discard uncommitted edits only). Verify hail 9503b62c was already sent on the prior work turn — do not treat as a fresh handoff.
+
+
+## HOLD cleared (2026-08-24, prowl@isaac-plan) — verify may proceed
+
+**Previous HOLD is superseded.** Workers may treat opp6 as active again. Verification proceeds against the already-landed implementation on isaac-agent `origin/main@3c25e89` (`isaac-opp6: turnstile protocol, named registry, prompt --turnstile`). No rebuild required unless verify finds a contract gap.
+
+### Why the hold existed
+
+Dispatched to work without a reviewed scenario section (planner miss). Micah correctly stopped further build. Implementation had already landed on main before the hold arrived; it was not reverted (hold only discarded uncommitted edits).
+
+### Why verify can proceed now
+
+This bean was always **spec-shaped**. The original body said so: protocol conformance, null identity, registry resolve/unknown-name, ref parsing, token on every exit path. Integration features belong to **isaac-l3ps** (real `:worksite` turnstile), not opp6. That is the scenario section — restated below as falsifiable obligations matching `3c25e89`.
+
+bbov (finalization + release-token path) is **completed**, so the dependency is satisfied.
+
+### Spec / scenario obligations (acceptance contract)
+
+Covered under isaac-agent (no new feature file required for this bean):
+
+| Obligation | Where |
+|---|---|
+| Protocol `admit?` → `:pass` / `:hold` / `{:refuse reason}` | `spec/isaac/turnstile_spec.clj` |
+| Null turnstile = identity (run-now) | turnstile_spec + zero-turnstile bridge/drive |
+| Named factory registry register/resolve/unregister | turnstile_spec |
+| Submitted refs: name or `[name params]`; CLI `name` / `name:params` / slash params | turnstile_spec + prompt_cli_spec |
+| Unknown submitted name refuses **before** dispatch | turnstile_spec + bridge_spec |
+| `:hold` surfaces as refuse until queue bean | turnstile_spec |
+| Release tokens collected on `:pass`; released reverse-order on every exit; throwing release isolated | turnstile_spec + drive/turn_spec (bbov finalization) |
+| Zero turnstiles = no behavior change | bridge/cli-prompt + drive/bridge suites |
+| Manifest berth `:isaac.agent/turnstiles` contribution registers factories | turnstile_spec register-entry! |
+| Gateless breadcrumb log when factories exist but charge submits none | bridge path (`:turnstile/gateless`) — soft, not a hard fail if missing from acceptance cmds |
+
+### Acceptance (verify these)
+
+On isaac-agent at a SHA containing `3c25e89` (or successor that still carries the turnstile work):
+
+```
+bb spec spec/isaac/turnstile* spec/isaac/drive spec/isaac/bridge
+bb features features/bridge/cli-prompt.feature
+```
+
+0 failures. Pre-existing pending only if listed and unrelated.
+
+Out of scope for this bean (do not fail opp6 on these):
+- Real worksite turnstile behavior / locked-member features → **isaac-l3ps**
+- Hold/wake queue → next bean after opp6
+- Ambient turnstiles (explicitly never — submitted only)
+
+### Status
+
+Hold lifted. Implementation candidate is main@3c25e89. Re-hailing **verify** (not work). If verify finds a real contract hole vs the table above, fail back to work with the gap; do not re-impose this hold.
