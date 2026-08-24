@@ -1,11 +1,11 @@
 ---
 # isaac-zcb9
 title: isaac-agent full bb features suite health (timeout + session/bridge/compaction flakes)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-17T05:42:36Z
-updated_at: 2026-08-17T05:42:36Z
+updated_at: 2026-08-24T22:23:43Z
 ---
 
 Split from isaac-rxr4 (episodes migrate-session). NOT a migrate-session product
