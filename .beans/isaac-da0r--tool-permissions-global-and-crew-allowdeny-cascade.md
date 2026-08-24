@@ -1,13 +1,11 @@
 ---
 # isaac-da0r
 title: 'Tool permissions: global and crew allow/deny cascade'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-21T22:16:00Z
-updated_at: 2026-08-24T16:10:33Z
+updated_at: 2026-08-24T16:11:36Z
 blocked_by:
     - isaac-ek0r
 ---
