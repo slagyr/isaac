@@ -4,8 +4,10 @@ title: Hail records vanish under restructured storage — send returns id, no fi
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-23T17:12:07Z
-updated_at: 2026-08-24T14:15:32Z
+updated_at: 2026-08-24T14:16:55Z
 ---
 
 Observed 2026-08-23 (post isaac-k27z storage restructure era): 'isaac hail send --band isaac-work' returned id 1232eaed; minutes later the record existed in NO hail dir (pending/inflight/delivered/deliveries all checked, find+grep across ~/.isaac/hail empty) while a worker turn DID resume the bean — so delivery may have happened with the record cleaned, or persistence is racing. Either way the audit trail broke: a sent hail must be findable somewhere from send until archive (hails-never-die requires durable records). Diagnose-first: trace 1232eaed's lifecycle in the current hail module; pin the record-retention contract in scenarios. Layer: isaac-hail — no overlap with in-flight work.
@@ -71,3 +73,13 @@ Draft **isaac-d13o** owns the two red crew-tool hail-send dispatch scenarios (ex
 ### Reset
 
 Verify-fail escalation counter reset by this note. Worker: confirm targeted suites on main@ledger SHA (or equivalent), retag unverified, hand to verifier. Do not re-expand acceptance to full `bb features` without a green baseline from d13o (or equivalent suite repair).
+
+
+## Targeted suites confirmed (planner rescope, 2026-08-24)
+
+Confirmed on isaac-hail `origin/main` @ `9c9d742` (contains durable ledger):
+
+- `bb spec` — 132 examples, 0 failures, 289 assertions
+- `bb features features/delivery.feature features/hail-get.feature` — 34 examples, 0 failures, 126 assertions, 2 pending (pre-existing hail-get search stubs: directory scan / templated band search — not yet implemented)
+
+Full `bb features` is **not** claimed. crew-tool hail-send dispatch red stays on draft **isaac-d13o**.
