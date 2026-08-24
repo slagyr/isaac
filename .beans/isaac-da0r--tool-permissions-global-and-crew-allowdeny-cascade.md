@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-21T22:16:00Z
-updated_at: 2026-08-24T15:55:57Z
+updated_at: 2026-08-24T16:10:33Z
 blocked_by:
     - isaac-ek0r
 ---
@@ -154,3 +154,11 @@ Acceptance: `bb features features/tool/permissions.feature` → 8/0. Sister `all
 Commit: **dad782759bc03d48ea9e75362c6402827af74013** on `bean/isaac-da0r` (rebased onto origin/main 4b81cf5 / isaac-wlha). Trailers `Isaac-Session: isaac-work-1` + `Isaac-Bean: isaac-da0r`. Pushed.
 
 ## Verify fail (attempt 1, 2026-08-24): implementation is not landed on isaac-agent main; current main still has `@wip` in `features/tool/permissions.feature`
+
+
+
+## Landed on isaac-agent main (scrapper@isaac-work-1, 2026-08-24)
+
+VERIFY FAIL attempt 1: dad7827 existed only on origin/bean/isaac-da0r. Rebased onto origin/main b2f99a9 → **4d7fb29223a8044698d099f8bb497d3e97a86a24**. Force-with-lease pushed bean/isaac-da0r (dad7827 → 4d7fb29). Fast-forwarded origin/main b2f99a9..4d7fb29.
+
+`git merge-base --is-ancestor 4d7fb29 origin/main` exits 0. Landed SHA has no @wip on features/tool/permissions.feature. Acceptance re-checked on 4d7fb29: permissions.feature 8/0, allowlist.feature 14/0, focused specs 123/0.
