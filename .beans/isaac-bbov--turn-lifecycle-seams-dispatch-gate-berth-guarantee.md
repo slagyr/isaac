@@ -1,6 +1,6 @@
 ---
 # isaac-bbov
-title: 'Turn lifecycle seams: dispatch gate berth + guaranteed finalization'
+title: 'Turn finalization + turn-observer interface'
 status: todo
 type: task
 created_at: 2026-08-23T19:19:16Z
@@ -54,3 +54,7 @@ DEPENDED ON BY (updated): the turn-request queue bean (next session — queue + 
 **Turnstile refs are parameterized** (2026-08-24, Micah): a submitted reference is a name OR name+params — `:worksite` (impl infers, e.g. member from turn cwd) or `[:worksite "chart-room"]` (explicit target). The registry resolves the name; params go to the impl. Same shape as foreman action refs.
 
 **Observers come in both attachments** (2026-08-24, Micah): REGISTERED observers see every turn (foreman's system-wide watch); SUBMITTED per-turn observer refs ride a turn request with the same name+params shape as turnstiles — e.g. `[:foreman "bean-work" "bn-7"]` — so any submitter can wire one turn's lifecycle into a consumer's flow. `isaac prompt` grows `--observer` alongside `--turnstile` (e.g. `--observer foreman:bean-work/bn-7`): a hand-run CLI prompt can report into a foreman machine instance — manual turns become first-class citizens of an orchestration. Resolution, unknown-name refusal, and validate checks identical to turnstiles.
+
+## SPLIT (2026-08-24, Micah): one bean per abstraction
+
+This bean now carries **guaranteed finalization + the turn-observer interface** (registered + submitted refs, `--observer`). The **turnstile protocol** moved to **isaac-opp6** (blocked by this bean — release tokens ride finalization). Everything above about turnstiles is design history; isaac-opp6 is the implementation contract. Build order: bbov -> isaac-opp6 -> queue bean -> l3ps.
