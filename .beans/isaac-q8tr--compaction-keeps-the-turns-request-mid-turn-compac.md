@@ -23,6 +23,21 @@ Defect found 2026-08-23 auditing stalled worker turns (da0r x2, bbov, mjr4, h5dk
 - Specs: compaction_spec (turnRequest recorded; prompt wording), builder_spec (framing + re-seed order). Scenario revisions: prompt_building.feature (rendered summary now framed), context_management.feature knife-edge fixture threshold 0.8 -> 0.9 (13-token margin; +23 tokens of framing tipped a second compaction).
 - Regression: full `bb spec spec` and `bb features` match pristine main exactly (24 spec / 13 feature failures pre-existing from in-flight config-schema work).
 
+## Acceptance (regression feature, 2026-08-24)
+
+Live (not `@wip`) — product fix `d1ee132` already makes it green. Red on `84c0a7f` (hail count 0 after rubberband splice). New steps: none.
+
+```
+bb features features/session/compaction_mid_turn.feature:12
+```
+
+Scenario: `rubberband mid-turn still carries the originating hail`
+- `Then session "mid-rb" has compaction`
+- `And the last LLM request mentions "Don't lose this ask." exactly 1 time`
+- `And the last LLM request mentions "HUGE-LEMON-PAYLOAD" exactly 0 times`
+
+Do not drop this scenario. It is the turn-loop contract 92h's stubbed spec never had.
+
 ## Follow-ups
 
 - Rehail stalled beans after deploy: isaac-bbov, isaac-da0r, isaac-mjr4 (work-1 checkout still carries da0r's uncommitted TDD; work-2 carries mjr4's).
