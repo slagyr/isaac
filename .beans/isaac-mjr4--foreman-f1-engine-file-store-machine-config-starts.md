@@ -4,8 +4,10 @@ title: 'Foreman F1: engine, file store, machine config, start/signal/status/list
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-23T22:07:07Z
-updated_at: 2026-08-23T22:15:17Z
+updated_at: 2026-08-24T02:00:39Z
 ---
 
 First bean of isaac-foreman (repo slagyr/isaac-foreman, scaffold 4cdb1c9, scenarios @wip at 3497ace). Design record: isaac-tdgt (full design + F1 session rulings 2026-08-23), isaac-51xy decisions 30-38.
@@ -52,3 +54,26 @@ No dependencies — F1 is self-contained (no isaac-agent changes). NOTE: worker 
 ## Machine testing story (2026-08-23, Micah's question)
 
 Machines (the config tables) are TDD-able at three layers: (1) **speclj against the pure engine** — isaac.foreman.machine/step is (table, state, event) -> {state, actions, order}, no I/O; authors red-green their EDN entity like normal code (this is a design REQUIREMENT on machine.clj's API, not an accident). (2) **Gherkin** — F1's CLI steps (start/signal/status-matches) ARE the machine-testing DSL; an orchestration ships table + feature file, reviewed like any bean. (3) **Record-only = simulator** — scratch instances against production config are safe in F1; F3 MUST add --dry-run to preserve this once actions execute (recorded as an F3 obligation in isaac-tdgt). Runtime gap detection: unhandled-event history entries show the missing rows.
+
+
+## Implementation (scrapper@isaac-work-2, 2026-08-24)
+
+isaac-foreman **fcad2c7** on main. @wip dropped. Specs + features green.
+
+Product:
+- `isaac.foreman.machine` — pure parse/validate/step; dangling action-refs; duplicate rows; explicit-beats-wildcard; unhandled result shape.
+- `isaac.foreman.store` — file impl `foreman/<machine>/<id>.edn` + `.events.ednl`; append-before-ack.
+- `isaac.foreman.observer` — transitions only; built-in `:log`; unhandled events stay in history.
+- `isaac.foreman.core` — start!/signal!/status/list; `now-iso` honors `memory/*now*`.
+- `isaac.foreman.checks` — dangling action-ref vs machine + shared `:foreman :actions`.
+- `isaac.foreman.cli` — `:isaac/cli` start/signal/status/list `--state`.
+- Manifest: `:isaac/cli :foreman`, `:isaac.config/schema :machines` (`:entity-dir "machines"` `:merge-root-entity? true`) + `:foreman` shared actions, `:isaac.config/check :dangling-actions`.
+- Pins: foundation **142316b**, agent **4408a97**, server **d7bbc8a**.
+- harbor-run fixture uses docstring file step (indexed `transitions[0].start` would not write a vector).
+- CI workflows from isaac-hooks pattern.
+
+Verified:
+- `bb spec spec` **28/0**, 68 assertions
+- `bb features features` **7/0**, 42 assertions
+
+No isaac-agent changes. F1 self-contained.
