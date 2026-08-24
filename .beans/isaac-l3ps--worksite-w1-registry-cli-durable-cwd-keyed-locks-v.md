@@ -52,3 +52,11 @@ Plus isaac-agent suites stay green under the bbov pin (zero-gate net):
 bb features features/bridge/cli-prompt.feature features/session
 ```
 Field check on zanebot (recorded here): register isaac-work-1's checkout as a worksite; operator-lock it; send a bean hail; watch the delivery DEFER (not dead-letter) until unlock; unlock; watch it flow. That demo is W1's whole reason to exist.
+
+## DESIGN REVISION (2026-08-24, Micah + planning session)
+
+**Cwd-keyed AUTO-gating is OUT** (decision 1 above superseded): protection is opt-in via the turnstile abstraction (see isaac-bbov revision). Worksite implements the `:worksite` turnstile and contributes it BY NAME to agent's registry; hail and foreman include it in their default stacks; the CLI defaults to the null turnstile — the human at the keyboard is the authority the lock protects. `worksites lock` now means "robots out": hail defers, foreman parks, the operator keeps working via CLI. Optional `--turnstile worksite` CLI flag for cautious operators.
+
+STANDS UNCHANGED: registry + both config forms, `worksites list/lock/unlock` CLI, durable lock files, operator-lock sanctity, dead-pid stealing, W2/W3 split.
+SCENARIOS 4, 6, 8 SUPERSEDED — redraft next planning session around explicit gating (sharpest form asserts both directions: `prompt --turnstile worksite` in a locked member refuses; the same prompt without it runs). Scenarios 1-3, 5, 7 stand. Field demo becomes: lock -> hail defers -> CLI still works -> unlock -> hail flows.
+BLOCKED-BY updated: isaac-bbov (revised) and the turn-request queue bean.

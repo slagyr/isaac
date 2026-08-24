@@ -324,3 +324,6 @@ One span permanently flagged (tono-verify-1 span 34): grok-4.20 CONSISTENTLY emi
 | P2-3/P2-4 | Worksite registry / mutex+pools | **SUPERSEDED by the worksite module program**: isaac-bbov (seams) + isaac-l3ps (W1, cwd-keyed) queued; W2 (pools/band-binding/max-in-flight) and W3 (lease expiry) planned differently than these rows assumed. Rows retired. |
 | P2-5 | isaac-chronicle / isaac-episode split | UNCHANGED, now cheaper: sits on k27z storage + bbov seams; three named core forks (router, compaction-close, recall rendering) remain the extraction work. |
 **Stream-coordination flags:** (1) k27z rewrote session feature steps — any planner writing transcript assertions should re-check step semantics against current main before drafting. (2) The "scrap `sessions migrate` later" note in k27z is a one-time-tool retirement — belongs to whoever runs the final chronicle cutover (P2-2/P2-5). (3) Gzip of frozen segments stays a parked draft (k27z's ruling; do not fold into P2 rows).
+
+## 2026-08-24 — Turn architecture session (cross-references isaac-tdgt, isaac-bbov, isaac-l3ps)
+Turnstile/turn-observer split settled; no hail<->foreman arrows; agent owns queue+addressing; invariants vs coordination ruled; opt-in-by-name registry. bbov and l3ps revised in place; W1 scenarios 4/6/8 to redraft; turn-request queue bean is the next planning session.
