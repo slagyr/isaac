@@ -88,3 +88,41 @@ New steps invented: none.
 - MCP discovery.
 - Ordered free-form rule lists beyond the four-step sugar.
 - `:only`.
+
+## Held (awaiting human, 2026-08-24)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: permissions.feature still 7/8 red (crew EDN overlay + approved tables omit recall__* now registered by h5dk/bh17).
+Resumes only on explicit human action (re-hail the work/plan band, or
+re-promote). No crew re-picks this until then.
+
+Continuation budget exhausted (do not send continuation 6). Incoming work hail on disk: **f6efe45e** (band isaac-work, bound-session isaac-work-1). Earlier recap cited 888f1e15; that file is gone.
+
+Local isaac-agent remains DIRTY on main @ 9f6c929 (13 files, cascade TDD not committed). Do not mix leftover stashes.
+
+### What already works (unit / focused)
+
+- `isaac.tool.names`: `policy-list`, `covers?`, four-step `cascade-allowed?` (empty=deny-all; crew allow last; crew deny overlays).
+- `allowed-tool-names` / bridge status inherit global `:allow :all` when crew omits `:tools`.
+- `check-tool-allow-tokens` rejects `[:all]` on global and crew; accepts `:all` keyword; validates `:deny` tokens.
+- Manifest `:tools :allow`/`:deny` at root + crew are `:type :ignore` so `:all` conforms (not a seq).
+- Extra factories register `skill__list` / `skill__load` / `hail__send` / `comm__send`.
+- Focused green: `names_spec`, `checks_spec`, `builtin_spec`, `turn_spec` (118/0 on that 4-file run).
+
+### What is still red (`bb features features/tool/permissions.feature` → 8/7)
+
+1. **Approved tables vs live registry.** `register-all!` now also registers `recall__search` / `recall__scene` (h5dk). Exact `the prompt has tools:` tables omit them, so global-allow-all / inherit / overlay / family-deny scenarios fail even when cascade is correct. Bean: "New steps invented: none" and "do not rewrite approved feature text." Needs planner/human to add recall rows or exclude recall from the feature path.
+2. **Crew EDN overlay does not land.** Scenarios that write `config/crew/main.edn` via `the isaac EDN file ... exists with:` (`tools.allow [:exec/run]`, `tools.deny [:fs/*]`, `tools.deny :all` + `tools.allow [:memory/*]`, `tools.deny [:web/*]`) still behave as inherit-global-only. Crew allow does not re-enable exec; crew deny-all+allow-memory still offers every tool. `parse-isaac-value` special-cases only `tools.allow` as comma-split keywords; values starting with `[` or `:` already EDN-read, so the write itself is probably fine — likely load/merge of crew entity `:tools` into the turn's `crew-members` on the feature harness. Foundation spec-support change vs agent load path; out of agent-only scope unless justified.
+3. **Config validate `[:all]` feature (line 171).** Empty real-fs root at `/tmp/isaac-allow-all-vec` + `the isaac file "isaac.edn"` + `the config is loaded` does not surface `tools.allow` / `#":all"`. Unit `check-tool-allow-tokens` already rejects `[:all]`. Feature path likely never runs the agent check (real-fs empty root / load-config [:all] / check not in discovery index for that root). Sister allowlist scenarios at `/tmp/isaac-allow-ns` already exist for crew tokens.
+
+Pre-existing, do not chase: `schema_spec` fs/instance (custom validation), `bridge_spec` session-file.
+
+### Resume checklist (human / next explicit work hail)
+
+1. Keep manifest brace count so `:crew` stays inside `:isaac.config/schema`.
+2. Decide approved-text vs live-registry (add recall__search/recall__scene to every exact table, or stop registering recall on this feature path). Do not silently rewrite.
+3. Make crew `:deny`/`:allow` land through isaac EDN file / `config:` harness into `crew-members` for `build-turn`.
+4. Green load-config `[:all]` on the empty-root feature path so line 171 matches.
+5. Green `permissions.feature`, then drop `@wip`.
+6. Focused + full specs (ignore pre-existing schema_spec fs/instance and bridge session-file).
+7. Commit/push isaac-agent with trailers `Isaac-Session: isaac-work-1` + `Isaac-Bean: isaac-da0r`.
+8. `beans update isaac-da0r --tag=unverified`; hail **isaac-verify** (band + params bean-id only, reply_to live incoming hail) + Discord ➡️ after SENT.
