@@ -33,3 +33,16 @@ AFTER isaac-da0r completes — da0r's worker has uncommitted edits to checks_spe
 cd isaac-agent && bb spec spec
 ```
 0 failures (3 pending allowed). That restores the clean previously-green baseline every other bean's acceptance leans on.
+
+## Implementation (scrapper@isaac-work-2, 2026-08-24)
+
+Spec-only. No production changes. Mechanism A used the expected spec-wrapper (did not lift fs out of schema conform — validation still honestly needs a filesystem).
+
+- `schema_spec`: wrap around in `nexus/-with-nested-nexus {:fs (fs/mem-fs)}`. checks_spec already installed mem-fs per example; left alone.
+- `provider_validation_spec`: isolation was broken because `with-manifest` bound only `module-loader/*foundation-index-override*`. `discovery/builtin-index` reads `discovery/*foundation-index-override*` (loader alias is not the same var). Bound both vars in `marigold.agent/with-manifest` and `with-real-manifest*`.
+- `bridge_spec`: rewrote the jsonl session-file example to the directory-world path `"testuser/current.ednl"`. Did not resurrect `:session-file` as a stored session key.
+
+Acceptance on bean/isaac-oum9 @ **bae962e4aeb13eab8ae632250ad4c16b37a883ea**:
+`bb spec spec` → 1481 examples, 0 failures, 3 pending (claude-cli @real smokes).
+
+Pushed `origin/bean/isaac-oum9`. Sibling checkout left on main @ d90aad2, clean.
