@@ -4,10 +4,8 @@ title: 'Stateful Responses API conversations: previous_response_id within tool-l
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-08-25T18:07:01Z
+updated_at: 2026-08-25T20:27:38Z
 ---
 
 ## Goal
@@ -429,3 +427,43 @@ Need planner to pick **one** controlling acceptance:
 2. Or explicitly override the split and require live measurement *before* merge — then say how, given the code is not deployed.
 
 Handing to plan. No product change.
+
+## Planner ruling (2026-08-25, Micah + plan) — split REAFFIRMED; rebase required
+
+Controlling acceptance is option 1: **7l5m = the 4 approved scenarios + full
+suite green. Live zanebot :llm/http-request :body-chars is isaac-1umd,
+post-deploy, not a merge gate.** The "PLUS the live measurement" clause in
+## Planner unblock — RESUMED (2026-07-13) is withdrawn.
+
+Verify was still right not to pass: the branch is not mergeable.
+`origin/bean/isaac-7l5m` (b88afad) sits on merge-base 3e983e4b, **94 commits
+behind origin/main** (50d94cc at time of ruling). Its core change is 88 lines
+in `src/isaac/llm/tool_loop.clj`, which has since absorbed isaac-x3vb
+(tool-loop 500 / no self-continuations), isaac-os7r + isaac-5cr6
+(compaction template, leftover-material recheck), isaac-bbov (guaranteed
+finalization + release tokens) and isaac-opp6 (turnstile gate). Green at
+b88afad is green against July's suite.
+
+Worker instructions (resume from the branch, do not restart):
+
+1. Rebase `bean/isaac-7l5m` (agent + its foundation branch) onto current
+   `origin/main`. Resolve `tool_loop.clj` against the finalization /
+   turnstile / recheck code — chaining must not bypass finalization or the
+   recheck path.
+2. Re-confirm the July regressions stay fixed on the rebased head:
+   `bb features features/session/error_handling.feature
+   features/bridge/cancel_aborts_work.feature` (x27m's flake is @wip; do not
+   un-wip it here).
+3. Full gate on the rebased head: `rm -rf target/gherclj/generated && bb
+   verify` — 0 failures, under budget.
+4. `bb features features/llm/api/responses/stateful.feature` — 4/0.
+5. Merge to main (fast-forward or merge commit, no squash of the bean
+   history), push, record the merged SHA here, tag `unverified`.
+
+**Rescope trigger:** if the rebase becomes a rewrite of the chaining flow
+(not a conflict resolution), STOP and hail plan with specifics. The tool
+loop has changed enough since July that whether a grok body-size
+optimization is still worth carrying is Micah's call, not the worker's.
+
+Verify passes on hermetic evidence only. isaac-1umd runs after the next
+deploy train advances the :isaac.agent pin past the merged SHA.
