@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-07-13T22:45:57Z
+updated_at: 2026-08-25T18:03:14Z
 ---
 
 ## Goal
@@ -380,3 +380,12 @@ Resume instructions for the worker:
 - Acceptance unchanged (the 4 approved scenarios) PLUS full-suite green PLUS the live zanebot body-chars before/after measurement.
 
 This note resets any verify-fail count.
+
+## Verify fail (attempt 1, 2026-08-25): full branch gate is green at b88afad, but the latest planner-unblock acceptance still requires a live zanebot body-chars before/after measurement and that evidence is still missing
+
+Evidence:
+- Verified the resumed implementation targets named in the bean: `isaac-agent` `origin/bean/isaac-7l5m` = `b88afad66c1f069f5ec931eb069fa17a7caf7f3f`; `isaac-foundation` `origin/bean/isaac-7l5m` = `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`.
+- Fresh rerun on the agent branch after clearing stale generated feature output is green: `rm -rf target/gherclj/generated && bb verify` -> specs `1230 examples, 0 failures, 2466 assertions, 3 pending`; features `637 examples, 0 failures, 1477 assertions`.
+- The current controlling planner note is `## Planner unblock — RESUMED (2026-07-13, fgo0 shipped)`, which explicitly keeps acceptance as the 4 approved scenarios **plus** full-suite green **plus** the live zanebot `:llm/http-request :body-chars` before/after measurement.
+- No post-resume worker note, bean note, or accessible hail artifact records that required live measurement.
+- Because the latest acceptance still requires that live evidence, this bean is not yet passable even though the branch suite is now green.
