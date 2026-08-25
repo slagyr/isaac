@@ -1,13 +1,11 @@
 ---
 # isaac-l3ps
-title: 'Worksite W1: registry, CLI, durable cwd-keyed locks via the dispatch gate'
+title: 'Worksite W1: registry, CLI, durable locks via :worksite turnstile'
 status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-23T19:23:46Z
-updated_at: 2026-08-25T22:49:01Z
-blocked_by:
-    - isaac-bbov
+updated_at: 2026-08-25T23:02:53Z
 ---
 
 First bean of the isaac-worksite module (repo slagyr/isaac-worksite, skeleton at ac40655, scenarios @wip at 75137cf). Design record: isaac-51xy decisions 36-38, isaac-tdgt addenda, planning session 2026-08-23.
@@ -86,3 +84,85 @@ Claimed and surveyed; no product code written. Returning to planner — the bean
 - Pin `isaac-worksite` deps.edn/bb.edn agent SHA to post-ohsy `2c87d0d` (current pin is `10093b4`). Blockers bbov + opp6 are completed; ohsy is in-progress+unverified on origin/main.
 
 Checkout: `/Users/zane/agents/isaac/work-2/isaac-worksite` cloned at origin/main@75137cf. No impl branch. Claim 98e90c11.
+
+
+## Planner adjustment (2026-08-25, prowl@isaac-plan) — conflict resolve + feature redraft
+
+**Conflict accepted.** Worker was right: original lock scenarios encoded AUTO-gating; revision killed that. Redraft is landed; implement against the new contract.
+
+### Features redrafted and pushed
+
+`slagyr/isaac-worksite` `origin/main@d7ae11d` (was `75137cf`).
+
+| # | File:scenario | Status |
+|---|---|---|
+| R1 | registry: both-forms validate + memberless rejected | **STANDS** (prose: no auto-gate claim) |
+| R2 | registry: list/help + lock state | **STANDS** |
+| R3 | registry: outside worksite sails through while another locked | **STANDS** (null-turnstile path) |
+| L1 | lock: operator lock/unlock round-trip | **STANDS** (was "scenario 5") |
+| L2 | lock: locked member refuses `--turnstile worksite`; bare prompt still runs | **REWRITTEN** (was auto-refuse ungated prompt) |
+| L3 | lock: turn lock via `--turnstile worksite` releases at end | **REWRITTEN** (was auto-take on every CLI prompt) |
+| L4 | lock: failed turn still releases | **REWRITTEN** (same; requires `--turnstile worksite`) |
+| L5 | lock: dead-pid steal with `--turnstile worksite`; operator never auto-broken | **REWRITTEN** (was ungated steal) |
+
+Old numbering "4,6,8 superseded / 1-3,5,7 stand" is retired. Use R1–R3 + L1–L5 above.
+
+### Design pins (W1)
+
+1. **`--turnstile` syntax**
+   - `worksite` — infer member from session cwd (primary in scenarios).
+   - `worksite:<name>` — explicit worksite name (supported by opp6 parse; optional scenario not required for W1 green).
+2. **Locked decision = `{:refuse :worksite-busy}`** (not `:hold`).
+   - CLI with `--turnstile worksite` while locked → stderr + exit 1 (no park).
+   - Hail deferral consumes the reason (existing reason-agnostic path).
+   - ohsy park-on-`:hold` is for other turnstiles (tide, admits-N); worksite lock is refuse.
+3. **Turn-lock acquire-on-admit is W1** for submitted `:worksite` only.
+   - Operator lock/unlock CLI, durable files, dead-pid steal, operator sanctity, release-on-finalization token — all W1.
+   - Null-turnstile / bare CLI never takes or consults the turn lock.
+4. **Hail/foreman default stacks including `:worksite` are NOT W1.**
+   - W1 ships the named factory + CLI opt-in + lock/list/unlock.
+   - Default stack wiring = later hail/foreman beans (field demo "lock → hail defers" needs that follow-up; do not block W1 acceptance on it).
+   - Record field demo as post-W1 when hail default stack lands.
+5. **Agent pin:** bump isaac-worksite `deps.edn` / `bb.edn` isaac-agent (+ agent-spec) pins to **`2c87d0d`** (post-ohsy on agent main at redraft time) or newer main that still carries bbov+opp6+ohsy turnstile/queue seams. Current pin `10093b4` is too old.
+
+### Manifest / product shape (W1)
+
+- Contribute `:worksite` turnstile factory via `:isaac.agent/turnstiles` (not the old dispatch-gate berth framing).
+- `:isaac/cli` for `worksites list|lock|unlock`.
+- No ambient gating. Registration ≠ activation for turns.
+
+### Blockers
+
+- **bbov** completed, **opp6** completed.
+- **ohsy** in-progress+unverified at agent `2c87d0d` — W1 does not require ohsy green for refuse path; pin to that SHA (or later) for turnstile+finalization APIs. If ohsy regresses agent main, wait or pin a known-good SHA that still has opp6.
+- Remove stale `blocked_by: isaac-bbov` only; do not hard-block on ohsy verify unless pin is unavailable.
+
+### Acceptance (supersedes prior)
+
+In `slagyr/isaac-worksite` at a SHA that includes `d7ae11d` features + W1 impl:
+
+```
+bb spec spec
+bb features features
+```
+
+Remove `@wip` from all eight scenarios; 0 failures.
+
+Agent suites under the bumped pin (zero-turnstile regression net):
+
+```
+bb features features/bridge/cli-prompt.feature features/session
+```
+
+(or document equivalent green on the pinned agent SHA).
+
+### Out of scope for W1
+
+- Hail/foreman auto-submit of `:worksite`
+- ohsy hold/wake integration with worksite
+- W2 pool allocation / logical pool addressing
+- W3 lease expiry/heartbeat
+
+### Worker handback
+
+Implement against redrafted features at worksite `d7ae11d`+. Bump agent pin. Do not restore auto-gating. Hand verify when `@wip` cleared and suites green.
