@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-07-12T23:19:23Z
-updated_at: 2026-07-12T23:19:23Z
+updated_at: 2026-08-25T04:19:53Z
 ---
 
 ## Bug
@@ -40,3 +40,12 @@ gate or reopen l70j. l70j's own contract is verified green (see that bean).
 - [ ] `clojure -M:features features/bridge/cancel_aborts_work.feature:32` green,
       stably, in `isaac-agent`.
 - [ ] Full `clojure -M:features` green.
+
+
+## Additional evidence (2026-08-25, from isaac-zcb9 verify-fail 2)
+
+On isaac-agent origin/main@69679f2 (zcb9 suite-health landed):
+
+- Full `bb features` intermittently failed at `features/bridge/cancel_aborts_work.feature:27` — `Then the turn result is "cancelled"` got `nil`.
+- Isolated scenario/file reruns passed repeatedly; later full suite + `bb ci` also passed on the same SHA.
+- Same symptom family as this bean's original `:32` case. zcb9 planner split: `@wip` the intermittent cancel scenarios under this bean; zcb9 no longer gates on cancel flake once isolated.
