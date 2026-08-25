@@ -1,11 +1,11 @@
 ---
 # isaac-5cr6
 title: model-switch into a window smaller than the summary-prompt floor must still loop
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-25T03:40:35Z
-updated_at: 2026-08-25T03:40:35Z
+updated_at: 2026-08-25T18:40:28Z
 ---
 
 Split from isaac-zcb9. After suite-health repair, full `bb features` is 728/1 under 180s. The leftover is this model-switch scenario: expected compaction-count 2, got 1.
