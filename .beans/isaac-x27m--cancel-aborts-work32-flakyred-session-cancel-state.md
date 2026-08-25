@@ -4,8 +4,10 @@ title: cancel_aborts_work:32 flaky/red — session cancel state nil where 'cance
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-12T23:19:23Z
-updated_at: 2026-08-25T23:21:44Z
+updated_at: 2026-08-25T23:32:42Z
 ---
 
 ## Bug
@@ -59,3 +61,18 @@ Both cancel scenarios in `features/bridge/cancel_aborts_work.feature` are now `@
 - "session remains usable after a cancel mid-loop" (original :32; same cancelled-vs-nil contract)
 
 zcb9 no longer gates on these. Product fix remains this bean.
+
+## Implementation (2026-08-25, scrapper@isaac-work-1)
+
+Root cause: `tool-loop/run` stops after tools with `{:cancelled? true :response nil}` (no `:error`). `execute-llm-turn!` only treated `:error :cancelled`, `cancelled-response?`, or a still-live `bridge/cancelled?` as cancel. After `finalize-turn-result` the `:cancelled?` map fell through to `process-response!`, so `Then the turn result is "cancelled"` saw `nil`. Isolated runs often still had the live cancel flag; full-suite timing cleared it first — flake.
+
+Fix: treat `(:cancelled? result)` as cancelled in the post-loop cond, same as `:error :cancelled`. Un-wip both `cancel_aborts_work` scenarios.
+
+Evidence:
+
+- Unit: `spec/isaac/drive/turn_spec.clj` — "returns stopReason cancelled when the tool-loop stops with :cancelled? after tools"
+- Isolated `bb features features/bridge/cancel_aborts_work.feature` 2/0 × 5
+- `clojure -M:features` cancel+suspend 8/0/20
+- Full JVM `clojure -M:features` **737/0/1963 in 89.8s**
+
+Landed isaac-agent `origin/main` = `59de03b52ca4957842c33b151a7bf7877eaecf8f`
