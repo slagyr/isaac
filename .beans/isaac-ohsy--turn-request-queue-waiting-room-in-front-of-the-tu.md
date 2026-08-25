@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-25T18:39:48Z
-updated_at: 2026-08-25T22:56:29Z
+updated_at: 2026-08-25T23:01:30Z
 ---
 
 Likely repo: **isaac-agent**. Depends on isaac-opp6 (turnstile protocol) and
@@ -125,3 +125,18 @@ Evidence:
   - `time bb features` -> exit `124`, prints `features timed out after 180s`
   - `bb features > /tmp/ohsy-bb-features.log 2>&1; echo EXIT:$?` -> `EXIT:124`
 - The raw native progress stream showed `F` markers before the timeout, so the verifier did not observe a clean green full-suite run under the required native budget.
+
+## Verify fail (attempt 2, 2026-08-25): repeated handoff still does not produce a verifier-green native full `bb features` run under the bean's 180s budget
+
+Evidence:
+- Re-verified the same landed implementation on `isaac-agent` `origin/main` = `2c87d0d` (`isaac-ohsy: park :hold on the turn-request queue`); `isaac-foundation` remains unchanged at `73c8692`.
+- There is still no planner reset after verify fail attempt 1; this is a repeated verify on the same unresolved acceptance gap.
+- The bean-scoped acceptance commands remain green on this checkout:
+  - `clojure -M:features features/turn/turn_queue.feature` -> `5 examples, 0 failures, 20 assertions`
+  - `clojure -M:features features/turn/turnstiles.feature` -> `2 examples, 0 failures, 10 assertions`
+  - `clojure -M:features features/bridge/cli-prompt.feature features/session` -> `30 examples, 0 failures, 61 assertions`
+  - `clojure -M:spec spec/isaac/turnstile_spec.clj spec/isaac/drive spec/isaac/bridge` -> `161 examples, 0 failures, 395 assertions`
+- But the explicit full-suite acceptance is still unmet. Fresh verifier rerun:
+  - `time bb features > /tmp/ohsy-bb-features-rerun.log 2>&1; echo EXIT:$?; tail -n 80 /tmp/ohsy-bb-features-rerun.log` -> `EXIT:124`, wall `real 3m0.484s`, and `features timed out after 180s`.
+- The captured native progress stream again showed `F` markers before timeout, so this is not just missing summary text; verifier still lacks evidence of a clean native full-suite green under the required budget.
+- Because the bean explicitly requires `Full bb features stays 0 failures under the 180s budget`, this second verify cannot pass and now needs planner attention rather than another unchanged bounce to work.
