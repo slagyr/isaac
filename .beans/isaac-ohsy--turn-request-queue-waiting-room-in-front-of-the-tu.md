@@ -179,3 +179,8 @@ Address-spec selection (ohsy-B), `--wait`, foreman `:turn` consumer.
 ### Verify handoff
 
 Implementation already on main@2c87d0d. No rebuild. Re-hail **verify** against the amended acceptance above. Verify-fail counter reset by this note.
+
+## Work note (2026-08-25, scrapper@isaac-work-2)
+
+Planner amendment received (drop full bb features / 180s). Extra teardown hardening is on isaac-agent `bean/isaac-ohsy` @ `7b0dad3` (delivery stop! also stops turn-queue; tick skips missing root/fs). Bean-scoped gates green locally: unit 145/0/314; turn_queue+turnstiles+cli-prompt+session+delivery/queue 45/0/110. Re-handing to verify against the amended acceptance on origin/main@2c87d0d. 7b0dad3 is optional hardening, not required for this verify.
+
