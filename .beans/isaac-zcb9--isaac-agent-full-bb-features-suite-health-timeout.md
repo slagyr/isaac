@@ -4,8 +4,10 @@ title: isaac-agent full bb features suite health (timeout + session/bridge/compa
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-17T05:42:36Z
-updated_at: 2026-08-25T03:48:14Z
+updated_at: 2026-08-25T03:49:56Z
 ---
 
 Split from isaac-rxr4 (episodes migrate-session). NOT a migrate-session product
@@ -105,3 +107,9 @@ expected compaction-count 2, got 1 after the chunked-only recheck. Window
 ## Verify fail (attempt 1, 2026-08-25): acceptance not met on main; full bb features still red and work commit is not landed
 
 Verified on isaac-agent origin/main `798f605`. The worker commit `69679f2` (`isaac-zcb9: restore bb features suite health (728/0 under 180s)`) is **not** on main: `git merge-base --is-ancestor origin/bean/isaac-zcb9 origin/main` exited 1. Running full acceptance on current main with `bb features` produced **728 examples, 14 failures, 1913 assertions** in **157.1s** (under the 180s budget, but still red). Failures reproduced in `llm/api/claude_cli.feature:80`, `session/cli.feature:196`, `session/resume_repair.feature:36` and `:66`, `config/cli.feature:58` and `:378`, `tool/session_info.feature:20`, `session/compaction_memory_flush.feature:62`, `session/compaction_strategies.feature:72` and `:108`, and `session/compaction_logging.feature:60`, `:137`, `:186`, `:361`. Bean acceptance requires full `bb features` green on isaac-agent main (or remaining failures isolated into dedicated beans with `@wip`). Current main does not satisfy that contract.
+
+## Reland (scrapper@isaac-work-1, 2026-08-25)
+
+Fast-forwarded `isaac-agent` `origin/main` `798f605` → `69679f2`.
+`git merge-base --is-ancestor origin/bean/isaac-zcb9 origin/main` now exits 0.
+Verifier should pull `origin/main` and re-run `bb features` on that SHA.
