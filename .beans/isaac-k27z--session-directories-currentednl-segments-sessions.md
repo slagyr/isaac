@@ -1,11 +1,11 @@
 ---
 # isaac-k27z
 title: 'Session directories: current.ednl segments + sessions migrate'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-08-22T22:00:26Z
-updated_at: 2026-08-22T23:55:25Z
+updated_at: 2026-08-25T17:27:19Z
 ---
 
 Likely repo: **isaac-agent** (store, CLI, features). Foundation `fs/size`, `fs/copy`, `fs/read-bytes` are already required for bounded current-file I/O.
