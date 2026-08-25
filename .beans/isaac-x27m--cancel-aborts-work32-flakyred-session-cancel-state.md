@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-07-12T23:19:23Z
-updated_at: 2026-08-25T04:19:53Z
+updated_at: 2026-08-25T04:30:49Z
 ---
 
 ## Bug
@@ -49,3 +49,13 @@ On isaac-agent origin/main@69679f2 (zcb9 suite-health landed):
 - Full `bb features` intermittently failed at `features/bridge/cancel_aborts_work.feature:27` — `Then the turn result is "cancelled"` got `nil`.
 - Isolated scenario/file reruns passed repeatedly; later full suite + `bb ci` also passed on the same SHA.
 - Same symptom family as this bean's original `:32` case. zcb9 planner split: `@wip` the intermittent cancel scenarios under this bean; zcb9 no longer gates on cancel flake once isolated.
+
+
+## Isolation (2026-08-25, scrapper@isaac-work-1)
+
+Both cancel scenarios in `features/bridge/cancel_aborts_work.feature` are now `@wip` with comments pointing at this bean:
+
+- "cancel between tool-loop iterations skips the next chat call" (was :20; Then at :27 was the full-suite flake)
+- "session remains usable after a cancel mid-loop" (original :32; same cancelled-vs-nil contract)
+
+zcb9 no longer gates on these. Product fix remains this bean.

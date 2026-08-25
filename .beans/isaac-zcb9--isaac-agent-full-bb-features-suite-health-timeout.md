@@ -4,8 +4,10 @@ title: isaac-agent full bb features suite health (timeout + session/bridge/compa
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-17T05:42:36Z
-updated_at: 2026-08-25T04:19:53Z
+updated_at: 2026-08-25T04:31:12Z
 ---
 
 Split from isaac-rxr4 (episodes migrate-session). NOT a migrate-session product
@@ -171,3 +173,15 @@ bb ci
 - 5cr6 + x27m remain open; they are not zcb9 gates once isolated.
 
 Verify-fail counter reset by this note.
+
+
+## Isolation complete (scrapper@isaac-work-1, 2026-08-25)
+
+@wip'd both cancel_aborts_work scenarios (comments point at isaac-x27m). Landed on isaac-agent main.
+
+Worker confirmation on the isolation SHA:
+
+- bb features → 725 examples, 0 failures, 1925 assertions, 141.3s (under 180s). Two cancel scenarios + model-switch excluded by @wip.
+- bb ci → config-bypass-lint ok; spec 1564 examples, 0 failures, 3198 assertions, 3 pending (real claude smokes); features again 725/0/1925 in 144.4s.
+
+Declared leftovers only: isaac-5cr6 (model-switch) + isaac-x27m (cancel flake). No product rewrite of cancel.
