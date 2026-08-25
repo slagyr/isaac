@@ -1,11 +1,14 @@
 ---
 # isaac-pqjn
-title: 'Compaction token accounting: :tokens-before mixes provider usage with chars/4 estimates; chunk gating runs on fiction'
-status: draft
+title: 'Token accounting: stamp :tokens on every entry at write time; compaction plans from stamped counts; per-turn drift log'
+status: todo
 type: bug
 priority: high
 created_at: 2026-08-25T21:11:00Z
-updated_at: 2026-08-25T21:11:00Z
+updated_at: 2026-08-25T21:16:00Z
+blocked_by:
+    - isaac-ohsy
+    - isaac-7l5m
 ---
 
 Likely repo: **isaac-agent** (`isaac.session.compaction`, `isaac.session.store.*`,
@@ -25,36 +28,25 @@ Same kind of history each time; `:tokens-before` swings from 1.4M (11× the
 provider's own count of the whole context) to 2.4K (a hundredth of the
 request that was actually built from those same messages).
 
-## Cause (read of the code, not yet proven by a spec)
+## Cause (corrected 2026-08-25 after reading the write path)
 
-`compaction-target` sums per-compactable `:tokens`. Each compactable's
-`:tokens` comes from `message-token-count` = `(or (:tokens entry)
-(llm/estimate-tokens {:messages [message]}))`, and tool pairs add the two
-entries' `:tokens` with nil→0. So a single sum mixes:
+**Nothing stamps `:tokens` at all.** `store/impl_common.clj:617` and
+`store/memory.clj:223` copy `(:tokens message)` through if a writer set it,
+but no writer does — `drive/turn.clj`, `llm/tool_loop.clj` and the comm
+paths never assoc `:tokens` on a message (grep is empty). So in production
+every compactable falls to `message-token-count`'s fallback:
+`llm/estimate-tokens` = chars/4 of `(str message)` — the **stringified
+Clojure map**, keys, quotes and escapes included, with tool results in
+whatever shape `->compact-message` left them. That single heuristic
+produced both the 1.4M and the 2.4K. "Mixed units" (first write-up) was
+wrong; it is *no accounting, only a stringify guess*.
 
-- provider-stamped `:tokens` on entries that have one (copied through by
-  `store/impl_common.clj:617` from `(:tokens message)` — whatever unit the
-  writer used, typically per-message usage), and
-- chars/4 of `(str message)` for entries that don't (`protocol/estimate-tokens`
-  stringifies the whole Clojure map — keys, quotes, escapes — so a large
-  tool result over-counts, and an EDN-stringified map with escaped newlines
-  over-counts more).
+Consequences stand:
 
-Nothing in `drive/turn.clj` or `tool_loop.clj` stamps `:tokens` on entries
-at all (grep is empty), so the only stamped values come from wherever comm
-or compaction writers put them — which is why the number collapses to a few
-thousand once the history is mostly compaction-era entries.
-
-Consequences:
-
-1. `needs-chunking?` = `(or (> tokens-before context-window) (> summary-prompt-tokens context-window))`
-   fired at 19:00 on the fictional 1.4M; `feasible-chunks` produced zero
-   chunks; the code logged `chunk-infeasible` and fell through to a normal
-   135K request that happened to fit. With a real over-window history the
-   same path would fail for real.
-2. `:slinky` `compaction-target` walks entries by `:tokens` to size the kept
-   head — with 2.4K-for-123-entries it keeps nearly everything or nothing.
-3. Every log line and `tokens-saved` number derived from these is untrustworthy.
+1. `needs-chunking?` gated on a fictional 1.4M; `feasible-chunks` found no
+   plan; `chunk-infeasible` fired; the real 135K request fit anyway.
+2. `:slinky` head sizing walks the same numbers.
+3. `tokens-saved` and every compaction log figure are untrustworthy.
 
 ## Goal
 
@@ -79,13 +71,60 @@ Design sketch (planner, to be scenarioed):
   never trips when the provider's own total is under the window; slinky head
   sizing holds the configured head fraction.
 
+## Decisions (2026-08-25, Micah + plan)
+
+1. **Unit:** content chars/4, ceiling — text of the message, tool-call
+   arguments, tool-result output. Never `(str map)`. A provider-tokenizer
+   swap later is a deliberate scenario change.
+2. **Source:** stamp `:tokens` on every transcript entry at write time, one
+   estimator, in the session store append path (single choke point).
+3. **Compaction reads stamped counts only** — no fallback estimator inside
+   `compaction-target` / `should-compact?` / `needs-chunking?` / chunk sizing /
+   `tokens-saved`.
+4. **Reconcile every turn, report-only:** after each model response log
+   `:session/token-drift {:stamped :provider :ratio}` (provider
+   `prompt_tokens` vs the stamped sum of what was sent). No correction
+   factor yet; a bound-triggered warn is a later scenario once real ratios
+   are known.
+
+## Scenarios (committed @wip at slagyr/isaac-agent, features/session/token_accounting.feature)
+
+- :19 every transcript entry carries a content-based token count (user 5,
+  toolResult 20, assistant 10; tool-call row `#*`).
+- :39 compaction plans from stamped counts — `:tokens-before` ≈ the stamped
+  750, `needs-chunking false`, no `compaction-chunk-infeasible`, while the
+  provider says 1700/2000.
+- :65 provider prompt tokens reconciled → `:session/token-drift` with
+  stamped/provider/ratio.
+
+Slinky head sizing on stamped values is already covered by
+features/session/compaction_strategies.feature:84 — it passes today only
+because the step seeds `tokens`; production never had them.
+
+## Step ledger
+
+| step | status |
+|------|--------|
+| default Grover setup / the following sessions exist (total-tokens) / a file exists with content: / the following model responses are queued (tool_call, usage.input_tokens) / the user sends … on session / session has transcript: (`tokens` column) / session has transcript matching (`tokens`, `#*`) / the isaac EDN file … exists with / the log has entries matching / the log has no entries matching | reuse |
+
+No new steps.
+
 ## Acceptance
 
-Draft until scenarios are written (`/plan-with-features`). Hold: do not
-touch during isaac-ohsy / isaac-7l5m rebase — both are in `tool_loop` /
-`turn` territory.
+In slagyr/isaac-agent — remove `@wip` from
+features/session/token_accounting.feature, then:
+
+    bb features features/session/token_accounting.feature
+    bb features features/session/compaction_strategies.feature features/session/compaction_logging.feature features/session/compaction_mid_turn.feature
+    bb spec spec/isaac/session spec/isaac/drive
+
+Full `bb features` stays 0 failures under the 180s budget.
+
+**Sequencing:** blocked by isaac-ohsy and isaac-7l5m (same `turn` /
+`tool_loop` / store territory) — land after both merge.
 
 ## Related
+
 
 isaac-5cr6 (leftover-material recheck), isaac-os7r (summary template),
 isaac-zcb9 (suite health). Config note: zanebot `grok-4-6.edn` window was
