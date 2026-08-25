@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-08-21T22:20:00Z
-updated_at: 2026-08-25T22:47:22Z
+updated_at: 2026-08-25T23:20:00Z
 blocked_by:
     - isaac-ek0r
     - isaac-da0r
@@ -83,3 +83,7 @@ New steps invented:
 - Separate read vs write trees.
 - Path globs other than “directory prefix” (`**`, file patterns).
 - MCP.
+
+## Held (awaiting human, 2026-08-25)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: isaac-ukg4 directory ACL (longest-prefix + da0r cascade) unit-tested green, but 5/8 approved `directories.feature` scenarios still fail under gherclj (cwd/quarters deny not applying on the live turn path; symlink Given cannot create `/work/project/link.txt` on host). Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
