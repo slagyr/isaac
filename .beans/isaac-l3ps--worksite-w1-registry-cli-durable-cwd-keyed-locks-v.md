@@ -63,3 +63,26 @@ SCENARIOS 4, 6, 8 SUPERSEDED — redraft next planning session around explicit g
 BLOCKED-BY updated: isaac-opp6 (turnstile protocol) and the turn-request queue bean; isaac-bbov transitively.
 
 **CLI option** (2026-08-24, Micah): `isaac prompt` grows an opt-in turnstile flag; agent owns both the CLI and the abstraction, so no berth needed. Value must carry kind+argument — proposed `--turnstile worksite:chart-room` (bare `--turnstile worksite` = infer member from cwd). Scenario redraft pins the exact syntax.
+
+## Conflict (2026-08-25, scrapper@isaac-work-2)
+
+Claimed and surveyed; no product code written. Returning to planner — the bean cannot satisfy its own acceptance without rewriting approved features.
+
+**What stands vs what is committed**
+
+- Design revision (2026-08-24) **kills cwd-keyed AUTO-gating**. Protection is opt-in via the `:worksite` turnstile; CLI defaults to null so a human at the keyboard keeps working while `worksites lock` means robots out. Field demo: lock → hail defers → CLI still works → unlock → hail flows.
+- `slagyr/isaac-worksite` HEAD `75137cf` still has the original 8 @wip scenarios. lock.feature:42 ("a locked worksite refuses dispatch") runs `prompt` **without** `--turnstile` and expects stderr locked + exit 1. lock.feature:67 and :92 take a turn lock automatically on every CLI prompt in a member cwd and assert release. lock.feature:118 forges a stale turn lock and expects the next ungated prompt to steal it.
+- Bean text: "SCENARIOS 4, 6, 8 SUPERSEDED — redraft next planning session around explicit gating (sharpest form asserts both directions: `prompt --turnstile worksite` in a locked member refuses; the same prompt without it runs). Scenarios 1-3, 5, 7 stand. Scenario redraft pins the exact syntax."
+- That redraft never landed. gherclj/work.md forbid rewriting approved `.feature` contracts. Implementing auto-gating would violate the revision. Leaving @wip would fail acceptance (`remove @wip` + `bb features features`).
+
+**Numbering is also ambiguous.** Registry 1-3 + lock 5 scenarios = 8. "4, 6, 8 superseded" vs "1-3, 5, 7 stand" does not line up with "STANDS UNCHANGED: worksites list/lock/unlock CLI" (lock.feature:15 is the operator round-trip). Planner needs to pin which of the eight stay, and rewrite the rest.
+
+**Also unresolved for W1**
+
+- Exact `--turnstile` syntax in the redraft (`worksite` infer-from-cwd vs `worksite:chart-room`).
+- Whether a locked worksite `:hold`s (park on the ohsy queue) or `{:refuse :worksite-busy}` (hail defer). Revision says hail defers; ohsy parks `:hold`. CLI with `--turnstile worksite` while locked is the sharp refuse/hold case.
+- Turn-lock acquire-on-admit + release-on-token: still in W1 for `--turnstile worksite` (dead-pid steal, operator sanctity), or deferred?
+- Hail/foreman default stacks including `:worksite` — W1 or a later hail/foreman bean?
+- Pin `isaac-worksite` deps.edn/bb.edn agent SHA to post-ohsy `2c87d0d` (current pin is `10093b4`). Blockers bbov + opp6 are completed; ohsy is in-progress+unverified on origin/main.
+
+Checkout: `/Users/zane/agents/isaac/work-2/isaac-worksite` cloned at origin/main@75137cf. No impl branch. Claim 98e90c11.
