@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-25T18:39:48Z
-updated_at: 2026-08-25T22:42:46Z
+updated_at: 2026-08-25T22:56:29Z
 ---
 
 Likely repo: **isaac-agent**. Depends on isaac-opp6 (turnstile protocol) and
@@ -110,3 +110,18 @@ Full `bb features` stays 0 failures under the 180s budget.
 - Address-spec candidate selection and hail router cutover (isaac-ohsy-B).
 - `--wait` blocking mode (nice-to-have; add a scenario if built).
 - Foreman's :turn action (consumes this queue; foreman repo).
+
+## Verify fail (attempt 1, 2026-08-25): explicit full native `bb features` gate is not verifiably green under the bean's 180s budget
+
+Evidence:
+- Verified landed implementation on `isaac-agent` `origin/main` = `2c87d0d` (`isaac-ohsy: park :hold on the turn-request queue`); `isaac-foundation` remained unchanged at `73c8692`.
+- The bean-scoped acceptance commands are green on this checkout:
+  - `clojure -M:features features/turn/turn_queue.feature` -> `5 examples, 0 failures, 20 assertions`
+  - `clojure -M:features features/turn/turnstiles.feature` -> `2 examples, 0 failures, 10 assertions`
+  - `clojure -M:features features/bridge/cli-prompt.feature features/session` -> `30 examples, 0 failures, 61 assertions`
+  - `clojure -M:spec spec/isaac/turnstile_spec.clj spec/isaac/drive spec/isaac/bridge` -> `161 examples, 0 failures, 395 assertions`
+- But the bean's explicit full-suite acceptance is still unmet: `Full bb features stays 0 failures under the 180s budget.`
+- I reproduced the native full-suite gate failing the budget twice:
+  - `time bb features` -> exit `124`, prints `features timed out after 180s`
+  - `bb features > /tmp/ohsy-bb-features.log 2>&1; echo EXIT:$?` -> `EXIT:124`
+- The raw native progress stream showed `F` markers before the timeout, so the verifier did not observe a clean green full-suite run under the required native budget.
