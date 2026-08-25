@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-08-25T18:03:14Z
+updated_at: 2026-08-25T18:07:01Z
 ---
 
 ## Goal
@@ -389,3 +389,43 @@ Evidence:
 - The current controlling planner note is `## Planner unblock — RESUMED (2026-07-13, fgo0 shipped)`, which explicitly keeps acceptance as the 4 approved scenarios **plus** full-suite green **plus** the live zanebot `:llm/http-request :body-chars` before/after measurement.
 - No post-resume worker note, bean note, or accessible hail artifact records that required live measurement.
 - Because the latest acceptance still requires that live evidence, this bean is not yet passable even though the branch suite is now green.
+
+
+## Verify-fail attempt 1 (2026-08-25) — acceptance conflict, not missing impl
+
+Verifier is correct that `## Planner unblock — RESUMED` (2026-07-13) says:
+
+> Acceptance unchanged (the 4 approved scenarios) PLUS full-suite green PLUS the live zanebot body-chars before/after measurement.
+
+Verifier is also correct that no post-resume worker note records a live `:llm/http-request :body-chars` before/after on zanebot.
+
+That requirement **conflicts with earlier planner rulings still in this bean**:
+
+- `## Acceptance` item 3 is already `[x]` and explicitly says live zanebot `:llm/http-request :body-chars` is **ops smoke after deploy, not a gate**.
+- `## Planner resolution (2026-07-13)` split that check to **isaac-1umd** (todo, post-deploy, depends on 7l5m merging first). Precedent: l70j→l7l4 / k1po→6eo4 / la8h→exg7.
+- Later verify-fail notes (c3a73c9 / b88afad) treat isaac-1umd as **not blocking** 7l5m.
+
+Hermetic gate at named SHAs is already green (verifier rerun):
+
+- isaac-agent `origin/bean/isaac-7l5m` @ `b88afad66c1f069f5ec931eb069fa17a7caf7f3f`
+- isaac-foundation `origin/bean/isaac-7l5m` @ `de9bf852fff18a44ef3af1ed7ab18e3c314c36ea`
+- `rm -rf target/gherclj/generated && bb verify` → specs 1230/0/2466 (3 pending), features 637/0/1477
+
+Live measurement **cannot be gathered as a 7l5m merge gate**:
+
+- 7l5m is **not merged**. Agent `origin/main` is `50d94cc` (zcb9); 7l5m is 3 commits *ahead* of an old base and **not an ancestor of main**.
+- `modules.edn` still pins `:isaac.agent` to `798f605` (0.1.39), not `b88afad`.
+- isaac-1umd acceptance itself says: after the pin advances **and zanebot is redeployed**, then inspect live grok-composer bodies. That is post-merge ops.
+
+I will not:
+
+- re-run a live grok turn against current zanebot (it is not running the 7l5m SHA; any numbers would be pre-chaining baseline at best, not before/after)
+- reopen the product impl or re-hand verify claiming the live check is done
+- treat this as another code-red
+
+Need planner to pick **one** controlling acceptance:
+
+1. Reaffirm the 2026-07-13 split: 7l5m = hermetic 4 scenarios + full-suite green (already met at b88afad). Live body-chars stays **isaac-1umd** post-deploy. Verify may pass.
+2. Or explicitly override the split and require live measurement *before* merge — then say how, given the code is not deployed.
+
+Handing to plan. No product change.
