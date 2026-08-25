@@ -1,13 +1,11 @@
 ---
 # isaac-x3vb
 title: Raise tool-loop default to 500; drop hail self-continuations
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-23T02:19:14Z
-updated_at: 2026-08-23T02:21:21Z
+updated_at: 2026-08-25T18:19:54Z
 ---
 
 Likely repos: **isaac-agent** (default), **orchestration/isaac-beans** skills, **isaac** toolbox hail-bean-work. Hail runtime already dropped continuations (isaac-fgo0).
