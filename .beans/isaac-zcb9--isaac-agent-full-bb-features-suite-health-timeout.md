@@ -1,11 +1,13 @@
 ---
 # isaac-zcb9
 title: isaac-agent full bb features suite health (timeout + session/bridge/compaction flakes)
-status: completed
+status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-17T05:42:36Z
-updated_at: 2026-08-25T04:15:07Z
+updated_at: 2026-08-25T04:17:01Z
 ---
 
 Split from isaac-rxr4 (episodes migrate-session). NOT a migrate-session product
@@ -111,3 +113,7 @@ Verified on isaac-agent origin/main `798f605`. The worker commit `69679f2` (`isa
 Fast-forwarded `isaac-agent` `origin/main` `798f605` → `69679f2`.
 `git merge-base --is-ancestor origin/bean/isaac-zcb9 origin/main` now exits 0.
 Verifier should pull `origin/main` and re-run `bb features` on that SHA.
+
+## Verify fail (attempt 2, 2026-08-25): acceptance still not reproducibly green on main; full bb features intermittently fails at cancel_aborts_work.feature:27
+
+Verified on isaac-agent origin/main `69679f2` after the reland. The suite-health fixes are landed and two full `bb features` reruns eventually went green (`727 examples, 0 failures, 1929 assertions`, latest in 141.5s / 2m23.9s), and `bb ci` also passed (`1564 examples, 0 failures, 3198 assertions, 3 pending` real claude smokes). But the acceptance requires the full feature gate to be reproducibly green, and this verify turn still reproduced an intermittent red on the same SHA: `bb features` failed with `727 examples, 1 failures, 1928 assertions` at `features/bridge/cancel_aborts_work.feature:27` (`Then the turn result is "cancelled"` → got `nil`). Isolated reruns of that scenario and file passed repeatedly (`bb features features/bridge/cancel_aborts_work.feature`, and `:20` five consecutive times), so the remaining issue is a live flake/intermittent gate failure rather than a deterministic regression. The worker's declared leftover was only the isolated `@wip` bean `isaac-5cr6`; this additional intermittent full-gate failure is not yet isolated or explained, so zcb9 acceptance is still unmet.
