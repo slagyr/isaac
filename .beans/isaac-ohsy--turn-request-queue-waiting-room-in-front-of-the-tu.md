@@ -1,11 +1,11 @@
 ---
 # isaac-ohsy
 title: 'Turn-request queue core: park on :hold, durable, wake by tick + token, turns list/drop'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-08-25T18:39:48Z
-updated_at: 2026-08-25T23:04:24Z
+updated_at: 2026-08-25T23:06:54Z
 ---
 
 Likely repo: **isaac-agent**. Depends on isaac-opp6 (turnstile protocol) and
