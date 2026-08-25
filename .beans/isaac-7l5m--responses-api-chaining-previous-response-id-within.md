@@ -1,13 +1,11 @@
 ---
 # isaac-7l5m
 title: 'Stateful Responses API conversations: previous_response_id within tool-loop turns (provider/model-gated)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-08-25T21:40:49Z
+updated_at: 2026-08-25T22:00:49Z
 ---
 
 ## Goal
