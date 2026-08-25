@@ -4,8 +4,10 @@ title: 'Turn-request queue core: park on :hold, durable, wake by tick + token, t
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-25T18:39:48Z
-updated_at: 2026-08-25T18:58:52Z
+updated_at: 2026-08-25T22:42:46Z
 ---
 
 Likely repo: **isaac-agent**. Depends on isaac-opp6 (turnstile protocol) and
