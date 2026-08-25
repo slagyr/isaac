@@ -4,8 +4,10 @@ title: 'Stateful Responses API conversations: previous_response_id within tool-l
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-08T20:46:12Z
-updated_at: 2026-08-25T20:27:38Z
+updated_at: 2026-08-25T21:40:49Z
 ---
 
 ## Goal
@@ -467,3 +469,28 @@ optimization is still worth carrying is Micah's call, not the worker's.
 
 Verify passes on hermetic evidence only. isaac-1umd runs after the next
 deploy train advances the :isaac.agent pin past the merged SHA.
+
+## Implementation (2026-08-25, scrapper@isaac-work-1) — rebased + landed
+
+Planner ruling (split reaffirmed) executed as conflict resolution, not a chaining rewrite.
+
+- Rebased `bean/isaac-7l5m` onto `origin/main` (then rebased again onto isaac-pqjn `8f21dd8` which landed mid-turn).
+- `tool_loop.clj` merge keeps HEAD `after-tools` / cancel / max-loops 500 **and** 7l5m `previous_response_id` chaining (`chain-id`, `full-context`, `with-chain`, 404 `:chat/state-reset` retry). Next-full tracks `(:messages next-req)` so mid-turn compaction mutations stay on the retry context. Finalization / leftover-material recheck path in `turn.clj` unchanged; `:stateful` bound after `prompt-out` and passed through augment.
+- Foundation `#count` path segment lives on `isaac-foundation` `73c8692` (agent already has a local `spec/isaac/step_tables.clj` copy used by features).
+
+Gates on landed SHA `b8087e285afabce72a0602b36e55c628f1c9a2fb` (isaac-agent `origin/main`):
+
+- `clojure -M:spec spec/isaac/llm/tool_loop_spec.clj spec/isaac/llm/responses_spec.clj spec/isaac/step_tables_spec.clj` → 86/0/166
+- `clojure -M:features features/llm/api/responses/stateful.feature features/session/error_handling.feature features/bridge/cancel_aborts_work.feature` → 10/0/21 (x27m cancel flakes stayed `@wip`)
+- `clojure -M:features` (full, no 180s cap) → **729/0/1934 in 50.9s**
+- native `bb features` (180s budget, deletes target): **729/0/1934 in 154.6s** and again **729/0/1934 in 144.1s**. One later native run 729/1 (`episodes/live.feature:570` scenes 3 vs 0) isolated 1/0 on both this SHA and pre-merge main; one 180s timeout with no summary — treated as suite-only flake per zcb9 bar, not chased.
+- Native `bb verify` still races the 180s features cap when specs (~6.5s) + cold features run back-to-back; the features task itself is green under budget when run alone.
+
+Landed (ff, no squash):
+
+- isaac-agent `origin/main` = `b8087e285afabce72a0602b36e55c628f1c9a2fb`
+- isaac-foundation `origin/main` = `73c8692` (`#count`; not required by agent pin)
+
+Live zanebot `:llm/http-request :body-chars` remains **isaac-1umd** (post-deploy). Did not un-wip x27m. Did not advance `modules.edn` pin.
+
+Merged SHA: `b8087e285afabce72a0602b36e55c628f1c9a2fb`
