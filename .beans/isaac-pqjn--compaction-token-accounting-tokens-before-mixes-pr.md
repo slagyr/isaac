@@ -89,12 +89,12 @@ Design sketch (planner, to be scenarioed):
 
 ## Scenarios (committed @wip at slagyr/isaac-agent, features/session/token_accounting.feature)
 
-- :19 every transcript entry carries a content-based token count (user 5,
+- :18 every transcript entry carries a content-based token count (user 5,
   toolResult 20, assistant 10; tool-call row `#*`).
-- :39 compaction plans from stamped counts — `:tokens-before` ≈ the stamped
+- :38 compaction plans from stamped counts — `:tokens-before` ≈ the stamped
   750, `needs-chunking false`, no `compaction-chunk-infeasible`, while the
   provider says 1700/2000.
-- :65 provider prompt tokens reconciled → `:session/token-drift` with
+- :67 provider prompt tokens reconciled → `:session/token-drift` with
   stamped/provider/ratio.
 
 Slinky head sizing on stamped values is already covered by
