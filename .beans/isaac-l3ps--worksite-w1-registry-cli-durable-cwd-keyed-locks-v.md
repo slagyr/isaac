@@ -1,10 +1,11 @@
 ---
 # isaac-l3ps
 title: 'Worksite W1: registry, CLI, durable cwd-keyed locks via the dispatch gate'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-08-23T19:23:46Z
-updated_at: 2026-08-23T19:23:46Z
+updated_at: 2026-08-25T22:49:01Z
 blocked_by:
     - isaac-bbov
 ---
