@@ -6,8 +6,9 @@ type: task
 priority: high
 tags:
     - toolbox
+    - unverified
 created_at: 2026-08-25T22:45:37Z
-updated_at: 2026-08-25T23:34:22Z
+updated_at: 2026-08-25T23:35:37Z
 ---
 
 Repo: **isaac** (`.toolbox/skills/hail-bean-work/SKILL.md`; also
@@ -59,3 +60,24 @@ agent that reads only work.md still finds it.
   wording, note it in the bean body for a follow-up rather than editing them
   here.
 - Docs-only bean: no product code or tests. Hand off `tag=unverified` as usual.
+
+## Process Observations (2026-08-25, scrapper@isaac-work-1)
+
+Docs-only. Replaced the "per deployment convention" hand-wave in
+`.toolbox/skills/hail-bean-work/SKILL.md` with the copy-pasteable
+`isaac hail send --band <verify-band> --reply-to <this-hail-id> --params '{:bean-id "<bean-id>"}'`
+command, plus a **Do not probe the CLI** rule. Mirrored the same command in
+`.toolbox/commands/work.md` "Hail-driven bootstrap".
+
+### Follow-up (skills outside this repo)
+
+`hail-bean-verify` and `hail-bean-plan` live at `~/.isaac/prompts/skills/`
+(not this repo). They already document `hail__send` JSON (`band` + `params` +
+`reply_to`) and do **not** carry the "per deployment convention" wording.
+They do **not** include the CLI `isaac hail send --band …` form. A follow-up
+could add that CLI line if workers sometimes fall back to the shell instead of
+`hail__send`; out of scope here.
+
+The zanebot copy of hail-bean-work (`~/.isaac/prompts/skills/hail-bean-work/SKILL.md`)
+already uses `hail__send` JSON rather than the vague convention phrase. This
+bean only edits the isaac-repo toolbox copies.

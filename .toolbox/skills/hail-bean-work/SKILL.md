@@ -76,6 +76,24 @@ to plan, or **HOLD + human escalate** if you still cannot finish.
 
 ## Hand off to verify
 
-- Worker: `in-progress` + `tag=unverified`, push isaac `.beans/` with any notes.
-- Hail verify band/session per deployment convention, or human runs `/verify`.
-- Verifier pulls isaac clone before reviewing.
+1. `beans update <id> --tag=unverified` (stay `in-progress`), commit + push
+   `.beans/`.
+2. Send the verify hail. The band name comes from the delivery's data block
+   (`:verify-band`, currently `isaac-verify`); the reply-to is the id of the
+   hail you are working (`:id` in the delivery, e.g. `fdfd518e`):
+
+       isaac hail send --band <verify-band> --reply-to <this-hail-id> \
+         --params '{:bean-id "<bean-id>"}'
+
+   The band template supplies the prompt; do not pass `--prompt` unless you
+   need to add notes for the verifier.
+3. Conflict / clarification goes to `:plan-band` the same way, with a
+   `--prompt` explaining the question.
+
+Verifier pulls the isaac clone before reviewing.
+
+## Do not probe the CLI
+
+Every `isaac hail send` that parses is a real send. Use `--help` to read
+flags, and `--dry-run` (once that flag lands) to check syntax. Never run it
+with placeholder values like `x` or `t`.

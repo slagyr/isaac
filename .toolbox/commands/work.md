@@ -22,6 +22,15 @@ If you arrived via hail (band/skill) rather than `/work`:
 4. Continue with the steps below from the isaac clone (claim beans here; edit
    module repos per bean scope).
 
+Verify handoff (copy-paste; band and hail id come from the delivery):
+
+    isaac hail send --band <verify-band> --reply-to <this-hail-id> \
+      --params '{:bean-id "<bean-id>"}'
+
+Do not probe the CLI with placeholder values (`x`, `t`). Every `isaac hail
+send` that parses is a real send. Use `--help` for flags; `--dry-run` once
+that flag lands.
+
 ## Process-test beans
 
 Beans whose body marks **process test**, **no-op**, or **orchestration smoke**
