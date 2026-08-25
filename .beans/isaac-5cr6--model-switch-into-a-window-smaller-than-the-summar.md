@@ -4,8 +4,10 @@ title: model-switch into a window smaller than the summary-prompt floor must sti
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-25T03:40:35Z
-updated_at: 2026-08-25T18:40:28Z
+updated_at: 2026-08-25T19:16:53Z
 ---
 
 Split from isaac-zcb9. After suite-health repair, full `bb features` is 728/1 under 180s. The leftover is this model-switch scenario: expected compaction-count 2, got 1.
@@ -49,3 +51,16 @@ mark the splice `:partial` the same way `:chunked` is marked today; one
 predicate (`partial-splice?`) at the recheck site. Add a hard loop bound —
 a pass that does not strictly reduce the estimate ends the loop — so a
 window that can never fit the summary cannot spin.
+
+## Implementation (2026-08-25, scrapper@isaac-work-1)
+
+Recheck is now `partial-splice?` (chunked OR `:partial`) at `perform-compaction!`. `:no-progress` still stops when the estimate does not strictly reduce.
+
+`:partial` is set only when `feasible-chunks` reports `:oversized-single` **and** some compactable body itself exceeds the window. Template-floor `:oversized-single` (summary request > window, messages themselves small) stays a complete splice so rubberband/slinky/quiet-day/rebound do not consume the next grover turn.
+
+Un-wip'd model-switch. Isolated `:150`, rubberband `:50`, slinky `:84`, quiet-day `:49`, rebound `:194` green. `bb features` 726/0/1928 in 141.6s. `bb ci` specs 1570/0/3211 (3 pending) + features 726/0/1928 in 144.3s.
+
+Acceptance:
+- [x] model-switch green, `@wip` removed
+- [x] isolated rubberband/slinky/quiet-day/rebound stay green
+- [x] full `bb features` 0 failures under 180s
