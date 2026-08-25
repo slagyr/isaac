@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - isaac-hail
+    - unverified
 created_at: 2026-08-25T22:45:37Z
-updated_at: 2026-08-25T23:34:28Z
+updated_at: 2026-08-25T23:37:54Z
 ---
 
 Repo: **isaac-hail** (`src/isaac/hail/cli.clj`, `spec/isaac/hail/cli_spec.clj`).
@@ -67,3 +68,7 @@ Also: `send-help` omits `--reply-to` and `--thread-id` even though
   placeholder values (coordinate with the sibling doc bean if it has landed).
 - Deploy per the isaac deploy train (version bump → modules.edn → upgrade on
   zanebot) so the crew's CLI actually has the flag.
+
+## Implementation (2026-08-25, scrapper@isaac-work-2)
+
+isaac-hail origin/main@2ba1541. `isaac hail send --dry-run` validates, prints the would-be record (EDN by default; `--json`/`--edn` honored), never calls `queue/send!`. Help lists `--reply-to`, `--thread-id`, `--dry-run`. hail-bean-work skill Hand off to verify now says check syntax with `--dry-run`, never placeholder probes. `bb spec` 138/0/317.

@@ -95,5 +95,5 @@ Verifier pulls the isaac clone before reviewing.
 ## Do not probe the CLI
 
 Every `isaac hail send` that parses is a real send. Use `--help` to read
-flags, and `--dry-run` (once that flag lands) to check syntax. Never run it
+flags, and `--dry-run` to check syntax. Never run it
 with placeholder values like `x` or `t`.
