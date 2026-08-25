@@ -32,3 +32,20 @@ Make model-switch-into-smaller-window still loop until chat can continue **witho
 
 - Do not revert the chunked-only recheck without a replacement that still skips non-chunked floor-stuck splices.
 - Do not reopen migrate-session (rxr4).
+
+## Planner direction (2026-08-25, Micah + plan)
+
+Replace the mechanism test (`:chunked?`) with the property it stood in for:
+**recheck iff compactable material remains after the splice.**
+
+- Chunked splice → material remains → recheck (unchanged).
+- `:oversized-single` splice → the oversized message itself was not
+  summarized → material remains → recheck. This is the model-switch case.
+- Complete non-chunked splice → nothing remains → skip. Preserves
+  rubberband/slinky/quiet-day and the floor-stuck guard.
+
+Implementation shape: where `feasible-chunks` yields `:oversized-single`,
+mark the splice `:partial` the same way `:chunked` is marked today; one
+predicate (`partial-splice?`) at the recheck site. Add a hard loop bound —
+a pass that does not strictly reduce the estimate ends the loop — so a
+window that can never fit the summary cannot spin.
