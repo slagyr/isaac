@@ -1,14 +1,13 @@
 ---
 # isaac-qn1z
 title: 'hail-bean-work skill: exact verify-handoff hail command; never probe the CLI with placeholders'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - toolbox
-    - unverified
 created_at: 2026-08-25T22:45:37Z
-updated_at: 2026-08-25T23:35:37Z
+updated_at: 2026-08-26T00:09:48Z
 ---
 
 Repo: **isaac** (`.toolbox/skills/hail-bean-work/SKILL.md`; also
