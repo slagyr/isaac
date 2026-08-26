@@ -1,11 +1,11 @@
 ---
 # isaac-pqjn
 title: 'Token accounting: stamp :tokens on every entry at write time; compaction plans from stamped counts; per-turn drift log'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-25T21:11:00Z
-updated_at: 2026-08-25T21:16:00Z
+updated_at: 2026-08-26T04:18:38Z
 blocked_by:
     - isaac-ohsy
     - isaac-7l5m
