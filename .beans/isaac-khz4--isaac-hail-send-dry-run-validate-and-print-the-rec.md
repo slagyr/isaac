@@ -1,14 +1,13 @@
 ---
 # isaac-khz4
 title: 'isaac hail send --dry-run: validate and print the record without enqueueing'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - isaac-hail
-    - unverified
 created_at: 2026-08-25T22:45:37Z
-updated_at: 2026-08-26T00:07:59Z
+updated_at: 2026-08-26T04:27:46Z
 ---
 
 Repo: **isaac-hail** (`src/isaac/hail/cli.clj`, `spec/isaac/hail/cli_spec.clj`).
