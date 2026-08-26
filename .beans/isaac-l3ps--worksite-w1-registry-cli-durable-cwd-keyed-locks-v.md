@@ -1,13 +1,11 @@
 ---
 # isaac-l3ps
 title: 'Worksite W1: registry, CLI, durable locks via :worksite turnstile'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-08-23T19:23:46Z
-updated_at: 2026-08-26T07:24:42Z
+updated_at: 2026-08-26T07:46:23Z
 ---
 
 First bean of the isaac-worksite module (repo slagyr/isaac-worksite, skeleton at ac40655, scenarios @wip at 75137cf). Design record: isaac-51xy decisions 36-38, isaac-tdgt addenda, planning session 2026-08-23.
