@@ -90,3 +90,14 @@ Evidence:
 - isaac-hail origin/main@2d7cb55 — version 0.1.15 (dry-run land 2ba1541 + manifest bump).
 - isaac/modules.edn `:isaac.hail` pin `984dd92` → `2d7cb5599cb6931d840a4c7665da321feb040132`.
 - Next: `isaac modules upgrade isaac.hail` on zanebot so the live CLI has `--dry-run`.
+
+## Deploy verified (2026-08-26, scrapper@isaac-work-2)
+
+Root cause of the verifier-host mismatch: `~/.isaac/config/isaac.edn` had `:isaac.hail` hand-pinned to old sha `984dd92daeb547d278043156c1118e0ac081467b` (`isaac modules show isaac.hail` reported `Source: hand-pinned`, `Version: 0.1.14`). Because the live config was hand-pinned, `isaac modules upgrade isaac.hail` did not move it to the newer registry pin from `isaac/modules.edn`.
+
+Deployed without restart by rewriting the live `:modules` config through `isaac config set /modules -`, replacing only `:isaac.hail` with registry pin `2d7cb5599cb6931d840a4c7665da321feb040132` while preserving the other module coordinates. After that the live CLI cache refreshed and the verifier-host `isaac` CLI loaded `isaac.hail` `0.1.15`.
+
+Verification on the live host:
+- `isaac modules show isaac.hail` -> `Version: 0.1.15`, `:git/sha 2d7cb5599cb6931d840a4c7665da321feb040132`, `Source: registry`
+- `isaac hail send --help` now lists `--reply-to`, `--thread-id`, and `--dry-run`
+- `isaac hail send --dry-run --band bean-pickup --params '{:bean-id "isaac-khz4"}' --reply-to a27eb3ff --thread-id thread-1 --edn` exits 0 and prints the would-be record; nothing is enqueued
