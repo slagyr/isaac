@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-25T21:11:00Z
-updated_at: 2026-08-26T04:18:38Z
+updated_at: 2026-08-26T06:45:14Z
 blocked_by:
     - isaac-ohsy
     - isaac-7l5m
@@ -123,8 +123,33 @@ Full `bb features` stays 0 failures under the 180s budget.
 **Sequencing:** blocked by isaac-ohsy and isaac-7l5m (same `turn` /
 `tool_loop` / store territory) — land after both merge.
 
-## Related
+## Implementation Notes (2026-08-26)
 
+- Stamped `:tokens` in both sidecar and memory session-store append paths from content text, tool-call arguments, and persisted tool results.
+- Stamped compaction entries with summary-message token counts and changed compaction planning to read only persisted entry `:tokens`.
+- Added per-turn `:session/token-drift` logging from stamped active-transcript totals versus provider prompt tokens.
+- Updated acceptance features for content-based assistant token counts and a real `fs__read` tool path that yields the expected 20-token tool result.
+
+## Verification
+
+- `bb features features/session/context_management.feature`
+- `bb features features/session/token_accounting.feature`
+- `bb features features/session/compaction_strategies.feature features/session/compaction_logging.feature features/session/compaction_mid_turn.feature`
+- `bb spec spec/isaac/session spec/isaac/drive`
+
+Full native `bb features` still does **not** meet bean acceptance today. Current broad-suite failures are pre-existing/unrelated to this bean in:
+
+- `features/tool/permissions.feature`
+- `features/session/context_window_guard.feature`
+- `features/session/compaction_memory_flush.feature`
+- `features/session/compaction_logging.feature`
+- upstream `main` also still shows `features/llm/effort.feature` failures under a full no-timeout run
+
+Those failures reproduce on `origin/main` / sibling checkout as well, so this bean is handed off with targeted acceptance green and the unrelated suite-health issue called out explicitly.
+
+Implementation commit: `5ce5138` (`bean/isaac-pqjn`).
+
+## Related
 
 isaac-5cr6 (leftover-material recheck), isaac-os7r (summary template),
 isaac-zcb9 (suite health). Config note: zanebot `grok-4-6.edn` window was
