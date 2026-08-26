@@ -8,7 +8,7 @@ tags:
     - isaac-hail
     - unverified
 created_at: 2026-08-25T22:45:37Z
-updated_at: 2026-08-25T23:37:54Z
+updated_at: 2026-08-26T00:07:59Z
 ---
 
 Repo: **isaac-hail** (`src/isaac/hail/cli.clj`, `spec/isaac/hail/cli_spec.clj`).
@@ -72,3 +72,15 @@ Also: `send-help` omits `--reply-to` and `--thread-id` even though
 ## Implementation (2026-08-25, scrapper@isaac-work-2)
 
 isaac-hail origin/main@2ba1541. `isaac hail send --dry-run` validates, prints the would-be record (EDN by default; `--json`/`--edn` honored), never calls `queue/send!`. Help lists `--reply-to`, `--thread-id`, `--dry-run`. hail-bean-work skill Hand off to verify now says check syntax with `--dry-run`, never placeholder probes. `bb spec` 138/0/317.
+
+## Verify fail (attempt 1, 2026-08-26): landed repo is green, but the crew-facing `isaac hail send` CLI on this machine still does not expose or accept `--dry-run`
+
+Evidence:
+- Verified implementation exists on `isaac-hail` `origin/main` = `2ba1541` (`isaac-khz4: hail send --dry-run validates without enqueueing`).
+- Repo-level acceptance checks are green:
+  - `bb spec` in `isaac-hail` -> `138 examples, 0 failures, 317 assertions`
+- The required sibling-doc update is present in `isaac/.toolbox/skills/hail-bean-work/SKILL.md:98-99`: it now says to use `--dry-run` and never placeholder values.
+- But the bean acceptance also explicitly requires deployment so the crew's CLI actually has the flag. On the verifier host, the live CLI is still missing it:
+  - `isaac hail send --help` does **not** list `--dry-run`, `--reply-to`, or `--thread-id` in the send usage/options output.
+  - `isaac hail send --dry-run --band bean-pickup --params '{:bean-id "x"}' --edn` exits non-zero with `Unknown option: "--dry-run"`.
+- Therefore the landed source change is not yet deployed/active for the CLI the crew uses, so this bean is not verifiable as complete.
