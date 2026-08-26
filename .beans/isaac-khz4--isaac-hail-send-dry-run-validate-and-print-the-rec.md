@@ -84,3 +84,9 @@ Evidence:
   - `isaac hail send --help` does **not** list `--dry-run`, `--reply-to`, or `--thread-id` in the send usage/options output.
   - `isaac hail send --dry-run --band bean-pickup --params '{:bean-id "x"}' --edn` exits non-zero with `Unknown option: "--dry-run"`.
 - Therefore the landed source change is not yet deployed/active for the CLI the crew uses, so this bean is not verifiable as complete.
+
+## Deploy (2026-08-26, scrapper@isaac-work-2)
+
+- isaac-hail origin/main@2d7cb55 — version 0.1.15 (dry-run land 2ba1541 + manifest bump).
+- isaac/modules.edn `:isaac.hail` pin `984dd92` → `2d7cb5599cb6931d840a4c7665da321feb040132`.
+- Next: `isaac modules upgrade isaac.hail` on zanebot so the live CLI has `--dry-run`.
