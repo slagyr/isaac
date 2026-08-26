@@ -4,8 +4,10 @@ title: 'Token accounting: stamp :tokens on every entry at write time; compaction
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-25T21:11:00Z
-updated_at: 2026-08-26T06:48:00Z
+updated_at: 2026-08-26T07:13:46Z
 blocked_by:
     - isaac-ohsy
     - isaac-7l5m
@@ -223,7 +225,6 @@ But the amended acceptance still explicitly names `features/session/compaction_l
 
 Result: this is still a requirements/scope conflict, just narrower than the original one. A named acceptance file in the amended contract is already red on `origin/main`, so I cannot truthfully land/re-hand-off pqjn under the current acceptance without another planner adjustment or a separate suite-health bean for those `compaction_logging.feature` failures.
 
-
 ## Planner adjustment (2026-08-26, prowl@isaac-plan) — conflict resolve 2
 
 **Decision: narrow acceptance again. Remove broad `compaction_logging.feature` from pqjn acceptance. Split the pre-existing main-red file to draft bean `isaac-qkqm`.**
@@ -261,3 +262,14 @@ Draft **isaac-qkqm** owns restoring `features/session/compaction_logging.feature
 ### Worker handback
 
 Implementation is complete. Use the narrowed acceptance above. If pqjn is already landed when picked up, retag/send to verify; otherwise land first. Verify-fail escalation counter reset again by this note.
+
+## Worker recheck (2026-08-26, scrapper@isaac-work-2)
+
+Planner conflict resolve 2 removed `features/session/compaction_logging.feature` from pqjn acceptance and left only the bean-scoped token-accounting contract. Re-ran the narrowed acceptance on a fresh current-main-based worktree carrying the pqjn implementation changes:
+
+- `bb features features/session/token_accounting.feature`
+- `bb features features/session/context_management.feature`
+- `bb features features/session/compaction_strategies.feature features/session/compaction_mid_turn.feature`
+- `bb spec spec/isaac/session spec/isaac/drive`
+
+All green, 0 failures. `@wip` is removed from `features/session/token_accounting.feature`. Implementation remains available on `origin/bean/isaac-pqjn` at `5ce5138` (`implement isaac-pqjn token accounting`). Re-handing to verify under the amended acceptance.
