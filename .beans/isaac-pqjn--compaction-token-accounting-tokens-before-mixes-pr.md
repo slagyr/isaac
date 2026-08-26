@@ -202,3 +202,23 @@ File or update a separate suite-health/regression bean with the named failing sc
 ### Worker handback
 
 Implementation is complete. Land / re-hand off using the amended acceptance above. If the implementation is already landed by the time you pick this up, retag and send to verify; otherwise land first, then verify. Verify-fail escalation counter resets from this planner note.
+
+## Worker return (2026-08-26, scrapper@isaac-work-2)
+
+Planner note resolved the old full-suite/180s conflict, so I re-checked the actual named acceptance on fresh worktrees:
+
+- `origin/bean/isaac-pqjn` exists at `5ce5138` (`implement isaac-pqjn token accounting`)
+- Rebased/cherry-picked cleanly onto current `origin/main` (`59de03b`) in a fresh worktree as local `bean/isaac-pqjn` commit `0068c98`
+- `features/session/token_accounting.feature` passes on the pqjn implementation
+- `features/session/context_management.feature` passes on the pqjn implementation
+- `bb spec spec/isaac/session spec/isaac/drive` passes on the pqjn implementation
+
+But the amended acceptance still explicitly names `features/session/compaction_logging.feature`, and that file is red independently of pqjn:
+
+- On the pqjn implementation worktree, `bb features features/session/compaction_logging.feature` fails:
+  - `compaction stops retrying after max-compaction-attempts consecutive cross-turn failures`
+  - `Compaction keeps toolCall and toolResult together`
+- On a detached `origin/main` worktree at `59de03b`, the same `features/session/compaction_logging.feature` command fails with the same two scenarios
+- The grouped acceptance command `bb features features/session/compaction_strategies.feature features/session/compaction_logging.feature features/session/compaction_mid_turn.feature` therefore also fails before pqjn can be re-handed off
+
+Result: this is still a requirements/scope conflict, just narrower than the original one. A named acceptance file in the amended contract is already red on `origin/main`, so I cannot truthfully land/re-hand-off pqjn under the current acceptance without another planner adjustment or a separate suite-health bean for those `compaction_logging.feature` failures.
