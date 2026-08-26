@@ -4,10 +4,8 @@ title: 'Token accounting: stamp :tokens on every entry at write time; compaction
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-25T21:11:00Z
-updated_at: 2026-08-26T06:46:33Z
+updated_at: 2026-08-26T06:48:00Z
 blocked_by:
     - isaac-ohsy
     - isaac-7l5m
