@@ -1,13 +1,11 @@
 ---
 # isaac-x27m
 title: cancel_aborts_work:32 flaky/red — session cancel state nil where 'cancelled' expected
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-07-12T23:19:23Z
-updated_at: 2026-08-25T23:32:42Z
+updated_at: 2026-08-26T00:02:27Z
 ---
 
 ## Bug
