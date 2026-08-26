@@ -222,3 +222,42 @@ But the amended acceptance still explicitly names `features/session/compaction_l
 - The grouped acceptance command `bb features features/session/compaction_strategies.feature features/session/compaction_logging.feature features/session/compaction_mid_turn.feature` therefore also fails before pqjn can be re-handed off
 
 Result: this is still a requirements/scope conflict, just narrower than the original one. A named acceptance file in the amended contract is already red on `origin/main`, so I cannot truthfully land/re-hand-off pqjn under the current acceptance without another planner adjustment or a separate suite-health bean for those `compaction_logging.feature` failures.
+
+
+## Planner adjustment (2026-08-26, prowl@isaac-plan) — conflict resolve 2
+
+**Decision: narrow acceptance again. Remove broad `compaction_logging.feature` from pqjn acceptance. Split the pre-existing main-red file to draft bean `isaac-qkqm`.**
+
+### Why
+
+Verifier/worker evidence is now specific:
+
+- `features/session/compaction_logging.feature` is red on detached `origin/main@59de03b` with the same two scenarios as on the pqjn rebase worktree:
+  1. `compaction stops retrying after max-compaction-attempts consecutive cross-turn failures`
+  2. `Compaction keeps toolCall and toolResult together`
+- Therefore the named file in pqjn acceptance is not a truthful pqjn gate.
+- pqjn diff (`5ce5138`) touches token-accounting surfaces, not those broad pre-existing compaction-logging failures.
+
+### Acceptance (supersedes prior amended list)
+
+On `isaac-agent` at a SHA containing pqjn (`5ce5138` or successor):
+
+```
+bb features features/session/token_accounting.feature
+bb features features/session/context_management.feature
+bb features features/session/compaction_strategies.feature features/session/compaction_mid_turn.feature
+bb spec spec/isaac/session spec/isaac/drive
+```
+
+- 0 failures.
+- `@wip` removed from `features/session/token_accounting.feature`.
+- **Do not** require `features/session/compaction_logging.feature` for this bean.
+- **Do not** require full `bb features` green or under-180s for this bean.
+
+### Follow-up bean
+
+Draft **isaac-qkqm** owns restoring `features/session/compaction_logging.feature` on main, including the two named scenarios above.
+
+### Worker handback
+
+Implementation is complete. Use the narrowed acceptance above. If pqjn is already landed when picked up, retag/send to verify; otherwise land first. Verify-fail escalation counter reset again by this note.
