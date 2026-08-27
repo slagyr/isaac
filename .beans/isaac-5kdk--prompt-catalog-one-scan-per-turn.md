@@ -1,11 +1,11 @@
 ---
 # isaac-5kdk
 title: 'Prompt catalog: one scan per turn'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-27T20:50:44Z
-updated_at: 2026-08-27T20:50:44Z
+updated_at: 2026-08-27T20:53:30Z
 parent: isaac-nwj3
 ---
 
