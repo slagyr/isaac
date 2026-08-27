@@ -4,8 +4,10 @@ title: 'Prompt catalog: one scan per turn'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-27T20:50:44Z
-updated_at: 2026-08-27T20:53:30Z
+updated_at: 2026-08-27T20:57:28Z
 parent: isaac-nwj3
 ---
 
