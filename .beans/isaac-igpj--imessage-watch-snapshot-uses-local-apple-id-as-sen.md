@@ -1,11 +1,11 @@
 ---
 # isaac-igpj
 title: iMessage watch snapshot uses local Apple ID as sender; inbound dropped
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-27T19:18:32Z
-updated_at: 2026-08-27T19:18:32Z
+updated_at: 2026-08-27T20:35:59Z
 ---
 
 Likely repo: `isaac-imessage`.
