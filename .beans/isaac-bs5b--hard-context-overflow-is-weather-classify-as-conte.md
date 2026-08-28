@@ -1,11 +1,11 @@
 ---
 # isaac-bs5b
 title: 'Hard context overflow is weather: classify as context-exhausted so hail defers, never 5× stuffing'
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-08-28T16:04:05Z
-updated_at: 2026-08-28T16:04:05Z
+updated_at: 2026-08-28T16:42:08Z
 ---
 
 Likely repo: **isaac-agent** (`isaac.drive.provider-wall` + `execute-llm-turn!`). Hail should not change if the reason is reused.
@@ -35,11 +35,31 @@ Approved drafting this bean (overflow must not retry as generic `:api-error`).
 
 Reuse `:context-exhausted` + rollback the just-appended user message. Reason reuse so hail attention fires without hail changes. Rollback so never-die deferral cannot stuff.
 
-## Scenarios (to draft before todo)
+## Decision (2026-08-28, Micah)
 
-See chat scenario plan. Stays draft until `@wip` features exist.
+Approved scenario plan (4) and the four scenarios as written.
+
+## Scenarios (approved, @wip on main)
+
+1. `isaac-agent` `features/llm/provider_walls.feature:99` — a provider 400 for prompt length classifies as context-exhausted
+2. `isaac-agent` `features/llm/provider_walls.feature:120` — a generic provider 400 stays an api-error
+3. `isaac-agent` `features/llm/provider_walls.feature:142` — overflow weather does not leave the rejected user turn on the transcript
+4. `isaac-hail` `features/context_window_guard.feature:83` — a provider 400 for prompt length defers the hail without burning attempts
+
+Hail production code should not change. S4 is the stack proof: grover `http-error` (not pre-classified `unavailable`), compaction enabled so isaac-dark's pre-request guard does not fire.
+
+## Acceptance
+
+- [ ] `cd isaac-agent && bb features features/llm/provider_walls.feature:99`
+- [ ] `cd isaac-agent && bb features features/llm/provider_walls.feature:120`
+- [ ] `cd isaac-agent && bb features features/llm/provider_walls.feature:142`
+- [ ] `cd isaac-hail && bb features features/context_window_guard.feature:83` (use `:dev-local` against the agent bean branch)
+- [ ] `@wip` removed from the four scenarios
+- [ ] Hail's isaac-agent pin bumped to the SHA that contains the classify+rollback fix (CI does not use `:dev-local`)
+
+DoD: `@wip` gone and the four commands pass. Specs for `isaac.drive.provider-wall` as needed.
 
 ## Notes
 
 - Grover `http-error` already carries `:status` / `:message`; real `isaac.llm.http` 400s put the text on `:body :error :message`. `response-message` already reads both.
-- `isaac service install` dropping plist env is a different bean.
+- `isaac service install` dropping plist env is a different bean (talk after this).
