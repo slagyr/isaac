@@ -1,11 +1,11 @@
 ---
 # isaac-1awj
 title: 'claude-cli: forward named .env vars into the subprocess env'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-08-28T17:17:47Z
-updated_at: 2026-08-28T19:26:15Z
+updated_at: 2026-08-28T19:38:13Z
 ---
 
 Likely repo: **isaac-agent** (`isaac.llm.api.claude-cli/subprocess-env` + provider schema).
