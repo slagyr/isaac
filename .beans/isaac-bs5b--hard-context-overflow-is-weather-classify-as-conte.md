@@ -1,13 +1,11 @@
 ---
 # isaac-bs5b
 title: 'Hard context overflow is weather: classify as context-exhausted so hail defers, never 5× stuffing'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-28T16:04:05Z
-updated_at: 2026-08-28T17:12:52Z
+updated_at: 2026-08-28T17:15:53Z
 ---
 
 Likely repo: **isaac-agent** (`isaac.drive.provider-wall` + `execute-llm-turn!`). Hail should not change if the reason is reused.
