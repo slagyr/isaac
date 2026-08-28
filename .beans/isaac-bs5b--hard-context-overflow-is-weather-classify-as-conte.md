@@ -4,10 +4,8 @@ title: 'Hard context overflow is weather: classify as context-exhausted so hail 
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-28T16:04:05Z
-updated_at: 2026-08-28T16:58:38Z
+updated_at: 2026-08-28T17:09:11Z
 ---
 
 Likely repo: **isaac-agent** (`isaac.drive.provider-wall` + `execute-llm-turn!`). Hail should not change if the reason is reused.
@@ -65,3 +63,22 @@ DoD: `@wip` gone and the four commands pass. Specs for `isaac.drive.provider-wal
 
 - Grover `http-error` already carries `:status` / `:message`; real `isaac.llm.http` 400s put the text on `:body :error :message`. `response-message` already reads both.
 - `isaac service install` dropping plist env is a different bean (talk after this).
+
+
+## Verify fail (attempt 1, 2026-08-28): required hail `bb features` stack-proof command is still red under the native path
+
+Evidence:
+- Verified implementation exists on `isaac-agent` `origin/bean/isaac-bs5b` at `5701875` and `isaac-hail` `origin/bean/isaac-bs5b` at `9e802ed`.
+- Agent-side acceptance is green on the bean branch:
+  - `bb features features/llm/provider_walls.feature:99` → `1 examples, 0 failures, 4 assertions`
+  - `bb features features/llm/provider_walls.feature:120` → `1 examples, 0 failures, 2 assertions`
+  - `bb features features/llm/provider_walls.feature:142` → `1 examples, 0 failures, 4 assertions`
+  - `bb spec spec/isaac/drive/provider_wall_spec.clj spec/isaac/session/store/memory_spec.clj` → `23 examples, 0 failures, 49 assertions`
+- The hail bean branch removed `@wip` from `features/context_window_guard.feature:83` and bumped its isaac-agent pin to `57018753a4e5498b2b6e74f380b51ccba9e9efb3` in both `deps.edn` and `bb.edn`.
+- But the required acceptance command is still red when run as written against paired bean worktrees (`isaac-hail` bean branch with local sibling `isaac-agent` bean branch):
+  - `bb features features/context_window_guard.feature:83`
+  - Fails during SCI analysis with `Unable to resolve symbol: fs/size` from `isaac-agent/src/isaac/session/store/impl_common.clj`.
+- For contrast only, the JVM fallback stack proof is green:
+  - `clojure -M:features features/context_window_guard.feature:83` → `1 examples, 0 failures, 4 assertions`
+
+Conclusion: bean DoD is not yet met because the named acceptance command still fails. Do not re-hand off until `cd isaac-hail && bb features features/context_window_guard.feature:83` is green, or planner amends the acceptance.
