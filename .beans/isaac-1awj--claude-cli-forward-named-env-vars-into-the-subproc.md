@@ -1,11 +1,11 @@
 ---
 # isaac-1awj
 title: 'claude-cli: forward named .env vars into the subprocess env'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-08-28T17:17:47Z
-updated_at: 2026-08-28T17:17:47Z
+updated_at: 2026-08-28T19:26:15Z
 ---
 
 Likely repo: **isaac-agent** (`isaac.llm.api.claude-cli/subprocess-env` + provider schema).
@@ -32,11 +32,28 @@ spawn. Plist stays PATH-only. `service install` unchanged.
 
 Out of scope: macos plist EnvironmentVariables, forwarding to other subprocesses.
 
-## Scenarios (plan approved, gherkin in chat)
+## Decision (2026-08-28, Micah)
 
-`features/llm/api/claude_cli.feature` (4):
+Approved spawn-copy design, scenario plan (4), and the four scenarios as written.
 
-1. Default: CLAUDE_CODE_OAUTH_TOKEN from .env is in the child env (no :forward-env in the provider file)
-2. An unlisted .env secret is not in the child env
-3. A name listed in :forward-env is in the child env
-4. ANTHROPIC_API_KEY is stripped even when listed in :forward-env
+## Scenarios (approved, @wip on isaac-agent main)
+
+`features/llm/api/claude_cli.feature`:
+
+1. `:253` — CLAUDE_CODE_OAUTH_TOKEN from .env is forwarded (schema default; no `:forward-env` in the provider file)
+2. `:269` — an unlisted .env secret is not forwarded
+3. `:287` — a name listed in `:forward-env` is forwarded (`:forward-env` replaces the default)
+4. `:309` — ANTHROPIC_API_KEY is stripped even when listed
+
+Invocation-table matcher extensions (existing step `the claude binary was invoked exactly once with:`): `(env NAME is VALUE)` and `(no env NAME)`.
+
+## Acceptance
+
+- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:253`
+- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:269`
+- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:287`
+- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:309`
+- [ ] `@wip` removed from the four scenarios
+- [ ] Provider schema includes `:forward-env` (seq of strings); default `["CLAUDE_CODE_OAUTH_TOKEN"]`
+
+DoD: `@wip` gone and the four commands pass.
