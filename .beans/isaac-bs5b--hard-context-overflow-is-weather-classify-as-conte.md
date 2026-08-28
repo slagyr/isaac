@@ -4,8 +4,10 @@ title: 'Hard context overflow is weather: classify as context-exhausted so hail 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-28T16:04:05Z
-updated_at: 2026-08-28T16:51:04Z
+updated_at: 2026-08-28T16:58:38Z
 ---
 
 Likely repo: **isaac-agent** (`isaac.drive.provider-wall` + `execute-llm-turn!`). Hail should not change if the reason is reused.
