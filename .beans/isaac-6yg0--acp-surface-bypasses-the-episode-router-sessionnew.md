@@ -5,7 +5,7 @@ status: draft
 type: bug
 priority: high
 created_at: 2026-08-29T05:16:30Z
-updated_at: 2026-08-29T05:16:30Z
+updated_at: 2026-08-29T05:20:58Z
 ---
 
 Repo: **isaac-acp** (`src/isaac/comm/acp/server.clj`, `cli.clj`), possibly a
@@ -65,3 +65,19 @@ and only because `fs/*` happens to be allowed.
 Drive episode crews through a routed surface: Discord, hail, or
 `isaac prompt --crew marvin --session <thread>` (prompt_cli has its own
 `ensure-session!` that routes).
+
+
+
+## Ruling (2026-08-28, Micah)
+
+**ACP must dispatch through the bridge, always.** No private `run-prompt`,
+no direct `create-with-resolved-behavior!`. Every surface (comm, hail, cron,
+CLI, ACP) enters at the one bridge seam — that is where the episode router,
+turnstiles, observers and finalization live, and a surface that skips it
+silently loses all of them. Design item 2 above is the whole bean; items 1,
+3, 4 follow from it. Audit the other surfaces (isaac-cli-server, cron,
+imessage/discord adapters) for the same bypass while here and note findings.
+
+Trial fallout struck from marvin's history 2026-08-28: chronicle session
+`sincere-tapir` (ACP) and episode/session `2026-08-29-0516-ncl8` (cli-1)
+deleted; neither was indexed.
