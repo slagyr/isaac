@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-08-22T21:33:23Z
-updated_at: 2026-08-23T22:00:39Z
+updated_at: 2026-08-29T04:43:16Z
 parent: isaac-51xy
 ---
 
@@ -106,3 +106,19 @@ VERIFY STUCK: acceptance must not require zero @wip on entire
 - Do **not** sequence bh17 de-@wip ahead of h5dk verify.
 
 This note resets the verify-fail escalation counter.
+
+
+
+## Field check (2026-08-28, zanebot 0.1.39 @ d8c63b8, Micah + plan) — PASS with one defect
+
+Pilot crew (`:conversation :episodes`, model :gist), thread `try-1`:
+- Cold open → `:episodes/opened` 2026-08-29-0441-v88j; recall-at-open injected a
+  transcript event `Recalled from earlier conversations (fetch full detail with
+  recall__scene <id>)` with two 08-22 scene refs in the `- [<id> · <date>] <gist>`
+  format; the reply answered from it correctly. Embedding via ollama-nightbird live.
+- Warm append (second prompt, same thread) stayed in the same episode.
+- `recall__scene` tool fetched a scene's distilled text once `:tools {:allow [:recall/*]}`
+  was on the crew.
+- **Defect:** with no `:recall/*` allow on the crew, the injected header still advertises
+  `recall__scene`; the model improvised `skill__load recall__scene` → "unknown skill".
+  Filed as isaac-<see follow-up bean>.
