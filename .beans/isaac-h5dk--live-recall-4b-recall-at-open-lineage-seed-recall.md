@@ -121,4 +121,4 @@ Pilot crew (`:conversation :episodes`, model :gist), thread `try-1`:
   was on the crew.
 - **Defect:** with no `:recall/*` allow on the crew, the injected header still advertises
   `recall__scene`; the model improvised `skill__load recall__scene` → "unknown skill".
-  Filed as isaac-<see follow-up bean>.
+  Filed as isaac-i66k.
