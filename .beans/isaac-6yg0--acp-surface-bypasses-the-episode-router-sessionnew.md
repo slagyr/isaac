@@ -4,10 +4,8 @@ title: 'ACP surface bypasses the episode router: session/new + session/prompt mu
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-29T05:16:30Z
-updated_at: 2026-08-29T14:41:54Z
+updated_at: 2026-08-29T14:47:16Z
 ---
 
 Repo: **isaac-acp** (`src/isaac/comm/acp/server.clj`, `cli.clj`), possibly a
@@ -215,3 +213,22 @@ Hail delivery_worker `run-turn!` bypass — sibling bean when 6yg0 lands.
 ### Verify-fail / HOLD counter
 
 Reset by this note. Do not re-HOLD for the same pin-bump fixture failures; fix them or split a named scenario.
+
+
+## Verify fail (attempt 1, 2026-08-29): required post-deploy zanebot field check is still not recorded
+
+Evidence:
+- Verified implementation exists on `isaac-acp` `origin/bean/isaac-6yg0` at `02d00e0`, with the pin-bump and ACP-through-bridge commits present on that branch.
+- The bean-scoped code/test gate is green on the verification worktree:
+  - `bb features features/comm/acp/episodes.feature` → `4 examples, 0 failures, 17 assertions`
+  - `bb features features/comm/acp` → `64 examples, 0 failures, 151 assertions`
+  - `bb spec` → `70 examples, 0 failures, 195 assertions`
+- `features/comm/acp/episodes.feature` is no longer `@wip` on the bean branch.
+- However, acceptance item 3 explicitly requires a **field check on zanebot after deploy** and says to **record it here**:
+  - `toad acp "zane-isaac acp --crew marvin --create always"`
+  - one prompt
+  - `isaac episodes list --crew marvin` shows an open episode on the ACP session id
+  - recall block present when the query matches the corpus
+- I found no completed deploy/field-check evidence in the bean after the planner reset, and grep across the bean/hail records only found the requirement text itself — not the completed proof.
+
+Conclusion: the repo/test gate is green, but the bean DoD is still unmet until the live zanebot deploy check is performed and recorded in the bean.
