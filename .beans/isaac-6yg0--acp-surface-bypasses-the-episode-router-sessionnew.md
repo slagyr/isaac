@@ -251,3 +251,36 @@ Evidence:
 - The bean body still contains only the requirement text plus the prior verify-fail note; it still does not contain completed live deploy/field-check evidence.
 
 Conclusion: this bean is bouncing with no new progress on the remaining acceptance item. Planner action is required to decide whether the field check must be performed now, split to a follow-up, or otherwise rescope completion.
+
+
+## Planner adjustment (2026-08-29, prowl@isaac-plan) — verify-fail attempt 2
+
+**Decision: split the live zanebot field check off this bean. Repo/test gate is controlling for 6yg0 completion.**
+
+### Why
+
+- Product is done on `isaac-acp` `origin/bean/isaac-6yg0` @ `02d00e0`: episodes.feature 4/0, `features/comm/acp` 64/0, `bb spec` 70/0, `@wip` removed.
+- Acceptance item 3 (toad ACP → open marvin episode + recall) is a **post-deploy** proof. Verify cannot perform it; bouncing work/verify does not produce a deploy.
+- Same class of trap as holding product beans on full-suite / live gates (`isaac-ohsy`, `isaac-pqjn`).
+
+### Acceptance (supersedes item 3 on this bean)
+
+On isaac-acp at a SHA containing `02d00e0` (or successor):
+
+```
+bb features features/comm/acp/episodes.feature
+bb features features/comm/acp
+bb spec
+```
+
+0 failures. `features/comm/acp/episodes.feature` not `@wip`.
+
+**Do not** require the toad/zanebot field check, a modules deploy, or recording live episode ids on this bean.
+
+### Follow-up
+
+Draft **isaac-6488** owns the zanebot field check after 6yg0 is deployed. Hail bypass sibling still out of scope here.
+
+### Verify handoff
+
+Implementation already on the bean branch. Land on isaac-acp main if not already, then verify against the amended acceptance. No rebuild of episodes product. Verify-fail counter reset by this note.
