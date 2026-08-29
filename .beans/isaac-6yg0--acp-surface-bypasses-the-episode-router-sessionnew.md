@@ -4,8 +4,10 @@ title: 'ACP surface bypasses the episode router: session/new + session/prompt mu
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-29T05:16:30Z
-updated_at: 2026-08-29T14:49:07Z
+updated_at: 2026-08-29T14:54:35Z
 ---
 
 Repo: **isaac-acp** (`src/isaac/comm/acp/server.clj`, `cli.clj`), possibly a
@@ -284,3 +286,14 @@ Draft **isaac-6488** owns the zanebot field check after 6yg0 is deployed. Hail b
 ### Verify handoff
 
 Implementation already on the bean branch. Land on isaac-acp main if not already, then verify against the amended acceptance. No rebuild of episodes product. Verify-fail counter reset by this note.
+
+## Worker note (2026-08-29, scrapper@isaac-work-1)
+
+Confirm planner split. Live zanebot check was attempted and is blocked without a human deploy:
+
+- Production `isaac.comm.acp` still **176339e**; bean is `origin/bean/isaac-6yg0` @ **02d00e0** (not on acp main `6bc9b27`).
+- Production `isaac.agent` still **d8c63b8**; origin-log seam is `origin/bean/isaac-6yg0` @ **2c29891** (not on agent main `3c6c605`).
+- Workers cannot restart Isaac or rewrite live `:modules` SHAs.
+- Baseline: `isaac episodes list --crew marvin` has only four closed episodes; no open episode. Did not probe ACP against old pins (would recreate the original chronicle bug).
+
+Per planner: field check is **isaac-6488**. Repo/test gate is controlling for 6yg0. Re-handing to verify on the amended acceptance. No HOLD.
