@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-29T05:16:30Z
-updated_at: 2026-08-29T06:01:37Z
+updated_at: 2026-08-29T14:33:17Z
 ---
 
 Repo: **isaac-acp** (`src/isaac/comm/acp/server.clj`, `cli.clj`), possibly a
