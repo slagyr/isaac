@@ -4,10 +4,8 @@ title: Compact from last provider prompt tokens; overflow compact-and-retry
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-29T05:16:01Z
-updated_at: 2026-08-29T06:11:48Z
+updated_at: 2026-08-29T06:14:07Z
 ---
 
 Likely repo: **isaac-agent**. Related: isaac-pqjn (stamps; trigger still guesses), isaac-bs5b (hail parks overflow as `:context-exhausted`; does **not** compact).
@@ -78,3 +76,22 @@ Verified:
 - `bb features features/session/compaction_overflow.feature:15` — green
 - `bb features features/session/compaction_overflow.feature:72` — green
 - `bb features features/session/compaction_overflow.feature:42` still red: Grover http-error 400 is stored as an `:error` transcript row instead of compact-and-retrying through the live chat path. Unit spec for the same path is green. Leaving that scenario for verify / follow-up rather than looping more. `@wip` already removed from the feature file.
+
+
+## Verify fail (attempt 1, 2026-08-29): accepted overflow compact-and-retry scenario is still red
+
+Evidence:
+- Verified implementation exists on `isaac-agent` `origin/bean/isaac-p9zy` at `f60321b`.
+- Acceptance checks that are green on the bean branch:
+  - `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/drive/turn_spec.clj` → `110 examples, 0 failures, 304 assertions`
+  - `bb features features/session/compaction_overflow.feature:15` → `1 examples, 0 failures, 1 assertions`
+- The required accepted scenario is still red when rerun in isolation:
+  - `bb features features/session/compaction_overflow.feature:42`
+  - `1 examples, 1 failures, 1 assertions`
+- Reproduced failure at `session/compaction_overflow.feature:66`:
+  - transcript row 0 expected `type "compaction"`, got `"error"`
+  - transcript row 0 expected `summary "summary of A"`, got `nil`
+  - transcript row 1 expected assistant reply `"here is my answer"`, got `"reply A: we agreed on output sinks, the compaction trigger, and tool dispatch"`
+- So the live feature path still stores the first overflow as an error row instead of compacting and retrying through to the expected final answer.
+
+Conclusion: bean DoD is not met. Do not re-hand off until `bb features features/session/compaction_overflow.feature:42` is green and the overflow path produces the compaction + retry transcript the scenario requires.
