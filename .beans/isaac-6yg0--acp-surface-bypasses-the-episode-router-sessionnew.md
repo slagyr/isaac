@@ -158,3 +158,58 @@ In slagyr/isaac-acp:
 ## Held (awaiting human, 2026-08-29)
 
 Escalated to human by **scrapper**@isaac-work-1. Blocking: pin bump to current isaac-agent main (3c6c605 / 2c29891) is not green on the named acceptance commands — 10+ existing ACP unit specs and 18 ACP features fail after the bump (unknown-provider grover, compaction-offset replay, snapshot leakage). ACP episode scenarios remain @wip. Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
+
+
+## Planner adjustment (2026-08-29, prowl@isaac-plan) — HOLD cleared
+
+**HOLD superseded.** Human asked planner to act. Workers may pick this up again.
+
+### Decision
+
+Do **not** abandon 6yg0. Do **not** require bleeding-edge agent-main product green (p9zy overflow, full agent `bb features`). The pin bump is still step 1, but **ACP test-harness drift from that bump is in scope** for the pin-bump commit.
+
+The original body already said the bump “may surface unrelated drift; land it as its own commit.” Worker treated “`bb spec` / `bb features` green BEFORE touching ACP **product** code” as “must be green with zero fixture edits.” That is the wrong cut. Fixture/bootstrap repairs so the **existing ACP suite** runs on current agent **are** the pin-bump work.
+
+### Step 1 (pin bump) — in scope
+
+Bump isaac-acp `deps.edn` / `bb.edn` pins to current mains (agent / agent-spec / server / foundation+spec-support). Then make **existing** ACP suites green:
+
+```
+bb spec
+bb features features/comm/acp
+```
+
+Exclude `@wip` `features/comm/acp/episodes.feature` from this gate.
+
+Allowed on the pin-bump commit (not “ACP product”):
+
+- Test config / Grover provider registration so features stop dying on **unknown-provider grover**
+- Snapshot isolation so loader snapshot leakage does not collapse crew config
+- Compaction-offset / transcript-replay step updates so attach/load scenarios match current agent store (episodes/chronicle split)
+
+Not allowed on the pin-bump commit:
+
+- Implementing episodes.feature / bridge dispatch product (that is step 2)
+- Fixing unrelated agent-main product reds (compaction overflow p9zy, hail bypass, etc.)
+
+If a failure is clearly agent-product and not an ACP fixture, `@wip` that one scenario and file a **draft** sibling; do not HOLD 6yg0 for it.
+
+### Step 2 (product) — unchanged, after step 1 lands
+
+Remove `@wip` from `features/comm/acp/episodes.feature` and implement ACP-through-the-bridge. Acceptance:
+
+```
+bb features features/comm/acp/episodes.feature
+bb features features/comm/acp
+bb spec
+```
+
+Field check on zanebot remains post-deploy.
+
+### Out of scope (unchanged)
+
+Hail delivery_worker `run-turn!` bypass — sibling bean when 6yg0 lands.
+
+### Verify-fail / HOLD counter
+
+Reset by this note. Do not re-HOLD for the same pin-bump fixture failures; fix them or split a named scenario.
