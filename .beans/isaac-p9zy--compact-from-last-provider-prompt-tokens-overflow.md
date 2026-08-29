@@ -4,8 +4,10 @@ title: Compact from last provider prompt tokens; overflow compact-and-retry
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-29T05:16:01Z
-updated_at: 2026-08-29T06:14:07Z
+updated_at: 2026-08-29T06:18:38Z
 ---
 
 Likely repo: **isaac-agent**. Related: isaac-pqjn (stamps; trigger still guesses), isaac-bs5b (hail parks overflow as `:context-exhausted`; does **not** compact).
@@ -95,3 +97,15 @@ Evidence:
 - So the live feature path still stores the first overflow as an error row instead of compacting and retrying through to the expected final answer.
 
 Conclusion: bean DoD is not met. Do not re-hand off until `bb features features/session/compaction_overflow.feature:42` is green and the overflow path produces the compaction + retry transcript the scenario requires.
+
+## Implementation (attempt 2, 2026-08-29, scrapper@isaac-work-2)
+
+Live overflow now compact-and-retries through `perform-compaction!` instead of calling `compact!` without the drive chat-fn. Grover http-error 400 is returned without streaming chunks. Scenario :42 is green.
+
+Landed on `isaac-agent` `bean/isaac-p9zy` @ `29586bd`.
+
+Verified:
+- `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/drive/turn_spec.clj` — 110/0/304
+- `bb features features/session/compaction_overflow.feature:15` — green
+- `bb features features/session/compaction_overflow.feature:42` — green
+- `bb features features/session/compaction_overflow.feature:72` — green
