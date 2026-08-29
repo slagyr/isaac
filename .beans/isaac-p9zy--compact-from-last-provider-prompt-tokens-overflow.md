@@ -1,11 +1,11 @@
 ---
 # isaac-p9zy
 title: Compact from last provider prompt tokens; overflow compact-and-retry
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-29T05:16:01Z
-updated_at: 2026-08-29T05:16:01Z
+updated_at: 2026-08-29T05:19:45Z
 ---
 
 Likely repo: **isaac-agent**. Related: isaac-pqjn (stamps; trigger still guesses), isaac-bs5b (hail parks overflow as `:context-exhausted`; does **not** compact).
