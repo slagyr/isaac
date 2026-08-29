@@ -4,8 +4,10 @@ title: 'ACP surface bypasses the episode router: session/new + session/prompt mu
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-29T05:16:30Z
-updated_at: 2026-08-29T14:33:17Z
+updated_at: 2026-08-29T14:41:54Z
 ---
 
 Repo: **isaac-acp** (`src/isaac/comm/acp/server.clj`, `cli.clj`), possibly a
