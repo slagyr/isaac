@@ -4,8 +4,10 @@ title: Compact from last provider prompt tokens; overflow compact-and-retry
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-29T05:16:01Z
-updated_at: 2026-08-29T05:56:20Z
+updated_at: 2026-08-29T06:11:48Z
 ---
 
 Likely repo: **isaac-agent**. Related: isaac-pqjn (stamps; trigger still guesses), isaac-bs5b (hail parks overflow as `:context-exhausted`; does **not** compact).
@@ -62,3 +64,17 @@ Remove `@wip` from that feature when green. Existing `token_accounting.feature` 
 - Provider tokenizer swap (pqjn: later scenario).
 - Changing the 0.8 threshold.
 - Reverting isaac-bs5b hail deferral.
+
+## Implementation (2026-08-29, scrapper@isaac-work-2)
+
+Landed on `isaac-agent` `bean/isaac-p9zy` @ `f60321b`.
+
+- `should-compact?` now gauges `max(live-estimate, last-input-tokens)`.
+- Prompt token estimate is content chars/4, never `(str map)`.
+- Drive compact-and-retries a prompt-too-long 400; compaction-disabled overflow is `:context-exhausted`.
+
+Verified:
+- `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/drive/turn_spec.clj` — 110/0/304
+- `bb features features/session/compaction_overflow.feature:15` — green
+- `bb features features/session/compaction_overflow.feature:72` — green
+- `bb features features/session/compaction_overflow.feature:42` still red: Grover http-error 400 is stored as an `:error` transcript row instead of compact-and-retrying through the live chat path. Unit spec for the same path is green. Leaving that scenario for verify / follow-up rather than looping more. `@wip` already removed from the feature file.
