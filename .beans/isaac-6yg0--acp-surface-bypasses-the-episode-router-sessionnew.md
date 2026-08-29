@@ -1,13 +1,11 @@
 ---
 # isaac-6yg0
 title: 'ACP surface bypasses the episode router: session/new + session/prompt must dispatch through bridge for :episodes crews'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-29T05:16:30Z
-updated_at: 2026-08-29T14:54:35Z
+updated_at: 2026-08-29T14:56:19Z
 ---
 
 Repo: **isaac-acp** (`src/isaac/comm/acp/server.clj`, `cli.clj`), possibly a
