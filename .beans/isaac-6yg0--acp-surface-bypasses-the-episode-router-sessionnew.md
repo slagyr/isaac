@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-29T05:16:30Z
-updated_at: 2026-08-29T14:47:16Z
+updated_at: 2026-08-29T14:49:07Z
 ---
 
 Repo: **isaac-acp** (`src/isaac/comm/acp/server.clj`, `cli.clj`), possibly a
@@ -232,3 +232,22 @@ Evidence:
 - I found no completed deploy/field-check evidence in the bean after the planner reset, and grep across the bean/hail records only found the requirement text itself — not the completed proof.
 
 Conclusion: the repo/test gate is green, but the bean DoD is still unmet until the live zanebot deploy check is performed and recorded in the bean.
+
+
+## Verify fail (attempt 2, 2026-08-29): required post-deploy zanebot field check is still not recorded
+
+Evidence:
+- Re-verified the same implementation target on `isaac-acp` `origin/bean/isaac-6yg0` at `02d00e0`; no newer worker proof or planner reset is present after the prior verify-fail.
+- The repo/test gate remains green on the bean branch:
+  - `bb features features/comm/acp/episodes.feature` → `4 examples, 0 failures, 17 assertions`
+  - `bb features features/comm/acp` → `64 examples, 0 failures, 151 assertions`
+  - `bb spec` → `70 examples, 0 failures, 195 assertions`
+- `features/comm/acp/episodes.feature` is still de-`@wip` on the bean branch.
+- Acceptance item 3 still requires a zanebot deploy check recorded in this bean:
+  - `toad acp "zane-isaac acp --crew marvin --create always"`
+  - one prompt
+  - `isaac episodes list --crew marvin` shows an open episode on the ACP session id
+  - recall block present when the query matches the corpus
+- The bean body still contains only the requirement text plus the prior verify-fail note; it still does not contain completed live deploy/field-check evidence.
+
+Conclusion: this bean is bouncing with no new progress on the remaining acceptance item. Planner action is required to decide whether the field check must be performed now, split to a follow-up, or otherwise rescope completion.
