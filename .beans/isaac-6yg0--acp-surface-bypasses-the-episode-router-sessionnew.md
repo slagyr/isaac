@@ -153,3 +153,8 @@ In slagyr/isaac-acp:
    acp --crew marvin --create always"`, one prompt → `isaac episodes list
    --crew marvin` shows an open episode on the ACP session id; recall block
    present when the query matches the corpus.
+
+
+## Held (awaiting human, 2026-08-29)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: pin bump to current isaac-agent main (3c6c605 / 2c29891) is not green on the named acceptance commands — 10+ existing ACP unit specs and 18 ACP features fail after the bump (unknown-provider grover, compaction-offset replay, snapshot leakage). ACP episode scenarios remain @wip. Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
