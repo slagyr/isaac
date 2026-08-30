@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-30T22:05:14Z
+updated_at: 2026-08-30T22:24:14Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -165,3 +165,39 @@ recommends yes, excluded from prompt builder + recall); (2) convenience
 - **`defaults` lives in the same namespace as the protocol**
   (`isaac.comm.protocol`): the protocol, the defaults map, and (if built)
   the `defcomm` macro are one surface.
+
+
+
+## Naming + persistence (2026-08-30, Micah + plan)
+
+- **reckoning** = the abstraction over provider `reasoning` (Responses API:
+  `reasoning` output items / `response.reasoning_summary_text.delta`) and
+  `thinking` (Anthropic blocks, claude-cli stream-json events). Confirmed.
+- **"speech" rejected** (rings of STT/TTS). Reframed from theater/deck, not
+  audio. Recommended slate — final pick pending Micah:
+  - `on-chatter` — live outward-voice deltas, classification unknown while
+    streaming (alternates: on-prose, on-patter, on-utterance, on-text)
+  - `on-aside` — cycle-end text when tool calls followed; a theater aside,
+    said while doing, not the answer (alternates: on-callout, on-preamble)
+  - `on-reply` — cycle-end text with no tool calls
+  - `on-narration` is DROPPED from the protocol (was ambiguous with the
+    stream reading).
+  Full method set otherwise as previously recorded: on-turn-start,
+  on-cycle-start/end, on-chatter, on-reckoning, on-tool-call/cancel/result,
+  on-tool-progress, on-aside, on-reply, on-bulletin, on-turn-end, send!.
+- **DECIDED: reckoning IS persisted** — new transcript entry type
+  `"reckoning"`; replayable (ACP session/load, sessions show), EXCLUDED
+  from the prompt builder and from recall/scene segmentation.
+- Industry note: claude-code persists thinking blocks in session jsonl
+  (wire-MANDATED: extended thinking + tool use requires returning
+  signature-carrying blocks next request); codex/grok responses agents
+  persist reasoning items (encrypted when store:false) for stateless
+  resume. isaac has no wire pressure today — 7l5m stateful chaining holds
+  reasoning server-side within a turn; Anthropic extended thinking is not
+  enabled. **Landmine note:** if extended thinking is ever enabled on
+  messages.clj, the TOOL LOOP must carry thinking blocks within the turn
+  regardless of transcript policy.
+
+All design decisions closed except the chatter/aside name pick. Next:
+split into beans (agent core; acp rendering; discord rendering) and write
+@wip features.
