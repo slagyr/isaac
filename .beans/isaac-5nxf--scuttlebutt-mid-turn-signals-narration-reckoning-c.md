@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-30T22:02:18Z
+updated_at: 2026-08-30T22:05:14Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -149,3 +149,19 @@ implementation safe with a published defaults map:
 Still open before scenarios: (1) persist reckoning in the transcript (plan
 recommends yes, excluded from prompt builder + recall); (2) convenience
 `narration` event at cycle end vs comms deriving it from cycle-end.
+
+
+
+## Confirmed (2026-08-30, Micah)
+
+- **One-time overhaul of every implementor** as part of the replacement —
+  no shim, no transition adapter. Inventory: in-tree null, memory, cli,
+  prompt_cli, api (isaac-agent) + discord, acp, imessage (module repos).
+  Module repos migrate on their own trains after the agent bean lands;
+  their pinned agent SHAs gate them, so in-tree and modules need not land
+  simultaneously — but each module's FIRST pin bump past the agent bean
+  must carry its migration (compile break is loud, not silent, since
+  inline impls of removed methods fail at compile/load).
+- **`defaults` lives in the same namespace as the protocol**
+  (`isaac.comm.protocol`): the protocol, the defaults map, and (if built)
+  the `defcomm` macro are one surface.
