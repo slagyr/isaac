@@ -201,3 +201,69 @@ recommends yes, excluded from prompt builder + recall); (2) convenience
 All design decisions closed except the chatter/aside name pick. Next:
 split into beans (agent core; acp rendering; discord rendering) and write
 @wip features.
+
+
+## FINAL DESIGN (2026-08-30, Micah approved names)
+
+Names locked: **chatter / reckoning / aside / reply / bulletin.**
+
+- **reckoning** — inward voice; the model working out what to do (Responses
+  `reasoning` summaries, Anthropic `thinking`). Not addressed to the user.
+  Dead reckoning at the chart table.
+- **aside** — outward voice, not the answer: what the model says on its way
+  into tool calls ("Let me pull up that scene."). Theater aside.
+- **reply** — outward voice, the answer; the cycle with no tool calls.
+- **chatter** — the SAME outward words as aside/reply, live, before the
+  verdict. At cycle end the buffered chatter is re-delivered whole as
+  on-aside or on-reply. A comm picks its altitude: streams (on-chatter) or
+  verdicts (on-aside/on-reply), never both.
+- Discriminators: addressed-to-you? × is-the-answer?
+  reckoning no/no · aside yes/no · reply yes/yes · chatter = yes/undetermined.
+
+### Protocol (isaac.comm.protocol — replaces Comm outright)
+
+```clojure
+(defprotocol Comm
+  ;; turn envelope
+  (on-turn-start   [comm session-key input])
+  (on-turn-end     [comm session-key result])   ; once, every outcome
+  ;; cycle boundaries (one LLM call each)
+  (on-cycle-start  [comm session-key cycle])                 ; {:n 3 :model "..."}
+  (on-cycle-end    [comm session-key cycle outcome])        ; {:outcome :aside|:reply
+                                                            ;  :text ".." :tool-calls [..]}
+  ;; live streams
+  (on-chatter      [comm session-key cycle chunk])  ; was on-text-chunk
+  (on-reckoning    [comm session-key cycle chunk])
+  ;; classified text at the boundary
+  (on-aside        [comm session-key cycle text])
+  (on-reply        [comm session-key text])
+  ;; tools
+  (on-tool-call    [comm session-key tool-call])
+  (on-tool-cancel  [comm session-key tool-call])
+  (on-tool-result  [comm session-key tool-call result])
+  (on-tool-progress[comm session-key tool-call chunk])
+  ;; the ship (replaces the four on-compaction-*)
+  (on-bulletin     [comm session-key bulletin])     ; {:kind :compaction/start
+                                                    ;  | :recall/injected | :episodes/opened
+                                                    ;  | :turnstile/held ... :payload {..}}
+  ;; outbound delivery — unchanged, NO default
+  (send!           [comm record]))
+
+(def defaults "no-op fn per turn-event method; :send! deliberately absent" {...})
+```
+
+Implementor convention (one-time overhaul, all 8 impls): state-only
+deftype + `(extend TheType Comm (merge comm/defaults {overrides}))` — never
+inline. Discord's whole migration ≈ on-turn-start (typing), on-reply (send),
+on-turn-end (errors), send!. Conformance spec calls every method on every
+comm to catch inline strays; optional `defcomm` macro later.
+
+### Turn timeline a comm experiences
+
+turn-start → bulletin(:recall/injected) → [cycle-start → reckoning* →
+chatter* → tool-call* → cycle-end{:aside} → aside → tool-result*]… →
+[cycle-start → chatter* → cycle-end{:reply} → reply] → turn-end.
+
+Redundancy is deliberate: dumb comms take verdicts, ACP takes streams
+(chatter → agent_message_chunk, reckoning → agent_thought_chunk), defaults
+make both free.
