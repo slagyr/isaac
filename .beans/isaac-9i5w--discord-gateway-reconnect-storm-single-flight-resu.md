@@ -8,7 +8,7 @@ tags:
     - discord
     - gateway
 created_at: 2026-08-30T15:13:13Z
-updated_at: 2026-08-30T15:13:13Z
+updated_at: 2026-08-30T15:44:42Z
 ---
 
 Likely repo: **isaac-discord**. Related: isaac-ceeq (double auth on the *same* reconnected socket's HELLO — fixed; this is a *second* reconnect task), isaac-wtg8 (uuid reconnect task ids so "task already scheduled" no longer throws — that let two tasks run).
@@ -37,7 +37,7 @@ ceeq's `:auth-sent?` guard is still correct for "HELLO must not re-IDENTIFY on *
 
 ## Decisions (2026-08-30, Micah)
 
-One bean. Ship the reconnect gate before installing a new token.
+One bean. Ship the reconnect gate before installing a new token. Dropped the opcode-7-alone RESUME scenario (duplicate of gateway_spec). Kept: race → one RESUME; park after failures; stop cancels pending reconnect.
 
 ## Behavior
 
@@ -54,9 +54,8 @@ Backoff 1s–30s stays. Existing 4000 RESUME / 1006 IDENTIFY / 4004 fatal scenar
 `features/comm/discord/reconnect.feature`
 
 - :48 opcode 7 plus a racing close sends one RESUME
-- :62 opcode 7 reconnects with RESUME not IDENTIFY
-- :75 reconnect failures park instead of IDENTIFY-storming
-- :85 stopping the client cancels a pending reconnect
+- :61 reconnect failures park instead of IDENTIFY-storming
+- :71 stopping the client cancels a pending reconnect
 
 Reuse: opcode 7, reconnect delay, `sends RESUME:`, `sends exactly one RESUME or IDENTIFY on reconnect`, log matching, `the Discord client is disconnected`, close-with-code.
 
@@ -66,7 +65,7 @@ New steps:
 2. `When the Discord client is stopped` — `gateway/stop!` on the active client. Snapshots auth count.
 3. `Then the Discord client sends no further IDENTIFY or RESUME` — auth delta since last snapshot is 0.
 
-Clock 180000 ms in :75 covers 8 attempts at 1s–30s (sum ≈ 121s). Keep that budget if the constant stays 8.
+Clock 180000 ms in :61 covers 8 attempts at 1s–30s (sum ≈ 121s). Keep that budget if the constant stays 8.
 
 ceeq's `gateway.feature` "exactly one RESUME or IDENTIFY" stays; it is same-socket HELLO, not this race.
 
@@ -91,12 +90,11 @@ Existing opcode 7 / 9 / 1006 / heartbeat-ack-timeout / dead-socket / watchdog sp
 cd isaac-discord
 bb spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj
 bb features features/comm/discord/reconnect.feature:48
-bb features features/comm/discord/reconnect.feature:62
-bb features features/comm/discord/reconnect.feature:75
-bb features features/comm/discord/reconnect.feature:85
+bb features features/comm/discord/reconnect.feature:61
+bb features features/comm/discord/reconnect.feature:71
 ```
 
-Remove `@wip` from those four scenarios when green. Existing reconnect / gateway / lifecycle / service_lifecycle scenarios stay green.
+Remove `@wip` from those three scenarios when green. Existing reconnect / gateway / lifecycle / service_lifecycle scenarios stay green.
 
 ## Out of scope
 
