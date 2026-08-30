@@ -1,11 +1,11 @@
 ---
 # isaac-5nxf
-title: 'Scuttlebutt: mid-turn signals (narration, reckoning, cycle boundaries, tool progress, bulletins) — Comm surface redesign'
-status: draft
+title: 'Scuttlebutt core: Comm replacement (chatter/reckoning/aside/reply/bulletins, cycles, defaults map) in isaac-agent'
+status: todo
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-30T22:24:14Z
+updated_at: 2026-08-30T22:46:04Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -267,3 +267,73 @@ chatter* → tool-call* → cycle-end{:aside} → aside → tool-result*]… →
 Redundancy is deliberate: dumb comms take verdicts, ACP takes streams
 (chatter → agent_message_chunk, reckoning → agent_thought_chunk), defaults
 make both free.
+
+
+
+## Scenarios (committed @wip at slagyr/isaac-agent 3cf66a8) — this bean = AGENT CORE
+
+features/comm/scuttlebutt.feature — 4 scenarios:
+- :22 chatter resolves into an aside (tools follow) / the reply (none) — full
+  timeline: cycle numbering, boundary classification, event order.
+- :46 reckoning: streamed to the comm, persisted as a "reckoning" transcript
+  entry, ABSENT from the next LLM request.
+- :68 compaction reaches the comm as bulletins (:compaction/start,
+  :compaction/success).
+- :92 a streaming mock tool ("test__sounding") emits tool-progress through
+  the handler ctx :progress! seam.
+
+Migrated under @wip (failing rows ARE the migration spec):
+- features/comm/memory.feature:12 text-chunk → chatter + reply.
+- features/session/llm_interaction.feature:93 text-chunk → chatter.
+- features/session/compaction_logging.feature:20/:91/(huge-head) compaction-*
+  events → bulletin rows with kind column.
+
+## Step ledger
+
+| step | status |
+|------|--------|
+| default Grover setup / the following sessions exist / the built-in tools are registered / the following model responses are queued / the user sends … via memory comm / the memory comm has events matching / session has transcript(: and matching) / the isaac EDN file … exists with | reuse |
+| **queued response row `type: reasoning`** | **NEW fixture — grover emits it as a reckoning delta** |
+| **queued row with text + tool_call in ONE response** | **VERIFY the grover queue supports it (row-per-chunk semantics suggest yes); if not, extend the fixture in this bean** |
+| **the LLM request does not contain {string}** | **NEW — absence assert on the last outbound request** |
+| **a streaming tool {name} is registered that emits progress ["…"] and returns {string}** | **NEW — registers a mock tool whose handler calls the ctx :progress! seam** |
+| memory comm event columns `cycle`, `outcome`, `kind` | **reuse-with-revision — MemoryComm (rewritten as the reference extend+defaults implementor) records them** |
+
+## Production shape (agent core)
+
+- isaac.comm.protocol: replace Comm per FINAL DESIGN; `defaults` map in the
+  same ns; send! has no default.
+- All in-tree impls overhauled to extend+merge: null, memory (reference),
+  cli, prompt_cli, api. Conformance spec invokes every method on every comm.
+- drive/turn.clj + tool_loop: cycle-start/end emission wrapping each chat
+  call; chatter (was on-text-chunk); aside/reply at the boundary; bulletins
+  from the compaction paths (legacy on-compaction-* methods DELETED).
+- Tool registry: handler ctx gains :progress! → on-tool-progress. Exec
+  ADOPTION is the follow-up bean, not here.
+- responses.clj reasoning-summary deltas + claude_cli thinking events →
+  on-reckoning; grover `reasoning` fixture row. messages.clj thinking is a
+  follow-up (extended thinking not enabled).
+- Transcript: "reckoning" entry type; excluded from prompt builder + recall
+  segmentation.
+
+## Acceptance
+
+Remove @wip from features/comm/scuttlebutt.feature and from the four
+migrated scenarios, then:
+
+    bb features features/comm/scuttlebutt.feature features/comm/memory.feature
+    bb features features/session/llm_interaction.feature features/session/compaction_logging.feature
+    bb spec spec/isaac/comm spec/isaac/drive
+
+Full bb features 0 failures under budget — EXCEPT any scenario covered by
+the pre-existing red noted below.
+
+**Known pre-existing red (NOT this bean):** features/comm/memory.feature
+"Compaction triggers during a memory comm turn" fails on clean main
+(transcript lacks the compaction entry) — being scoped; see the
+suite-health bean filed alongside.
+
+## Module follow-ups (created as siblings)
+
+acp rendering, discord rendering, exec tool-progress adoption, terminology
+renames — see blocking/blocked-by links.
