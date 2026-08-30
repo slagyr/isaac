@@ -7,8 +7,9 @@ priority: high
 tags:
     - discord
     - gateway
+    - unverified
 created_at: 2026-08-30T15:13:13Z
-updated_at: 2026-08-30T15:46:31Z
+updated_at: 2026-08-30T16:02:21Z
 ---
 
 Likely repo: **isaac-discord**. Related: isaac-ceeq (double auth on the *same* reconnected socket's HELLO — fixed; this is a *second* reconnect task), isaac-wtg8 (uuid reconnect task ids so "task already scheduled" no longer throws — that let two tasks run).
@@ -102,3 +103,16 @@ Remove `@wip` from those three scenarios when green. Existing reconnect / gatewa
 - Changing heartbeat interval, intents, or REST send.
 - Raising or lowering the 5 min watchdog (it is the post-park recovery).
 - Reverting ceeq's `:auth-sent?` HELLO guard.
+
+## Implementation (2026-08-30)
+
+Landed on isaac-discord `main` `a64c3eba`.
+
+- Single-flight reconnect (stable task id + CAS). Opcode 7 then a racing 1000 keeps one RESUME.
+- `max-reconnect-attempts` 8; park with `:discord.gateway/reconnect-exhausted`. `ensure-recovery!` honors the flag. READY resets the counter.
+- `gateway/stop!` cancels a pending reconnect. `register-comm!` of a new instance `stop!`s any other live discord client.
+- Zanebot: `:discord/token` is now `"${DISCORD_TOKEN}"` (was a literal that did not match `.env`). Module pin `a64c3eba`.
+
+Verified locally:
+- `bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj` — 93/0/216
+- `bb jvm-features features/comm/discord/reconnect.feature` — 6/0/21

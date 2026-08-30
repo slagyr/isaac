@@ -26,7 +26,7 @@
                                :git/sha "c1dbf202865efc00f4657b13164afb223a912cea"}
                        :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
  :isaac.comm.discord  {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                               :git/sha "cd1e0a1726d2a58cb47360797cb123843e5b0f95"}
+                               :git/sha "a64c3eba40ff4b19f7d10541776da28d00232108"}
                        :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                :git/sha "96d6328516e4ecc73d357ede554b70283a7d4570"}
