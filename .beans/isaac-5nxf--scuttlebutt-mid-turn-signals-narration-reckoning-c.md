@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-30T15:54:52Z
+updated_at: 2026-08-30T22:02:18Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -116,3 +116,36 @@ so the ACP module is on current pins.
 2. Persist reckoning in the transcript, or stream-only.
 3. Emit a convenience `narration` event at cycle end, or let comms derive it
    from cycle-end.
+
+
+
+## Decision (2026-08-30, Micah + plan) — Option D: protocol + defaults map
+
+Micah's constraints: case statements frowned upon (kills B's on-event); wants
+a REPLACEMENT of Comm, not a patch (kills A); comms carry state in
+deftype/defrecord fields (weakens C's multimethods).
+
+Resolution: **redesign the Comm protocol freely** (turn/cycle boundaries,
+reckoning, tool-progress, bulletin as first-class methods) and make partial
+implementation safe with a published defaults map:
+
+- `isaac.comm.protocol/defaults` — a plain fn-map, one no-op per method.
+- Comms declare state-only `deftype` and attach the protocol EXTERNALLY:
+  `(extend TheType Comm (merge comm/defaults {overrides}))`. Fns receive
+  `this`; deftype fields stay publicly readable. New signals later = one
+  entry in defaults, zero module edits.
+- **Trap to enforce**: inline (deftype-body) protocol implementation
+  bypasses defaults — missing methods are AbstractMethodError, and an
+  `Object` fallback does not rescue inline implementors. Convention:
+  comms never implement Comm inline. Enforce via (a) a `defcomm` macro
+  generating deftype + merged extend, and/or (b) a conformance spec that
+  calls every protocol method on each comm (catches bare inline impls).
+- `send!` may stay on the same protocol; it gets no default (delivery is
+  mandatory per comm).
+- Perf note: external extend dispatches via the protocol cache, not direct
+  interface calls — nanoseconds, irrelevant at per-turn event rates.
+- on-compaction-* fold into bulletins as part of the replacement.
+
+Still open before scenarios: (1) persist reckoning in the transcript (plan
+recommends yes, excluded from prompt builder + recall); (2) convenience
+`narration` event at cycle end vs comms deriving it from cycle-end.
