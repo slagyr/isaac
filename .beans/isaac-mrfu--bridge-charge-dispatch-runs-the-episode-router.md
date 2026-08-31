@@ -5,9 +5,10 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - episodes
 created_at: 2026-08-31T03:25:29Z
-updated_at: 2026-08-31T13:27:10Z
+updated_at: 2026-08-31T14:43:17Z
 parent: isaac-51xy
 ---
 
