@@ -4,10 +4,8 @@ title: 'x2up residue: 3 scenarios still red on main after the merge'
 status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-31T16:27:46Z
-updated_at: 2026-08-31T17:32:03Z
+updated_at: 2026-08-31T17:50:07Z
 ---
 
 Repo: **isaac-agent**, main @ e452bc6 (x2up merged). Full bb features:
