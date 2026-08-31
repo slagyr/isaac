@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T15:58:37Z
+updated_at: 2026-08-31T16:14:56Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
