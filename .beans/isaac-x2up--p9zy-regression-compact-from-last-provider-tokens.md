@@ -1,13 +1,11 @@
 ---
 # isaac-x2up
 title: 'p9zy regression: compact-from-last-provider-tokens turned 18 compaction scenarios red on main'
-status: in-progress
+status: completed
 type: bug
 priority: critical
-tags:
-    - unverified
 created_at: 2026-08-30T22:52:35Z
-updated_at: 2026-08-31T15:31:56Z
+updated_at: 2026-08-31T15:40:01Z
 ---
 
 Repo: **isaac-agent**. Found 2026-08-30 running the full suite on main
