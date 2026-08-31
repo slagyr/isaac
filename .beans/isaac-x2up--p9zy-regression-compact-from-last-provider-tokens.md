@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: critical
 created_at: 2026-08-30T22:52:35Z
-updated_at: 2026-08-30T22:59:24Z
+updated_at: 2026-08-31T14:17:30Z
 ---
 
 Repo: **isaac-agent**. Found 2026-08-30 running the full suite on main
