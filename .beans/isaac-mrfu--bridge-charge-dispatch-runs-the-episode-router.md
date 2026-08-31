@@ -5,10 +5,9 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - unverified
     - episodes
 created_at: 2026-08-31T03:25:29Z
-updated_at: 2026-08-31T14:43:17Z
+updated_at: 2026-08-31T14:47:52Z
 parent: isaac-51xy
 ---
 
@@ -60,3 +59,24 @@ Remove `@wip` when green. `features/episodes/live.feature` stays green.
 - Discord channel mapping / replies (follow-on bean).
 - `#general` leftover chronicle session (operational).
 - Hail `run-turn!` bypass (6yg0 note; sibling later).
+
+
+## Verify fail (attempt 1, 2026-08-31): required episodes live regression is red
+
+Evidence:
+- Verified implementation exists on `isaac-agent` `origin/bean/isaac-mrfu` at `2f9b889` (`isaac-mrfu: dispatch! of a pre-built charge runs the episode router`).
+- The bean's accepted charge-dispatch scenarios are green on the bean branch:
+  - `bb features features/bridge/episode_dispatch.feature:12` → `1 examples, 0 failures, 4 assertions`
+  - `bb features features/bridge/episode_dispatch.feature:36` → `1 examples, 0 failures, 5 assertions`
+  - `bb features features/bridge/episode_dispatch.feature:70` → `1 examples, 0 failures, 2 assertions`
+  - `bb features features/bridge/episode_dispatch.feature` → `3 examples, 0 failures, 11 assertions`
+- `features/bridge/episode_dispatch.feature` is de-`@wip` on the bean branch.
+- However, the bean also explicitly requires `features/episodes/live.feature` to stay green, and that regression is red on the bean branch:
+  - `bb features features/episodes/live.feature:160`
+  - `1 examples, 1 failures, 2 assertions`
+  - failing step: `Then the stdout contains "here is the answer"` at `episodes/live.feature:181`
+- I also reproduced the same red scenario on current `origin/main` (`506fea4`), so this may be an ambient/base regression rather than new damage from `isaac-mrfu`; but under the bean's current text, the required live regression net is still not green.
+- Focused spec coverage for the implementation seam is green:
+  - `bb spec spec/isaac/bridge_spec.clj` → `60 examples, 0 failures, 129 assertions`
+
+Conclusion: the new charge-dispatch behavior is implemented and the bean-specific feature is green, but DoD is still unmet because the required `features/episodes/live.feature` regression is red. Either make that regression green on the authoritative branch or get planner approval to narrow/split the ambient live regression requirement.
