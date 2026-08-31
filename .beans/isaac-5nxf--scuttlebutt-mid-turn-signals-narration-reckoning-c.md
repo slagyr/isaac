@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T15:15:12Z
+updated_at: 2026-08-31T15:35:45Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -386,3 +386,17 @@ compaction reds are excluded and everything else must be green.
 - prompt_cli migrates mechanically in THIS bean (byte-identical); its
   stdout/stderr redesign + output-level flags are a SEPARATE bean from the
   prompt_cli review session (isaac-frvu) — do not fold it in here.
+
+
+
+## Scope amendment v2 (2026-08-31, Micah — supersedes the LogComm amendment)
+
+- **No LogComm.** The comm-less fallback at drive/turn.clj:1084/:1268
+  becomes the **null comm**. Existing drive logging + the transcript already
+  carry everything a LogComm would have duplicated.
+- CliComm deletion STANDS: remove src/isaac/comm/cli.clj here and
+  isaac-server's divergent copy (server deletion rides its next pin bump;
+  verify no shadowing in between).
+- In-tree implementors to overhaul: **null, memory, prompt_cli** — three,
+  not five. prompt_cli stays byte-identical in this bean; its stdout/stderr
+  redesign is the separate bean from the prompt_cli review session.

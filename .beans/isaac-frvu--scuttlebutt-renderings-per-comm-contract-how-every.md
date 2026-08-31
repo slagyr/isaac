@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
-updated_at: 2026-08-31T15:15:12Z
+updated_at: 2026-08-31T15:35:45Z
 blocking:
     - isaac-i5ps
     - isaac-pq0b
@@ -130,3 +130,30 @@ in-tree implementor list becomes null, memory, LogComm, prompt_cli.
 
 Next review session: **prompt_cli** (stdout/stderr split + output-level
 flags + reckoning flag + bulletin mapping).
+
+
+
+## CLI review — CORRECTED AND FINAL (2026-08-31, Micah)
+
+Supersedes the LogComm ruling above (that was an idea recorded prematurely):
+1. **Fallback = null comm.** LogComm REJECTED — redundant: the drive already
+   logs every event (request-built, chat/*, tool/start, compaction/*), and
+   verbatim text lives in the transcript, the source of truth. Future idea
+   noted, not planned: `isaac sessions tail <key>` reading the transcript
+   (incl. reckoning entries) for live worker-watching.
+2. **CliComm dies, both copies** (agent + isaac-server's divergent shadow) —
+   zero clients once the fallback is null. `prompt` is unaffected: it uses
+   its own PromptComm and never hits the fallback; the fallback only serves
+   comm-less charges (hail, cron).
+3. **stdout/stderr principle settled, incl. the streaming question**:
+   stdout = the reply only (composable: `isaac prompt … | pbcopy` yields the
+   answer). stderr = ALL live activity — including chatter, which streams
+   there token-by-token, dead ends and all; when the verdict is :reply the
+   full reply prints to stdout, and duplication between the stderr stream
+   and stdout reply is ACCEPTED (Micah: chatter doesn't always resolve and
+   can contain dead ends; stderr is where that belongs).
+   Output-level flags (quiet/default/verbose tiers, where reckoning and
+   bulletins sit) → the prompt_cli review session.
+
+In-tree implementor list: **null, memory, prompt_cli** (+ null doubling as
+the fallback).
