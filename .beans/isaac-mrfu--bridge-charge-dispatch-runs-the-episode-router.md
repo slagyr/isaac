@@ -1,13 +1,13 @@
 ---
 # isaac-mrfu
 title: Bridge charge dispatch runs the episode router
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - episodes
 created_at: 2026-08-31T03:25:29Z
-updated_at: 2026-08-31T03:25:29Z
+updated_at: 2026-08-31T13:27:10Z
 parent: isaac-51xy
 ---
 
