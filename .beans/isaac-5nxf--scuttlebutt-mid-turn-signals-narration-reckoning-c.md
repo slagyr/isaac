@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-30T22:46:04Z
+updated_at: 2026-08-31T13:36:52Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -337,3 +337,33 @@ suite-health bean filed alongside.
 
 acp rendering, discord rendering, exec tool-progress adoption, terminology
 renames — see blocking/blocked-by links.
+
+
+
+## In-tree per-comm contract (2026-08-31, plan — the slice of isaac-frvu this bean needs)
+
+Byte-identical UX through the migration; each in-tree comm takes ONE
+altitude and defaults for the rest:
+- **null** — comm/defaults for everything (plus send!).
+- **memory** — records every event incl. cycle/outcome/kind columns; the
+  reference implementor, dictated by scuttlebutt.feature.
+- **cli / prompt_cli / api** — on-chatter renders exactly what on-text-chunk
+  rendered (byte-identical stdout); tool call/result lines unchanged;
+  aside/reply/reckoning/cycle/bulletin all defaults. Inventory each before
+  migrating — they are not identical today; preserve each one's current
+  output, do not unify them in this bean.
+- **Conformance spec addition**: for each comm, at most one of
+  {on-chatter} / {on-aside, on-reply} is non-default (memory exempt) — the
+  no-double-render rule, made testable.
+Module comms (acp/discord/imessage) are NOT this bean: isaac-frvu plans
+their rendering; they migrate in their own repos afterward.
+
+## Dispatch coordination (2026-08-31)
+
+isaac-x2up is in flight in drive/turn.clj + compaction. Sequence your landing:
+implement freely on the bean branch, but REBASE onto main after x2up merges
+and rerun the full gate before tagging unverified. If x2up's fix moves the
+compaction emission points this bean touches, prefer x2up's structure and
+adapt. Full-suite acceptance inherits x2up's outcome: 0 failures expected
+once it lands; if x2up is still open when you finish, the 18 known
+compaction reds are excluded and everything else must be green.
