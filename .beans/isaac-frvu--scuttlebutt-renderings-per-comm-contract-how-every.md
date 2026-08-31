@@ -1,11 +1,11 @@
 ---
 # isaac-frvu
 title: 'Scuttlebutt renderings: per-comm contract — how every Comm impl handles the new surface'
-status: draft
+status: completed
 type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
-updated_at: 2026-08-31T16:03:45Z
+updated_at: 2026-08-31T16:05:40Z
 blocking:
     - isaac-i5ps
     - isaac-pq0b
@@ -259,3 +259,33 @@ channel in separate buckets; hard limit 10k invalid requests/10min = 1h
 Cloudflare ban, so honoring Retry-After is the non-negotiable part.
 
 Remaining review session: iMessage.
+
+
+
+## iMessage review session (2026-08-31, Micah) — DECIDED
+
+iMessage = pure delivery. All turn events take comm/defaults; send! is the
+entire implementation (replies already ride the outbound delivery queue, not
+turn callbacks — today's on-turn-end is nil and stays that way via
+defaults). Break-glass alerts (compaction-disabled, stuck holds) are the
+ATTENTION system's job — it already routes break-glass to imessage; wiring
+lands in isaac-vrtb, never in the comm. No typing-bubble phase 0: the imsg
+CLI cannot send typing indicators.
+
+## SERIES COMPLETE — final per-comm contract index
+
+- null: defaults + send! stub (also the comm-less fallback; CliComm deleted,
+  both copies).
+- memory: records everything — reference implementor (scuttlebutt.feature).
+- prompt_cli: mechanical in 5nxf; stdout=reply/stderr=theater redesign with
+  -q/-v tiers in isaac-7rso.
+- ACP: option B — thought channel as stderr (💬 chatter, 🧠 reckoning),
+  message = reply at verdict; tool-progress via tool_call_update — isaac-i5ps.
+- Discord: phase 0 typing heartbeat isaac-qomx (no scuttlebutt dep);
+  phase 1 mechanical on pin bump; phase 2 live-turn working message
+  isaac-pq0b.
+- iMessage: pure delivery, nothing to do beyond the mechanical defaults
+  migration on its pin bump.
+Cross-comm emoji vocabulary: 💬 chatter · 🧠 reckoning · 🧰/← tools ·
+🥬✨🥀🧟 compaction (🪦 = disabled). Conformance: no same-DESTINATION double
+render (per-destination rule in isaac-5nxf).
