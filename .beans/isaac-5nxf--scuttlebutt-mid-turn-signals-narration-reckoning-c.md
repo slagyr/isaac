@@ -4,8 +4,10 @@ title: 'Scuttlebutt core: Comm replacement (chatter/reckoning/aside/reply/bullet
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T15:39:28Z
+updated_at: 2026-08-31T15:47:21Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
