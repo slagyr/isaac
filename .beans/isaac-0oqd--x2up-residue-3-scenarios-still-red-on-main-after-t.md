@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-31T16:27:46Z
-updated_at: 2026-08-31T17:29:13Z
+updated_at: 2026-08-31T17:32:03Z
 ---
 
 Repo: **isaac-agent**, main @ e452bc6 (x2up merged). Full bb features:
@@ -54,3 +54,10 @@ Failing scenarios are the spec; no new Gherkin required.
 - Full gate on isaac-agent main: bb features 738/0/1964, bb spec green.
 - Released 0.1.40 (manifest + CHANGELOG); registry pin advanced in the same
   train.
+
+
+
+Addendum: two stale SPECS also repaired in the same train (pre-existing at
+e452bc6, standalone-reproducible): worker_spec scheduler expectation missing
+ohsy's :turn.queue/tick; comm_spec PromptComm 1-arity construction (deftype
+gained live?). Final gate: bb spec 1603/0 (3 pending), bb features 738/0.
