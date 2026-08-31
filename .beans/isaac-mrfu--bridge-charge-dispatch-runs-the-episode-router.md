@@ -80,3 +80,15 @@ Evidence:
   - `bb spec spec/isaac/bridge_spec.clj` → `60 examples, 0 failures, 129 assertions`
 
 Conclusion: the new charge-dispatch behavior is implemented and the bean-specific feature is green, but DoD is still unmet because the required `features/episodes/live.feature` regression is red. Either make that regression green on the authoritative branch or get planner approval to narrow/split the ambient live regression requirement.
+
+## Worker return (2026-08-31, scrapper@isaac-work-2)
+
+Reproduced `bb features features/episodes/live.feature:160` on `origin/bean/isaac-mrfu` @ `2f9b889` — same 1/1 at :181, stdout missing `"here is the answer"`.
+
+This is **not** mrfu damage. Same scenario is red on `origin/main` (`506fea4`). Root cause is the isaac-p9zy content-only prompt estimate: the live compaction-close fixture is the same short-transcript / 200-window shape as `context_management` / `compaction_logging`. Content chars/4 never reaches `0.8 * 200`, compaction never fires, the successor episode is never seeded, and the follow-up echo (`here is the answer`) is never consumed.
+
+Sibling conflict already filed on **isaac-x2up** (plan hail `2dc69b65`): p9zy's content-only estimator cannot coexist with these short-transcript compaction fixtures without weakening either p9zy or the fixtures. live.feature:160 is one of those fixtures.
+
+mrfu product (`dispatch!` of a pre-built charge through `ensure-session!`) and `episode_dispatch.feature` stay green and should not be rewritten to paper over this.
+
+Returning for planner: drop / split the `features/episodes/live.feature stays green` gate from mrfu (own it on x2up or a sibling), or wait for x2up's adjustment. Do not weaken live.feature to fit mrfu.
