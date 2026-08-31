@@ -287,5 +287,5 @@ CLI cannot send typing indicators.
 - iMessage: pure delivery, nothing to do beyond the mechanical defaults
   migration on its pin bump.
 Cross-comm emoji vocabulary: 💬 chatter · 🧠 reckoning · 🧰/← tools ·
-🥬✨🥀🧟 compaction (🪦 = disabled). Conformance: no same-DESTINATION double
+🥬✨🥀🪦 compaction. Conformance: no same-DESTINATION double
 render (per-destination rule in isaac-5nxf).
