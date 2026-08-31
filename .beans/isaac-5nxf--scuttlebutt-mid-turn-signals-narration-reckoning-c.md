@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T15:47:21Z
+updated_at: 2026-08-31T15:58:37Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -412,3 +412,5 @@ voice twice to the same output channel. Implementing both on-chatter and
 on-reply is legal when they target different destinations (prompt_cli
 redesign: chatter→stderr, reply→stdout). memory exempt as recorder. The
 conformance spec asserts the per-destination form, not the per-method form.
+
+## Verify fail (attempt 1, 2026-08-31): required acceptance is still incomplete (`features/session/compaction_logging.feature` remains @wip and `src/isaac/comm/cli.clj` was not deleted)
