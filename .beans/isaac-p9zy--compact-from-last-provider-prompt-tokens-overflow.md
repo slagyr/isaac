@@ -107,3 +107,5 @@ Verified:
 - `bb features features/session/compaction_overflow.feature:15` — green
 - `bb features features/session/compaction_overflow.feature:42` — green
 - `bb features features/session/compaction_overflow.feature:72` — green
+
+Follow-up: isaac-x2up repairs the 18-scenario main-suite regression this bean introduced (content-only estimate vs short-transcript fixtures). p9zy contract (overflow compact-and-retry, content-only estimator) is preserved.

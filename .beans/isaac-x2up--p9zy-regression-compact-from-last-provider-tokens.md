@@ -4,8 +4,10 @@ title: 'p9zy regression: compact-from-last-provider-tokens turned 18 compaction 
 status: in-progress
 type: bug
 priority: critical
+tags:
+    - unverified
 created_at: 2026-08-30T22:52:35Z
-updated_at: 2026-08-31T14:17:30Z
+updated_at: 2026-08-31T15:31:56Z
 ---
 
 Repo: **isaac-agent**. Found 2026-08-30 running the full suite on main
@@ -175,3 +177,13 @@ Plus the other named p9zy-regression files from the bean evidence (context_manag
 Full `bb features` 0 failures only if the remaining reds are exactly this set; do not reopen unrelated suite-health.
 
 Verify-fail / conflict counter reset by this note.
+
+## Implementation (2026-08-31, scrapper@isaac-work-2)
+
+Planner decision applied: keep p9zy content-only estimator. Express "over the line" as `last-input-tokens` above `0.8 * window`. Mid-turn hole: live estimate was truncating tool results against the context window before counting — stop passing `:context-window` into `estimate-prompt-tokens`. Context-window guard now uses `context-gauge` (max live estimate, last-input-tokens).
+
+Landed on `isaac-agent` `bean/isaac-x2up`.
+
+Verified:
+- `bb features features/session/compaction_overflow.feature` + strategies/logging/mid_turn/memory_flush/template/context_management/context_window_guard/async + memory-comm + scuttlebutt + cli-prompt compaction + episodes/live:148 — 48/0/115
+- `bb spec spec/isaac/session spec/isaac/drive spec/isaac/llm/prompt/builder_spec.clj` — 388/0/901
