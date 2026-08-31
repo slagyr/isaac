@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
-updated_at: 2026-08-31T15:35:45Z
+updated_at: 2026-08-31T15:39:28Z
 blocking:
     - isaac-i5ps
     - isaac-pq0b
@@ -157,3 +157,38 @@ Supersedes the LogComm ruling above (that was an idea recorded prematurely):
 
 In-tree implementor list: **null, memory, prompt_cli** (+ null doubling as
 the fallback).
+
+
+
+## prompt_cli review session (2026-08-31, Micah) — DECIDED
+
+Principle: stdout is the answer, stderr is the theater, tiers only change
+how much theater. Errors: stderr always, every tier, plus exit code.
+
+| | --quiet | default | --verbose |
+|---|---|---|---|
+| stdout | reply | reply | reply |
+| chatter (live, dead ends incl.) | — | stderr | stderr |
+| 🧰 tool-call / ← tool-result | — | stderr | stderr |
+| compaction bulletins 🥬✨🥀🪦 | — | stderr | stderr |
+| reckoning (⋯ dim) | — | — | stderr |
+| tool-progress | — | — | stderr |
+| other bulletins (recall, holds, …) | — | — | stderr |
+
+- Chatter in DEFAULT (today's live feel, relocated to stderr); compaction in
+  default (how you tell compacting from hung); reckoning verbose-only
+  (inward voice; transcript has it regardless).
+- Asides render at NO tier — chatter already streamed those words.
+- The old live?/streaming knob DIES — streaming is free on stderr; one flag
+  family (-q / -v).
+- **No-double-render rule gains a channel qualifier** (→ isaac-5nxf): never
+  render the same voice twice TO THE SAME DESTINATION. prompt_cli
+  (chatter→stderr + reply→stdout) and memory both pass; chatter+reply both
+  to stdout still fails conformance.
+
+Implementation is its own bean (redesign, not the 5nxf mechanical
+migration). Scenario seeds: `prompt -m … 2>/dev/null` emits exactly the
+reply; -q silences stderr entirely (errors excepted); -v shows ⋯ reckoning
+lines; existing 🧰/compaction stderr scenarios keep passing.
+
+Remaining review sessions: ACP, Discord, iMessage.

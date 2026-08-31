@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T15:35:45Z
+updated_at: 2026-08-31T15:39:28Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -400,3 +400,13 @@ compaction reds are excluded and everything else must be green.
 - In-tree implementors to overhaul: **null, memory, prompt_cli** — three,
   not five. prompt_cli stays byte-identical in this bean; its stdout/stderr
   redesign is the separate bean from the prompt_cli review session.
+
+
+
+## Conformance rule refinement (2026-08-31, prompt_cli review)
+
+No-double-render is per DESTINATION: a comm must never render the same
+voice twice to the same output channel. Implementing both on-chatter and
+on-reply is legal when they target different destinations (prompt_cli
+redesign: chatter→stderr, reply→stdout). memory exempt as recorder. The
+conformance spec asserts the per-destination form, not the per-method form.
