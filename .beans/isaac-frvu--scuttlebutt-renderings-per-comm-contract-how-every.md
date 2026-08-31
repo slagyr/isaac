@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
-updated_at: 2026-08-31T15:46:39Z
+updated_at: 2026-08-31T16:03:45Z
 blocking:
     - isaac-i5ps
     - isaac-pq0b
@@ -221,3 +221,41 @@ compaction, 🧰/← tools — prompt_cli's -v reckoning lines use 🧠 too
 (supersedes the ⋯ placeholder in its table).
 
 Remaining review sessions: Discord, iMessage.
+
+
+
+## Discord review session (2026-08-31, Micah) — DECIDED
+
+Micah's driving gripe: the typing indicator dies after ~10s and long turns
+go opaque — ANY liveness signal is the big win. Three phases:
+
+**Phase 0 — typing heartbeat (own bean; needs NO scuttlebutt):**
+re-send post-typing every ~8s from on-turn-start until on-turn-end, using
+today's protocol. Ships independently, immediately.
+
+**Phase 1 — mechanical migration (rides the module's pin bump past 5nxf):**
+on-reply posts the reply as a new message (replacing on-turn-end's content
+path); on-turn-end renders errors only; typing heartbeat continues; all else
+defaults. Zero UX change beyond phase 0.
+
+**Phase 2 — live-turn working message (isaac-pq0b, per-channel opt-in
+:live-turn):**
+- working message posted at first cycle; EDITED (coalesced ≥2s, honor
+  Retry-After, hard cap ~15 edits/turn then freeze) with: latest 💬 aside,
+  last ~5 🧰/← tool lines (older collapse to a count), 🥬 compaction line.
+- chatter/tool-progress: not rendered (edits are snapshots; asides are the
+  right granularity).
+- **reckoning: never on Discord, no flag** — shared channels.
+- other bulletins silent (holds/deferrals are attention's job).
+- verdict: working message collapses to a one-line summary
+  (✔ n cycles · 🧰 n tools · Ns) and the reply posts as a NEW message so
+  the notification ping fires.
+- rest.clj gains bucket-awareness (today only 429→transient) — in pq0b.
+- Future note, not planned: Discord THREADS as a full-theater container.
+
+Rate-limit reality recorded: no documented fixed numbers — per-route buckets
+via X-RateLimit headers; global 50/s; sends and edits empirically ~5/5s per
+channel in separate buckets; hard limit 10k invalid requests/10min = 1h
+Cloudflare ban, so honoring Retry-After is the non-negotiable part.
+
+Remaining review session: iMessage.
