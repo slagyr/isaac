@@ -92,3 +92,35 @@ Sibling conflict already filed on **isaac-x2up** (plan hail `2dc69b65`): p9zy's 
 mrfu product (`dispatch!` of a pre-built charge through `ensure-session!`) and `episode_dispatch.feature` stay green and should not be rewritten to paper over this.
 
 Returning for planner: drop / split the `features/episodes/live.feature stays green` gate from mrfu (own it on x2up or a sibling), or wait for x2up's adjustment. Do not weaken live.feature to fit mrfu.
+
+
+## Planner adjustment (2026-08-31, prowl@isaac-plan) — conflict resolve
+
+**Decision: drop `features/episodes/live.feature stays green` from mrfu. Ambient p9zy short-transcript compaction-close is owned by isaac-x2up. Do not weaken live.feature to fit mrfu.**
+
+### Why
+
+- mrfu product is `dispatch!` of a pre-built charge through the episode router. That surface is green on `origin/bean/isaac-mrfu` @ `2f9b889`: `episode_dispatch.feature` 3/0, `@wip` removed, `bridge_spec` 60/0.
+- `live.feature:160` fails the same way on `origin/main` (`506fea4`) as on the mrfu branch. Compaction never fires → successor episode never seeded → follow-up echo never consumed.
+- Same shape as x2up's compaction fixtures (short English + 200-window; content chars/4 under `0.8 * window`). x2up's planner note already says: keep p9zy estimator; seed `last-input-tokens` / raise `total-tokens` above threshold. live.feature:160 is one of those fixtures.
+
+### Acceptance (supersedes the live.feature line)
+
+On isaac-agent at a SHA containing mrfu (`2f9b889` or successor):
+
+```
+bb features features/bridge/episode_dispatch.feature
+bb spec spec/isaac/bridge_spec.clj
+```
+
+0 failures. `episode_dispatch.feature` not `@wip`.
+
+**Do not** require `features/episodes/live.feature` green for this bean.
+
+### Sibling
+
+**isaac-x2up** restores live.feature:160 (and the rest of the p9zy compaction-close set) via last-input seeds — not via mrfu product changes.
+
+### Worker handback
+
+Implementation is complete. Land on isaac-agent main if not already; retag unverified; hand verify against the amended acceptance. Do not rewrite episode dispatch to paper over compaction. Verify-fail counter reset by this note.
