@@ -7,7 +7,11 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-30T15:54:52Z
+<<<<<<< HEAD
 updated_at: 2026-08-31T16:17:57Z
+=======
+updated_at: 2026-08-31T16:22:05Z
+>>>>>>> d83f8d87 (verify fail: isaac-5nxf)
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -415,9 +419,9 @@ conformance spec asserts the per-destination form, not the per-method form.
 
 ## Verify fail (attempt 1, 2026-08-31): required acceptance is still incomplete (`features/session/compaction_logging.feature` remains @wip and `src/isaac/comm/cli.clj` was not deleted)
 
-
-
 ## Principle addition (2026-08-31, iMessage review): no comm delivers
 replies outside the protocol. Module migrations must move any bespoke
 reply plumbing (iMessage's result->reply-text path) into on-reply; the
 conformance story includes checking modules deliver via the protocol.
+
+## Verify fail (attempt 2, 2026-08-31): required scuttlebutt acceptance is still red (`features/session/compaction_logging.feature` bulletin scenarios remain failing on the bean branch)
