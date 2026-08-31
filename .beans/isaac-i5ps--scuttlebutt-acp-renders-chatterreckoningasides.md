@@ -18,7 +18,7 @@ Repo: isaac-acp (after its pin bump in isaac-6yg0). Migrate to the new Comm via 
 
 Thought channel = stderr, message channel = stdout:
 - on-chatter → agent_thought_chunk, live, '💬 ' prefix.
-- on-reckoning → agent_thought_chunk, '🧭 ' prefix (feed the existing unused
+- on-reckoning → agent_thought_chunk, '🧠 ' prefix (feed the existing unused
   thought-notification builder).
 - on-reply → agent_message_chunk, whole reply at the verdict — the only
   message content. Reply duplication with the thought stream is accepted.

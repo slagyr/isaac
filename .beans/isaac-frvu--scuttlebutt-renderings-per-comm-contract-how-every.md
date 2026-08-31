@@ -203,7 +203,7 @@ the CLI principle applied to ACP's channel pair.
 | signal | mapping |
 |---|---|
 | chatter | agent_thought_chunk, streamed live, 💬-prefixed |
-| reckoning | agent_thought_chunk, ⚙→ **🧭-prefixed** (dead reckoning; disambiguates the two voices inside the thought channel) |
+| reckoning | agent_thought_chunk, **🧠-prefixed** (disambiguates the two voices inside the thought channel) |
 | reply | agent_message_chunk, whole, at the verdict — the ONLY message content. Duplication with the thought stream accepted (CLI precedent) |
 | aside | nothing separate (chatter streamed it) |
 | tool-call/result | tool_call pending → tool_call_update completed (unchanged) |
@@ -216,8 +216,8 @@ Notes: ACP protocol had a native home for every signal (plan +
 current_mode_update remain unused — 'plan' flagged as a future foreman fit).
 Clients that hide thought chunks see silence until the verdict; toad shows
 them, strictly better than today's everything-is-the-message.
-Emoji vocabulary is now CROSS-COMM: 💬 chatter, 🧭 reckoning, 🥬✨🥀🪦
-compaction, 🧰/← tools — prompt_cli's -v reckoning lines use 🧭 too
+Emoji vocabulary is now CROSS-COMM: 💬 chatter, 🧠 reckoning, 🥬✨🥀🪦
+compaction, 🧰/← tools — prompt_cli's -v reckoning lines use 🧠 too
 (supersedes the ⋯ placeholder in its table).
 
 Remaining review sessions: Discord, iMessage.
