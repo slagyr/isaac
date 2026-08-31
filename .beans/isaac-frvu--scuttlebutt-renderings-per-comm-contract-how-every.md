@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
-updated_at: 2026-08-31T14:59:38Z
+updated_at: 2026-08-31T15:15:12Z
 blocking:
     - isaac-i5ps
     - isaac-pq0b
@@ -97,3 +97,36 @@ per-comm vs per-crew knob; bulletin visibility incl. :episodes/* invisible
 and holds-via-attention; Discord phase split + opt-in flag; iMessage
 break-glass ping) are to be settled inside the relevant comm's session,
 not globally.
+
+
+
+## CLI review session (2026-08-31, Micah) — DECIDED
+
+Findings that reframed it: CliComm's only users are the two fallback sites
+in drive/turn.clj (:1084, :1268) — every comm-less charge (hail deliveries,
+i.e. WORKERS) renders through it into server stdout; and isaac-server ships
+a divergent older copy of the same namespace (classpath-order roulette).
+
+Rulings (Micah):
+1. **CliComm is the wrong fallback.** Comm-less turns get a new **LogComm**:
+   renders every signal through isaac.logger as structured events (worker
+   chatter/asides/tool events land in server.log where they belong), not
+   stdout prints. null would lose the signal; LogComm keeps it observable.
+2. **Kill the divergence**: delete isaac-server's src/isaac/comm/cli.clj.
+   And with the fallback gone, agent's CliComm has zero users — DELETE BOTH.
+   There is no 'cli comm'; the interactive CLI surface is prompt_cli.
+3. **Principle (applies to all CLI-ish comms, decided here, implemented in
+   the prompt_cli session): the official model response must be
+   identifiable. stdout carries ONLY the reply; ALL other activity (chatter,
+   asides, reckoning, tool events, bulletins) goes to stderr**, with CLI
+   options to control output levels (e.g. quiet / normal / verbose tiers —
+   exact flags decided in the prompt_cli session). This supersedes
+   byte-identical for the interactive CLI where reply-vs-activity was
+   previously mixed on stdout.
+
+Scope consequences → isaac-5nxf (amended there): LogComm (new, in-tree,
+conformance-covered) replaces the fallback; both CliComm copies deleted;
+in-tree implementor list becomes null, memory, LogComm, prompt_cli.
+
+Next review session: **prompt_cli** (stdout/stderr split + output-level
+flags + reckoning flag + bulletin mapping).

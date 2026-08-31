@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T14:44:41Z
+updated_at: 2026-08-31T15:15:12Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -367,3 +367,22 @@ compaction emission points this bean touches, prefer x2up's structure and
 adapt. Full-suite acceptance inherits x2up's outcome: 0 failures expected
 once it lands; if x2up is still open when you finish, the 18 known
 compaction reds are excluded and everything else must be green.
+
+
+
+## Scope amendment (2026-08-31, Micah — CLI review session, see isaac-frvu)
+
+- NEW in-tree implementor **LogComm**: replaces CliComm as the comm-less
+  fallback at drive/turn.clj:1084/:1268. Renders every signal as structured
+  isaac.logger events (worker turns become observable in server.log). Covered
+  by the conformance spec. Scenario: a memory-comm-less turn logs chatter/
+  tool events instead of printing — assert via 'the log has entries
+  matching'.
+- **DELETE both CliComm copies**: src/isaac/comm/cli.clj here AND
+  isaac-server's divergent src/isaac/comm/cli.clj (coordinate: the server
+  deletion ships on the server repo's next pin bump; until then its copy
+  must not shadow — verify load order or delete in the same train).
+- In-tree implementor list is now: null, memory, LogComm, prompt_cli.
+- prompt_cli migrates mechanically in THIS bean (byte-identical); its
+  stdout/stderr redesign + output-level flags are a SEPARATE bean from the
+  prompt_cli review session (isaac-frvu) — do not fold it in here.
