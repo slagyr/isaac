@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
-updated_at: 2026-08-30T23:29:05Z
+updated_at: 2026-08-31T14:59:38Z
 blocking:
     - isaac-i5ps
     - isaac-pq0b
@@ -67,3 +67,33 @@ decision Micah should make deliberately.
 Draft until the planning session runs. Blocks isaac-i5ps and isaac-pq0b
 (already linked); informs isaac-5nxf but does not block it — the in-tree
 contract there is "byte-identical, one altitude", already its regression net.
+
+
+
+## Session 1 results (2026-08-31, Micah + plan)
+
+Inventory attached (read of all impls):
+- cli (comm/cli.clj): prints text chunks; '[tool call: name]' lines; newline
+  at turn end; everything else no-op. Plain.
+- prompt_cli: very different from cli — accumulates text (prints when live),
+  🧰 tool-call + ← tool-result on stderr, ALL FOUR compaction states on
+  stderr (🥬/✨/🥀/🪦). The rich one.
+- api.clj: re-exports the protocol only — NOT an implementor; drop it from
+  the table (migration touches null, memory, cli, prompt_cli + 3 modules).
+- ACP: has an UNUSED agent_thought_chunk builder — reckoning pipe ready.
+  tool_call/tool_call_update lifecycle documented (pending→completed).
+- Discord: typing at start + one message at end. iMessage: no-ops every
+  turn event; replies ride send! delivery only.
+- Discord rate-limit note: message edits share the per-channel ~5 req/5s
+  bucket — live-turn editing must throttle (≥2s/edit, coalesce) or 429s.
+
+DECIDED (Micah): **null and memory rows as proposed** — null = defaults +
+send! stub; memory = records everything (dictated by scuttlebutt.feature).
+
+REMAINING: one REVIEW SESSION PER COMM, in Micah's order: cli, prompt_cli,
+ACP, Discord, iMessage. The recommendation rows in the table above are
+seeds, not decisions. The cross-cutting questions (reckoning default
+per-comm vs per-crew knob; bulletin visibility incl. :episodes/* invisible
+and holds-via-attention; Discord phase split + opt-in flag; iMessage
+break-glass ping) are to be settled inside the relevant comm's session,
+not globally.
