@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T16:14:56Z
+updated_at: 2026-08-31T16:17:57Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -414,3 +414,10 @@ redesign: chatter→stderr, reply→stdout). memory exempt as recorder. The
 conformance spec asserts the per-destination form, not the per-method form.
 
 ## Verify fail (attempt 1, 2026-08-31): required acceptance is still incomplete (`features/session/compaction_logging.feature` remains @wip and `src/isaac/comm/cli.clj` was not deleted)
+
+
+
+## Principle addition (2026-08-31, iMessage review): no comm delivers
+replies outside the protocol. Module migrations must move any bespoke
+reply plumbing (iMessage's result->reply-text path) into on-reply; the
+conformance story includes checking modules deliver via the protocol.

@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
-updated_at: 2026-08-31T16:05:40Z
+updated_at: 2026-08-31T16:17:57Z
 blocking:
     - isaac-i5ps
     - isaac-pq0b
@@ -289,3 +289,32 @@ CLI cannot send typing indicators.
 Cross-comm emoji vocabulary: 💬 chatter · 🧠 reckoning · 🧰/← tools ·
 🥬✨🥀🪦 compaction. Conformance: no same-DESTINATION double
 render (per-destination rule in isaac-5nxf).
+
+
+
+## iMessage review — CORRECTED AND FINAL (2026-08-31, Micah)
+
+Supersedes the 'pure delivery' row above. Findings: replies to a bound chat
+are deterministic today but via BESPOKE plumbing (inbound driver →
+result->reply-text → chunker → delivery queue), outside the Comm protocol;
+and imsg 0.9.0 HAS a typing command — it requires the IMCore bridge (SIP
+disabled + `imsg launch` dylib injection), and zanebot currently has SIP
+ENABLED, so typing is host-gated, not tool-gated.
+
+Decided row:
+- **on-reply**: chunk + enqueue to the originating chat; the bespoke
+  result->reply-text side-path is DELETED and its logic (chunking, cap)
+  moves here. on-turn-end: error text to the chat.
+- **typing heartbeat, feature-detected**: when `imsg status` reports the
+  IMCore bridge available, heartbeat like Discord's isaac-qomx; otherwise
+  silent no-op. Ships dormant.
+- everything else defaults; send! unchanged (cross-chat records).
+- SIP-disable on zanebot = OPS DECISION parked with Micah, not a bean.
+  Tapback-ack (👍 on receipt) noted as a future idea behind the same gate.
+- Migration is a real refactor (inbound driver stops post-processing
+  results) — belongs in the module's pin-bump migration bean with @wip
+  scenarios, not a rubber-stamp.
+
+**Principle (series-wide, established here): no comm delivers replies
+outside the protocol.** The bespoke iMessage reply path was benign but is
+the same species of side-channel as the ACP bridge bypass (isaac-6yg0).
