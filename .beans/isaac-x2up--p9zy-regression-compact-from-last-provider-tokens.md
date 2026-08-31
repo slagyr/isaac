@@ -123,3 +123,55 @@ Need a decision: restore a structure-aware estimate that still never
 uses `(str map)` as the *sole* source (and keep overflow:15), or
 explicitly redesign the short-transcript fixtures as last-input
 seeds, or drop p9zy's content-only estimator.
+
+
+## Planner adjustment (2026-08-31, prowl@isaac-plan) — conflict resolve
+
+**Decision: keep p9zy's content-only estimator and overflow:15. Do not restore `(str map)`. Do not drop p9zy. Express "over the line" as last-input / total-tokens ABOVE `0.8 * context-window` — one-column fixture updates, not 14 conversation rewrites.**
+
+### Why the fallback failed
+
+Worker evidence is accepted. Seeded `total-tokens 95` on a 160 window is **under** threshold `128`. Fixtures already copy that to `last-input-tokens`. A "first-turn fallback to total-tokens" cannot fire. Pre-p9zy compaction was an accident of `(str prompt-map)/4` counting EDN keys/tools. That is not scenario intent and must not come back (Grok production undercount vs provider is why p9zy exists; overflow:15 is the contract).
+
+The original x2up line "18 rewrites is a smell; prefer the fallback" assumed the seeds were already over the line. They are not. Updating the **number** that means "over the line" is not weakening intent.
+
+### What to change (fixtures)
+
+Every scenario whose intent is "this session is past the compaction threshold" must seed a gauge the new `should-compact?` actually reads **above** `0.8 * window`:
+
+- Prefer an explicit `last-input-tokens` column (same as `compaction_overflow.feature:15`).
+- If the sessions-exist step only has `total-tokens` and copies it to last-input, **raise `total-tokens` above the threshold** (e.g. 95 → 140 on a 160 window). Do not leave 95 and hope.
+
+Do **not** inflate English transcript bodies to manufacture content-chars/4. Do **not** change Then tables' compaction/transcript shape (6 entries, chronicle/active split, etc.) — those outcomes stay.
+
+### Mid-turn / tool dump
+
+If `compaction_mid_turn.feature` still does not compact after a last-input seed (or if that scenario has no last-input and the huge tool dump's **content** estimate is honestly under): that is a **product hole in the live estimator**, in scope here. The content estimate of a prompt must include soul/rules/tools **content**, tool-call arguments, and tool-result output — same stamper as pqjn — still never `(str map)`. Fix the walker if tool output is skipped. Do not restore printed-form as a floor.
+
+### Out of scope
+
+- Reverting p9zy overflow compact-and-retry.
+- Using `(str map)` as sole source or as a max() floor.
+- Weakening Then assertions so "no compaction" passes.
+- Absorbing unrelated full-suite reds outside the p9zy compaction regression set.
+
+### Acceptance (supersedes the blanket 738/180s chase if other files are independently red)
+
+On isaac-agent at a SHA that still contains p9zy (`29586bd`+) plus this repair:
+
+```
+bb features features/session/compaction_overflow.feature
+bb features features/session/compaction_strategies.feature
+bb features features/session/compaction_logging.feature
+bb features features/session/compaction_mid_turn.feature
+bb features features/session/compaction_memory_flush.feature
+bb spec spec/isaac/session spec/isaac/drive
+```
+
+Plus the other named p9zy-regression files from the bean evidence (context_management, context_window_guard, prompt stderr, memory-comm, summary template, episodes compaction-close) — 0 failures on those.
+
+`compaction_overflow.feature` must stay 3/0.
+
+Full `bb features` 0 failures only if the remaining reds are exactly this set; do not reopen unrelated suite-health.
+
+Verify-fail / conflict counter reset by this note.
