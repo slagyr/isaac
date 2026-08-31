@@ -1,11 +1,11 @@
 ---
 # isaac-5nxf
 title: 'Scuttlebutt core: Comm replacement (chatter/reckoning/aside/reply/bulletins, cycles, defaults map) in isaac-agent'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T13:36:52Z
+updated_at: 2026-08-31T14:44:41Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
