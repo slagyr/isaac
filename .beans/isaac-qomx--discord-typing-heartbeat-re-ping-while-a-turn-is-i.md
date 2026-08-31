@@ -1,11 +1,11 @@
 ---
 # isaac-qomx
 title: 'Discord typing heartbeat: re-ping while a turn is in flight'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-08-31T16:03:45Z
-updated_at: 2026-08-31T16:03:45Z
+updated_at: 2026-08-31T16:25:08Z
 ---
 
 Repo: **isaac-discord**. Phase 0 of the Discord scuttlebutt plan (isaac-frvu
@@ -38,3 +38,33 @@ it's working hardest. Any liveness signal is a huge improvement.
 
 Draft until scenarios are committed @wip. Independent of isaac-5nxf —
 dispatchable as soon as planned.
+
+
+
+## Scenarios (committed @wip at slagyr/isaac-discord ba9b997)
+
+features/comm/discord/typing.feature — :33 refresh while running (wait:true
++ clock 17s ⇒ 3 POSTs); :46 stops at turn end (fast turn, 30s ⇒ 1 POST);
+:59 error turn also stops (the leak case; relies on guaranteed
+finalization). Preamble's aspirational refresh claim corrected.
+
+## Step ledger
+
+| step | status |
+|------|--------|
+| Grover setup in / faked Gateway / config: / client ready as bot / responses queued (wait) / MESSAGE_CREATE / test clock advances / outbound request matches | reuse |
+| **{n:int} Discord outbound HTTP requests to {url:string} were made** | **NEW — count variant; tolerate singular/plural** |
+
+## Design pins
+
+Per-channel scheduler heartbeat: start on-turn-start, refcount concurrent
+turns per channel, cancel on-turn-end (every outcome), ~8s period. 429/
+Retry-After skips a beat (unit-spec obligation, not Gherkin). No config knob.
+
+## Acceptance
+
+Remove @wip from the three scenarios, then:
+    bb features features/comm/discord/typing.feature
+    bb spec spec/isaac/comm
+Full module bb features + bb spec green. Today's Comm protocol — NO
+isaac-5nxf dependency; do not migrate the protocol here.

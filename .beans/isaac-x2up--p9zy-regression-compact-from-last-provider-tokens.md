@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: critical
 created_at: 2026-08-30T22:52:35Z
-updated_at: 2026-08-31T15:40:01Z
+updated_at: 2026-08-31T16:25:08Z
 ---
 
 Repo: **isaac-agent**. Found 2026-08-30 running the full suite on main
@@ -185,3 +185,10 @@ Landed on `isaac-agent` `bean/isaac-x2up`.
 Verified:
 - `bb features features/session/compaction_overflow.feature` + strategies/logging/mid_turn/memory_flush/template/context_management/context_window_guard/async + memory-comm + scuttlebutt + cli-prompt compaction + episodes/live:148 — 48/0/115
 - `bb spec spec/isaac/session spec/isaac/drive spec/isaac/llm/prompt/builder_spec.clj` — 388/0/901
+
+
+
+## Merged (2026-08-31, plan): bean/isaac-x2up → main at e452bc6 (verify had
+passed on the branch but the merge was never made; planner merged after a
+green strategies smoke). Full-suite confirmation in progress; 5nxf's verify
+fails were this missing merge.
