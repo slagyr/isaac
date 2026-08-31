@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-08-30T15:54:52Z
-updated_at: 2026-08-31T16:22:05Z
+updated_at: 2026-08-31T16:29:55Z
 ---
 
 Design discussion 2026-08-30 (Micah + plan). Recall term: **scuttlebutt** — the
@@ -421,3 +421,15 @@ reply plumbing (iMessage's result->reply-text path) into on-reply; the
 conformance story includes checking modules deliver via the protocol.
 
 ## Verify fail (attempt 2, 2026-08-31): required scuttlebutt acceptance is still red (`features/session/compaction_logging.feature` bulletin scenarios remain failing on the bean branch)
+
+## Implementation (2026-08-31, scrapper@isaac-work-2)
+
+Rebased `bean/isaac-5nxf` onto `origin/main` (`e452bc6` x2up). CliComm gone; null fallback. Bulletin scenarios inherit x2up last-input seeds (165 / 85).
+
+Landed on `isaac-agent` `bean/isaac-5nxf` @ `1ab44ab` (rebased).
+
+Verified:
+- `bb spec spec/isaac/comm spec/isaac/drive` — 125/0/282
+- `bb features features/comm/scuttlebutt.feature features/comm/memory.feature` — 8/0/10
+- `bb features features/session/llm_interaction.feature` — 7/0/9
+- `bb features features/session/compaction_logging.feature:20` + `:91` — 2/0/3
