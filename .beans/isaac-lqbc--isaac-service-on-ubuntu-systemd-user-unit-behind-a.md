@@ -5,11 +5,11 @@ status: in-progress
 type: feature
 priority: normal
 tags:
-    - linux
     - unverified
     - server
+    - linux
 created_at: 2026-09-03T20:53:20Z
-updated_at: 2026-09-03T23:42:02Z
+updated_at: 2026-09-03T23:53:39Z
 ---
 
 Repo: **isaac-server**. Planning session 2026-09-03 (Micah + plan). Goal: run
