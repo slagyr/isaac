@@ -7,8 +7,9 @@ priority: high
 tags:
     - foundation
     - test-isolation
+    - unverified
 created_at: 2026-09-03T23:48:04Z
-updated_at: 2026-09-03T23:50:47Z
+updated_at: 2026-09-03T23:51:53Z
 blocking:
     - isaac-stao
 ---
@@ -59,3 +60,12 @@ memory** — memory means no file.
 
 - The scenario-root injection in isaac-server (isaac-stao).
 - CLI sink behaviour (`apply-cli!` already leaves `:memory` alone).
+
+
+## Implementation (2026-09-03, plan@isaac-plan)
+
+isaac-foundation main @ **7c959041504bb24d3d67e154788bebf52f0be25f** (`7c95904`).
+`apply-server!` under `:memory` → `lfile/clear-sink-config!`, no server sink;
+docstring rewritten. Two new examples in `spec/isaac/log/output_spec.clj`
+(preserves :memory + no sink; drops a prior file-mode sink). Gate: `bb spec`
+894/0, `bb features` 139/0, lint clean. Pin this SHA in isaac-stao.

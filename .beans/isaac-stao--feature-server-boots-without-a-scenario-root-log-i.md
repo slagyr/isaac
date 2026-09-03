@@ -1,14 +1,14 @@
 ---
 # isaac-stao
 title: Feature server boots without a scenario root log into the live ~/.isaac (isaac-server command.feature)
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - isaac-server
     - test-isolation
 created_at: 2026-09-03T23:36:58Z
-updated_at: 2026-09-03T23:36:58Z
+updated_at: 2026-09-03T23:51:53Z
 ---
 
 Likely repo: **isaac-server** (`spec/isaac/server/server_steps.clj`, `features/server/command.feature`).
