@@ -1,0 +1,40 @@
+---
+# isaac-stao
+title: Feature server boots without a scenario root log into the live ~/.isaac (isaac-server command.feature)
+status: todo
+type: bug
+priority: high
+tags:
+    - isaac-server
+    - test-isolation
+created_at: 2026-09-03T23:36:58Z
+updated_at: 2026-09-03T23:36:58Z
+---
+
+Likely repo: **isaac-server** (`spec/isaac/server/server_steps.clj`, `features/server/command.feature`).
+
+## Problem
+
+Three `features/server/command.feature` scenarios (`server command logs hello before startup`, `server command logs startup with host and port`, `Default port is 6674 when no port is configured`) run `isaac server` through `run-cli-with-stubbed-config!` with **no scenario root**. `argv-with-feature-root` only injects `--root` when the feature bean has one, so `isaac.main` resolves the default root: the real `~/.isaac` of whoever runs the suite.
+
+Observed on zanebot 2026-09-03 (verify crew, `bb features` in `verify/isaac-server`): three server boots logged `:server/hello :root "/Users/zane/.isaac"` and wrote ~130 lines (config snapshot, boot phases, every `:berth/registration`) into the **live** `~/.isaac/logs/server.log`. On the old foundation pin that also meant every line slurped the 6MB live log (~0.8s/line, the isaac-sbn7 bug), and `bb features` timed out (exit 124 at 240s). The pin is fixed separately (isaac-server bumps foundation to 8dc5d5e); this bean is the isolation leak, which is wrong regardless of speed — test boots pollute the production log and `config/set-snapshot "server boot"` entries in it.
+
+Locally the same three boots print `root /tmp/isaac` (whatever the developer's default root resolves to).
+
+## Settled design
+
+- A feature-run server boot must never resolve to the real home root. The CLI-path boot step (`run-cli-with-stubbed-config!`) takes the scenario root when one is set and otherwise uses the same per-scenario default the in-process boot step uses (`default-server-home` under `target/test-state`), always passing `--root`.
+- `command.feature` keeps its scenarios as written; the fix is in the step, so any future feature that boots via the CLI path is covered too.
+
+## Acceptance
+
+Home: `isaac-server` (`bb features`, `bb spec`).
+
+1. `bb features` in isaac-server never logs a `:server/hello` whose `:root` is outside the repo's `target/` (run it, then `grep ':server/hello' ~/.isaac/logs/server.log` shows no new entries from the run; every hello in the feature stdout shows a `target/` or scenario root).
+2. `command.feature` scenarios still pass and their `the log has entries matching` assertions still see `:server/hello` / `:server/started`.
+3. `argv-with-feature-root` (or its replacement) always yields an argv containing `--root` for the server command.
+
+## Out of scope
+
+- Rotating or cleaning the live zanebot `server.log`.
+- The foundation pin bump (done alongside this bean, commit on isaac-server main).
