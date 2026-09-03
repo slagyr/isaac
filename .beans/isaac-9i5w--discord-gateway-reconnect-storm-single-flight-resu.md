@@ -7,9 +7,8 @@ priority: high
 tags:
     - discord
     - gateway
-    - unverified
 created_at: 2026-08-30T15:13:13Z
-updated_at: 2026-08-30T16:02:21Z
+updated_at: 2026-09-03T17:53:39Z
 ---
 
 Likely repo: **isaac-discord**. Related: isaac-ceeq (double auth on the *same* reconnected socket's HELLO — fixed; this is a *second* reconnect task), isaac-wtg8 (uuid reconnect task ids so "task already scheduled" no longer throws — that let two tasks run).
@@ -116,3 +115,23 @@ Landed on isaac-discord `main` `a64c3eba`.
 Verified locally:
 - `bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj` — 93/0/216
 - `bb jvm-features features/comm/discord/reconnect.feature` — 6/0/21
+
+
+## Verify fail (attempt 1, 2026-09-03): exact acceptance spec command is still red (`bb spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj` exits nonzero; only the JVM path is green)
+
+Evidence:
+- `bb spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj`
+  - exits 1 from the native SCI path
+  - `Protocol not found: clojure.lang.IHashEq`
+- `bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj`
+  - `93 examples, 0 failures, 216 assertions`
+- `bb features features/comm/discord/reconnect.feature:48`
+  - `1 examples, 0 failures, 6 assertions`
+- `bb features features/comm/discord/reconnect.feature:61`
+  - `1 examples, 0 failures, 2 assertions`
+- `bb features features/comm/discord/reconnect.feature:71`
+  - `1 examples, 0 failures, 3 assertions`
+- `bb jvm-features features/comm/discord/gateway.feature features/comm/discord/lifecycle.feature features/comm/discord/service_lifecycle.feature`
+  - `10 examples, 0 failures, 36 assertions`
+
+`bb.edn` currently documents both `gateway_spec.clj` and `service_spec.clj` as JVM-only. This bean cannot pass until the exact acceptance command is green or the acceptance is amended.
