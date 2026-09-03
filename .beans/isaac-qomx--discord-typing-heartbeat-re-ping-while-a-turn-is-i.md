@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-31T16:03:45Z
-updated_at: 2026-09-03T17:29:12Z
+updated_at: 2026-09-03T17:35:05Z
 ---
 
 Repo: **isaac-discord**. Phase 0 of the Discord scuttlebutt plan (isaac-frvu
@@ -72,3 +72,5 @@ Full module bb features + bb spec green. Today's Comm protocol — NO
 isaac-5nxf dependency; do not migrate the protocol here.
 
 ## Verify fail (attempt 1, 2026-09-03): bean branch regresses discord comm specs and does not satisfy the full-module green gate
+
+## Verify fail (attempt 2, 2026-09-03): typing heartbeat scenarios pass, but discord comm specs still regress and the full-module green gate remains unmet
