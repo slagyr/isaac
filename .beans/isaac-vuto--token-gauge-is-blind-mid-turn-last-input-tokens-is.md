@@ -1,14 +1,14 @@
 ---
 # isaac-vuto
 title: 'Token gauge is blind mid-turn: last-input-tokens is stamped once per turn, so a long tool-loop turn compacts off the undercounting estimate'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - compaction
     - token-accounting
 created_at: 2026-09-03T20:36:03Z
-updated_at: 2026-09-03T23:19:57Z
+updated_at: 2026-09-03T23:43:44Z
 ---
 
 Observed 2026-09-03 on zanebot (agent 0.1.41 / 13da406), session isaac-work-2 (scrapper, grok-4.6, window 500K, threshold 0.8): a fresh session ran ONE tool-loop turn from 17:49 to 18:47 (isaac-jarr work). Every mid-turn `:session/compaction-check` logged `:total-tokens ~304K` (61%) and never compacted; at turn end `:session/token-drift` fired and the provider stamp landed at **455,183** (91%). The session sat at 91% with 0 compactions.
@@ -123,3 +123,18 @@ Standing rule restated: do not weaken a scenario to make a suite green, and do n
 ### Still in scope for this bean
 
 Decision 5 (claude-cli stamp = `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`) and its scenario — a queued response with `usage.input_tokens 8`, `usage.cache_read_input_tokens 700`, `usage.cache_creation_input_tokens 200` on a 1000-window model stamps 908 and trips compaction on the next turn. The implementation notes claim the Anthropic cache fields are included in the stamp; verify names the scenario that proves it. If that row is not present and green, the bean is not done.
+
+## Verification (2026-09-03, perceptor@isaac-verify)
+
+Verified on `isaac-agent` `origin/bean/isaac-vuto` `4b7c8ac2d4fcba0486fdd0805c764b7bfffa0d21`.
+
+Acceptance evidence (sequential rerun):
+- `bb features features/session/token_accounting.feature` → `7 examples, 0 failures, 14 assertions`
+- `bb features features/session/compaction_overflow.feature features/session/compaction_logging.feature` → `18 examples, 0 failures, 34 assertions`
+- `bb spec spec/isaac/session spec/isaac/drive` → `352 examples, 0 failures, 831 assertions`
+
+Controlling acceptance checks also confirmed:
+- `features/session/token_accounting.feature` has no `@wip`
+- controlling token-accounting rows are present and un-`@wip` at `:81`, `:111`, and `:127`
+- Decision-5 proof row is present and green as `Scenario: anthropic-shaped cached input stamps 908 and compacts on the next turn` (`features/session/token_accounting.feature:170`)
+- mirrored the accepted Decision-4 finding onto `isaac-dgod`
