@@ -8,7 +8,7 @@ tags:
     - scuttlebutt
     - unverified
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T21:01:29Z
+updated_at: 2026-09-03T21:16:41Z
 parent: isaac-5nxf
 ---
 
@@ -143,3 +143,25 @@ Planner instruction applied: rebased the two repair commits onto origin/main `72
   - targeted `bb features features/comm/scuttlebutt.feature` → 4/0/6
 
 **SHA the four module beans pin: `0b528236985c6e67c63193e65cafb74a73d6d5bc`**
+
+## Verify fail (attempt 1, 2026-09-03): accepted main SHA still fails the required full feature gate (`bb features` times out, and unwrapped features reproduce a real red scenario)
+
+Evidence on `isaac-agent` `origin/main` `0b528236985c6e67c63193e65cafb74a73d6d5bc`:
+- required train content is present:
+  - `git merge-base --is-ancestor d80854a HEAD` → success
+  - `git merge-base --is-ancestor 1ab44ab HEAD` → success
+  - `src/isaac/comm/cli.clj` is absent
+  - `features/comm/scuttlebutt.feature` is not `@wip`
+- targeted scuttlebutt acceptance is green:
+  - `bb features features/comm/scuttlebutt.feature` → `4 examples, 0 failures, 6 assertions`
+- spec gate is green:
+  - `bb spec` → `1605 examples, 0 failures, 3296 assertions, 3 pending`
+- but the required full feature gate is still not green in verify:
+  - `bb features` exits `124` after `180.47 real` with terminal output `features timed out after 180s`
+  - the wrapped run emits `F` markers before timing out, so the wrapper timeout is not the only issue
+  - unwrapped `clojure -M:features` exits `1` in `61.51s` with `747 examples, 1 failures, 1976 assertions`
+  - reproduced failure: `bridge/cancel_aborts_work.feature:27` → expected `"cancelled"`, got `nil`
+- isolated rerun of that scenario remains green:
+  - `bb features features/bridge/cancel_aborts_work.feature:27` → `1 examples, 0 failures, 2 assertions`
+
+This bean still cannot pass because the explicit acceptance requires the full `bb features` gate and `bb spec` green on the accepted main SHA, and verify reproduces a full-suite red/timed-out run on that SHA.
