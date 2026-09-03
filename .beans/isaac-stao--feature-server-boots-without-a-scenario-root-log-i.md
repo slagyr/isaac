@@ -38,3 +38,18 @@ Home: `isaac-server` (`bb features`, `bb spec`).
 
 - Rotating or cleaning the live zanebot `server.log`.
 - The foundation pin bump (done alongside this bean, commit on isaac-server main).
+
+
+## Amendment (2026-09-03, plan — combined fix with isaac-zqyw)
+
+Blocked by **isaac-zqyw** (isaac-foundation: `apply-server!` under `:memory`
+binds no file sink). Two additions to this bean, design otherwise unchanged:
+
+- **Pin bump rides here.** Bump `io.github.slagyr/isaac-foundation` (and the
+  `-spec` / `-test-support` coords) in `deps.edn` and `bb.edn` to the SHA
+  isaac-zqyw records, in the same commit as the step fix.
+- **One-time acceptance (not a scenario):** after a full `bb features`, the
+  memory-mode scenarios (`command.feature`, `hot_reload_logging.feature`,
+  `logging.feature`) wrote no `logs/server.log` anywhere — not under `target/`
+  and not under the home root. `find target -name server.log` after the run
+  lists only files produced by file-mode scenarios (`log_lifecycle.feature`).
