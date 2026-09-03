@@ -1,6 +1,6 @@
 ---
 # isaac-tuk1
-title: 'Claude Code as a first-class provider: isaac-claude module + native tool loop via MCP'
+title: 'Claude Code as a first-class provider: isaac-claude-code module + native tool loop via MCP'
 status: in-progress
 type: epic
 tags:

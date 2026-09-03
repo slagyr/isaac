@@ -1,6 +1,6 @@
 ---
 # isaac-5xn7
-title: 'isaac-claude driver v2: Claude Code runs the native tool loop against isaac''s MCP tools; transcript from the stream-json feed'
+title: 'isaac-claude-code driver v2: Claude Code runs the native tool loop against isaac''s MCP tools; transcript from the stream-json feed'
 status: draft
 type: feature
 tags:
