@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - mcp
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-03T23:36:15Z
+updated_at: 2026-09-03T23:52:14Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -50,3 +50,18 @@ Split of production: registry + JSON-RPC handler fn in **isaac-agent** (`isaac.m
     cd isaac-server && bb features features/server/mcp_bridge.feature features/server/auth.feature && bb spec
     both: full bb features && bb spec (exit codes)
 The server pins the agent SHA that ships the registry. Remove @wip when green.
+
+
+
+## Step ledger v2 (2026-09-03, after Micah's audit) — supersedes the ledger above
+
+| step | status |
+|------|--------|
+| default Grover setup / built-in tools registered / crew allows tools / sessions exist / config: / transcript matching / transcript not matching / the log has entries matching / an Isaac root at / the Isaac server is started / the response status is / the response body has … equal to / **stdin is:** / **isaac is run with** / **the stdout lines match:** / the exit code is 0 | reuse (bridge round trip now runs entirely on foundation CLI steps; the {server-port} placeholder is the existing test-server port substitution — confirm the runner exposes it, else pass the port via the server's status output) |
+| **Given a turn "…" is registered for session "…"** (+ `with tools "…"` on the server side) | **NEW — the registry entry is written by the driver at turn start (isaac-5xn7); with no driver in these scenarios nothing else can create it. Reusing 1sdl's fake driver + `the user sends` would test the registry only through a whole turn, coupling zocg to the seam bean and hiding the handler's own contract.** |
+| **And the turn "…" is cleared** | **NEW — same reason: the driver clears it at turn end; the refusal scenario needs a cleared turn without a turn having run.** |
+| **When an MCP request is handled for turn "…":** (docstring JSON) | **NEW — the agent-side handler is a function, not a route; production lives in isaac-agent so its scenarios must call it directly. The server's POST step cannot run in the agent suite (no server dep).** |
+| **Then the MCP response matches:** (dot-path table, match DSL) | **NEW — binds the match DSL to the last MCP response; `the last LLM request matches:` and the server's `response body has` are bound to different objects. Thin wrapper over the existing matcher.** |
+| **When the client sends POST "…" with header "…" and body:** / **with body:** | **NEW — the server suite has only GET request steps; POST with a body is the general-purpose addition.** |
+
+Dropped from v1: `has N tools` (now a `:mcp/tools-listed :count` log row), `has no "error" key` (absence assertion — the isError scenario asserts `id` + `result.isError` instead), `text is at most N characters` (the `truncated` marker + existing cap features cover it), and the three `mcp-bridge stdout …` steps (foundation's `stdin is:` / `isaac is run with` / `the stdout lines match:` replace them). Net: 5 new step phrasings, all fixture/binding helpers.
