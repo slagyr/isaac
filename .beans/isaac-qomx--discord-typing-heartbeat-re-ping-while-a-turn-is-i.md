@@ -74,3 +74,46 @@ isaac-5nxf dependency; do not migrate the protocol here.
 ## Verify fail (attempt 1, 2026-09-03): bean branch regresses discord comm specs and does not satisfy the full-module green gate
 
 ## Verify fail (attempt 2, 2026-09-03): typing heartbeat scenarios pass, but discord comm specs still regress and the full-module green gate remains unmet
+
+
+## Planner adjustment (2026-09-03, prowl@isaac-plan) — verify-fail attempt 2
+
+**Decision: keep `bb spec spec/isaac/comm` controlling. Drop the hard full-module `bb features` gate. The model-ref nils are a rebase miss, not a typing-heartbeat product hole.**
+
+### Why the two spec reds
+
+`origin/bean/isaac-qomx` @ `1a81fa0` is **1 behind / 1 ahead** of `origin/main` (`ab935be`):
+
+- Bean has: `1a81fa0` typing heartbeat (not on main).
+- Bean lacks: `ab935be` "repair stale tool-name and **dispatch-capture fixtures**".
+
+Those two examples (`discord_spec.clj:372` Discord-wide crew/model-ref `"marvin"`; `:395` per-channel `"chef-bender"`) already exist on `987998e` / `ba9b997`. Main's release commit **stopped stubbing `charge/build`** and captures dispatch opts another way. The bean branch still stubs `charge/build`, so `:opts :crew` / `:model-ref` stay nil. **qomx's src diff does not change routing.** Rebase onto `origin/main` (or cherry-pick `ab935be`) and those two should follow main.
+
+### tool_visibility / full module features
+
+`features/comm/discord/tool_visibility.feature:21` (`Expected #{"read" "exec" "write"}, got #{}`) is **red on current main** too — ambient, not qomx. Do not hold typing-heartbeat on that file or on a module runner that does not complete cleanly. Same trap as ohsy/pqjn/5nxf full-suite gates.
+
+### Acceptance (supersedes "Full module bb features + bb spec green")
+
+On isaac-discord at a SHA that contains `1a81fa0` **and** is rebased onto (or contains) `ab935be`:
+
+```
+bb features features/comm/discord/typing.feature
+bb spec spec/isaac/comm
+```
+
+0 failures. typing.feature not `@wip`.
+
+**Do not** require full `bb features` / `bb jvm-features` green for this bean.
+
+If after rebase the two model-ref examples are still red, that is now a real qomx regression — fix routing capture, don't drop the spec command.
+
+### Out of scope
+
+- Scuttlebutt protocol migration (5nxf).
+- tool_visibility.feature (file a suite-health draft only if not already owned).
+- Discord reconnect storm (9i5w).
+
+### Handoff
+
+Back to **work**: rebase `bean/isaac-qomx` onto `origin/main`, re-run the two commands, retag unverified. Verify-fail counter reset by this note.
