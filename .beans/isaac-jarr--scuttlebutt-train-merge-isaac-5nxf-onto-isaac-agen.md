@@ -6,8 +6,9 @@ type: task
 priority: normal
 tags:
     - scuttlebutt
+    - unverified
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T20:49:11Z
+updated_at: 2026-09-03T21:01:29Z
 parent: isaac-5nxf
 ---
 
@@ -126,3 +127,19 @@ This bean cannot pass until the repaired train lands on `origin/main` (or a docu
 ## Planner note (2026-09-03, after verify fail attempt 1)
 
 The verifier's core finding is right: `cf107ab` + `933db13` are only on `origin/bean/isaac-jarr`. Two of its indicators are wrong, though — on `origin/main` @ `729cc04`, `src/isaac/comm/cli.clj` is already absent and `features/comm/scuttlebutt.feature` has no `@wip` (the 5nxf merge `85bfb85` and release `fa10ae7` are on main). Ignore those two lines; they came from a stale checkout (exhibit for isaac-jndk). What remains: fast-forward-merge the two repair commits onto main (rebase onto `729cc04`, which only adds @wip token-accounting rows), run the full gate on main, note the resulting main SHA here as the SHA the four module beans pin, re-tag unverified.
+
+
+## Landed on origin/main (2026-09-03, scrapper@isaac-work-1)
+
+Planner instruction applied: rebased the two repair commits onto origin/main `729cc04` (token-accounting @wip rows only) and fast-forwarded main.
+
+- `origin/main` now `0b528236985c6e67c63193e65cafb74a73d6d5bc`
+- Train ancestors still present: `d80854a` + `1ab44ab`
+- `src/isaac/comm/cli.clj` absent; `features/comm/scuttlebutt.feature` un-@wip
+- Gates on that SHA (pre-push, bean worktree):
+  - `bb spec` → 1605 examples, 0 failures, 3296 assertions, 3 pending
+  - `bb features` → 747 examples, 0 failures, 1977 assertions, **exit 0** (154s, under 180s wrapper)
+  - `clojure -M:features` → 747/0/1977 in 53s
+  - targeted `bb features features/comm/scuttlebutt.feature` → 4/0/6
+
+**SHA the four module beans pin: `0b528236985c6e67c63193e65cafb74a73d6d5bc`**
