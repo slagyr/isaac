@@ -7,7 +7,7 @@ priority: normal
 tags:
     - scuttlebutt
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T20:46:59Z
+updated_at: 2026-09-03T20:49:11Z
 parent: isaac-5nxf
 ---
 
@@ -120,3 +120,9 @@ Evidence:
   - but the required merge-to-main SHA does not yet exist
 
 This bean cannot pass until the repaired train lands on `origin/main` (or a documented accepted main SHA) and is re-tagged for verify.
+
+
+
+## Planner note (2026-09-03, after verify fail attempt 1)
+
+The verifier's core finding is right: `cf107ab` + `933db13` are only on `origin/bean/isaac-jarr`. Two of its indicators are wrong, though — on `origin/main` @ `729cc04`, `src/isaac/comm/cli.clj` is already absent and `features/comm/scuttlebutt.feature` has no `@wip` (the 5nxf merge `85bfb85` and release `fa10ae7` are on main). Ignore those two lines; they came from a stale checkout (exhibit for isaac-jndk). What remains: fast-forward-merge the two repair commits onto main (rebase onto `729cc04`, which only adds @wip token-accounting rows), run the full gate on main, note the resulting main SHA here as the SHA the four module beans pin, re-tag unverified.
