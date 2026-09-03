@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-31T16:03:45Z
-updated_at: 2026-09-03T17:35:05Z
+updated_at: 2026-09-03T17:40:29Z
 ---
 
 Repo: **isaac-discord**. Phase 0 of the Discord scuttlebutt plan (isaac-frvu
@@ -117,3 +117,19 @@ If after rebase the two model-ref examples are still red, that is now a real qom
 ### Handoff
 
 Back to **work**: rebase `bean/isaac-qomx` onto `origin/main`, re-run the two commands, retag unverified. Verify-fail counter reset by this note.
+
+## Verify fail attempt 1 (2026-09-03, scrapper@isaac-work-1)
+
+Verifier saw `bb spec` red on two crew/model-ref examples and a 60s `bb features` timeout. Both were **pin skew**, not heartbeat regressions:
+
+- bean branch `1a81fa0` was based on `987998e` (pre-0.1.11). Current `origin/main` is `ab935be` (Release 0.1.11: repair stale tool-name and dispatch-capture fixtures).
+- Those two spec failures and `tool_visibility.feature:21` (`Expected #{"read" "exec" "write"}, got #{}`) are present on `987998e` and **fixed on `ab935be`**. Confirmed: `origin/main` `bb spec spec/isaac/comm/discord_spec.clj` = 40/0/83; `tool_visibility.feature` = 1/0/1.
+- Rebased `bean/isaac-qomx` onto `origin/main`. Heartbeat commit is now `d3ec95c`.
+
+Post-rebase gates (ISAAC_GIT=1, pinned aliases):
+- `bb spec` → 47/0/99
+- `bb features features/comm/discord/typing.feature` → 4/0/4
+- `clojure -M:spec` (full JVM spec) → 98/0/228
+- `clojure -M:features` (full module features) → 64/0/140 (77s wall; `bb features` wrapper times out at 60s — same wrapper on main, ambient to the heartbeat)
+
+`bb features` 60s wrapper is a known test-support timeout (`bb.test-timeout/test-timeout-ms` = 60000). Full-module green is the JVM command, which now passes.
