@@ -32,3 +32,39 @@ Evidence on `isaac-agent` `origin/main` `082f9b0`:
   - the run emitted `F` markers before timing out, so the full gate did not complete cleanly
 
 This bean explicitly requires the full gate by exit code (`bb features AND bb spec, exit codes not tails`). It cannot pass until `bb features` exits 0 on the accepted main SHA, or planning narrows/amends the gate.
+
+## Verify fail attempt 1 (2026-09-03, scrapper@isaac-work-1)
+
+Conflict: named full gate `bb features` cannot exit 0 on accepted main.
+
+Train content is present on origin/main `c2b7b9e` (verifier saw `082f9b0`;
+same train ancestors `d80854a` + `1ab44ab`; CliComm gone; scuttlebutt un-@wip).
+`bb spec` is green (1604/0). Targeted `bb features features/comm/scuttlebutt.feature`
+is green in isolation (4/0/6).
+
+Unwrapped `bb features` (no 180s wrapper) on `c2b7b9e` finished in **228s** with
+**747 examples, 5 failures, 1968 assertions**. The 180s timeout is a consequence
+of the reds, not the cause. Failures:
+
+1. `session/context_window_guard.feature:74` — bulletin `compaction/disabled`
+   (5nxf migration of the old `compaction-disabled` event). Isolated scuttlebutt
+   is green; this migrated scenario is not.
+2. `session/compaction_memory_flush.feature:42` — compaction-turn `memory__write`
+   did not persist. Feature **unchanged since 13da406** (pre-5nxf). Likely
+   5nxf/jarr product interaction, not a planned 5nxf scenario.
+3. `comm/scuttlebutt.feature:91` — streaming tool-progress through the ctx seam.
+   Isolated `bb features features/comm/scuttlebutt.feature` is 4/0/6; fails only
+   in the full suite (order/leak).
+4. `bridge/cancel_aborts_work.feature:27` — turn result expected `"cancelled"`,
+   got nil. Feature **unchanged since 13da406**.
+5. `session/compaction_template.feature:49` — `config/compaction.md` did not
+   replace the built-in template (got the default nine-section prompt). Feature
+   **unchanged since 13da406**.
+
+Making `bb features` exit 0 means either (a) fixing these five as extra 5nxf/jarr
+product work beyond the merge+release scope, or (b) planner-amending acceptance
+to the targeted scuttlebutt + spec gates already green, treating the five as
+follow-up (several are pre-5nxf contracts that the train now trips).
+
+Do not reopen 5nxf protocol work. Request: amend or authorize the five as
+in-scope repairs, then re-dispatch.
