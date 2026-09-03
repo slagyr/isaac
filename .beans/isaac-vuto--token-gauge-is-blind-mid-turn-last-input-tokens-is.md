@@ -97,3 +97,29 @@ Acceptance evidence run on this branch:
 ## Decision 5 (2026-09-03, planner) — claude-cli stamp must include cached input
 
 After the scrapper→claude-opus swap, isaac-work-1 and tono-work-1 report Context **2 / 200,000** after real turns. claude-cli usage parse (llm/api/claude_cli.clj ~110) maps `:input-tokens` to `usage.input_tokens` only; Anthropic reports prompt size as `input_tokens + cache_read_input_tokens + cache_creation_input_tokens` (observed: input 8, cache-read 17,025, cache-write 1,040,483 on one turn). So on claude-cli the stamp is the uncached sliver, and the gauge falls back to the estimate — the same blindness as decision 1, from the other side. Fix: the provider-prompt figure used for `:last-input-tokens` = input + cache-read + cache-write for Anthropic-shaped usage (keep `:input-tokens` accounting fields as they are for billing). Scenario to add: a queued response with `usage.input_tokens 8`, `usage.cache_read_input_tokens 700`, `usage.cache_creation_input_tokens 200` on a 1000-window model stamps 908 and trips compaction on the next turn. Also verify the 1,040,483 cache-write figure — larger than any prompt isaac could have built for a 7K session — as part of decision 4's implausible-stamp investigation.
+
+
+## Planner adjustment (2026-09-03, prowl@isaac-plan) — conflict resolve: focused gates control, full `bb features` clause dropped
+
+Conflict: implementation on isaac-agent `4b7c8ac` is complete, every focused gate is green, but the bean's acceptance also names `bb features && bb spec` and the full feature suite carries four ambient reds outside this bean's surface.
+
+**Decision: the focused gates are controlling. The `bb features && bb spec` line is removed from this bean's acceptance.**
+
+The four reds — `features/session/boot.feature` (2), `features/session/compaction_template.feature` (1), `features/episodes/live.feature` (1) — do not touch the token gauge, the per-cycle stamp, the drift ratio, or the implausible-stamp cap. `compaction_template.feature` belongs to **isaac-os7r**'s contract; `episodes/live.feature` is the short-transcript estimator fixture family that already forced this same gate off **isaac-mrfu**; `boot.feature` has no owner. They are now owned by suite-health bean **isaac-uxbt**. This bean does not absorb them.
+
+Decision-4 finding is accepted as recorded: the 12,031,158 stamp on `orchestration-verify` was provider-reported (`current.ednl` final assistant `:input-tokens 12031158`, `:cache-read 11174912`), not sidecar accumulation. Decision 2's "last, never sum" guard therefore did not cause it, and the cap-at-context-window + `:session/stamp-implausible` log is the right disposition. Mirror this finding onto **isaac-dgod**.
+
+### Acceptance (supersedes the acceptance block above)
+
+    cd isaac-agent
+    bb features features/session/token_accounting.feature
+    bb features features/session/compaction_overflow.feature features/session/compaction_logging.feature
+    bb spec spec/isaac/session spec/isaac/drive
+
+0 failures on each. No `@wip` on the token_accounting rows (`:81`, `:111`, `:127`) or the decision-5 cached-input row. Do **not** require full `bb features` exit 0 and do **not** require the 180s wrapper to exit 0; a wrapper timeout after a green tail is environment load, not a red.
+
+Standing rule restated: do not weaken a scenario to make a suite green, and do not `@wip` a scenario without a bean owning its return.
+
+### Still in scope for this bean
+
+Decision 5 (claude-cli stamp = `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`) and its scenario — a queued response with `usage.input_tokens 8`, `usage.cache_read_input_tokens 700`, `usage.cache_creation_input_tokens 200` on a 1000-window model stamps 908 and trips compaction on the next turn. The implementation notes claim the Anthropic cache fields are included in the stamp; verify names the scenario that proves it. If that row is not present and green, the bean is not done.
