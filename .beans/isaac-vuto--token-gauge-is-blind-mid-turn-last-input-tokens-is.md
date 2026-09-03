@@ -8,7 +8,7 @@ tags:
     - compaction
     - token-accounting
 created_at: 2026-09-03T20:36:03Z
-updated_at: 2026-09-03T20:42:43Z
+updated_at: 2026-09-03T22:14:58Z
 ---
 
 Observed 2026-09-03 on zanebot (agent 0.1.41 / 13da406), session isaac-work-2 (scrapper, grok-4.6, window 500K, threshold 0.8): a fresh session ran ONE tool-loop turn from 17:49 to 18:47 (isaac-jarr work). Every mid-turn `:session/compaction-check` logged `:total-tokens ~304K` (61%) and never compacted; at turn end `:session/token-drift` fired and the provider stamp landed at **455,183** (91%). The session sat at 91% with 0 compactions.
@@ -57,3 +57,9 @@ Fixture note: scenario 1's queued tool_call row carries `usage.input_tokens 850`
     bb spec spec/isaac/session spec/isaac/drive
     bb features && bb spec    # full gate, exit codes
 Remove @wip when green; note decision-4 finding on this bean. Evidence from the field (2026-09-03): isaac-work-2 ran one 58-minute tool-loop turn blind at ~304K estimate while the provider reported 455K; on the next turn (0.1.41) it compacted itself 455K→7.5K, so the turn-boundary path works — only the mid-turn path is blind.
+
+
+
+## Decision 5 (2026-09-03, planner) — claude-cli stamp must include cached input
+
+After the scrapper→claude-opus swap, isaac-work-1 and tono-work-1 report Context **2 / 200,000** after real turns. claude-cli usage parse (llm/api/claude_cli.clj ~110) maps `:input-tokens` to `usage.input_tokens` only; Anthropic reports prompt size as `input_tokens + cache_read_input_tokens + cache_creation_input_tokens` (observed: input 8, cache-read 17,025, cache-write 1,040,483 on one turn). So on claude-cli the stamp is the uncached sliver, and the gauge falls back to the estimate — the same blindness as decision 1, from the other side. Fix: the provider-prompt figure used for `:last-input-tokens` = input + cache-read + cache-write for Anthropic-shaped usage (keep `:input-tokens` accounting fields as they are for billing). Scenario to add: a queued response with `usage.input_tokens 8`, `usage.cache_read_input_tokens 700`, `usage.cache_creation_input_tokens 200` on a 1000-window model stamps 908 and trips compaction on the next turn. Also verify the 1,040,483 cache-write figure — larger than any prompt isaac could have built for a 7K session — as part of decision 4's implausible-stamp investigation.

@@ -8,7 +8,7 @@ tags:
     - scuttlebutt
     - unverified
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T21:16:41Z
+updated_at: 2026-09-03T22:14:58Z
 parent: isaac-5nxf
 ---
 
@@ -165,3 +165,13 @@ Evidence on `isaac-agent` `origin/main` `0b528236985c6e67c63193e65cafb74a73d6d5b
   - `bb features features/bridge/cancel_aborts_work.feature:27` → `1 examples, 0 failures, 2 assertions`
 
 This bean still cannot pass because the explicit acceptance requires the full `bb features` gate and `bb spec` green on the accepted main SHA, and verify reproduces a full-suite red/timed-out run on that SHA.
+
+
+
+## Exceptions (2026-09-03, planner) — full-gate flake and wrapper timeout
+
+Verify attempt 2 reproduced exactly one red on main `0b52823`: `bridge/cancel_aborts_work.feature:27` (expected "cancelled", got nil), green in isolation, and the worker's own unwrapped run was 747/0/1977 in 53s. This is the cancel-race flake family (isaac-x27m closed it once; isaac-zcb9 restored suite health; isaac-2bni is the ACP twin). It is not a train regression.
+
+Verify may PASS this bean when: (a) `bb spec` is green, (b) unwrapped `clojure -M:features` on the accepted main SHA reports zero failures OR its only failure is `cancel_aborts_work.feature:27` and that scenario passes twice in isolation, and (c) the 180s wrapper timeout is treated as environment load, not a red — record the unwrapped wall time instead. Record the run counts in the verify note.
+
+Follow-up filed separately: fix the cancel race for good so the full gate is deterministic again (planner).
