@@ -4,7 +4,7 @@ title: 'Episodic memory: episodes, scenes, recall — per-crew RAG layer that di
 status: draft
 type: epic
 created_at: 2026-06-26T04:13:22Z
-updated_at: 2026-08-16T00:00:00Z
+updated_at: 2026-09-03T20:40:00Z
 ---
 
 DESIGN. Originally drafted 2026-06-25 as an exploratory RAG layer; substantially redesigned in a planning session 2026-08-16 (Micah). A cross-conversation recall layer so a crew draws on relevant parts of ALL its past conversations when composing a turn — like human associative memory. The design now goes further than the original: it REPLACES sessions rather than augmenting them (see Decision 10). Big.
@@ -327,3 +327,11 @@ One span permanently flagged (tono-verify-1 span 34): grok-4.20 CONSISTENTLY emi
 
 ## 2026-08-24 — Turn architecture session (cross-references isaac-tdgt, isaac-bbov, isaac-l3ps)
 Turnstile/turn-observer split settled; no hail<->foreman arrows; agent owns queue+addressing; invariants vs coordination ruled; opt-in-by-name registry. bbov and l3ps revised in place; W1 scenarios 4/6/8 to redraft; turn-request queue bean is the next planning session.
+
+## Field note (2026-09-03): isaac-work-2 chronicle restored after a rename
+
+Context-exhaust recovery renamed stuffed `isaac-work-2` → `isaac-work-2-archive-20260903` and recreated an empty session under the live key. That would have orphaned the retain chronicle (`0.ednl`…`90.ednl` + stuffed `current.ednl`) from `isaac episodes migrate-session isaac-work-2`, which reads `chronicle-transcript` by session key.
+
+**Repaired the same day** as a rotation, not a second session: archive `0`–`90` copied onto live; archive `current.ednl` frozen as live `91.ednl`; the post-restart freeze (sessionId `9bb01ebc`) moved from live `0.ednl` → `92.ednl`; live `:segment` set to 93 so the next splice writes `93.ednl`. Archive kept on disk, untagged, as backup. Byte-compared 0/90/91.
+
+**Do not rename hail worker sessions to recover from compaction-disabled.** Under `:retain`, freeze the stuffed `current.ednl` as the next numbered segment and let the live session keep the key. Rename breaks episode indexing until someone restitches the chronicle.

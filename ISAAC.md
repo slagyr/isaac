@@ -284,6 +284,19 @@ runs the same suite and **fails the run**. Check `gh run list` after a push.
 
 Prevention: never bypass the hook. One-time setup per checkout: `bb hooks:install`.
 
+### Don't rename retain sessions to recover from compaction-disabled
+
+Hail worker context-exhaust is `:compaction-disabled` plus the window guard.
+The chronicle for episode indexing is `chronicle-transcript`: frozen
+`{n}.ednl` segments plus `current.ednl`, keyed by session name.
+
+Renaming the stuffed session and recreating the live key orphans that
+chronicle (`isaac-work-2` 2026-09-03 — repaired by attaching archive
+`0`–`90` plus stuffed current as `91.ednl`). Recover by rotating:
+freeze stuffed `current.ednl` as the next numbered segment and keep the
+session key. Leave a renamed leftover untagged so hail `:prefer :oldest`
+cannot bind it.
+
 ### Deceptive default fallback (Isaac example)
 
 Early `isaac config` on a fresh install printed a crafted-looking config
