@@ -8,7 +8,7 @@ tags:
     - scuttlebutt
     - imessage
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-03T17:57:54Z
+updated_at: 2026-09-03T23:48:30Z
 blocked_by:
     - isaac-jarr
 ---
@@ -34,3 +34,9 @@ Today `ImessageComm` no-ops all ten turn methods; replies ride the outbound deli
     bb features
     bb spec
 Shape: `(extend ImessageComm comm/Comm (merge comm/defaults {:send! ...}))` — never inline.
+
+
+
+## Pin target updated (2026-09-03, planner)
+
+Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43) — not jarr's 0b52823. Main advanced past jarr with isaac-vuto (token accounting) and isaac-q34y (idle sealing), both verified and merged; the full gate on merged main is 756/0 features, 1612/0 spec. Same protocol as 0.1.42 for this bean's purposes.

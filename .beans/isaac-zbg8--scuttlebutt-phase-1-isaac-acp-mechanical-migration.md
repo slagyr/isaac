@@ -8,7 +8,7 @@ tags:
     - scuttlebutt
     - acp
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-03T17:57:54Z
+updated_at: 2026-09-03T23:48:30Z
 blocked_by:
     - isaac-jarr
 ---
@@ -47,3 +47,9 @@ Guards already in the suite (no absence tests needed — [[no-absence-tests]]):
     bb features     # 64/0 (cancellation.feature flake is isaac-2bni; rerun once)
     bb spec
 Then isaac-i5ps (rendering redesign) unblocks.
+
+
+
+## Pin target updated (2026-09-03, planner)
+
+Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43) — not jarr's 0b52823. Main advanced past jarr with isaac-vuto (token accounting) and isaac-q34y (idle sealing), both verified and merged; the full gate on merged main is 756/0 features, 1612/0 spec. Same protocol as 0.1.42 for this bean's purposes.

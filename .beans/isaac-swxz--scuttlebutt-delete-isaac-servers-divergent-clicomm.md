@@ -8,7 +8,7 @@ tags:
     - scuttlebutt
     - server
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-03T17:57:54Z
+updated_at: 2026-09-03T23:48:30Z
 blocked_by:
     - isaac-jarr
 ---
@@ -25,3 +25,9 @@ One-time removal; no Gherkin ([[no-absence-tests]]). Acceptance is the bean's ow
 - [ ] deps.edn + bb.edn agent pin = the SHA isaac-jarr releases (the server must compile against the new `isaac.comm.protocol`).
 - [ ] `bb features` and `bb spec` green (exit codes, not tails).
 - [ ] Release the server manifest; note the SHA on this bean so the scuttlebutt train pins agent + server + discord + acp + imessage together.
+
+
+
+## Pin target updated (2026-09-03, planner)
+
+Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43) — not jarr's 0b52823. Main advanced past jarr with isaac-vuto (token accounting) and isaac-q34y (idle sealing), both verified and merged; the full gate on merged main is 756/0 features, 1612/0 spec. Same protocol as 0.1.42 for this bean's purposes.

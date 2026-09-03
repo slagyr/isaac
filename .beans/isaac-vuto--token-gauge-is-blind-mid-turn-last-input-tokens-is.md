@@ -8,7 +8,7 @@ tags:
     - compaction
     - token-accounting
 created_at: 2026-09-03T20:36:03Z
-updated_at: 2026-09-03T23:43:44Z
+updated_at: 2026-09-03T23:48:30Z
 ---
 
 Observed 2026-09-03 on zanebot (agent 0.1.41 / 13da406), session isaac-work-2 (scrapper, grok-4.6, window 500K, threshold 0.8): a fresh session ran ONE tool-loop turn from 17:49 to 18:47 (isaac-jarr work). Every mid-turn `:session/compaction-check` logged `:total-tokens ~304K` (61%) and never compacted; at turn end `:session/token-drift` fired and the provider stamp landed at **455,183** (91%). The session sat at 91% with 0 compactions.
@@ -138,3 +138,9 @@ Controlling acceptance checks also confirmed:
 - controlling token-accounting rows are present and un-`@wip` at `:81`, `:111`, and `:127`
 - Decision-5 proof row is present and green as `Scenario: anthropic-shaped cached input stamps 908 and compacts on the next turn` (`features/session/token_accounting.feature:170`)
 - mirrored the accepted Decision-4 finding onto `isaac-dgod`
+
+
+
+## Planner note (2026-09-03, plan@micah) — full gate is green; the waiver was unnecessary
+
+Merged onto main at 96d30d5 (with q34y at 29ed157) and released as 0.1.43 (bf4323326c150bdcda4be2c0245cf2f7b0cbd629). Full `clojure -M:features` on merged main: **756 examples, 0 failures**; `bb spec` 1612/0. The four "ambient reds" cited in the focused-gate adjustment did not reproduce on main — they were branch/environment state. Recorded as an exhibit for isaac-jndk: the full-gate clause should not be dropped by adjustment; rerun it on the merge target instead.
