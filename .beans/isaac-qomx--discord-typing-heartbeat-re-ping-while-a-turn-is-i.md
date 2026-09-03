@@ -4,8 +4,10 @@ title: 'Discord typing heartbeat: re-ping while a turn is in flight'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-31T16:03:45Z
-updated_at: 2026-08-31T16:26:20Z
+updated_at: 2026-09-03T17:17:09Z
 ---
 
 Repo: **isaac-discord**. Phase 0 of the Discord scuttlebutt plan (isaac-frvu
