@@ -6,9 +6,8 @@ type: bug
 priority: normal
 tags:
     - episodes
-    - unverified
 created_at: 2026-09-03T17:16:10Z
-updated_at: 2026-09-03T18:32:35Z
+updated_at: 2026-09-03T18:35:47Z
 parent: isaac-51xy
 ---
 
@@ -76,3 +75,19 @@ Fixture notes (adjust fixtures to the contract, never the impl): gist spans are 
     bb features features/episodes/live.feature   # existing seal/close contracts stay green
     bb spec spec/isaac/episodes
 Remove @wip when green. Unit spec: in-flight episode skipped by the tick. Ordering: runs on isaac-work when a session is free; independent of the scuttlebutt train.
+
+
+## Verify fail (attempt 1, 2026-09-03): acceptance feature file was changed beyond `@wip` removal with no bean `## Exceptions` authorization
+
+Evidence:
+- Bean references `features/episodes/idle_seal.feature` as a controlling acceptance file.
+- Bean body has **no** `## Exceptions` section authorizing feature edits.
+- On `isaac-agent` `origin/bean/isaac-q34y` at `664a25d`, the feature diff vs planned `origin/main` `f5f6345` is not only `@wip` removal:
+
+```diff
+-    Given the isaac EDN file "config/crew/cordelia.edn" exists with:
++    Given default Grover setup
++    And the isaac EDN file "config/crew/cordelia.edn" exists with:
+```
+
+Per verify gate, acceptance feature files may only change by `@wip` removal unless the bean documents an exception. Stop here and either move the fixture/setup change out of the acceptance file, or document/authorize the feature edit explicitly in the bean before re-verify.
