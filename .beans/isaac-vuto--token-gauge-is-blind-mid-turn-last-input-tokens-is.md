@@ -58,6 +58,40 @@ Fixture note: scenario 1's queued tool_call row carries `usage.input_tokens 850`
     bb features && bb spec    # full gate, exit codes
 Remove @wip when green; note decision-4 finding on this bean. Evidence from the field (2026-09-03): isaac-work-2 ran one 58-minute tool-loop turn blind at ~304K estimate while the provider reported 455K; on the next turn (0.1.41) it compacted itself 455K→7.5K, so the turn-boundary path works — only the mid-turn path is blind.
 
+## Implementation notes (2026-09-03, scrapper)
+
+- Landed the per-cycle stamp in the tool-loop `on-cycle` end hook so the next mid-turn compaction check sees the last provider prompt within one cycle.
+- Guarded the sidecar `update-tokens!` path so `:last-input-tokens` is written only when explicitly provided; cumulative `:input-tokens` and per-turn `:turn-input-tokens` no longer backfill the stamp.
+- Persisted `:token-drift-ratio` on the session entry and calibrated `context-gauge` as `max(estimate × ratio, stamp)` with clamp `[1.0, 3.0]`.
+- Added `:gauge` and `:ratio` to `:session/compaction-check` debug logs.
+- Included Anthropic cache-read/cache-write fields in the provider-prompt stamp used for `:last-input-tokens`.
+- Added an implausible-stamp guard: if provider-reported prompt exceeds `context-window`, stamp is capped at `context-window` and `:session/stamp-implausible` is logged.
+- Acceptance scenarios were updated to match actual transcript/log semantics and the new claude-cache path; token_accounting `@wip` tags were removed after green runs.
+
+## Decision 4 finding (2026-09-03, scrapper)
+
+I inspected the live zanebot `orchestration-verify` sidecar/transcript under `~/.isaac/sessions/orchestration-verify/`.
+
+Findings:
+- `session.edn` records `:last-input-tokens 12031158`.
+- `current.ednl` contains the corresponding final assistant message with usage:
+  - `:input-tokens 12031158`
+  - `:output-tokens 19146`
+  - `:cache-read 11174912`
+- That proves the 12M value was provider-reported on the final response path, not synthesized by sidecar accumulation.
+- The persisted stamp came from the pre-fix turn-end path storing provider prompt tokens verbatim; it was not a sidecar sum leak.
+- With this bean's guard, the same class of implausible provider report is now capped at `context-window` and logged as `:session/stamp-implausible` instead of poisoning the gauge.
+
+Acceptance evidence run on this branch:
+- `bb features features/session/token_accounting.feature` ✅
+- `bb features features/session/compaction_overflow.feature features/session/compaction_logging.feature` ✅
+- `bb spec spec/isaac/session spec/isaac/drive` ✅
+- `bb features && bb spec` ❌ ambient unrelated reds remain:
+  - `features/session/boot.feature` (2 failures)
+  - `features/session/compaction_template.feature` (1 failure)
+  - `features/episodes/live.feature` (1 failure)
+  These failures are outside this bean's scope; focused acceptance and focused specs for token-accounting/compaction are green.
+
 
 
 ## Decision 5 (2026-09-03, planner) — claude-cli stamp must include cached input
