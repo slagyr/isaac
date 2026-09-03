@@ -1,14 +1,13 @@
 ---
 # isaac-jarr
 title: 'Scuttlebutt train: merge isaac-5nxf onto isaac-agent main and release'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - scuttlebutt
-    - unverified
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T22:14:58Z
+updated_at: 2026-09-03T22:19:59Z
 parent: isaac-5nxf
 ---
 
