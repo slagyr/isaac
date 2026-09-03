@@ -6,9 +6,8 @@ type: task
 priority: normal
 tags:
     - scuttlebutt
-    - unverified
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T20:40:55Z
+updated_at: 2026-09-03T20:46:59Z
 parent: isaac-5nxf
 ---
 
@@ -100,3 +99,24 @@ Isolated reruns on origin/main c2b7b9e (then bean/isaac-jarr cf107ab):
 Product protocol unchanged. SHA to pin after verify: note the merge-to-main SHA on this bean.
 
 Full unwrapped suite previously 747/5/1968 in 228s; 180s wrapper timed out. Remaining isolated-green reds (1,2,4,5) are suite-order leaks/flakes; :91 was the only isolated product miss and is fixed.
+
+
+## Verify fail (attempt 1, 2026-09-03): the accepted scuttlebutt-train repairs are still only on `origin/bean/isaac-jarr` and have not landed on `origin/main`
+
+Evidence:
+- Bean acceptance is integration-only and explicitly requires **isaac-agent main** to contain the merged/rebased train with `bb features` + `bb spec` green.
+- Current refs:
+  - `origin/main` → `729cc04`
+  - `origin/bean/isaac-jarr` → `933db13`
+  - `git rev-list --left-right --count origin/bean/isaac-jarr...origin/main` → `2 1`
+- The latest repair commits are **not on main**:
+  - `git branch -a --contains cf107ab` → only `origin/bean/isaac-jarr`
+  - `git branch -a --contains 933db13` → only `origin/bean/isaac-jarr`
+- Acceptance indicators on `origin/main` are still wrong for this bean:
+  - `src/isaac/comm/cli.clj` is still present on main
+  - `features/comm/scuttlebutt.feature` is still `@wip` on main
+- Branch-side evidence is not enough for this integration bean:
+  - on `origin/bean/isaac-jarr` `933db13`, `bb features features/comm/scuttlebutt.feature` is green (`4 examples, 0 failures, 6 assertions`)
+  - but the required merge-to-main SHA does not yet exist
+
+This bean cannot pass until the repaired train lands on `origin/main` (or a documented accepted main SHA) and is re-tagged for verify.
