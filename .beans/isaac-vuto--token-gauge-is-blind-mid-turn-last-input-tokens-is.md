@@ -5,11 +5,10 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - unverified
     - compaction
     - token-accounting
 created_at: 2026-09-03T20:36:03Z
-updated_at: 2026-09-03T23:18:21Z
+updated_at: 2026-09-03T23:19:57Z
 ---
 
 Observed 2026-09-03 on zanebot (agent 0.1.41 / 13da406), session isaac-work-2 (scrapper, grok-4.6, window 500K, threshold 0.8): a fresh session ran ONE tool-loop turn from 17:49 to 18:47 (isaac-jarr work). Every mid-turn `:session/compaction-check` logged `:total-tokens ~304K` (61%) and never compacted; at turn end `:session/token-drift` fired and the provider stamp landed at **455,183** (91%). The session sat at 91% with 0 compactions.
