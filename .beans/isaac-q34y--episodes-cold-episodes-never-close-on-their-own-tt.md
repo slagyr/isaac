@@ -6,8 +6,9 @@ type: bug
 priority: normal
 tags:
     - episodes
+    - unverified
 created_at: 2026-09-03T17:16:10Z
-updated_at: 2026-09-03T18:14:56Z
+updated_at: 2026-09-03T18:32:35Z
 parent: isaac-51xy
 ---
 
