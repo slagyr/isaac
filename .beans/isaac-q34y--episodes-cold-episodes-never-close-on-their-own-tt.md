@@ -1,13 +1,13 @@
 ---
 # isaac-q34y
 title: 'Episodes: cold episodes never close on their own — TTL is only checked on the next message'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - episodes
 created_at: 2026-09-03T17:16:10Z
-updated_at: 2026-09-03T18:11:31Z
+updated_at: 2026-09-03T18:14:56Z
 parent: isaac-51xy
 ---
 
