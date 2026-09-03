@@ -31,3 +31,15 @@ The agent release that deletes the in-tree provider and the module's first relea
 - isaac-agent: `bb features` and `bb spec` green with the four files gone and the three manifest entries removed; `grep -r claude-cli src` shows only the protocol.clj default (if left).
 - `isaac modules list` on a root with both pinned shows :isaac.llm.claude ok and `isaac config validate` accepts a `{:type :claude}` provider.
 - Smoke after the train: `isaac prompt --crew main --session train-pong "Reply with exactly: pong"` on zanebot (main is on :claude-opus).
+
+
+## Work observations (2026-09-03, scrapper)
+
+Conflict detected before implementation handoff:
+
+- The bean says the move must be PURE / byte-identical and says to stop if anything else must change.
+- The bean also says the `:claude` provider-template manifest entry should move out of `isaac-agent`, while separately saying the existing core behavior at `src/isaac/llm/api/protocol.clj:153` / `spec/isaac/llm/providers_spec.clj:74-79` must remain observable and preferably stay in core.
+- On current `isaac-agent` main, `spec/isaac/llm/providers_spec.clj` directly asserts `(sut/template "claude")` returns `{:api "claude-cli" :auth "none" :command "claude" :stream-supports-tool-calls false}` with no module index. Removing the core provider-template entry makes that spec/behavior fail unless we either (a) keep the `:claude` template in core, or (b) change the spec / behavior to require module loading.
+- Option (a) violates the stated acceptance text `the three manifest entries removed`; option (b) violates the PURE MOVE / no-behavior-change rule.
+
+Planner decision needed: either keep the built-in `:claude` provider-template (and any needed provider schema keys) in `isaac-agent` for this extraction bean, or explicitly authorize the behavior/spec change away from `(sut/template "claude")` in core.
