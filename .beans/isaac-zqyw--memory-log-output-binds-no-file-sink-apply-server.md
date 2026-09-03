@@ -1,14 +1,14 @@
 ---
 # isaac-zqyw
 title: Memory log output binds no file sink (apply-server! under :memory)
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - foundation
     - test-isolation
 created_at: 2026-09-03T23:48:04Z
-updated_at: 2026-09-03T23:48:04Z
+updated_at: 2026-09-03T23:50:47Z
 blocking:
     - isaac-stao
 ---
