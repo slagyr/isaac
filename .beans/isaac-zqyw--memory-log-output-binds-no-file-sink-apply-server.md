@@ -78,3 +78,15 @@ audit undercounted). Rule refined: harness `:memory` binds no sink UNLESS the
 config names `:logging.output` explicitly — then it applies as in production.
 Third spec example covers it. Gate: `bb spec` 895/0, `bb features` 139/0.
 **Pin e0dc789 (not 7c95904).**
+
+## CI follow-up (2026-09-03, scrapper)
+
+GitHub Actions run `33819393077` failed on main at `7c95904` during `bb ci`, but
+this bean already has a same-bean follow-up on main: `e0dc789`
+(`isaac-zqyw: explicit :logging.output in config wins over harness :memory`).
+
+Current `isaac-foundation` main @ `e0dc789` reproduces green locally:
+- `bb ci` → specs `895 examples, 0 failures, 1622 assertions`; features `139 examples, 0 failures, 342 assertions`
+
+No independent repair was commissioned; the CI regression is correlated to
+`isaac-zqyw` and already resolved on default branch.
