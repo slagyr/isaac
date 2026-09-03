@@ -4,10 +4,8 @@ title: 'Discord typing heartbeat: re-ping while a turn is in flight'
 status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-31T16:03:45Z
-updated_at: 2026-09-03T17:40:29Z
+updated_at: 2026-09-03T18:03:02Z
 ---
 
 Repo: **isaac-discord**. Phase 0 of the Discord scuttlebutt plan (isaac-frvu
@@ -133,3 +131,25 @@ Post-rebase gates (ISAAC_GIT=1, pinned aliases):
 - `clojure -M:features` (full module features) → 64/0/140 (77s wall; `bb features` wrapper times out at 60s — same wrapper on main, ambient to the heartbeat)
 
 `bb features` 60s wrapper is a known test-support timeout (`bb.test-timeout/test-timeout-ms` = 60000). Full-module green is the JVM command, which now passes.
+
+
+## Verify fail (attempt 2, 2026-09-03): rebased heartbeat branch contains the main fixture repair, but the planner-adjusted acceptance commands still do not complete green as written
+
+Evidence on `isaac-discord` `origin/bean/isaac-qomx` at `d3ec95c` (contains `ab935be`):
+
+- Branch contains the planner-required rebase target:
+  - `git rev-parse --short HEAD` → `d3ec95c`
+  - `git merge-base --is-ancestor ab935be HEAD` → success
+- `features/comm/discord/typing.feature` no longer has `@wip` on the three controlling scenarios.
+- Direct JVM checks are green:
+  - `clojure -M:features features/comm/discord/typing.feature` → `4 examples, 0 failures, 4 assertions`
+  - `clojure -M:spec spec/isaac/comm` → `98 examples, 0 failures, 228 assertions`
+  - `bb spec` (default native subset) → `47 examples, 0 failures, 99 assertions`
+- But the **exact planner-adjusted acceptance commands** still fail in this repo:
+  - `bb features features/comm/discord/typing.feature`
+    - prints `4 examples, 0 failures, 4 assertions`
+    - then exits nonzero with `jvm-features timed out after 60s`
+  - `bb spec spec/isaac/comm`
+    - exits nonzero from the SCI/native path with `Protocol not found: clojure.lang.IHashEq`
+
+So the product behavior appears green after rebase, but the acceptance commands named in the bean still do not run cleanly as written. This needs planner clarification/amendment (for example, whether the intended gate is the direct JVM path or a different bb task shape), not another blind worker loop.
