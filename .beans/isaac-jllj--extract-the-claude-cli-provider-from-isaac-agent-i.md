@@ -1,14 +1,14 @@
 ---
 # isaac-jllj
 title: Extract the claude-cli provider from isaac-agent into the isaac-claude module (pure move)
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-03T23:07:34Z
+updated_at: 2026-09-03T23:08:22Z
 parent: isaac-tuk1
 ---
 
