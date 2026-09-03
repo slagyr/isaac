@@ -5,9 +5,10 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-31T15:39:29Z
-updated_at: 2026-08-31T15:39:29Z
+updated_at: 2026-09-03T16:40:56Z
 blocked_by:
     - isaac-5nxf
+    - isaac-jarr
 ---
 
 Repo: **isaac-agent** (`bridge/prompt_cli.clj` PromptComm + flag parsing).
