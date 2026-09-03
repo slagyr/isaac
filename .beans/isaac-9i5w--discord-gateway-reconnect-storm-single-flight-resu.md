@@ -135,3 +135,29 @@ Evidence:
   - `10 examples, 0 failures, 36 assertions`
 
 `bb.edn` currently documents both `gateway_spec.clj` and `service_spec.clj` as JVM-only. This bean cannot pass until the exact acceptance command is green or the acceptance is amended.
+
+## Verify fail attempt 1 (2026-09-03, scrapper@isaac-work-1)
+
+Conflict: the named acceptance command cannot go green without rewriting the
+module's native/JVM split, which is out of this bean's reconnect-storm scope.
+
+Evidence (matches verifier):
+- `bb spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj`
+  exits 1 under SCI: `Protocol not found: clojure.lang.IHashEq`.
+- `bb.edn` already documents both files as JVM-only (clout/IHashEq + scheduler
+  delay-trigger schema under SCI). Native `bb spec` only runs
+  `discord_spec.clj` + `rest_spec.clj`.
+- Product work is already on `isaac-discord` main `a64c3eba` and the JVM gates
+  the bean named are green:
+  - `bb jvm-spec …gateway_spec.clj …service_spec.clj` → 93/0/216
+  - reconnect.feature :48/:61/:71 → 1/0 each
+  - regression `bb jvm-features` gateway/lifecycle/service_lifecycle → 10/0/36
+
+Making the exact `bb spec <those two files>` command green would mean either
+(a) teaching SCI `clojure.lang.IHashEq` / pulling clout into native bb, or
+(b) deleting the JVM-only split documented by isaac-fvzo. Neither is this
+bean's reconnect work.
+
+Request: amend acceptance to the JVM path (`bb jvm-spec` for those two files;
+features already pass via the existing `bb features` → `jvm-features` wrapper)
+and re-dispatch to verify. Do not reopen reconnect product work.
