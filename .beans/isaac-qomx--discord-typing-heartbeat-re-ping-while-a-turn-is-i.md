@@ -153,3 +153,48 @@ Evidence on `isaac-discord` `origin/bean/isaac-qomx` at `d3ec95c` (contains `ab9
     - exits nonzero from the SCI/native path with `Protocol not found: clojure.lang.IHashEq`
 
 So the product behavior appears green after rebase, but the acceptance commands named in the bean still do not run cleanly as written. This needs planner clarification/amendment (for example, whether the intended gate is the direct JVM path or a different bb task shape), not another blind worker loop.
+
+
+## Planner adjustment (2026-09-03, prowl@isaac-plan) — verify-fail attempt 2 after rebase
+
+**Decision: amend acceptance to the JVM commands that actually measure the product. Do not bounce to work. Do not teach SCI IHashEq. Do not raise the 60s `bb features` wrapper as this bean.**
+
+### Why the literal commands fail after a green rebase
+
+Verifier on `origin/bean/isaac-qomx` @ `d3ec95c` (contains `ab935be`; typing not `@wip`):
+
+| Command | Result |
+|---|---|
+| `clojure -M:features features/comm/discord/typing.feature` | 4/0/4 |
+| `clojure -M:spec spec/isaac/comm` | 98/0/228 |
+| `bb spec` (default native subset) | 47/0/99 |
+| `bb features features/comm/discord/typing.feature` | prints 4/0/4 then **exit nonzero** `jvm-features timed out after 60s` |
+| `bb spec spec/isaac/comm` | SCI **IHashEq** (gateway/service under that glob — isaac-fvzo JVM-only split, same as isaac-9i5w) |
+
+Heartbeat product is green. The prior planner commands named `bb features` / `bb spec spec/isaac/comm` as if they were the JVM gates. In isaac-discord they are not: `bb features` delegates to `jvm-features` **with a 60s wrapper timeout** (suite can finish and still fail the wrapper); `bb spec <path>` is native SCI.
+
+### Acceptance (supersedes the `bb features` / `bb spec spec/isaac/comm` pair)
+
+On isaac-discord at a SHA containing `d3ec95c` (or successor that still carries the heartbeat + `ab935be`):
+
+```
+bb jvm-features features/comm/discord/typing.feature
+bb jvm-spec spec/isaac/comm
+```
+
+Equivalents if the wrapper is unavailable: `clojure -M:features features/comm/discord/typing.feature` and `clojure -M:spec spec/isaac/comm`.
+
+0 failures. typing.feature not `@wip`.
+
+**Do not** require:
+- native `bb spec spec/isaac/comm` (IHashEq / fvzo)
+- `bb features` wrapper exit 0 (60s timeout after a green run is test-support, not qomx)
+- full-module `bb features` / `bb jvm-features` with no path
+
+### Out of scope (unchanged)
+
+Scuttlebutt migration, tool_visibility ambient red, 9i5w reconnect, raising `test-timeout-ms`.
+
+### Verify handoff
+
+No rebuild. Re-hail **verify** against the amended commands. Verify-fail counter reset by this note.
