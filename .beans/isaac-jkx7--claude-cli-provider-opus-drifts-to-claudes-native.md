@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - tool-protocol
 created_at: 2026-09-03T22:20:42Z
-updated_at: 2026-09-03T22:20:42Z
+updated_at: 2026-09-03T22:22:59Z
 ---
 
 Observed 2026-09-03 after scrapper/prowl moved to :claude-opus (claude-cli provider) during the grok credit outage.
@@ -23,3 +23,11 @@ Fix (all three; the first makes it robust):
 3. Strip model-written text after a parsed call block before execution so fabricated results never enter the transcript.
 
 Runnable acceptance to write (@wip, features/llm/claude_cli*.feature): (1) a scripted claude-cli response using the invoke syntax executes the tool exactly like the fence; (2) fence-then-invoke in one turn executes both; (3) an unparseable call-shaped block triggers one corrective re-prompt and, if it persists, ends the turn with :error :tool-protocol and the hail delivery is NOT marked delivered; (4) text after a call block is not persisted as assistant content. Related: isaac-ozv9, isaac-kn7y, isaac-vuto (claude-cli usage stamp).
+
+
+
+## Second failure mode (2026-09-03 22:21, isaac-work-2, isaac-vuto hail 4e722471)
+
+After 20 minutes of good work the turn died: `:session/turn-failed :ex-class JsonParseException "Unexpected character ('n'): was expecting comma to separate Object entries … column: 2278"` (drive/turn.clj:1257, thrown from claude-cli's fence payload parse — claude_cli.clj:88 `json/parse-string payload`). The model wrote a `<tool_call>` whose JSON arguments were malformed (long payload, almost certainly an unescaped string in a write/edit call). That is the same protocol violation as the invoke drift, surfacing as an exception instead of a silent verdict: the hail burned a real attempt (`:hail/attempt-failed :error :exception`, attempts 1) and five of these dead-letter a healthy bean.
+
+Add to the fix: 4. a fence whose payload fails to parse is handled by the same corrective re-prompt path as item 2 (quote the parse error and the offending fence back to the model, once), never an exception out of the provider; and the hail treats `:error :tool-protocol` as weather-like (defer, do not burn the dead-letter budget) because it is the provider contract failing, not the bean. Scenario (5): a scripted claude-cli response with a malformed fence gets one corrective re-prompt; a well-formed retry executes; the transcript shows no exception and the delivery is not counted as a failed attempt.
