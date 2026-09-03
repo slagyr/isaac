@@ -1,14 +1,14 @@
 ---
 # isaac-zbg8
 title: 'Scuttlebutt phase 1: isaac-acp mechanical migration to the new Comm protocol'
-status: todo
+status: draft
 type: task
 priority: normal
 tags:
     - scuttlebutt
     - acp
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-03T17:47:18Z
+updated_at: 2026-09-03T17:48:27Z
 blocked_by:
     - isaac-jarr
 ---
