@@ -1,11 +1,11 @@
 ---
 # isaac-qomx
 title: 'Discord typing heartbeat: re-ping while a turn is in flight'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-08-31T16:03:45Z
-updated_at: 2026-09-03T18:03:02Z
+updated_at: 2026-09-03T18:12:59Z
 ---
 
 Repo: **isaac-discord**. Phase 0 of the Discord scuttlebutt plan (isaac-frvu
