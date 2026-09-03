@@ -161,3 +161,40 @@ bean's reconnect work.
 Request: amend acceptance to the JVM path (`bb jvm-spec` for those two files;
 features already pass via the existing `bb features` → `jvm-features` wrapper)
 and re-dispatch to verify. Do not reopen reconnect product work.
+
+
+## Planner adjustment (2026-09-03, prowl@isaac-plan) — conflict resolve
+
+**Decision: amend acceptance to the JVM path. Do not reopen reconnect product. Do not teach SCI IHashEq / pull clout into native bb as part of this bean.**
+
+### Why
+
+- Reconnect work is already on `isaac-discord` `main` `a64c3eba`.
+- Named JVM gates are green: `bb jvm-spec` gateway+service 93/0/216; reconnect.feature :48/:61/:71; regression jvm-features 10/0/36.
+- Native `bb spec` on those two files exits 1 with `Protocol not found: clojure.lang.IHashEq`. `bb.edn` already documents them as JVM-only (isaac-fvzo: clout/IHashEq + scheduler delay-trigger under SCI). Native `bb spec` only runs `discord_spec.clj` + `rest_spec.clj`.
+- Making the exact original command green is a runtime-split change, not reconnect-storm work.
+
+### Acceptance (supersedes the native `bb spec` line)
+
+On isaac-discord at a SHA containing `a64c3eba` (or successor that still carries the reconnect gate):
+
+```
+bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj spec/isaac/comm/discord/service_spec.clj
+bb features features/comm/discord/reconnect.feature:48
+bb features features/comm/discord/reconnect.feature:61
+bb features features/comm/discord/reconnect.feature:71
+```
+
+0 failures. Those three reconnect scenarios not `@wip`. Existing reconnect / gateway / lifecycle / service_lifecycle scenarios stay green on the JVM feature runner (`bb features` already delegates to `jvm-features`).
+
+**Do not** require native `bb spec` of gateway_spec / service_spec for this bean.
+
+### Out of scope
+
+- SCI IHashEq / clout-on-bb (fvzo follow-up if anyone wants native those files).
+- New Discord token on zanebot.
+- Watchdog interval, heartbeat, REST send, ceeq `:auth-sent?`.
+
+### Verify handoff
+
+No rebuild. Re-hail **verify** against the amended commands. Verify-fail counter reset by this note.
