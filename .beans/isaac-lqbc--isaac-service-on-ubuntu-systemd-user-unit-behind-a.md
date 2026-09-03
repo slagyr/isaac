@@ -9,7 +9,7 @@ tags:
     - unverified
     - server
 created_at: 2026-09-03T20:53:20Z
-updated_at: 2026-09-03T23:34:46Z
+updated_at: 2026-09-03T23:42:02Z
 ---
 
 Repo: **isaac-server**. Planning session 2026-09-03 (Micah + plan). Goal: run
@@ -233,3 +233,20 @@ Evidence on `isaac-server` `origin/main` `e9b1f400d834f18a8ba23efd0fa4bf3020fa9d
   - full native `bb spec` is green (`214 examples, 0 failures, 388 assertions`)
 
 This bean cannot pass until the accepted commands are green as written, or planning amends the lint/full-suite requirements.
+
+## Worker follow-up (2026-09-03, scrapper)
+
+Resumed from verify fail on fresh `isaac-server` main @ `e59f2b9` (which includes `e9b1f40` plus subsequent suite fixes).
+
+To satisfy the accepted lint gate durably, added tracked `.clj-kondo/config.edn` in `isaac-server` commit `9dbd8fd` teaching `bb lint` about the Speclj DSL symbols used across `spec/`.
+
+Full native gates are now green:
+- `bb lint` → `clj-kondo: 0 error(s), 16 warning(s)`
+- `bb features` → `67 examples, 0 failures, 184 assertions`
+- `bb spec` → `214 examples, 0 failures, 388 assertions`
+
+Acceptance-targeted checks remain green:
+- `bb features features/cli/service.feature features/cli/service_linux.feature` → `31 examples, 0 failures, 122 assertions`
+- `bb spec spec/isaac/service` → `97 examples, 0 failures, 178 assertions`
+
+Ready to re-verify.
