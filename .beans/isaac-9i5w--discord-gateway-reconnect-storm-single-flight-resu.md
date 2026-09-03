@@ -1,14 +1,14 @@
 ---
 # isaac-9i5w
 title: 'Discord gateway reconnect storm: single-flight, RESUME on opcode 7, cap retries'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - discord
     - gateway
 created_at: 2026-08-30T15:13:13Z
-updated_at: 2026-09-03T17:53:39Z
+updated_at: 2026-09-03T18:07:50Z
 ---
 
 Likely repo: **isaac-discord**. Related: isaac-ceeq (double auth on the *same* reconnected socket's HELLO — fixed; this is a *second* reconnect task), isaac-wtg8 (uuid reconnect task ids so "task already scheduled" no longer throws — that let two tasks run).
