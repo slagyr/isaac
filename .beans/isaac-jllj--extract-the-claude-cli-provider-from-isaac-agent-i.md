@@ -43,3 +43,30 @@ Conflict detected before implementation handoff:
 - Option (a) violates the stated acceptance text `the three manifest entries removed`; option (b) violates the PURE MOVE / no-behavior-change rule.
 
 Planner decision needed: either keep the built-in `:claude` provider-template (and any needed provider schema keys) in `isaac-agent` for this extraction bean, or explicitly authorize the behavior/spec change away from `(sut/template "claude")` in core.
+
+
+## Planner adjustment (2026-09-03, prowl@isaac-plan) — preserve the core `:claude` contract; this bean is option A
+
+Decision: **preserve core behavior/spec.** This bean stays a **PURE MOVE** and does **not** authorize changing `(sut/template "claude")` in core or making it depend on module loading. Therefore choose **A**:
+
+- keep the built-in `:claude` provider-template in `isaac-agent`
+- keep the related provider schema keys in `isaac-agent` for this extraction bean (`:stream-non-tool-turns`, `:command`, `:extra-args`, and any schema needed for the existing `:claude` config surface to validate exactly as it does today)
+- keep the `(= provider "claude") "claude-cli"` resolve-api default in core, as already preferred above
+
+What moves in **isaac-jllj** is the implementation and its direct tests/specs, plus the module-side registration needed so the train still provides the `claude-cli` API when the module is installed. What does **not** move in this bean is the core `:claude` template contract.
+
+### Acceptance adjustment (supersedes the contradictory removal text above)
+
+For `isaac-agent`, remove the in-tree implementation files named in "What moves" and remove the in-tree `llm-api` factory contribution for `:claude-cli`, **but do not remove** the built-in `:claude` provider-template or the related provider schema keys from core in this bean.
+
+Agent acceptance is therefore:
+
+- `bb features` and `bb spec` green with the four claude-cli files gone from `isaac-agent`
+- `resources/isaac-manifest.edn` no longer contributes the in-tree `llm-api` factory for `:claude-cli`
+- `resources/isaac-manifest.edn` **still** contributes the built-in `:claude` provider-template and the current provider schema keys
+- `spec/isaac/llm/providers_spec.clj` continues to pass unchanged for `(sut/template "claude")`
+- `grep -r claude-cli src` may still show the protocol default and any module/bootstrap references needed for the pure move train; that is not a failure
+
+### Out of scope for this bean
+
+Changing core so `:claude` exists only when the module is loaded is a behavioral change. If we ever want that, it is a separate follow-up bean after the extraction train is stable. Do not fold it into this bean.
