@@ -5,10 +5,11 @@ status: in-progress
 type: feature
 priority: normal
 tags:
-    - server
     - linux
+    - unverified
+    - server
 created_at: 2026-09-03T20:53:20Z
-updated_at: 2026-09-03T23:16:35Z
+updated_at: 2026-09-03T23:21:54Z
 ---
 
 Repo: **isaac-server**. Planning session 2026-09-03 (Micah + plan). Goal: run
@@ -168,3 +169,45 @@ Remove @wip from `features/cli/service_linux.feature` and from the four
 0 failures; every new `src/` namespace has a `spec/` twin (platform seam,
 linux impl, shared program-args ns). Full `bb features` + `bb spec` green.
 Hand off with `--tag=unverified`, status stays in-progress.
+
+
+## Implementation (2026-09-03, plan@isaac-plan — worked locally after hail 1aeaacc1 died to isaac-jkx7)
+
+Landed on isaac-server main @ e9b1f40 (on top of the @wip scenarios at 5116743).
+
+- `src/isaac/service/manager.clj` — `Manager` protocol (service-name, install!,
+  uninstall!, start!, stop!, restart!, status!, logs!). Protocol, not
+  multimethod, per project DI convention.
+- `src/isaac/service/launch.clj` — shared: `program-arguments`, `service-path`
+  (was macos `plist-path`), `default-path` (was `launchd-path`),
+  `runtime-from-program-arguments`, `jvm-packaged-exec-cmd`.
+- `src/isaac/service/linux.clj` — `SystemdManager`: unit at
+  `~/.config/systemd/user/isaac.service`; `quote-arg` (`$`→`$$`, C-escaped
+  double quotes) + `exec-start-args` inverse for runtime inference; install =
+  write + daemon-reload + enable --now + `loginctl show-user <user> -p Linger`
+  → `{:linger? bool}`; status via `systemctl --user show isaac -p ActiveState
+  -p MainPID -p ExecMainStatus` (active→running, else raw; MainPID 0 dropped);
+  logs at `~/.local/state/isaac/server.log`.
+- `macos.clj` — `LaunchdManager` record; program-args/PATH moved to launch;
+  install! returns `{}`.
+- `cli.clj` — `manager-for` (Mac OS X / Linux / nil); all subcommands take the
+  manager; "Service installed: <service-name>"; linger warning on stderr
+  ("lingering is off" + `loginctl enable-linger <user>`); unsupported OS →
+  "isaac service is not supported on <OS>" exit 1; summaries drop "launchd".
+- Steps (`service_steps.clj`): `shell commands are stubbed` (renamed),
+  `sh {cmd} prints to stdout:` (generic, keyed by argv[0]; replaced
+  `launchctl print returns:`), `the INI file {path} matches:` (repeated keys →
+  vector, `Section.key[n]`, `~` normalized). `launchctl was called with` kept
+  for the macOS feature.
+- Specs: new `launch_spec`, `manager_spec`, `linux_spec`; `macos_spec` lost
+  the moved PATH examples; `cli_spec` "unsupported OS" now uses "Windows 11"
+  and a new "on Linux" describe covers install/linger/status/restart.
+- Scenario 1 retitled "…inheriting the CLI root…": a packaged install passes
+  the invoking CLI's `--root` into ExecStart (the harness runs with
+  `/target/test-state`), same as the macOS behavior — not a harness leak.
+
+Gate (bb, native): `bb spec spec/isaac/service` 97/0; `bb features
+features/cli/service.feature features/cli/service_linux.feature` 31/0;
+`bb verify` 214 spec / 67 feature examples, 0 failures; `bb lint src` 0
+errors (the spec-file `unresolved symbol` lint errors are pre-existing speclj
+noise — untouched `runtime_spec.clj` reports the same 6).
