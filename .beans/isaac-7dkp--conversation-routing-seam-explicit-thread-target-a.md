@@ -1,14 +1,14 @@
 ---
 # isaac-7dkp
 title: 'Conversation routing seam: explicit thread target and origin-aware delivery'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - episodes
     - conversation
 created_at: 2026-09-03T14:23:59Z
-updated_at: 2026-09-03T14:25:11Z
+updated_at: 2026-09-03T17:32:38Z
 parent: isaac-51xy
 ---
 
@@ -65,3 +65,9 @@ Clean cutover acceptance: an episodes-crew thread that collides with a legacy ch
 5. Discord keeps its origin channel for typing and reply after the episode route.
 
 Decision is approved by Micah’s request to bean and implement the protocol/defmulti seam.
+
+
+
+## Summary of Changes
+
+Shipped in the 0.1.41 episodes train (2026-09-03): isaac-agent 13da406 (conversation router seam d5cb192, origin preserved for delivery 07a0810, :episodes/opened logs origin 2b18dca), isaac-discord ab935be (request-map dispatch with :conversation/:origin; origin-first reply channel; stale tool-name + dispatch-capture fixtures repaired), isaac-acp 0cd2677 (pin alignment). Module suites green (discord 61/0 + 42/0, acp 64/0, agent 738/0 + 1605/0). Field: marvin opens episodes from Discord (2026-09-03-1647-xsdf) and ACP (2026-09-03-1651-p80b), see isaac-6488. Remaining items (bridge @wip scenarios, collision rejection, Discord mode-awareness, router fork, charge schema) split to isaac-qgeu.

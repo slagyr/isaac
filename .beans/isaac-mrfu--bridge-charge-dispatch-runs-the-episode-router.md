@@ -1,13 +1,13 @@
 ---
 # isaac-mrfu
 title: Bridge charge dispatch runs the episode router
-status: in-progress
+status: scrapped
 type: bug
 priority: high
 tags:
     - episodes
 created_at: 2026-08-31T03:25:29Z
-updated_at: 2026-08-31T14:47:52Z
+updated_at: 2026-09-03T17:32:38Z
 parent: isaac-51xy
 ---
 
@@ -124,3 +124,9 @@ bb spec spec/isaac/bridge_spec.clj
 ### Worker handback
 
 Implementation is complete. Land on isaac-agent main if not already; retag unverified; hand verify against the amended acceptance. Do not rewrite episode dispatch to paper over compaction. Verify-fail counter reset by this note.
+
+
+
+## Reasons for Scrapping
+
+Superseded by isaac-7dkp (2026-09-03). 7dkp replaced the prebuilt-charge heuristic with the conversation routing seam: Discord now dispatches a request map (not a prebuilt charge) so the bridge's ensure-session! runs the episode router; ACP already passed a request map. The three @wip scenarios in features/bridge/episode_dispatch.feature were not activated by 7dkp — they move to the 7dkp follow-up bean. Deployed 2026-09-03 in the 0.1.41 train; marvin opens episodes from both surfaces.
