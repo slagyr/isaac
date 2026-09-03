@@ -7,8 +7,9 @@ priority: high
 tags:
     - isaac-server
     - test-isolation
+    - unverified
 created_at: 2026-09-03T23:36:58Z
-updated_at: 2026-09-03T23:51:53Z
+updated_at: 2026-09-03T23:55:18Z
 ---
 
 Likely repo: **isaac-server** (`spec/isaac/server/server_steps.clj`, `features/server/command.feature`).
@@ -53,3 +54,23 @@ binds no file sink). Two additions to this bean, design otherwise unchanged:
   `logging.feature`) wrote no `logs/server.log` anywhere — not under `target/`
   and not under the home root. `find target -name server.log` after the run
   lists only files produced by file-mode scenarios (`log_lifecycle.feature`).
+
+
+## Implementation (2026-09-03, plan@isaac-plan)
+
+isaac-server main @ **98aa691**.
+- `spec/isaac/server/server_steps.clj`: new `feature-root` — the scenario
+  root, else `default-server-home` under `target/test-state` (cleaned when not
+  mem-fs, recorded in `g :root` like the in-process step);
+  `argv-with-feature-root` always injects `--root` unless argv has one.
+  `command.feature` unchanged.
+- `features/server/log_lifecycle.feature`: the six file-asserting scenarios
+  add `logging.output | file` to their config table (production knob) —
+  required now that foundation `:memory` binds no sink (isaac-zqyw refinement).
+- Pin: foundation `8dc5d5e` → `e0dc789` in deps.edn (3) and bb.edn (5).
+
+Gate: `bb verify` — config-bypass-lint ok, spec 214/0, features 67/0.
+One-time isolation check: `:server/hello` count in the real
+`~/.isaac/logs/server.log` unchanged across a full `bb features` (9 → 9), and
+`find target -name 'server*.log'` empty afterwards (lifecycle scenarios run on
+mem-fs).

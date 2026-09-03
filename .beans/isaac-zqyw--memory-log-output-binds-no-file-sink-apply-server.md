@@ -69,3 +69,12 @@ isaac-foundation main @ **7c959041504bb24d3d67e154788bebf52f0be25f** (`7c95904`)
 docstring rewritten. Two new examples in `spec/isaac/log/output_spec.clj`
 (preserves :memory + no sink; drops a prior file-mode sink). Gate: `bb spec`
 894/0, `bb features` 139/0, lint clean. Pin this SHA in isaac-stao.
+
+### Refinement (same session) — foundation main @ **e0dc789b58723a3415a12d5f0d95e0d9148bc316**
+
+First cut (7c95904) broke six isaac-server `log_lifecycle.feature` scenarios
+that assert the file on purpose (the harness sets `:memory` globally, so my
+audit undercounted). Rule refined: harness `:memory` binds no sink UNLESS the
+config names `:logging.output` explicitly — then it applies as in production.
+Third spec example covers it. Gate: `bb spec` 895/0, `bb features` 139/0.
+**Pin e0dc789 (not 7c95904).**
