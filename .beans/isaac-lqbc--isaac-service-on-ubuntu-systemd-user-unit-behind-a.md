@@ -9,7 +9,7 @@ tags:
     - unverified
     - server
 created_at: 2026-09-03T20:53:20Z
-updated_at: 2026-09-03T23:21:54Z
+updated_at: 2026-09-03T23:34:46Z
 ---
 
 Repo: **isaac-server**. Planning session 2026-09-03 (Micah + plan). Goal: run
@@ -211,3 +211,25 @@ features/cli/service.feature features/cli/service_linux.feature` 31/0;
 `bb verify` 214 spec / 67 feature examples, 0 failures; `bb lint src` 0
 errors (the spec-file `unresolved symbol` lint errors are pre-existing speclj
 noise — untouched `runtime_spec.clj` reports the same 6).
+
+## Verify fail (attempt 1, 2026-09-03): explicit acceptance is still unmet (`bb lint` and full native `bb features` are not green as written)
+
+Evidence on `isaac-server` `origin/main` `e9b1f400d834f18a8ba23efd0fa4bf3020fa9d9e`:
+- acceptance-specific scenarios are no longer `@wip`:
+  - `features/cli/service.feature` has no `@wip`
+  - `features/cli/service_linux.feature` has no `@wip`
+- acceptance-targeted commands are green:
+  - `bb features features/cli/service.feature features/cli/service_linux.feature` → `31 examples, 0 failures, 122 assertions`
+  - `bb spec spec/isaac/service` → `97 examples, 0 failures, 178 assertions`
+- new service namespaces do have spec twins:
+  - `src/isaac/service/manager.clj` ↔ `spec/isaac/service/manager_spec.clj`
+  - `src/isaac/service/launch.clj` ↔ `spec/isaac/service/launch_spec.clj`
+  - `src/isaac/service/linux.clj` ↔ `spec/isaac/service/linux_spec.clj`
+- but the bean's explicit broader acceptance is still red in verify:
+  - `bb lint` exits `1` with `clj-kondo: 126 error(s), 37 warning(s)`
+    - includes unresolved Speclj DSL symbols across `spec/`, including touched service specs; worker only proved `bb lint src`, not the accepted `bb lint`
+  - full native `bb features` exits `124` with terminal output `features timed out after 180s`
+    - full JVM equivalent is green (`clojure -M:test:features` → `67 examples, 0 failures, 184 assertions`, `113.38 real`), but the acceptance text still requires full native `bb features` green
+  - full native `bb spec` is green (`214 examples, 0 failures, 388 assertions`)
+
+This bean cannot pass until the accepted commands are green as written, or planning amends the lint/full-suite requirements.
