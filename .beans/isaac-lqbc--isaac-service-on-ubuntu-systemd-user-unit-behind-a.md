@@ -1,14 +1,14 @@
 ---
 # isaac-lqbc
 title: 'isaac service on Ubuntu: systemd user unit behind a platform seam (Linux + macOS)'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
     - server
     - linux
 created_at: 2026-09-03T20:53:20Z
-updated_at: 2026-09-03T20:53:20Z
+updated_at: 2026-09-03T21:51:12Z
 ---
 
 Repo: **isaac-server**. Planning session 2026-09-03 (Micah + plan). Goal: run
@@ -107,3 +107,64 @@ Remove @wip, then in isaac-server:
 - System-level (root) units. User units only, matching the macOS LaunchAgent
   (per-user) model.
 - journald integration beyond what the file redirect gives.
+
+
+## Scenarios (committed @wip at slagyr/isaac-server 5116743) — supersedes the sketch above
+
+`features/cli/service_linux.feature` — 13 scenarios, whole feature @wip:
+packaged install (unit rows + daemon-reload + enable --now), dev-checkout
+install, --root, --runtime jvm (+ status reads runtime back), linger warn /
+linger quiet, status not-installed / running, uninstall idempotent /
+removes, start-stop-restart verbs, logs / logs --follow.
+
+`features/cli/service.feature` (macOS) — shared edits, each @wip:
+- "status shows running…" now uses `sh "launchctl" prints to stdout:`.
+- three help scenarios reworded: `Install Isaac as a background service` /
+  `Remove the Isaac background service` (no "launchd").
+- "Linux is not yet supported" scenario DELETED; header paragraph replaced.
+The untouched macOS scenarios (14 non-wip, green at 5116743) are the
+regression net.
+
+## Step ledger (final)
+
+| step | status |
+|------|--------|
+| an Isaac root at / the operating system is / {cmd} resolves to / the current process PATH is / isaac is run with / sh was called with / the file … contains: / the file … does not exist / the stdout contains / the stderr contains / the stderr does not contain / the stdout matches / the exit code is | reuse |
+| **shell commands are stubbed** | **RENAME of `launchctl is stubbed` — same fn; update the step def AND the macOS Background line (the Linux file already uses the new name)** |
+| **sh {cmd:string} prints to stdout:** | **NEW generic canned stdout keyed by argv[0]; REPLACES `launchctl print returns:` (delete the old step)** |
+| **the INI file {path:string} matches:** | **NEW — systemd unit / INI parser: `[Section]` + `key=value`; repeated keys collect into a vector, `Section.key[n]` indexes; expected values normalize `~` to the test home like `launchctl was called with` does; missing file fails loudly** |
+
+## Worker notes
+
+- Every subprocess goes through `isaac.shell/sh!` / `exec!` — never
+  `clojure.java.shell` directly. The scenarios run on macOS/CI with the shell
+  stubbed; a real `systemctl`/`loginctl` call is a defect.
+- Unit name is plain `isaac` (`isaac.service`), not the reverse-DNS launchd
+  label. stdout line: `Service installed: isaac`.
+- `ExecStart` is one space-joined line; the jvm `sh -c` wrapper is a single
+  double-quoted argument with inner `\"` and `$$` for the literal dollar
+  (systemd substitutes lone `$`). `runtime-from-program-arguments` already
+  infers jvm from `/bin/sh` + `clojure` + `-m isaac.main` — reuse it.
+- Linger: `loginctl show-user <user> -p Linger`; anything but `Linger=yes`
+  (including empty output / error) → stderr warning containing
+  "lingering is off" and the literal `loginctl enable-linger` command; exit 0.
+- status: `systemctl --user show isaac -p ActiveState -p MainPID -p ExecMainStatus`;
+  `active` → `state: running` exit 0; any other state prints it raw, exit 1.
+- Log path (process stdout capture, distinct from the `<root>/logs` sink):
+  `~/.local/state/isaac/server.log` via `StandardOutput=append:` /
+  `StandardError=append:`; `logs` reads that file, `--follow` = `tail -f`.
+- Unknown OS still errors ("isaac service is not supported on <OS>") — no
+  scenario for it (no absence tests).
+
+## Acceptance
+
+Remove @wip from `features/cli/service_linux.feature` and from the four
+@wip scenarios in `features/cli/service.feature`, then in isaac-server:
+
+    bb features features/cli/service.feature features/cli/service_linux.feature
+    bb spec spec/isaac/service
+    bb lint
+
+0 failures; every new `src/` namespace has a `spec/` twin (platform seam,
+linux impl, shared program-args ns). Full `bb features` + `bb spec` green.
+Hand off with `--tag=unverified`, status stays in-progress.
