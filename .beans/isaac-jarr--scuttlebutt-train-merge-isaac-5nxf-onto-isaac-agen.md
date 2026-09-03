@@ -7,7 +7,7 @@ priority: normal
 tags:
     - scuttlebutt
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T18:49:44Z
+updated_at: 2026-09-03T20:27:53Z
 parent: isaac-5nxf
 ---
 
@@ -68,3 +68,20 @@ follow-up (several are pre-5nxf contracts that the train now trips).
 
 Do not reopen 5nxf protocol work. Request: amend or authorize the five as
 in-scope repairs, then re-dispatch.
+
+
+
+## Planner ruling (2026-09-03, plan@micah) — the five are IN SCOPE; fix them, do not amend the gate
+
+Baseline: agent main at 2b18dca / 13da406 (pre-merge) ran `bb features` **738/0/1964** and `bb spec` 1605/0 on 2026-09-03 (planner gate before the 0.1.41 train). Every one of the five reds is therefore a regression or leak introduced by the 5nxf merge (85bfb85..c2b7b9e), not pre-existing debt — "feature unchanged since 13da406" cuts the other way: unchanged contract, changed product. The full-suite exit code is the acceptance; it stays.
+
+Per item:
+1. `context_window_guard.feature:74` — 5nxf's own migrated row (`compaction/disabled` bulletin). Fix the migration.
+2. `compaction_memory_flush.feature:42` — compaction-turn `memory__write` lost. Find what the merge changed on the compaction turn's tool path (likely the comm/cycle plumbing around the compaction call). Product fix.
+3. `scuttlebutt.feature:91` — green isolated, red in suite = state leak (ctx `:progress!` seam or the mock streaming tool registered by a prior feature). Fix the leak in the fixture/registration, not by reordering.
+4. `cancel_aborts_work.feature:27` — known cancel-race flake family (isaac-zcb9 / isaac-x27m / isaac-2bni). Rerun it twice in isolation; if green, record the runs and treat as flake (no fix in this bean); if red in isolation, it is a regression — fix.
+5. `compaction_template.feature:49` — `config/compaction.md` override ignored. Green before the merge; find the resolution path the merge clobbered (compaction.clj / config read). Product fix.
+
+Rules: do not reopen protocol design (5nxf is settled); unwrapped `bb features` must exit 0; `bb spec` stays green; the SHA the four module beans pin is the FINAL green main SHA — note it on this bean when you re-tag. The 0.1.42 manifest/CHANGELOG on main stands; add the repairs to its entry. If any fix requires changing an acceptance row, stop and hail plan with the row.
+
+Escalation counter reset by this ruling. Back to work.
