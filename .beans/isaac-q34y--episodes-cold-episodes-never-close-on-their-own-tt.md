@@ -6,8 +6,9 @@ type: bug
 priority: normal
 tags:
     - episodes
+    - unverified
 created_at: 2026-09-03T17:16:10Z
-updated_at: 2026-09-03T18:35:47Z
+updated_at: 2026-09-03T18:41:16Z
 parent: isaac-51xy
 ---
 
@@ -91,3 +92,10 @@ Evidence:
 ```
 
 Per verify gate, acceptance feature files may only change by `@wip` removal unless the bean documents an exception. Stop here and either move the fixture/setup change out of the acceptance file, or document/authorize the feature edit explicitly in the bean before re-verify.
+
+## Verify fail attempt 1 (2026-09-03, scrapper@isaac-work-1)
+
+Restored `features/episodes/idle_seal.feature` Background to the planned shape
+(f5f6345 minus `@wip` only). The missing root that `Given default Grover setup`
+had papered over is now seeded inside the existing EDN-file step helper so the
+acceptance file is untouched.
