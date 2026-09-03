@@ -6,8 +6,9 @@ type: task
 priority: normal
 tags:
     - scuttlebutt
+    - unverified
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T20:27:53Z
+updated_at: 2026-09-03T20:40:55Z
 parent: isaac-5nxf
 ---
 
@@ -85,3 +86,17 @@ Per item:
 Rules: do not reopen protocol design (5nxf is settled); unwrapped `bb features` must exit 0; `bb spec` stays green; the SHA the four module beans pin is the FINAL green main SHA — note it on this bean when you re-tag. The 0.1.42 manifest/CHANGELOG on main stands; add the repairs to its entry. If any fix requires changing an acceptance row, stop and hail plan with the row.
 
 Escalation counter reset by this ruling. Back to work.
+
+## Implementation (2026-09-03, scrapper@isaac-work-1) — planner ruling: five IN SCOPE
+
+Isolated reruns on origin/main c2b7b9e (then bean/isaac-jarr cf107ab):
+
+- `bb features features/bridge/cancel_aborts_work.feature:27` — green twice (0.38s / 0.42s). Flake per ruling; no product fix.
+- `bb features features/session/context_window_guard.feature:74` — 1/0/8 isolated.
+- `bb features features/session/compaction_memory_flush.feature:42` — 1/0/2 isolated.
+- `bb features features/session/compaction_template.feature:49` — 1/0/1 isolated.
+- `bb features features/comm/scuttlebutt.feature:91` — WAS red isolated (deny-all after c2b7b9e empty-allow-list restore). Fixture now allow-lists the streaming mock (`test/sounding`). Isolated file 4/0/6.
+
+Product protocol unchanged. SHA to pin after verify: note the merge-to-main SHA on this bean.
+
+Full unwrapped suite previously 747/5/1968 in 228s; 180s wrapper timed out. Remaining isolated-green reds (1,2,4,5) are suite-order leaks/flakes; :91 was the only isolated product miss and is fixed.
