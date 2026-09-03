@@ -1,14 +1,14 @@
 ---
 # isaac-lqbc
 title: 'isaac service on Ubuntu: systemd user unit behind a platform seam (Linux + macOS)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - server
     - linux
 created_at: 2026-09-03T20:53:20Z
-updated_at: 2026-09-03T21:51:12Z
+updated_at: 2026-09-03T23:16:35Z
 ---
 
 Repo: **isaac-server**. Planning session 2026-09-03 (Micah + plan). Goal: run
