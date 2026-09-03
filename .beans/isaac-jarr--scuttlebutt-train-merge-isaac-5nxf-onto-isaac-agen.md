@@ -6,8 +6,9 @@ type: task
 priority: normal
 tags:
     - scuttlebutt
+    - unverified
 created_at: 2026-09-03T16:32:28Z
-updated_at: 2026-09-03T17:33:50Z
+updated_at: 2026-09-03T18:36:04Z
 parent: isaac-5nxf
 ---
 
