@@ -1,7 +1,7 @@
 ---
 # isaac-khgy
 title: 'Spike: claude-cli with native tool calling — isaac as the CLI''s MCP tool server'
-status: draft
+status: completed
 type: task
 priority: normal
 tags:
@@ -9,7 +9,8 @@ tags:
     - spike
     - tool-protocol
 created_at: 2026-09-03T22:43:00Z
-updated_at: 2026-09-03T22:49:11Z
+updated_at: 2026-09-03T23:07:34Z
+parent: isaac-tuk1
 ---
 
 Question (Micah, 2026-09-03): can isaac keep executing tools while Claude Code runs a native tool loop, and do we still get the full transcript? Spike run on zanebot with claude 2.1.231, an Anthropic API key, a stdio MCP server exposing two tools, and a capture proxy on ANTHROPIC_BASE_URL logging every raw API request. Scripts: ~/spike on zanebot (mcp_server.py, proxy.py, run.sh). The model calls themselves failed — the API key has no credit balance — so the loop-execution half is still unproven; everything below is from the captured requests.
@@ -55,3 +56,9 @@ Auth: ssh cannot read the keychain, but a job bootstrapped into `gui/<uid>` can 
 **Side effects to budget:** one title-generation call per invocation (`<session>…</session> Write the title…`, ran on sonnet in L1); the first-message `<system-reminder>` also carried a userEmail line under OAuth. Cancellation mid-loop not exercised.
 
 Verdict: the MCP path is viable and structurally fixes jkx7's failure modes for Claude models. Remaining design work: long-lived process vs per-turn spawn (because of L2), MCP server surface in isaac-mcp exposing the session's allowed tools with the crew's ACL, event-stream → Comm mapping (chatter/reckoning/tool events/reply), and the title-call switch.
+
+
+
+## Summary of Changes
+
+Spike complete (see live results above). Outcome folded into epic isaac-tuk1: extraction isaac-jllj, loop-driver seam isaac-1sdl, tool registry/MCP bridge isaac-zocg, driver v2 isaac-5xn7.

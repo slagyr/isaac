@@ -8,7 +8,8 @@ tags:
     - claude-cli
     - tool-protocol
 created_at: 2026-09-03T22:20:42Z
-updated_at: 2026-09-03T22:22:59Z
+updated_at: 2026-09-03T23:07:34Z
+parent: isaac-tuk1
 ---
 
 Observed 2026-09-03 after scrapper/prowl moved to :claude-opus (claude-cli provider) during the grok credit outage.
