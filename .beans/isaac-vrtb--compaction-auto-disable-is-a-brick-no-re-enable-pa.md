@@ -53,7 +53,7 @@ Hail `features/context_window_guard.feature`: drop context-exhausted attention a
 1. First required compact failure refuses the user turn — consecutive-failures 1, no `:block` — **approved**; `@wip` in `features/session/context_window_guard.feature`
 2. Third consecutive compact failure sets `:block {:reason :compaction-failed}` and posts attention once — **approved**; `@wip` in `features/session/context_window_guard.feature`
 3. A blocked conversation refuses the next turn — no LLM, no assistant row, reason `:blocked` — **approved**; `@wip` in `features/session/context_window_guard.feature`
-4. Unset `:block` — the next needing turn is accepted (compaction can run)
+4. Unset `:block` — the next needing turn is accepted (compaction can run) — **approved**; `@wip` in `features/session/context_window_guard.feature`
 5. Hail defers an unavailable turn without posting context-exhausted attention
 
 ## Acceptance
