@@ -47,6 +47,14 @@ Hail `features/context_window_guard.feature`: blocked session does not 5-minute-
 - A catalog of other `:block` reasons.
 - Changing the 0.8 compact threshold or p9zy's overflow retry for *unblocked* sessions.
 
+## Scenario plan (2026-09-04, framing approved; titles awaiting nod)
+
+1. First required compact failure refuses the user turn — consecutive-failures 1, no `:block`
+2. Third consecutive compact failure sets `:block {:reason :compaction-failed}` and posts attention once
+3. A blocked conversation refuses the next turn — no LLM, no assistant row, reason `:blocked`
+4. Unset `:block` — the next needing turn is accepted (compaction can run)
+5. Hail to a blocked session stays parked — not `:context-exhausted` 5-minute weather
+
 ## Acceptance
 
 Draft until `@wip` scenarios exist.
