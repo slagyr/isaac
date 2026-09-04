@@ -9,7 +9,7 @@ tags:
     - durability
     - hail
 created_at: 2026-09-04T16:52:39Z
-updated_at: 2026-09-04T21:24:01Z
+updated_at: 2026-09-04T21:47:21Z
 ---
 
 2026-09-04 16:48:51Z, isaac-work-1 (scrapper on gpt-5.4), during isaac-v1la's work turn (hail 0fd02d06). `current.ednl` got a torn line at byte offset 416664: the tail of a toolResult content string ("…only dots and the su") is immediately followed by `{:type "message", :id "b37497a6", :parentId "5d11a594", … :role "toolResult", :id "fc_7200e397-…"` — a second entry started mid-line. From then on every turn on the session fails at drive/turn.clj:1399 reading the transcript (`NumberFormatException: For input string: "5d11a594"` — the EDN reader is mid-token when it hits the fused line). The delivery retried 5× thirty seconds apart, each appending an `:type "error"` entry, and dead-lettered at 16:51:32Z — a healthy bean lost to a poisoned session ([[hails-never-die]]: dead-letter is for poison in the BEAN, not the session).
@@ -32,3 +32,8 @@ Scenarios (@wip, worker writes): (1) an append that races another writer still y
 
 ## Exhibit 3 (2026-09-04 21:18–21:21Z, cheery-rowan)
 Second torn transcript in one day, on the session that had just finished isaac-v1la: `Invalid number: 2026-09-04T21, offset: 46148` (a timestamp token fused mid-line). Timing lines up with the 21:18:38 server restart (clean-suspend phase) and/or the 21:19–21:23 window when `/usr/local/bin/isaac` was unlinked by a failed brew upgrade — a tool shell-out failing mid-turn while the drive was persisting. Whichever it was, the append is not atomic and the file is left unparseable. A ci-failure delivery (ed0d19f9) burned 4 attempts on it before I archived the session as `cheery-rowan-torn-20260904` (tags cleared) and minted `snappy-toad` for the band. Add to scenarios: a restart (suspend) that lands mid-append must not leave a partial line — either the append completes or nothing of it is written.
+
+
+
+## Exhibit 4 (2026-09-04 21:41Z, isaac-work-2)
+Third torn transcript of the day: `Invalid number: 2026-09-04T21, offset: 25032, context: … bean, do not re-qu{:type` — an entry truncated mid-string with the next append fused onto it. isaac-work-2 was mid-turn on the jllj work re-hail when the 21:18:38 `launchctl kickstart -k` restart hit. All three tears today (isaac-work-1 this morning, cheery-rowan, isaac-work-2) coincide with server restarts during in-flight turns: the restart kills the JVM between the truncating write and the newline/rest of the record. The suspend phase must either finish the append or roll it back; the re-open path must at minimum skip a torn trailing record instead of poisoning the whole session. Cost so far today: 3 sessions archived, 2 hails dead-lettered (v1la, jllj re-hail). Sessions archived: isaac-work-2-torn-20260904 (tags cleared); band now on snappy-toad.
