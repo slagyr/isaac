@@ -1,14 +1,14 @@
 ---
 # isaac-j2v0
 title: 'Parallel tool batches: execute a response''s tool calls concurrently (bounded), results in batch order'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
     - agent
     - tool-loop
 created_at: 2026-09-04T00:14:58Z
-updated_at: 2026-09-04T00:14:58Z
+updated_at: 2026-09-04T00:28:33Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/llm/tool_loop.clj`, `src/isaac/drive/turn.clj`
@@ -84,3 +84,84 @@ Migrate: la8h "runs both in order and persists both pairs" → id-based.
 
 Draft until the design decisions above are confirmed and scenarios are
 committed @wip.
+
+
+## Decisions ratified (2026-09-03, Micah) — supersede the "proposed" section
+
+Bounded concurrency (`tools.max-parallel`, default 4, 1 = serial); followup
+order = batch order; transcript = all toolCalls persisted in batch order before
+execution, each toolResult persisted on completion (completion order on disk,
+paired by id); cancel mid-batch = in-flight calls run to their own
+cancellation, queued calls never start and get on-tool-cancel; one call's
+error is its own result. Batch independence is the model's contract.
+
+**No wall-clock in the passing path.** Test-double tools block on conditions,
+never sleeps; their one-second ceilings run only when the implementation is
+wrong (rendezvous returns "alone", gate returns "gate never opened").
+
+## Scenarios (committed @wip at slagyr/isaac-agent ce8138f)
+
+`features/session/parallel_tool_batches.feature` — 6 scenarios:
+1. rendezvous: two calls in one batch overlap (both tool-call events precede
+   both tool-result events; both results "met").
+2. batch order vs completion order: gated slow + quick; comm sees quick first,
+   the followup request carries slow then quick.
+3. transcript: both toolCall rows before any toolResult; results paired by id.
+4. `tools.max-parallel` config knob, default 4 (`config get`).
+5. cancel mid-batch at max-parallel 1: in-flight blocking tool and the queued
+   tool both report tool-cancel; nothing after runs.
+6. one error (fs__read missing file) + one success in the same batch.
+Migrated @wip: `parallel_tool_calls.feature` la8h scenario → calls-first
+transcript + id pairing.
+
+## Unit-spec obligations (not Gherkin — no clean observable without timers)
+
+`spec/isaac/llm/tool_loop_spec.clj`: a fake tool-fn blocking on a latch,
+recording concurrent invocations —
+- bound 2, batch of 3: `await-condition` until exactly 2 in flight, third not
+  started; release; all 3 results in batch order.
+- bound 1: never more than 1 in flight; results in batch order.
+- errors in one call don't abort the others; cancellation flag stops queued
+  calls (loop-level twin of scenario 5).
+
+## Step ledger (final)
+
+| step | status |
+|------|--------|
+| default Grover setup / built-in tools registered / sessions exist / queued `tool_calls` batch (la8h fixture) / user sends (sync via memory comm + async form) / memory comm has events matching / transcript matching + not matching / the last LLM request matches / the turn is cancelled … after N tool calls / the turn result is / config: / an Isaac root at / isaac is run with / stdout contains | reuse |
+| **a rendezvous tool {name} is registered that returns {string} once {n:int} calls are in flight** | **NEW mock — counter of in-flight calls; waits (≤1s) for n; returns "alone" on ceiling** |
+| **a gated tool {name} is registered that returns {string} once tool {other} has completed** | **NEW mock — latch tripped by the named tool's completion; ceiling returns "gate never opened"** |
+| **a blocking tool {name} is registered that returns cancelled once the turn is cancelled** | **NEW mock — polls the bridge cancel flag for its session_key, returns `{:error :cancelled}`** |
+| **every toolResult in session {key} pairs with a toolCall by id** | **NEW — each toolResult's toolCallId matches an earlier toolCall id in the transcript** |
+| `tools.max-parallel` | config schema row (positive int, default 4) |
+
+## Worker notes
+
+- `tool-loop/run`: replace the serial `mapv` with bounded concurrent
+  execution (futures + a semaphore or a fixed pool sized by the bound);
+  gather in batch order. Cycles stay sequential.
+- `drive/turn.clj record-tool-call!` splits into announce (on-tool-call +
+  persist toolCall, serial, batch order) and execute/complete (per call,
+  concurrent; persist toolResult + on-tool-result on completion). Keep the
+  per-call cancel bookkeeping; add the queued-call path (never started →
+  on-tool-cancel, no toolResult).
+- Futures convey dynamic bindings in Clojure and bb; confirm nothing in
+  `tool-registry/tool-fn` or the fs nexus assumes a single thread.
+- The mocks live in `spec/isaac/tool/tools_steps.clj` beside `test__sounding`.
+- Message indexes in scenarios 2 and 6 assume system, user, assistant-with-
+  calls, tool, tool — fix the INDEX to the real request shape, never the
+  behaviour. Same for the toolResult `message.content[0].text` path.
+- Scenario 5 mixes the async send with the memory-comm event table; align to
+  whichever harness the cancel step's channel-events read.
+
+## Acceptance
+
+Remove @wip from `features/session/parallel_tool_batches.feature` and the
+migrated scenario in `parallel_tool_calls.feature`, then in isaac-agent:
+
+    bb features features/session/parallel_tool_batches.feature features/session/parallel_tool_calls.feature
+    bb spec spec/isaac/llm/tool_loop_spec.clj spec/isaac/drive
+    bb features features/comm/scuttlebutt.feature features/llm/tool_loop_driver.feature features/bridge/cancel.feature
+
+0 failures; full `bb spec` + `bb features` green; no `Thread/sleep` in the
+new steps or specs. Hand off `--tag=unverified`, status stays in-progress.
