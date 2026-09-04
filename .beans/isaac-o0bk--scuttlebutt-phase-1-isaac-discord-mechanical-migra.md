@@ -8,11 +8,7 @@ tags:
     - discord
     - scuttlebutt
 created_at: 2026-09-03T16:40:55Z
-<<<<<<< HEAD
-updated_at: 2026-09-04T04:43:20Z
-=======
 updated_at: 2026-09-04T04:50:24Z
->>>>>>> 3d7f34d5 (isaac-o0bk: note CI regression repair)
 blocked_by:
     - isaac-jarr
 ---

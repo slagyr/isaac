@@ -165,3 +165,23 @@ migrated scenario in `parallel_tool_calls.feature`, then in isaac-agent:
 
 0 failures; full `bb spec` + `bb features` green; no `Thread/sleep` in the
 new steps or specs. Hand off `--tag=unverified`, status stays in-progress.
+
+## Work observations (2026-09-04, scrapper@isaac-work-1)
+
+Implemented bounded concurrent execution for one response's tool-call batch on branch `bean/isaac-j2v0` @ `8a79a55` (base `origin/main@2277cb8`).
+
+Delivered:
+- `src/isaac/llm/tool_loop.clj`: bounded concurrent batch execution with `tools.max-parallel` defaulting to `4`, preserving followup `tool-results` batch order.
+- `src/isaac/drive/turn.clj`: announce/persist all `toolCall` entries before execution, then persist/emit each `toolResult` on completion; preserve queued vs in-flight cancellation behavior.
+- `src/isaac/tool/registry.clj`: raw `execute` result maps plus `present-result` normalization for transcript/model payloads.
+- spec/feature harness updates for rendezvous, gated, and blocking mock tools; transcript pairing by id; config-default coverage.
+- removed `@wip` from `features/session/parallel_tool_batches.feature` and the migrated scenario in `features/session/parallel_tool_calls.feature`.
+
+Verification:
+- `bb features features/session/parallel_tool_batches.feature features/session/parallel_tool_calls.feature` → `9 examples, 0 failures, 23 assertions`
+- `bb features features/comm/scuttlebutt.feature features/llm/tool_loop_driver.feature features/bridge/cancel.feature` → green
+- `bb spec spec/isaac/llm/tool_loop_spec.clj spec/isaac/drive` → green
+- `bb spec` → `1625 examples, 0 failures, 3342 assertions, 3 pending`
+- `bb features` is not suite-stable in this workspace: one full run passed (`762 examples, 0 failures, 2034 assertions`), but reruns fail intermittently outside this bean's surface at `features/episodes/live.feature:604` (`without embedding, drift is inert but the size cap still seals`, expected `1` scene got `0`). The same scenario passes in isolation with `bb features features/episodes/live.feature:577`.
+
+Conclusion: implementation and focused acceptance are complete, but the bean's full-`bb features` gate is currently blocked by a pre-existing cross-feature suite-health / state-isolation flake unrelated to parallel tool batches. Returning to planner for acceptance adjustment or a split suite-health bean.
