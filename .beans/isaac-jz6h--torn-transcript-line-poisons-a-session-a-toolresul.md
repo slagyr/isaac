@@ -9,7 +9,7 @@ tags:
     - durability
     - hail
 created_at: 2026-09-04T16:52:39Z
-updated_at: 2026-09-04T16:52:39Z
+updated_at: 2026-09-04T16:59:46Z
 ---
 
 2026-09-04 16:48:51Z, isaac-work-1 (scrapper on gpt-5.4), during isaac-v1la's work turn (hail 0fd02d06). `current.ednl` got a torn line at byte offset 416664: the tail of a toolResult content string ("…only dots and the su") is immediately followed by `{:type "message", :id "b37497a6", :parentId "5d11a594", … :role "toolResult", :id "fc_7200e397-…"` — a second entry started mid-line. From then on every turn on the session fails at drive/turn.clj:1399 reading the transcript (`NumberFormatException: For input string: "5d11a594"` — the EDN reader is mid-token when it hits the fused line). The delivery retried 5× thirty seconds apart, each appending an `:type "error"` entry, and dead-lettered at 16:51:32Z — a healthy bean lost to a poisoned session ([[hails-never-die]]: dead-letter is for poison in the BEAN, not the session).
@@ -21,3 +21,9 @@ Two defects:
 Evidence on zanebot: `~/.isaac/sessions/isaac-work-1/current.ednl` (222 lines, 449 KB) — the torn line is the one containing `the su{:type "message"`; `~/.isaac/hail/failed/0fd02d06.edn`. The isaac-foundation-v1la checkout on isaac-work-1's role home holds the worker's progress.
 
 Scenarios (@wip, worker writes): (1) an append that races another writer still yields one entry per line (spec with two threads appending 1000 entries; every line parses); (2) a transcript with one fused line is quarantined at open — the turn runs, `:session/transcript-torn` is logged, the quarantined line is written to `current.ednl.torn`; (3) a delivery whose turn throws the same pre-model exception twice gets the session marked unhealthy and the hail rebinds/defers without consuming an attempt.
+
+
+
+## Exhibit 2 — recovery friction (16:51–16:59Z)
+- A delivery's `:bound-session` follows a renamed session: after `sessions rename isaac-work-1 isaac-work-1-archive-…` the re-hail (45a0023f) still bound to the archive and dead-lettered there. Renaming/archiving a poisoned session must also invalidate deliveries bound to it (or the worker must re-select when the bound session's transcript fails to open).
+- `isaac sessions set <id>.tags '#{:ci :isaac}'` rejects every value form with "must be a set of keywords" (schema.clj:64 validation vs the CLI's string parse) — see the separate bean. Workaround used: `isaac prompt --crew scrapper --tag ci --tag isaac --create always` mints a tagged session (`cheery-rowan`); the band matches on tags, not names.

@@ -9,7 +9,7 @@ tags:
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T16:53:33Z
+updated_at: 2026-09-04T16:59:46Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -72,3 +72,8 @@ The cached config must never contain substituted secrets (cache/cli.edn is world
 
 ## Delivery note (2026-09-04 16:51Z)
 Hail 0fd02d06 dead-lettered after 5 attempts — NOT a bean fault: isaac-work-1's transcript got a torn line at 16:48:51Z (isaac-jz6h) and every retry died reading it. The session was archived as `isaac-work-1-archive-20260904` (transcript intact for jz6h's investigation) and the bean re-hailed as 45a0023f to a fresh isaac-work-1. Worker: your earlier progress is in the `isaac-foundation-v1la` checkout / branch in the role home — resume from there.
+
+
+
+## Delivery note 2 (16:59Z)
+Second hail 45a0023f also dead-lettered: it had pre-bound to the archived session (bound-session sticks through a rename) and burned 5 attempts there. Third hail **ed84420c** bound at 16:59:09 to a fresh tagged scrapper session `cheery-rowan` (attempts 0). Nothing about this bean's work failed.
