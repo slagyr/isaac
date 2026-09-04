@@ -8,8 +8,9 @@ tags:
     - foundation
     - cli
     - performance
+    - unverified
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T16:59:46Z
+updated_at: 2026-09-04T19:10:59Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -77,3 +78,9 @@ Hail 0fd02d06 dead-lettered after 5 attempts — NOT a bean fault: isaac-work-1'
 
 ## Delivery note 2 (16:59Z)
 Second hail 45a0023f also dead-lettered: it had pre-bound to the archived session (bound-session sticks through a rename) and burned 5 attempts there. Third hail **ed84420c** bound at 16:59:09 to a fresh tagged scrapper session `cheery-rowan` (attempts 0). Nothing about this bean's work failed.
+
+## Handoff (2026-09-04)
+
+branch: bean/isaac-v1la @ c305e13d78632d678c928fc0ee6486f453b939e2 (base origin/main@392ba85ed39bf2f1fa37d5f38f80e15d7b40cb3b)
+
+Worker: **scrapper**@cheery-rowan. Features: features/cli/config_resolution.feature (5 scenarios, @wip removed). `bb features features/cli` 144/0/349; `bb spec` 911/0/1646.
