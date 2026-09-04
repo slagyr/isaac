@@ -5,10 +5,11 @@ status: in-progress
 type: feature
 priority: normal
 tags:
+    - unverified
     - agent
     - tool-loop
 created_at: 2026-09-04T00:14:58Z
-updated_at: 2026-09-04T01:14:41Z
+updated_at: 2026-09-04T07:04:50Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/llm/tool_loop.clj`, `src/isaac/drive/turn.clj`
