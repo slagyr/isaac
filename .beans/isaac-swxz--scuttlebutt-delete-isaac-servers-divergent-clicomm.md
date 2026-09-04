@@ -5,10 +5,11 @@ status: in-progress
 type: task
 priority: normal
 tags:
+    - unverified
     - scuttlebutt
     - server
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-04T00:56:06Z
+updated_at: 2026-09-04T02:22:28Z
 blocked_by:
     - isaac-jarr
 ---
@@ -101,3 +102,25 @@ Therefore this bean is broadened from "delete CliComm only" to **"make isaac-ser
 - release manifest noted on this bean with the server SHA that rides the train
 
 Implementation freedom is the worker's call: remove the divergent server copies in favor of the agent surface, or update the server-owned copies so they match the pinned protocol/API surface. The contract is compatibility on the required train, not a specific code move.
+
+
+
+## Work complete (2026-09-04, scrapper@isaac-work-2)
+
+Completed in `isaac-server` on branch `bean/isaac-swxz` from `origin/main@319e04f15b203537b99cfa47c9624ede90a43bf1`.
+
+Implemented compatibility required by the pinned scuttlebutt train:
+- pinned `deps.edn`, `bb.edn`, feature fixtures, and configurator steps to agent/telly SHA `bf4323326c150bdcda4be2c0245cf2f7b0cbd629`
+- deleted `src/isaac/comm/cli.clj`
+- reconciled server comm copies in `src/isaac/comm/protocol.clj`, `src/isaac/comm/null.clj`, and `src/isaac/comm/memory.clj` to the newer protocol surface
+- added `src/isaac/comm/render.clj` required by the aligned comm implementation
+- expanded `src/isaac/session/store/spi.clj` to the newer session-store API expected during module activation (`chronicle-transcript`, reckoning, turn-marker, rename support)
+- added explicit `io.github.slagyr/isaac-agent` classpath dependency so agent store impl namespaces resolve during feature/spec boot
+- fixed the hot-reload logging feature fixture so it edits valid config (`server.host`) on the pinned train
+- bumped server manifest version to `0.1.11`
+
+Verification on this branch:
+- `bb features` -> `67 examples, 0 failures, 184 assertions`
+- `bb spec` -> `214 examples, 0 failures, 414 assertions`
+
+Train/server implementation SHA: `1207d456c99a2c7044e46fd0fc6a64ceb567448d`.
