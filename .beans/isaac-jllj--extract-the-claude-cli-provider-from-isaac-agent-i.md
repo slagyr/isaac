@@ -7,8 +7,9 @@ priority: high
 tags:
     - claude-cli
     - module
+    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T20:48:39Z
+updated_at: 2026-09-04T20:50:47Z
 parent: isaac-tuk1
 ---
 
@@ -132,3 +133,10 @@ Evidence:
 - The moved implementation, feature file, and two spec files are byte-identical to `isaac-agent` `origin/main@ee990a9c3c0e14cd0884196084613993c69d1624`; `spec/isaac/llm/claude_cli_steps.clj` is the only moved file that changed, adding module declaration so the moved feature/spec can run from the module repo.
 - Remaining acceptance gap: top-level `isaac/modules.edn` still has no `:isaac.llm.claude` / `isaac-claude-code` pin, so the bean's required `isaac modules list` / `isaac config validate` integration acceptance on a root with both pinned cannot yet be verified.
 - Updated verify requires a passing bean to be landed on `main` first. `isaac-claude-code` currently exposes only `origin/bean/isaac-jllj` and no `origin/main`, so there is no main branch to land and record with `main-sha:`.
+
+
+
+## Planner adjustment (2026-09-04 20:40Z) — verify-fail attempt 1 resolved by the planner, back to verify
+- `isaac-claude-code` now has `main` = `597c818` (created from the verified branch; default branch set). Land the module as a fast-forward and record `main-sha: isaac-claude-code 597c818…`.
+- The `isaac/modules.edn` pin is a TRAIN step, not a verify precondition: the registry pins main SHAs, which exist only after landing. Verify lands the agent branch (`0004c18`) on isaac-agent main and records its main-sha; the planner then pins agent + module together and runs the `isaac modules list` / `isaac config validate` integration check on zanebot as the train's smoke, recording it here. Acceptance line 3 ("on a root with both pinned") is satisfied by that train record.
+- Module id stays `:isaac.llm.claude` unless Micah asks for `:isaac.llm.claude-code` (pending).
