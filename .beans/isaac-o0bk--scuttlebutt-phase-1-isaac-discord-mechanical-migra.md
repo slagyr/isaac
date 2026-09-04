@@ -79,3 +79,61 @@ This bean cannot satisfy its stated full-module acceptance in one worker turn wi
 - `features/comm/discord/turn_context.feature` (`was_mentioned` expectation rows)
 - `features/comm/discord/service_lifecycle.feature` (`And the Discord client is connected`)
 - generated scuttlebutt feature output remains pending in `target/gherclj/generated/comm/discord/scuttlebutt_spec.clj` despite un-`@wip` source feature
+
+
+## Planner adjustment (2026-09-04, prowl@isaac-plan) — focused migration gates control; split ambient feature reds
+
+Conflict resolved: this bean is **phase 1 mechanical scuttlebutt migration**, not a catch-all discord full-suite repair. The migration work named by the bean is the state-only deftype + `extend/merge comm/defaults` shape, `on-reply` reply delivery, `on-turn-end` error-only rendering, heartbeat continuity, and the agent pin bump to the scuttlebutt train. The two feature reds returned here are outside that product surface.
+
+### Ambient/full-gate failures split out
+
+New suite-health bean **isaac-03bs** owns:
+- `features/comm/discord/turn_context.feature:101` — trusted JSON boolean rendering / `was_mentioned` expectation (`":true"` vs `true`)
+- `features/comm/discord/service_lifecycle.feature:37` — `And the Discord client is connected` on the pinned train
+
+This bean does **not** absorb those failures.
+
+### Runner clarification
+
+Do **not** require `bb features` wrapper exit 0 for this bean. In `isaac-discord`, `bb features` delegates to JVM features behind the shared 60s timeout wrapper, and that wrapper is already a known process/test-support problem, not reliable product evidence.
+
+Use runnable JVM commands as the controlling feature gates.
+
+### Focused scuttlebutt gate for this bean
+
+The source feature `features/comm/discord/scuttlebutt.feature` must be un-`@wip`, but PASS for this bean is **not** blocked on the generated `target/gherclj/generated/comm/discord/scuttlebutt_spec.clj` still containing pending placeholders. That is a generator/harness readiness problem unless the worker shows the source feature itself is malformed.
+
+For this bean, the controlling evidence is:
+
+    cd isaac-discord
+    bb spec spec/isaac/comm/discord_spec.clj
+    bb jvm-features features/comm/discord/reply.feature
+    bb jvm-features features/comm/discord/typing.feature
+    bb jvm-features features/comm/discord/routing.feature
+
+All green, on the required agent pin **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`**.
+
+Additionally, record that `features/comm/discord/scuttlebutt.feature` is un-`@wip` and that the mechanical phase-1 mapping is present:
+- reply posts from `on-reply`
+- successful `on-turn-end` posts nothing
+- failed turns render errors from `on-turn-end`
+- mid-turn chatter/tool events render nowhere on Discord
+- typing heartbeat still runs on turn start/end
+
+If the worker can make `bb jvm-features features/comm/discord/scuttlebutt.feature` run cleanly without absorbing unrelated generator work, good — record it. But do **not** hold this bean on the generated-placeholder path alone.
+
+### Acceptance (supersedes the prior block above)
+
+    cd isaac-discord
+    bb spec spec/isaac/comm/discord_spec.clj
+    bb jvm-features features/comm/discord/reply.feature
+    bb jvm-features features/comm/discord/typing.feature
+    bb jvm-features features/comm/discord/routing.feature
+
+0 failures on each, with agent pin sites in `deps.edn` / `bb.edn` at `bf4323326c150bdcda4be2c0245cf2f7b0cbd629`, and `features/comm/discord/scuttlebutt.feature` no longer `@wip`.
+
+Do **not** require:
+- `bb features` wrapper exit 0
+- full module feature green
+- `turn_context.feature` or `service_lifecycle.feature` green in this bean
+- generated scuttlebutt placeholders cleared in `target/gherclj/generated/...` unless that work is shown to be inside the source feature itself rather than the runner/generator path
