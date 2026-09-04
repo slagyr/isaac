@@ -4,8 +4,10 @@ title: 'Post-deploy: confirm parallel tool-call batching on real zanebot beans (
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-07-09T16:37:56Z
-updated_at: 2026-09-04T22:34:04Z
+updated_at: 2026-09-04T22:35:55Z
 ---
 
 ## Goal
