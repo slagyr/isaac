@@ -9,7 +9,7 @@ tags:
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T21:14:17Z
+updated_at: 2026-09-04T21:21:55Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -115,3 +115,8 @@ Worker: **scrapper**@cheery-rowan.
 
 ## Landed on main (2026-09-04)
 main-sha: isaac-foundation e832ff67b75f896a0525caaca1977e8933aa2f21
+
+
+
+## Deploy status (2026-09-04 21:30Z)
+Landed on isaac-foundation main (e832ff6), verified. NOT yet on zanebot: zanebot runs a brew HEAD build (HEAD-8dc5d5e, 2026-09-03). `brew upgrade --fetch-HEAD isaac` as user zane failed mid-way ("Your Xcode (26.1) is outdated" + `Permission denied … locks/python@3.13.formula.lock` — the brew prefix is owned by micahmartin) and left isaac UNLINKED; restored by relinking the HEAD keg (`ln -sfn ../Cellar/isaac/HEAD-8dc5d5e/bin/isaac /usr/local/bin/isaac`). Deploy needs a brew-healthy window (Micah): fix ownership/Xcode, then `brew reinstall isaac` (HEAD keg) or `brew upgrade --fetch-HEAD isaac`, then restart the server. Expected after deploy: `isaac --version` ≈0.5 s (one resolution) → ≈0.15 s (cached resolved config).
