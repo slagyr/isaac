@@ -1,14 +1,13 @@
 ---
 # isaac-oup9
 title: Hail HTTP route mangles a string :session frequency into a char vector → undeliverable (no-recipients)
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - hail
-    - unverified
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-04T23:01:39Z
+updated_at: 2026-09-04T23:04:54Z
 ---
 
 Repo: **isaac-hail** (`src/isaac/hail/http.clj normalize-frequencies`).
@@ -45,3 +44,17 @@ addressed hail is routed to that session (memory comm / Marigold fixtures).
 branch: bean/isaac-oup9 @ bd109bd91f6dc1aaf60c4084a336c076e5450a09 (base origin/main@0f98f3e322673c9198d0f08a76dabdcd2fb037e2)
 
 HTTP normalize-frequencies now wraps a string :session as a keyword vector matching CLI --session; vectors map element-wise; non-string shapes 400 naming the field. Same for :session-tags and :crew. Feature posts a session-addressed hail and asserts router delivery.
+
+## Landed on main (2026-09-04)
+main-sha: isaac-hail bd109bd91f6dc1aaf60c4084a336c076e5450a09
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on isaac-hail `origin/bean/isaac-oup9` `bd109bd91f6dc1aaf60c4084a336c076e5450a09`, fast-forwarded onto `origin/main`.
+
+Evidence:
+- HTTP `normalize-frequencies` wraps a string `:session` as `[:isaac-work-1]` (CLI-equivalent keyword vector), maps string vectors element-wise, and 400s non-string shapes naming the field. Same audit for `:session-tags` and `:crew`.
+- `features/http.feature` adds `POST with a string session is routed to that session` (no `@wip`); after router tick, delivery is bound to `:watch-room`.
+- `bb spec` → `144 examples, 0 failures, 332 assertions`
+- `bb features` → `140 examples, 0 failures, 534 assertions, 2 pending` (pre-existing hail-get `@wip` search scenarios, unchanged from origin/main)
+- Feature-file edits are additive scenario only; ambient `@wip` in `features/context_window_guard.feature` is pre-existing on main.
