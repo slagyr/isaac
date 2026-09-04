@@ -279,3 +279,34 @@ Verification after repair:
 - `bb ci` no longer reproduces the bean-surface/tool-permissions failure; the remaining full-suite red is still the already-split ambient suite-health flake at `features/episodes/live.feature:571` / `:604`, owned by `isaac-tx3j`.
 
 Note: verifier had already completed and landed `8a79a55` before this CI repair. The subsequent repair commit is on `main` at `8f6038c`; the earlier `main-sha` records the original landing point for bean acceptance.
+
+## CI regression repair 2 (2026-09-04, scrapper@isaac-work-1)
+
+GitHub Actions run `33883674869` failed on `bb ci` at `origin/main` `b2369c2`
+(`plan: recall_logging.feature references isaac-80vq`). Empty `bean_id`;
+correlated back to completed bean `isaac-j2v0` because the red is the
+remaining scheduler-order assertion in that bean's unit spec.
+
+Failing example:
+
+- `tool-loop/run bounds concurrent tool execution to two while preserving batch order`
+  at `spec/isaac/llm/tool_loop_spec.clj:113`
+- Expected: `["a" "b" "c"]`
+- got: `["b" "a" "c"]`
+
+Root cause: two workers claim the first two gated calls (`a`/`b`) concurrently.
+Start order among those two is scheduler-dependent; `c` still starts last
+because the bound is 2. Followup `tool-results` remain batch order
+`["ok-a" "ok-b" "ok-c"]`. The earlier repair already loosened the first-two
+overlap assertion; this leftover exact-vector assertion was still flaky on CI.
+
+Repair delivered on `bean/isaac-j2v0` / `main` @ `668f157`:
+
+- `spec/isaac/llm/tool_loop_spec.clj`: assert `{a b c}` membership plus `c`
+  last, not exact start vector. Followup order assertion unchanged.
+
+Verification:
+
+- `bb spec spec/isaac/llm/tool_loop_spec.clj` → `20 examples, 0 failures, 69 assertions`
+- 50 consecutive focused runs green
+- `bb spec` → `1626 examples, 0 failures, 3344 assertions, 3 pending`
