@@ -1,14 +1,14 @@
 ---
 # isaac-o0bk
 title: 'Scuttlebutt phase 1: isaac-discord mechanical migration to the new Comm protocol'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - scuttlebutt
     - discord
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-03T23:48:30Z
+updated_at: 2026-09-04T02:25:23Z
 blocked_by:
     - isaac-jarr
 ---
