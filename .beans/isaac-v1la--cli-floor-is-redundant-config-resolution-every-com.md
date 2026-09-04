@@ -1,7 +1,7 @@
 ---
 # isaac-v1la
 title: 'CLI floor is redundant config resolution: every command loads and validates the config 3–5 times (~1.3 s of the 1.6 s --version)'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T16:47:34Z
+updated_at: 2026-09-04T16:48:51Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
