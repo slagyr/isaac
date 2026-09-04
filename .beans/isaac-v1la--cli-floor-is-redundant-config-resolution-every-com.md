@@ -8,9 +8,8 @@ tags:
     - foundation
     - cli
     - performance
-    - unverified
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T19:10:59Z
+updated_at: 2026-09-04T19:26:24Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
