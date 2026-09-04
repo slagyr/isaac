@@ -7,8 +7,9 @@ priority: normal
 tags:
     - scuttlebutt
     - imessage
+    - unverified
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-04T03:44:25Z
+updated_at: 2026-09-04T03:56:14Z
 blocked_by:
     - isaac-jarr
 ---
@@ -40,3 +41,15 @@ Shape: `(extend ImessageComm comm/Comm (merge comm/defaults {:send! ...}))` — 
 ## Pin target updated (2026-09-03, planner)
 
 Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43) — not jarr's 0b52823. Main advanced past jarr with isaac-vuto (token accounting) and isaac-q34y (idle sealing), both verified and merged; the full gate on merged main is 756/0 features, 1612/0 spec. Same protocol as 0.1.42 for this bean's purposes.
+
+## Worker Notes (2026-09-04)
+
+- Implemented the mechanical phase-1 iMessage migration in sibling worktree `isaac-imessage-yleu` on branch `bean/isaac-yleu`.
+- Replaced the inline no-op Comm methods with state-only `(deftype ImessageComm [host state*])` plus `(extend ImessageComm comm/Comm (merge comm/defaults {:send! ...}))`.
+- Kept `send!` as the complete Comm implementation; replies continue to ride the outbound delivery queue and no turn-event rendering was added to the comm.
+- Bumped `deps.edn` and `bb.edn` agent / agent-spec / telly pins to `bf4323326c150bdcda4be2c0245cf2f7b0cbd629`.
+- Verified:
+  - `bb features` → `15 examples, 0 failures, 30 assertions`
+  - `bb spec` → `41 examples, 0 failures, 69 assertions`
+- Observed existing suite output noise during green runs (logger lines and feature boot banner prints), but acceptance passed and no additional product changes were introduced in this bean.
+- branch: `bean/isaac-yleu` @ `b4ac3fe` (base `origin/main@c067dd3`)
