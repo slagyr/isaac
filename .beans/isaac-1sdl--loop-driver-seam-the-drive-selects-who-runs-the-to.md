@@ -1,14 +1,14 @@
 ---
 # isaac-1sdl
 title: 'Loop-driver seam: the drive selects who runs the tool loop (isaac or the provider)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - claude-cli
     - drive
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-03T23:22:30Z
+updated_at: 2026-09-04T23:03:19Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
