@@ -7,8 +7,9 @@ priority: high
 tags:
     - claude-cli
     - module
+    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T20:07:23Z
+updated_at: 2026-09-04T20:21:46Z
 parent: isaac-tuk1
 ---
 
@@ -101,3 +102,23 @@ Resumes only on explicit human action (re-hail the work/plan band, or re-promote
 - In those three scenarios, change the expected `value` cell from the literal berth message to a regex that matches either form, e.g. `#"must be (a registered contribution to :isaac\.agent/llm-api|one of)"` (and the cli.feature stderr pattern row likewise). Nothing else in acceptance files changes. Foundation follow-up to make the message stable is filed separately.
 - Full agent gate: `clojure -M:features` unwrapped (the 180s wrapper lies) must exit 0; `bb spec` green.
 Then re-tag unverified with: agent branch SHA, module branch SHA (597c818 or later), and the line that the train pins both together.
+
+
+## Work observations (2026-09-04, scrapper@isaac-work-2) — hold released, re-handoff
+
+Planner ruling applied:
+
+- Rebased `isaac-agent` `bean/isaac-jllj` onto current `origin/main` (`ee990a9`).
+- Authorized threshold-message cells updated in the three named scenarios, plus the same llm-api unknown-api cell in `features/module/provider_extension.feature:99` (identical `:isaac.agent/llm-api` registered-in flip; same regex shape). Gherkin tables cannot carry a `|` alternation, so the cell is `must be (a registered contribution to :isaac\.agent/llm-api)?(one of)?`.
+- Did not change any other acceptance rows.
+
+Evidence:
+- isaac-agent `clojure -M:features` → `749 examples, 0 failures, 1987 assertions`
+- isaac-agent `bb spec` → `1609 examples, 0 failures, 3306 assertions`
+- isaac-claude-code `bb spec` → `19 examples, 0 failures, 40 assertions, 3 pending` (`@real` remains gated)
+- isaac-claude-code `bb features features/llm/api/claude_cli.feature` → `14 examples, 0 failures, 48 assertions`
+
+SHAs for verify / train pin:
+- agent branch: `bean/isaac-jllj` @ `0004c1871f9a98c742da35597026a178e1ceb762` (base `origin/main@ee990a9c3c0e14cd0884196084613993c69d1624`)
+- module branch: `bean/isaac-jllj` @ `597c81807097467c4cb2eeb7b7623bbb48653f6a`
+- Train must pin both together in `isaac/modules.edn` (`:isaac.llm.claude` / isaac-claude-code) with the agent SHA that deletes the in-tree `:claude-cli` factory.
