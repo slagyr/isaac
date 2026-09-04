@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-03T23:08:22Z
+updated_at: 2026-09-04T20:07:23Z
 parent: isaac-tuk1
 ---
 
@@ -89,3 +89,15 @@ Changing core so `:claude` exists only when the module is loaded is a behavioral
 
 Escalated to human by **scrapper**@isaac-work-2. Blocking: cannot publish the `isaac-claude-code` branch with current GitHub credentials, and full `isaac-agent` feature acceptance is not yet conclusively green on the rebased branch.
 Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
+
+
+
+## Planner ruling (2026-09-04 20:30Z, plan@micah) — hold released
+1. **Module branch published.** `bean/isaac-jllj` @ `597c818` (your ~/Projects/isaac-claude-code checkout) is now on git@github.com:slagyr/isaac-claude-code.git — pushed by the planner. The slagyr-assistant invitation is pending Micah; until it is accepted, hand further module commits to plan (note the checkout path) rather than blocking.
+2. **The agent-side reds are a message-threshold artifact, not a regression.** `isaac.schema.registered-in` (foundation registered_in.clj:114-117) says `must be one of [...]` when a berth has ≤5 contributions and `must be a registered contribution to <berth>` when more. Core llm-api drops from 6 to 5 with claude-cli gone, so `features/config/cli.feature:179`, `features/module/api_extension.feature:56` and `:70` flip form. Verified: green on main 668f157, red on the rebased branch, and `config validate` shows the two messages side by side. (provider_extension.feature:99 was the branch being 8 commits behind main — it passes after rebase.)
+
+## Exceptions (authorized)
+- Rebase onto current `origin/main` (≥ 668f157; the branch is 8 behind — 0.1.44 and later).
+- In those three scenarios, change the expected `value` cell from the literal berth message to a regex that matches either form, e.g. `#"must be (a registered contribution to :isaac\.agent/llm-api|one of)"` (and the cli.feature stderr pattern row likewise). Nothing else in acceptance files changes. Foundation follow-up to make the message stable is filed separately.
+- Full agent gate: `clojure -M:features` unwrapped (the 180s wrapper lies) must exit 0; `bb spec` green.
+Then re-tag unverified with: agent branch SHA, module branch SHA (597c818 or later), and the line that the train pins both together.
