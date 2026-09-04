@@ -1,11 +1,11 @@
 ---
 # isaac-vrtb
 title: Block broken conversations; compaction-failed is the first reason
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-08-31T14:15:35Z
-updated_at: 2026-09-04T16:53:13Z
+updated_at: 2026-09-04T23:42:38Z
 ---
 
 Likely repo: **isaac-agent** (session schema, drive turn gate, attention). **isaac-hail**: stop special-casing `:context-exhausted` (generic `:unavailable?` + `:retry-after-ms` only). Comm protocol: drop `on-compaction-disabled` / `:compaction/disabled` (isaac-server, isaac-discord, isaac-acp, isaac-imessage).
@@ -54,8 +54,19 @@ Hail `features/context_window_guard.feature`: drop context-exhausted attention a
 2. Third consecutive compact failure sets `:block {:reason :compaction-failed}` and posts attention once — **approved**; `@wip` in `features/session/context_window_guard.feature`
 3. A blocked conversation refuses the next turn — no LLM, no assistant row, reason `:blocked` — **approved**; `@wip` in `features/session/context_window_guard.feature`
 4. Unset `:block` — the next needing turn is accepted (compaction can run) — **approved**; `@wip` in `features/session/context_window_guard.feature`
-5. Hail defers an unavailable turn without posting context-exhausted attention
+5. Hail defers an unavailable turn without posting context-exhausted attention — **approved**; `@wip` in isaac-hail `features/context_window_guard.feature` (replaces the old context-exhausted attention scenario)
 
 ## Acceptance
 
-Draft until `@wip` scenarios exist.
+```
+cd isaac-agent
+bb features features/session/context_window_guard.feature:88
+bb features features/session/context_window_guard.feature:113
+bb features features/session/context_window_guard.feature:148
+bb features features/session/context_window_guard.feature:168
+
+cd isaac-hail
+bb features features/context_window_guard.feature:45
+```
+
+0 failures. Remove `@wip` from those five rows. No remaining `compaction-disabled` in agent schema/drive/session tool. No hail `maybe-notify-context-exhausted!`.
