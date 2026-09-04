@@ -9,7 +9,7 @@ tags:
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T16:30:55Z
+updated_at: 2026-09-04T16:41:23Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -41,3 +41,24 @@ Unit specs: memoization keyed on watched mtimes; server path unaffected (hot-rel
 ## Acceptance
     cd isaac-foundation && bb features features/cli && bb spec
     zanebot after the brew train: `/usr/bin/time -p isaac --version` under 0.6 s (fix 1) / under 0.3 s (fix 2); record the table above re-measured.
+
+
+
+## Features (`@wip`) — isaac-foundation `features/cli/config_resolution.feature` @ 392ba85
+1. a fast-path command resolves the config exactly once
+2. a real command resolves the config exactly once
+3. a warm startup cache serves the resolved config without validating
+4. a watched config change re-resolves and refreshes the cached config
+5. a corrupted cached config falls back to full resolution
+
+## Step ledger (mirrors features/cli/startup-caching.feature)
+
+| step | status |
+|------|--------|
+| an empty Isaac root at / isaac EDN file exists with / isaac file exists with / isaac is run with / the exit code is 0 / the stdout contains / the classpath cache file is corrupted so apply fails | reuse |
+| **the config resolution spy is armed** / **was invoked exactly N times** | **NEW — same shape as `the classpath plan spy …` (startup-caching.feature): counts `isaac.config.loader/load-config-result` calls in the CLI process** |
+| **the config validation spy is armed** / **was invoked exactly N times** / **at least N times** | **NEW — counts root validate+normalize (fix 2's skip)** |
+| **a warm startup cache exists from a prior run** | **NEW phrasing — generalises `a warm classpath cache exists from a prior non-fast-path run`; implement as an alias of that step** |
+| **the startup cache was refreshed after replan** | **NEW phrasing — alias of `the classpath cache was refreshed after replan`** |
+
+Four new step phrasings, two of which are aliases of existing classpath-cache steps; the two spies copy the classpath-plan spy pattern.
