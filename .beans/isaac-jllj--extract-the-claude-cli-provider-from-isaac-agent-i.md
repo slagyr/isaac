@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T22:28:13Z
+updated_at: 2026-09-04T22:32:31Z
 parent: isaac-tuk1
 ---
 
@@ -192,3 +192,11 @@ Evidence:
 - In-tree claude-cli implementation/tests/features removed from isaac-agent; `resources/isaac-manifest.edn` no longer contributes `:claude-cli` llm-api factory; built-in `:claude` template and related schema keys remain.
 - Feature-file edits limited to planner-authorized registered-in regex cells plus the moved/deleted claude_cli.feature.
 - Train pin of `:isaac.llm.claude` in `isaac/modules.edn` remains a train step after landing.
+
+
+
+## Train (2026-09-04 22:45Z)
+- isaac-agent main bumped to 0.1.45 (e3fd720, on top of the verified 0004c18).
+- isaac/modules.edn: agent → e3fd720; NEW entry `:isaac.llm.claude` → isaac-claude-code 597c818 (module id as declared in its manifest; rename to :isaac.llm.claude-code is a separate decision).
+- zanebot: `isaac modules upgrade` (agent e1e10e8 → e3fd720) + `isaac modules install isaac.llm.claude` (upgrade does not pick up new registry entries); `modules list` shows both ok; `config validate` OK.
+- Server restart pending a quiet window (no active session, no open hail turn) — restarts mid-turn tear transcripts (isaac-jz6h). A poller restarts when idle and records boot health.
