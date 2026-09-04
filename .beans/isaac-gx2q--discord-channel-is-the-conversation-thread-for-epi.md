@@ -1,14 +1,14 @@
 ---
 # isaac-gx2q
 title: Discord channel is the conversation thread for episode crews
-status: todo
+status: completed
 type: bug
 priority: high
 tags:
     - discord
     - episodes
 created_at: 2026-08-31T03:27:23Z
-updated_at: 2026-09-03T14:25:11Z
+updated_at: 2026-09-04T20:01:07Z
 parent: isaac-51xy
 blocked_by:
     - isaac-7dkp
@@ -60,3 +60,8 @@ Pin isaac-agent to isaac-mrfu's SHA before this can go green in CI.
 - Deleting or compacting zanebot's stuffed `#general` chronicle session.
 - Per-channel `:session` override behavior.
 - iMessage.
+
+
+
+## Summary of Changes (2026-09-04, planner)
+Delivered by isaac-7dkp (Discord dispatches `:conversation {:kind :thread :id "discord-<channel>"}` + origin; bridge routes to the episode) and isaac-o0bk / isaac-ay0s (replies and typing route by the cycle's origin). `features/comm/discord/episodes.feature` is active and green on isaac-discord main (0.1.13). Field evidence: marvin's Discord messages open episodes on the channel thread (2026-09-03-1647-xsdf, 2026-09-04-1414-nlve) with replies delivered. The stale block on the completed 7dkp is cleared by closing this bean.
