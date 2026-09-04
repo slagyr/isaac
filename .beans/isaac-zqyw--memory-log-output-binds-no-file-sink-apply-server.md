@@ -1,15 +1,14 @@
 ---
 # isaac-zqyw
 title: Memory log output binds no file sink (apply-server! under :memory)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - foundation
     - test-isolation
-    - unverified
+    - foundation
 created_at: 2026-09-03T23:48:04Z
-updated_at: 2026-09-03T23:51:53Z
+updated_at: 2026-09-04T00:04:17Z
 blocking:
     - isaac-stao
 ---
@@ -90,3 +89,19 @@ Current `isaac-foundation` main @ `e0dc789` reproduces green locally:
 
 No independent repair was commissioned; the CI regression is correlated to
 `isaac-zqyw` and already resolved on default branch.
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on `isaac-foundation` `origin/main` `e0dc789b58723a3415a12d5f0d95e0d9148bc316`.
+
+Acceptance evidence:
+- `bb spec spec/isaac/log/output_spec.clj` → `10 examples, 0 failures, 17 assertions`
+- `bb spec` → `895 examples, 0 failures, 1622 assertions`
+- `bb features` → `139 examples, 0 failures, 342 assertions`
+- implementation is present in `src/isaac/log/output.clj`:
+  - `apply-server!` preserves harness `:memory` with no server sink when `:logging.output` is absent
+  - explicit `:logging.output` overrides harness `:memory`
+- `spec/isaac/log/output_spec.clj` contains the coverage the bean requires:
+  - preserves `:memory` and binds no server sink
+  - explicit `:logging.output` wins over harness `:memory`
+  - drops a prior file-mode sink on a later memory-mode boot
