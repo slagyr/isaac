@@ -5,11 +5,12 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - foundation
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T19:29:01Z
+updated_at: 2026-09-04T20:23:21Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -102,3 +103,13 @@ Additional gap: Micah's 2026-09-04 decision required a feature scenario proving 
 ## Planner note (2026-09-04, after verify fail 1)
 1. The red row (`config_resolution.feature:39`, expects "marvin" after a watched config change) is green in isolation and red in the suite because the prior scenario leaves a fresh cache in the same test root and the config rewrite lands in the SAME mtime tick as the cache write — write-ordering freshness (cache.clj) then calls the stale cache fresh. That is a real edge, not just test hygiene: treat an equal mtime as stale (strict `<`), or add file size + content hash of the root config to the basis. Fix the freshness rule; do not fix the scenario by sleeping.
 2. The secrets guarantee is a decision-level contract, so it needs the FEATURE row, not only `config_cache_spec.clj`: add `Scenario: the cached config never contains a substituted secret` — fixture `.env` with `DISCORD_TOKEN=s3cr3t-value` and `config/isaac.edn` referencing `${DISCORD_TOKEN}`; run `config get comms`; then `the isaac file "cache/cli.edn" does not contain "s3cr3t-value"` (reuse the existing file-contains step family; add the negated form if only the positive exists — note it in the ledger).
+
+## Handoff (2026-09-04, after verify fail 1)
+
+branch: bean/isaac-v1la @ e832ff67b75f896a0525caaca1977e8933aa2f21 (base origin/main@392ba85ed39bf2f1fa37d5f38f80e15d7b40cb3b)
+
+Worker: **scrapper**@cheery-rowan.
+
+- Freshness: `cache/fresh?` now treats equal mtime as stale unless `:basis :config-hash` (SHA-256 of the root config) still matches. Same-tick rewrite of `config/isaac.edn` after a warm seed no longer serves stale `:crew "main"` as `"marvin"`.
+- Secrets feature: `Scenario: the cached config never contains a substituted secret` added to `features/cli/config_resolution.feature`. New Then `the isaac file {path} does not contain {expected}` (root-relative substring absence).
+- Acceptance: `bb features features/cli` 145/0/350; `bb spec` 915/0/1650.
