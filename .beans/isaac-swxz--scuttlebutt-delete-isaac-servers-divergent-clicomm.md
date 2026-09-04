@@ -1,15 +1,14 @@
 ---
 # isaac-swxz
 title: 'Scuttlebutt: delete isaac-server''s divergent CliComm (src/isaac/comm/cli.clj)'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
-    - unverified
     - scuttlebutt
     - server
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-04T02:22:28Z
+updated_at: 2026-09-04T02:27:31Z
 blocked_by:
     - isaac-jarr
 ---
@@ -124,3 +123,28 @@ Verification on this branch:
 - `bb spec` -> `214 examples, 0 failures, 414 assertions`
 
 Train/server implementation SHA: `1207d456c99a2c7044e46fd0fc6a64ceb567448d`.
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on `isaac-server` `origin/bean/isaac-swxz` `1207d456c99a2c7044e46fd0fc6a64ceb567448d`.
+
+Acceptance evidence:
+- required agent/telly pin `bf4323326c150bdcda4be2c0245cf2f7b0cbd629` is present in:
+  - `deps.edn`
+  - `bb.edn`
+  - `spec/isaac/configurator_steps.clj`
+  - `features/module/activation.feature`
+  - `features/module/comm_extension.feature`
+- `src/isaac/comm/cli.clj` is absent
+- grep found no remaining `isaac.comm.cli` or `->CliComm` references outside the deleted file
+- compatibility surface is present on the verified branch:
+  - `src/isaac/comm/protocol.clj` defines `comm/defaults`
+  - `src/isaac/comm/null.clj` and `src/isaac/comm/memory.clj` extend `Comm` via `(merge comm/defaults ...)`
+  - `src/isaac/comm/render.clj` is present
+  - `src/isaac/session/store/spi.clj` includes the newer session-store API required by the pinned train, including `rename-session!`, `chronicle-transcript`, `append-reckoning!`, and turn-marker operations
+- `resources/isaac-manifest.edn` version is `0.1.11`
+- verification gates:
+  - `bb features` → `67 examples, 0 failures, 184 assertions`
+  - `bb spec` → `214 examples, 0 failures, 414 assertions`
+
+The green full feature run confirms module boot no longer fails on `comm/defaults` resolution or the newer session-store API expected by the pinned agent/telly train.
