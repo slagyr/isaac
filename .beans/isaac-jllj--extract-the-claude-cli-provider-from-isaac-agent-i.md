@@ -9,7 +9,7 @@ tags:
     - module
     - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T20:50:47Z
+updated_at: 2026-09-04T20:51:31Z
 parent: isaac-tuk1
 ---
 
@@ -140,3 +140,14 @@ Evidence:
 - `isaac-claude-code` now has `main` = `597c818` (created from the verified branch; default branch set). Land the module as a fast-forward and record `main-sha: isaac-claude-code 597c818…`.
 - The `isaac/modules.edn` pin is a TRAIN step, not a verify precondition: the registry pins main SHAs, which exist only after landing. Verify lands the agent branch (`0004c18`) on isaac-agent main and records its main-sha; the planner then pins agent + module together and runs the `isaac modules list` / `isaac config validate` integration check on zanebot as the train's smoke, recording it here. Acceptance line 3 ("on a root with both pinned") is satisfied by that train record.
 - Module id stays `:isaac.llm.claude` unless Micah asks for `:isaac.llm.claude-code` (pending).
+
+## Handoff (2026-09-04, after verify fail 1 / planner adjustment)
+
+Planner adjustment applied: `isaac-claude-code` now has `origin/main` @ `597c81807097467c4cb2eeb7b7623bbb48653f6a` (default branch `main`). Registry pin of `:isaac.llm.claude` in `isaac/modules.edn` is a TRAIN step after landing, not a verify precondition.
+
+Worker does not land or pin. Exact SHAs for verify landing:
+
+- isaac-agent branch: `bean/isaac-jllj` @ `0004c1871f9a98c742da35597026a178e1ceb762` (base `origin/main@ee990a9c3c0e14cd0884196084613993c69d1624`) — fast-forward onto `origin/main`
+- isaac-claude-code: already on `origin/main` @ `597c81807097467c4cb2eeb7b7623bbb48653f6a` (same SHA as `bean/isaac-jllj`)
+
+After both are on main, planner pins agent + module together and runs `isaac modules list` / `isaac config validate` on zanebot as the train smoke.
