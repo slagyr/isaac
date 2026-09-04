@@ -1,15 +1,14 @@
 ---
 # isaac-stao
 title: Feature server boots without a scenario root log into the live ~/.isaac (isaac-server command.feature)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - isaac-server
     - test-isolation
-    - unverified
 created_at: 2026-09-03T23:36:58Z
-updated_at: 2026-09-03T23:55:18Z
+updated_at: 2026-09-04T00:08:13Z
 ---
 
 Likely repo: **isaac-server** (`spec/isaac/server/server_steps.clj`, `features/server/command.feature`).
@@ -74,3 +73,23 @@ One-time isolation check: `:server/hello` count in the real
 `~/.isaac/logs/server.log` unchanged across a full `bb features` (9 → 9), and
 `find target -name 'server*.log'` empty afterwards (lifecycle scenarios run on
 mem-fs).
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on `isaac-server` `origin/main` `98aa6918c57d23b9fe2baffd53d90d5b89d809bc`.
+
+Acceptance evidence:
+- `bb features` → `67 examples, 0 failures, 184 assertions`
+- `bb spec` → `214 examples, 0 failures, 388 assertions`
+- `bb features features/server/command.feature` → `3 examples, 0 failures, 3 assertions`
+- `spec/isaac/server/server_steps.clj` now provides:
+  - `default-server-home` under `target/test-state/server-default-home`
+  - `feature-root` = scenario root, else that default home
+  - `argv-with-feature-root` always injects `--root` unless already present
+  - `run-cli-with-stubbed-config!` routes server-command boots through that argv
+- foundation pin bump to `e0dc789b58723a3415a12d5f0d95e0d9148bc316` is present in `deps.edn` and `bb.edn`
+- one-time isolation check on the live home log:
+  - before full `bb features`: `~/.isaac/logs/server.log` had `5` `:server/hello` entries
+  - after full `bb features`: still `5` `:server/hello` entries
+  - full feature stdout roots were only repo `target/…` paths or explicit scenario roots such as `/tmp/isaac`; none were `/Users/zane/.isaac`
+  - `find target -name 'server.log' -o -name 'server-*.log'` returned no files after the run
