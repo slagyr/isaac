@@ -8,7 +8,11 @@ tags:
     - discord
     - scuttlebutt
 created_at: 2026-09-03T16:40:55Z
+<<<<<<< HEAD
 updated_at: 2026-09-04T04:43:20Z
+=======
+updated_at: 2026-09-04T04:50:24Z
+>>>>>>> 3d7f34d5 (isaac-o0bk: note CI regression repair)
 blocked_by:
     - isaac-jarr
 ---
@@ -194,6 +198,24 @@ Acceptance evidence:
 Non-controlling per planner adjustment: full `bb features`, `turn_context.feature`, `service_lifecycle.feature`, and generated scuttlebutt placeholder output are excluded from this bean's acceptance surface.
 
 
-
 ## Post-deploy regression (2026-09-04) — see isaac-ay0s
 Deployed as isaac-discord 0.1.12 and rolled back 39 minutes later: gateway never started (Reconfigurable via extend invisible to berths' satisfies? snapshot) and episode-crew replies were dropped (on-reply resolves channel by session key only). The boot-connect features were not in the verify run. Fix + re-release tracked in isaac-ay0s.
+
+## CI regression repair (2026-09-04, scrapper@isaac-work-2)
+
+GitHub Actions `CI Tests` run `33834525694` failed on `isaac-discord` main `0f9dfeb0285293485e8f35a6aca4ec37d22b9ced`. Reproduced locally with `ISAAC_GIT=1 bb jvm-spec spec/isaac/server/discord_app_spec.clj`.
+
+Root cause: `DiscordIntegration` participated in the new Comm migration through `api/Reconfigurable` extension only. Under the pinned runtime used by the berth reconciler, the instance satisfied `isaac.reconfigurable/Reconfigurable` but **not** `isaac.config.berths/Reconfigurable`, so berth lifecycle callbacks did not run and Discord registration/connect state never initialized in the server app path.
+
+Repair pushed to `isaac-discord` as `3abd4e9ff3bfc03ce6fcf6f705bcd8e20e0cfbb4` on both `main` and `bean/isaac-o0bk`.
+
+Changes:
+- implement `reconfigurable/Reconfigurable` directly on `deftype DiscordIntegration`
+- keep host `state-dir` resolution flowing through `integration` / `make` / `factory/create`
+- add a regression spec asserting the integration satisfies both `reconfigurable/Reconfigurable` and `berth-config/Reconfigurable`
+
+Verification:
+- `bb spec spec/isaac/comm/discord_spec.clj` → `43 examples, 0 failures, 90 assertions`
+- `ISAAC_GIT=1 bb jvm-spec spec/isaac/server/discord_app_spec.clj` → `96 examples, 0 failures, 223 assertions`
+
+Note: local `ISAAC_GIT=1 bb ci` still hits the repo's known `jvm-features` 60s wrapper timeout; this repair addresses the reproduced default-branch Discord server spec regression from the reported run.
