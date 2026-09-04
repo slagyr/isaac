@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T22:32:31Z
+updated_at: 2026-09-04T22:37:38Z
 parent: isaac-tuk1
 ---
 
@@ -200,3 +200,8 @@ Evidence:
 - isaac/modules.edn: agent → e3fd720; NEW entry `:isaac.llm.claude` → isaac-claude-code 597c818 (module id as declared in its manifest; rename to :isaac.llm.claude-code is a separate decision).
 - zanebot: `isaac modules upgrade` (agent e1e10e8 → e3fd720) + `isaac modules install isaac.llm.claude` (upgrade does not pick up new registry entries); `modules list` shows both ok; `config validate` OK.
 - Server restart pending a quiet window (no active session, no open hail turn) — restarts mid-turn tear transcripts (isaac-jz6h). A poller restarts when idle and records boot health.
+
+
+
+## Deployed (2026-09-04 22:35Z)
+Server restarted on zanebot (Micah: turns pause when able and resume on boot). Boot: :server/started, :discord.gateway/ready, no errors beyond the expected :cancelled grok streams at kill; snappy-toad / isaac-verify / tono-work-1 / tono-work-2 all resumed. `modules list`: isaac.agent 0.1.45 (e3fd720) ok, isaac.llm.claude 0.1.0 (597c818) ok. Smoke: `isaac prompt --crew scrapper --model claude-cli` → `pong` — the :claude-cli factory is served by the extracted module.
