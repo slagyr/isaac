@@ -1,15 +1,14 @@
 ---
 # isaac-j2v0
 title: 'Parallel tool batches: execute a response''s tool calls concurrently (bounded), results in batch order'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
-    - unverified
     - agent
     - tool-loop
 created_at: 2026-09-04T00:14:58Z
-updated_at: 2026-09-04T07:04:50Z
+updated_at: 2026-09-04T07:09:28Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/llm/tool_loop.clj`, `src/isaac/drive/turn.clj`
@@ -212,3 +211,37 @@ Controlling acceptance in `isaac-agent` is:
 If the worker has a clean full `bb features` run on the branch, record it as supporting evidence. But PASS for this bean must not be blocked on rerunning a suite-only `episodes/live.feature:604` flake that already passes in isolation.
 
 Standing rule restated: do not weaken scenario intent to fit the suite; file ambient full-suite reds as dedicated suite-health work instead.
+
+## Landed on main (2026-09-04)
+
+main-sha: isaac-agent 8a79a553ff55caa8242ecb3af4dcafb8a6fd09e1
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on `isaac-agent` `origin/main` `8a79a553ff55caa8242ecb3af4dcafb8a6fd09e1` after fast-forward merge of `bean/isaac-j2v0` onto main.
+
+Acceptance evidence:
+- focused feature rows are un-`@wip`:
+  - `features/session/parallel_tool_batches.feature`
+  - migrated scenario in `features/session/parallel_tool_calls.feature`
+- no `Thread/sleep` found in the new/changed step or spec files:
+  - `spec/isaac/tool/tools_steps.clj`
+  - `spec/isaac/tool/tools_steps_spec.clj`
+  - `spec/isaac/llm/tool_loop_spec.clj`
+  - `spec/isaac/session/session_steps.clj`
+  - `spec/isaac/session/session_steps_spec.clj`
+  - `spec/isaac/drive/turn_spec.clj`
+- implementation commit is real and on main: `isaac-j2v0: execute tool-call batches concurrently`
+- controlling gates on the accepted main SHA:
+  - `bb features features/session/parallel_tool_batches.feature features/session/parallel_tool_calls.feature` → `9 examples, 0 failures, 23 assertions`
+  - `bb features features/comm/scuttlebutt.feature features/llm/tool_loop_driver.feature features/bridge/cancel.feature` → `7 examples, 0 failures, 10 assertions`
+  - `bb spec spec/isaac/llm/tool_loop_spec.clj spec/isaac/drive` → `123 examples, 0 failures, 322 assertions`
+  - `bb spec` → `1625 examples, 0 failures, 3342 assertions, 3 pending`
+- supporting evidence from the worker note: one full `bb features` run on the branch was green at `762 examples, 0 failures, 2034 assertions`
+
+Implementation surface confirmed in the changed files:
+- `src/isaac/llm/tool_loop.clj` runs one response's tool-call batch concurrently with a bound while preserving followup result order
+- `src/isaac/drive/turn.clj` announces/persists all `toolCall` entries before execution, then persists/emits each `toolResult` on completion
+- `src/isaac/tool/registry.clj` preserves raw execution result maps while normalizing presentation for transcript/model payloads
+
+Per planner adjustment, this bean does not absorb the full-suite-only `features/episodes/live.feature:604` flake; that suite-health work is owned by `isaac-tx3j`.
