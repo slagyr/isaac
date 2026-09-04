@@ -8,7 +8,7 @@ tags:
     - scuttlebutt
     - server
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-04T02:27:31Z
+updated_at: 2026-09-04T02:29:59Z
 blocked_by:
     - isaac-jarr
 ---
@@ -148,3 +148,10 @@ Acceptance evidence:
   - `bb spec` → `214 examples, 0 failures, 414 assertions`
 
 The green full feature run confirms module boot no longer fails on `comm/defaults` resolution or the newer session-store API expected by the pinned agent/telly train.
+
+
+
+## Landed on main (2026-09-04) — by the planner, as backstop
+main-sha: isaac-server 1207d456c99a2c7044e46fd0fc6a64ceb567448d
+
+Note: verify marked this bean completed at 02:27Z without landing it (the skill's new step 7a was on zanebot since 00:39Z). Exhibit for isaac-nrak follow-through: the isaac-verify session carries an older copy of the skill text in its transcript and did not re-read the file this turn.
