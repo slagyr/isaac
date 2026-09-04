@@ -6,8 +6,9 @@ type: bug
 priority: normal
 tags:
     - hail
+    - unverified
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-04T22:36:03Z
+updated_at: 2026-09-04T23:01:39Z
 ---
 
 Repo: **isaac-hail** (`src/isaac/hail/http.clj normalize-frequencies`).
@@ -38,3 +39,9 @@ the same value the CLI produces for `--session isaac-work-1`; a
 field name. `features/` hail HTTP route: a scenario posting a session-
 addressed hail is routed to that session (memory comm / Marigold fixtures).
 `bb spec && bb features` in isaac-hail green.
+
+## Handoff
+
+branch: bean/isaac-oup9 @ bd109bd91f6dc1aaf60c4084a336c076e5450a09 (base origin/main@0f98f3e322673c9198d0f08a76dabdcd2fb037e2)
+
+HTTP normalize-frequencies now wraps a string :session as a keyword vector matching CLI --session; vectors map element-wise; non-string shapes 400 naming the field. Same for :session-tags and :crew. Feature posts a session-addressed hail and asserts router delivery.
