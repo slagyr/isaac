@@ -1,15 +1,14 @@
 ---
 # isaac-yleu
 title: 'Scuttlebutt phase 1: isaac-imessage mechanical migration to the new Comm protocol'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - scuttlebutt
     - imessage
-    - unverified
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-04T03:56:14Z
+updated_at: 2026-09-04T03:59:32Z
 blocked_by:
     - isaac-jarr
 ---
@@ -53,3 +52,23 @@ Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43)
   - `bb spec` → `41 examples, 0 failures, 69 assertions`
 - Observed existing suite output noise during green runs (logger lines and feature boot banner prints), but acceptance passed and no additional product changes were introduced in this bean.
 - branch: `bean/isaac-yleu` @ `b4ac3fe` (base `origin/main@c067dd3`)
+
+## Landed on main (2026-09-04)
+
+main-sha: isaac-imessage b4ac3fe1f76b8da4771d59a783dd25a83389112a
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on `isaac-imessage` `origin/main` `b4ac3fe1f76b8da4771d59a783dd25a83389112a` after fast-forward merge of `bean/isaac-yleu` onto main.
+
+Acceptance evidence:
+- required agent / agent-spec / telly pin `bf4323326c150bdcda4be2c0245cf2f7b0cbd629` is present in `deps.edn` and `bb.edn`
+- implementation shape is present in `src/isaac/comm/imessage.clj`:
+  - state-only `(deftype ImessageComm [host state*] ...)`
+  - `(extend ImessageComm comm/Comm (merge comm/defaults {:send! send-record!}))`
+- `send!` remains the complete Comm implementation; no turn-event rendering was added to the comm
+- full module gates on the accepted main SHA:
+  - `bb features` → `15 examples, 0 failures, 30 assertions`
+  - `bb spec` → `41 examples, 0 failures, 69 assertions`
+
+Observed during green verification: expected log noise from existing suite paths (`:config/set-snapshot`, `:imessage.notification/no-chat-guid`, `:imsg.client/disconnected`, `:imsg.watch/subscribed`, `:imessage.send/no-target`) appeared in stdout/stderr, but did not produce acceptance failures.
