@@ -1,14 +1,14 @@
 ---
 # isaac-nrak
 title: 'Verified beans never land on main: make merge-to-main part of the verify pass'
-status: draft
+status: completed
 type: task
 priority: high
 tags:
     - process
     - orchestration
 created_at: 2026-09-04T00:36:46Z
-updated_at: 2026-09-04T00:36:46Z
+updated_at: 2026-09-04T00:39:42Z
 ---
 
 Five times in one week a bean passed verify and its code stayed on `bean/<id>` until a planner noticed, sometimes days later, sometimes after main had moved and the merge conflicted:
@@ -37,3 +37,14 @@ Also: `completed` should be unreachable without a `main-sha` line on the bean �
 - hail-bean-work skill: the unverified handoff states the branch and its base SHA.
 - Exhibit check: no completed bean in isaac/.beans since the change without a main-sha line.
 Related: isaac-jndk (full-gate rule), isaac-2bni / cancel flake (gate trust).
+
+
+
+## Decision (2026-09-03, Micah): A — the verifier merges on pass. Implemented.
+
+## Summary of Changes
+
+- slagyr/orchestration 52d20bb — `hail-bean-verify/SKILL.md`: new step 7a "Land it on main BEFORE marking completed": per repo, fetch + ff-pull main, merge `bean/<id>` (fast-forward ok); conflict = FAIL back to work with "rebase onto main"; non-ff merge → re-run the targeted gate on the merged head, red → reset + FAIL; push; append `## Landed on main` + `main-sha: <repo> <sha>` lines; **completed is unreachable without a main-sha line**; no pin/release/deploy from verify. Work already on main → ancestor check + record. Limbo section updated so both pass states require the landing.
+- `hail-bean-work/SKILL.md`: rebase `bean/<id>` onto origin/main before handoff; handoff note states `branch … (base origin/main@…)`; worker does not merge or pin.
+- zanebot `~/.isaac/prompts` (slagyr/zane-isaac) updated with both files — live for the next verify turn (skills are read per turn).
+- Not done (follow-up if wanted): a mechanical check that refuses `--status=completed` without a main-sha line (beans hook).
