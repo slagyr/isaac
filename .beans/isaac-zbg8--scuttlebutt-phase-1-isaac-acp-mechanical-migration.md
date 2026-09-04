@@ -5,10 +5,11 @@ status: in-progress
 type: task
 priority: normal
 tags:
-    - scuttlebutt
     - acp
+    - unverified
+    - scuttlebutt
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-04T03:21:59Z
+updated_at: 2026-09-04T03:35:07Z
 blocked_by:
     - isaac-jarr
 ---
@@ -53,3 +54,17 @@ Then isaac-i5ps (rendering redesign) unblocks.
 ## Pin target updated (2026-09-03, planner)
 
 Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43) — not jarr's 0b52823. Main advanced past jarr with isaac-vuto (token accounting) and isaac-q34y (idle sealing), both verified and merged; the full gate on merged main is 756/0 features, 1612/0 spec. Same protocol as 0.1.42 for this bean's purposes.
+
+## Worker Notes (2026-09-04)
+
+- Implemented the mechanical phase-1 ACP migration in sibling worktree `isaac-acp-zbg8` on branch `bean/isaac-zbg8`.
+- Replaced inline `deftype` protocol methods with state-only `(deftype AcpComm [output-writer])` plus `(extend AcpComm comm/Comm (merge comm/defaults {...}))`.
+- Mapped `on-chatter` to the existing `agent_message_chunk` rendering path and `on-bulletin` to the existing compaction thought notifications for `:compaction/start`, `:compaction/success`, `:compaction/failure`, and `:compaction/disabled`.
+- Left `on-reply`, `on-aside`, `on-reckoning`, `on-cycle-*`, and `on-tool-progress` at protocol defaults to preserve the no-double-render contract for ACP phase 1.
+- Bumped `deps.edn` and `bb.edn` agent / agent-spec pins to `bf4323326c150bdcda4be2c0245cf2f7b0cbd629`.
+- Updated focused specs to drive the new entry points (`on-chatter`, `on-bulletin`) without changing feature rows.
+- Verified:
+  - `bb features features/comm/acp` → `64 examples, 0 failures, 151 assertions`
+  - `bb features` → `64 examples, 0 failures, 151 assertions`
+  - `bb spec` → `70 examples, 0 failures, 195 assertions`
+- branch: `bean/isaac-zbg8` @ `3be2975` (base `origin/main@ef03bbe`)
