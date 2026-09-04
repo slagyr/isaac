@@ -8,7 +8,7 @@ tags:
     - discord
     - scuttlebutt
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-04T03:48:37Z
+updated_at: 2026-09-04T04:43:20Z
 blocked_by:
     - isaac-jarr
 ---
@@ -192,3 +192,8 @@ Acceptance evidence:
   - all Comm protocol methods dispatch without `AbstractMethodError`
 
 Non-controlling per planner adjustment: full `bb features`, `turn_context.feature`, `service_lifecycle.feature`, and generated scuttlebutt placeholder output are excluded from this bean's acceptance surface.
+
+
+
+## Post-deploy regression (2026-09-04) — see isaac-ay0s
+Deployed as isaac-discord 0.1.12 and rolled back 39 minutes later: gateway never started (Reconfigurable via extend invisible to berths' satisfies? snapshot) and episode-crew replies were dropped (on-reply resolves channel by session key only). The boot-connect features were not in the verify run. Fix + re-release tracked in isaac-ay0s.
