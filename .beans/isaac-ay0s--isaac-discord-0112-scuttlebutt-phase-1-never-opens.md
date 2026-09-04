@@ -1,14 +1,14 @@
 ---
 # isaac-ay0s
 title: isaac-discord 0.1.12 (scuttlebutt phase 1) never opens the gateway and drops episode-crew replies — train rolled back
-status: todo
+status: completed
 type: bug
 priority: high
 tags:
     - discord
     - scuttlebutt
 created_at: 2026-09-04T04:43:20Z
-updated_at: 2026-09-04T04:43:20Z
+updated_at: 2026-09-04T14:06:43Z
 parent: isaac-tuk1
 ---
 
@@ -30,3 +30,18 @@ The Discord default `bb features` task ran 61–64 scenarios of 69: `lifecycle.f
     bb features features/comm/discord/lifecycle.feature features/comm/discord/service_lifecycle.feature features/comm/discord/episodes.feature features/comm/discord/scuttlebutt.feature
     bb features && bb spec   # with deps/bb pinned to the agent + server SHAs the train pins
 Then release 0.1.13 and re-run the scuttlebutt train (all five pins from registry b2a16619, discord replaced).
+
+
+
+## Landed on main (2026-09-04) — planner-implemented, Micah: "do the work yourself"
+main-sha: isaac-agent e1e10e80ccf1e72a3cb82cf85678af950adb8cbd (Release 0.1.44)
+main-sha: isaac-discord 3568cc5626db2c8b89bb6ec5041c07f1a4992e5c (Release 0.1.13)
+
+## Summary of Changes
+- Agent 0.1.44: the cycle map handed to on-cycle-start/on-cycle-end carries the charge's `:origin`; memory comm records `origin-kind`; scuttlebutt.feature scenario "cycle events carry the turn's origin"; full gate 763/0 features, 1626/0 spec.
+- Discord 0.1.13: Reconfigurable back INLINE on the deftype (with the why-comment); Comm stays extend+defaults; `on-cycle-start` stashes session-key → origin channel and starts the typing heartbeat for episode sessions (first cycle only); `on-reply` and `on-turn-end` resolve the channel via the stash before the session-name map; concurrent worker fix 3abd4e9 (same inline lifecycle + host-state-dir fallback) merged in; qomx's count step ported and its three typing scenarios activated; scuttlebutt scenario 3 rewritten (chatter+tool in one cycle); pins agent 0.1.44 + server 1207d45. Gates (ISAAC_GIT=1, pinned): boot/episodes/scuttlebutt/typing 16/0, default features 67/0, spec 45/0.
+- Deployed 14:05Z (registry f66021bf): discord.client/started 14:05:27.08, gateway ready 14:05:28.51, pong OK.
+
+## Gate findings for isaac-jndk
+1. The default Discord `bb features` honours `dev-local?` — with a sibling isaac-agent checkout (every worker role home has one) the suite runs against the SIBLING agent/server/foundation sources, not the pinned SHAs. o0bk verified green that way while the pinned run was red. Verify must set `ISAAC_GIT=1`.
+2. foundation test-support's `with-timeout!` budget is a fixed 60s (test_timeout.clj:8); the Discord suite finishes in 43s + JVM boot and exits 124 on a green run. Exit codes are not trustworthy under the wrapper until the budget is configurable (`clojure -M:features` unwrapped is).

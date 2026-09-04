@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-08-31T16:03:45Z
-updated_at: 2026-09-03T18:12:59Z
+updated_at: 2026-09-04T14:06:43Z
 ---
 
 Repo: **isaac-discord**. Phase 0 of the Discord scuttlebutt plan (isaac-frvu
@@ -198,3 +198,8 @@ Scuttlebutt migration, tool_visibility ambient red, 9i5w reconnect, raising `tes
 ### Verify handoff
 
 No rebuild. Re-hail **verify** against the amended commands. Verify-fail counter reset by this note.
+
+
+
+## Note (2026-09-04): branch superseded
+`bean/isaac-qomx` (d3ec95c) was verified 2026-09-03 but never merged (pre isaac-nrak rule) and now conflicts with main: isaac-o0bk re-implemented the heartbeat. isaac-ay0s ported qomx's count step and activated the three typing scenarios on the o0bk implementation (green, shipped in discord 0.1.13). The branch can be deleted.
