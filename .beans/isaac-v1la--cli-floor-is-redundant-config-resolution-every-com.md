@@ -9,7 +9,7 @@ tags:
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T16:41:23Z
+updated_at: 2026-09-04T16:47:34Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -62,3 +62,8 @@ Unit specs: memoization keyed on watched mtimes; server path unaffected (hot-rel
 | **the startup cache was refreshed after replan** | **NEW phrasing — alias of `the classpath cache was refreshed after replan`** |
 
 Four new step phrasings, two of which are aliases of existing classpath-cache steps; the two spies copy the classpath-plan spy pattern.
+
+
+
+## Decision (2026-09-04, Micah): cache the resolved config PRE-substitution
+The cached config must never contain substituted secrets (cache/cli.edn is world-readable on zanebot). Cache the normalized config with ${VAR} placeholders intact and re-apply env substitution on the warm read (env/lock-dotenv! + the existing substitute step), so a warm hit still reflects the current .env. Add a scenario: the cache file never contains a substituted token value (fixture .env with a known secret; grep the cache).
