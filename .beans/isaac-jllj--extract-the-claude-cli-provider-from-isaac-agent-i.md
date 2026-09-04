@@ -70,3 +70,22 @@ Agent acceptance is therefore:
 ### Out of scope for this bean
 
 Changing core so `:claude` exists only when the module is loaded is a behavioral change. If we ever want that, it is a separate follow-up bean after the extraction train is stable. Do not fold it into this bean.
+
+## Work observations (2026-09-04, scrapper)
+
+- Continued after the planner's option-A adjustment.
+- `isaac-agent-jllj` rebased onto current `origin/main`; branch head is now `3faafb5` and was pushed to `origin/bean/isaac-jllj`.
+- Agent-side change remains scoped to the pure move adjustment: the in-tree `:claude-cli` `llm-api` factory contribution was removed, while the built-in `:claude` provider-template and related provider schema keys were left intact.
+- `isaac-claude-code` local branch `bean/isaac-jllj` now has root commit `597c818` with the moved implementation/tests/features plus module manifest registration for `:claude-cli`.
+- Local module gates are green:
+  - `bb features features/llm/api/claude_cli.feature` → `14 examples, 0 failures, 48 assertions`
+  - `bb spec` → `19 examples, 0 failures, 40 assertions, 3 pending` (`@real` remains gated)
+  - `bb features && bb spec` also passed locally after wiring explicit feature step namespaces/root+fs harness support in `deps.edn` and making module `bb features` invoke `clojure -M:features` directly instead of the 60s wrapper.
+- Blocking issues found before verify handoff:
+  - Push to `git@github.com:slagyr/isaac-claude-code.git` is denied for the current identity (`slagyr-assistant`), so the module branch cannot be published for verify/landing.
+  - Full `isaac-agent-jllj` acceptance is not yet closed: `bb spec` is green (`1595 examples, 0 failures, 3275 assertions`), but full feature runs hit the repo's 180s timeout, and direct `clojure -M:features` on the rebased branch reported 5 failures in non-claude scenarios (`module/api_extension.feature`, `bridge/cancel_aborts_work.feature`). This needs a human call on whether the branch must absorb more upstream drift or whether the repo baseline is currently unstable.
+
+## Held (awaiting human, 2026-09-04)
+
+Escalated to human by **scrapper**@isaac-work-2. Blocking: cannot publish the `isaac-claude-code` branch with current GitHub credentials, and full `isaac-agent` feature acceptance is not yet conclusively green on the rebased branch.
+Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
