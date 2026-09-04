@@ -1,69 +1,52 @@
 ---
 # isaac-vrtb
-title: Remove compaction-disabled; keep compacting and page attention
+title: Block broken conversations; compaction-failed is the first reason
 status: draft
 type: bug
 priority: high
 created_at: 2026-08-31T14:15:35Z
-updated_at: 2026-09-04T16:33:53Z
+updated_at: 2026-09-04T16:53:13Z
 ---
 
-Likely repo: **isaac-agent** (session schema, drive compaction, attention). Also **isaac-hail** (fixtures that used the flag to force `:context-exhausted`) and the Comm protocol method `on-compaction-disabled` in **isaac-server** plus no-op impls in **isaac-discord / isaac-acp / isaac-imessage**.
+Likely repo: **isaac-agent** (session schema, drive turn gate, attention). Hail must learn the new refusal so it does not 5-minute-retry a blocked conversation as `:context-exhausted` weather. Comm protocol: drop `on-compaction-disabled` / `:compaction/disabled` (isaac-server, isaac-discord, isaac-acp, isaac-imessage).
 
 ## Problem
 
-After 5 consecutive compaction failures a session gets `:compaction-disabled true`. From then on every turn skips compaction, hits the context guard, and defers `:context-exhausted` forever. Hail retries it on a 5-minute cadence. The session is dead; the only recovery is manual unset. Compaction is necessary — disabling it is the expensive failure mode, not a safety valve.
+`:compaction-disabled` turns off compaction and then treats every later turn as window weather. Hail retries every 5 minutes into a session that will never compact. That is the expensive failure. Compaction is necessary; the *conversation* is what should stop, not the compact capability.
 
-Attention for this path is incomplete: `maybe-notify-compaction-disabled!` fires once as the flag is set, and the 1h per-session throttle atom in `isaac.attention` is never consulted.
+Failed compaction is one reason a conversation needs intervention. There will be others. Self-repair is the ideal; until then, a broken conversation must not accept turns.
 
 ## Decisions (2026-09-04, Micah)
 
-1. **Delete `:compaction-disabled`.** Never skip compaction because earlier attempts failed. Clean cutover: drop the key from the session schema, stop writing it, delete the `session__model` clearer. Unknown keys already drop on read (`schema_spec` "drops unknown keys on read"), so live `session.edn` files that still carry the flag just stop honoring it — no migrator.
-2. **Keep compacting.** `max-compaction-attempts` is **3** (was 5 — same constant today for in-turn recursive compact tries and the consecutive-failure trip). Cross-turn `:compaction.consecutive-failures` stays as a counter (success still resets to 0). It is not a kill switch.
-3. **Page, don't brick.** On the **3rd** consecutive compact failure: post attention (Discord notify coords) and keep the existing `:compaction/failure` bulletin. Do **not** emit `:compaction/disabled`. Wire the unused 1h per-session throttle in `isaac.attention` so a stuck session pages once an hour, not every turn.
-4. **This-turn save-or-defer.** `compaction-cannot-save-turn?` is true when compact failed or exhausted in-turn attempts *on this turn*. p9zy overflow compact-and-retry is unchanged; hail still sees `:context-exhausted` weather when *this* request cannot be saved — not because a flag was set last Tuesday.
+1. **General block, not a compaction switch.** Replace `:compaction-disabled` with a session `:block` map (`{:reason :keyword :at iso}`). Nil/absent = healthy. First producer: `:reason :compaction-failed` after **3** consecutive compact failures (`max-compaction-attempts` 5→3). Other reasons can write the same field later. Clean cutover: drop `:compaction-disabled`; unknown keys already drop on read.
+2. **Blocked conversations refuse turns.** Drive returns `{:unavailable? true :reason :blocked}` before appending the user/assistant and before the user LLM. The chronicle does not grow. Revive is explicit: `isaac sessions unset <id>.block` (or equivalent). Compaction remains a capability — it runs again on the first turn after unblock.
+3. **Intervention, not a 5-minute hammer.** Attention posts once when the block is set (session, reason, tokens, window). Copy is "Conversation blocked …", never "compaction disabled". Hail must **not** classify `:blocked` as `:context-exhausted` weather (isaac-dark / isaac-bs5b). Park the hail until the block is cleared (hails-never-die); do not spin `retry-after-ms` 300000 into a session that needs a human.
+4. **This-turn compact failure (before the 3rd).** If compact was required and failed, do not take the user turn (no assistant row). Count the failure. At 3, set `:block`. p9zy overflow compact-and-retry still applies when the conversation is *not* blocked.
+5. **Protocol.** Remove `on-compaction-disabled` and bulletin `:compaction/disabled`. Keep `:compaction/failure`.
 
-   **Correction (current code does NOT refuse the turn):** `features/session/compaction_logging.feature` "Compaction failure is logged and chat proceeds without looping" — compact LLM errors, then the user turn still runs and the assistant reply is appended to `current.ednl` (the live chronicle). Failed compact does not freeze a segment; it also does not block the new turn.
+## Not yet other reasons
 
-   **Proposed (2026-09-04, planner; Micah's "chronicle won't accept turns after failed compactions"):** if compact was required this turn and it failed, do **not** call the user LLM and do **not** append the assistant reply. Return `:context-exhausted` (hail defers, no attempt burn). Next hail tries compact again. That is how the chronicle stops growing when compact cannot save. Confirm.
-5. **Protocol.** Remove `on-compaction-disabled` from the Comm protocol and every impl. Agent `on-bulletin` `:kind :compaction/disabled` goes away with it.
+Do not inventory a taxonomy in this bean. The field is open; compaction-failed is the first writer. Turnstile `:held` stays a different thing (temporary park, not broken).
 
-## Behavior
-
-- A session at 3 consecutive compact failures still *tries* compaction on the next turn that needs it.
-- The 3rd failure (and then at most once per hour while still failing) enqueues attention: session key, consecutive-failures, tokens, window. Copy is "Compaction failing for session …", never "disabled".
-- A later successful compact resets `consecutive-failures` to 0 (same as today).
-- Existing disabled sessions on disk (`orchestration-work` on zanebot) start compacting again on the next turn after deploy.
-
-## Existing scenarios to delete or rewrite (isaac-agent)
+## Existing scenarios
 
 | file | verdict |
 |------|---------|
-| `features/session/context_window_guard.feature` "compaction disabled over the guard line defers without an LLM request" | **delete** — that *is* the brick |
-| `features/session/context_window_guard.feature` "compaction failure cap posts attention…" | **rewrite** — attention still posts; session has no disabled flag; next needing turn still compacts |
-| `features/session/compaction_logging.feature` "compaction stops retrying after max-compaction-attempts consecutive cross-turn failures" | **rewrite** — still logs failure; no `:compaction-disabled`; no `:compaction/disabled` bulletin |
-| `features/session/compaction_logging.feature` "switching model clears compaction-disabled…" | **delete** — nothing to clear |
-| `features/session/compaction_overflow.feature` "prompt-too-long with compaction disabled is context-exhausted weather" | **rewrite** — overflow after *this-turn* compact cannot save still defers (p9zy); do not seed a disabled flag |
-| `features/session/compaction_logging.feature` "Compaction failure is logged and chat proceeds without looping" | **rewrite if turn-refusal lands** — compact required + failed → `:context-exhausted`, no assistant row |
+| `context_window_guard` "compaction disabled over the guard line…" | **rewrite** — blocked conversation refuses the turn (no LLM); reason `:blocked` not `:context-exhausted` |
+| `context_window_guard` "compaction failure cap posts attention…" | **rewrite** — 3rd failure sets `:block`, attention posts once |
+| `compaction_logging` "stops retrying after max consecutive…" | **rewrite** — block + refuse; compaction is not skipped as a capability |
+| `compaction_logging` "switching model clears compaction-disabled" | **delete** — revive is unset `:block`, not a model swap |
+| `compaction_logging` "Compaction failure is logged and chat proceeds" | **rewrite** — required compact failed → this turn refused, no assistant row |
+| `compaction_overflow` "prompt-too-long with compaction disabled…" | **rewrite** — blocked vs this-turn overflow are different; do not seed the old flag |
 
-Hail `features/context_window_guard.feature` seeds `compaction-disabled true` to force exhausted weather. Rewrite those Givens (queued `:unavailable` / this-turn compact fail + over-guard last-input). Do not keep a test-only flag.
+Hail `features/context_window_guard.feature`: blocked session does not 5-minute-defer as context-exhausted; hail stays parked until unset.
 
 ## Out of scope
 
-- Changing the 0.8 compact threshold or p9zy overflow retry.
-- Splitting in-turn compact retries from the attention trip (one constant, now 3).
-- A runbook for the old opus-window recovery trick.
+- Auto-unblock / compact-only housekeeping (self-repair).
+- A catalog of other `:block` reasons.
+- Changing the 0.8 compact threshold or p9zy's overflow retry for *unblocked* sessions.
 
 ## Acceptance
 
-Draft until `@wip` scenarios exist. Then:
-
-```
-cd isaac-agent
-bb features features/session/context_window_guard.feature
-bb features features/session/compaction_logging.feature
-bb features features/session/compaction_overflow.feature
-bb spec spec/isaac/drive/turn_spec.clj spec/isaac/attention_spec.clj spec/isaac/session/schema_spec.clj spec/isaac/tool/session_spec.clj
-```
-
-Plus hail fixture rewrite green. No remaining `compaction-disabled` in agent schema, drive, or session tool. No `@wip` on the rewritten rows.
+Draft until `@wip` scenarios exist.
