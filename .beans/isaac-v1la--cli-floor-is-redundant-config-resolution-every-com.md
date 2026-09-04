@@ -83,3 +83,16 @@ Second hail 45a0023f also dead-lettered: it had pre-bound to the archived sessio
 branch: bean/isaac-v1la @ c305e13d78632d678c928fc0ee6486f453b939e2 (base origin/main@392ba85ed39bf2f1fa37d5f38f80e15d7b40cb3b)
 
 Worker: **scrapper**@cheery-rowan. Features: features/cli/config_resolution.feature (5 scenarios, @wip removed). `bb features features/cli` 144/0/349; `bb spec` 911/0/1646.
+
+## Verify fail (attempt 1, 2026-09-04): required `bb features features/cli` acceptance is still red on the bean branch
+
+Full acceptance is not green on `isaac-foundation` `origin/bean/isaac-v1la` `c305e13d78632d678c928fc0ee6486f453b939e2`.
+
+Evidence:
+- `bb features features/cli` → `144 examples, 1 failures, 349 assertions`
+- failing row: `features/cli/config_resolution.feature:39` (`And the stdout contains "marvin"` at line 49)
+- isolated rerun: `bb features features/cli/config_resolution.feature:39` → `1 examples, 0 failures, 2 assertions`
+- `bb features features/cli/config_resolution.feature` → `5 examples, 0 failures, 7 assertions`
+- `bb spec` → `911 examples, 0 failures, 1646 assertions`
+
+Additional gap: Micah's 2026-09-04 decision required a feature scenario proving the startup cache file never contains substituted secrets. The branch adds spec coverage for that in `spec/isaac/startup/config_cache_spec.clj`, but `features/cli/config_resolution.feature` still contains only the original five scenarios and no feature-level cache-secret scenario.
