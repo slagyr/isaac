@@ -1,15 +1,14 @@
 ---
 # isaac-o0bk
 title: 'Scuttlebutt phase 1: isaac-discord mechanical migration to the new Comm protocol'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
-    - scuttlebutt
     - discord
-    - unverified
+    - scuttlebutt
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-04T03:42:55Z
+updated_at: 2026-09-04T03:48:37Z
 blocked_by:
     - isaac-jarr
 ---
@@ -159,3 +158,37 @@ Notes:
   - typing heartbeat still runs on turn start/end
 
 Ready for verify on the focused migration gates.
+
+## Landed on main (2026-09-04)
+
+main-sha: isaac-discord 0f9dfeb0285293485e8f35a6aca4ec37d22b9ced
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on `isaac-discord` `origin/main` `0f9dfeb0285293485e8f35a6aca4ec37d22b9ced` after fast-forward merge of `bean/isaac-o0bk` onto main.
+
+Acceptance evidence:
+- required agent pin `bf4323326c150bdcda4be2c0245cf2f7b0cbd629` is present in `deps.edn` and `bb.edn`
+- `features/comm/discord/scuttlebutt.feature` contains no `@wip`
+- implementation shape is present in `src/isaac/comm/discord.clj`:
+  - state-only `(deftype DiscordIntegration [state-dir connect-ws! cfg conn])`
+  - `(extend DiscordIntegration comm/Comm (merge comm/defaults {...}))`
+- mechanical phase-1 mapping confirmed in code/specs:
+  - `on-reply` posts the reply
+  - successful `on-turn-end` posts nothing
+  - errored `on-turn-end` posts the error
+  - typing heartbeat still runs on `on-turn-start` / `on-turn-end`
+  - chatter/tool/bulletin methods remain on protocol defaults for silent phase-1 behavior
+- controlling gates on the accepted main SHA:
+  - `ISAAC_GIT=1 bb spec spec/isaac/comm/discord_spec.clj` → `42 examples, 0 failures, 88 assertions`
+  - `ISAAC_GIT=1 bb jvm-features features/comm/discord/reply.feature` → `3 examples, 0 failures, 5 assertions`
+  - `ISAAC_GIT=1 bb jvm-features features/comm/discord/typing.feature` → `1 examples, 0 failures, 1 assertions`
+  - `ISAAC_GIT=1 bb jvm-features features/comm/discord/routing.feature` → `9 examples, 0 failures, 10 assertions`
+- focused guard coverage in `spec/isaac/comm/discord_spec.clj` confirms:
+  - reply posts from `on-reply`
+  - errored turns post from `on-turn-end`
+  - successful `on-turn-end` does not double-post
+  - typing indicator starts on turn start
+  - all Comm protocol methods dispatch without `AbstractMethodError`
+
+Non-controlling per planner adjustment: full `bb features`, `turn_context.feature`, `service_lifecycle.feature`, and generated scuttlebutt placeholder output are excluded from this bean's acceptance surface.
