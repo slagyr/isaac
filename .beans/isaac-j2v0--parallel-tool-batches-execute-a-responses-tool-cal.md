@@ -245,3 +245,37 @@ Implementation surface confirmed in the changed files:
 - `src/isaac/tool/registry.clj` preserves raw execution result maps while normalizing presentation for transcript/model payloads
 
 Per planner adjustment, this bean does not absorb the full-suite-only `features/episodes/live.feature:604` flake; that suite-health work is owned by `isaac-tx3j`.
+
+## CI regression repair (2026-09-04, scrapper@isaac-work-1)
+
+GitHub Actions run `33847377954` failed on `bb ci` after landing `8a79a55`.
+Reproduced locally: `bb ci` first exposed two order/race-sensitive failures in
+full-suite execution:
+
+- `features/tool/permissions.feature` could read prompt tools before an
+  asynchronously completed turn had flushed `:llm-request`, yielding `{}`.
+- `features/session/parallel_tool_batches.feature` could observe the gated mock
+  tool completion before the corresponding `tool-result` event was emitted,
+  breaking the intended event-order assertion under suite timing.
+
+Repair delivered on `bean/isaac-j2v0` / `main` @ `8f6038c`:
+
+- `spec/isaac/session/session_steps.clj`: make prompt assertions await any
+  in-flight turn before reading the last LLM request.
+- `src/isaac/drive/turn.clj`: support optional raw tool-result `:after-result!`
+  hooks that run only after toolResult persistence/event emission.
+- `spec/isaac/tool/tools_steps.clj`: move mock completion signaling for
+  streaming/rendezvous/gated tools behind `:after-result!` so feature gates
+  observe the same post-result ordering they assert.
+- specs updated to cover both behaviors; loosened one unit-spec's concurrent
+  start-order assertion to require overlap, not scheduler order.
+
+Verification after repair:
+
+- `bb spec spec/isaac/llm/tool_loop_spec.clj spec/isaac/session/session_steps_spec.clj spec/isaac/drive/turn_spec.clj spec/isaac/tool/tools_steps_spec.clj` → green
+- `bb spec` → `1626 examples, 0 failures, 3343 assertions, 3 pending`
+- `bb features features/session/parallel_tool_batches.feature features/session/parallel_tool_calls.feature features/comm/scuttlebutt.feature features/llm/tool_loop_driver.feature features/bridge/cancel.feature features/tool/permissions.feature` → `24 examples, 0 failures, 45 assertions`
+- repeated stress: `features/tool/permissions.feature` + `features/session/parallel_tool_batches.feature` 20 consecutive green runs
+- `bb ci` no longer reproduces the bean-surface/tool-permissions failure; the remaining full-suite red is still the already-split ambient suite-health flake at `features/episodes/live.feature:571` / `:604`, owned by `isaac-tx3j`.
+
+Note: verifier had already completed and landed `8a79a55` before this CI repair. The subsequent repair commit is on `main` at `8f6038c`; the earlier `main-sha` records the original landing point for bean acceptance.
