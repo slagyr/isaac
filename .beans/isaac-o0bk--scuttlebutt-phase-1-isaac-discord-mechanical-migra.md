@@ -8,7 +8,7 @@ tags:
     - scuttlebutt
     - discord
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-04T02:25:23Z
+updated_at: 2026-09-04T03:16:16Z
 blocked_by:
     - isaac-jarr
 ---
@@ -53,3 +53,29 @@ Agent pin in deps.edn/bb.edn = the SHA isaac-jarr releases. Implementation shape
 ## Pin target updated (2026-09-03, planner)
 
 Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43) — not jarr's 0b52823. Main advanced past jarr with isaac-vuto (token accounting) and isaac-q34y (idle sealing), both verified and merged; the full gate on merged main is 756/0 features, 1612/0 spec. Same protocol as 0.1.42 for this bean's purposes.
+
+
+
+## Work observations (2026-09-04, scrapper@isaac-work-2)
+
+Started implementation in `isaac-discord` on branch `bean/isaac-o0bk` from `origin/main@a62d2fe68ca956431da3fe67a5f526e5c5e3a5e6`.
+
+Implemented so far:
+- agent pin sites in `deps.edn` and `bb.edn` updated to `bf4323326c150bdcda4be2c0245cf2f7b0cbd629`
+- Discord comm migrated from inline protocol methods to state-only `deftype` + `extend DiscordIntegration comm/Comm (merge comm/defaults ...)` shape
+- reply delivery moved to `on-reply`; `on-turn-end` now renders error outcomes only
+- typing heartbeat logic from isaac-qomx restored on the new shape (`on-turn-start` + stop on `on-turn-end`)
+- Discord unit/spec coverage updated for new comm entry points; `features/comm/discord/scuttlebutt.feature` un-`@wip`
+
+Current verification:
+- `bb spec spec/isaac/comm/discord_spec.clj` passes (`42 examples, 0 failures, 88 assertions`)
+- pinning to the required agent SHA exposed pre-existing/full-gate failures outside the bean's scoped comm migration:
+  - `features/comm/discord/turn_context.feature:101` expects system prompt to contain `":true"` for `was_mentioned`, but current trusted JSON renders booleans as `true`/`false` (no leading colon)
+  - `features/comm/discord/service_lifecycle.feature:37` fails `And the Discord client is connected` on current train
+- generated `target/gherclj/generated/comm/discord/scuttlebutt_spec.clj` still compiles to pending placeholders for the new feature file, so the focused scuttlebutt acceptance is not runnable through the current generator path yet
+- `bb features` also still times out at the shared 60s harness wrapper on this repo
+
+This bean cannot satisfy its stated full-module acceptance in one worker turn without planner direction because remaining failures are not caused by the scuttlebutt comm migration itself. Exact failing files/symbols for planner review:
+- `features/comm/discord/turn_context.feature` (`was_mentioned` expectation rows)
+- `features/comm/discord/service_lifecycle.feature` (`And the Discord client is connected`)
+- generated scuttlebutt feature output remains pending in `target/gherclj/generated/comm/discord/scuttlebutt_spec.clj` despite un-`@wip` source feature
