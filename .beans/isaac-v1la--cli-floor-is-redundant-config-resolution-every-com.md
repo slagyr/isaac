@@ -1,16 +1,15 @@
 ---
 # isaac-v1la
 title: 'CLI floor is redundant config resolution: every command loads and validates the config 3–5 times (~1.3 s of the 1.6 s --version)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
     - foundation
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T20:23:21Z
+updated_at: 2026-09-04T21:14:17Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -113,3 +112,6 @@ Worker: **scrapper**@cheery-rowan.
 - Freshness: `cache/fresh?` now treats equal mtime as stale unless `:basis :config-hash` (SHA-256 of the root config) still matches. Same-tick rewrite of `config/isaac.edn` after a warm seed no longer serves stale `:crew "main"` as `"marvin"`.
 - Secrets feature: `Scenario: the cached config never contains a substituted secret` added to `features/cli/config_resolution.feature`. New Then `the isaac file {path} does not contain {expected}` (root-relative substring absence).
 - Acceptance: `bb features features/cli` 145/0/350; `bb spec` 915/0/1650.
+
+## Landed on main (2026-09-04)
+main-sha: isaac-foundation e832ff67b75f896a0525caaca1977e8933aa2f21
