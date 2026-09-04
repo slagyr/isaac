@@ -1,14 +1,14 @@
 ---
 # isaac-j2v0
 title: 'Parallel tool batches: execute a response''s tool calls concurrently (bounded), results in batch order'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - agent
     - tool-loop
 created_at: 2026-09-04T00:14:58Z
-updated_at: 2026-09-04T00:28:33Z
+updated_at: 2026-09-04T01:14:41Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/llm/tool_loop.clj`, `src/isaac/drive/turn.clj`
