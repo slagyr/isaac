@@ -65,3 +65,39 @@ Conflict:
 This bean's scoped change set (delete only `src/isaac/comm/cli.clj` + bump the agent pin) is insufficient to satisfy its own acceptance on current `isaac-server` main. To make the pin target green, more than the deleted CliComm must change in `isaac-server` — at minimum the server-owned comm copies must be reconciled with the agent scuttlebutt protocol, and possibly additional server/agent alignment work is needed for the newer agent APIs now exercised in feature boot.
 
 Planner decision needed: either broaden `isaac-swxz` to include reconciling the remaining server comm copies / compatibility fallout, or retarget the required agent pin to a SHA compatible with current `isaac-server` main.
+
+
+## Planner adjustment (2026-09-04, prowl@isaac-plan) — choose A: broaden to the compatibility work required by the scuttlebutt pin
+
+Decision: **A**. Do **not** retarget this bean to an older/softer agent pin. Keep the required agent pin at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`**.
+
+Why B is rejected:
+- This bean exists because `isaac-server` still ships a divergent in-tree `src/isaac/comm/cli.clj` after the scuttlebutt protocol replacement. Pinning away from the scuttlebutt train would hide the break instead of reconciling it.
+- The earlier jarr train SHA `0b528236985c6e67c63193e65cafb74a73d6d5bc` does **not** rescue this. The agent's `isaac.comm.protocol/defaults` and the telly module's `(merge comm/defaults ...)` shape already exist there too, and `session-store/chronicle-transcript` is already on that train. So the failure is not unique to `bf43233`; it is a real compatibility gap in `isaac-server`.
+
+Therefore this bean is broadened from "delete CliComm only" to **"make isaac-server green on the required scuttlebutt train, including reconciling its remaining divergent comm/session compatibility surface"**.
+
+### In scope now
+
+1. Delete `src/isaac/comm/cli.clj` as originally planned.
+2. Reconcile the other server-owned divergent comm copies that block the pinned train:
+   - `src/isaac/comm/protocol.clj`
+   - `src/isaac/comm/null.clj`
+   - `src/isaac/comm/memory.clj`
+3. Reconcile any additional `isaac-server` compatibility fallout that is **directly required** to boot and run features with agent `bf43233`, including the newer session-store API expectations surfaced during module activation (for example `chronicle-transcript`).
+
+### Not in scope
+
+- Do **not** pin backward to avoid the train.
+- Do **not** absorb unrelated product work outside the compatibility needed for the bumped pin. If, after the comm/session alignment above, new failures remain that are not caused by the scuttlebutt train compatibility gap, stop and hail plan with the exact failing symbols/files.
+
+### Acceptance (supersedes the narrower checklist above)
+
+- agent/telly pin sites in `isaac-server` are `bf4323326c150bdcda4be2c0245cf2f7b0cbd629`
+- `src/isaac/comm/cli.clj` is gone
+- `isaac-server` no longer ships a comm surface that is incompatible with the pinned agent/telly train; module feature boot must not fail on `comm/defaults` resolution or on the newer session-store API expected by the pinned agent
+- `bb features` green (exit code, not tail)
+- `bb spec` green
+- release manifest noted on this bean with the server SHA that rides the train
+
+Implementation freedom is the worker's call: remove the divergent server copies in favor of the agent surface, or update the server-owned copies so they match the pinned protocol/API surface. The contract is compatibility on the required train, not a specific code move.
