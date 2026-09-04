@@ -82,3 +82,49 @@ bucketing of effort 2). Existing compaction scenarios stay green.
     bb features features/session/compaction.feature features/session/compaction_logging.feature
 
 Full gate green. Hand off `--tag=unverified`.
+
+## Scenarios (committed @wip at slagyr/isaac-agent ee990a9) — supersede the sketch
+
+`features/session/compaction_requests.feature` — 4 scenarios:
+1. compaction request carries `effort 2` while the reply request keeps the
+   session's `effort 7`.
+2. `compaction.effort 5` in crew config overrides the default (same policy
+   merge as threshold/head; model-level works identically — "just like all
+   the other model config", Micah).
+3. `compaction.max-request-tokens 60` on a 200-token window: a history that
+   fits the window is still split into 3 chunks (`:session/compaction-chunked
+   :chunks 3` in the log); the chronicle holds the merged summary.
+4. A summary request that fails `error | closed` is retried once at half
+   size (`:session/compaction-chunk-retry :attempt 1`), consecutive-failures
+   stays 0, chronicle holds the merged summary.
+
+## Step ledger
+
+| step | status |
+|------|--------|
+| Isaac root / config: / isaac EDN file exists with / sessions exist (`effort`, `compaction.head`, `crew` columns) / session has transcript / model responses queued (`text`, `error`) / user sends / the compaction request matches / the last LLM request matches / the log has entries matching / the following sessions match (`compaction.consecutive-failures`) / session has chronicle matching | reuse |
+| **`:session/compaction-chunk-retry`** | **NEW info event** (`:attempt`, chunk tokens before/after) — add to the ISAAC.md registered-events table, coverage = scenario 4 |
+| `:session/compaction-chunked` | existing info event — add to the ISAAC.md table with scenario 3 as coverage |
+| `compaction.effort`, `compaction.max-request-tokens` | NEW compaction policy keys (schema + `compaction-policy-keys`); code defaults 2 and 32000 |
+
+## Spec-only obligations
+
+- `allows-effort false` model → summary request carries no `:effort`.
+- Retry-at-half happens ONCE: a second drop on the halved chunks increments
+  `consecutive-failures` (no descent to single messages).
+- Retry branch keys on transport-class failures only: `:stream-stalled`
+  (isaac-6zk5) or an `:llm-error` whose message is "closed"; context-length
+  errors keep their existing overflow path.
+- Scenario 3's fixture is tuned by message length against the Grover token
+  estimate — adjust text or cap to land on exactly 3 chunks, never the
+  assertion.
+
+## Acceptance (final)
+
+Remove @wip from `features/session/compaction_requests.feature`, then:
+
+    bb features features/session/compaction_requests.feature
+    bb features features/session/compaction_logging.feature features/session/compaction_overflow.feature features/session/compaction_template.feature
+    bb spec spec/isaac/session spec/isaac/drive
+
+0 failures; full `bb features` + `bb spec` green. Hand off `--tag=unverified`.
