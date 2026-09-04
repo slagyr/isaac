@@ -1,13 +1,13 @@
 ---
 # isaac-oup9
 title: Hail HTTP route mangles a string :session frequency into a char vector → undeliverable (no-recipients)
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - hail
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-04T16:29:12Z
+updated_at: 2026-09-04T22:36:03Z
 ---
 
 Repo: **isaac-hail** (`src/isaac/hail/http.clj normalize-frequencies`).
