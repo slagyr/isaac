@@ -1,14 +1,14 @@
 ---
 # isaac-swxz
 title: 'Scuttlebutt: delete isaac-server''s divergent CliComm (src/isaac/comm/cli.clj)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - scuttlebutt
     - server
 created_at: 2026-09-03T16:40:56Z
-updated_at: 2026-09-03T23:48:30Z
+updated_at: 2026-09-04T00:56:06Z
 blocked_by:
     - isaac-jarr
 ---
