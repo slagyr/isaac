@@ -1,14 +1,14 @@
 ---
 # isaac-jgng
 title: Compaction requests sized to the context window die 'closed' on chatgpt; cap per-request tokens and adapt chunk size on failure
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - agent
     - compaction
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-04T16:46:02Z
+updated_at: 2026-09-04T22:34:04Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/compaction.clj` chunk plan,
