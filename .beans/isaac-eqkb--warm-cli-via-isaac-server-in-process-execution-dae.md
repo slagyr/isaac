@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-07-13T17:29:33Z
-updated_at: 2026-07-13T17:29:33Z
+updated_at: 2026-09-04T16:30:55Z
 ---
 
 ## Goal (PARKED — design captured 2026-07-13, not yet prioritized)
@@ -35,3 +35,8 @@ Erase the ~1.3s babashka source-load floor on every isaac CLI command by executi
 ## Status
 
 DRAFT / parked per Micah 2026-07-13 ('big and complicated... might be the right move, but for now just get the classpath cached'). Revisit after the low-hanging classpath cache (isaac-ogiu) ships and we see the residual floor in practice.
+
+
+
+## Premise revised (2026-09-04, see isaac-v1la)
+The "1.33 s bb source-load floor" this bean was built on is not source loading: `isaac --version` spends 1296 of 1307 ms in three full config resolutions (launcher, main, cli-logging). Fix that first; re-measure the residual floor before reviving the daemon.
