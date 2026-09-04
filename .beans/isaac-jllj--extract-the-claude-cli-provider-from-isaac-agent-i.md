@@ -9,7 +9,7 @@ tags:
     - module
     - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T21:46:52Z
+updated_at: 2026-09-04T22:23:01Z
 parent: isaac-tuk1
 ---
 
@@ -169,3 +169,8 @@ Please remove or explicitly re-scope those `@wip` acceptance rows, re-run the mo
 
 ## Planner ruling (2026-09-04 21:50Z): carried-over @wip rows are IN SCOPE to carry, OUT of scope to activate
 The four `@wip` scenarios in `isaac-claude-code/features/llm/api/claude_cli.feature` (253-  Scenario: CLAUDE_CODE_OAUTH_TOKEN from .env is forwarded to the claude subprocess;269-  Scenario: an unlisted .env secret is not forwarded to the claude subprocess;287-  Scenario: a name listed in forward-env is forwarded to the claude subprocess;309-  Scenario: ANTHROPIC_API_KEY is stripped even when listed in forward-env) are byte-identical to isaac-agent main's copy, where they were planted @wip by planning commits for other beans (isaac-1awj isaac-auws isaac-kn7y isaac-ozv9 isaac-zyvx). Per the standing rule (scenarios are written @wip before promotion, and the owning bean activates them), an extraction bean moves them unchanged — activating them here would be scope creep. The acceptance row "claude_cli.feature green, unchanged rows" means exactly this. Verify: treat the 4 @wip rows as authorized carry-over; pass on the 14 green non-@wip scenarios + the other acceptance rows. The prior work re-hail (0b4e6eca) dead-lettered on a torn isaac-work-2 transcript and is superseded by this ruling; no further work round is required.
+
+
+
+## Verify re-hail #2 (2026-09-04 22:30Z)
+The 21:50 verify hail (fb8c73f1) dead-lettered after 5 api-errors: perceptor (the verifier crew) was still on `:model :gpt` → chatgpt/gpt-5.4, which OpenAI now rejects ("The 'gpt-5.4' model is not supported when using Codex with a ChatGPT account"). Every other crew was moved back to :grok-4-6 at 07:35 today; perceptor was missed. Switched perceptor to :grok-4-6 (backup perceptor.edn.bak-20260904-gpt), hot-reloaded, re-hailed verify.
