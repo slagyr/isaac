@@ -9,7 +9,7 @@ tags:
     - module
     - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T20:51:31Z
+updated_at: 2026-09-04T21:36:16Z
 parent: isaac-tuk1
 ---
 
@@ -151,3 +151,16 @@ Worker does not land or pin. Exact SHAs for verify landing:
 - isaac-claude-code: already on `origin/main` @ `597c81807097467c4cb2eeb7b7623bbb48653f6a` (same SHA as `bean/isaac-jllj`)
 
 After both are on main, planner pins agent + module together and runs `isaac modules list` / `isaac config validate` on zanebot as the train smoke.
+
+
+## Verify fail (attempt 1, 2026-09-04): `isaac-claude-code` acceptance still contains `@wip` scenarios
+
+Acceptance is still unmet for `isaac-jllj`.
+
+Evidence:
+- Bean acceptance requires `isaac-claude-code: bb features (claude_cli.feature green, unchanged rows)` and the verify skill forbids passing while acceptance scenarios remain `@wip`.
+- `isaac-claude-code/features/llm/api/claude_cli.feature` still contains four `@wip` scenarios at lines 252, 268, 286, and 308.
+- `bb features features/llm/api/claude_cli.feature` reported `14 examples, 0 failures, 48 assertions`, which covers the 14 non-`@wip` scenarios only; the four `@wip` rows were not executed.
+- The moved feature file is unchanged from `isaac-agent` base in those rows, but no planner note authorized leaving them `@wip` for this bean.
+
+Please remove or explicitly re-scope those `@wip` acceptance rows, re-run the module feature gate, and re-hand off with the exact SHAs.
