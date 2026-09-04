@@ -9,7 +9,7 @@ tags:
     - cli
     - performance
 created_at: 2026-09-04T16:30:55Z
-updated_at: 2026-09-04T16:48:51Z
+updated_at: 2026-09-04T16:53:33Z
 ---
 
 Micah (2026-09-04): "find out why the floor has grown — I don't think foundation has grown significantly." It hasn't. Profiled on zanebot (foundation 0.1.23, brew HEAD-8dc5d5e, bb 1.12.214, wrapper env with CLJ_CONFIG/DEPS_CLJ_DIR=deps-home) by instrumenting `isaac.config.loader/load-config-result` with a call counter + timer and driving `isaac.launcher/-main`:
@@ -67,3 +67,8 @@ Four new step phrasings, two of which are aliases of existing classpath-cache st
 
 ## Decision (2026-09-04, Micah): cache the resolved config PRE-substitution
 The cached config must never contain substituted secrets (cache/cli.edn is world-readable on zanebot). Cache the normalized config with ${VAR} placeholders intact and re-apply env substitution on the warm read (env/lock-dotenv! + the existing substitute step), so a warm hit still reflects the current .env. Add a scenario: the cache file never contains a substituted token value (fixture .env with a known secret; grep the cache).
+
+
+
+## Delivery note (2026-09-04 16:51Z)
+Hail 0fd02d06 dead-lettered after 5 attempts — NOT a bean fault: isaac-work-1's transcript got a torn line at 16:48:51Z (isaac-jz6h) and every retry died reading it. The session was archived as `isaac-work-1-archive-20260904` (transcript intact for jz6h's investigation) and the bean re-hailed as 45a0023f to a fresh isaac-work-1. Worker: your earlier progress is in the `isaac-foundation-v1la` checkout / branch in the role home — resume from there.
