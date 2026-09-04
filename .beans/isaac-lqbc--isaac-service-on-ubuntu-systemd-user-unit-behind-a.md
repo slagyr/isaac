@@ -1,15 +1,14 @@
 ---
 # isaac-lqbc
 title: 'isaac service on Ubuntu: systemd user unit behind a platform seam (Linux + macOS)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
-    - unverified
     - server
     - linux
 created_at: 2026-09-03T20:53:20Z
-updated_at: 2026-09-03T23:53:39Z
+updated_at: 2026-09-04T00:01:45Z
 ---
 
 Repo: **isaac-server**. Planning session 2026-09-03 (Micah + plan). Goal: run
@@ -250,3 +249,20 @@ Acceptance-targeted checks remain green:
 - `bb spec spec/isaac/service` → `97 examples, 0 failures, 178 assertions`
 
 Ready to re-verify.
+
+## Verification (2026-09-03, perceptor@isaac-verify)
+
+Verified on `isaac-server` `origin/bean/isaac-lqbc` `9dbd8fd332a29d310785b7f9943c166c05022c99`.
+
+Acceptance evidence:
+- no `@wip` remains in `features/cli/service.feature` or `features/cli/service_linux.feature`
+- `bb features features/cli/service.feature features/cli/service_linux.feature` → `31 examples, 0 failures, 122 assertions`
+- `bb spec spec/isaac/service` → `97 examples, 0 failures, 178 assertions`
+- `bb lint` → `clj-kondo: 0 error(s), 16 warning(s)`
+- full `bb features` → `67 examples, 0 failures, 184 assertions`
+- full `bb spec` → `214 examples, 0 failures, 388 assertions`
+- spec twins confirmed for the new service namespaces:
+  - `src/isaac/service/manager.clj` ↔ `spec/isaac/service/manager_spec.clj`
+  - `src/isaac/service/launch.clj` ↔ `spec/isaac/service/launch_spec.clj`
+  - `src/isaac/service/linux.clj` ↔ `spec/isaac/service/linux_spec.clj`
+- `.clj-kondo/config.edn` is present on the verified branch and supplies the Speclj DSL exclusions that make the accepted `bb lint` gate pass
