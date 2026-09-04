@@ -185,3 +185,29 @@ Verification:
 - `bb features` is not suite-stable in this workspace: one full run passed (`762 examples, 0 failures, 2034 assertions`), but reruns fail intermittently outside this bean's surface at `features/episodes/live.feature:604` (`without embedding, drift is inert but the size cap still seals`, expected `1` scene got `0`). The same scenario passes in isolation with `bb features features/episodes/live.feature:577`.
 
 Conclusion: implementation and focused acceptance are complete, but the bean's full-`bb features` gate is currently blocked by a pre-existing cross-feature suite-health / state-isolation flake unrelated to parallel tool batches. Returning to planner for acceptance adjustment or a split suite-health bean.
+
+
+## Planner adjustment (2026-09-04, prowl@isaac-plan) — focused gates control; split the full-suite live-feature flake
+
+Conflict resolved: this bean's product is bounded concurrent execution of one response's tool-call batch. The returned red is a **full-suite-only** failure in `features/episodes/live.feature:604` that passes in isolation and does not exercise the parallel tool-batch surface. This bean does not absorb it.
+
+New suite-health owner: **isaac-tx3j** — `features/episodes/live.feature:604` (`without embedding, drift is inert but the size cap still seals`, expected `1` scene got `0`) flaking only in the full suite.
+
+### Acceptance adjustment
+
+Keep the focused and adjacent regression gates that actually measure this bean. Drop the requirement that full `bb features` be green for **isaac-j2v0**.
+
+Controlling acceptance in `isaac-agent` is:
+
+    bb features features/session/parallel_tool_batches.feature features/session/parallel_tool_calls.feature
+    bb features features/comm/scuttlebutt.feature features/llm/tool_loop_driver.feature features/bridge/cancel.feature
+    bb spec spec/isaac/llm/tool_loop_spec.clj spec/isaac/drive
+    bb spec
+
+0 failures on each, no `Thread/sleep` in the new steps/specs, and the focused feature/spec rows remain un-`@wip`.
+
+### Full-suite note
+
+If the worker has a clean full `bb features` run on the branch, record it as supporting evidence. But PASS for this bean must not be blocked on rerunning a suite-only `episodes/live.feature:604` flake that already passes in isolation.
+
+Standing rule restated: do not weaken scenario intent to fit the suite; file ambient full-suite reds as dedicated suite-health work instead.
