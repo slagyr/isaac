@@ -7,9 +7,8 @@ priority: high
 tags:
     - claude-cli
     - module
-    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T20:21:46Z
+updated_at: 2026-09-04T20:48:39Z
 parent: isaac-tuk1
 ---
 
@@ -122,3 +121,14 @@ SHAs for verify / train pin:
 - agent branch: `bean/isaac-jllj` @ `0004c1871f9a98c742da35597026a178e1ceb762` (base `origin/main@ee990a9c3c0e14cd0884196084613993c69d1624`)
 - module branch: `bean/isaac-jllj` @ `597c81807097467c4cb2eeb7b7623bbb48653f6a`
 - Train must pin both together in `isaac/modules.edn` (`:isaac.llm.claude` / isaac-claude-code) with the agent SHA that deletes the in-tree `:claude-cli` factory.
+
+## Verify fail (attempt 1, 2026-09-04): train-pin / landing acceptance is still incomplete for the new module
+
+Acceptance is not fully satisfied for `isaac-jllj`.
+
+Evidence:
+- `isaac-agent` `origin/bean/isaac-jllj` `0004c1871f9a98c742da35597026a178e1ceb762`: `clojure -M:features` → `749 examples, 0 failures, 1987 assertions`; `bb spec` → `1609 examples, 0 failures, 3306 assertions`.
+- `isaac-claude-code` `origin/bean/isaac-jllj` `597c81807097467c4cb2eeb7b7623bbb48653f6a`: `bb features features/llm/api/claude_cli.feature` → `14 examples, 0 failures, 48 assertions`; `bb spec` → `19 examples, 0 failures, 40 assertions, 3 pending`.
+- The moved implementation, feature file, and two spec files are byte-identical to `isaac-agent` `origin/main@ee990a9c3c0e14cd0884196084613993c69d1624`; `spec/isaac/llm/claude_cli_steps.clj` is the only moved file that changed, adding module declaration so the moved feature/spec can run from the module repo.
+- Remaining acceptance gap: top-level `isaac/modules.edn` still has no `:isaac.llm.claude` / `isaac-claude-code` pin, so the bean's required `isaac modules list` / `isaac config validate` integration acceptance on a root with both pinned cannot yet be verified.
+- Updated verify requires a passing bean to be landed on `main` first. `isaac-claude-code` currently exposes only `origin/bean/isaac-jllj` and no `origin/main`, so there is no main branch to land and record with `main-sha:`.
