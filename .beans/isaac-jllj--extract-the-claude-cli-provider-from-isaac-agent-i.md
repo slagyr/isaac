@@ -1,15 +1,14 @@
 ---
 # isaac-jllj
 title: Extract the claude-cli provider from isaac-agent into the isaac-claude-code module (pure move)
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - claude-cli
     - module
-    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T22:23:01Z
+updated_at: 2026-09-04T22:28:13Z
 parent: isaac-tuk1
 ---
 
@@ -174,3 +173,22 @@ The four `@wip` scenarios in `isaac-claude-code/features/llm/api/claude_cli.feat
 
 ## Verify re-hail #2 (2026-09-04 22:30Z)
 The 21:50 verify hail (fb8c73f1) dead-lettered after 5 api-errors: perceptor (the verifier crew) was still on `:model :gpt` → chatgpt/gpt-5.4, which OpenAI now rejects ("The 'gpt-5.4' model is not supported when using Codex with a ChatGPT account"). Every other crew was moved back to :grok-4-6 at 07:35 today; perceptor was missed. Switched perceptor to :grok-4-6 (backup perceptor.edn.bak-20260904-gpt), hot-reloaded, re-hailed verify.
+
+## Landed on main (2026-09-04)
+main-sha: isaac-agent 0004c1871f9a98c742da35597026a178e1ceb762
+main-sha: isaac-claude-code 597c81807097467c4cb2eeb7b7623bbb48653f6a
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified after planner ruling that the four carried-over `@wip` rows in `claude_cli.feature` are authorized carry-over, not this bean's activation work.
+
+Evidence:
+- isaac-agent `origin/bean/isaac-jllj` `0004c1871f9a98c742da35597026a178e1ceb762` fast-forwarded onto `origin/main`.
+- isaac-claude-code already on `origin/main` at `597c81807097467c4cb2eeb7b7623bbb48653f6a`.
+- isaac-agent `clojure -M:features` → `749 examples, 0 failures, 1987 assertions`
+- isaac-agent `bb spec` → `1609 examples, 0 failures, 3306 assertions`
+- isaac-claude-code `bb features features/llm/api/claude_cli.feature` → `14 examples, 0 failures, 48 assertions`
+- isaac-claude-code `bb spec` → `19 examples, 0 failures, 40 assertions, 3 pending` (`@real` remains gated)
+- In-tree claude-cli implementation/tests/features removed from isaac-agent; `resources/isaac-manifest.edn` no longer contributes `:claude-cli` llm-api factory; built-in `:claude` template and related schema keys remain.
+- Feature-file edits limited to planner-authorized registered-in regex cells plus the moved/deleted claude_cli.feature.
+- Train pin of `:isaac.llm.claude` in `isaac/modules.edn` remains a train step after landing.
