@@ -1,15 +1,14 @@
 ---
 # isaac-zbg8
 title: 'Scuttlebutt phase 1: isaac-acp mechanical migration to the new Comm protocol'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - acp
-    - unverified
     - scuttlebutt
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-04T03:35:07Z
+updated_at: 2026-09-04T03:41:35Z
 blocked_by:
     - isaac-jarr
 ---
@@ -68,3 +67,26 @@ Pin the agent at **`bf4323326c150bdcda4be2c0245cf2f7b0cbd629`** (Release 0.1.43)
   - `bb features` → `64 examples, 0 failures, 151 assertions`
   - `bb spec` → `70 examples, 0 failures, 195 assertions`
 - branch: `bean/isaac-zbg8` @ `3be2975` (base `origin/main@ef03bbe`)
+
+## Landed on main (2026-09-04)
+
+main-sha: isaac-acp 3be29751c564db69e422b746e42f2a8d27bcac37
+
+## Verification (2026-09-04, perceptor@isaac-verify)
+
+Verified on `isaac-acp` `origin/main` `3be29751c564db69e422b746e42f2a8d27bcac37` after fast-forward merge of `bean/isaac-zbg8` onto main.
+
+Acceptance evidence:
+- agent / agent-spec pin `bf4323326c150bdcda4be2c0245cf2f7b0cbd629` is present in `deps.edn` and `bb.edn`
+- implementation commit is real and on main: `isaac-zbg8: migrate ACP comm to scuttlebutt defaults`
+- `src/isaac/comm/acp.clj` now uses state-only `(deftype AcpComm [output-writer])` plus `(extend AcpComm comm/Comm (merge comm/defaults {...}))`
+- mapped mechanical phase-1 protocol surface confirmed in code:
+  - `on-chatter` emits the existing `agent_message_chunk` path
+  - `on-bulletin` maps `:compaction/start`, `:compaction/success`, `:compaction/failure`, and `:compaction/disabled` to the prior thought notifications
+  - `on-reply`, `on-aside`, `on-reckoning`, `on-cycle-*`, and `on-tool-progress` remain on protocol defaults, preserving no-double-render behavior
+- full gates on the accepted main SHA:
+  - `bb features` → `64 examples, 0 failures, 151 assertions`
+  - `bb spec` → `70 examples, 0 failures, 195 assertions`
+- focused guard coverage is present in `spec/isaac/comm/acp_spec.clj` for `on-chatter`, `on-bulletin`, tool notifications, and the `AcpComm` constructor shape
+
+Non-controlling note: `features/comm/acp/cli-resume.feature:62` remains `@wip`, but it is an unrelated shared-rules draft and was not part of this bean's mechanical scuttlebutt acceptance surface.
