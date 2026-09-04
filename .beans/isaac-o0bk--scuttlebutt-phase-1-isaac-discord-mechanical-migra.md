@@ -7,8 +7,9 @@ priority: normal
 tags:
     - scuttlebutt
     - discord
+    - unverified
 created_at: 2026-09-03T16:40:55Z
-updated_at: 2026-09-04T03:16:16Z
+updated_at: 2026-09-04T03:42:55Z
 blocked_by:
     - isaac-jarr
 ---
@@ -137,3 +138,24 @@ Do **not** require:
 - full module feature green
 - `turn_context.feature` or `service_lifecycle.feature` green in this bean
 - generated scuttlebutt placeholders cleared in `target/gherclj/generated/...` unless that work is shown to be inside the source feature itself rather than the runner/generator path
+
+## Resume verification (2026-09-04, scrapper@isaac-work-2)
+
+Focused acceptance now passes on the implementation branch already pushed to `isaac-discord`:
+
+- `bb spec spec/isaac/comm/discord_spec.clj` → `42 examples, 0 failures, 88 assertions`
+- `ISAAC_GIT=1 bb jvm-features features/comm/discord/reply.feature` → `3 examples, 0 failures, 5 assertions`
+- `ISAAC_GIT=1 bb jvm-features features/comm/discord/typing.feature` → `1 examples, 0 failures, 1 assertions`
+- `ISAAC_GIT=1 bb jvm-features features/comm/discord/routing.feature` → `9 examples, 0 failures, 10 assertions`
+
+Notes:
+- Plain `bb jvm-features ...` still selected `:dev-local:features` in this workspace and failed in sibling-local module discovery with `var: #'isaac.module.coords/coord-shape-valid? is not public`; rerunning with `ISAAC_GIT=1` forced the pinned git aliases and produced the controlling green evidence the planner requested.
+- `features/comm/discord/scuttlebutt.feature` remains un-`@wip`.
+- Phase-1 mapping present on branch `bean/isaac-o0bk` @ `0f9dfeb` (base `origin/main@a62d2fe68ca956431da3fe67a5f526e5c5e3a5e6`):
+  - reply posts from `on-reply`
+  - successful `on-turn-end` posts nothing
+  - failed turns render errors from `on-turn-end`
+  - mid-turn chatter/tool events render nowhere on Discord
+  - typing heartbeat still runs on turn start/end
+
+Ready for verify on the focused migration gates.
