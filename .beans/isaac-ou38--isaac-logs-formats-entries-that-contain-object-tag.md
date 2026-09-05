@@ -1,13 +1,11 @@
 ---
 # isaac-ou38
 title: 'isaac logs formats entries that contain #object tagged literals'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-05T03:54:22Z
-updated_at: 2026-09-05T04:09:32Z
+updated_at: 2026-09-05T04:17:52Z
 ---
 
 Likely repo: **isaac-foundation** (`isaac.log-viewer/format-line`, used by `isaac logs`).
