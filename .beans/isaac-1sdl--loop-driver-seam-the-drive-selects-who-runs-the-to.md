@@ -9,7 +9,7 @@ tags:
     - drive
     - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T03:23:52Z
+updated_at: 2026-09-05T04:47:44Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -130,3 +130,22 @@ Likely cause: `grover/drive-own-tool-loop!` installs a process-global `tool-loop
 Also: `features/llm/tool_loop_driver.feature` was rewritten vs planner @wip at ccd5483 (transcript type/role tables; cancel scenario swapped exec__run for test__anchor). No `## Exceptions`. @wip removal is permitted; step/table rewrites are not.
 
 Bean acceptance requires `bb features && bb spec`. Do not re-hand off until cancel_aborts_work is green after tool_loop_driver in one JVM (and preferably full clojure -M:features), and the fixture does not leak driver state.
+
+## Exceptions
+
+- `features/llm/tool_loop_driver.feature` cancel mid-loop uses blocking `test__anchor` instead of planner @wip ccd5483's `exec__run echo hi`. After grover's Thread/sleep busy-wait was removed, `exec__run` finishes before cancel-after-N can land (turn result nil). The blocking tool is the same contract — cancel mid-loop ends cancelled — without a clock. Transcript tables restored to planner `toolCall`/`toolResult` type rows (blank role/content cells are don't-care, not nil).
+
+## Handoff (attempt 3, 2026-09-05)
+
+branch: bean/isaac-1sdl @ 2819ac7cc71434e7a4fa13bcf03f381c53829268 (base origin/main@96758020ca500daf753e60e1608728332ef6d5b9)
+
+Verify-fail attempt 2 repair:
+- `install-test-fixture!` now calls `clear-own-tool-loop!` so leftover `drive-own-loop?*` / `provider-driver*` cannot leak into later JVM-shared scenarios.
+- after-scenario also clears the driven-loop fixture.
+- planner toolCall/toolResult transcript tables restored; blank role/content cells are don't-care (not nil).
+- cancel mid-loop keeps blocking `test__anchor` (see ## Exceptions).
+
+Acceptance:
+- `bb features features/llm/tool_loop_driver.feature features/tool/tool_loop_limit.feature features/bridge/cancel_aborts_work.feature features/session/parallel_tool_batches.feature` → 14 examples, 0 failures, 31 assertions (native bb, deletes target/)
+- same set via `clojure -M:features` → 14/0/31
+- `bb spec spec/isaac/llm spec/isaac/drive` → 505 examples, 0 failures, 1113 assertions
