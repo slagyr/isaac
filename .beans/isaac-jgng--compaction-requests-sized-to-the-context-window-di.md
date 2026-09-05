@@ -140,3 +140,23 @@ branch: bean/isaac-jgng @ 12a1625e3b7ccea64b3bb3f03c4b480e73109c0d (base origin/
 - :session/compaction-chunk-retry logged on the retry; scenario 3 fixture tuned to 3 chunks (window 800 / cap 670)
 - gates: bb spec 1636/0; bb features compaction_requests + logging/overflow/template 24/0
 - clojure -M:features: compaction_requests green. cancel_aborts_work second scenario flakes when run after this suite (passes in isolation / after stash of this branch) — pre-existing flake, not this bean
+
+## Verify fail (attempt 1, 2026-09-05): compaction_requests red — effort missing / crew override ignored
+
+HEAD: 12a1625e3b7ccea64b3bb3f03c4b480e73109c0d
+Working tree: clean
+branch: origin/bean/isaac-jgng (base origin/main@212b17cf924f160c47cfda0f90a30d9512efddaf)
+
+Acceptance is unmet. Required feature gate is red on this SHA.
+
+Evidence (isaac-agent 12a1625, clean tree, rm -rf target/gherclj/generated/ before run):
+
+- `bb features features/session/compaction_requests.feature` → **4 examples, 2 failures, 7 assertions**.
+  Failure 1 (`compaction_requests.feature:39`): compaction request `effort` Expected 2, got nil.
+  Failure 2 (`compaction_requests.feature:69`): crew `compaction.effort` 5 Expected 5, got 2.
+  Scenarios 3 (chunk under cap) and 4 (retry at half) passed.
+- `bb spec spec/isaac/session spec/isaac/drive` → 366 examples, 0 failures, 857 assertions (specs green; the feature path is not).
+- `@wip` removed. Scenario 3 fixture retune (window 800 / cap 670) is authorized by the bean's spec-only obligations.
+
+The Grover feature path is not attaching summary effort the way the scenarios require: default effort is absent (nil, not 2), and crew-level compaction.effort is not winning the policy merge (stays at code default 2). Do not re-hand off until `bb features features/session/compaction_requests.feature` is green, then the logging/overflow/template net.
+
