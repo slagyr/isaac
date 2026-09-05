@@ -1,13 +1,13 @@
 ---
 # isaac-ggxc
 title: Crew is the only source of session behavior; drop durable session pins
-status: draft
+status: scrapped
 type: task
 priority: high
 tags:
     - planning
 created_at: 2026-09-05T05:13:23Z
-updated_at: 2026-09-05T17:52:02Z
+updated_at: 2026-09-05T19:19:39Z
 parent: isaac-51xy
 ---
 
@@ -74,3 +74,9 @@ Verified in code first: session schema has mutable :model/:effort/:context-mode/
 5. **Session :provider**: dropped with :model (only ever written alongside it; resolution derives provider from the model).
 
 Clean cutover: no aliases, no deprecation shims; removed scenarios are deleted, not retained.
+
+
+
+## Reasons for Scrapping (2026-09-05, Micah)
+
+Ruled during the planning session, after the investigation above: keep the durable session overrides (:model/:effort/:context-mode/:compaction) and the surfaces that write them (`/model`, `/effort`, session__model, `sessions set`, create-time). Rationale: episodes already allow per-thread behavior, and a session pin is the same gesture for chronicle sessions; there is no reason to destroy it. The :with-* origin-scoped overrides (prompt, hail, hooks, Discord channels, cron, ACP --model) stay as they are. isaac-b3tl (session override wins after crew reload) remains in force. The decisions 1–5 recorded above are void. No feature files were changed.
