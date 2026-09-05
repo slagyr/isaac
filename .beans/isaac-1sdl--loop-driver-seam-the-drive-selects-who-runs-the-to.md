@@ -9,7 +9,7 @@ tags:
     - drive
     - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T02:38:04Z
+updated_at: 2026-09-05T03:23:52Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -102,3 +102,31 @@ Acceptance:
 - bb spec spec/isaac/llm spec/isaac/drive → 504 examples, 0 failures, 1111 assertions
 - bb spec → 1614 examples, 0 failures, 3320 assertions
 - clojure -M:features → 754 examples, 0 failures, 1996 assertions
+
+
+
+## Verify fail (attempt 2, 2026-09-05): cancel_aborts_work red vs green main after tool_loop_driver; leftover grover driver
+
+HEAD: 3993edfe56f8fc586d87faa7a21f956c98e21311
+Working tree: clean
+branch: origin/bean/isaac-1sdl (base origin/main@627e7ddf6d45bdb366fb3e57283b33cf9a5a0030)
+
+Acceptance is unmet. Attempt-1 items (tool_loop_limit matcher, Thread/sleep) are gone, but the required cancel regression net is red on this SHA and green on origin/main.
+
+Evidence (isaac-agent 3993edf, clean tree, rm -rf target/gherclj/generated/ before each run):
+
+- Isolated `bb features features/llm/tool_loop_driver.feature` → 5 examples, 0 failures, 9 assertions (@wip removed). 1.25s.
+- Isolated `bb features features/bridge/cancel_aborts_work.feature` → 2 examples, 0 failures, 4 assertions.
+- Isolated `bb features features/tool/tool_loop_limit.feature` → 3 examples, 0 failures, 5 assertions.
+- Combined `bb features features/llm/tool_loop_driver.feature features/bridge/cancel_aborts_work.feature` → 7/0/13 (order-dependent green).
+- Combined `bb features features/llm/tool_loop_driver.feature features/tool/tool_loop_limit.feature features/bridge/cancel_aborts_work.feature features/session/parallel_tool_batches.feature` → **9 examples, 1 failure, 21 assertions**.
+  Failure: `features/bridge/cancel_aborts_work.feature:27` (`cancel between tool-loop iterations skips the next chat call`) Expected: "cancelled" got: nil.
+- Same combined set plus compaction/tool_loop/token_accounting/compaction_mid_turn → **27 examples, 2 failures, 53 assertions**. Both failures are cancel_aborts_work.feature:27 and :39 (turn result nil, not cancelled).
+- Same combined set on origin/main@627e7dd (tool_loop_driver still @wip, skipped) → **22 examples, 0 failures, 46 assertions**. This is a branch regression, not ambient.
+- `bb spec spec/isaac/llm spec/isaac/drive` → 504 examples, 0 failures, 1111 assertions.
+
+Likely cause: `grover/drive-own-tool-loop!` installs a process-global `tool-loop/provider-driver*` and `:drives-tool-loop?`. Root-setup calls `grover/clear-own-tool-loop!`, but cancel_aborts_work still flakes when it runs after driven scenarios in the same JVM — cancel after N tool calls does not land (turn result nil). Isolation green + combined red is the same class of leak as attempt 1.
+
+Also: `features/llm/tool_loop_driver.feature` was rewritten vs planner @wip at ccd5483 (transcript type/role tables; cancel scenario swapped exec__run for test__anchor). No `## Exceptions`. @wip removal is permitted; step/table rewrites are not.
+
+Bean acceptance requires `bb features && bb spec`. Do not re-hand off until cancel_aborts_work is green after tool_loop_driver in one JVM (and preferably full clojure -M:features), and the fixture does not leak driver state.
