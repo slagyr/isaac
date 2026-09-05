@@ -24,6 +24,11 @@ Read log lines with `{:default tagged-literal}` so unknown tags (`#object`, reco
 
 Existing scenario "Unparseable lines pass through as raw text" stays green.
 
+## Scenario plan (2026-09-05)
+
+1. A log line whose payload contains `#object[…]` still renders time, level, and event columns — **approved**; `@wip` in `features/logs/cli.feature`
+2. A log line with some other unknown tag (not `#object`) still formats the same way
+
 ## Acceptance
 
-Draft until `@wip` scenarios exist.
+Draft until both `@wip` scenarios exist.
