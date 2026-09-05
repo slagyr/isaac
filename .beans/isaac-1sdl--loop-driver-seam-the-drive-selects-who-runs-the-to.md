@@ -9,7 +9,7 @@ tags:
     - drive
     - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T00:17:06Z
+updated_at: 2026-09-05T00:24:22Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -67,3 +67,21 @@ Acceptance:
 - bb spec spec/isaac/llm spec/isaac/drive → 504 examples, 0 failures
 - bb spec → 1614 examples, 0 failures, 3320 assertions
 - full bb features timed out at 180s (pre-existing suite budget; 3 F dots mid-run, not isolated to this bean)
+
+## Verify fail (attempt 1, 2026-09-05): full `bb features` regression on tool-loop-max; Thread/sleep in grover driver fixture
+
+Acceptance is unmet for isaac-1sdl.
+
+Evidence on isaac-agent `origin/bean/isaac-1sdl` `2988fbd2f0c71d3b3c9afe9899121bf419ee5262` (base `origin/main@3a81657371dc9665f2bd24ed3021045b7394076c`):
+
+- Focused gates are green:
+  - `bb features features/llm/tool_loop_driver.feature` → `5 examples, 0 failures, 9 assertions` (`@wip` removed)
+  - `bb features features/session/compaction_overflow.feature features/bridge/cancel_aborts_work.feature features/session/tool_loop.feature features/session/token_accounting.feature features/session/compaction_mid_turn.feature` → `15 examples, 0 failures, 28 assertions`
+  - `bb spec spec/isaac/llm spec/isaac/drive` → `504 examples, 0 failures, 1111 assertions`
+  - `bb spec` → `1614 examples, 0 failures, 3320 assertions`
+- Bean acceptance also requires `bb features && bb spec`. Unwrapped `clojure -M:features` is red: `754 examples, 2 failures, 1995 assertions`.
+- Failure 1 is a real regression vs main, not ambient: `features/tool/tool_loop_limit.feature:33` (`a crew-level tool-loop-max caps the turn's tool cycles`) is **green in isolation on origin/main** (`1/0/1`) and **red in isolation on this branch** (`1/1/1`). Transcript expected toolCall/toolResult, got message/user.
+- Failure 2 (`tool_loop_driver.feature:114` compact-between-turns) is suite-order only: isolation `bb features features/llm/tool_loop_driver.feature:91` is green (`1/0/2`).
+- Blocking smell: `src/isaac/llm/api/grover.clj` `grover-loop-driver` busy-waits with `(Thread/sleep 1)` for up to 250ms so cancel-after-N steps can land. No `verify-allow` comment and no bean `## Exceptions`.
+
+Please restore the tool-loop-max regression (it is in this bean's tool_loop/run dispatch surface), remove or justify the sleep, re-run `clojure -M:features` green, and re-hand off with the SHA.
