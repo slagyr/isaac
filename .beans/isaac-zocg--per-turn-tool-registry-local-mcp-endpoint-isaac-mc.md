@@ -1,14 +1,14 @@
 ---
 # isaac-zocg
 title: Per-turn tool registry + local MCP endpoint + `isaac mcp-bridge` stdio command
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - claude-cli
     - mcp
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-03T23:52:14Z
+updated_at: 2026-09-05T05:01:29Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
