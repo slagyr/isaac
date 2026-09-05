@@ -1,15 +1,14 @@
 ---
 # isaac-zocg
 title: Per-turn tool registry + local MCP endpoint + `isaac mcp-bridge` stdio command
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - claude-cli
     - mcp
-    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T06:55:14Z
+updated_at: 2026-09-05T07:05:29Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -77,3 +76,8 @@ Acceptance:
 - agent `bb features features/llm/mcp_turn_registry.feature` 5/0/8; `bb spec spec/isaac/mcp` 8/0/20; `bb spec` 1625/0/3348
 - server `bb features features/server/mcp_bridge.feature features/server/auth.feature` green; `bb spec` 221/0/432; full `bb features` 71/0/193
 - agent full `bb features` 760 examples, 1 failure at `episodes/live.feature:604` (unrelated drift/size-cap seal). Isolated retry of that scenario is green on both JVM and bb.
+
+## Landed on main (2026-09-05)
+
+main-sha: isaac-agent 243c0e161d4dcdb186912b9aaa0da50f188d24d9
+main-sha: isaac-server ebcf5df9009e173bb9846fa33690720a92de7eb7
