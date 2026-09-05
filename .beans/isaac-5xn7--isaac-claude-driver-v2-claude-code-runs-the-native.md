@@ -1,14 +1,14 @@
 ---
 # isaac-5xn7
 title: 'isaac-claude-code driver v2: Claude Code runs the native tool loop against isaac''s MCP tools; transcript from the stream-json feed'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-03T23:43:00Z
+updated_at: 2026-09-05T07:11:49Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-1sdl
@@ -49,3 +49,8 @@ Implements the LoopDriver for the claude-cli provider inside isaac-claude-code. 
 | **Given the fake Claude Code fails MCP initialization** / **reports version "…"** | **NEW — scripted failure modes for the fallback scenario** |
 
 Four new steps, all fixture/assertion helpers around the fake CLI; no new domain step phrasing. The fake lives in the module's spec support and reuses the agent's provider-driven fake driver seam from isaac-1sdl where it can.
+
+
+
+## Planted (2026-09-05)
+Feature file committed: isaac-claude-code main 81c542f `features/llm/api/claude_driver.feature` (6 @wip scenarios, Background mirrors claude_cli.feature plus `drives-tool-loop? true` and `exec/run`). Ledger unchanged except one assertion step reused from the legacy set under a new subject: **the fake Claude Code was invoked with:** (same table shape as `the claude binary was invoked exactly once with:`) — implement as the fake's argv record, not a new matcher. Unblocked: isaac-1sdl (agent 0.1.47) and isaac-zocg (server 0.1.12) are deployed on zanebot; the module's manifest must bump its agent/server pins to those SHAs before `bb features` can see the LoopDriver seam and the MCP turn route. Status → todo; dispatch on Micah's release.
