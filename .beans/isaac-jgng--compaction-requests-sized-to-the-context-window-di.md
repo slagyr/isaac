@@ -1,15 +1,14 @@
 ---
 # isaac-jgng
 title: Compaction requests sized to the context window die 'closed' on chatgpt; cap per-request tokens and adapt chunk size on failure
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
     - agent
     - compaction
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-05T18:54:57Z
+updated_at: 2026-09-05T18:57:50Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/compaction.clj` chunk plan,
@@ -177,3 +176,7 @@ Fixes:
 Gates after rebase onto origin/main (isaac-6zk5 idle-stall):
 - bb features compaction_requests + logging/overflow/template → 24/0/44
 - bb spec spec/isaac/session spec/isaac/drive → 369/0/863 (pre-rebase; compaction_spec compact! context green post-rebase)
+
+## Landed on main (2026-09-05)
+
+main-sha: isaac-agent e0f932b236c10eb32a06e290e5b4b5c3339c0c45
