@@ -1,16 +1,15 @@
 ---
 # isaac-jz6h
 title: 'Torn transcript line poisons a session: a toolResult entry was written mid-line into another entry; every retry dies and the delivery dead-letters'
-status: in-progress
+status: completed
 type: bug
 priority: critical
 tags:
     - durability
     - hail
-    - unverified
     - session
 created_at: 2026-09-04T16:52:39Z
-updated_at: 2026-09-05T03:09:53Z
+updated_at: 2026-09-05T03:28:51Z
 ---
 
 2026-09-04 16:48:51Z, isaac-work-1 (scrapper on gpt-5.4), during isaac-v1la's work turn (hail 0fd02d06). `current.ednl` got a torn line at byte offset 416664: the tail of a toolResult content string ("…only dots and the su") is immediately followed by `{:type "message", :id "b37497a6", :parentId "5d11a594", … :role "toolResult", :id "fc_7200e397-…"` — a second entry started mid-line. From then on every turn on the session fails at drive/turn.clj:1399 reading the transcript (`NumberFormatException: For input string: "5d11a594"` — the EDN reader is mid-token when it hits the fused line). The delivery retried 5× thirty seconds apart, each appending an `:type "error"` entry, and dead-lettered at 16:51:32Z — a healthy bean lost to a poisoned session ([[hails-never-die]]: dead-letter is for poison in the BEAN, not the session).
@@ -72,3 +71,9 @@ Implemented the committed append-lock contract only. Hail-failover and quarantin
 `clojure -M:spec` — 1610 examples, 0 failures.
 
 branch: bean/isaac-jz6h @ 6d75783cee8987252e21ddc86fbb3cb2d55cfa39 (base origin/main@627e7ddf6d45bdb366fb3e57283b33cf9a5a0030)
+
+
+
+## Landed on main (2026-09-05)
+
+main-sha: isaac-agent 6d75783cee8987252e21ddc86fbb3cb2d55cfa39
