@@ -1,7 +1,7 @@
 ---
 # isaac-4zr3
 title: 'Conversation persist lock + crash-safe writes: session.edn/segment spit still racy after jz6h'
-status: draft
+status: todo
 type: bug
 priority: high
 tags:
@@ -9,16 +9,14 @@ tags:
     - session
     - hail
 created_at: 2026-09-05T16:46:04Z
-updated_at: 2026-09-05T19:11:55Z
-blocked_by:
-    - isaac-jz6h
+updated_at: 2026-09-05T19:33:08Z
 ---
 
 Follow-up to isaac-jz6h (append lock landed; hail-failover + quarantine still open). Parallel tool threads still share the session files without a conversation-wide lock, and whole-file writes are truncate-then-write.
 
 ## Decision (2026-09-05, Micah)
 
-Both requirements, not just the lock:
+Both requirements, not just the lock. Specs, not Gherkin — store internals. Conversation impls never see the lock. jz6h is completed; this bean is unblocked.
 
 1. **Conversation lock.** One mutex per backing persist (the store's session-key). Every persist *and* every read of that session's files takes it. Parallel tools still *run* in parallel; they queue only at the store. Then `append-entry!` / sidecar spit don't have to be concurrency-aware. Lock reads too — otherwise the skeleton `session.edn` race stays.
 2. **Crash-safe writes.** Orthogonal to the mutex: temp+rename for whole-file rewrites; one-syscall full-line append. A lock does not buy crash-mid-write (restart tore lines).
@@ -44,4 +42,18 @@ Work turn on isaac-1sdl re-queue (hail 2f9c8e52) failed at turn end with `Unconf
 - Bound-unclaimed deliveries — isaac-at5m.
 - Provider "closed" burns attempts — isaac-9gcs.
 
-Do not implement from this draft. Promote to todo after scenarios exist (`/plan-with-features`).
+## Runnable acceptance
+
+isaac-agent store specs only. No `@wip` features.
+
+Worker adds specs that prove:
+
+1. Concurrent persist and read of the same session-key serialize at the store; a reader never sees a blank sidecar / skeleton.
+2. Whole-file rewrites (`session.edn`, segment/`write-ednl!`) are temp+rename; a crash mid-write leaves the previous file intact.
+3. A blank or unparseable read of an EXISTING session throws `:session/unreadable`, never mints a skeleton.
+
+```
+cd isaac-agent
+bb spec spec/isaac/session/store
+bb spec
+```
