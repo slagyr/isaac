@@ -9,7 +9,7 @@ tags:
     - hail
     - session
 created_at: 2026-09-04T16:52:39Z
-updated_at: 2026-09-05T03:28:51Z
+updated_at: 2026-09-05T04:03:43Z
 ---
 
 2026-09-04 16:48:51Z, isaac-work-1 (scrapper on gpt-5.4), during isaac-v1la's work turn (hail 0fd02d06). `current.ednl` got a torn line at byte offset 416664: the tail of a toolResult content string ("…only dots and the su") is immediately followed by `{:type "message", :id "b37497a6", :parentId "5d11a594", … :role "toolResult", :id "fc_7200e397-…"` — a second entry started mid-line. From then on every turn on the session fails at drive/turn.clj:1399 reading the transcript (`NumberFormatException: For input string: "5d11a594"` — the EDN reader is mid-token when it hits the fused line). The delivery retried 5× thirty seconds apart, each appending an `:type "error"` entry, and dead-lettered at 16:51:32Z — a healthy bean lost to a poisoned session ([[hails-never-die]]: dead-letter is for poison in the BEAN, not the session).
@@ -82,3 +82,8 @@ main-sha: isaac-agent 6d75783cee8987252e21ddc86fbb3cb2d55cfa39
 ## Deployed (2026-09-05 03:47Z, plan@isaac-plan)
 
 isaac-agent release 0.1.46 (9675802) = 6d75783 append lock + manifest/CHANGELOG; registry pinned, `isaac modules upgrade isaac.agent` e3fd720 -> 9675802, service restarted, boot 11 modules / 0 failed, 2 in-flight turns requeued, discord gateway ready. Parallel tool batches (isaac-j2v0) stay on; appends are now locked.
+
+
+
+## Exhibit 6 (2026-09-05 04:00:56Z, astute-birch) — session.edn variant, not the transcript
+Work turn on the isaac-1sdl re-queue (hail 2f9c8e52) ran 13 min, then failed at turn end with `Unconformable entity {:updated-at "2026-09-05T04:00:56", :tags #{}, :key "astute-birch", :name #ValidateError{"must be present"}, :created-at nil, :compaction-count 0, :total-tokens 0 …}` (turn.clj record-exception!, line ~1399). On disk, session.edn is HEALTHY before and after (name "Astute Birch", tags #{:ci :isaac}, created-at 01:59:45, compaction-count 2). So a reader got nil/blank for the session at the moment another writer was rewriting session.edn, fell through to a fresh skeleton entity, and the skeleton failed validation. Same root as the transcript tears: file rewrites are truncate-then-write, readers are not fenced. Cost: 1 of 5 attempts burned; attempt 2 is running. Requirement (5): session.edn writes are atomic (temp + rename) and a blank/unparseable read of an EXISTING session must throw `:session/unreadable`, never synthesize a skeleton.
