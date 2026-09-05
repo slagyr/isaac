@@ -3,13 +3,13 @@
 title: 'Torn transcript line poisons a session: a toolResult entry was written mid-line into another entry; every retry dies and the delivery dead-letters'
 status: draft
 type: bug
-priority: high
+priority: critical
 tags:
     - session
     - durability
     - hail
 created_at: 2026-09-04T16:52:39Z
-updated_at: 2026-09-04T21:47:21Z
+updated_at: 2026-09-05T02:01:26Z
 ---
 
 2026-09-04 16:48:51Z, isaac-work-1 (scrapper on gpt-5.4), during isaac-v1la's work turn (hail 0fd02d06). `current.ednl` got a torn line at byte offset 416664: the tail of a toolResult content string ("…only dots and the su") is immediately followed by `{:type "message", :id "b37497a6", :parentId "5d11a594", … :role "toolResult", :id "fc_7200e397-…"` — a second entry started mid-line. From then on every turn on the session fails at drive/turn.clj:1399 reading the transcript (`NumberFormatException: For input string: "5d11a594"` — the EDN reader is mid-token when it hits the fused line). The delivery retried 5× thirty seconds apart, each appending an `:type "error"` entry, and dead-lettered at 16:51:32Z — a healthy bean lost to a poisoned session ([[hails-never-die]]: dead-letter is for poison in the BEAN, not the session).
@@ -37,3 +37,8 @@ Second torn transcript in one day, on the session that had just finished isaac-v
 
 ## Exhibit 4 (2026-09-04 21:41Z, isaac-work-2)
 Third torn transcript of the day: `Invalid number: 2026-09-04T21, offset: 25032, context: … bean, do not re-qu{:type` — an entry truncated mid-string with the next append fused onto it. isaac-work-2 was mid-turn on the jllj work re-hail when the 21:18:38 `launchctl kickstart -k` restart hit. All three tears today (isaac-work-1 this morning, cheery-rowan, isaac-work-2) coincide with server restarts during in-flight turns: the restart kills the JVM between the truncating write and the newline/rest of the record. The suspend phase must either finish the append or roll it back; the re-open path must at minimum skip a torn trailing record instead of poisoning the whole session. Cost so far today: 3 sessions archived, 2 hails dead-lettered (v1la, jllj re-hail). Sessions archived: isaac-work-2-torn-20260904 (tags cleared); band now on snappy-toad.
+
+
+
+## Exhibit 5 (2026-09-05 00:58Z, snappy-toad) — NO restart involved
+Fourth torn session in ~24 h. `Invalid number: 2026-09-05T00, offset: 77569`. The fused record is line 21: `{:type "message" :id "5e98e783" … :timestamp "2026-09-05T00:58:12" :message {:role "toolResult" …` — a large toolResult (a file read; the content breaks off mid-prose at "See [the TDD skill") with the next record's `{:type` glued on. The first `:session/turn-failed` on the parse error is at 00:58:13, one second after that record's timestamp; the delivery worker then re-bound and failed every second (20 bound/failed pairs) until the isaac-1sdl work re-queue (e6c8d5d3) exhausted → dead-letter. No restart, no cancel, no compaction-started on that session in the window (only compaction-check reads). So the append itself can end mid-record: the writer emitted a partial line and never finished it, and the next append did not notice. Restart-mid-write (exhibits 2–4) is one trigger; this is another. Requirements sharpened: (1) an append is all-or-nothing (write the full record to a buffer, then one write + newline; never stream content into the file); (2) on open, a trailing partial record is quarantined (moved to `current.ednl.torn`) and the session proceeds — one torn record must not poison a session; (3) log `:transcript/torn-record-quarantined` with offset; (4) the delivery worker must not re-bind and re-fail the same session 20× in 20 s — a parse failure is poison for that session, back off or fail over. Cost today: 4 sessions archived (isaac-work-1, cheery-rowan, isaac-work-2, snappy-toad), 3 hails dead-lettered (v1la, jllj work re-queue, 1sdl work re-queue). Priority → critical.
