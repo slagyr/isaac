@@ -7,8 +7,9 @@ priority: normal
 tags:
     - claude-cli
     - drive
+    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-04T23:03:19Z
+updated_at: 2026-09-05T00:17:06Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -52,3 +53,17 @@ Existing tool-loop / cancel_aborts_work / compaction_overflow features are the r
     bb spec spec/isaac/llm spec/isaac/drive
     bb features && bb spec
 Remove @wip when green. No behavior change for providers without the flag.
+
+
+## Handoff
+
+branch: bean/isaac-1sdl @ 2988fbd2f0c71d3b3c9afe9899121bf419ee5262 (base origin/main@3a81657371dc9665f2bd24ed3021045b7394076c)
+
+tool-loop/run dispatches on (:drives-tool-loop? (api/config p)); logs :turn/loop-driver :provider <name> :driver :default|:provider. Default loop is historical -run-default. Grover fixture (drive-own-tool-loop!) is the Claude Code test double. Provider-driven loops skip mid-turn compact and log :turn/compaction-deferred :reason :provider-driven. Overflow compact-and-retry stays above the seam.
+
+Acceptance:
+- bb features features/llm/tool_loop_driver.feature → 5 examples, 0 failures, 9 assertions (@wip removed)
+- bb features features/session/compaction_overflow.feature features/bridge/cancel_aborts_work.feature features/session/tool_loop.feature features/session/token_accounting.feature features/session/compaction_mid_turn.feature → 15 examples, 0 failures
+- bb spec spec/isaac/llm spec/isaac/drive → 504 examples, 0 failures
+- bb spec → 1614 examples, 0 failures, 3320 assertions
+- full bb features timed out at 180s (pre-existing suite budget; 3 F dots mid-run, not isolated to this bean)
