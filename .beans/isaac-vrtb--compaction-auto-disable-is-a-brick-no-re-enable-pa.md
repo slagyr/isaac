@@ -1,11 +1,11 @@
 ---
 # isaac-vrtb
 title: Block broken conversations; compaction-failed is the first reason
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-31T14:15:35Z
-updated_at: 2026-09-04T23:42:38Z
+updated_at: 2026-09-05T00:19:00Z
 ---
 
 Likely repo: **isaac-agent** (session schema, drive turn gate, attention). **isaac-hail**: stop special-casing `:context-exhausted` (generic `:unavailable?` + `:retry-after-ms` only). Comm protocol: drop `on-compaction-disabled` / `:compaction/disabled` (isaac-server, isaac-discord, isaac-acp, isaac-imessage).
