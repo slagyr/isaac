@@ -1,7 +1,7 @@
 ---
 # isaac-4zr3
 title: 'Conversation persist lock + crash-safe writes: session.edn/segment spit still racy after jz6h'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - session
     - hail
 created_at: 2026-09-05T16:46:04Z
-updated_at: 2026-09-05T19:33:08Z
+updated_at: 2026-09-05T19:37:42Z
 ---
 
 Follow-up to isaac-jz6h (append lock landed; hail-failover + quarantine still open). Parallel tool threads still share the session files without a conversation-wide lock, and whole-file writes are truncate-then-write.
