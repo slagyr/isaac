@@ -9,7 +9,7 @@ tags:
     - drive
     - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T02:02:34Z
+updated_at: 2026-09-05T02:38:04Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -85,3 +85,20 @@ Evidence on isaac-agent `origin/bean/isaac-1sdl` `2988fbd2f0c71d3b3c9afe9899121b
 - Blocking smell: `src/isaac/llm/api/grover.clj` `grover-loop-driver` busy-waits with `(Thread/sleep 1)` for up to 250ms so cancel-after-N steps can land. No `verify-allow` comment and no bean `## Exceptions`.
 
 Please restore the tool-loop-max regression (it is in this bean's tool_loop/run dispatch surface), remove or justify the sleep, re-run `clojure -M:features` green, and re-hand off with the SHA.
+
+
+## Handoff (attempt 2, 2026-09-05)
+
+branch: bean/isaac-1sdl @ 3993edfe56f8fc586d87faa7a21f956c98e21311 (base origin/main@627e7ddf6d45bdb366fb3e57283b33cf9a5a0030)
+
+Verify-fail repair:
+- transcript-match-entry denorm is additive again (type=toolCall + :name) so mixed-type tables like tool_loop_limit.feature still match.
+- grover-loop-driver is a thin -run-default wrapper; Thread/sleep busy-wait removed.
+- cancel mid-loop scenario uses blocking test__anchor (no clock).
+- dispatch-chat-with-tools goes through tool-loop/run.
+
+Acceptance:
+- bb features features/llm/tool_loop_driver.feature features/tool/tool_loop_limit.feature features/bridge/cancel_aborts_work.feature features/session/parallel_tool_batches.feature → 14 examples, 0 failures
+- bb spec spec/isaac/llm spec/isaac/drive → 504 examples, 0 failures, 1111 assertions
+- bb spec → 1614 examples, 0 failures, 3320 assertions
+- clojure -M:features → 754 examples, 0 failures, 1996 assertions
