@@ -1,16 +1,15 @@
 ---
 # isaac-4zr3
 title: 'Conversation persist lock + crash-safe writes: session.edn/segment spit still racy after jz6h'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - durability
     - session
     - hail
-    - unverified
 created_at: 2026-09-05T16:46:04Z
-updated_at: 2026-09-05T19:58:59Z
+updated_at: 2026-09-05T20:02:01Z
 ---
 
 Follow-up to isaac-jz6h (append lock landed; hail-failover + quarantine still open). Parallel tool threads still share the session files without a conversation-wide lock, and whole-file writes are truncate-then-write.
@@ -70,3 +69,7 @@ Store internals in isaac-agent:
 - `read-session-entry` throws `:session/unreadable` on blank or unparseable existing session.edn; never mints a skeleton.
 
 Acceptance: `bb spec spec/isaac/session/store` 75/0; `bb spec` 1651/0.
+
+## Landed on main (2026-09-05)
+
+main-sha: isaac-agent fbf38401e307af6fdb596593e64bb83a940e4df1
