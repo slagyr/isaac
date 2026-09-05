@@ -1,15 +1,14 @@
 ---
 # isaac-6zk5
 title: 'SSE reader has no idle-stall timeout: a silent provider stream blocks the turn until the socket dies (~15 min)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - provider-weather
-    - unverified
     - agent
+    - provider-weather
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-05T17:09:27Z
+updated_at: 2026-09-05T17:11:56Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/llm/http.clj` `post-sse!` / `cancellable-call`).
@@ -63,3 +62,8 @@ hail branch: bean/isaac-6zk5 @ 4b5084287ffa853bfcd42bf1a9ae98bb5621bafb (base or
 Idle-stall on SSE/NDJSON via cancellable-call 50ms poll + last-activity from on-chunk. Silent stream → {:error :stream-stalled :unavailable? true :retry-after-ms …}. Log :llm/stream-stalled (warn, elapsed-ms, bytes-received). :stream-idle-timeout-ms default 90000 in manifest :defaults; per-provider override. post-json! idle only when opts set the key. Hail defers without incrementing attempts (existing weather path + one example).
 
 bb spec spec/isaac/llm spec/isaac/drive 538/0. Hail delivery_worker_spec 25/0. Hail features/delivery.feature:537 1/0.
+
+## Landed on main (2026-09-05)
+
+main-sha: isaac-agent ca8ed7ad37640bc9f17e132334fce442f014b86d
+main-sha: isaac-hail 4b5084287ffa853bfcd42bf1a9ae98bb5621bafb
