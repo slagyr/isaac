@@ -1,5 +1,5 @@
 {:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                               :git/sha "96758020ca500daf753e60e1608728332ef6d5b9"}
+                               :git/sha "212b17cf924f160c47cfda0f90a30d9512efddaf"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.llm.claude    {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
                                :git/sha "597c81807097467c4cb2eeb7b7623bbb48653f6a"}
@@ -11,7 +11,7 @@
                                :git/sha "1b8b1ce834956c630cfb8a9e1cb4c64096b57af9"}
                        :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.server        {:coord {:git/url "https://github.com/slagyr/isaac-server.git"
-                               :git/sha "1207d456c99a2c7044e46fd0fc6a64ceb567448d"}
+                               :git/sha "fa395438031f034cd2ba2b8d305e9d094c9a1fd5"}
                        :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp      {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
                                :git/sha "79cc310d75555174dc726eaafc30524414ffbf6a"}
