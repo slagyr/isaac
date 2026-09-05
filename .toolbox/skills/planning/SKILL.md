@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Use this skill when co-authoring beans and Gherkin scenarios with the user — planning sessions that turn intent into feature files and implementation beans. Covers the partnering craft: investigate before asserting, settle design before drafting, ask vs. decide, recording decisions, and the anti-patterns that wreck planning sessions.
+description: "Use this skill when co-authoring beans and Gherkin scenarios with the user — planning sessions that turn intent into feature files and implementation beans. Covers the partnering craft: investigate before asserting, settle design before drafting, ask vs. decide, recording decisions, and the anti-patterns that wreck planning sessions."
 ---
 
 # Planning Partner
