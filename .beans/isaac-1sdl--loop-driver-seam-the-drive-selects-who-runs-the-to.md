@@ -1,15 +1,14 @@
 ---
 # isaac-1sdl
 title: 'Loop-driver seam: the drive selects who runs the tool loop (isaac or the provider)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - claude-cli
     - drive
-    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T04:47:44Z
+updated_at: 2026-09-05T04:56:09Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -149,3 +148,7 @@ Acceptance:
 - `bb features features/llm/tool_loop_driver.feature features/tool/tool_loop_limit.feature features/bridge/cancel_aborts_work.feature features/session/parallel_tool_batches.feature` → 14 examples, 0 failures, 31 assertions (native bb, deletes target/)
 - same set via `clojure -M:features` → 14/0/31
 - `bb spec spec/isaac/llm spec/isaac/drive` → 505 examples, 0 failures, 1113 assertions
+
+## Landed on main (2026-09-05)
+
+main-sha: isaac-agent 2819ac7cc71434e7a4fa13bcf03f381c53829268
