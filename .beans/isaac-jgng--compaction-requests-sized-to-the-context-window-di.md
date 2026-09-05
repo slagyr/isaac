@@ -7,8 +7,9 @@ priority: high
 tags:
     - agent
     - compaction
+    - unverified
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-05T16:20:28Z
+updated_at: 2026-09-05T17:03:41Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/compaction.clj` chunk plan,
@@ -128,3 +129,14 @@ Remove @wip from `features/session/compaction_requests.feature`, then:
     bb spec spec/isaac/session spec/isaac/drive
 
 0 failures; full `bb features` + `bb spec` green. Hand off `--tag=unverified`.
+
+## Implementation notes (scrapper @ isaac-work-2)
+
+branch: bean/isaac-jgng @ 12a1625e3b7ccea64b3bb3f03c4b480e73109c0d (base origin/main@212b17cf924f160c47cfda0f90a30d9512efddaf)
+
+- compaction.effort default 2 (policy-merge like threshold/head); omitted when model :allows-effort false
+- compaction.max-request-tokens default 32000 forces chunking independent of the model window
+- transport-class drop (:stream-stalled / llm-error "closed") retries once at half size; second drop increments consecutive-failures
+- :session/compaction-chunk-retry logged on the retry; scenario 3 fixture tuned to 3 chunks (window 800 / cap 670)
+- gates: bb spec 1636/0; bb features compaction_requests + logging/overflow/template 24/0
+- clojure -M:features: compaction_requests green. cancel_aborts_work second scenario flakes when run after this suite (passes in isolation / after stash of this branch) — pre-existing flake, not this bean

@@ -342,6 +342,8 @@ for general principles.
 | `:session/compaction-started` | info | `session/logging.clj` | `features/context/compaction.feature` |
 | `:session/compaction-failed` | error | `cli/chat/single_turn.clj` | `features/context/compaction.feature` |
 | `:session/compaction-stopped` | warn | `cli/chat/single_turn.clj` | commented in `features/context/compaction.feature` |
+| `:session/compaction-chunked` | info | `session/compaction.clj` | `features/session/compaction_requests.feature` |
+| `:session/compaction-chunk-retry` | info | `session/compaction.clj` | `features/session/compaction_requests.feature` |
 | `:chat/response-failed` | error | `cli/chat/single_turn.clj` | `features/chat/logging.feature` |
 | `:chat/error-not-stored` | warn | `cli/chat/single_turn.clj` | untestable without storage failure injection |
 | `:tool/execute-failed` | error | `tool/registry.clj` | `features/tools/execution.feature` |
