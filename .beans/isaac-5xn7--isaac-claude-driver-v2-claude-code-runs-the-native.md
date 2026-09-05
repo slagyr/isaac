@@ -1,14 +1,14 @@
 ---
 # isaac-5xn7
 title: 'isaac-claude-code driver v2: Claude Code runs the native tool loop against isaac''s MCP tools; transcript from the stream-json feed'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T07:11:49Z
+updated_at: 2026-09-05T19:31:00Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-1sdl
