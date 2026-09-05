@@ -7,8 +7,9 @@ priority: normal
 tags:
     - claude-cli
     - mcp
+    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T05:01:29Z
+updated_at: 2026-09-05T06:55:14Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -65,3 +66,14 @@ The server pins the agent SHA that ships the registry. Remove @wip when green.
 | **When the client sends POST "…" with header "…" and body:** / **with body:** | **NEW — the server suite has only GET request steps; POST with a body is the general-purpose addition.** |
 
 Dropped from v1: `has N tools` (now a `:mcp/tools-listed :count` log row), `has no "error" key` (absence assertion — the isError scenario asserts `id` + `result.isError` instead), `text is at most N characters` (the `truncated` marker + existing cap features cover it), and the three `mcp-bridge stdout …` steps (foundation's `stdin is:` / `isaac is run with` / `the stdout lines match:` replace them). Net: 5 new step phrasings, all fixture/binding helpers.
+
+## Handoff (unverified)
+
+branch: bean/isaac-zocg
+- isaac-agent @ 243c0e161d4dcdb186912b9aaa0da50f188d24d9 (base origin/main@2819ac7cc71434e7a4fa13bcf03f381c53829268)
+- isaac-server @ ebcf5df9009e173bb9846fa33690720a92de7eb7 (base origin/main@1207d456c99a2c7044e46fd0fc6a64ceb567448d)
+
+Acceptance:
+- agent `bb features features/llm/mcp_turn_registry.feature` 5/0/8; `bb spec spec/isaac/mcp` 8/0/20; `bb spec` 1625/0/3348
+- server `bb features features/server/mcp_bridge.feature features/server/auth.feature` green; `bb spec` 221/0/432; full `bb features` 71/0/193
+- agent full `bb features` 760 examples, 1 failure at `episodes/live.feature:604` (unrelated drift/size-cap seal). Isolated retry of that scenario is green on both JVM and bb.
