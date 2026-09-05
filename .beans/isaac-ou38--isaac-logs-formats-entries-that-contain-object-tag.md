@@ -1,11 +1,13 @@
 ---
 # isaac-ou38
 title: 'isaac logs formats entries that contain #object tagged literals'
-status: todo
+status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-05T03:54:22Z
-updated_at: 2026-09-05T04:03:34Z
+updated_at: 2026-09-05T04:09:32Z
 ---
 
 Likely repo: **isaac-foundation** (`isaac.log-viewer/format-line`, used by `isaac logs`).
@@ -26,17 +28,21 @@ Existing scenario "Unparseable lines pass through as raw text" stays green.
 
 ## Scenario plan (2026-09-05)
 
-1. A log line whose payload contains `#object[…]` still renders time, level, and event columns — **approved**; `@wip` `features/logs/cli.feature:64`
-2. A log line with some other unknown tag (not `#object`) still formats the same way — **approved**; `@wip` `features/logs/cli.feature:74`
+1. A log line whose payload contains `#object[…]` still renders time, level, and event columns — `features/logs/cli.feature:63`
+2. A log line with some other unknown tag (not `#object`) still formats the same way — `features/logs/cli.feature:72`
+
+## Implementation (2026-09-05, planner)
+
+`format-line` reads with `(edn/read-string {:default tagged-literal} line)`. Unknown tags become TaggedLiterals; the map still formats. Garbage lines still catch and pass through.
 
 ## Acceptance
 
 ```
 cd isaac-foundation
-bb features features/logs/cli.feature:64
-bb features features/logs/cli.feature:74
+bb features features/logs/cli.feature:63
+bb features features/logs/cli.feature:72
 bb features features/logs/cli.feature:58
 bb spec spec/isaac/log_viewer_spec.clj
 ```
 
-0 failures. Remove `@wip` from those two rows. Existing "Unparseable lines pass through as raw text" (`:58`) stays green.
+0 failures. `@wip` removed.
