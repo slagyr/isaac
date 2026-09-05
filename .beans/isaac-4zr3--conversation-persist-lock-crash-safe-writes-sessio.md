@@ -9,7 +9,7 @@ tags:
     - session
     - hail
 created_at: 2026-09-05T16:46:04Z
-updated_at: 2026-09-05T16:46:04Z
+updated_at: 2026-09-05T19:11:55Z
 blocked_by:
     - isaac-jz6h
 ---
@@ -20,7 +20,7 @@ Follow-up to isaac-jz6h (append lock landed; hail-failover + quarantine still op
 
 Both requirements, not just the lock:
 
-1. **Conversation lock.** One mutex per conversation (session id). Every persist *and* every read of that conversation's files takes it. Parallel tools still *run* in parallel; they queue only at the store. Then `append-entry!` / sidecar spit don't have to be concurrency-aware. Lock reads too — otherwise the skeleton `session.edn` race stays.
+1. **Conversation lock.** One mutex per backing persist (the store's session-key). Every persist *and* every read of that session's files takes it. Parallel tools still *run* in parallel; they queue only at the store. Then `append-entry!` / sidecar spit don't have to be concurrency-aware. Lock reads too — otherwise the skeleton `session.edn` race stays.
 2. **Crash-safe writes.** Orthogonal to the mutex: temp+rename for whole-file rewrites; one-syscall full-line append. A lock does not buy crash-mid-write (restart tore lines).
 
 In-process JVM lock first. A second process (`isaac sessions set` while the server is turning) won't see a JVM lock; do not invent flock unless we later care.
