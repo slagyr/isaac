@@ -8,8 +8,9 @@ tags:
     - durability
     - session
     - hail
+    - unverified
 created_at: 2026-09-05T16:46:04Z
-updated_at: 2026-09-05T19:37:42Z
+updated_at: 2026-09-05T19:58:59Z
 ---
 
 Follow-up to isaac-jz6h (append lock landed; hail-failover + quarantine still open). Parallel tool threads still share the session files without a conversation-wide lock, and whole-file writes are truncate-then-write.
@@ -57,3 +58,15 @@ cd isaac-agent
 bb spec spec/isaac/session/store
 bb spec
 ```
+
+## Implementation notes
+
+branch: bean/isaac-4zr3 @ fbf38401e307af6fdb596593e64bb83a940e4df1 (base origin/main@e0f932b236c10eb32a06e290e5b4b5c3339c0c45)
+
+Store internals in isaac-agent:
+
+- One in-process JVM mutex per session-key (`with-persist-lock`). Reads and writes of session.edn, current.ednl, frozen segments, and turn markers take it. Conversation impls never see the lock.
+- Whole-file rewrites go through `atomic-spit!` (path.tmp then `fs/move`). `append-entry!` remains one-syscall full-line append under the conversation lock.
+- `read-session-entry` throws `:session/unreadable` on blank or unparseable existing session.edn; never mints a skeleton.
+
+Acceptance: `bb spec spec/isaac/session/store` 75/0; `bb spec` 1651/0.
