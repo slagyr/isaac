@@ -5,11 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - agent
     - compaction
-    - unverified
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-05T17:03:41Z
+updated_at: 2026-09-05T18:54:57Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/compaction.clj` chunk plan,
@@ -160,3 +160,20 @@ Evidence (isaac-agent 12a1625, clean tree, rm -rf target/gherclj/generated/ befo
 
 The Grover feature path is not attaching summary effort the way the scenarios require: default effort is absent (nil, not 2), and crew-level compaction.effort is not winning the policy merge (stays at code default 2). Do not re-hand off until `bb features features/session/compaction_requests.feature` is green, then the logging/overflow/template net.
 
+
+
+## Verify fail repair (attempt 2, 2026-09-05) — scrapper @ isaac-work-1
+
+branch: bean/isaac-jgng @ e0f932b236c10eb32a06e290e5b4b5c3339c0c45 (base origin/main@ca8ed7ad37640bc9f17e132334fce442f014b86d)
+
+Root causes:
+- compact! called resolve-behavior with only :context-window, so the session-store used for the transcript was not the one used for crew lookup. Feature scenario 2 (crew compaction.effort 5) resolved defaults.crew ("main") and stayed at code default 2.
+- compaction-request-matches (and memory-comm / last-compaction-request-input matchers) read last-compaction-request before user-sends-on-session's parked 50ms turn finished compact!. Scenario 1 expected effort 2, got nil.
+
+Fixes:
+- compact! now passes {:root :session-store :context-window} into resolve-behavior.
+- Feature matchers await the parked turn before reading last-compaction-request / memory-comm events.
+
+Gates after rebase onto origin/main (isaac-6zk5 idle-stall):
+- bb features compaction_requests + logging/overflow/template → 24/0/44
+- bb spec spec/isaac/session spec/isaac/drive → 369/0/863 (pre-rebase; compaction_spec compact! context green post-rebase)
