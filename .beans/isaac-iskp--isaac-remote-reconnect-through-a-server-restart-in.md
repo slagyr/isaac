@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-05T04:42:28Z
-updated_at: 2026-09-05T04:42:28Z
+updated_at: 2026-09-05T04:43:27Z
 ---
 
 Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and every `isaac remote` client die with exit 1 whenever zanebot's server restarts, because the proxy's reattach window is <0.4 s and there is nothing to reattach to after a restart.
@@ -47,3 +47,7 @@ Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and ever
 - [ ] Manual: restart zanebot's server while a Toad ACP session is open → session survives (stderr shows reconnect attempts, then `reattached` or `restarted`) and the next prompt answers
 - [ ] Module version bump + registry pin (train step)
 - [ ] Planner note: reconnect defaults recorded in the module README
+
+
+
+Feature planted: isaac-cli-proxy main c1ee5ad (4 @wip scenarios). One step beyond the ledger is new: **Then the stdout contains {text} exactly once** — the existing `does not contain` step cannot express "once, not twice" for a JSON id. Also **Given the env var {name} is {value}** is assumed to exist in foundation cli-steps; if it does not, it is a NEW step in this module.
