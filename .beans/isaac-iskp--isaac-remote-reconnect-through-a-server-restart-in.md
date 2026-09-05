@@ -4,8 +4,10 @@ title: 'isaac remote: reconnect through a server restart instead of exiting'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-05T04:42:28Z
-updated_at: 2026-09-05T17:10:34Z
+updated_at: 2026-09-05T19:05:01Z
 ---
 
 Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and every `isaac remote` client die with exit 1 whenever zanebot's server restarts, because the proxy's reattach window is <0.4 s and there is nothing to reattach to after a restart.
@@ -47,3 +49,12 @@ Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and ever
 - [ ] Planner note: reconnect defaults recorded in the module README
 
 Feature planted: isaac-cli-proxy main 58b583f (4 @wip scenarios; `bb features` → 7 existing green, @wip skipped). Exactly ONE new step (refuses reattach for n attempts) plus two fixture extensions to the existing reattach-replay step.
+
+## Handoff
+
+branch: bean/isaac-iskp @ 3de25b446805f2c5985eab9db64e3cd27dc4db27 (base origin/main@58b583f2444e94f79a68656b33e1ae251f9aa5d5)
+
+Implemented reconnect window (0.25s, 0.5, 1, 2, 4, then 5s cap until 120s; ISAAC_REMOTE_RECONNECT_SECS overrides), stderr-only `isaac remote: reconnecting (attempt N)…`, unknown-stream → fresh start, ACP initialize + session/load replay with swallowed duplicates. README records reconnect defaults. Module version bump + registry pin left to train. Manual Toad ACP restart is not a worker gate.
+
+`bb spec` 17/0, `bb features` 11/0 (4 new + 7 existing remote scenarios).
+
