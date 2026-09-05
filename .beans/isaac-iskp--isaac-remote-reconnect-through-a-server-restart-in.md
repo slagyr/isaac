@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-05T04:42:28Z
-updated_at: 2026-09-05T04:43:50Z
+updated_at: 2026-09-05T04:48:12Z
 ---
 
 Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and every `isaac remote` client die with exit 1 whenever zanebot's server restarts, because the proxy's reattach window is <0.4 s and there is nothing to reattach to after a restart.
@@ -29,17 +29,15 @@ Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and ever
 |---|---|
 | Given a stub /cli server that assigns stream-id … and replies with frames: | existing |
 | Given the stub server drops the connection after sending | existing |
-| Given the stub server on reattach replays frames: | existing |
-| **Given the stub server refuses reattach for {n:int} attempts** | **NEW** — loopback transport stays dropped for n connects (ws.clj `ReconnectableTransport` gains a refuse counter) |
-| **Given the stub server drops the connection permanently** | **NEW** — wraps existing `drop-loopback-permanently!` |
-| **Given the stub server answers reattach with an unknown-stream error** | **NEW** — reattach reply = error frame `unknown stream s-1` |
-| **Given the stdin lines are:** (table) | **NEW** in this module (feeds the stdin pump before run) |
+| Given the stub server on reattach replays frames: | existing — **fixture extension**: accepts a `message` column so an `error` row can carry `unknown stream s-1`; rows AFTER an error row are the stub's replies to the next `start` frame (fresh start) |
+| **Given the stub server refuses reattach for {n:int} attempts** | **NEW** — the loopback transport rejects the first n connects, then accepts; with n beyond the window it also covers the give-up scenario (no separate "permanently" step) |
+| Given the env var "X" is set to "Y" | existing (foundation config-steps; require or re-register in this module) |
+| And stdin is: (docstring) | existing |
 | When isaac remote is run with {args} | existing |
-| Then the stub server received frames: | existing (row order asserts the second start / replayed handshake) |
-| Then the stdout contains / does not contain | existing |
+| Then the stub server received frames: | existing (row order asserts attach → second start → replayed handshake; `data` column takes `#"regex"`) |
+| Then the stdout contains / does not contain | existing — duplicate-swallowing is asserted by marking the fresh-start replies `"replayed":true` and requiring stdout does not contain it |
 | Then the stderr contains | existing |
 | Then the exit code is N | existing |
-| Then the reconnect window is {n:int} seconds (env override) | folded into scenario 1 via `ISAAC_REMOTE_RECONNECT_SECS=3` set by the run step — no new step; use `isaac remote is run with` after `Given the env var … is …` from foundation cli-steps |
 
 ## Acceptance
 - [ ] 4 scenarios above green with @wip removed; existing 8 remote scenarios unchanged
@@ -48,6 +46,4 @@ Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and ever
 - [ ] Module version bump + registry pin (train step)
 - [ ] Planner note: reconnect defaults recorded in the module README
 
-
-
-Feature planted: isaac-cli-proxy main c1ee5ad (4 @wip scenarios). One step beyond the ledger is new: **Then the stdout contains {text} exactly once** — the existing `does not contain` step cannot express "once, not twice" for a JSON id. The env-var step uses foundation wording `Given the env var "X" is set to "Y"` (isaac-foundation `spec/isaac/config/config_steps.clj:383`); the proxy step set must require that namespace (or register the same step) — not a new step. Suite check after planting: `bb features` → 7 examples green, @wip rows skipped.
+Feature planted: isaac-cli-proxy main 58b583f (4 @wip scenarios; `bb features` → 7 existing green, @wip skipped). Exactly ONE new step (refuses reattach for n attempts) plus two fixture extensions to the existing reattach-replay step.
