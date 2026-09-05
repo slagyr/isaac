@@ -7,7 +7,7 @@ priority: high
 tags:
     - planning
 created_at: 2026-09-05T05:13:23Z
-updated_at: 2026-09-05T05:13:23Z
+updated_at: 2026-09-05T05:16:42Z
 parent: isaac-51xy
 ---
 
@@ -55,3 +55,8 @@ Reverse isaac-b3tl: delete `features/crew/model_reload.feature` scenario "an exp
 - Discord channel `:with-model` still applies per turn.
 
 Clean cutover: no deprecated aliases, old override scenarios deleted not retained.
+
+
+## Decision (2026-09-05, Zane) — ACP / conversation start
+
+With `:conversation :episodes`, every conversation start is a new episode. `--create always` must not be required: `--crew marvin` (no session, no create flag) already mints a fresh thread, replays nothing, recall fills in. That is isaac-6yg0 / `features/comm/acp/episodes.feature` (`--crew on an episode crew attaches to a fresh thread and replays nothing`). Keep that contract. Do not introduce a stable reconnectable marvin ACP thread in this bean.
