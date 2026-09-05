@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - mcp
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T07:05:29Z
+updated_at: 2026-09-05T07:10:11Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-jllj
@@ -81,3 +81,8 @@ Acceptance:
 
 main-sha: isaac-agent 243c0e161d4dcdb186912b9aaa0da50f188d24d9
 main-sha: isaac-server ebcf5df9009e173bb9846fa33690720a92de7eb7
+
+
+
+## Deployed (2026-09-05 07:09Z)
+Train: isaac-agent 0.1.47 (212b17c) + isaac-server 0.1.12 (fa39543) pinned in isaac/modules.edn, `modules upgrade` on zanebot, server restarted 07:08:39Z. `modules list` ok for agent/server/llm.claude; `config validate` OK; `isaac --help` lists `mcp-bridge`; scrapper pong OK.
