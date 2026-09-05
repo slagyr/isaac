@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-05T04:42:28Z
-updated_at: 2026-09-05T04:43:27Z
+updated_at: 2026-09-05T04:43:50Z
 ---
 
 Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and every `isaac remote` client die with exit 1 whenever zanebot's server restarts, because the proxy's reattach window is <0.4 s and there is nothing to reattach to after a restart.
@@ -50,4 +50,4 @@ Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and ever
 
 
 
-Feature planted: isaac-cli-proxy main c1ee5ad (4 @wip scenarios). One step beyond the ledger is new: **Then the stdout contains {text} exactly once** — the existing `does not contain` step cannot express "once, not twice" for a JSON id. Also **Given the env var {name} is {value}** is assumed to exist in foundation cli-steps; if it does not, it is a NEW step in this module.
+Feature planted: isaac-cli-proxy main c1ee5ad (4 @wip scenarios). One step beyond the ledger is new: **Then the stdout contains {text} exactly once** — the existing `does not contain` step cannot express "once, not twice" for a JSON id. The env-var step uses foundation wording `Given the env var "X" is set to "Y"` (isaac-foundation `spec/isaac/config/config_steps.clj:383`); the proxy step set must require that namespace (or register the same step) — not a new step. Suite check after planting: `bb features` → 7 examples green, @wip rows skipped.
