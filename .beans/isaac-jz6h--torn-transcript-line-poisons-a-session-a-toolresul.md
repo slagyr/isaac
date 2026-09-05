@@ -1,7 +1,7 @@
 ---
 # isaac-jz6h
 title: 'Torn transcript line poisons a session: a toolResult entry was written mid-line into another entry; every retry dies and the delivery dead-letters'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 tags:
@@ -10,7 +10,7 @@ tags:
     - hail
     - unverified
 created_at: 2026-09-04T16:52:39Z
-updated_at: 2026-09-05T02:20:18Z
+updated_at: 2026-09-05T02:39:42Z
 ---
 
 2026-09-04 16:48:51Z, isaac-work-1 (scrapper on gpt-5.4), during isaac-v1la's work turn (hail 0fd02d06). `current.ednl` got a torn line at byte offset 416664: the tail of a toolResult content string ("…only dots and the su") is immediately followed by `{:type "message", :id "b37497a6", :parentId "5d11a594", … :role "toolResult", :id "fc_7200e397-…"` — a second entry started mid-line. From then on every turn on the session fails at drive/turn.clj:1399 reading the transcript (`NumberFormatException: For input string: "5d11a594"` — the EDN reader is mid-token when it hits the fused line). The delivery retried 5× thirty seconds apart, each appending an `:type "error"` entry, and dead-lettered at 16:51:32Z — a healthy bean lost to a poisoned session ([[hails-never-die]]: dead-letter is for poison in the BEAN, not the session).
