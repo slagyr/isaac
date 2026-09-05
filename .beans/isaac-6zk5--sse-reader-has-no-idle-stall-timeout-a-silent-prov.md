@@ -1,14 +1,14 @@
 ---
 # isaac-6zk5
 title: 'SSE reader has no idle-stall timeout: a silent provider stream blocks the turn until the socket dies (~15 min)'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - agent
     - provider-weather
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-04T16:29:12Z
+updated_at: 2026-09-05T16:05:48Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/llm/http.clj` `post-sse!` / `cancellable-call`).
