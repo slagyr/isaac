@@ -77,3 +77,8 @@ branch: bean/isaac-jz6h @ 6d75783cee8987252e21ddc86fbb3cb2d55cfa39 (base origin/
 ## Landed on main (2026-09-05)
 
 main-sha: isaac-agent 6d75783cee8987252e21ddc86fbb3cb2d55cfa39
+
+
+## Deployed (2026-09-05 03:47Z, plan@isaac-plan)
+
+isaac-agent release 0.1.46 (9675802) = 6d75783 append lock + manifest/CHANGELOG; registry pinned, `isaac modules upgrade isaac.agent` e3fd720 -> 9675802, service restarted, boot 11 modules / 0 failed, 2 in-flight turns requeued, discord gateway ready. Parallel tool batches (isaac-j2v0) stay on; appends are now locked.
