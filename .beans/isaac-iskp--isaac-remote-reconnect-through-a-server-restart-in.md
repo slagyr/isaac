@@ -1,13 +1,11 @@
 ---
 # isaac-iskp
 title: 'isaac remote: reconnect through a server restart instead of exiting'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-05T04:42:28Z
-updated_at: 2026-09-05T19:05:01Z
+updated_at: 2026-09-05T19:11:27Z
 ---
 
 Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and every `isaac remote` client die with exit 1 whenever zanebot's server restarts, because the proxy's reattach window is <0.4 s and there is nothing to reattach to after a restart.
@@ -58,3 +56,6 @@ Implemented reconnect window (0.25s, 0.5, 1, 2, 4, then 5s cap until 120s; ISAAC
 
 `bb spec` 17/0, `bb features` 11/0 (4 new + 7 existing remote scenarios).
 
+## Landed on main (2026-09-05)
+
+main-sha: isaac-cli-proxy 3de25b446805f2c5985eab9db64e3cd27dc4db27
