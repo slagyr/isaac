@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-09-05T04:42:28Z
-updated_at: 2026-09-05T19:11:27Z
+updated_at: 2026-09-05T19:27:53Z
 ---
 
 Repo: isaac-cli-proxy (feature file: features/remote.feature). Toad/ACP and every `isaac remote` client die with exit 1 whenever zanebot's server restarts, because the proxy's reattach window is <0.4 s and there is nothing to reattach to after a restart.
@@ -59,3 +59,8 @@ Implemented reconnect window (0.25s, 0.5, 1, 2, 4, then 5s cap until 120s; ISAAC
 ## Landed on main (2026-09-05)
 
 main-sha: isaac-cli-proxy 3de25b446805f2c5985eab9db64e3cd27dc4db27
+
+
+
+## Train (2026-09-05)
+Registry pinned isaac.cli-proxy → 3de25b4 (0.1.3). The proxy runs on the CLIENT (Toad's / the operator's isaac install), not on zanebot, so deployment = `isaac modules upgrade` on each client machine (dev-local checkouts: `git pull`). Manual acceptance (restart zanebot while a Toad ACP session is open → session survives) is Micah's to run after upgrading their client.
