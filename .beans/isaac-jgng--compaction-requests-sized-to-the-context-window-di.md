@@ -8,7 +8,7 @@ tags:
     - agent
     - compaction
 created_at: 2026-09-04T16:29:12Z
-updated_at: 2026-09-04T22:34:04Z
+updated_at: 2026-09-05T16:20:28Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/compaction.clj` chunk plan,
