@@ -7,7 +7,7 @@ priority: high
 tags:
     - planning
 created_at: 2026-09-05T05:13:23Z
-updated_at: 2026-09-05T05:16:42Z
+updated_at: 2026-09-05T17:52:02Z
 parent: isaac-51xy
 ---
 
@@ -60,3 +60,17 @@ Clean cutover: no deprecated aliases, old override scenarios deleted not retaine
 ## Decision (2026-09-05, Zane) — ACP / conversation start
 
 With `:conversation :episodes`, every conversation start is a new episode. `--create always` must not be required: `--crew marvin` (no session, no create flag) already mints a fresh thread, replays nothing, recall fills in. That is isaac-6yg0 / `features/comm/acp/episodes.feature` (`--crew on an episode crew attaches to a fresh thread and replays nothing`). Keep that contract. Do not introduce a stable reconnectable marvin ACP thread in this bean.
+
+
+
+## Decisions (2026-09-05, Micah — planning session with the planner)
+
+Verified in code first: session schema has mutable :model/:effort/:context-mode/:compaction (schema.clj:62-79); resolve-behavior* reads the session first for all four (context.clj:110-150); writers are `/model` (slash/builtin.clj:43), `/effort` (:114,:123), session__model (tool/session.clj:62), `sessions set` (any mutable field), and CREATE TIME — frequencies/behavioral-override projects :with-model/:with-effort/:with-context-mode into create-with-resolved-behavior! opts, which persists them (context.clj:200-232). Reads drop unknown keys (spec/isaac/session/schema_spec.clj "drops unknown keys on read"), so removing keys from the schema makes stale pins inert with no migration. The session :compaction map mixes policy keys with breaker state; 26 scenarios in 11 agent feature files seed compaction POLICY through session tables as a fixture.
+
+1. **Slash commands**: remove `/model` and `/effort` entirely, including the no-arg display forms — `/status` already reports both. Why: a display form that cannot switch is a trap; clean cutover.
+2. **Compaction fixtures**: the 26 session-table policy fixtures (bridge/cli-prompt, bridge/logging, comm/memory, session/{async_compaction, compaction_logging, compaction_memory_flush, compaction_requests, compaction_strategies, compaction_template, context_management, context_window_guard}) are rewritten to crew-level `compaction` config INSIDE this bean. Why: the worker touches those files anyway; a prep bean would just serialize the same edit. Session :compaction keeps ONLY breaker state (:consecutive-failures); policy keys leave the session schema.
+3. **Breaker reset**: replace "switching model clears compaction-disabled" (compaction_logging.feature:290, used session__model) with "a crew model change resets compaction-disabled on the next turn". Why: preserves the operator recovery path (change the crew's model, next turn retries) without a session pin.
+4. **`-M/--model` on `prompt`**: stays as the alias for `--with-model` (this-turn). Create-time persistence goes away: :with-* on a fresh session applies to the first turn only and is never written.
+5. **Session :provider**: dropped with :model (only ever written alongside it; resolution derives provider from the model).
+
+Clean cutover: no aliases, no deprecation shims; removed scenarios are deleted, not retained.
