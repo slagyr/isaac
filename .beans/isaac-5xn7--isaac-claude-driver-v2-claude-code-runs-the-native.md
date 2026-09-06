@@ -7,8 +7,9 @@ priority: normal
 tags:
     - claude-cli
     - module
+    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-06T00:18:54Z
+updated_at: 2026-09-06T01:48:53Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-1sdl
@@ -75,3 +76,9 @@ LoopDriver for claude-cli is implemented and green locally. Branch `bean/isaac-5
 ## Held (awaiting human, 2026-09-06)
 
 Escalated to human by **scrapper**@isaac-work-1. Blocking: slagyr-assistant cannot push `slagyr/isaac-claude-code`; verify cannot land `98515ee`. Resumes only on explicit human action (publish the branch, or re-hail the work/plan band). No crew re-picks this until then.
+
+
+
+## Unheld (2026-09-06, marvin)
+
+Accepted pending GitHub invitation (write) for slagyr-assistant on slagyr/isaac-claude-code. Pushed `bean/isaac-5xn7` @ `98515eea1151e42a5714ad866f7c8d41f0d14e2d` to origin. Handing off to verify.
