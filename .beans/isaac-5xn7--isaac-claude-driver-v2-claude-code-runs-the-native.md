@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-05T19:31:00Z
+updated_at: 2026-09-06T00:18:54Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-1sdl
@@ -54,3 +54,24 @@ Four new steps, all fixture/assertion helpers around the fake CLI; no new domain
 
 ## Planted (2026-09-05)
 Feature file committed: isaac-claude-code main 81c542f `features/llm/api/claude_driver.feature` (6 @wip scenarios, Background mirrors claude_cli.feature plus `drives-tool-loop? true` and `exec/run`). Ledger unchanged except one assertion step reused from the legacy set under a new subject: **the fake Claude Code was invoked with:** (same table shape as `the claude binary was invoked exactly once with:`) — implement as the fake's argv record, not a new matcher. Unblocked: isaac-1sdl (agent 0.1.47) and isaac-zocg (server 0.1.12) are deployed on zanebot; the module's manifest must bump its agent/server pins to those SHAs before `bb features` can see the LoopDriver seam and the MCP turn route. Status → todo; dispatch on Micah's release.
+
+
+## Implementation (2026-09-06, scrapper@isaac-work-1)
+
+LoopDriver for claude-cli is implemented and green locally. Branch `bean/isaac-5xn7` @ `98515eea1151e42a5714ad866f7c8d41f0d14e2d` (base origin/main@`81c542f772d845886d665d27ef4c9125f3952075`) in worktree `/Users/zane/agents/isaac/work-1/isaac-claude-code-5xn7`.
+
+- Pins: agent `e0f932b`, server `fa39543`, foundation `e0dc789`.
+- Template `:drives-tool-loop? true` + schema `:type :boolean`.
+- Fake-CLI harness (stream-json script + MCP-init fail + stdin/argv/SIGTERM).
+- `claude-loop-driver` folds `input + cache_read + cache_creation` into token-counts (`last=320` / `turn=580`).
+- Fallback on MCP-init fail → fence `--print --output-format json`, log `:claude/driver-fallback`.
+- Title side-call: no CLI switch (khgy); log `:claude/title-side-call :found false` per driven turn.
+- `augment-provider` remakes drop most cfg keys; `last-cfg*` remembers command/extra-args/stream flags/`drives-tool-loop?`/`stream-supports-tool-calls` so remakes keep both LoopDriver and the legacy fence path.
+- Legacy `claude_cli.feature` Background sets `drives-tool-loop? | false` so the template default does not force LoopDriver onto fence scenarios.
+- Suites: `clojure -M:spec` 32 examples, 0 failures, 74 assertions, 3 pending `@real`; `clojure -M:features` 20 examples, 0 failures, 68 assertions. `@wip` removed from the 6 driver scenarios.
+
+`git push origin bean/isaac-5xn7` denied: `Permission to slagyr/isaac-claude-code.git denied to slagyr-assistant`. Product commit is local only.
+
+## Held (awaiting human, 2026-09-06)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: slagyr-assistant cannot push `slagyr/isaac-claude-code`; verify cannot land `98515ee`. Resumes only on explicit human action (publish the branch, or re-hail the work/plan band). No crew re-picks this until then.
