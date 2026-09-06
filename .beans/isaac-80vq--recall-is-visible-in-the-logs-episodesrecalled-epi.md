@@ -9,7 +9,7 @@ tags:
     - recall
     - logging
 created_at: 2026-09-04T14:25:43Z
-updated_at: 2026-09-06T18:42:01Z
+updated_at: 2026-09-06T18:46:23Z
 parent: isaac-51xy
 ---
 
@@ -55,3 +55,5 @@ main-sha: isaac-agent d6a43c5a5923a35898662c63df3a54b43612cecb
 
 ## Deployed (2026-09-06 18:45Z)
 Agent 0.1.48 (8d70109) pinned + upgraded on zanebot, restarted; carries 80vq plus 6zk5, jgng, 4zr3 (all verified-landed). Smoke: `isaac prompt --crew marvin 'do you recall anything about Fermi…'` → Marvin answered from the Fermi Explorer scene; recall events checked in server.log (see planner note).
+
+Smoke result: three cold opens (CLI `prompt --crew marvin`, CLI `--session` new thread, ACP session/new + prompt) each logged `:episodes/recalled :search 8 :lineage 0 :top 0.74–0.76 :floor 0.47 :scene-ids […]` with the thread and episode ids — in **cli.log**, because turns started through the remote CLI (which runs in-process on the server) log under the CLI logger; Discord-originated turns will land in server.log. Operator note recorded.
