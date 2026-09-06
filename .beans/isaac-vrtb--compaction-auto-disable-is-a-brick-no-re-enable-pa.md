@@ -4,8 +4,10 @@ title: Block broken conversations; compaction-failed is the first reason
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-31T14:15:35Z
-updated_at: 2026-09-05T00:19:00Z
+updated_at: 2026-09-06T21:04:41Z
 ---
 
 Likely repo: **isaac-agent** (session schema, drive turn gate, attention). **isaac-hail**: stop special-casing `:context-exhausted` (generic `:unavailable?` + `:retry-after-ms` only). Comm protocol: drop `on-compaction-disabled` / `:compaction/disabled` (isaac-server, isaac-discord, isaac-acp, isaac-imessage).
@@ -70,3 +72,19 @@ bb features features/context_window_guard.feature:45
 ```
 
 0 failures. Remove `@wip` from those five rows. No remaining `compaction-disabled` in agent schema/drive/session tool. No hail `maybe-notify-context-exhausted!`.
+
+
+## Implementation notes (scrapper@isaac-work-2)
+
+Agent: `bean/isaac-vrtb` @ `bb9331a3d72f4257ac205fa34a61d6cafd344fd7` (base origin/main@`68dad70`).
+Hail: `bean/isaac-vrtb` @ `4d0f6820a5b9e13ffde918a81b7b1382354e28fa` (base origin/main@`4b50842`).
+
+Session `:compaction-disabled` replaced by conversation `:block {:reason :compaction-failed :at iso}` after 3 consecutive compact failures. Blocked turns return `{:unavailable? true :reason :blocked}` before the user LLM. This-turn compact failure is `:context-exhausted` weather (no `:block` until the 3rd). Revive: `isaac sessions unset <id>.block`. Attention copy is "Conversation blocked …" from agent, not hail.
+
+Hail no longer special-cases `:context-exhausted`: `maybe-notify-context-exhausted!` deleted; `defer-delivery!` parks any `:unavailable?` without burning attempts and without context-exhausted attention.
+
+Acceptance (0 failures, `@wip` removed from the five approved rows):
+- `bb features features/session/context_window_guard.feature:88` (and :113 :148 :168; full file 7/0)
+- `bb features features/context_window_guard.feature:45` (scenario 5; file line now 37 after dropping grover context-window Given)
+
+Leftover hail `@wip`: provider-400 prompt-length (isaac-bs5b) — not in the five approved rows.
