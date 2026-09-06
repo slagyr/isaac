@@ -8,7 +8,7 @@ tags:
     - hail
     - provider-wall
 created_at: 2026-09-04T00:56:30Z
-updated_at: 2026-09-04T12:10:11Z
+updated_at: 2026-09-06T20:10:10Z
 ---
 
 Observed 2026-09-04 00:55Z, isaac-work-2 (scrapper on gpt-5.4/chatgpt), hail 37ec4440 (isaac-jllj extraction, 75 minutes into the turn): `:llm/http-error :status nil :error :unknown :response-body-chars 3` on the Responses stream (772K-char request), then `:chat/stream-error :error :unknown`, `:chat/response-failed :message "closed"`, and `:hail/attempt-failed :attempts 1 :error :unknown`.
@@ -21,3 +21,8 @@ Expected: nil-status / connection-closed / reset / timeout stream failures class
 
 ## Exhibit 2 (2026-09-04 09:55–10:55Z, tono-work-1)
 The same nil-status "closed" stream drop also kills COMPACTION requests: five consecutive `:session/compaction-failed :error :unknown :message "closed"` on chatgpt tripped the auto-disable (compaction-disabled true, consecutive-failures 5 — isaac-vrtb), after which the session sat at 274,720/278,528 tokens returning `:drive/context-exhausted` every 5 minutes for tono-c76g. Recovered by hand with the opus runbook (unset flag → pin claude-opus → housekeeping turn compacted → unpin). Transport failures must not count toward the compaction auto-disable either.
+
+
+
+## Exhibit (2026-09-06 20:08Z, tono-work-1, agent 0.1.49)
+Responses-API variant of the same class: `:chat/response-failed :error :llm-error :provider grok :message "responses stream ended without response.completed"` twice within 4 s (20:08:17, 20:08:21) on a ~335K-token turn; classified :llm-error and burned attempts 2 and 3 of hail 567b453a (tono-2fe1). grok answered a small pong seconds later, and the session then compacted (67% → 43%) — i.e. the provider cut an oversized stream, not a poison prompt. A stream that ends before its terminal event is weather: defer with attention, do not count against the dead-letter budget. Same rule for "closed" (chatgpt) and "stream ended without response.completed" (grok/responses).
