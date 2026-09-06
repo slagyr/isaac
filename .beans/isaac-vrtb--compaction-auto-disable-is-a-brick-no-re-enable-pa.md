@@ -1,13 +1,11 @@
 ---
 # isaac-vrtb
 title: Block broken conversations; compaction-failed is the first reason
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-31T14:15:35Z
-updated_at: 2026-09-06T21:04:41Z
+updated_at: 2026-09-06T21:19:21Z
 ---
 
 Likely repo: **isaac-agent** (session schema, drive turn gate, attention). **isaac-hail**: stop special-casing `:context-exhausted` (generic `:unavailable?` + `:retry-after-ms` only). Comm protocol: drop `on-compaction-disabled` / `:compaction/disabled` (isaac-server, isaac-discord, isaac-acp, isaac-imessage).
@@ -88,3 +86,10 @@ Acceptance (0 failures, `@wip` removed from the five approved rows):
 - `bb features features/context_window_guard.feature:45` (scenario 5; file line now 37 after dropping grover context-window Given)
 
 Leftover hail `@wip`: provider-400 prompt-length (isaac-bs5b) — not in the five approved rows.
+
+
+
+## Landed on main (2026-09-06)
+
+main-sha: isaac-agent bb9331a3d72f4257ac205fa34a61d6cafd344fd7
+main-sha: isaac-hail 4d0f6820a5b9e13ffde918a81b7b1382354e28fa
