@@ -5,7 +5,8 @@ status: draft
 type: bug
 priority: high
 created_at: 2026-09-06T02:02:10Z
-updated_at: 2026-09-06T02:06:13Z
+updated_at: 2026-09-06T02:06:27Z
+parent: isaac-tuk1
 ---
 
 Repo: isaac-claude-code (features/llm/api/claude_driver.feature). Found on the isaac-5xn7 deploy smoke, 2026-09-06 02:00Z, zanebot, Claude Code 2.1.236.
