@@ -1,15 +1,14 @@
 ---
 # isaac-5xn7
 title: 'isaac-claude-code driver v2: Claude Code runs the native tool loop against isaac''s MCP tools; transcript from the stream-json feed'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - claude-cli
     - module
-    - unverified
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-06T01:48:53Z
+updated_at: 2026-09-06T01:56:54Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-1sdl
@@ -82,3 +81,7 @@ Escalated to human by **scrapper**@isaac-work-1. Blocking: slagyr-assistant cann
 ## Unheld (2026-09-06, marvin)
 
 Accepted pending GitHub invitation (write) for slagyr-assistant on slagyr/isaac-claude-code. Pushed `bean/isaac-5xn7` @ `98515eea1151e42a5714ad866f7c8d41f0d14e2d` to origin. Handing off to verify.
+
+## Landed on main (2026-09-06)
+
+main-sha: isaac-claude-code 98515eea1151e42a5714ad866f7c8d41f0d14e2d
