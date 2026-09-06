@@ -8,7 +8,7 @@ tags:
     - claude-cli
     - module
 created_at: 2026-09-03T23:07:34Z
-updated_at: 2026-09-06T01:56:54Z
+updated_at: 2026-09-06T02:06:13Z
 parent: isaac-tuk1
 blocked_by:
     - isaac-1sdl
@@ -85,3 +85,8 @@ Accepted pending GitHub invitation (write) for slagyr-assistant on slagyr/isaac-
 ## Landed on main (2026-09-06)
 
 main-sha: isaac-claude-code 98515eea1151e42a5714ad866f7c8d41f0d14e2d
+
+
+
+## Deploy attempt + rollback (2026-09-06 02:00–02:12Z)
+Released 0.1.1 (14b9ef2), pinned, upgraded, restarted. Smoke `isaac prompt --crew scrapper --model claude-cli --session train-mcp-smoke` (one exec tool call) FAILED on the real CLI (Claude Code 2.1.236): `Error: When using --print, --output-format=stream-json requires --verbose` — the driver omits --verbose, the process exits before its first event, and decision 4's fallback did not fire. Rolled the registry back to 0.1.0 (597c818); fence path pong OK. Bug: isaac-nni3. Bean stays completed (acceptance was met against the fake CLI); the fix ships under nni3.
