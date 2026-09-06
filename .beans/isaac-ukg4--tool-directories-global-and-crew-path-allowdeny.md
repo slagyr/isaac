@@ -1,11 +1,11 @@
 ---
 # isaac-ukg4
 title: 'Tool directories: global and crew path allow/deny'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-08-21T22:20:00Z
-updated_at: 2026-09-06T18:14:22Z
+updated_at: 2026-09-06T18:34:59Z
 blocked_by:
     - isaac-ek0r
     - isaac-da0r
