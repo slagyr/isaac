@@ -1,14 +1,15 @@
 ---
 # isaac-80vq
 title: 'Recall is visible in the logs: :episodes/recalled, :episodes/recall-empty, :recall/scene, :recall/search'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 tags:
     - episodes
     - recall
     - logging
 created_at: 2026-09-04T14:25:43Z
-updated_at: 2026-09-04T14:25:43Z
+updated_at: 2026-09-06T18:02:16Z
 parent: isaac-51xy
 ---
 
