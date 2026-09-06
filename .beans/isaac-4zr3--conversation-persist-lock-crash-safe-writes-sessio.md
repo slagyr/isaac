@@ -1,15 +1,16 @@
 ---
 # isaac-4zr3
 title: 'Conversation persist lock + crash-safe writes: session.edn/segment spit still racy after jz6h'
-status: completed
+status: in-progress
 type: bug
 priority: high
 tags:
     - durability
     - session
     - hail
+    - unverified
 created_at: 2026-09-05T16:46:04Z
-updated_at: 2026-09-05T20:02:01Z
+updated_at: 2026-09-06T10:45:25Z
 ---
 
 Follow-up to isaac-jz6h (append lock landed; hail-failover + quarantine still open). Parallel tool threads still share the session files without a conversation-wide lock, and whole-file writes are truncate-then-write.
@@ -73,3 +74,17 @@ Acceptance: `bb spec spec/isaac/session/store` 75/0; `bb spec` 1651/0.
 ## Landed on main (2026-09-05)
 
 main-sha: isaac-agent fbf38401e307af6fdb596593e64bb83a940e4df1
+
+
+## CI repair (2026-09-06)
+
+GitHub Actions CI Tests run 33988862016 failed `bb ci` features at compaction_logging.feature:252 on main@fbf3840 (suite-order leak: leftover delivery/turn/episodes workers + wake-hook; user-sends 50ms park raced cancel/suspend vs begin-turn).
+
+Repair branch: bean/isaac-4zr3 @ cf4d6759a44a7a151a4c8fd73bb5ad5cdde9e89f (base origin/main@fbf38401e307af6fdb596593e64bb83a940e4df1)
+
+- delivery `stop!` also stops turn-worker + episodes-worker and clears the wake hook
+- worker_steps live-scheduler `shutdown!` in before-scenario and after-scenario
+- user-sends hybrid: record immediately if dispatch finishes in 50ms, else park `:turn-future` and wait until turn-start so cancel/suspend see a live turn
+- session_steps after-scenario + root-setup-hook clear the wake hook
+
+Verification: `bb ci` — specs 1654/0, features 764/0.
