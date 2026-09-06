@@ -1,11 +1,11 @@
 ---
 # isaac-nni3
 title: 'claude LoopDriver: real CLI rejects stream-json without --verbose and the driver does not fall back'
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-06T02:02:10Z
-updated_at: 2026-09-06T02:06:27Z
+updated_at: 2026-09-06T17:55:54Z
 parent: isaac-tuk1
 ---
 
@@ -25,3 +25,22 @@ Repo: isaac-claude-code (features/llm/api/claude_driver.feature). Found on the i
 
 
 Rollback done 02:12Z: registry back to 597c818, zanebot upgraded + restarted, `--model claude-cli` pong OK on the fence path. Registry note: `isaac modules upgrade` read a cached registry for ~2–3 min after the push ("up to date"); retry until `modules list` shows the target sha.
+
+
+
+## Scenario (approved 2026-09-06, Micah) — planted at isaac-claude-code 958d166
+`features/llm/api/claude_driver.feature:157` — a CLI that exits before its first stream event falls back to the fence path with the stderr logged.
+
+## Step ledger
+| Step | Status |
+|---|---|
+| Given a fake Claude Code on the path scripted with: | existing (5xn7) |
+| **Given the fake Claude Code exits {code:int} before streaming with stderr {text}** | **NEW** — the existing failure step scripts a failed MCP init after the process is up; this scripts death at startup, the class the real CLI produced |
+| When the user sends … / Then the response is … / the log has entries matching: | existing |
+| Then the fake Claude Code was invoked with: | existing (5xn7); asserted twice — driver attempt carried --verbose, retry went through the fence path |
+
+## Acceptance
+- [ ] `bb features features/llm/api/claude_driver.feature:157` green with @wip removed; the other 6 driver scenarios and claude_cli.feature unchanged
+- [ ] `bb features && bb spec` green in isaac-claude-code
+- [ ] Real-binary smoke on zanebot after the train: `isaac prompt --crew scrapper --model claude-cli --session train-mcp-smoke 'Use your exec tool to run exactly: echo mcp-loop-ok — then reply with only the command's output.'` → `mcp-loop-ok`, and the log shows `:turn/loop-driver :driver :provider` with NO `:claude/driver-fallback`
+- [ ] Module version bump (0.1.2) + registry pin (train step)
