@@ -1,16 +1,15 @@
 ---
 # isaac-4zr3
 title: 'Conversation persist lock + crash-safe writes: session.edn/segment spit still racy after jz6h'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - durability
     - session
     - hail
-    - unverified
 created_at: 2026-09-05T16:46:04Z
-updated_at: 2026-09-06T10:45:25Z
+updated_at: 2026-09-06T10:50:43Z
 ---
 
 Follow-up to isaac-jz6h (append lock landed; hail-failover + quarantine still open). Parallel tool threads still share the session files without a conversation-wide lock, and whole-file writes are truncate-then-write.
@@ -88,3 +87,7 @@ Repair branch: bean/isaac-4zr3 @ cf4d6759a44a7a151a4c8fd73bb5ad5cdde9e89f (base 
 - session_steps after-scenario + root-setup-hook clear the wake hook
 
 Verification: `bb ci` — specs 1654/0, features 764/0.
+
+## Landed on main (2026-09-06)
+
+main-sha: isaac-agent cf4d6759a44a7a151a4c8fd73bb5ad5cdde9e89f
