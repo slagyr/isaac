@@ -9,7 +9,7 @@ tags:
     - recall
     - logging
 created_at: 2026-09-04T14:25:43Z
-updated_at: 2026-09-06T18:37:11Z
+updated_at: 2026-09-06T18:42:01Z
 parent: isaac-51xy
 ---
 
@@ -50,3 +50,8 @@ scrapper@isaac-work-1: recall-at-open logs :episodes/recalled / :episodes/recall
 ## Landed on main (2026-09-06)
 
 main-sha: isaac-agent d6a43c5a5923a35898662c63df3a54b43612cecb
+
+
+
+## Deployed (2026-09-06 18:45Z)
+Agent 0.1.48 (8d70109) pinned + upgraded on zanebot, restarted; carries 80vq plus 6zk5, jgng, 4zr3 (all verified-landed). Smoke: `isaac prompt --crew marvin 'do you recall anything about Fermi…'` → Marvin answered from the Fermi Explorer scene; recall events checked in server.log (see planner note).
