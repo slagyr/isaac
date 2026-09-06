@@ -2,7 +2,7 @@
                                :git/sha "212b17cf924f160c47cfda0f90a30d9512efddaf"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.llm.claude    {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
-                               :git/sha "597c81807097467c4cb2eeb7b7623bbb48653f6a"}
+                               :git/sha "14b9ef2031ee18e3a8573b32d0e60b1740febe0b"}
                        :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
                                :git/sha "3de25b446805f2c5985eab9db64e3cd27dc4db27"}
