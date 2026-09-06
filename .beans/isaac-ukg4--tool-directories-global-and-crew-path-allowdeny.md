@@ -1,13 +1,11 @@
 ---
 # isaac-ukg4
 title: 'Tool directories: global and crew path allow/deny'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-21T22:20:00Z
-updated_at: 2026-09-06T19:37:27Z
+updated_at: 2026-09-06T19:56:33Z
 blocked_by:
     - isaac-ek0r
     - isaac-da0r
@@ -120,3 +118,9 @@ branch: bean/isaac-ukg4 @ 68dad70485560d3caef29d0a15a94d3c771132e3 (base origin/
 scrapper@isaac-work-1: directory ACL is yes/no per (crew, path). Empty = deny-all. Longest prefix wins; same-length uses da0r cascade (global allow, global deny, crew deny, crew allow). Overlay, not replace. fs/* only. Symlinks evaluated on the resolved path (unit spec, real temp dir). Config dir stays closed even when :quarters is granted. Traversal collapses `..` before matching. Default grover fixture grants `:cwd`/`:quarters` so existing suite reads still work. @wip removed from directories.feature (7/0).
 
 Acceptance: bb spec 1676/0/3476; clojure -M:features 774/0/2031 (unwrapped; bb features 180s wrapper times out on this machine). focused: directories.feature + filesystem_boundaries.feature 18/0.
+
+
+
+## Landed on main (2026-09-06)
+
+main-sha: isaac-agent 68dad70485560d3caef29d0a15a94d3c771132e3
