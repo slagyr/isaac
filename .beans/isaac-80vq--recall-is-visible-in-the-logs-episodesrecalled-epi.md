@@ -1,16 +1,15 @@
 ---
 # isaac-80vq
 title: 'Recall is visible in the logs: :episodes/recalled, :episodes/recall-empty, :recall/scene, :recall/search'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - episodes
     - recall
     - logging
-    - unverified
 created_at: 2026-09-04T14:25:43Z
-updated_at: 2026-09-06T18:32:43Z
+updated_at: 2026-09-06T18:37:11Z
 parent: isaac-51xy
 ---
 
@@ -47,3 +46,7 @@ Remove @wip when green. Note for the ACP surface: its process logs to cli.log, n
 branch: bean/isaac-80vq @ d6a43c5a5923a35898662c63df3a54b43612cecb (base origin/main@1ee29cd4e93bd0815e53d8defba6ce84695c7f4b)
 
 scrapper@isaac-work-1: recall-at-open logs :episodes/recalled / :episodes/recall-empty / :episodes/recall-skipped (debug). scene-tool logs :recall/scene / :recall/scene-missing. search-tool logs :recall/search. @wip removed. Acceptance green: bb features recall_logging+live+index 27/0/163; bb spec spec/isaac/recall 81/0/188; bb spec 1660/0/3449; clojure -M:features 767/0/2024.
+
+## Landed on main (2026-09-06)
+
+main-sha: isaac-agent d6a43c5a5923a35898662c63df3a54b43612cecb
