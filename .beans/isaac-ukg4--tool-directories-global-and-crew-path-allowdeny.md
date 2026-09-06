@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-08-21T22:20:00Z
-updated_at: 2026-08-25T23:20:00Z
+updated_at: 2026-09-06T18:10:12Z
 blocked_by:
     - isaac-ek0r
     - isaac-da0r
@@ -87,3 +87,12 @@ New steps invented:
 ## Held (awaiting human, 2026-08-25)
 
 Escalated to human by **scrapper**@isaac-work-1. Blocking: isaac-ukg4 directory ACL (longest-prefix + da0r cascade) unit-tested green, but 5/8 approved `directories.feature` scenarios still fail under gherclj (cwd/quarters deny not applying on the live turn path; symlink Given cannot create `/work/project/link.txt` on host). Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
+
+
+
+## Planner investigation (2026-09-06) — the ACL works; the scenarios were mis-authored
+Reproduced the hold on the WIP branch `bean/isaac-ukg4` (c41e325, 67 behind main): `bb features features/tool/directories.feature` → 8 examples, 5 failures — four `Row 2: message.isError: Expected true, got: nil` (scenarios at :35, :65, :126, :183) and the symlink scenario (:214) dying in `java.nio.file.Files/createSymbolicLink` (GraalVM MissingReflectionRegistrationError under bb).
+
+Traced `fs-bounds/ensure-path-allowed` on the live turn path: it IS called, the session IS found, the policy IS loaded (`global={:allow [:cwd]} ctx={:cwd "/work/project" :quarters "/isaac-state/crew/main"}`), and `names/path-allowed?` returns true for the cwd read and false for `/outside/secret.txt` (verified by re-running :35 with both tool calls queued before the text reply → row 1 toolResult isError=true, content `path outside allowed directories`). The four failing scenarios queue `tool_call, text, tool_call, text`: the drive ends the turn on the first text response, so the second (denied) read never executes, and the transcript matcher's third row lands on the only toolResult. The 'deny not applying on the live turn path' diagnosis in the hold note was wrong; the enforcement point is correct.
+
+Symlink scenario: feature fixtures run on the memory fs (`session_steps/mem-fs`); `isaac.fs` has no symlink or canonicalization operations, and fs-bounds canonicalizes through the host (`io/file .getCanonicalPath`). A symlink cannot exist on the mem fs, so this scenario is unimplementable as written regardless of the reflection error.
