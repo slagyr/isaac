@@ -1,11 +1,11 @@
 ---
 # isaac-ukg4
 title: 'Tool directories: global and crew path allow/deny'
-status: in-progress
+status: todo
 type: feature
 priority: high
 created_at: 2026-08-21T22:20:00Z
-updated_at: 2026-09-06T18:10:12Z
+updated_at: 2026-09-06T18:14:22Z
 blocked_by:
     - isaac-ek0r
     - isaac-da0r
@@ -96,3 +96,17 @@ Reproduced the hold on the WIP branch `bean/isaac-ukg4` (c41e325, 67 behind main
 Traced `fs-bounds/ensure-path-allowed` on the live turn path: it IS called, the session IS found, the policy IS loaded (`global={:allow [:cwd]} ctx={:cwd "/work/project" :quarters "/isaac-state/crew/main"}`), and `names/path-allowed?` returns true for the cwd read and false for `/outside/secret.txt` (verified by re-running :35 with both tool calls queued before the text reply → row 1 toolResult isError=true, content `path outside allowed directories`). The four failing scenarios queue `tool_call, text, tool_call, text`: the drive ends the turn on the first text response, so the second (denied) read never executes, and the transcript matcher's third row lands on the only toolResult. The 'deny not applying on the live turn path' diagnosis in the hold note was wrong; the enforcement point is correct.
 
 Symlink scenario: feature fixtures run on the memory fs (`session_steps/mem-fs`); `isaac.fs` has no symlink or canonicalization operations, and fs-bounds canonicalizes through the host (`io/file .getCanonicalPath`). A symlink cannot exist on the mem fs, so this scenario is unimplementable as written regardless of the reflection error.
+
+
+
+## Decisions (2026-09-06, Micah)
+1. The four deny scenarios (and the crew-extra allow scenario, which passed vacuously for the same reason) queue BOTH reads before the text reply. Why: the drive ends a turn on a text response; a denied read after a text never executes. Rewritten on isaac-agent main 1ee29cd — no new steps; the denied row asserts `isError true` and content `#"(?s).*path outside allowed directories.*"`.
+2. Symlink coverage moves to the unit spec: `spec/isaac/tool/fs_bounds_spec.clj` proves `path-allowed?`/`ensure-path-allowed` evaluate the RESOLVED path using a real temp directory and `babashka.fs/create-sym-link` (bb-native; no java.nio reflection). Why: feature fixtures run on the memory fs, which cannot hold a symlink, and a real-fs fixture mode for one scenario is not worth the machinery. The feature scenario and the `a symlink … pointing at …` step are deleted (the step must be removed from session_steps on the branch).
+3. Hold lifted; the WIP branch `bean/isaac-ukg4` (c41e325) is the starting point — rebase onto main (67 behind) first.
+
+## Acceptance (replaces the list above)
+- `bb features features/tool/directories.feature:18 35 63 91 120 149 174`
+- 0 failures with the file-level `@wip` removed (7 scenarios).
+- `bb spec spec/isaac/tool/fs_bounds_spec.clj` includes the symlink-resolution case on a real temp dir.
+- `bb features && bb spec` green in isaac-agent; `features/tool/filesystem_boundaries.feature` cutover from the branch retained.
+- Config validation (`checks.clj`) accepts `:tools :directories {:allow … :deny …}` at root and crew (branch already does; keep its specs).
