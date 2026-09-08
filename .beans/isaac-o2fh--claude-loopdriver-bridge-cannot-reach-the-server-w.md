@@ -4,8 +4,10 @@ title: 'claude LoopDriver bridge cannot reach the server: wrong default port, no
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T18:55:31Z
-updated_at: 2026-09-08T18:57:35Z
+updated_at: 2026-09-08T19:09:36Z
 parent: isaac-tuk1
 ---
 
@@ -31,3 +33,16 @@ Steps: existing (isaac EDN file exists with, fake scripted with, response is, tr
 ## Acceptance
 - `bb features features/llm/api/claude_driver.feature` → all 15 scenarios green with @wip removed; `bb features && bb spec` green in isaac-claude-code; isaac-server `bb features features/server/mcp_bridge.feature` green with the JSON-RPC auth error covered
 - Field check by the verifier via exec on zanebot AFTER the planner pins the released versions (module 0.1.6 + server if changed): `isaac prompt --crew scrapper --model claude-cli --session verify-mcp-smoke 'Use your exec tool to run exactly: echo mcp-loop-ok — then reply with only the command'\''s output.'` → `mcp-loop-ok`; cli.log shows `:claude/mcp-status` with isaac connected (or pending followed by tools > 0), `:claude/driver-exit :result-event true`, NO `:claude/driver-fallback`; transcript has the exec toolCall/toolResult pair. The planner records the deploy and re-hails verify for it.
+
+## Handoff
+
+isaac-claude-code branch: bean/isaac-o2fh @ aecf628 (base origin/main@53faf58)
+isaac-server branch: bean/isaac-o2fh @ 521c1b8 (base origin/main@fa39543)
+
+Worker **scrapper**@isaac-work-2. Do not pin registry from this worker.
+
+claude-code 0.1.6: `--server` from config `:server :port` (default 6674), `--token` from `:server :auth :token`; provider `:mcp-server-url`/`:mcp-token` still override. `mcp-failed?` only on status `failed` (or connected+zero tools); `pending` proceeds.
+
+isaac-server 0.1.13: mcp-bridge 401 → JSON-RPC `-32001` `"unauthorized"` + `:mcp-bridge/unauthorized` log, never plain-text Unauthorized.
+
+Acceptance: claude-code `bb features features/llm/api/claude_driver.feature` 15/15, `@wip` removed; `bb features` 29; `bb spec` 55/0 fail (3 pending @real). isaac-server `bb features features/server/mcp_bridge.feature` 5/5 including JSON-RPC auth error; `bb features` 72; `bb spec` 222. Field check + registry pin remain planner/verifier after pin. Negative log assertion reused existing `the log has no entries matching:`.
