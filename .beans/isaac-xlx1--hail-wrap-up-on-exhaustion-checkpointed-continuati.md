@@ -1,11 +1,11 @@
 ---
 # isaac-xlx1
 title: 'Hail: wrap-up on exhaustion, checkpointed continuations per band, continuation budget → attention, band :cycle-limit override'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T15:28:25Z
+updated_at: 2026-09-08T20:05:23Z
 parent: isaac-ntt6
 blocked_by:
     - isaac-y802
