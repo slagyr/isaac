@@ -1,11 +1,11 @@
 ---
 # isaac-1tmw
 title: 'claude LoopDriver native loop: tool calls dispatched twice under Claude''s mcp__ name, one CLI spawn per cycle, reply text doubled'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-08T20:17:46Z
-updated_at: 2026-09-08T20:17:46Z
+updated_at: 2026-09-08T20:19:29Z
 parent: isaac-tuk1
 ---
 
