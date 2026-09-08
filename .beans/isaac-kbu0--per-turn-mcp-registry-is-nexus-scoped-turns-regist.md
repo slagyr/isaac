@@ -4,8 +4,10 @@ title: 'Per-turn MCP registry is nexus-scoped: turns registered from a nested ne
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T19:21:08Z
-updated_at: 2026-09-08T19:22:15Z
+updated_at: 2026-09-08T19:35:10Z
 parent: isaac-tuk1
 ---
 
@@ -24,3 +26,11 @@ Repo: isaac-agent (`src/isaac/mcp/turns.clj` `registry-atom`: `(or (nexus/get :m
 ## Acceptance
 - isaac-agent `bb spec spec/isaac/mcp/` green incl. the nested-nexus case; `bb features features/llm/mcp_turn_registry.feature` green; `bb features && bb spec` green.
 - Field check by the verifier via exec on zanebot after the train (agent bump + pin): `isaac prompt --crew scrapper --model claude-cli --session verify-mcp-smoke 'Use your exec tool to run exactly: echo mcp-loop-ok — then reply with only the command'\''s output.'` → `mcp-loop-ok`; cli.log `:claude/mcp-status :status "connected" :tools N>0`, `:claude/driver-exit :result-event true`, NO `:claude/driver-fallback`; server.log shows `POST /mcp/turns/<id>` for tools/list AND tools/call; transcript has the exec toolCall/toolResult pair executed through the bridge. The planner records the deploy and re-hails verify for it.
+
+## Handoff
+
+branch: bean/isaac-kbu0 @ 2bb212e (base origin/main@c54cbb0)
+
+isaac-agent: `src/isaac/mcp/turns.clj` registry is a process-global `defonce` atom (not nexus-scoped). `handle` logs `:mcp/turn-not-active :turn <id>` at `:warn` on refuse. Nested-nexus spec in `spec/isaac/mcp/turns_spec.clj`; refuse log asserted in `features/llm/mcp_turn_registry.feature`. No isaac-server change — route already delegates to `isaac.mcp.turns/handle`.
+
+Local: `bb spec spec/isaac/mcp/` green; `bb features features/llm/mcp_turn_registry.feature` green; `bb spec` 1679 examples, 0 failures. Do not pin modules.edn. Field check after agent bump + pin is verifier/planner.
