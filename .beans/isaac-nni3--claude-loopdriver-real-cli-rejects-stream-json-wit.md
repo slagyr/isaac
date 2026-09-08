@@ -1,11 +1,11 @@
 ---
 # isaac-nni3
 title: 'claude LoopDriver: real CLI rejects stream-json without --verbose and the driver does not fall back'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-06T02:02:10Z
-updated_at: 2026-09-06T17:55:54Z
+updated_at: 2026-09-08T15:33:07Z
 parent: isaac-tuk1
 ---
 
