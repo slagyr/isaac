@@ -1,11 +1,11 @@
 ---
 # isaac-kbu0
 title: 'Per-turn MCP registry is nexus-scoped: turns registered from a nested nexus (remote CLI, ACP) are invisible to the HTTP route, so Claude Code sees zero tools'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-08T19:21:08Z
-updated_at: 2026-09-08T19:21:09Z
+updated_at: 2026-09-08T19:22:15Z
 parent: isaac-tuk1
 ---
 
