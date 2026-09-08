@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T19:57:49Z
+updated_at: 2026-09-08T20:04:13Z
 parent: isaac-ntt6
 ---
 
@@ -51,3 +51,8 @@ Deploy note (train): zanebot crews using tool-loop-max (scrapper 400) re-key to 
 
 ## Landed on main (2026-09-08)
 main-sha: isaac-agent 8d9dd2602d610db45bbd41f142b81152fa85c95c
+
+
+
+## Deployed (2026-09-08 20:03Z) — agent 0.1.52 (461082b)
+zanebot crew re-keyed: scrapper `:tool-loop-max 400` → `:cycle-limit 120` (committed in zane-isaac); built-in default now 100. Restarted; `config validate` OK; smoke pong logs `:turn/ended :session train-pong :ended-by :reply :cycle-limit 120`. isaac-xlx1 dispatched.
