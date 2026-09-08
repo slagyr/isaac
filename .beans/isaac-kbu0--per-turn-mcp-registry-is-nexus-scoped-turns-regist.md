@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T19:21:08Z
-updated_at: 2026-09-08T19:51:25Z
+updated_at: 2026-09-08T19:56:39Z
 parent: isaac-tuk1
 ---
 
@@ -37,3 +37,8 @@ Local: `bb spec spec/isaac/mcp/` green; `bb features features/llm/mcp_turn_regis
 
 ## Landed on main (2026-09-08)
 main-sha: isaac-agent 64f4ca7ea7d78fb6f8e6e0e814cd804127a8a317
+
+
+
+## Deployed (2026-09-08 19:52Z) — agent 0.1.51 (7635a34)
+Smoke via the remote CLI: still `:claude/mcp-status :status "connected" :tools 0` → `:claude/driver-fallback :reason :mcp-failed` (fence path answered `mcp-loop-ok`). One `POST /mcp/turns/<id>` → 200 (19:54:30). Planner checking whether the route now finds the turn (no :mcp/turn-not-active) and whether the registered entry carries tools.
