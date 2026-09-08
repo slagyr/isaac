@@ -1,13 +1,11 @@
 ---
 # isaac-kbu0
 title: 'Per-turn MCP registry is nexus-scoped: turns registered from a nested nexus (remote CLI, ACP) are invisible to the HTTP route, so Claude Code sees zero tools'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-08T19:21:08Z
-updated_at: 2026-09-08T19:35:10Z
+updated_at: 2026-09-08T19:51:25Z
 parent: isaac-tuk1
 ---
 
@@ -34,3 +32,8 @@ branch: bean/isaac-kbu0 @ 2bb212e (base origin/main@c54cbb0)
 isaac-agent: `src/isaac/mcp/turns.clj` registry is a process-global `defonce` atom (not nexus-scoped). `handle` logs `:mcp/turn-not-active :turn <id>` at `:warn` on refuse. Nested-nexus spec in `spec/isaac/mcp/turns_spec.clj`; refuse log asserted in `features/llm/mcp_turn_registry.feature`. No isaac-server change — route already delegates to `isaac.mcp.turns/handle`.
 
 Local: `bb spec spec/isaac/mcp/` green; `bb features features/llm/mcp_turn_registry.feature` green; `bb spec` 1679 examples, 0 failures. Do not pin modules.edn. Field check after agent bump + pin is verifier/planner.
+
+
+
+## Landed on main (2026-09-08)
+main-sha: isaac-agent 64f4ca7ea7d78fb6f8e6e0e814cd804127a8a317
