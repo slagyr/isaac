@@ -1,13 +1,11 @@
 ---
 # isaac-8slm
 title: 'claude LoopDriver: text emitted before a tool call is glued onto the final reply (aside vs reply)'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-08T22:10:01Z
-updated_at: 2026-09-08T23:40:54Z
+updated_at: 2026-09-08T23:48:24Z
 parent: isaac-tuk1
 ---
 
@@ -30,3 +28,9 @@ Scuttlebutt contract: text in a cycle that ends in tool calls resolves into an *
 branch: bean/isaac-8slm @ 6c303e353035dd90e1e807bd092170995431d661 (base origin/main@087eecbdd33635857446275f2f721de65ce33ea0)
 
 Parser splits stream-json by cycle: text sharing a cycle with tool_use is `:asides`; only the final tool-less cycle is the reply. LoopDriver fires on-cycle `:end` with the aside *before* the fake/MCP tool-fn so scuttlebutt can persist it, then replies with the last cycle's text. Scenario un-@wip. `bb features features/llm/api/claude_driver.feature` 19/0; `bb features` 33/0; `bb spec` 59/0 (3 pending @real). Manifest 0.1.8.
+
+
+
+## Landed on main (2026-09-08)
+
+main-sha: isaac-claude-code 2ca7faa75055f8b09573c2446ee5092f2391cb37
