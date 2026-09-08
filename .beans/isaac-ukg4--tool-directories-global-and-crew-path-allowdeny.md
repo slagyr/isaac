@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-08-21T22:20:00Z
-updated_at: 2026-09-06T19:56:33Z
+updated_at: 2026-09-08T15:32:53Z
 blocked_by:
     - isaac-ek0r
     - isaac-da0r
@@ -124,3 +124,8 @@ Acceptance: bb spec 1676/0/3476; clojure -M:features 774/0/2031 (unwrapped; bb f
 ## Landed on main (2026-09-06)
 
 main-sha: isaac-agent 68dad70485560d3caef29d0a15a94d3c771132e3
+
+
+
+## Deployed (2026-09-08 15:30Z) — agent 0.1.50 (c54cbb0) + hail 0.1.15 (4d0f682)
+Root grant applied first: `isaac.edn :tools {:directories {:allow [:cwd :quarters]}}`. After restart every CLI prompt failed with `invalid configuration … comms[:discord].crew references undefined crew … valid-values ["pilot"]`: 0.1.50's crew schema rejects the OLD vector form `:directories [:cwd …]` (the planner's earlier note that vectors were still accepted was wrong — only checks.clj tolerated them; the schema does not), so 11 crew files were dropped from the loaded config. Fixed at 15:36Z by rewriting each to `:directories {:allow […]}` (backups `*.bak-20260908-dirs`, committed in zane-isaac); `config validate` OK; pong OK. Six-minute CLI outage; hail attempts checked separately.

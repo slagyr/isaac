@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-08-31T14:15:35Z
-updated_at: 2026-09-06T21:19:21Z
+updated_at: 2026-09-08T15:32:53Z
 ---
 
 Likely repo: **isaac-agent** (session schema, drive turn gate, attention). **isaac-hail**: stop special-casing `:context-exhausted` (generic `:unavailable?` + `:retry-after-ms` only). Comm protocol: drop `on-compaction-disabled` / `:compaction/disabled` (isaac-server, isaac-discord, isaac-acp, isaac-imessage).
@@ -93,3 +93,8 @@ Leftover hail `@wip`: provider-400 prompt-length (isaac-bs5b) — not in the fiv
 
 main-sha: isaac-agent bb9331a3d72f4257ac205fa34a61d6cafd344fd7
 main-sha: isaac-hail 4d0f6820a5b9e13ffde918a81b7b1382354e28fa
+
+
+
+## Deployed (2026-09-08 15:30Z) — agent 0.1.50 (c54cbb0) + hail 0.1.15 (4d0f682)
+Root grant applied first: `isaac.edn :tools {:directories {:allow [:cwd :quarters]}}`. After restart every CLI prompt failed with `invalid configuration … comms[:discord].crew references undefined crew … valid-values ["pilot"]`: 0.1.50's crew schema rejects the OLD vector form `:directories [:cwd …]` (the planner's earlier note that vectors were still accepted was wrong — only checks.clj tolerated them; the schema does not), so 11 crew files were dropped from the loaded config. Fixed at 15:36Z by rewriting each to `:directories {:allow […]}` (backups `*.bak-20260908-dirs`, committed in zane-isaac); `config validate` OK; pong OK. Six-minute CLI outage; hail attempts checked separately.
