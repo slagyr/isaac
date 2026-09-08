@@ -5,7 +5,7 @@ status: draft
 type: epic
 priority: high
 created_at: 2026-09-08T13:34:08Z
-updated_at: 2026-09-08T15:11:57Z
+updated_at: 2026-09-08T15:28:25Z
 ---
 
 Repo: isaac-hail (delivery_worker) / isaac-agent (drive/turn). Reopens the isaac-k4mf contract: a hail-driven work turn must not silently complete on an empty terminal model response.
@@ -43,3 +43,12 @@ Context: the 2fe1 turn ran to scrapper's 400-cycle cap (401 compaction checks, 5
 
 ## Structure
 This bean is the epic. Children: (a) isaac-agent — stop reason, on-exhausted hook on Comm, k4mf bypass, charge-level cycle limit; (b) isaac-hail — wrap-up policy, continuation budget per band, attention on exhaustion; (c) orchestration skills — commit-on-green, verify deletes the bean branch, tono work skill uses a bean branch; (d) chores — remote bean-branch cleanup (isaac + tono). Scenario plans per child follow, one at a time.
+
+
+
+## Children (2026-09-08)
+- isaac-y802 — isaac-agent: :ended-by, Comm on-exhausted, :cycle-limit rename (default 100, charge override). Planted affb005 (+ cap-scenario rename). DISPATCHED.
+- isaac-xlx1 — isaac-hail: wrap-up policy, checkpointed continuations, budget → attention, band :cycle-limit. Planted e497905. Blocked by isaac-y802; dispatched when isaac-y802 lands.
+- isaac-3vil — draft: wall-clock / cost budgets (deferred decision 6).
+- Skills (decision 7): DONE — orchestration b413ef7 (work: commit on green, always; verify: delete the landed branch), synced to zanebot (zane-isaac). Chores: 73 merged bean branches deleted across 9 isaac repos; tono has none by design (its band prompt mandates main-only, no branches — Micah's call whether commit-on-green applies there).
+- Deploy plan: isaac-y802 ships as agent 0.1.51 with zanebot crew config re-keyed (scrapper `:cycle-limit 120`); isaac-xlx1 ships as hail 0.1.16.
