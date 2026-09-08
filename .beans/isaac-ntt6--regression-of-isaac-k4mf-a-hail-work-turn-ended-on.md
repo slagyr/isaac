@@ -1,11 +1,11 @@
 ---
 # isaac-ntt6
-title: 'Regression of isaac-k4mf: a hail work turn ended on an empty final response after 1258 tool calls and was marked delivered'
+title: 'Exhausted turns: stop reason, exhaustion policy at the loop seam, bounded continuations, commit-on-green'
 status: draft
-type: bug
+type: epic
 priority: high
 created_at: 2026-09-08T13:34:08Z
-updated_at: 2026-09-08T13:35:11Z
+updated_at: 2026-09-08T15:11:57Z
 ---
 
 Repo: isaac-hail (delivery_worker) / isaac-agent (drive/turn). Reopens the isaac-k4mf contract: a hail-driven work turn must not silently complete on an empty terminal model response.
@@ -25,3 +25,21 @@ k4mf's investigation covered turns that ended with NO tool calls and empty conte
 ## Mechanism — HYPOTHESIS, not confirmed (planner read of drive/turn.clj on main, 2026-09-08)
 Checked after writing this: the canned loop-limit text appears in neither the session transcript nor the delivered hail record, and `assistant-content-chars 0` was logged. So either the canned message is applied to the result but never persisted, or the empty reply reached the delivery worker by a path that bypasses `guard-empty-terminal-response` (e.g. the provider-driven or parallel-batch loop returning without a terminal message). The worker must trace which. What IS established: 1258 tools, empty final content, :error nil, outcome :delivered.
 k4mf's guard (`guard-empty-terminal-response`) does nudge once and then errors (`:empty-terminal-response`) — so a plain empty reply would NOT be delivered. The hole is the loop-limit path: `canned-loop-exhausted-message` replaces a blank terminal reply on a `:loop-request?` result with the canned text 'I ran several tools but did not reach a conclusion before hitting the tool loop limit. Ask me to continue…', which makes the content non-blank, so the turn completes normally and the delivery worker marks the hail :delivered. For an interactive chat that is the right UX; for a work-band hail there is no human to 'ask me to continue' — the bean silently stalls. Fix belongs in the delivery worker: when the terminal result is loop-exhausted (or the canned message) on a work/verify band, treat it as :continuation-needed → re-bind a continuation turn on the same session (bounded, e.g. 3 continuations per delivery), log `:hail/turn-continued :loops N`, and only then dead-letter-with-attention. Crew scrapper `tool-loop-max 400`.
+
+
+
+## Decisions (2026-09-08, Micah — planning session)
+
+Context: the 2fe1 turn ran to scrapper's 400-cycle cap (401 compaction checks, 514 model requests, 8 mid-turn compactions, 1258 tool calls) and ended with empty content marked :delivered; vrtb stopped the same way on 09-05. Industry survey: every autonomous runner reports budget exhaustion as a distinct outcome (OpenAI MaxTurnsExceeded, LangGraph recursion limit, SWE-agent auto-submit at cost limit); none marks it success. Terminology stays: cycle = one trip through the tool loop, turn = prompt → reply.
+
+1. **Exhaustion policy is an abstraction at the loop seam.** The tool loop gains an on-exhausted hook (alongside the 1sdl hooks: cycle start/end, after-tools, cancelled?, max loops). The loop never knows who is asking; it invokes the hook and honours the answer: :stop | :wrap-up | :continue.
+2. **Stop reason on every turn result and in the transcript**: :end-turn | :loop-limit | :cancelled | :error | :context-exhausted. Logged (`:turn/ended :stop-reason …`) and delivered to comms on turn end.
+3. **k4mf bypass closed**: an exhausted turn with empty content can never complete as success, regardless of policy.
+4. **The Comm chooses the policy.** on-exhausted lives on the Comm protocol with `comm/defaults` = :stop (today's behaviour: the 'ask me to continue' reply for attended origins — CLI, Discord, ACP). The hail delivery worker's comm answers :wrap-up.
+5. **Wrap-up + bounded continuation (hail).** :wrap-up = one final cycle with a system nudge (budget exhausted; start nothing new; commit + push to the bean branch; write the done/next note on the bean; hand off if acceptance is met) and a small tool allowance. Then the delivery worker re-hails the same bean as a fresh turn — a checkpointed continuation, not a nudge inside the degraded context — up to the band's continuation budget. Why this beats a larger cap: a larger cap moves the cliff; the 2fe1 turn compacted 8 times on the way to 400 and would have compacted 16 times on the way to 800 with nothing committed.
+6. **Cycle limit is layered**: defaults → crew → dispatcher override on the charge (hail band config, cron job). Interactive origins inherit the crew value. OPEN: rename `tool-loop-max` → `cycle-limit` (clean cutover; touches zanebot crew files + one feature file) — awaiting Micah's yes. Multiple budget currencies (wall-clock, cost) DEFERRED to a separate draft.
+7. **Commit on green, always** (work skill): commit + push to the bean branch after every green test run, not only at handoff; the branch is what makes early commits safe (main moves only when the verifier lands). Verify skill step 7a: delete the bean branch after landing. One-time chores: delete merged remote bean branches on every repo — one isaac bean, one tono bean, acceptance-only (no scenarios).
+8. **Notify only when continuations are exhausted**: each continuation is logged; attention pages once when the band's continuation budget (hail band config, default 3) runs out; then dead-letter-with-attention as today.
+
+## Structure
+This bean is the epic. Children: (a) isaac-agent — stop reason, on-exhausted hook on Comm, k4mf bypass, charge-level cycle limit; (b) isaac-hail — wrap-up policy, continuation budget per band, attention on exhaustion; (c) orchestration skills — commit-on-green, verify deletes the bean branch, tono work skill uses a bean branch; (d) chores — remote bean-branch cleanup (isaac + tono). Scenario plans per child follow, one at a time.
