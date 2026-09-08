@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T21:08:25Z
+updated_at: 2026-09-08T21:11:41Z
 parent: isaac-ntt6
 blocked_by:
     - isaac-y802
@@ -48,3 +48,8 @@ Deploy note: zanebot bands isaac-work/isaac-verify/tono-work/tono-verify inherit
 ## Landed on main (2026-09-08)
 
 main-sha: isaac-hail 2056e6a501510d20299a51b30ba8c4f14cbca48c
+
+
+
+## Deployed (2026-09-08 20:4xZ) — hail 0.1.16 (2056e6a)
+Pinned, upgraded, restarted; `config validate` OK; a smoke-band delivery routed → bound → delivered and its turn logged `:turn/ended :ended-by :reply :cycle-limit 120`. Bands inherit `:continuations 3`; the wrap-up/continuation path will be exercised by the first worker turn that hits its cycle limit.

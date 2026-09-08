@@ -1,11 +1,11 @@
 ---
 # isaac-ntt6
 title: 'Exhausted turns: stop reason, exhaustion policy at the loop seam, bounded continuations, commit-on-green'
-status: draft
+status: completed
 type: epic
 priority: high
 created_at: 2026-09-08T13:34:08Z
-updated_at: 2026-09-08T15:28:25Z
+updated_at: 2026-09-08T21:11:41Z
 ---
 
 Repo: isaac-hail (delivery_worker) / isaac-agent (drive/turn). Reopens the isaac-k4mf contract: a hail-driven work turn must not silently complete on an empty terminal model response.
@@ -52,3 +52,12 @@ This bean is the epic. Children: (a) isaac-agent — stop reason, on-exhausted h
 - isaac-3vil — draft: wall-clock / cost budgets (deferred decision 6).
 - Skills (decision 7): DONE — orchestration b413ef7 (work: commit on green, always; verify: delete the landed branch), synced to zanebot (zane-isaac). Chores: 73 merged bean branches deleted across 9 isaac repos; tono has none by design (its band prompt mandates main-only, no branches — Micah's call whether commit-on-green applies there).
 - Deploy plan: isaac-y802 ships as agent 0.1.51 with zanebot crew config re-keyed (scrapper `:cycle-limit 120`); isaac-xlx1 ships as hail 0.1.16.
+
+
+
+## Summary of Changes (2026-09-08)
+All eight decisions landed and are live on zanebot:
+- isaac-y802 (agent 0.1.52): `:ended-by` on every turn result + `:turn/ended` log; Comm `on-exhausted` (:stop default, :wrap-up); k4mf bypass closed; `:tool-loop-max` → `:cycle-limit` (built-in 100, charge override); scrapper re-keyed to 120.
+- isaac-xlx1 (hail 0.1.16): delivery-worker comm answers :wrap-up; a cycle-limited turn is re-queued as a checkpointed continuation (same delivery, `:continuation` +1, attempts untouched); band `:continuations` (default 3) → `:hail/continuations-exhausted` + attention + dead-letter; band `:cycle-limit` override on the charge.
+- Skills: commit on green to `bean/<id>` (work); verify squash-merges to ONE commit per bean and deletes the branch; tono bands moved from main-only to the same branch discipline (zane-isaac 5ecabf8, c677c34); 73 merged bean branches deleted.
+- isaac-3vil (wall-clock / cost budgets) stays a standalone draft (decision 6 deferral).
