@@ -4,8 +4,10 @@ title: 'Hail: wrap-up on exhaustion, checkpointed continuations per band, contin
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T20:05:23Z
+updated_at: 2026-09-08T20:56:52Z
 parent: isaac-ntt6
 blocked_by:
     - isaac-y802
@@ -26,3 +28,19 @@ All existing (agent library + hail's tick step): isaac EDN file exists with (cre
 - `bb features features/delivery.feature` → the 3 ntt6 scenarios green with @wip removed; the k4mf scenario and all others unchanged and green
 - `bb features && bb spec` green in isaac-hail
 - Deploy note: zanebot bands isaac-work/isaac-verify/tono-work/tono-verify inherit `:continuations 3`; no config change required
+
+
+## Handoff
+
+branch: bean/isaac-xlx1 @ 0b5b65d204b94eb916495864166763f9e7d242c0 (base origin/main@e49790526259d79a4e2ec37c1a4803d20ef05924)
+
+Worktree: /Users/zane/agents/isaac/work-1/isaac-hail-xlx1 (do not merge to main; verify lands it).
+
+Acceptance:
+- `bb features features/delivery.feature` → 27 examples, 0 failures; 3 ntt6 wrap-up scenarios green with @wip removed
+- `bb spec` → 154 examples, 0 failures, 352 assertions
+- `bb features` → 144 examples, 0 failures, 548 assertions, 2 pending (pre-existing hail-get search, not this bean)
+- k4mf empty-terminal and fgo0 quiet-success scenarios unchanged and green
+- Agent pin 461082b8b6106c74e4d7acf47cc74ad8319575fa (0.1.52) for Comm on-exhausted / :ended-by :cycle-limit
+
+Deploy note: zanebot bands isaac-work/isaac-verify/tono-work/tono-verify inherit `:continuations 3`; no config change required.
