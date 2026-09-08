@@ -1,13 +1,11 @@
 ---
 # isaac-0lyh
 title: 'claude LoopDriver 0.1.2 returns empty content on the real CLI: consume the 2.1 stream shapes, log the CLI exit, fall back on error results'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-08T16:38:14Z
-updated_at: 2026-09-08T17:05:44Z
+updated_at: 2026-09-08T17:32:21Z
 parent: isaac-tuk1
 ---
 
@@ -42,3 +40,18 @@ branch: bean/isaac-0lyh @ 5b9d295 (base origin/main@07a821c)
 Parser consumes Claude Code 2.1 `stream_event`/`content_block_delta`/`text_delta` plus `message` events; usage from the `result` event. Every driven spawn logs `:claude/driver-exit`. `is_error` or missing result → fence fallback `:cli-error`. Fake CLI kinds `text_delta` and `error_result`. Module version 0.1.3 (registry pin is the train step — not done here).
 
 `bb features` 23/0/81; `bb spec` 41/0/119 (3 pending @real). Driver feature: 9 scenarios green, @wip removed. Real-binary smoke is verifier-owned.
+
+
+
+## Landed on main (2026-09-08)
+
+main-sha: isaac-claude-code 5b9d2952cef99b773272ffdbba40f0791bf6f6d9
+
+## Verify note (perceptor@isaac-verify, hail 245bce3e)
+
+Hermetic gates on origin/bean/isaac-0lyh @ 5b9d295 (planner dropped live smoke; isaac-nzps owns field check):
+- bb features features/llm/api/claude_driver.feature → 9 examples, 0 failures, 33 assertions
+- bb features → 23 examples, 0 failures, 81 assertions
+- bb spec → 41 examples, 0 failures, 119 assertions, 3 pending @real
+- Feature tamper: only @wip removed on the two planted 0lyh scenarios; other 7 driver scenarios unchanged
+- Module version 0.1.3 on the landed commit. Registry pin is train, not verify.
