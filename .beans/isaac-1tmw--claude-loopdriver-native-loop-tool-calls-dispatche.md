@@ -4,8 +4,10 @@ title: 'claude LoopDriver native loop: tool calls dispatched twice under Claude'
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T20:17:46Z
-updated_at: 2026-09-08T20:19:29Z
+updated_at: 2026-09-08T21:56:41Z
 parent: isaac-tuk1
 ---
 
@@ -33,3 +35,12 @@ Steps: existing (fake scripted with, response is, transcript matching, has N tra
 ## Acceptance
 - `bb features features/llm/api/claude_driver.feature` → all 18 scenarios green with @wip removed; `bb features && bb spec` green
 - Field check (planner or verifier via exec on zanebot after the train): `isaac hail send --band smoke --prompt '<echo mcp-loop-ok prompt>'` on the claude-cli-pinned smoke session → reply exactly `mcp-loop-ok`; server.log: ONE `:claude/driver-exit` for the turn, `:mcp/tools-listed` once, ONE tools/call POST; transcript: exactly one toolCall (exec__run) + one toolResult (`mcp-loop-ok`) + one assistant message.
+
+
+## Handoff
+
+branch: bean/isaac-1tmw @ ab6eaa3 (base origin/main@f017756)
+
+One CLI spawn per turn; mcp__isaac__ names mapped to isaac names; drive tool-fn is not re-dispatched after the stream (fake CLI executes once via the registry-bound tool-fn); reply XOR deltas vs trailing assistant text.
+
+Acceptance: `bb features features/llm/api/claude_driver.feature` 18 green with @wip off; `bb features && bb spec` green.
