@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T20:17:46Z
-updated_at: 2026-09-08T22:06:15Z
+updated_at: 2026-09-08T22:10:03Z
 parent: isaac-tuk1
 ---
 
@@ -48,3 +48,8 @@ Acceptance: `bb features features/llm/api/claude_driver.feature` 18 green with @
 ## Landed on main (2026-09-08)
 
 main-sha: isaac-claude-code f31cbd600508ecfce90911c129c7387c5b656dcd
+
+
+
+## Deployed + field check (2026-09-08 22:08Z) — 0.1.7 (222fb22)
+Counted server-origin smoke (hail 064911f6): driver-exit 1, fallback 0, tools-listed 1, /mcp/turns POSTs 2, mcp-status 15 connected, ONE toolResult `mcp-loop-ok`. Contract met. Residual: reply persisted as `OKmcp-loop-ok` (pre-tool aside glued on) → isaac-8slm.
