@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T19:21:08Z
-updated_at: 2026-09-08T19:56:39Z
+updated_at: 2026-09-08T20:01:09Z
 parent: isaac-tuk1
 ---
 
@@ -42,3 +42,8 @@ main-sha: isaac-agent 64f4ca7ea7d78fb6f8e6e0e814cd804127a8a317
 
 ## Deployed (2026-09-08 19:52Z) — agent 0.1.51 (7635a34)
 Smoke via the remote CLI: still `:claude/mcp-status :status "connected" :tools 0` → `:claude/driver-fallback :reason :mcp-failed` (fence path answered `mcp-loop-ok`). One `POST /mcp/turns/<id>` → 200 (19:54:30). Planner checking whether the route now finds the turn (no :mcp/turn-not-active) and whether the registered entry carries tools.
+
+
+
+## Finding after 0.1.51 (planner, 2026-09-08 20:0xZ): the CLI path is OUT OF PROCESS
+server.log at 19:54:30: `:mcp/turn-not-active :turn ea6a46a9…` — the route still could not find the turn. Cause is one level below nexus scoping: the remote CLI server spawns every command as a separate `isaac` process (`isaac-cli-server dispatch.clj` `p/process`), so a `prompt`-originated turn's driver registers the turn in ITS process while the HTTP route lives in the server process. No in-memory registry — nexus-scoped or global — can bridge that. kbu0's fix is still correct for in-server nested nexuses (ACP), but the remote-CLI field check can never pass by design. Driven claude-cli turns are supported for server-origin turns (hail, Discord, ACP-in-server); an out-of-process turn should fall back with `:reason :out-of-process` instead of `:mcp-failed`. Field check moved to a server-origin turn via a new `smoke` hail band (session tag :smoke, session genuine-cedar) — result recorded below.
