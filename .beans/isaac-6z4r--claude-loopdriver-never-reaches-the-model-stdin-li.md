@@ -4,8 +4,10 @@ title: 'claude LoopDriver never reaches the model: stdin lines lack the stream-j
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T17:40:09Z
-updated_at: 2026-09-08T17:40:58Z
+updated_at: 2026-09-08T17:53:24Z
 parent: isaac-tuk1
 ---
 
@@ -40,3 +42,11 @@ Repo: isaac-claude-code (`src/isaac/llm/api/claude_cli.clj`: `conversation->stre
 - `bb features features/llm/api/claude_driver.feature` → all 11 scenarios green with @wip removed; `bb features && bb spec` green
 - Field check as in Required 4, run by the verifier through its exec tool on zanebot AFTER the planner's train pins the released version (the verifier must not pass on 0.1.3): the planner records the deploy on this bean and re-hails verify.
 - Module version bump (0.1.4) + registry pin (train step)
+
+## Implementation notes
+
+branch: bean/isaac-6z4r @ 2a3b652 (base origin/main@1937edc)
+
+Driven stdin is now stream-json user envelopes (`{"type":"user","message":{…}}`); prior turns replay as prose inside a user message. Per driven spawn: register MCP turn, write temp `mcpServers.isaac` config running `isaac mcp-bridge --turn <id> --server <url>`, pass `--mcp-config`. Fake CLI: bare stdin → empty output; no `--mcp-config` → no tool_use. Module 0.1.4 (registry pin is train).
+
+`bb features` 25/0/92; `bb spec` 45/0/136 (3 pending @real). Driver feature: 11 scenarios green, @wip removed. Field check is verifier-owned after train pins.
