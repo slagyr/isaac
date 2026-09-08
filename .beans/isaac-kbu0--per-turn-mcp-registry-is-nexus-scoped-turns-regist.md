@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T19:21:08Z
-updated_at: 2026-09-08T20:01:09Z
+updated_at: 2026-09-08T20:01:51Z
 parent: isaac-tuk1
 ---
 
@@ -47,3 +47,11 @@ Smoke via the remote CLI: still `:claude/mcp-status :status "connected" :tools 0
 
 ## Finding after 0.1.51 (planner, 2026-09-08 20:0xZ): the CLI path is OUT OF PROCESS
 server.log at 19:54:30: `:mcp/turn-not-active :turn ea6a46a9…` — the route still could not find the turn. Cause is one level below nexus scoping: the remote CLI server spawns every command as a separate `isaac` process (`isaac-cli-server dispatch.clj` `p/process`), so a `prompt`-originated turn's driver registers the turn in ITS process while the HTTP route lives in the server process. No in-memory registry — nexus-scoped or global — can bridge that. kbu0's fix is still correct for in-server nested nexuses (ACP), but the remote-CLI field check can never pass by design. Driven claude-cli turns are supported for server-origin turns (hail, Discord, ACP-in-server); an out-of-process turn should fall back with `:reason :out-of-process` instead of `:mcp-failed`. Field check moved to a server-origin turn via a new `smoke` hail band (session tag :smoke, session genuine-cedar) — result recorded below.
+
+## CI note (2026-09-08, hail ef0a040d)
+
+GitHub Actions CI Tests failed on land SHA 64f4ca7 (`bb ci` / `bb features`):
+- `session/parallel_tool_batches.feature:124` — mixed success/fail concurrent batch events
+- `session/compaction_logging.feature:140` — partial-compact transcript row mismatch
+
+These are the ambient full-suite flakes already noted on isaac-y802 handoff (isolated re-runs green; not introduced by the process-global registry). Bean stays completed. Subsequent main `8d9dd26` (isaac-y802) CI Tests run 34271982954 conclusion=success. No independent repair.
