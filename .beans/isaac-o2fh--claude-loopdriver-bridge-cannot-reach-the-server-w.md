@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T18:55:31Z
-updated_at: 2026-09-08T19:15:38Z
+updated_at: 2026-09-08T19:19:16Z
 parent: isaac-tuk1
 ---
 
@@ -69,3 +69,8 @@ isaac-server @ 521c1b8:
 - Module version 0.1.13
 
 Field check + registry pin are train/planner (bean: AFTER pin). Live smoke not run. No ~/.isaac mutation.
+
+
+
+## Deployed (2026-09-08 ~19:3xZ) — module 0.1.6 (aecf628) + server 0.1.13 (521c1b8)
+Smoke: reply `mcp-loop-ok` with a toolResult — still via FALLBACK. Progress: `:claude/mcp-status :status "connected" :tools 0` (URL + token now right; the bridge connects), then `:claude/driver-fallback :reason :mcp-failed` because Claude Code discovered zero tools. Next seam: the bridge's tools/list for the registered turn returns nothing — registry mismatch (driver registers into one registry, the server route reads another) or an empty tools payload. Being traced by the planner.
