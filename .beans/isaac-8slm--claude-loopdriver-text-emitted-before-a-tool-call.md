@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: normal
 created_at: 2026-09-08T22:10:01Z
-updated_at: 2026-09-08T23:48:24Z
+updated_at: 2026-09-08T23:52:58Z
 parent: isaac-tuk1
 ---
 
@@ -34,3 +34,8 @@ Parser splits stream-json by cycle: text sharing a cycle with tool_use is `:asid
 ## Landed on main (2026-09-08)
 
 main-sha: isaac-claude-code 2ca7faa75055f8b09573c2446ee5092f2391cb37
+
+
+
+## Deployed + field check (2026-09-08 ~23:2xZ) — 0.1.8 (2ca7faa)
+Counted smoke (hail 3fc68663): driver-exit 1, fallback 0, tools-listed 1, POSTs 2; the pre-tool aside is no longer glued on (contract met). Regression: assistant message `mcp-loop-okmcp-loop-ok` — reply doubled from two of the three text sources → isaac-g2z8.
