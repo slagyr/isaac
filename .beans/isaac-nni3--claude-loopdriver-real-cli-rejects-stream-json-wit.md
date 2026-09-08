@@ -4,8 +4,10 @@ title: 'claude LoopDriver: real CLI rejects stream-json without --verbose and th
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-06T02:02:10Z
-updated_at: 2026-09-08T15:33:07Z
+updated_at: 2026-09-08T16:14:52Z
 parent: isaac-tuk1
 ---
 
@@ -44,3 +46,15 @@ Rollback done 02:12Z: registry back to 597c818, zanebot upgraded + restarted, `-
 - [ ] `bb features && bb spec` green in isaac-claude-code
 - [ ] Real-binary smoke on zanebot after the train: `isaac prompt --crew scrapper --model claude-cli --session train-mcp-smoke 'Use your exec tool to run exactly: echo mcp-loop-ok — then reply with only the command's output.'` → `mcp-loop-ok`, and the log shows `:turn/loop-driver :driver :provider` with NO `:claude/driver-fallback`
 - [ ] Module version bump (0.1.2) + registry pin (train step)
+
+## Implementation (scrapper@isaac-work-2)
+
+branch: bean/isaac-nni3 @ 79c794608f9b131b6e4e52a4623eb8d731180983 (base origin/main@958d166741e8a1f95965883a44def4b6788430dd)
+
+- `--verbose` is passed whenever `--output-format stream-json` is used with `-p`.
+- CLI exit before first stream-json event logs `:claude/driver-fallback :reason :cli-start-failed` with stderr and retries on the fence (`--print` json) path.
+- Fake Claude Code rejects stream-json without `--verbose` with the real CLI message.
+- `features/llm/api/claude_driver.feature:157` green, `@wip` removed.
+- `bb spec` 36/0/91 (3 pending @real); `bb features` 21/0/74.
+- Module version bump 0.1.2 + registry pin is train, not this worker.
+
