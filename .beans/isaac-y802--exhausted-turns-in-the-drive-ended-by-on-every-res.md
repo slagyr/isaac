@@ -1,13 +1,11 @@
 ---
 # isaac-y802
 title: 'Exhausted turns in the drive: :ended-by on every result, Comm on-exhausted policy, :cycle-limit (rename, default 100, charge override)'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T19:45:07Z
+updated_at: 2026-09-08T19:57:49Z
 parent: isaac-ntt6
 ---
 
@@ -48,3 +46,8 @@ Acceptance:
 - `bb features` full suite: 2 flakes already on main (compaction_memory_flush memory_write persist; parallel_tool_batches cancel mid-batch events). Isolated re-runs of those files go green. Native `bb features` still hits the 180s suite timeout (pre-existing; suite ~277s without the wrapper). Do not reopen ukg4/80vq.
 
 Deploy note (train): zanebot crews using tool-loop-max (scrapper 400) re-key to `:cycle-limit 120` (config edit, hot reload).
+
+
+
+## Landed on main (2026-09-08)
+main-sha: isaac-agent 8d9dd2602d610db45bbd41f142b81152fa85c95c
