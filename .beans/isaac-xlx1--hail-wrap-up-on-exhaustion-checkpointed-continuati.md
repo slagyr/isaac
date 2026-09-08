@@ -1,13 +1,11 @@
 ---
 # isaac-xlx1
 title: 'Hail: wrap-up on exhaustion, checkpointed continuations per band, continuation budget → attention, band :cycle-limit override'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T20:56:52Z
+updated_at: 2026-09-08T21:08:25Z
 parent: isaac-ntt6
 blocked_by:
     - isaac-y802
@@ -44,3 +42,9 @@ Acceptance:
 - Agent pin 461082b8b6106c74e4d7acf47cc74ad8319575fa (0.1.52) for Comm on-exhausted / :ended-by :cycle-limit
 
 Deploy note: zanebot bands isaac-work/isaac-verify/tono-work/tono-verify inherit `:continuations 3`; no config change required.
+
+
+
+## Landed on main (2026-09-08)
+
+main-sha: isaac-hail 2056e6a501510d20299a51b30ba8c4f14cbca48c
