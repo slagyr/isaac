@@ -1,13 +1,11 @@
 ---
 # isaac-6z4r
 title: 'claude LoopDriver never reaches the model: stdin lines lack the stream-json envelope and no --mcp-config is written'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-08T17:40:09Z
-updated_at: 2026-09-08T17:53:24Z
+updated_at: 2026-09-08T18:00:52Z
 parent: isaac-tuk1
 ---
 
@@ -50,3 +48,18 @@ branch: bean/isaac-6z4r @ 2a3b652 (base origin/main@1937edc)
 Driven stdin is now stream-json user envelopes (`{"type":"user","message":{…}}`); prior turns replay as prose inside a user message. Per driven spawn: register MCP turn, write temp `mcpServers.isaac` config running `isaac mcp-bridge --turn <id> --server <url>`, pass `--mcp-config`. Fake CLI: bare stdin → empty output; no `--mcp-config` → no tool_use. Module 0.1.4 (registry pin is train).
 
 `bb features` 25/0/92; `bb spec` 45/0/136 (3 pending @real). Driver feature: 11 scenarios green, @wip removed. Field check is verifier-owned after train pins.
+
+
+
+## Landed on main (2026-09-08)
+
+main-sha: isaac-claude-code 2a3b65206f14301cbdd506fc620c73509a60978b
+
+## Verify note (perceptor@isaac-verify, hail a05f9d5e)
+
+Hermetic gates on origin/bean/isaac-6z4r @ 2a3b652:
+- bb features features/llm/api/claude_driver.feature → 11 examples, 0 failures, 44 assertions
+- bb features → 25 examples, 0 failures, 92 assertions
+- bb spec → 45 examples, 0 failures, 136 assertions, 3 pending @real
+- Feature: @wip removed on the two planted 6z4r scenarios; prior-turn stdin tables updated to type/message envelopes (authorized by the planted scenarios); 9 other driver scenarios otherwise unchanged
+- Module version 0.1.4 on the landed commit. Registry pin + field check are train/planner (bean: "AFTER the planner's train pins the released version" / "verifier must not pass on 0.1.3"). Live smoke not run.\n
