@@ -1,11 +1,11 @@
 ---
 # isaac-6z4r
 title: 'claude LoopDriver never reaches the model: stdin lines lack the stream-json envelope and no --mcp-config is written'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-08T17:40:09Z
-updated_at: 2026-09-08T17:40:09Z
+updated_at: 2026-09-08T17:40:58Z
 parent: isaac-tuk1
 ---
 
