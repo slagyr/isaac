@@ -1,11 +1,11 @@
 ---
 # isaac-0lyh
 title: 'claude LoopDriver 0.1.2 returns empty content on the real CLI: consume the 2.1 stream shapes, log the CLI exit, fall back on error results'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-08T16:38:14Z
-updated_at: 2026-09-08T16:38:14Z
+updated_at: 2026-09-08T16:41:49Z
 parent: isaac-tuk1
 ---
 
