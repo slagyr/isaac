@@ -4,8 +4,10 @@ title: 'claude LoopDriver: driven turns must not teach the textual fence protoco
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T18:10:29Z
-updated_at: 2026-09-08T18:11:18Z
+updated_at: 2026-09-08T18:42:30Z
 parent: isaac-tuk1
 ---
 
@@ -30,3 +32,13 @@ Steps: existing (fake scripted with / invoked with, response is, transcript matc
 - `bb features features/llm/api/claude_driver.feature` → all 13 scenarios green with @wip removed; `bb features && bb spec` green
 - Field check by the verifier via exec on zanebot AFTER the planner pins the released version (not 0.1.3/0.1.4): `isaac prompt --crew scrapper --model claude-cli --session verify-mcp-smoke 'Use your exec tool to run exactly: echo mcp-loop-ok — then reply with only the command'\''s output.'` → reply `mcp-loop-ok`; cli.log shows `:claude/mcp-status` with isaac connected and tools > 0, `:claude/driver-exit :result-event true`, NO `:claude/driver-fallback`; the session transcript has the exec toolCall/toolResult pair. The planner records the deploy on this bean and re-hails verify for the field check.
 - Module version bump (0.1.5) + registry pin (train step)
+
+## Handoff
+
+branch: bean/isaac-lrvb @ 9d9ee24 (base origin/main@bfee7f5)
+
+Worker **scrapper**@isaac-work-2. Module 0.1.5. Do not pin registry from this worker.
+
+Driven `build-system-prompt` omits `tool-protocol-contract`. Fake CLI kind `mcp_status` emits a system/init event. Init with isaac status ≠ connected or zero tools on a turn that has tools, or a residual `<tool_call>` fence in the driven reply, logs `:claude/mcp-status` and `:claude/driver-fallback :reason :mcp-failed` then retries the fence path.
+
+Acceptance: `bb features features/llm/api/claude_driver.feature` 13/13 green, `@wip` removed; `bb features` 27/27; `bb spec` 51 examples 0 failures (3 pending @real). Field check + registry pin remain planner/verifier after pin.
