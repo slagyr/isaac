@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T18:10:29Z
-updated_at: 2026-09-08T18:47:09Z
+updated_at: 2026-09-08T18:53:49Z
 parent: isaac-tuk1
 ---
 
@@ -55,3 +55,8 @@ Hermetic gates on origin/bean/isaac-lrvb @ 9d9ee24:
 - bb spec → 51 examples, 0 failures, 166 assertions, 3 pending @real
 - Feature tamper: only @wip removed on the two planted lrvb scenarios; other 11 driver scenarios unchanged
 - Module version 0.1.5 on the landed commit. Registry pin + field check are train/planner (bean: AFTER pin, not on 0.1.3/0.1.4). Live smoke not run.
+
+
+
+## Deployed (2026-09-08 18:3xZ) — 0.1.5 (9d9ee24)
+Smoke `--model claude-cli` one exec call → reply `mcp-loop-ok` with a toolResult in the transcript — but via the FALLBACK: `:claude/mcp-status :servers [{:name "isaac" …}] :tools 0` → `:claude/driver-fallback :reason :mcp-failed`. So this bean's contract holds (no fence taught, status logged, safe fallback) and the remaining blocker is the bridge itself: Claude Code cannot connect to `isaac mcp-bridge` for the turn. Left deployed (fallback answers correctly). Bridge failure being diagnosed by the planner.
