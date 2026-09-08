@@ -5,7 +5,7 @@ status: draft
 type: bug
 priority: high
 created_at: 2026-09-06T20:08:36Z
-updated_at: 2026-09-06T20:08:36Z
+updated_at: 2026-09-08T23:08:22Z
 ---
 
 Repo: isaac-agent (6zk5 follow-up; `src/isaac/llm/http.clj` resolve-idle-timeout-ms, `charge.clj` ensure-provider, `config/resolve.clj` model-override-provider-opts, `llm/api/openai/shared.clj` llm-http-opts).
@@ -22,3 +22,8 @@ Repo: isaac-agent (6zk5 follow-up; `src/isaac/llm/http.clj` resolve-idle-timeout
 3. Whichever link drops the key is fixed.
 
 Until then grok reasoning turns >90 s silent are deferred and re-run from scratch (16 tool calls redone on tono-work-1 at 19:12).
+
+
+
+## Re-scoped (planner, 2026-09-08 23:10Z)
+`:llm/stream-stalled :elapsed-ms 300018 :bytes-received 41984` on isaac-work-1 at 23:06Z — the configured 300 s IS honored now. The value was set at 19:14/19:19Z and hot-reloaded, but stalls at 19:17, 20:05 still used 90 s; the server has been restarted several times since (20:0x for agent 0.1.52, hail 0.1.16, claude 0.1.7). So the defect is narrower than 'not honored': **a change to stream-idle-timeout-ms does not take effect on hot reload — only after a restart.** Likely the provider (and its http opts) is built once per session/charge and cached, or the delivery worker's cfg for in-flight bindings is stale. Requirement 1 (spec through the delivery-worker path) stays; add: a config reload between two turns changes the idle timeout the second turn uses (no restart). Requirement 2 (log :idle-timeout-ms on the stall event) stays.
