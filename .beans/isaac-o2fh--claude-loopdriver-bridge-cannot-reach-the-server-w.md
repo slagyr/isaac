@@ -1,11 +1,11 @@
 ---
 # isaac-o2fh
 title: 'claude LoopDriver bridge cannot reach the server: wrong default port, no auth token, and ''pending'' treated as failed'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-08T18:55:31Z
-updated_at: 2026-09-08T18:55:31Z
+updated_at: 2026-09-08T18:57:35Z
 parent: isaac-tuk1
 ---
 
