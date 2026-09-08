@@ -1,13 +1,11 @@
 ---
 # isaac-nni3
 title: 'claude LoopDriver: real CLI rejects stream-json without --verbose and the driver does not fall back'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-06T02:02:10Z
-updated_at: 2026-09-08T16:14:52Z
+updated_at: 2026-09-08T16:25:32Z
 parent: isaac-tuk1
 ---
 
@@ -58,3 +56,8 @@ branch: bean/isaac-nni3 @ 79c794608f9b131b6e4e52a4623eb8d731180983 (base origin/
 - `bb spec` 36/0/91 (3 pending @real); `bb features` 21/0/74.
 - Module version bump 0.1.2 + registry pin is train, not this worker.
 
+
+
+## Landed on main (2026-09-08)
+
+main-sha: isaac-claude-code 79c794608f9b131b6e4e52a4623eb8d731180983
