@@ -5,7 +5,7 @@ status: draft
 type: bug
 priority: high
 created_at: 2026-09-08T13:34:08Z
-updated_at: 2026-09-08T13:34:45Z
+updated_at: 2026-09-08T13:35:11Z
 ---
 
 Repo: isaac-hail (delivery_worker) / isaac-agent (drive/turn). Reopens the isaac-k4mf contract: a hail-driven work turn must not silently complete on an empty terminal model response.
@@ -22,5 +22,6 @@ k4mf's investigation covered turns that ended with NO tool calls and empty conte
 
 
 
-## Mechanism (planner read of drive/turn.clj on main, 2026-09-08)
+## Mechanism — HYPOTHESIS, not confirmed (planner read of drive/turn.clj on main, 2026-09-08)
+Checked after writing this: the canned loop-limit text appears in neither the session transcript nor the delivered hail record, and `assistant-content-chars 0` was logged. So either the canned message is applied to the result but never persisted, or the empty reply reached the delivery worker by a path that bypasses `guard-empty-terminal-response` (e.g. the provider-driven or parallel-batch loop returning without a terminal message). The worker must trace which. What IS established: 1258 tools, empty final content, :error nil, outcome :delivered.
 k4mf's guard (`guard-empty-terminal-response`) does nudge once and then errors (`:empty-terminal-response`) — so a plain empty reply would NOT be delivered. The hole is the loop-limit path: `canned-loop-exhausted-message` replaces a blank terminal reply on a `:loop-request?` result with the canned text 'I ran several tools but did not reach a conclusion before hitting the tool loop limit. Ask me to continue…', which makes the content non-blank, so the turn completes normally and the delivery worker marks the hail :delivered. For an interactive chat that is the right UX; for a work-band hail there is no human to 'ask me to continue' — the bean silently stalls. Fix belongs in the delivery worker: when the terminal result is loop-exhausted (or the canned message) on a work/verify band, treat it as :continuation-needed → re-bind a continuation turn on the same session (bounded, e.g. 3 continuations per delivery), log `:hail/turn-continued :loops N`, and only then dead-letter-with-attention. Crew scrapper `tool-loop-max 400`.
