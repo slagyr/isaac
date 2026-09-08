@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T19:21:08Z
-updated_at: 2026-09-08T20:01:51Z
+updated_at: 2026-09-08T20:17:48Z
 parent: isaac-tuk1
 ---
 
@@ -58,3 +58,7 @@ These are ambient full-suite flakes already noted on the isaac-y802 handoff (iso
 
 Flake hardening filed as draft **isaac-1d7x**. Do not retag unverified. Do not hail work or verify on this bean.
 
+
+
+## Field check PASSED for this bean's contract (2026-09-08 20:14Z)
+Server-origin turn (smoke band, session genuine-cedar pinned to claude-cli, hail 93544111): `:turn/loop-driver :driver :provider`, `POST /mcp/turns/<id>` → `:mcp/tools-listed`, `:claude/mcp-status :tools 15 :status "connected"`, `:claude/driver-exit :result-event true`, no fallback, the tool executed through the bridge and the reply reached the user. Remaining native-loop defects (double dispatch under the mcp__ name, spawn per cycle, doubled reply) → isaac-1tmw.
