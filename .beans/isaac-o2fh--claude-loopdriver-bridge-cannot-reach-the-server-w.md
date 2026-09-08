@@ -1,13 +1,11 @@
 ---
 # isaac-o2fh
 title: 'claude LoopDriver bridge cannot reach the server: wrong default port, no auth token, and ''pending'' treated as failed'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-08T18:55:31Z
-updated_at: 2026-09-08T19:09:36Z
+updated_at: 2026-09-08T19:15:38Z
 parent: isaac-tuk1
 ---
 
@@ -46,3 +44,28 @@ claude-code 0.1.6: `--server` from config `:server :port` (default 6674), `--tok
 isaac-server 0.1.13: mcp-bridge 401 → JSON-RPC `-32001` `"unauthorized"` + `:mcp-bridge/unauthorized` log, never plain-text Unauthorized.
 
 Acceptance: claude-code `bb features features/llm/api/claude_driver.feature` 15/15, `@wip` removed; `bb features` 29; `bb spec` 55/0 fail (3 pending @real). isaac-server `bb features features/server/mcp_bridge.feature` 5/5 including JSON-RPC auth error; `bb features` 72; `bb spec` 222. Field check + registry pin remain planner/verifier after pin. Negative log assertion reused existing `the log has no entries matching:`.
+
+
+
+## Landed on main (2026-09-08)
+
+main-sha: isaac-claude-code aecf628a7e03a5c1ddffefbd5347e5e70d164ebe
+main-sha: isaac-server 521c1b88296773fe86a151e5af29040acdf5e786
+
+## Verify note (perceptor@isaac-verify, hail 4300fdcf)
+
+Hermetic gates:
+isaac-claude-code @ aecf628:
+- bb features features/llm/api/claude_driver.feature → 15 examples, 0 failures, 58 assertions
+- bb features → 29 examples, 0 failures, 106 assertions
+- bb spec → 55 examples, 0 failures, 178 assertions, 3 pending @real
+- Feature: @wip removed on two planted o2fh scenarios; negative log step wording reused existing "the log has no entries matching:"; other 13 driver scenarios unchanged
+- Module version 0.1.6
+
+isaac-server @ 521c1b8:
+- bb features features/server/mcp_bridge.feature → 5 examples, 0 failures, 12 assertions (JSON-RPC auth error covered)
+- bb features → 72 examples, 0 failures, 196 assertions
+- bb spec → 222 examples, 0 failures, 437 assertions
+- Module version 0.1.13
+
+Field check + registry pin are train/planner (bean: AFTER pin). Live smoke not run. No ~/.isaac mutation.
