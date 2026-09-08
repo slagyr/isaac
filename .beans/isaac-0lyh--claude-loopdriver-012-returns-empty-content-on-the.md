@@ -4,8 +4,10 @@ title: 'claude LoopDriver 0.1.2 returns empty content on the real CLI: consume t
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T16:38:14Z
-updated_at: 2026-09-08T16:41:49Z
+updated_at: 2026-09-08T17:05:44Z
 parent: isaac-tuk1
 ---
 
@@ -32,3 +34,11 @@ Steps: all existing (fake Claude Code scripted with / invoked with, the response
 - `bb features && bb spec` green
 - REAL-BINARY smoke run by the VERIFIER via its exec tool on zanebot (the verify session runs inside the server, keychain available): `isaac prompt --crew scrapper --model claude-cli --session verify-mcp-smoke 'Use your exec tool to run exactly: echo mcp-loop-ok — then reply with only the command'\''s output.'` → `mcp-loop-ok`, and cli.log shows `:turn/loop-driver :driver :provider` and `:claude/driver-exit :exit-code 0 :result-event true` with NO `:claude/driver-fallback`. A bean cannot pass without this line.
 - Module version bump (0.1.3) + registry pin (train step)
+
+## Implementation notes
+
+branch: bean/isaac-0lyh @ 5b9d295 (base origin/main@07a821c)
+
+Parser consumes Claude Code 2.1 `stream_event`/`content_block_delta`/`text_delta` plus `message` events; usage from the `result` event. Every driven spawn logs `:claude/driver-exit`. `is_error` or missing result → fence fallback `:cli-error`. Fake CLI kinds `text_delta` and `error_result`. Module version 0.1.3 (registry pin is the train step — not done here).
+
+`bb features` 23/0/81; `bb spec` 41/0/119 (3 pending @real). Driver feature: 9 scenarios green, @wip removed. Real-binary smoke is verifier-owned.
