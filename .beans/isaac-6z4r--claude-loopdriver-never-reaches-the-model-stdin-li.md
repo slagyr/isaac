@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-08T17:40:09Z
-updated_at: 2026-09-08T18:00:52Z
+updated_at: 2026-09-08T18:10:31Z
 parent: isaac-tuk1
 ---
 
@@ -63,3 +63,8 @@ Hermetic gates on origin/bean/isaac-6z4r @ 2a3b652:
 - bb spec → 45 examples, 0 failures, 136 assertions, 3 pending @real
 - Feature: @wip removed on the two planted 6z4r scenarios; prior-turn stdin tables updated to type/message envelopes (authorized by the planted scenarios); 9 other driver scenarios otherwise unchanged
 - Module version 0.1.4 on the landed commit. Registry pin + field check are train/planner (bean: "AFTER the planner's train pins the released version" / "verifier must not pass on 0.1.3"). Live smoke not run.\n
+
+
+
+## Deploy attempt + rollback (2026-09-08 18:05Z)
+0.1.4 (2a3b652) pinned + deployed. The driven spawn now reaches the model (driver-exit: result-event true, no fallback) — stdin envelopes and --mcp-config work. But the reply was the literal `<tool_call>…</tool_call>` fence text and no tool ran: the driven system prompt still teaches the fence protocol. Rolled back to 0.1.3. Follow-up: isaac-lrvb.
