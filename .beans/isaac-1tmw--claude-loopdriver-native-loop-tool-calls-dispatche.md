@@ -1,13 +1,11 @@
 ---
 # isaac-1tmw
 title: 'claude LoopDriver native loop: tool calls dispatched twice under Claude''s mcp__ name, one CLI spawn per cycle, reply text doubled'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-08T20:17:46Z
-updated_at: 2026-09-08T21:56:41Z
+updated_at: 2026-09-08T22:06:15Z
 parent: isaac-tuk1
 ---
 
@@ -44,3 +42,9 @@ branch: bean/isaac-1tmw @ ab6eaa3 (base origin/main@f017756)
 One CLI spawn per turn; mcp__isaac__ names mapped to isaac names; drive tool-fn is not re-dispatched after the stream (fake CLI executes once via the registry-bound tool-fn); reply XOR deltas vs trailing assistant text.
 
 Acceptance: `bb features features/llm/api/claude_driver.feature` 18 green with @wip off; `bb features && bb spec` green.
+
+
+
+## Landed on main (2026-09-08)
+
+main-sha: isaac-claude-code f31cbd600508ecfce90911c129c7387c5b656dcd
