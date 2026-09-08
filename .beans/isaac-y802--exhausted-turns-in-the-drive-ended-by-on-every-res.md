@@ -4,8 +4,10 @@ title: 'Exhausted turns in the drive: :ended-by on every result, Comm on-exhaust
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T15:33:22Z
+updated_at: 2026-09-08T19:45:07Z
 parent: isaac-ntt6
 ---
 
@@ -31,3 +33,18 @@ Repo: isaac-agent. Child of isaac-ntt6 (decisions 1–4, 6). Feature: `features/
 - `bb features && bb spec` green; no `tool-loop-max` left in src/spec/features (`grep -rn tool-loop-max` empty)
 - Existing driver/cancel/compaction scenarios unchanged
 - Deploy note: zanebot crews using tool-loop-max (scrapper 400) are re-keyed to `:cycle-limit 120` by the train (config edit, hot reload)
+
+## Handoff
+
+branch: bean/isaac-y802 @ 76695fb48855af314f6c53476057c775c2f9f0a5 (base origin/main@c54cbb0aa796c967327548cbde3cdb98bb63709e)
+
+Worktree: /Users/zane/agents/isaac/work-1/isaac-agent-y802 (do not merge to main; verify lands it).
+
+Acceptance:
+- `bb features features/llm/turn_exhaustion.feature` → 5 green, @wip removed
+- `bb features features/tool/tool_loop_limit.feature` → green, @wip removed
+- `bb spec` → 1688 examples, 0 failures
+- `grep -rn tool-loop-max` empty in src/spec/features
+- `bb features` full suite: 2 flakes already on main (compaction_memory_flush memory_write persist; parallel_tool_batches cancel mid-batch events). Isolated re-runs of those files go green. Native `bb features` still hits the 180s suite timeout (pre-existing; suite ~277s without the wrapper). Do not reopen ukg4/80vq.
+
+Deploy note (train): zanebot crews using tool-loop-max (scrapper 400) re-key to `:cycle-limit 120` (config edit, hot reload).
