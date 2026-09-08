@@ -1,0 +1,37 @@
+---
+# isaac-nzps
+title: 'isaac-0lyh field check: real Claude Code MCP loop smoke after 0.1.3 deploy'
+status: draft
+type: task
+priority: high
+tags:
+    - claude-cli
+created_at: 2026-09-08T17:27:09Z
+updated_at: 2026-09-08T17:27:09Z
+parent: isaac-tuk1
+---
+
+Split from **isaac-0lyh**. Product + hermetic gates are green on `isaac-claude-code` `origin/bean/isaac-0lyh` @ `5b9d295` (`bb features features/llm/api/claude_driver.feature` 9/0/33; full `bb features` 23/0/81; `bb spec` 41/0/119 with 3 pending @real). Verify cannot complete 0lyh because acceptance required a live zanebot real-binary smoke that needs `isaac.llm.claude` **0.1.3** deployed. Verify skill forbids pin/release/deploy; live zanebot still has **0.1.0** @ `597c818` (nni3 rollback). Running the smoke against 0.1.0 would be a false pass (wrong parser).
+
+## Field check (after 0lyh 0.1.3 is pinned and deployed on zanebot)
+
+Do **not** run this against 0.1.0 / 0.1.2. The parser under test is 0.1.3 (`5b9d295` or its rebased/released equivalent).
+
+1. Confirm `isaac modules list` shows `:isaac.llm.claude` **0.1.3** (or the released SHA that contains `5b9d295`).
+2. Run:
+
+       isaac prompt --crew scrapper --model claude-cli --session verify-mcp-smoke 'Use your exec tool to run exactly: echo mcp-loop-ok — then reply with only the command'\''s output.'
+
+3. The reply is exactly `mcp-loop-ok`.
+4. `cli.log` (or the session's server log) shows:
+   - `:turn/loop-driver :driver :provider`
+   - `:claude/driver-exit :exit-code 0 :result-event true`
+   - **no** `:claude/driver-fallback`
+5. Record evidence on this bean: module SHA/version, prompt session id, reply text, and the three log facts.
+
+## Notes
+
+- Do **not** reopen 0lyh product/parser work unless this field check fails.
+- Blocked by 0lyh landing + train pin of 0.1.3 + deploy (`modules upgrade`; human operates the service lifecycle).
+- Draft until a human promotes it after the train is on zanebot.
+- Isolated `/tmp` roots and second Isaac services are **not** a substitute: the failure mode is the real CLI + MCP under `--strict-mcp-config` with the live keychain.
