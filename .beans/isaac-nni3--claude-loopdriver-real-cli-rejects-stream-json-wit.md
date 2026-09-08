@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-06T02:02:10Z
-updated_at: 2026-09-08T16:25:32Z
+updated_at: 2026-09-08T16:35:35Z
 parent: isaac-tuk1
 ---
 
@@ -61,3 +61,8 @@ branch: bean/isaac-nni3 @ 79c794608f9b131b6e4e52a4623eb8d731180983 (base origin/
 ## Landed on main (2026-09-08)
 
 main-sha: isaac-claude-code 79c794608f9b131b6e4e52a4623eb8d731180983
+
+
+
+## Deploy attempt + rollback (2026-09-08 16:29Z)
+Released 0.1.2 (0c65a77, landed 79c7946), pinned, upgraded, restarted. Real-binary smoke (`--model claude-cli`, one exec tool call, Claude Code 2.1.236) FAILED again: `:turn/loop-driver :driver :provider`, then two `:claude/title-side-call` lines 1.3 s apart (two CLI spawns of ~1 s each — too fast for a model call), NO `:claude/driver-fallback`, then `:chat/response-failed :error :empty-terminal-response` (the k4mf guard nudged once and gave up). So the CLI started, emitted nothing the driver mapped to content, and exited in a way the new 'exit before first event' fallback did not classify. Rolled back to 0.1.0 (597c818) at 16:36Z; fence-path pong OK. Follow-up bug filed by the planner.
