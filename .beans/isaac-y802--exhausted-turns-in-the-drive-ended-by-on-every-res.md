@@ -1,11 +1,11 @@
 ---
 # isaac-y802
 title: 'Exhausted turns in the drive: :ended-by on every result, Comm on-exhausted policy, :cycle-limit (rename, default 100, charge override)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-08T15:28:25Z
-updated_at: 2026-09-08T15:28:25Z
+updated_at: 2026-09-08T15:33:22Z
 parent: isaac-ntt6
 ---
 
