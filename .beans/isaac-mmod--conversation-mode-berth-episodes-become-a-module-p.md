@@ -130,3 +130,11 @@ bb features features/session/session_policy.feature:207
 bb features features/bridge/suspend.feature && bb features && bb spec
 ```
 The earlier acceptance block's grep lines stand, with `:session-store` read as `:session-policy`. Train note: zanebot `crew/marvin.edn` `:conversation :episodes` → `:session-policy :episodes`.
+
+## CI repair (2026-09-09, scrapper@isaac-work-2)
+
+Main CI Tests (runs 34383400840 @ f3dd87e, 34384940799 @ 1f72fa3) failed at **Install ripgrep** — `apt-get update` exit 100, Hash Sum mismatch on `dl.google.com/linux/chrome-stable`. Not a product failure; `bb ci` never ran.
+
+Repair on `bean/isaac-mmod` and fast-forwarded to `origin/main`: **de3af25** — install ripgrep from the GitHub musl release (same pattern as the isaac monolith workflow). Trailers Isaac-Session: isaac-work-2 / Isaac-Bean: isaac-mmod.
+
+Session-policy implementation remains local WIP; this commit is CI-only.
