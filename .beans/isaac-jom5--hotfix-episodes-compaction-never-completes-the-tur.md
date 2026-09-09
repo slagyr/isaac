@@ -4,8 +4,10 @@ title: 'HOTFIX: episodes compaction never completes — the turn keeps measuring
 status: in-progress
 type: bug
 priority: critical
+tags:
+    - unverified
 created_at: 2026-09-09T21:22:23Z
-updated_at: 2026-09-09T21:23:32Z
+updated_at: 2026-09-09T23:41:37Z
 ---
 
 Repo: isaac-agent (`session/compaction.clj` splice! / compact-close! path, `drive/turn.clj` compaction retry + successor-session-key). Agent 0.1.52 on zanebot. Interim hotfix ahead of isaac-mmod (which moves this whole path behind the session policy); keep the change minimal and scoped to the episodes branch.
@@ -30,3 +32,16 @@ On an episodes crew, `splice!` calls `lifecycle/compact-close!`, which closes th
 ## Acceptance
 - `bb features features/episodes/live.feature:610` green with @wip removed; `bb features features/episodes/ features/session/compaction_*.feature && bb spec` green
 - Train + field: agent bump, deploy; on zanebot the two dangling successors on thread acp-4cb3db22… (2114-junk, 2117-7dag) are closed by `isaac episodes close` after deploy; a new marvin ACP session compacts once and continues.
+
+
+## Handoff
+
+branch: bean/isaac-jom5 @ 9b0030d4c8a0c9b9690ae5da56c5cf23cf1d2509 (base origin/main@7c05aeffff36cbe50027eb2c3c07ef0ff03a1fb9)
+
+After compact-close! the drive continues on the successor session key and
+logs :session/compaction-completed with that id. no-progress only when the
+same key did not shrink. compact-close! reuses an already-open episode on
+the thread. Scenario live.feature:610 green, @wip removed. episodes/ +
+compaction_* (except pre-existing compaction_memory_flush flake on main)
+green. session_steps now pass :crew/:config so episodes dispatch resolves
+the thread.
