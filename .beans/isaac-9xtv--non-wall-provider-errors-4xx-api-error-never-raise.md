@@ -1,16 +1,15 @@
 ---
 # isaac-9xtv
 title: Non-wall provider errors (4xx api-error) never raise attention; hooks, cron and episode seals fail silently
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - agent
     - attention
     - provider-weather
-    - unverified
 created_at: 2026-09-09T14:36:34Z
-updated_at: 2026-09-09T19:51:13Z
+updated_at: 2026-09-09T20:10:38Z
 ---
 
 Repo: **isaac-agent**. One seam: `isaac.drive.dispatch/log-dispatch-result`
@@ -102,3 +101,9 @@ Acceptance focused green:
 - bb spec spec/isaac/drive spec/isaac/attention_spec.clj — 125/0/312
 
 `bb ci` unit specs 1704/0 then native `bb features` hit the 180s suite timeout (exit 124). Focused acceptance is green; full-suite timeout is the existing agent-native budget, not a product failure in this bean.
+
+
+
+## Landed on main (2026-09-09)
+
+main-sha: isaac-agent 64230488bd35d91b06a836fe4f4bfd0f1a6180cb
