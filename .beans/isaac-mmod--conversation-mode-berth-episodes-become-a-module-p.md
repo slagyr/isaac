@@ -1,11 +1,11 @@
 ---
 # isaac-mmod
 title: 'Session-store berth: chronicle and episodes are session-store implementations selected per crew; the bridge stops resolving episodes'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-09T16:23:58Z
+updated_at: 2026-09-09T16:35:02Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -51,3 +51,45 @@ features/session/session_store.feature (new; bridge/episode_dispatch.feature del
 7. a warm second turn on an episodes crew appends to the open episode (rewrite)
 8. a conversation start without a session id asks the store for one (logbook answers; frequencies and ACP no longer branch on mode)
 Fixture: `logbook` = a recording decorator over the chronicle store (so every existing sessions/transcript step keeps working). New steps: `Given a recording session store "logbook" is registered`, `Then the logbook store recorded calls matching:` (table: method | session-id | …).
+
+
+
+## Planted (2026-09-09) — isaac-agent main ddb9d7f
+`features/session/session_store.feature` (8 @wip scenarios; `features/bridge/episode_dispatch.feature` deleted, its two @wip scenarios rewritten as 6 and 7).
+
+## Step ledger
+| Step | Status |
+|---|---|
+| default Grover setup / the isaac EDN file … exists with: / the following model responses are queued: / a charge is dispatched with: / the following sessions exist: / session … has transcript: / has transcript matching: / has compaction / the following sessions match: / an episode exists for crew … matching: / crew … has N episode(s) / the current time is / the user sends … / isaac is run with … / the exit code is / the stdout contains / the config has validation errors matching: | existing |
+| **Given a recording session store "logbook" is registered** | **NEW** — spec-support decorator over the chronicle store, registered under the berth name; records every protocol call |
+| **Then the logbook store recorded calls matching:** (columns: method, session-id, crew) | **NEW** — the only way to assert the protocol call sequence and ids |
+| **Then the logbook store recorded no calls** | **NEW** — negative form |
+| `an episode exists for crew … matching:` reads `session-id` (was `thread`) | existing step, record key renamed |
+
+## Implementation surface (all isaac-agent)
+1. Berth `:isaac.agent/session-store` in the manifest: named factories → SessionStore implementations; chronicle = today's store registered under `:chronicle`; episodes registered under `:episodes` (stays in the agent until the extraction bean).
+2. Crew config `:session-store` (schema + `:isaac.config/check` contribution: unknown name → `references undefined session store (got "x"); known: …`). `:conversation` key removed (clean cutover; zanebot crews carry no :conversation today except marvin — the train re-keys `marvin.edn` `:conversation :episodes` → `:session-store :episodes`).
+3. Store selection per crew at the seams that fetch a store (`nexus [:sessions :store]` users): the bridge/drive/comms/hail/tools obtain the crew's store; session id never rewritten.
+4. Protocol additions: `default-session [store crew opts]`; `repair-transcript!` (what bridge/resume does with raw files). Route bridge/status, bridge/resume, session/context, session/cli through the protocol or scope them to chronicle (worker's call, record it).
+5. Remove from callers: bridge/core + prompt_cli (`episodes-crew?`, `resolve-thread!`, `maybe-recall-at-open!`, `maybe-seal!`, the :cli seal exemption); drive/turn `successor-session-key`; session/compaction `compact-close!` + episode-store reads; session/frequencies mode branch (asks `default-session`).
+6. Episodes store implementation: cold first append opens + recalls (blocks before the message); `clear-turn-marker!` seals; `splice-compaction!` closes + chains a successor; `active-transcript` = open episode or empty; `get-transcript` = full record; episode record `:thread` → `:session-id` (clean cutover, migrate existing records on read or via `isaac episodes migrate`).
+7. Discord/ACP branches are NOT in this bean (follow-ups isaac-… below); their features must stay green against the agent seam.
+
+## Acceptance
+```
+cd isaac-agent
+bb features features/session/session_store.feature:20
+bb features features/session/session_store.feature:48
+bb features features/session/session_store.feature:68
+bb features features/session/session_store.feature:80
+bb features features/session/session_store.feature:117
+bb features features/session/session_store.feature:141
+bb features features/session/session_store.feature:169
+bb features features/session/session_store.feature:204
+bb features features/bridge/suspend.feature
+bb features features/episodes/ features/recall/ features/comm/acp/ 2>/dev/null; bb features && bb spec
+```
+- All 8 green with @wip removed; suspend.feature unchanged and green with resume going through the protocol; the episodes/recall features green with :session-id.
+- `grep -rn ':conversation' src spec features` empty; `grep -rn 'episodes-crew?\|resolve-thread!\|maybe-recall-at-open!\|maybe-seal!\|compact-close!\|successor-session-key' src/isaac/bridge src/isaac/drive src/isaac/session src/isaac/comm` empty.
+- Downstream (isaac-acp `features/comm/acp/episodes.feature`, isaac-discord features) still green against this agent SHA — the verifier runs them with the pinned sibling.
+- Train note: zanebot `crew/marvin.edn` `:conversation :episodes` → `:session-store :episodes` at deploy.
