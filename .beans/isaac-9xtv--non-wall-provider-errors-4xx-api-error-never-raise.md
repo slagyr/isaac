@@ -74,10 +74,19 @@ a recovery post when the provider comes back.
 
 ## Acceptance
 
-- Scenario: hook turn gets a 400 from the provider → one attention post
-  naming provider, model, session and the detail.
-- Scenario: three hook turns on the same provider fail within a minute →
-  one post.
-- Scenario: episode seal fails 5 times → one post.
-- Scenario: two different providers fail → two posts.
-- `bb spec` and `bb features` green.
+Scenarios: `isaac-agent/features/llm/provider_attention.feature` (five, @wip,
+commit ea60ec0). One new step — `the newest file in {path} EDN contains:` —
+goes in isaac-agent's own steps (not foundation spec-support; no pin bump).
+
+```
+cd isaac-agent
+bb features features/llm/provider_attention.feature
+bb features features/llm/provider_walls.feature
+bb features features/session/context_window_guard.feature
+bb features features/session/compaction_overflow.feature
+bb spec spec/isaac/drive spec/isaac/attention_spec.clj
+bb ci
+```
+
+All five pass with @wip removed; the three neighbouring features stay green
+after `prompt-too-long?` moves into provider-wall. bb ci green.
