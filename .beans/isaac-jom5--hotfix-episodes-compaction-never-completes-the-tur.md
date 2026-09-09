@@ -1,11 +1,11 @@
 ---
 # isaac-jom5
 title: 'HOTFIX: episodes compaction never completes — the turn keeps measuring the closed episode, logs no-progress, and re-compacts every turn, spawning open successors'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-09-09T21:22:23Z
-updated_at: 2026-09-09T21:22:23Z
+updated_at: 2026-09-09T21:23:32Z
 ---
 
 Repo: isaac-agent (`session/compaction.clj` splice! / compact-close! path, `drive/turn.clj` compaction retry + successor-session-key). Agent 0.1.52 on zanebot. Interim hotfix ahead of isaac-mmod (which moves this whole path behind the session policy); keep the change minimal and scoped to the episodes branch.
