@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: normal
 created_at: 2026-09-08T23:52:56Z
-updated_at: 2026-09-09T00:10:50Z
+updated_at: 2026-09-09T00:13:47Z
 parent: isaac-tuk1
 ---
 
@@ -35,3 +35,8 @@ Reply assembly picks one source: `result.result` when present, else assistant-me
 ## Landed on main (2026-09-09)
 
 main-sha: isaac-claude-code 6a80f358c775c892b1e1cf54d2a4d247bf1e35dc
+
+
+
+## Deployed + field check PASSED (2026-09-09 ~00:0xZ) — 0.1.9 (6a80f35)
+Counted server-origin smoke (hail ec271401, session genuine-cedar): driver-exit 1, fallback 0, tools-listed 1, /mcp/turns POSTs 2; transcript exactly user → assistant toolCall exec__run → toolResult `mcp-loop-ok` → assistant `mcp-loop-ok`. The native Claude Code loop is clean end to end.
