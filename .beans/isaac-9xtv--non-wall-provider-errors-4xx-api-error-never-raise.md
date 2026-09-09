@@ -1,7 +1,7 @@
 ---
 # isaac-9xtv
 title: Non-wall provider errors (4xx api-error) never raise attention; hooks, cron and episode seals fail silently
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - attention
     - provider-weather
 created_at: 2026-09-09T14:36:34Z
-updated_at: 2026-09-09T14:36:34Z
+updated_at: 2026-09-09T15:05:44Z
 ---
 
 Repo: **isaac-agent**. One seam: `isaac.drive.dispatch/log-dispatch-result`
