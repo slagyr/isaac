@@ -8,7 +8,7 @@ tags:
     - hail
     - provider-wall
 created_at: 2026-09-04T00:56:30Z
-updated_at: 2026-09-06T20:10:10Z
+updated_at: 2026-09-09T17:02:20Z
 ---
 
 Observed 2026-09-04 00:55Z, isaac-work-2 (scrapper on gpt-5.4/chatgpt), hail 37ec4440 (isaac-jllj extraction, 75 minutes into the turn): `:llm/http-error :status nil :error :unknown :response-body-chars 3` on the Responses stream (772K-char request), then `:chat/stream-error :error :unknown`, `:chat/response-failed :message "closed"`, and `:hail/attempt-failed :attempts 1 :error :unknown`.
@@ -26,3 +26,8 @@ The same nil-status "closed" stream drop also kills COMPACTION requests: five co
 
 ## Exhibit (2026-09-06 20:08Z, tono-work-1, agent 0.1.49)
 Responses-API variant of the same class: `:chat/response-failed :error :llm-error :provider grok :message "responses stream ended without response.completed"` twice within 4 s (20:08:17, 20:08:21) on a ~335K-token turn; classified :llm-error and burned attempts 2 and 3 of hail 567b453a (tono-2fe1). grok answered a small pong seconds later, and the session then compacted (67% → 43%) — i.e. the provider cut an oversized stream, not a poison prompt. A stream that ends before its terminal event is weather: defer with attention, do not count against the dead-letter budget. Same rule for "closed" (chatgpt) and "stream ended without response.completed" (grok/responses).
+
+
+
+## Exhibit (2026-09-09 17:00Z, tono-harden, agent 0.1.52)
+`:chat/response-failed :error :unknown :provider grok :message "closed"` → `:hail/attempt-failed :attempts 1 :error :unknown` on hail 4c3e8188 (tono-jzr7). Same class, now on grok and classified :unknown rather than :llm-error — still burns the attempt. Three providers/phrasings so far: chatgpt "closed", grok "responses stream ended without response.completed", grok "closed".
