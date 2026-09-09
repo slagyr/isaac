@@ -12,8 +12,9 @@ created_at: 2026-09-09T14:36:34Z
 updated_at: 2026-09-09T14:36:34Z
 ---
 
-Repo: **isaac-agent** (`src/isaac/attention.clj`, `src/isaac/drive/turn.clj`
-around the `:chat/response-failed` log); hail already covers its own paths.
+Repo: **isaac-agent**. One seam: `isaac.drive.dispatch/log-dispatch-result`
+(every provider call — user turns, tool loops, episode seals — passes through
+it). Notifier lives in `isaac.attention`. Hail already covers its own paths.
 
 ## Problem
 
@@ -52,9 +53,24 @@ plan lost Codex access, malformed request) is the gap.
   same notifier; the seal retry loop must not post thirty times.
 - Existing turn-failed and conversation-blocked posts unchanged.
 
+## Decisions (2026-09-09, Micah)
+
+1. **One place.** Broken-provider identification lives in the drive, in
+   `dispatch/log-dispatch-result`, not at call sites. Episodes, comms, hooks,
+   cron and hail are not touched.
+2. **One classifier.** `provider-wall/classify` decides weather vs broken.
+   The overflow-400 check (`prompt-too-long?`, today in turn.clj) moves into
+   provider-wall so dispatch and turn share it; dispatch posts attention only
+   for results classify leaves as `:api-error` / `:llm-error`.
+3. **Throttle** is per provider, one hour, in memory (same shape as the
+   per-session throttle in `isaac.attention`). Hourly repost carries the
+   suppressed count. A restart may cost one duplicate post; accepted.
+4. Recovery post is out of scope.
+
 ## Non-goals
 
-Retry/backoff policy for 400s; changing what hail does with walls or auth.
+Retry/backoff policy for 400s; changing what hail does with walls or auth;
+a recovery post when the provider comes back.
 
 ## Acceptance
 
