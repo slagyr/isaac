@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-09T16:02:31Z
+updated_at: 2026-09-09T16:23:58Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -33,3 +33,21 @@ Repo: isaac-agent. First of three beans to extract episodes+recall into a module
 - **Protocol additions are fine** (Micah): add a `repair-transcript!` (what bridge/resume does with raw files today) and whatever operator-read method `sessions show/status` need, OR keep those as chronicle's CLI lens with `isaac episodes` as episodes' lens — worker's call, recorded on the bean. migrate stays chronicle-internal.
 - **Discord heartbeat is store-agnostic** (Micah): the typing heartbeat runs regardless of the session store; Discord's episode/chronicle request-shape branch collapses to a plain session id. ACP's fresh-mint (session/new) and replay-open-episode (session/load) branches collapse to open-session!/active-transcript. Those two module changes are follow-up beans in isaac-discord / isaac-acp, dispatched after this bean's train.
 - **Fixture**: the seam is proven with a fictional session store `logbook` (Marigold) in spec support that records every protocol call; `features/bridge/episode_dispatch.feature` is rewritten against it; the episodes features move with the extraction bean.
+
+
+
+## Decisions (2026-09-09, Micah) — recall placement and default session
+- **Recall is store content, not an API.** The episodes store's first `append-message!` on a cold session id opens the episode, runs recall on that message's text, appends the recalled blocks, THEN the message — so the prompt builder reads history → recalled blocks → live message (decision 1's cache order). `active-transcript` = what the session currently shows (open episode, or nothing when cold — ACP session/load replays exactly that); `get-transcript` = the full record (operator lenses). Prior episodes are never replayed (51xy decision 2); they come back only as recalled scenes.
+- **Default session is the store's answer.** New protocol method (name: `default-session` [store crew opts]): when a conversation starts with no session id (prompt `--crew`, ACP session/new without a name, comm bindings without a session), the caller asks the crew's store. Chronicle → the crew's most recent session, creating it if none. Episodes → a fresh id (a new chain on first append). An explicit id is honoured by both; a cold explicit id on episodes opens a new episode on that chain. `--create` keeps its chronicle meaning and is a no-op for episodes (isaac-6yg0 stands). This removes the mode branch from session/frequencies and ACP's session-new.
+
+## Scenario plan (approved titles; gherkin follows one at a time)
+features/session/session_store.feature (new; bridge/episode_dispatch.feature deleted):
+1. a crew selects a session store by name
+2. a crew with no session-store setting is a chronicle
+3. an unknown session store fails config validation
+4. the session id is stable across compaction
+5. turn markers are the store's turn signals, for the CLI too
+6. an episodes crew keeps its session id through a cold open (rewrite of the @wip episode_dispatch scenario)
+7. a warm second turn on an episodes crew appends to the open episode (rewrite)
+8. a conversation start without a session id asks the store for one (logbook answers; frequencies and ACP no longer branch on mode)
+Fixture: `logbook` = a recording decorator over the chronicle store (so every existing sessions/transcript step keeps working). New steps: `Given a recording session store "logbook" is registered`, `Then the logbook store recorded calls matching:` (table: method | session-id | …).
