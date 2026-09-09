@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-09T17:07:17Z
+updated_at: 2026-09-09T17:31:12Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -61,3 +61,8 @@ Fixtures: Marigold cast (cordelia crew, lantern-room session). Steps: mostly exi
 - **migrate-layout moves everything**: every session directory (287 on zanebot) relocates under its crew, session.edn is stamped with its store during the move (no 'absent = chronicle' rule needed), episode backing sessions + `episodes/<crew>/<eid>/` records + scenes fold into `sessions/<crew>/<sid>/episodes/<eid>/`, the index is rebuilt, the recall index re-rowed with session-id, and `~/.isaac/episodes/` ends empty. Idempotent, --dry-run.
 - Index rows: `{:session-id :episode-id :scene-id :kind :model}`.
 - Scenes live under `episodes/<eid>/scenes/`.
+
+
+
+## Layering note (2026-09-09, after the mmod recut)
+This bean is the DISK session store's representation of the primitives mmod defines (session record, transcript streams + container records per session+container, container documents, crew documents, the sessions index). Policies never see these paths. Terminology: the session.edn / index stamp is `:session-policy` (not :session-store). The layout stands as decided: `sessions/<crew>/<sid>/session.edn`, chronicle transcript at the session root, `episodes/<cid>/{episode.edn,current.ednl,scenes/}`, `sessions/<crew>/recall/` = the crew documents, `sessions/index.edn`. The memory store keeps the same primitives in maps (specs); a database store would map them to tables. Scenario tables drafted with 'session-store' read 'session-policy' when planted.
