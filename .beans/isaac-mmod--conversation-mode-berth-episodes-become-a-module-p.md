@@ -1,11 +1,11 @@
 ---
 # isaac-mmod
-title: 'Session-store berth: chronicle and episodes are session-store implementations selected per crew; the bridge stops resolving episodes'
-status: in-progress
+title: 'Session policy berth over a primitive session store: chronicle and episodes are per-crew policies; the bridge stops resolving episodes'
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-09T16:42:50Z
+updated_at: 2026-09-09T17:30:30Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -93,3 +93,22 @@ bb features features/episodes/ features/recall/ features/comm/acp/ 2>/dev/null; 
 - `grep -rn ':conversation' src spec features` empty; `grep -rn 'episodes-crew?\|resolve-thread!\|maybe-recall-at-open!\|maybe-seal!\|compact-close!\|successor-session-key' src/isaac/bridge src/isaac/drive src/isaac/session src/isaac/comm` empty.
 - Downstream (isaac-acp `features/comm/acp/episodes.feature`, isaac-discord features) still green against this agent SHA — the verifier runs them with the pinned sibling.
 - Train note: zanebot `crew/marvin.edn` `:conversation :episodes` → `:session-store :episodes` at deploy.
+
+
+
+## CONTRACT RECUT (2026-09-09 17:30Z, Micah) — supersedes 'the berth IS the session store'
+The worker's first turn (hail e7e9b9c7, isaac-work-2) was cancelled at 17:28Z by restarting the server with its turn marker removed; discard any branch work from it — the contract below replaces the earlier one. Config key/berth names in the planted feature change accordingly (planner updates the feature file).
+
+**Two protocols, not one.**
+1. **Session store = persistence primitives**, chosen once per root (disk sidecar, memory; a database later), addressed by ids, never by path:
+   - session record — session id (identity + overrides + `:session-policy`)
+   - transcript stream, append-only — session id + container id
+   - container record — session id + container id (episode.edn: status, timestamps, counters, parent)
+   - container documents — session id + container id + name (scenes, gists)
+   - crew documents — crew + name (the recall index + vectors: derived, module-owned, stored opaquely)
+   - the sessions index (the store's own concern; id → crew/policy/updated-at; derived, rebuildable)
+   The disk store's representation of these is isaac-b6w0's layout (`sessions/<crew>/<sid>/…`, `episodes/<cid>/…`, `sessions/<crew>/recall/`). The store never knows what an episode is; 'episodes' is the container primitive with more than one container per session.
+2. **Session policy = what the bridge/drive/comms/tools talk to** (today's SPI surface: open/get/list/transcripts/append/compaction/markers + `default-session`), implemented per policy ON TOP of the primitives: **chronicle** = one container per session (today's behaviour, moved behind the primitives); **episodes** = open a container on a cold first append (recall injected ahead of the message), seal on clear-turn-marker! (scene documents + container record), close + successor container on the compaction methods, maintain the crew's recall documents. Policies never see a directory.
+   Crew key `:session-policy :chronicle | :episodes` (absent = chronicle; unknown = config validation error); berth `:isaac.agent/session-policy` contributes named policy factories that receive the root store. Session ids are unique fleet-wide and never change.
+
+**Ripple**: the current `isaac.session.store.spi/SessionStore` splits into the primitives protocol (store) and the policy-facing protocol (what callers use); the sidecar and memory stores implement the primitives; chronicle implements the policy over them. The seven direct file users (bridge/status, bridge/resume, session/context, session/cli, session/migrate, episodes/store, recall/index) move onto primitives. Everything else in the earlier decisions stands (session id stable, recall inside the policy's first append, default-session, Discord/ACP follow-ups).
