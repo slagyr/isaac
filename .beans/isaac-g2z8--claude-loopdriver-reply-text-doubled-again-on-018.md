@@ -1,13 +1,11 @@
 ---
 # isaac-g2z8
 title: 'claude LoopDriver: reply text doubled again on 0.1.8 — the stream carries the final text three times; use one source'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-08T23:52:56Z
-updated_at: 2026-09-09T00:05:48Z
+updated_at: 2026-09-09T00:10:50Z
 parent: isaac-tuk1
 ---
 
@@ -31,3 +29,9 @@ Counts: driver-exit 1, fallback 0, tools-listed 1, /mcp/turns POSTs 2 — the lo
 branch: bean/isaac-g2z8 @ 381542bc3010b3a70aaa7a49b590a2c381ae8011 (base origin/main@dff98e42b7c200611b8fe2a677cd4aeb5d9d257b)
 
 Reply assembly picks one source: `result.result` when present, else assistant-message text, else accumulated deltas — never concatenated. Fake CLI fixture kind `result_text` emits the result event independently of deltas/`text`. Scenario un-@wip. `bb features features/llm/api/claude_driver.feature` 20/0; `bb features` 34/0; `bb spec` 61/0 (3 pending @real). Manifest 0.1.9.
+
+
+
+## Landed on main (2026-09-09)
+
+main-sha: isaac-claude-code 6a80f358c775c892b1e1cf54d2a4d247bf1e35dc
