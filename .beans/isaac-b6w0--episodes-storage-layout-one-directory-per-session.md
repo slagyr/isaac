@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-09T16:42:14Z
+updated_at: 2026-09-09T17:07:17Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -51,3 +51,13 @@ Fixtures: Marigold cast (cordelia crew, lantern-room session). Steps: mostly exi
 ## Acceptance (sketch until scenarios are planted)
 - all planted scenarios green with @wip removed; `bb features && bb spec` green
 - `isaac episodes migrate-layout --dry-run` then real run on zanebot at the train; `ls ~/.isaac/episodes` empty afterwards; marvin recall smoke (Fermi) still answers from recalled scenes
+
+
+
+## Decisions (2026-09-09, Micah) — layout recut
+- **Sessions nest by crew**: `sessions/<crew>/<session-id>/…` (crew immutable on the session — 51xy decision 35 made physical; `/crew` and `sessions set .crew` go away). The recall index moves to `sessions/<crew>/recall/{index.edn,vectors.json}` — crew-scoped, next to what it indexes, and NOT granted (nothing under sessions/ is reachable through quarters or cwd; crews must not read their own index).
+- **Session ids are unique fleet-wide** (invariant; create refuses an id present under another crew).
+- **A sessions index at `sessions/index.edn`**: id → {:crew :session-store :updated-at}. It is the by-id resolver for the nested layout (hail bound-session, comm bindings, every one-argument store call), the `sessions list` source (no 287-directory scan), and the uniqueness check. DERIVED: rebuildable by scanning; readers fall back to a scan and repair it; written atomically (temp + rename, isaac-4zr3); updated on create/rename/delete/store-stamp. (impl_common's `index-path` exists but is legacy — only migrate.clj reads it; no live index today.)
+- **migrate-layout moves everything**: every session directory (287 on zanebot) relocates under its crew, session.edn is stamped with its store during the move (no 'absent = chronicle' rule needed), episode backing sessions + `episodes/<crew>/<eid>/` records + scenes fold into `sessions/<crew>/<sid>/episodes/<eid>/`, the index is rebuilt, the recall index re-rowed with session-id, and `~/.isaac/episodes/` ends empty. Idempotent, --dry-run.
+- Index rows: `{:session-id :episode-id :scene-id :kind :model}`.
+- Scenes live under `episodes/<eid>/scenes/`.
