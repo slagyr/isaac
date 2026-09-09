@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-09T17:30:30Z
+updated_at: 2026-09-09T17:31:32Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -112,3 +112,21 @@ The worker's first turn (hail e7e9b9c7, isaac-work-2) was cancelled at 17:28Z by
    Crew key `:session-policy :chronicle | :episodes` (absent = chronicle; unknown = config validation error); berth `:isaac.agent/session-policy` contributes named policy factories that receive the root store. Session ids are unique fleet-wide and never change.
 
 **Ripple**: the current `isaac.session.store.spi/SessionStore` splits into the primitives protocol (store) and the policy-facing protocol (what callers use); the sidecar and memory stores implement the primitives; chronicle implements the policy over them. The seven direct file users (bridge/status, bridge/resume, session/context, session/cli, session/migrate, episodes/store, recall/index) move onto primitives. Everything else in the earlier decisions stands (session id stable, recall inside the policy's first append, default-session, Discord/ACP follow-ups).
+
+
+
+## Planted (updated 2026-09-09 17:35Z) — isaac-agent main f3dd87e
+Feature renamed to `features/session/session_policy.feature` (vocabulary: session-policy, 'a recording session policy "logbook" is registered', 'the logbook policy recorded calls matching:'). Acceptance selectors:
+```
+cd isaac-agent
+bb features features/session/session_policy.feature:23
+bb features features/session/session_policy.feature:51
+bb features features/session/session_policy.feature:71
+bb features features/session/session_policy.feature:83
+bb features features/session/session_policy.feature:120
+bb features features/session/session_policy.feature:144
+bb features features/session/session_policy.feature:172
+bb features features/session/session_policy.feature:207
+bb features features/bridge/suspend.feature && bb features && bb spec
+```
+The earlier acceptance block's grep lines stand, with `:session-store` read as `:session-policy`. Train note: zanebot `crew/marvin.edn` `:conversation :episodes` → `:session-policy :episodes`.
