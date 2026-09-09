@@ -1,11 +1,11 @@
 ---
 # isaac-jejt
 title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resume honor it'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-09T20:46:22Z
+updated_at: 2026-09-09T21:51:17Z
 ---
 
 ## Problem
@@ -92,25 +92,54 @@ User cancel still **deletes** the marker when the live turn finishes (isaac-2xj5
 - Cross-process: stamp `:cancelled` on the existing turn marker. No HTTP. No in-process-/cli requirement.
 - Store owns the file; add an update (`request-cancel!`), not a get-and-spit from CLI.
 - ACP unchanged.
+- Existing `sessions --help` subcommand list (`features/session/cli.feature:22`) also lists `cancel`. Do **not** `@wip` that passing scenario; add the `cancel` assertion in the same commit that implements the subcommand.
 
-## Scenario plan (10) — pending review
+## Scenario review (2026-09-09, Micah) — all 10 approved, keep as written
 
-`features/session/cli.feature` (isaac-agent)
-1. help lists cancel
-2. missing id refuses
-3. unknown session refuses (no marker created)
-4. idle session refuses (no marker created)
-5. live turn: stamp `:cancelled` and return; still in-flight (did not wait)
-6. orphan marker: stamp and return
+`features/session/cli.feature` (isaac-agent @ `03af97b`)
+1. **keep** `features/session/cli.feature:329` — help lists cancel
+2. **keep** `features/session/cli.feature:335` — missing id refuses
+3. **keep** `features/session/cli.feature:341` — unknown session refuses (no marker created)
+4. **keep** `features/session/cli.feature:348` — idle session refuses (no marker created)
+5. **keep** `features/session/cli.feature:358` — live turn: stamp `:cancelled` and return; still in-flight (did not wait). Lazy-impl killer: `cancel!` does not write `:cancelled` on the marker.
+6. **keep** `features/session/cli.feature:375` — orphan marker: stamp and return
 
 `features/bridge/cancel.feature` (isaac-agent)
-7. drive honors the stamp → turn result cancelled; marker gone
+7. **keep** `features/bridge/cancel.feature:51` — drive honors the stamp → turn result cancelled; marker gone
 
-`features/delivery.feature` (isaac-hail)
-8. live hail archives to `hail/cancelled/`; not delivered/failed/deliveries; log `:outcome :cancelled`
+`features/delivery.feature` (isaac-hail @ `48f0a0c`)
+8. **keep** `features/delivery.feature:845` — live hail archives to `hail/cancelled/`; not delivered/failed/deliveries; log `:outcome :cancelled`
 
 `features/turn-resume.feature` (isaac-hail)
-9. cancelled hail marker is not re-queued; lands in `hail/cancelled/`; marker gone
+9. **keep** `features/turn-resume.feature:123` — cancelled hail marker is not re-queued; lands in `hail/cancelled/`; marker gone
 
 `features/session/resume_repair.feature` (isaac-agent)
-10. cancelled comm marker is dropped; no interruption note; marker gone
+10. **keep** `features/session/resume_repair.feature:71` — cancelled comm marker is dropped; no interruption note; marker gone
+
+New steps: none.
+
+## Acceptance
+
+Un-`@wip` the ten scenarios above. Add `cancel` to the existing `--help` subcommand list at `features/session/cli.feature:22` in the same agent commit.
+
+isaac-agent:
+
+```
+bb features features/session/cli.feature:329
+bb features features/session/cli.feature:335
+bb features features/session/cli.feature:341
+bb features features/session/cli.feature:348
+bb features features/session/cli.feature:358
+bb features features/session/cli.feature:375
+bb features features/bridge/cancel.feature:51
+bb features features/session/resume_repair.feature:71
+```
+
+isaac-hail:
+
+```
+bb features features/delivery.feature:845
+bb features features/turn-resume.feature:123
+```
+
+Also `bb spec && bb features` green in both repos.
