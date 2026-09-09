@@ -1,11 +1,11 @@
 ---
 # isaac-mmod
 title: 'Session policy berth over a primitive session store: chronicle and episodes are per-crew policies; the bridge stops resolving episodes'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-09T17:31:32Z
+updated_at: 2026-09-09T18:04:23Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
