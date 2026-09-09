@@ -1,11 +1,11 @@
 ---
 # isaac-b6w0
 title: 'Episodes storage layout: one directory per session under sessions/, episodes nested inside, session.edn holds identity and overrides once'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-09T17:31:12Z
+updated_at: 2026-09-09T17:46:39Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -66,3 +66,39 @@ Fixtures: Marigold cast (cordelia crew, lantern-room session). Steps: mostly exi
 
 ## Layering note (2026-09-09, after the mmod recut)
 This bean is the DISK session store's representation of the primitives mmod defines (session record, transcript streams + container records per session+container, container documents, crew documents, the sessions index). Policies never see these paths. Terminology: the session.edn / index stamp is `:session-policy` (not :session-store). The layout stands as decided: `sessions/<crew>/<sid>/session.edn`, chronicle transcript at the session root, `episodes/<cid>/{episode.edn,current.ednl,scenes/}`, `sessions/<crew>/recall/` = the crew documents, `sessions/index.edn`. The memory store keeps the same primitives in maps (specs); a database store would map them to tables. Scenario tables drafted with 'session-store' read 'session-policy' when planted.
+
+
+
+## Decisions (2026-09-09, Micah) — ids, migration, listing
+- **Ids**: episode and scene ids are `yyyyMMddHHmmssSSS` (17 digits) minted from the clock at creation, never from a message timestamp; the store bumps by 1 ms on a collision inside the same parent. Same format for both (they never share a parent).
+- **Existing ids are kept** by migrate-layout (an id is opaque; renaming would rewrite recalled-scenes lists, index rows, parent links, and break log/bean references).
+- **Listing**: `sessions list` shows a POLICY column; for an episodes session the USED column is the open episode's counters; sessions of an episodes crew with no open episode are hidden by default (`--all` shows them) — proliferation is inherent to the policy, and the listing must not drown. Retention of closed-episode transcripts is isaac-xwwb (follow-up).
+
+## Planted (2026-09-09) — isaac-agent main 1f72fa3
+`features/episodes/layout.feature` (8 @wip scenarios). Blocked by isaac-mmod; blocks isaac-209q (the module extracts this layout).
+
+## Step ledger
+| Step | Status |
+|---|---|
+| the isaac EDN file … exists with: / the isaac file … exists with: (docstring) / the isaac file … exists / does not exist / EDN contains: / the directory … has exactly N files / config file … containing: / a charge is dispatched with: / the following sessions exist: / session … has transcript: / has transcript matching: / the user sends … / the current time is / the last chat request … used model / crew … has N episodes / an episode exists for crew … matching: (reads `session-id`, `last-input-tokens`, `parent-episode`) / isaac is run with / the stdout matches: / the stdout contains / the stderr contains / the exit code is / the index for crew … has rows: (gains `session-id`) / the crew … allows tools / the current session is / the tool … is called with / the tool result … | existing |
+| **When the user sends {text} on session {key} as crew {crew}** | **NEW** — a second session on a named crew in one scenario; 'sessions exist' would seed a chronicle-shaped record for an episodes crew |
+| **Given crew {crew} has a closed episode {id} on session {sid} with scenes:** | **NEW** — the nested layout needs the session; the sessionless fixture wording is retired with the layout |
+| the directory … has exactly N files | existing — must count directory ENTRIES for `episodes/`; if it counts regular files only, add an `entries` form (worker's call, note it) |
+
+## Acceptance
+```
+cd isaac-agent
+bb features features/episodes/layout.feature:21
+bb features features/episodes/layout.feature:56
+bb features features/episodes/layout.feature:104
+bb features features/episodes/layout.feature:140
+bb features features/episodes/layout.feature:171
+bb features features/episodes/layout.feature:191
+bb features features/episodes/layout.feature:215
+bb features features/episodes/layout.feature:245
+bb features features/episodes/ features/recall/ features/session/ && bb features && bb spec
+```
+- All 8 green with @wip removed; the existing episodes/recall features green on the new layout (their fixtures move to the on-session wording; the sessionless `has a closed episode … with scenes:` step is deleted).
+- After the migrate-layout scenario's real run: `~/.isaac/episodes/` (test root) contains nothing (one-time criterion, not a scenario).
+- Ids minted by the store match `\d{17}`; `isaac.episodes.ids/timestamped-id` takes an instant and returns the 17-digit form.
+- Train: on zanebot run `isaac episodes migrate-layout --dry-run`, review, then the real run (backup `~/.isaac/sessions` + `~/.isaac/episodes` first); marvin Fermi recall smoke still answers from recalled scenes; `sessions list` shows the POLICY column.
