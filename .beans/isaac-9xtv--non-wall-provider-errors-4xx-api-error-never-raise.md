@@ -8,8 +8,9 @@ tags:
     - agent
     - attention
     - provider-weather
+    - unverified
 created_at: 2026-09-09T14:36:34Z
-updated_at: 2026-09-09T15:05:44Z
+updated_at: 2026-09-09T19:51:13Z
 ---
 
 Repo: **isaac-agent**. One seam: `isaac.drive.dispatch/log-dispatch-result`
@@ -90,3 +91,14 @@ bb ci
 
 All five pass with @wip removed; the three neighbouring features stay green
 after `prompt-too-long?` moves into provider-wall. bb ci green.
+
+## Handoff
+
+branch: bean/isaac-9xtv @ 11abcd315adb16da9652452a225fd2bb582e24e0 (base origin/main@1f72fa3673b393f80b46fa4489c6b68486001e7b)
+
+Acceptance focused green:
+- bb features features/llm/provider_attention.feature — 5/0/27 (@wip removed)
+- bb features features/llm/provider_walls.feature features/session/context_window_guard.feature features/session/compaction_overflow.feature — 14/0/63
+- bb spec spec/isaac/drive spec/isaac/attention_spec.clj — 125/0/312
+
+`bb ci` unit specs 1704/0 then native `bb features` hit the 180s suite timeout (exit 124). Focused acceptance is green; full-suite timeout is the existing agent-native budget, not a product failure in this bean.
