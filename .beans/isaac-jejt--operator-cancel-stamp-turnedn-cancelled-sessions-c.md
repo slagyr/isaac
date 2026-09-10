@@ -1,13 +1,11 @@
 ---
 # isaac-jejt
 title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resume honor it'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-10T21:56:50Z
+updated_at: 2026-09-10T22:03:50Z
 ---
 
 ## Problem
@@ -156,3 +154,10 @@ Agent: SessionStore `request-cancel!` stamps `:cancelled` on the existing turn m
 Hail: live `run-turn!` cancelled archives `hail/cancelled/` with `:outcome :cancelled` (not delivered/failed/requeued). `hail-subdirs` includes `cancelled`.
 
 Acceptance: ten scenarios un-@wip. Agent focused features green (9). Hail focused delivery.feature:845 + turn-resume.feature:123 green against agent d13c18e. Agent `bb spec` 1739/0. Hail `bb spec` 156/0. Did not pin modules.edn. Did not commit hail bb.edn override.
+
+
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-agent ac1bf9b99522e338e79ebea9579804b9491c805e
+main-sha: isaac-hail 9887de094940511d9045cf4225db5409ed8cbb15
