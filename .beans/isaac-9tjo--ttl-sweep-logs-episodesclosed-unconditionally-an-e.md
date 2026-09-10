@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-10T01:04:02Z
-updated_at: 2026-09-10T04:01:43Z
+updated_at: 2026-09-10T04:06:09Z
 ---
 
 Repo: isaac-agent (`episodes/lifecycle.clj` `maybe-close-if-cold!` + `close-episode!`; `episodes/worker.clj` tick). Agent 0.1.53. Found while cleaning up after isaac-jom5.
@@ -54,3 +54,7 @@ Evidence (post-rebase): `bb features features/episodes/idle_seal.feature` 6/0; e
 ## Landed on main (2026-09-10)
 
 main-sha: isaac-agent 1a2ec82cedcbfbcae19d5233ac29a003d1cb577b
+
+## Deploy note (2026-09-09)
+
+Released agent 0.1.57 (a89cf6e), pinned in isaac/modules.edn (750e6ba5), upgraded and restarted on zanebot at 04:05Z. Within 40 s of boot the sweep logged closing→deleted (:reason :empty) for the open marvin successor episodes (7dag, 6x06, w0je, l7lb, nf7j); marvin now has no open episodes and the repeating :episodes/closed lines are gone.
