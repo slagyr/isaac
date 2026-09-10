@@ -43,3 +43,28 @@ Harden the two named scenarios so they are suite-stable without weakening intent
 0 failures on each, repeated enough to show `:124` and `:140` no longer flake. Then record an unwrapped `clojure -M:features` run (or CI Tests success on a SHA that only changes these two files). The 180s `bb features` wrapper timeout under load is not by itself a red.
 
 Do **not** reopen isaac-kbu0. Do **not** require MCP registry or Claude Code field checks here.
+
+
+## Extended (2026-09-10, prowl@isaac-plan) — also owns `:101` cancel mid-batch
+
+CI FAIL hail `df8c1e40` on isaac-qpdb land SHA `58982c6` (run 34488061619) and release 0.1.59 `74b9acd` (run 34488386985) both red at:
+
+- `features/session/parallel_tool_batches.feature:101` — cancel mid-batch memory-comm events (`Expected truthy false`)
+
+Isolated JVM `clojure -M:features features/session/parallel_tool_batches.feature:85` is **1/1 on both 0.1.58 (full CI SUCCESS) and 58982c6**. Diff `837b6d4..58982c6` is `registry.clj` + `registry_spec` only; `turn.clj` unchanged. Blocking mock returns `{:error :cancelled}`; after qpdb that map is preserved so `on-tool-cancel` *should* fire for the in-flight tool. The failing Then is still the **first events table** (anchor tool-call/tool-result) — timing/event-shape, not the preserve branch.
+
+**isaac-qpdb remains completed.** Do not recut `run-handler`. Do not reopen qpdb.
+
+This bean now owns both named parallel_tool_batches rows:
+- `:124` mixed concurrent batch events (original)
+- `:101` cancel mid-batch memory-comm events (this extension)
+
+`compaction_logging.feature:140` still in scope as originally filed.
+
+## Acceptance (supersedes the file list above)
+
+    cd isaac-agent
+    bb features features/session/parallel_tool_batches.feature
+    bb features features/session/compaction_logging.feature
+
+0 failures on each, repeated enough to show **`:101`, `:124`, and `:140`** no longer flake. Isolated `clojure -M:features features/session/parallel_tool_batches.feature:85` must also be 0. Record run counts. Do not weaken scenario intent.

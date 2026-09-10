@@ -93,3 +93,21 @@ Release SHAs already on module mains (not cut by this planner):
 - isaac-acp **0.1.13** `6c949bbf5443ff3595c9f5342bff161ad882a0b1` (`release 0.1.13 — cancel mid-tool sends tool_call_update cancelled; pin agent 0.1.59`)
 
 Registry (`modules.edn`) now pins those two SHAs. **No live deploy from this turn** — do not edit `~/.isaac/config`, do not `modules upgrade`, do not restart. Human operates the service lifecycle: `modules upgrade` then restart when ready. Until then live ACP still has the uncleared pending-tool indicator on cancel.
+
+
+## Planner note (2026-09-10, prowl@isaac-plan) — CI FAIL hail df8c1e40 / 0040082e: do not reopen
+
+GitHub Actions CI Tests failed on land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures.
+
+1. `session/parallel_tool_batches.feature:101` — cancel mid-batch memory-comm events (`Expected truthy false`)
+2. `turn/turn_queue.feature:69` — closed turnstile park/wake, transcript empty (`Tied off missing`)
+
+**isaac-qpdb remains completed.** Acceptance still holds (`registry_spec` 47/0; ACP `cancel_tool_status` 1/0; `server_spec` 41/0/118). Diff `837b6d4..58982c6` is `registry.clj` + `registry_spec` only (10 lines); `turn.clj` unchanged. Isolated `parallel_tool_batches.feature:85` is red on **both** 0.1.58 (full CI SUCCESS) and 58982c6. Release 0.1.59 `74b9acd` CI run 34488386985 failed the same `:101` only.
+
+Root cause is not the preserve-`{:error :cancelled}` branch. The failing Then is the first events table (anchor tool-call/tool-result) — timing/event-shape. After qpdb the blocking mock's `{:error :cancelled}` is preserved, so `on-tool-cancel` *should* fire for the in-flight tool; the red is still the ambient cancel-mid-batch flake (y802 / kbu0 / 1d7x family), not the new preserve path. `turn_queue:69` is full-suite-only (isolated green).
+
+Flake ownership:
+- **isaac-1d7x** extended to own `parallel_tool_batches.feature:101` (it previously named only `:124`)
+- **isaac-w4km** (new draft) owns `turn_queue.feature:69`
+
+Do not retag unverified. Do not hail work or verify on this bean. Do not recut `run-handler`. Registry pin 0.1.59 + ACP 0.1.13 stands.
