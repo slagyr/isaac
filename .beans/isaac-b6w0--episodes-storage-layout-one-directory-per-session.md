@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-10T17:58:21Z
+updated_at: 2026-09-10T18:10:36Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -152,3 +152,28 @@ Failing specs:
 
 
 Verifier: bounce on these; do not accept layout.feature alone as the gate. Worker: the sessions/session-storage/exhaustion/unknown-crew failures say the nested `sessions/<crew>/<id>` layout broke chronicle paths that other features plant by the old `sessions/<id>` path — check the sidecar path helpers and the migrate-layout read path before the episodes features.
+## Verify fail (attempt 1, 2026-09-10): remaining episodes features still assert hyphenated ids; live 5/19 red, migrate_session 6/12 red
+
+HEAD: 9b4836d9102d0a257b4796827022bb6a851c8931
+Working tree: clean
+branch: bean/isaac-b6w0 @ 9b4836d (base origin/main@3f94e42)
+
+layout.feature 8/0/80 with @wip removed. ids_spec 5/0. No src-less handoff.
+
+Acceptance also requires: `bb features features/episodes/ features/recall/ features/session/` green, and existing episodes/recall features green after fixtures move to on-session wording (sessionless closed-episode step deleted). Worker notes claimed remaining live/lifecycle gaps predate the recut; they do not: live.feature and migrate_session.feature still assert `#"\d{4}-\d{2}-\d{2}-\d{4}-\w+"` while the store now mints `\d{17}`.
+
+Evidence:
+- `bb features features/episodes/layout.feature` → 8 examples, 0 failures, 80 assertions
+- `bb features features/episodes/idle_seal.feature` → 6/0/31
+- `bb features features/episodes/index.feature` → 6/0/41
+- `bb features features/episodes/recall_logging.feature` → 3/0/6
+- `bb features features/episodes/live.feature` → 19 examples, 5 failures, 113 assertions
+  live.feature:363 recalled scenes expected hyphenated id, got `20260301100000000`
+  live.feature:573 scenes matching: gist/text/continues mismatch (continues got `20260301100000000`)
+- `bb features features/episodes/migrate_session.feature` → 12 examples, 6 failures, 82 assertions (hyphenated id regex at migrate_session.feature:68 plus scene matching)
+- `bb spec` focused (ids/layout/impl_common/episodes_policy/memory/store) → 72 examples, 1 failure: MemorySessionStore repair-transcript! (memory_spec.clj:26 Expected ["Begin"] got ())
+- Combined `bb features features/episodes/ features/recall/ features/session/` timed out at 180s with many F dots
+
+No ## Exceptions. layout.feature edits beyond @wip removal (keyword policy values, gist-model fixture, stdout "Crew") are scenario-plan authorized, not the fail.
+
+Do not land. Keep bean/isaac-b6w0. Update remaining episodes/recall features to 17-digit ids / nested layout fixtures, then re-run the planted remaining-features gate.
