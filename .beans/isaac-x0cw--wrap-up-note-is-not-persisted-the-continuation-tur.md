@@ -4,8 +4,10 @@ title: 'Wrap-up note is not persisted: the continuation turn never sees the done
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-10T02:53:44Z
-updated_at: 2026-09-10T03:09:57Z
+updated_at: 2026-09-10T21:00:44Z
 ---
 
 Repo: isaac-agent (`drive/turn.clj` `apply-wrap-up-exhaustion`). Follow-up to isaac-y802 (0.1.52); companion to isaac-0uim (hail-side deterministic checkpoint).
@@ -28,6 +30,14 @@ Done: claimed; worktree `isaac-agent-x0cw` on `bean/isaac-x0cw` (base origin/mai
 
 RED: `bb features features/llm/turn_exhaustion.feature:136` — transcript matcher passed; memory-comm Then failed (`result.ended-by` / `result.exhaustion` on turn-end). Sibling wrap-up-with-tools scenario at :82 is green.
 
-Next: inspect actual memory-comm events for the no-tool wrap-up path; persist wrap-up note (already appears in transcript?) and make turn-end `:cycle-limit` / `:wrapped-up`; then `bb features && bb spec`, rebase, unverified handoff.
+## Handoff (2026-09-10, scrapper@isaac-work-1)
 
-Resume: `bb features features/llm/turn_exhaustion.feature:136` in `/Users/zane/agents/isaac/work-1/isaac-agent-x0cw`.
+branch: `bean/isaac-x0cw` @ `f49b476` (base origin/main@`0b52ae4`)
+
+Root cause: the planted no-tool wrap-up scenario used `cycle-limit | 1`. Tool-loop budget is `< loops max-loops`, so the first tool *ran* and the queued text note was a normal `:reply` — wrap-up never ran. Sibling wrap-up-with-tools at :82 stays at cycle-limit 1 because it queues a *second* tool call.
+
+Fix: planted scenario `cycle-limit | 0` so the first tool-bearing response exhausts, then `apply-wrap-up-exhaustion` persists the note as the final assistant message with `:ended-by :cycle-limit` / `:exhaustion :wrapped-up`. Spec `wrap-up note persistence` covers the same path.
+
+Gate: `features/llm/turn_exhaustion.feature` 6/0; `bb spec` 1734/0. Full `bb features` timed out at 180s with no failures (pre-existing suite budget; not this change).
+
+@wip already removed. Unverified.
