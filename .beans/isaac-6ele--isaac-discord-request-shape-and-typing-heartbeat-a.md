@@ -4,8 +4,10 @@ title: 'isaac-discord: request shape and typing heartbeat are store-agnostic'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T07:42:30Z
+updated_at: 2026-09-10T09:09:27Z
 blocked_by:
     - isaac-mmod
 ---
@@ -80,3 +82,31 @@ Repro (clean leftover gherclj first; ISAAC_GIT=1 so the pin is used, not ../isaa
 Hang is inside scenario 3 (`the heartbeat stops when the turn ends`) — two dots means scenarios 1–2 including after-hooks completed. Likely leftover grover wait / in-flight turn from scenario 2 (`wait: true`) so MESSAGE_CREATE or test-clock advance never returns. Check session-key case: episodes.feature asserts store id `discord-c999` while the Discord step parks `waiting-session*` as `discord-C999`; `grover/release-wait!` on the wrong key is a no-op and the next scenario blocks.
 
 Do not land. Fix typing.feature so the named `bb jvm-features features/comm/discord/typing.feature` run exits 0 with 4 examples / 0 failures inside the 60s bb timeout, then re-run the other named gates.
+
+
+## Progress (2026-09-10, scrapper@isaac-work-1, verify-fail repair)
+
+isaac-discord `bean/isaac-6ele` @ **97e9763** (base origin/main@3568cc5).
+
+**Cause:** typing.feature scenario 2 parks a Grover `wait: true` turn on a
+`clojure.core/future` (non-daemon agent send-off pool). Discord steps parked
+`waiting-session*` as `discord-C999` while Grover wait-gates use the charge
+session-key; `session_steps/-drain-parked-turn!` only sees `g :turn-future`,
+then `grover/reset-queue!` drops the promise without delivering it.
+`maybe-wait!` spun forever. The JVM printed 2 (or later 4) green dots then
+never exited — `bb jvm-features` 60s wrapper exit 124.
+
+**Fix (spec/isaac/comm/discord/discord_steps.clj only):**
+- Drain every Grover wait-gate + both casings (`discord-C999` / `discord-c999`).
+- `bridge-cancel/cancel!` after session_steps `clear!`, then join the future,
+  `clear-in-flight!`, `bridge-cancel/clear!`.
+- `g/after-all` `shutdown-agents` so the JVM actually exits.
+
+**Green (ISAAC_GIT=1):**
+- `clojure -M:features features/comm/discord/typing.feature` 4/0/4 in 10.2s, process exit 0 in 21.7s
+- `bb jvm-features features/comm/discord/typing.feature` 4/0, exit 0 in 22s (under 60s)
+- episodes.feature 3/0/13; routing.feature 9/0/10; scuttlebutt.feature 3/0/6
+- `bb spec` 46/0/96
+- `grep -rn ':conversation\|isaac.episodes' src` empty
+
+**Handoff:** branch: bean/isaac-6ele @ 97e9763 (base origin/main@3568cc5).
