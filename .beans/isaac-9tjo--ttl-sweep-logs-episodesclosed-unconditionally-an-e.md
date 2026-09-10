@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-10T01:04:02Z
-updated_at: 2026-09-10T01:04:52Z
+updated_at: 2026-09-10T01:40:43Z
 ---
 
 Repo: isaac-agent (`episodes/lifecycle.clj` `maybe-close-if-cold!` + `close-episode!`; `episodes/worker.clj` tick). Agent 0.1.53. Found while cleaning up after isaac-jom5.
@@ -26,3 +26,11 @@ Repo: isaac-agent (`episodes/lifecycle.clj` `maybe-close-if-cold!` + `close-epis
 ## Acceptance
 - the planted scenario green with @wip removed; `bb features features/episodes/ && bb spec` green
 - Train: after deploy the six marvin episodes on thread acp-4cb3db22… close on the next sweep and stay closed; `:episodes/closed` lines for them stop.
+
+
+
+## REVISED (2026-09-10, Micah) — supersedes Required 1–2
+1. **Delete, don't close.** An open episode with no content (no messages — only markers/compaction entries) has no value: the sweep DELETES the episode record and its backing session (`:episodes/deleted :reason :empty`). No LLM pass, no zero-scene record.
+2. **Logging is truthful about time**: log `:episodes/closing` before the attempt; `:episodes/closed` (or `:episodes/deleted`) only after it succeeded; on failure `:episodes/close-failed :error <message>` at :warn with the actual error (e.g. 'nothing to segment', 'unknown backing session'), and the sweep backs off that episode.
+3. `isaac episodes close` reports per-episode outcomes (closed / deleted / failed + error), never a bare 'closed 0'.
+Planted scenario updated on isaac-agent main d51cba9 (asserts the record and backing session are gone, `:episodes/closing` then `:episodes/deleted :reason :empty`, and no `:closing` on the next tick).
