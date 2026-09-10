@@ -1,11 +1,11 @@
 ---
 # isaac-jejt
 title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resume honor it'
-status: completed
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-10T22:03:50Z
+updated_at: 2026-09-10T22:13:46Z
 ---
 
 ## Problem
@@ -161,3 +161,22 @@ Acceptance: ten scenarios un-@wip. Agent focused features green (9). Hail focuse
 
 main-sha: isaac-agent ac1bf9b99522e338e79ebea9579804b9491c805e
 main-sha: isaac-hail 9887de094940511d9045cf4225db5409ed8cbb15
+
+
+
+## Verify fail (attempt 1, 2026-09-10): hail main 9887de0 CI Tests run 34535392748 red — native bb ci uses pinned isaac-agent 461082b8 (pre-jejt); delivery.feature:845 Expected 0 got 1; turn-resume.feature:123 Expected truthy was nil
+
+HEAD: hail 9887de094940511d9045cf4225db5409ed8cbb15 (main, clean)
+Working tree: clean
+CI: https://github.com/slagyr/isaac-hail/actions/runs/34535392748 job verify 103065694575 step "Run bb ci"
+CI env: AGENT_SHA=461082b8b6106c74e4d7acf47cc74ad8319575fa FOUNDATION_SHA=e0dc789b58723a3415a12d5f0d95e0d9148bc316 SERVER_SHA=eb51cc48b8964dabb678086ac36051a86d94c03a
+Local reproduction (isaac-hail @ 9887de0, native bb features, no ISAAC_GIT): same 2 failures as CI.
+
+Root cause: hail deps.edn / bb.edn pin isaac-agent at 461082b8. jejt agent squash ac1bf9b99522e338e79ebea9579804b9491c805e is on origin/main but not pinned. Native `bb ci` / `bb features` (what GitHub Actions runs) therefore cannot see request-cancel! / cancelled? marker / archive-cancelled-hail!. Verify gate used ISAAC_GIT=1 jvm-features against local agent — green there, red on the published pin. Worker note: "Did not pin modules.edn. Did not commit hail bb.edn override."
+
+Repair path:
+1. Pin hail deps.edn + bb.edn isaac-agent and isaac-agent-spec :git/sha to ac1bf9b99522e338e79ebea9579804b9491c805e (both :deps and :aliases :spec).
+2. Native (no ISAAC_GIT): `bb features features/delivery.feature:845 features/turn-resume.feature:123` then `bb ci` green.
+3. Push hail main. Do not treat JVM/local-root as the CI gate.
+
+Hail 050d0eec (ci-failure, reply_to this thread). Correlation: do not independent-repair.
