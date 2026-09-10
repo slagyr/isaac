@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: critical
 created_at: 2026-09-09T21:22:23Z
-updated_at: 2026-09-10T00:00:13Z
+updated_at: 2026-09-10T00:05:13Z
 ---
 
 Repo: isaac-agent (`session/compaction.clj` splice! / compact-close! path, `drive/turn.clj` compaction retry + successor-session-key). Agent 0.1.52 on zanebot. Interim hotfix ahead of isaac-mmod (which moves this whole path behind the session policy); keep the change minimal and scoped to the episodes branch.
@@ -47,3 +47,8 @@ the thread.
 ## Landed on main (2026-09-09)
 
 main-sha: isaac-agent 644bd4f0be04278c9e0a7ceb11c839d2f0bb7231
+
+
+
+## Deployed (2026-09-09 ~21:5xZ) — agent 0.1.53 (f7432c2)
+Pinned, upgraded, restarted; `config validate` OK; marvin CLI pong OK. Before the deploy the loop had kept running on Micah's thread: SIX open successors (2114-junk … 2130-nf7j) — closed by the planner after deploy (see thread cleanup note). Field proof = Micah's next marvin ACP session compacting once and continuing.
