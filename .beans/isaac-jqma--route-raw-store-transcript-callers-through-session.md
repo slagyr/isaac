@@ -1,11 +1,11 @@
 ---
 # isaac-jqma
 title: Route raw-store transcript callers through SessionPolicy; torn-line repair moves behind the store SPI
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-09-10T15:03:58Z
-updated_at: 2026-09-10T15:03:58Z
+updated_at: 2026-09-10T15:10:53Z
 parent: isaac-mmod
 ---
 
@@ -26,3 +26,7 @@ Repo: isaac-agent. After isaac-mmod five callers still hold the primitive Sessio
 
 ## Acceptance
 bb spec && bb features green in isaac-agent; grep -rn 'store/(get-transcript|active-transcript|append-message!|open-session!)' src outside src/isaac/session and src/isaac/episodes and src/isaac/recall is empty.
+
+## Summary of Changes (planner, 2026-09-10)
+
+Landed on isaac-agent main as squash e94c5ec (release 0.1.60 = 3f94e42d54f598117a0bbe9d469b5594a95fa926). Store SPI: `impl-common/repair-torn-transcript!*` + sidecar/memory `repair-transcript!`; chronicle + episodes delegate. resume: crew policy via `policy/for-crew` from the session record; `repair-transcript!`, `get-transcript`, `append-message!` through it; marker clear stays primitive (documented). status: turn count via the policy. charge/transcript: `policy/for-request`. api/create-session!: crew policy (chronicle default). logbook fixture records `repair-transcript!` + `get-transcript`. Scenarios: resume_repair 'transcript repair goes through the session's crew policy'; commands '/status counts turns through the session's crew policy'. Specs: sidecar + memory repair. Gates: bb spec 1730/0; bb features 799/1 where the 1 was the pre-existing qpdb cancel-mid-batch failure (fixed on main separately, f4813d9); Discord dev-local features 67/0, spec 97/0. Acceptance grep empty.

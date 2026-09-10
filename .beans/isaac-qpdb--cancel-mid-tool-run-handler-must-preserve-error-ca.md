@@ -7,7 +7,7 @@ priority: high
 tags:
     - cancel
 created_at: 2026-09-10T13:07:38Z
-updated_at: 2026-09-10T14:19:07Z
+updated_at: 2026-09-10T15:10:53Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/registry.clj` `run-handler`) + **isaac-acp** pin. Do **not** reopen **isaac-0yoc**.
@@ -111,3 +111,7 @@ Flake ownership:
 - **isaac-w4km** (new draft) owns `turn_queue.feature:69`
 
 Do not retag unverified. Do not hail work or verify on this bean. Do not recut `run-handler`. Registry pin 0.1.59 + ACP 0.1.13 stands.
+
+## Fallout fixed (planner, 2026-09-10)
+
+Agent CI was red after landing: `features/session/parallel_tool_batches.feature` 'cancel mid-batch' asserted the in-flight anchor call reports `tool-result`; with `{:error :cancelled}` preserved it now reports `tool-cancel`, which is the behaviour this bean wanted for ACP. Recut on main (f4813d9), released in agent 0.1.60. The verifier's gate here was the registry spec only; the full feature suite would have caught it.
