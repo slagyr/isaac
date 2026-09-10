@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-10T22:13:46Z
+updated_at: 2026-09-10T22:20:05Z
 ---
 
 ## Problem
@@ -180,3 +180,22 @@ Repair path:
 3. Push hail main. Do not treat JVM/local-root as the CI gate.
 
 Hail 050d0eec (ci-failure, reply_to this thread). Correlation: do not independent-repair.
+
+
+
+## CI evidence (isaac-agent, 2026-09-10)
+
+CI Tests run 34535363284 on ac1bf9b job verify 103065599427 step "Run bb ci": specs 1739/0; features 808 examples, 1 failure.
+https://github.com/slagyr/isaac-agent/actions/runs/34535363284
+
+Failure: features/session/cli.feature:367 — And session "design-chat" in-flight status is true; Expected true got false.
+Prior steps in that scenario passed: exit 0, turn marker exists with cancelled true. Only the in-flight atom was already false.
+
+Local reproduction (isaac-agent @ ac1bf9b, native bb):
+- `bb features features/session/cli.feature:358` → 1/0/4 green
+- `bb features features/session/cli.feature` → 34/0/107 green
+Does not reproduce isolated or on the full cli.feature file. CI-only under the 808-example suite (Linux).
+
+Likely race: `sessions cancel` stamps the marker (fire-and-forget, no bridge/cancel!); `cancelled?` (atom OR marker) is polled on the live turn (~50ms SSE / tool-loop), so the turn can clear in-flight before the next And step while the marker is still on disk. Scenario intent (lazy-impl killer): stamp AND still in-flight (did not wait).
+
+Hail 8a6bee4e (ci-failure). Correlation: do not independent-repair. Outstanding with attempt-1 hail pin on isaac-hail.
