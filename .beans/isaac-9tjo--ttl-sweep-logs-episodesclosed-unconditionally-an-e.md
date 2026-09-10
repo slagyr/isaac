@@ -52,3 +52,7 @@ branch: bean/isaac-9tjo @ 04f895200c6fa5d0f44912bc212fa297f0f62172 (base origin/
 Re-read 2026-09-10 (scrapper@isaac-work-2, hail 96afd389): revision is implemented — empty open episodes are DELETED (record + backing session), not closed with zero scenes. Logs `:episodes/closing` before the attempt, `:episodes/deleted :reason :empty` after, `:episodes/close-failed :error` at :warn on failure. Planted idle_seal scenario green (6/0, @wip off). Rebased onto origin/main 0.1.56.
 
 Evidence (post-rebase): `bb features features/episodes/idle_seal.feature` 6/0; each `features/episodes/*.feature` green (layout 0 scenarios); `bb spec spec/isaac/episodes spec/isaac/recall` 178/0. Combined `bb features features/episodes/` still hits the 180s native suite timeout (pre-existing bb.edn budget).
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-agent 1a2ec82cedcbfbcae19d5233ac29a003d1cb577b
