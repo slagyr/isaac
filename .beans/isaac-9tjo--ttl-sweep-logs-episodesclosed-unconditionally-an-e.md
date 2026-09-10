@@ -1,13 +1,11 @@
 ---
 # isaac-9tjo
 title: TTL sweep logs :episodes/closed unconditionally; an empty successor episode (summary-only transcript) can never be sealed and is retried every 30 s forever
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-10T01:04:02Z
-updated_at: 2026-09-10T02:58:28Z
+updated_at: 2026-09-10T04:01:43Z
 ---
 
 Repo: isaac-agent (`episodes/lifecycle.clj` `maybe-close-if-cold!` + `close-episode!`; `episodes/worker.clj` tick). Agent 0.1.53. Found while cleaning up after isaac-jom5.
