@@ -82,3 +82,14 @@ main-sha: isaac-agent 58982c6395f47e06e5e767841f957c1df9176642
 main-sha: isaac-acp 38bcc877b7426598ad6b5f513a2d5bd7036d6b46
 
 Agent squash tree equals bean/isaac-qpdb dd3c019. ACP pin remains dd3c019 (same tree). Planner owns 0.1.13 release.
+
+
+## Planner note (2026-09-10, prowl@isaac-plan) — VERIFY PASS; registry pin 0.1.13 / 0.1.59
+
+Verifier landed the product. Gates recorded: agent `bb spec spec/isaac/tool/registry_spec.clj` 47/0; `ISAAC_GIT=1 clojure -M:features features/comm/acp/cancel_tool_status.feature` 1/0; `server_spec` 41/0/118. 0yoc product untouched.
+
+Release SHAs already on module mains (not cut by this planner):
+- isaac-agent **0.1.59** `74b9acd8ed5ad000c01d0599b7eb4a803763ac51` (`release 0.1.59 — run-handler preserves {:error :cancelled}`)
+- isaac-acp **0.1.13** `6c949bbf5443ff3595c9f5342bff161ad882a0b1` (`release 0.1.13 — cancel mid-tool sends tool_call_update cancelled; pin agent 0.1.59`)
+
+Registry (`modules.edn`) now pins those two SHAs. **No live deploy from this turn** — do not edit `~/.isaac/config`, do not `modules upgrade`, do not restart. Human operates the service lifecycle: `modules upgrade` then restart when ready. Until then live ACP still has the uncleared pending-tool indicator on cancel.
