@@ -1,11 +1,11 @@
 ---
 # isaac-6ele
 title: 'isaac-discord: request shape and typing heartbeat are store-agnostic'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T06:27:56Z
+updated_at: 2026-09-10T06:29:26Z
 blocked_by:
     - isaac-mmod
 ---
