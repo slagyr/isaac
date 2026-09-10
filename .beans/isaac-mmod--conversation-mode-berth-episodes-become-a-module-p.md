@@ -4,8 +4,10 @@ title: 'Session policy berth over a primitive session store: chronicle and episo
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-10T05:41:19Z
+updated_at: 2026-09-10T05:55:11Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -197,3 +199,21 @@ Same 3 failures on JVM `clojure -M:features -t '~slow' -t '~wip'`: **797 example
 ### Not a fail on its own
 
 session_policy 8 scenarios + berth `:isaac.agent/session-policy` + factories exist. Do not land until cli-prompt frequencies work again and `bb features && bb spec` is green.
+
+
+## Repair (attempt 1, 2026-09-10, scrapper@isaac-work-1)
+
+isaac-agent `bean/isaac-mmod` @ **1fa612e** (base origin/main@a89cf6e / 0.1.57).
+
+**Fix:** `prompt_cli/resolve-target` uses `policy/default-session` only for `--crew` with no session id **and** no frequencies (`--create`/`--prefer`/`--session`/`--resume`/tags). `--create never` errors without opening; `--create always` starts a fresh session; `--prefer oldest` picks the oldest matching crew session. Bare `prompt -m` stays on `prompt-default`. `ensure-session!` create uses `(:session-key target)` only (nil → memory `"session"`). Leftover `lifecycle_spec` plant recut `:conversation` → `:session-policy`.
+
+**Green:**
+- `bb features features/bridge/cli-prompt.feature` 30/0/61
+- `bb features features/session/session_policy.feature` 8/0/23 (scenario 8 still asks default-session)
+- `bb features features/bridge/suspend.feature` 3/0
+- `bb features features/episodes/live.feature` 19/0
+- `bb spec` 1729/0/3637
+- `grep :conversation src spec features` empty
+- caller-dir `episodes-crew?|resolve-thread!|maybe-recall-at-open!|maybe-seal!|compact-close!|successor-session-key` empty except `session/policy/episodes.clj` calling `lifecycle/maybe-seal!` (policy-internal)
+
+**Handoff:** branch: bean/isaac-mmod @ 1fa612e (base origin/main@a89cf6e). Discord episodes plant re-key is verifier-local per planner note 209c8f46.
