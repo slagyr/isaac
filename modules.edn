@@ -1,5 +1,5 @@
 {:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                               :git/sha "a89cf6ebb0d5d42736306b282897adbaf26d7632"}
+                               :git/sha "837b6d48366a637f5896bc4cbc17a03b3c523d2c"}
                        :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.llm.claude    {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
                                :git/sha "6a80f358c775c892b1e1cf54d2a4d247bf1e35dc"}
@@ -29,7 +29,7 @@
                                :git/sha "c1dbf202865efc00f4657b13164afb223a912cea"}
                        :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
  :isaac.comm.discord  {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                               :git/sha "3568cc5626db2c8b89bb6ec5041c07f1a4992e5c"}
+                               :git/sha "40da00eced3f53d48ca40596255e7da9ce7c507b"}
                        :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                :git/sha "ebde04695d4a23a78161cd22b688da5fa57a9791"}
