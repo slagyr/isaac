@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T12:19:22Z
+updated_at: 2026-09-10T13:56:52Z
 blocked_by:
     - isaac-mmod
 ---
@@ -111,3 +111,5 @@ GitHub Actions run 34475605641: isaac-acp `verify: Run features` 64/1 on land SH
 Root cause is isaac-agent 0.1.58: `announce-tool-call!` CAS `:announced→:running` before execute, so in-flight `cancel-queued!` CAS `announced→cancelled` fails; `run-handler` then stringifies/caps `{:error :cancelled}` to `{:result "{:error :cancelled}"}`, so `turn.clj` never fires `on-tool-cancel`.
 
 Repair filed as draft **isaac-qpdb** (preserve `{:error :cancelled}` in `run-handler`; ACP 0.1.13 pins that agent SHA; gate `cancel_tool_status.feature` with real exec). Do not retag unverified. Do not hail work or verify on this bean. Live: cancel still aborts; editor pending indicator uncleared until qpdb + 0.1.13.
+
+**Correction (planner, 2026-09-10 14:30Z):** the cancel-status regression is agent-side (see isaac-qpdb); the bisect shows the feature fails at 79cc310 too when run against agent 0.1.58. 0yoc only moved the pin. My earlier 'ACP 64/0 against 0.1.58' pre-deploy claim came from a `bb features` run that used the old pinned agent, not the local one.

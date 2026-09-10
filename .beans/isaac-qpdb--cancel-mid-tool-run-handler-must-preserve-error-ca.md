@@ -1,13 +1,13 @@
 ---
 # isaac-qpdb
 title: 'Cancel mid-tool: run-handler must preserve {:error :cancelled} (ACP tool_call_update pending after 0.1.58)'
-status: draft
+status: todo
 type: bug
 priority: high
 tags:
     - cancel
 created_at: 2026-09-10T13:07:38Z
-updated_at: 2026-09-10T13:07:38Z
+updated_at: 2026-09-10T13:56:52Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/registry.clj` `run-handler`) + **isaac-acp** pin. Do **not** reopen **isaac-0yoc**.
@@ -50,3 +50,9 @@ Live: cancel still aborts; editor pending indicator uncleared until this lands a
 ## Notes
 
 Related: **isaac-2va** (completed — original `tool_call_update cancelled` contract); **isaac-2bni** (draft flake on `cancellation.feature` timing, different scenario); **isaac-x27m** (completed cancel_aborts_work flake). This bean is the 0.1.58 announce/running + cap-output stringify, not those.
+
+## Planner confirmation (2026-09-10)
+
+Bisect confirms the agent-side root cause: at isaac-acp `79cc310` (pre-0yoc) `clojure -M:dev-local:features features/comm/acp/cancel_tool_status.feature` against local agent 837b6d4 → 1/1 failure; `clojure -M:features` (pinned agent 0.1.43 bf43233) → 1/0. On isaac-acp main both aliases fail. Reverting 0yoc's server.clj or cli.clj changes one at a time does not help. The regression rides whichever agent release introduced the announce→running CAS; 0yoc only moved the pin so CI could see it.
+
+Promoted from draft; dispatching now. Worker: land the agent fix on a bean branch of isaac-agent first (release is the planner's), then in isaac-acp pin that agent SHA and gate the feature with real exec as written above. Note the ACP prompt path is unchanged by 0yoc; do not touch it.
