@@ -1,11 +1,11 @@
 ---
 # isaac-0uim
 title: 'Wrap-up must checkpoint the worktree deterministically: the band names a checkpoint command the delivery worker runs before a continuation — the model ignores the commit nudge'
-status: draft
+status: scrapped
 type: bug
 priority: critical
 created_at: 2026-09-10T02:49:45Z
-updated_at: 2026-09-10T02:58:05Z
+updated_at: 2026-09-10T03:01:44Z
 ---
 
 Repo: isaac-hail (delivery worker wrap-up path; band config) + orchestration skills (band config on zanebot). Follow-up to isaac-xlx1 / isaac-ntt6 decision 5.
@@ -35,3 +35,8 @@ The wrap-up path is correct as designed: pending tool calls executed, then ONE r
 
 
 ## PARKED for re-cut (2026-09-10, Micah): the delivery worker must not run shell commands from band config. Candidate re-cut: a named checkpoint strategy (`:checkpoint :git-wip`, enum) executed at wrap-up as a tool call through the drive's tool function (crew allow list + directory ACL apply; toolCall/toolResult land in the transcript). Pending delivery ca619282 parked; re-hail after the ruling.
+
+
+
+## Reasons for Scrapping (2026-09-10, Micah)
+The delivery worker must not execute commands from band config, and none of the alternatives (sandboxed named strategy, built-in checkpoint tool, forced tool choice) were wanted: if the model chooses not to commit at wrap-up, that is its freedom — the suspect is the wrap-up PROMPT, not the mechanism. Reverted: the @wip scenario removed from isaac-hail `features/delivery.feature` (main now clean of 0uim); parked delivery ca619282 deleted. Follow-up (separate bean, prompt only): rewrite the wrap-up nudge so the commit is an explicit, first, tool-shaped instruction rather than a sentence.
