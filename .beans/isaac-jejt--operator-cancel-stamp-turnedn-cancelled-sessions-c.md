@@ -4,8 +4,10 @@ title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resum
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-10T02:44:18Z
+updated_at: 2026-09-10T21:56:50Z
 ---
 
 ## Problem
@@ -143,3 +145,14 @@ bb features features/turn-resume.feature:123
 ```
 
 Also `bb spec && bb features` green in both repos.
+
+## Handoff (scrapper@isaac-work-1)
+
+branch: bean/isaac-jejt @ d13c18e (base origin/main@4e34748) — isaac-agent
+branch: bean/isaac-jejt @ 3f7bcde (base origin/main@4f3e0ea) — isaac-hail
+
+Agent: SessionStore `request-cancel!` stamps `:cancelled` on the existing turn marker. `isaac sessions cancel <id>` fire-and-forget; idle/unknown/missing refuse exit 1. `cancelled?` is atom OR marker. Resume archives cancelled hail to `hail/cancelled/` then deletes the marker; cancelled comm drops with no interruption note.
+
+Hail: live `run-turn!` cancelled archives `hail/cancelled/` with `:outcome :cancelled` (not delivered/failed/requeued). `hail-subdirs` includes `cancelled`.
+
+Acceptance: ten scenarios un-@wip. Agent focused features green (9). Hail focused delivery.feature:845 + turn-resume.feature:123 green against agent d13c18e. Agent `bb spec` 1739/0. Hail `bb spec` 156/0. Did not pin modules.edn. Did not commit hail bb.edn override.
