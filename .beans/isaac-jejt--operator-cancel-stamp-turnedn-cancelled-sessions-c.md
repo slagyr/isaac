@@ -1,11 +1,11 @@
 ---
 # isaac-jejt
 title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resume honor it'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-09T21:51:17Z
+updated_at: 2026-09-10T02:44:18Z
 ---
 
 ## Problem
