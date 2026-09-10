@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - cancel
+    - unverified
 created_at: 2026-09-10T13:07:38Z
-updated_at: 2026-09-10T13:57:43Z
+updated_at: 2026-09-10T14:12:43Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/registry.clj` `run-handler`) + **isaac-acp** pin. Do **not** reopen **isaac-0yoc**.
@@ -56,3 +57,20 @@ Related: **isaac-2va** (completed — original `tool_call_update cancelled` cont
 Bisect confirms the agent-side root cause: at isaac-acp `79cc310` (pre-0yoc) `clojure -M:dev-local:features features/comm/acp/cancel_tool_status.feature` against local agent 837b6d4 → 1/1 failure; `clojure -M:features` (pinned agent 0.1.43 bf43233) → 1/0. On isaac-acp main both aliases fail. Reverting 0yoc's server.clj or cli.clj changes one at a time does not help. The regression rides whichever agent release introduced the announce→running CAS; 0yoc only moved the pin so CI could see it.
 
 Promoted from draft; dispatching now. Worker: land the agent fix on a bean branch of isaac-agent first (release is the planner's), then in isaac-acp pin that agent SHA and gate the feature with real exec as written above. Note the ACP prompt path is unchanged by 0yoc; do not touch it.
+
+
+## Implementation (scrapper@isaac-work-1)
+
+Agent `run-handler` preserves `{:error :cancelled}` (no cap-output stringify). Optional belt: `announce-tool-call!` emits `on-tool-cancel` while tool-state is `:running`. ACP pins that SHA and gates cancel with real `exec/exec-tool`.
+
+- **isaac-agent** `bean/isaac-qpdb` @ `dd3c01997cabb0d621163f4ac98a971c572da128` (base origin/main@`837b6d48366a637f5896bc4cbc17a03b3c523d2c`)
+- **isaac-acp** `bean/isaac-qpdb` @ `7e56cdb8312b7dc8dbfaa8553f81e8679bc8e9be` (base origin/main@`ae798ec70dd387842a63ab0f04495c0be81a0672`)
+
+Acceptance:
+- `bb spec spec/isaac/tool/registry_spec.clj` — 47 examples, 0 failures
+- `ISAAC_GIT=1 clojure -M:features features/comm/acp/cancel_tool_status.feature` — 1/0
+- `ISAAC_GIT=1 clojure -M:spec spec/isaac/comm/acp/server_spec.clj` — 41 examples, 0 failures, 118 assertions
+
+Did not recut 0yoc product. Planner still owns ACP 0.1.13 release.
+
+branch: bean/isaac-qpdb @ dd3c019 (agent, base origin/main@837b6d4); bean/isaac-qpdb @ 7e56cdb (acp, base origin/main@ae798ec)
