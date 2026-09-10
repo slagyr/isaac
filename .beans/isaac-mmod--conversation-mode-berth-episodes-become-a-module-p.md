@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-10T06:23:49Z
+updated_at: 2026-09-10T09:17:13Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -320,3 +320,7 @@ Squash of bean/isaac-mmod @ 1fa612e onto origin/main a89cf6e. Base unchanged —
 - bb spec: 1729 examples, 0 failures, 3637 assertions (9.09s)
 - grep :conversation src spec features: empty
 - caller-dir episodes-crew?|resolve-thread!|maybe-recall-at-open!|maybe-seal!|compact-close!|successor-session-key empty except session/policy/episodes.clj:199 lifecycle/maybe-seal! (policy-internal)
+
+## Deploy note (2026-09-10 09:16Z)
+
+Shipped on one train: isaac-agent 0.1.58 (837b6d4) + isaac-discord 0.1.14 (40da00e), registry a1346660. zanebot crew files marvin.edn and pilot.edn re-keyed `:conversation :episodes` → `:session-policy :episodes` (zane-isaac commit) in the same breath as the restart. Boot clean: no post-boot errors or warnings, `:isaac.agent/session-policy` berth registered chronicle + episodes, Discord gateway ready at 09:16:00Z, b6w0 worker resumed on isaac-work-2. Downstream suites (hail, server, acp, claude, cron, cli-proxy) were green locally against 0.1.58 before the pin.

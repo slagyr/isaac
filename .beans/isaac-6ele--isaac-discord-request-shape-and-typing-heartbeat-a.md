@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T09:13:40Z
+updated_at: 2026-09-10T09:17:13Z
 blocked_by:
     - isaac-mmod
 ---
@@ -114,3 +114,7 @@ never exited — `bb jvm-features` 60s wrapper exit 124.
 ## Landed on main (2026-09-10)
 
 main-sha: isaac-discord 6ffa54164675f0ea3b4739ed525ec40c1a6e6174
+
+## Deploy note (2026-09-10 09:16Z)
+
+Shipped on one train: isaac-agent 0.1.58 (837b6d4) + isaac-discord 0.1.14 (40da00e), registry a1346660. zanebot crew files marvin.edn and pilot.edn re-keyed `:conversation :episodes` → `:session-policy :episodes` (zane-isaac commit) in the same breath as the restart. Boot clean: no post-boot errors or warnings, `:isaac.agent/session-policy` berth registered chronicle + episodes, Discord gateway ready at 09:16:00Z, b6w0 worker resumed on isaac-work-2. Downstream suites (hail, server, acp, claude, cron, cli-proxy) were green locally against 0.1.58 before the pin.
