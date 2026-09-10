@@ -4,10 +4,8 @@ title: 'Session policy berth over a primitive session store: chronicle and episo
 status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-10T05:15:50Z
+updated_at: 2026-09-10T05:38:57Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -157,3 +155,45 @@ isaac-agent `bean/isaac-mmod` @ **f50c77b** (base origin/main@a89cf6e / 0.1.57).
 **Done:** SessionPolicy berth (chronicle/episodes), recall on first user append, live.feature recut to policy+lifecycle (stable session-id; TTL via worker tick), isaac-jom5: compact-chain! returns `:successor-container` so perform-compaction! logs `:session/compaction-completed` instead of `:no-progress` when the live estimate stays put. `features/episodes/live.feature` 19/0, `session_policy.feature` 8/0, `idle_seal.feature` green, `suspend.feature` 3/0.
 
 **Handoff:** branch: bean/isaac-mmod @ f50c77b (base origin/main@a89cf6e).
+
+
+
+## Verify fail (attempt 1, 2026-09-10): prompt --crew bypasses frequencies (:create/:prefer); cli-prompt.feature 3 red
+
+HEAD: f50c77b47210d91209604ac384b7b7ef80f47c02 (isaac-agent bean/isaac-mmod; merge-base origin/main a89cf6e)
+Working tree: clean
+
+### Blocking (isaac-agent)
+
+`src/isaac/bridge/prompt_cli.clj` `resolve-target` short-circuits any `--crew` without `--session`/`--resume`/tags to `policy/default-session` (chronicle = most-recent session for that crew). That skips `session-frequencies/resolve-session-targets`, so `:create` and `:prefer` are ignored.
+
+Reproduce:
+```
+cd isaac-agent   # at f50c77b
+rm -rf target/gherclj/generated/
+bb features features/bridge/cli-prompt.feature
+```
+30 examples, **3 failures**, 58 assertions:
+1. `--create never with no match errors` (cli-prompt.feature:199) — expected stderr "no session"; got none (default-session created/opened a session instead of erroring).
+2. `--create always starts a fresh session and leaves the matching one untouched` (:220) — expected session count 2, got 1 (appended to existing ketch-session).
+3. `--prefer oldest picks the oldest of multiple matching sessions` (:277) — wrote onto `recent` instead of `older`.
+
+Same 3 failures on JVM `clojure -M:features -t '~slow' -t '~wip'`: **797 examples, 3 failures, 2143 assertions** (71.4s). Native `bb features` (full suite) hit the 180s timeout after printing those Fs.
+
+### Acceptance greps (partial)
+
+- `features/session/session_policy.feature`: 8/0, `@wip` removed. Feature diffs vs origin/main are `@wip` removal only.
+- `features/bridge/suspend.feature`: 3/0.
+- `features/episodes/live.feature`: 19/0; idle_seal+recall_logging 12/0; index+migrate+recall 18/0.
+- `bb spec`: **1726 examples, 0 failures, 3630 assertions** (9.06s).
+- Caller-dir grep `episodes-crew?|resolve-thread!|maybe-recall-at-open!|maybe-seal!|compact-close!|successor-session-key` in `src/isaac/bridge` `drive` `session` `comm`: empty except `session/policy/episodes.clj` calling `lifecycle/maybe-seal!` (policy-internal, allowed).
+- `grep :conversation src spec features` is **not** empty: leftover `spec/isaac/episodes/lifecycle_spec.clj:649` still `{:conversation :episodes}` (isaac-9tjo tick example; two sibling its were recut to `:session-policy`). Production `src/` is clean.
+
+### Downstream (bean said must stay green vs this SHA)
+
+- isaac-acp `features/comm/acp/episodes.feature` against local agent: 4/0.
+- isaac-discord `features/comm/discord/episodes.feature` against local agent: **3 examples, 2 failures** (no episode opened; crew has 0 episodes). Feature still plants `:conversation | episodes`. Bean text both (a) carves Discord/ACP as follow-up beans and (b) requires those suites green against this SHA. Discord is red.
+
+### Not a fail on its own
+
+session_policy 8 scenarios + berth `:isaac.agent/session-policy` + factories exist. Do not land until cli-prompt frequencies work again and `bb features && bb spec` is green.
