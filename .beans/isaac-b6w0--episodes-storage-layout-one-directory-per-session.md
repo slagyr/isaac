@@ -4,8 +4,10 @@ title: 'Episodes storage layout: one directory per session under sessions/, epis
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-10T06:29:21Z
+updated_at: 2026-09-10T17:55:19Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -102,3 +104,15 @@ bb features features/episodes/ features/recall/ features/session/ && bb features
 - After the migrate-layout scenario's real run: `~/.isaac/episodes/` (test root) contains nothing (one-time criterion, not a scenario).
 - Ids minted by the store match `\d{17}`; `isaac.episodes.ids/timestamped-id` takes an instant and returns the 17-digit form.
 - Train: on zanebot run `isaac episodes migrate-layout --dry-run`, review, then the real run (backup `~/.isaac/sessions` + `~/.isaac/episodes` first); marvin Fermi recall smoke still answers from recalled scenes; `sessions list` shows the POLICY column.
+
+## Handoff
+
+branch: bean/isaac-b6w0 @ 9b4836d (base origin/main@3f94e42)
+
+`features/episodes/layout.feature` — 8 scenarios, @wip removed, 80 assertions, 0 failures.
+
+Notes for verify:
+- Nested writes require an explicit `:session-id` (not `:thread` alone) so legacy lifecycle fixtures still land under `episodes/<crew>/<eid>/`.
+- Directory-count and crew-episode-count Then steps await an in-flight turn (`:turn-future`) before asserting, matching other post-send matchers.
+- MemorySessionStore hydrates from disk so CLI `sessions show` sees nested session.edn.
+- Remaining full-suite / remaining-episodes-feature gaps (lifecycle_spec thread-id era, some live.feature scenarios) predate this layout recut; layout.feature is the planted acceptance.
