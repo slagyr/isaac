@@ -1,7 +1,7 @@
 ---
 # isaac-tic5
 title: 'Checkpoints inside the turn: :cycle config group (limit, checkpoint-every, prompts), loop nudge every N cycles, continuations default 2'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - hail
     - config
 created_at: 2026-09-10T21:15:48Z
-updated_at: 2026-09-10T21:15:48Z
+updated_at: 2026-09-10T21:23:12Z
 ---
 
 Repos: **isaac-agent** (tool loop / drive: `llm/tool_loop.clj` hooks, `drive/turn.clj`
@@ -73,11 +73,12 @@ save point has to move inside the turn.
 8. **Prerequisite:** isaac-x0cw (wrap-up note persisted for the continuation).
 9. **Default prompts are task-agnostic (Micah, 2026-09-10).** The drive's
    built-in texts assume nothing about git, tests, beans, or the kind of task:
-   - wrap-up (unchanged from today): "Your cycle budget for this turn is
-     exhausted. Do not start new work. First save any work in progress the way
-     your instructions say to, then reply with a short note: what is done, what
-     is next, and the exact place to resume from. Your next turn resumes from
-     this note."
+   - wrap-up: "Your cycle budget for this turn is exhausted. Do not start new
+     work. First save any work in progress the way your instructions say to,
+     then reply with a short note: what is done, what is next, and the exact
+     place to resume from." (Today's hardcoded text ends with "Your next turn
+     resumes from this note." — DROP it: only true for hail continuations;
+     Micah 2026-09-10.)
    - checkpoint: "Checkpoint: save work in progress the way your instructions
      say to, then continue. Do not stop."
    "The way your instructions say to" is the contract: the crew's soul/skill
@@ -88,11 +89,33 @@ save point has to move inside the turn.
 
 ## Acceptance
 
-Scenarios to be planted one at a time (features/llm/checkpoint.feature,
-turn_exhaustion.feature additions, config schema feature; isaac-hail
-band/continuation features). Then:
+Scenarios (@wip):
+- isaac-agent f705093: `features/llm/checkpoint.feature` (nudge every Nth
+  cycle; crew checkpoint-prompt override; no config → no nudge),
+  `features/llm/turn_exhaustion.feature` (crew wrap-up-prompt override),
+  `features/config/cycle.feature` (:cycle-limit rejected naming :cycle
+  {:limit}; `config schema crew.value.cycle` lists the knobs).
+- isaac-hail 6339b55: `features/delivery.feature` (band :cycle map overrides
+  the crew on the charge; default continuations 2). Existing ntt6 scenarios
+  there move from `cycle-limit` to `cycle.limit`.
+- Spec-level: the drive's default checkpoint and wrap-up texts contain none of
+  git, commit, branch, bean, test, verify (decision 9).
+- One new step in isaac-agent: `LLM request {n} matches:` (grover twin of
+  `outbound HTTP request N matches:`). New transcript entry type `checkpoint`
+  {:cycle N}; new log event `:turn/checkpoint-nudged`.
 
 ```
-cd isaac-agent && bb features features/llm/checkpoint.feature features/llm/turn_exhaustion.feature features/tool/tool_loop_limit.feature && bb spec && bb ci
-cd isaac-hail && bb features && bb spec && bb ci
+cd isaac-agent
+bb features features/llm/checkpoint.feature features/llm/turn_exhaustion.feature features/config/cycle.feature features/tool/tool_loop_limit.feature
+bb spec spec/isaac/drive spec/isaac/config
+bb ci
+cd ../isaac-hail
+bb features features/delivery.feature
+bb spec && bb ci
 ```
+
+All pass with @wip removed; every existing `cycle-limit` feature/spec moves
+to `cycle.limit` (clean cutover). Train: agent + hail bumps, then zanebot
+config cutover — crew files `:cycle-limit` → `:cycle {...}` (scrapper per
+decision 7), band files `cycle-limit:` → `cycle:`; isaac-hail default
+continuations 2 lands with the hail bump.
