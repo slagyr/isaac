@@ -1,13 +1,13 @@
 ---
 # isaac-ru3e
 title: 'isaac-discord: process-message! always sends :session-key; drop episode/chronicle request-shape branch'
-status: draft
+status: scrapped
 type: task
 priority: high
 tags:
     - discord
 created_at: 2026-09-10T06:18:04Z
-updated_at: 2026-09-10T06:18:04Z
+updated_at: 2026-09-10T06:27:56Z
 parent: isaac-mmod
 blocked_by:
     - isaac-mmod
@@ -47,3 +47,7 @@ This is Discord production request-shape, not an agent bug. Do **not** recut Dis
 0 failures. `grep -n ':conversation' src` empty (or only comments). Do **not** require full `bb features` wrapper exit 0 (60s timeout is known). Do not reopen mmod product.
 
 Draft until human review. Blocked by mmod landing.
+
+## Reasons for Scrapping
+
+Duplicate of isaac-6ele (created 2026-09-09 under Micah's ruling that the Discord request shape collapses to a plain session id). Its specifics (session-key always, plant re-key, acceptance commands, agent pin) were folded into 6ele on 2026-09-10.
