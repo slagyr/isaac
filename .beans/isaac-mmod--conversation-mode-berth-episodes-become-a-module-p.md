@@ -1,13 +1,11 @@
 ---
 # isaac-mmod
 title: 'Session policy berth over a primitive session store: chronicle and episodes are per-crew policies; the bridge stops resolving episodes'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-10T06:15:52Z
+updated_at: 2026-09-10T06:23:49Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -304,3 +302,21 @@ Do **not** require:
 - full `bb features && bb spec` as a controlling gate (the named commands above are the gate)
 
 Train note still stands: zanebot `crew/marvin.edn` `:conversation :episodes` → `:session-policy :episodes` at deploy. Discord/ACP recuts (ru3e, 0yoc) pin the agent SHA this bean releases.
+
+
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-agent 5104ad470c8c797132925a9d5f6a487ab1c8a86a
+
+Squash of bean/isaac-mmod @ 1fa612e onto origin/main a89cf6e. Base unchanged — targeted gate already green on that tree. Planner e07ca5d8 waived Discord/ACP downstream-green (follow-ups isaac-ru3e, isaac-0yoc). No harden-band.
+
+### Agent gates (controlling)
+
+- bb features features/session/session_policy.feature: 8 examples, 0 failures, 23 assertions (1.81s). @wip removed.
+- bb features features/bridge/cli-prompt.feature features/bridge/suspend.feature: 33 examples, 0 failures, 73 assertions (12.91s)
+- bb features features/episodes/live.feature features/episodes/idle_seal.feature features/episodes/recall_logging.feature: 28 examples, 0 failures, 163 assertions (15.31s)
+- bb features features/episodes/index.feature features/episodes/migrate_session.feature features/recall: 18 examples, 0 failures, 134 assertions (5.53s)
+- bb spec: 1729 examples, 0 failures, 3637 assertions (9.09s)
+- grep :conversation src spec features: empty
+- caller-dir episodes-crew?|resolve-thread!|maybe-recall-at-open!|maybe-seal!|compact-close!|successor-session-key empty except session/policy/episodes.clj:199 lifecycle/maybe-seal! (policy-internal)
