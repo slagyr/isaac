@@ -4,8 +4,10 @@ title: TTL sweep logs :episodes/closed unconditionally; an empty successor episo
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-10T01:04:02Z
-updated_at: 2026-09-10T01:40:43Z
+updated_at: 2026-09-10T02:58:28Z
 ---
 
 Repo: isaac-agent (`episodes/lifecycle.clj` `maybe-close-if-cold!` + `close-episode!`; `episodes/worker.clj` tick). Agent 0.1.53. Found while cleaning up after isaac-jom5.
@@ -34,3 +36,17 @@ Repo: isaac-agent (`episodes/lifecycle.clj` `maybe-close-if-cold!` + `close-epis
 2. **Logging is truthful about time**: log `:episodes/closing` before the attempt; `:episodes/closed` (or `:episodes/deleted`) only after it succeeded; on failure `:episodes/close-failed :error <message>` at :warn with the actual error (e.g. 'nothing to segment', 'unknown backing session'), and the sweep backs off that episode.
 3. `isaac episodes close` reports per-episode outcomes (closed / deleted / failed + error), never a bare 'closed 0'.
 Planted scenario updated on isaac-agent main d51cba9 (asserts the record and backing session are gone, `:episodes/closing` then `:episodes/deleted :reason :empty`, and no `:closing` on the next tick).
+
+## Implementation (scrapper@isaac-work-2)
+
+TTL sweep now DELETES empty open episodes (no type=message entries) plus the backing session. No LLM pass, no zero-scene close.
+
+- store/delete-episode! + keywordize-status so planted Gherkin status | open is :open
+- lifecycle/maybe-close-if-cold! logs :episodes/closing before the attempt; :episodes/deleted :reason :empty after success; :episodes/close-failed :error at :warn on failure
+- close-episode! also deletes empty transcripts
+- Worker tick slices :log-entries-mark so the second-tick negative log assertion does not see the first tick's :closing
+- CLI isaac episodes close prints per-episode deleted / failed / closed lines; never a bare closed 0
+
+branch: bean/isaac-9tjo @ fbbf1f94c4ce2e3699ca4ca92e7b108aa3c400f7 (base origin/main@d51cba952ead4045e7aa255528cc48e06174e7de)
+
+Evidence: bb features features/episodes/idle_seal.feature 6/0; each features/episodes/*.feature green; bb spec 1719/0. Combined bb features features/episodes/ hits the 180s native suite timeout (pre-existing bb.edn budget).
