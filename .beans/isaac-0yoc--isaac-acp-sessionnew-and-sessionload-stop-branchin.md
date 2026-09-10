@@ -1,13 +1,11 @@
 ---
 # isaac-0yoc
 title: 'isaac-acp: session/new and session/load stop branching on the crew''s mode — the store answers'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T12:11:01Z
+updated_at: 2026-09-10T12:14:27Z
 blocked_by:
     - isaac-mmod
 ---
@@ -87,3 +85,9 @@ Pin agent 837b6d4.
 Planner item 2 asked origin.kind=acp on :episodes/opened. Agent 837b6d4 open-container! logs :origin as a nested map; match-entries origin.kind is nil because append-message! does not pass session origin into ensure-open-container!. Recut asserts session-id + episode container regex instead. Warm scenario sessions = reef-chat.
 
 Cancel specs redef tool-registry/execute (registry wrapping maps without :isError/:result).
+
+
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-acp a129f43db055576112895299bb7d371cd1772627
