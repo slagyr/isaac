@@ -4,10 +4,8 @@ title: 'isaac-discord: request shape and typing heartbeat are store-agnostic'
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T06:59:41Z
+updated_at: 2026-09-10T07:42:30Z
 blocked_by:
     - isaac-mmod
 ---
@@ -53,3 +51,32 @@ isaac-discord `bean/isaac-6ele` @ **5bbeb28** (base origin/main@3568cc5).
 - `grep -rn ':conversation\|isaac\.episodes' src` empty
 
 **Handoff:** branch: bean/isaac-6ele @ 5bbeb28 (base origin/main@3568cc5).
+
+
+
+## Verify fail (attempt 1, 2026-09-10): typing.feature hangs after 2 green examples; bb jvm-features gate times out
+
+HEAD (beans repo): 3f5ab544f7099a5ee734478ff2700c2445005d75
+Working tree: clean
+isaac-discord: bean/isaac-6ele @ 5bbeb28baf20cf00c6c980a3f0778507557a9f4f (base origin/main 3568cc5)
+
+Gate from bean (named runs, ISAAC_GIT=1):
+
+- `grep -rn ':conversation\|isaac.episodes' src` empty. Pin 837b6d4 present in deps.edn + bb.edn.
+- `bb spec` 46 examples, 0 failures, 96 assertions (0.54s).
+- `clojure -M:features features/comm/discord/episodes.feature` 3/0/13 in 10.1s.
+- `clojure -M:features features/comm/discord/routing.feature` 9/0/10 in 18.0s.
+- `clojure -M:features features/comm/discord/scuttlebutt.feature` 3/0/6 in 9.1s.
+- `clojure -M:features features/comm/discord/typing.feature` **hangs**. After ~25s stdout is two green dots (scenarios 1–2), then no further output through 180s. Process stays alive as gherclj.main. `bb jvm-features` wraps this in a 60s timeout and exits 124 (`jvm-features timed out after 60s`) even when the examples that did finish were green.
+
+Repro (clean leftover gherclj first; ISAAC_GIT=1 so the pin is used, not ../isaac-agent):
+
+    cd isaac-discord
+    pkill -f 'gherclj.main' || true
+    rm -rf target/gherclj/generated/
+    export ISAAC_GIT=1
+    clojure -M:features features/comm/discord/typing.feature
+
+Hang is inside scenario 3 (`the heartbeat stops when the turn ends`) — two dots means scenarios 1–2 including after-hooks completed. Likely leftover grover wait / in-flight turn from scenario 2 (`wait: true`) so MESSAGE_CREATE or test-clock advance never returns. Check session-key case: episodes.feature asserts store id `discord-c999` while the Discord step parks `waiting-session*` as `discord-C999`; `grover/release-wait!` on the wrong key is a no-op and the next scenario blocks.
+
+Do not land. Fix typing.feature so the named `bb jvm-features features/comm/discord/typing.feature` run exits 0 with 4 examples / 0 failures inside the 60s bb timeout, then re-run the other named gates.
