@@ -1,14 +1,13 @@
 ---
 # isaac-qpdb
 title: 'Cancel mid-tool: run-handler must preserve {:error :cancelled} (ACP tool_call_update pending after 0.1.58)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - cancel
-    - unverified
 created_at: 2026-09-10T13:07:38Z
-updated_at: 2026-09-10T14:12:43Z
+updated_at: 2026-09-10T14:19:07Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/registry.clj` `run-handler`) + **isaac-acp** pin. Do **not** reopen **isaac-0yoc**.
@@ -74,3 +73,12 @@ Acceptance:
 Did not recut 0yoc product. Planner still owns ACP 0.1.13 release.
 
 branch: bean/isaac-qpdb @ dd3c019 (agent, base origin/main@837b6d4); bean/isaac-qpdb @ 7e56cdb (acp, base origin/main@ae798ec)
+
+
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-agent 58982c6395f47e06e5e767841f957c1df9176642
+main-sha: isaac-acp 38bcc877b7426598ad6b5f513a2d5bd7036d6b46
+
+Agent squash tree equals bean/isaac-qpdb dd3c019. ACP pin remains dd3c019 (same tree). Planner owns 0.1.13 release.
