@@ -4,8 +4,10 @@ title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resum
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-10T22:20:05Z
+updated_at: 2026-09-10T22:48:24Z
 ---
 
 ## Problem
@@ -199,3 +201,18 @@ Does not reproduce isolated or on the full cli.feature file. CI-only under the 8
 Likely race: `sessions cancel` stamps the marker (fire-and-forget, no bridge/cancel!); `cancelled?` (atom OR marker) is polled on the live turn (~50ms SSE / tool-loop), so the turn can clear in-flight before the next And step while the marker is still on disk. Scenario intent (lazy-impl killer): stamp AND still in-flight (did not wait).
 
 Hail 8a6bee4e (ci-failure). Correlation: do not independent-repair. Outstanding with attempt-1 hail pin on isaac-hail.
+
+## Repair (scrapper@isaac-work-2, 2026-09-10)
+
+Pinned hail `deps.edn` + `bb.edn` isaac-agent and isaac-agent-spec `:git/sha` to `ac1bf9b99522e338e79ebea9579804b9491c805e` (both `:deps` and `:aliases :spec` extra-deps). Did not pin `modules.edn`. Did not touch agent 8a6bee4e.
+
+hail main: `fac43ef` (base origin/main@9887de0)
+branch: bean/isaac-jejt @ fac43ef (base origin/main@9887de0)
+
+Native (no ISAAC_GIT), gitlibs ac1bf9b9:
+- `bb features features/delivery.feature:845 features/turn-resume.feature:123` → 2/0/10 green
+- `bb spec` → 156/0/358 green
+
+Local `bb ci` features: 146 examples, 7 failures in band-inheritance / band-prompt templating (nil pending hail). Those 7 pass isolated (`bb features features/band-inheritance.feature` → 7/0/16). CI run 34535392748 on 9887de0 (Linux, 23s) had only the two jejt pin failures — band inheritance was green there. Local full-suite pollution, not a pin regression. GitHub Actions clones siblings at the pin; native CI is the gate.
+
+Did not independent-repair hail 050d0eec / agent 8a6bee4e.
