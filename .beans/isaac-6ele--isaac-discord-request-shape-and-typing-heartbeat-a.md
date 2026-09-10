@@ -1,13 +1,11 @@
 ---
 # isaac-6ele
 title: 'isaac-discord: request shape and typing heartbeat are store-agnostic'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T09:09:27Z
+updated_at: 2026-09-10T09:13:40Z
 blocked_by:
     - isaac-mmod
 ---
@@ -110,3 +108,9 @@ never exited — `bb jvm-features` 60s wrapper exit 124.
 - `grep -rn ':conversation\|isaac.episodes' src` empty
 
 **Handoff:** branch: bean/isaac-6ele @ 97e9763 (base origin/main@3568cc5).
+
+
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-discord 6ffa54164675f0ea3b4739ed525ec40c1a6e6174
