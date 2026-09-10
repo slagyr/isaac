@@ -5,7 +5,7 @@ status: completed
 type: epic
 priority: high
 created_at: 2026-09-08T13:34:08Z
-updated_at: 2026-09-10T03:16:40Z
+updated_at: 2026-09-10T10:43:50Z
 ---
 
 Repo: isaac-hail (delivery_worker) / isaac-agent (drive/turn). Reopens the isaac-k4mf contract: a hail-driven work turn must not silently complete on an empty terminal model response.
@@ -66,3 +66,7 @@ All eight decisions landed and are live on zanebot:
 
 ## Post-deploy note (2026-09-10, Micah)
 The wrap-up nudge in the drive must stay generic (it drives every turn, not only bean work): agent 0.1.55 ships a neutral nudge — 'save any work in progress the way your instructions say to, then reply with a done/next note'. The git checkpoint instruction lives in the orchestration work skill ('Wrap-up on budget exhaustion'). A deterministic checkpoint run by the delivery worker (isaac-0uim) was scrapped: no shell from config; if the model chooses not to commit that is its freedom — the prompt is the lever.
+
+## Field observation (2026-09-10 10:40Z, isaac-work-1 / isaac-0yoc, grok-4.6)
+
+Cycle limit 120 reached after 371 executed tools; the wrap-up nudge got an empty model response (`:empty-terminal-response: wrap-up note was empty`, 0 tool calls, 0 chars). Path taken: turn `:ended-by :error` → `:hail/attempt-failed` attempts 1 → immediate rebind on the same session, i.e. a retry that skips the checkpoint note and grants a fresh cycle budget. Worked as designed, but an empty wrap-up on a long grok session may be context pressure (request bodies ~650 KB); if it repeats, consider compacting before the nudge or retrying the nudge once at lower effort before failing the turn.
