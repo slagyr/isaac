@@ -1,11 +1,11 @@
 ---
 # isaac-0yoc
 title: 'isaac-acp: session/new and session/load stop branching on the crew''s mode — the store answers'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-09T16:35:02Z
+updated_at: 2026-09-10T09:18:20Z
 blocked_by:
     - isaac-mmod
 ---
