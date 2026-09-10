@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: critical
 created_at: 2026-09-10T02:49:45Z
-updated_at: 2026-09-10T02:49:45Z
+updated_at: 2026-09-10T02:53:20Z
 ---
 
 Repo: isaac-hail (delivery worker wrap-up path; band config) + orchestration skills (band config on zanebot). Follow-up to isaac-xlx1 / isaac-ntt6 decision 5.
@@ -26,3 +26,8 @@ Repo: isaac-hail (delivery worker wrap-up path; band config) + orchestration ski
 ## Acceptance
 - planted scenario green with @wip removed; `bb features && bb spec` green in isaac-hail
 - Band config on zanebot (isaac-work, tono-work, orchestration-work) carries `checkpoint`; after deploy, the next wrap-up on any worker session shows `:hail/checkpointed` and a new commit on the bean branch.
+
+
+
+## Root cause confirmed (planner read of drive/turn.clj `apply-wrap-up-exhaustion` + the 01:38–01:41Z log)
+The wrap-up path is correct as designed: pending tool calls executed, then ONE request carrying the nudge ('Budget exhausted. Start nothing new. Commit and push to the bean branch; write the done/next note; hand off if acceptance is met.') with the turn's tools still offered (15 selected); if the model returns tool calls they are executed and a tool-less note request follows; otherwise its text is the note. At 01:38:50Z grok-4-6 answered that request with prose only — no tool calls — so nothing committed, and the code accepted the text as the wrap-up note (`:exhaustion :wrapped-up`). Three times out of three. The instruction is advisory to the model; a checkpoint cannot be. Hence this bean.
