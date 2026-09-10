@@ -21,3 +21,13 @@ Each wrap-up ended `:turn/ended :ended-by :cycle-limit :exhaustion :wrapped-up` 
 
 ## Acceptance
 - planted scenario green with @wip removed; the other turn_exhaustion scenarios unchanged; `bb features && bb spec` green.
+
+## Progress (2026-09-10, scrapper@isaac-work-1)
+
+Done: claimed; worktree `isaac-agent-x0cw` on `bean/isaac-x0cw` (base origin/main@37116ef); un-@wip planted scenario; pushed `35c1bbe` (wip checkpoint).
+
+RED: `bb features features/llm/turn_exhaustion.feature:136` — transcript matcher passed; memory-comm Then failed (`result.ended-by` / `result.exhaustion` on turn-end). Sibling wrap-up-with-tools scenario at :82 is green.
+
+Next: inspect actual memory-comm events for the no-tool wrap-up path; persist wrap-up note (already appears in transcript?) and make turn-end `:cycle-limit` / `:wrapped-up`; then `bb features && bb spec`, rebase, unverified handoff.
+
+Resume: `bb features features/llm/turn_exhaustion.feature:136` in `/Users/zane/agents/isaac/work-1/isaac-agent-x0cw`.
