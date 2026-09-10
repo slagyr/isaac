@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T12:14:27Z
+updated_at: 2026-09-10T12:19:22Z
 blocked_by:
     - isaac-mmod
 ---
@@ -91,3 +91,9 @@ Cancel specs redef tool-registry/execute (registry wrapping maps without :isErro
 ## Landed on main (2026-09-10)
 
 main-sha: isaac-acp a129f43db055576112895299bb7d371cd1772627
+
+## Deploy note + CI regression (2026-09-10 12:16Z)
+
+Released isaac-acp 0.1.12 (ae798ec), pinned (dce8de10), upgraded and restarted on zanebot; boot clean. ACP smoke: `session/new --crew marvin` answered through the episodes policy with a fresh session id (nothing persisted until the first prompt). 
+
+**Regression landed with this bean:** isaac-acp CI `verify: Run features` is red on `features/comm/acp/cancel_tool_status.feature` — after `session/cancel` the client gets `tool_call`/`pending` instead of `tool_call_update`/`cancelled` (64 examples, 1 failure). Deterministic locally on main against agent 837b6d4; the suite was 64/0 on origin/main before this bean. The worker called the sibling spec failure pre-existing and the verifier landed without gating it (ruling item 6 above). The ci-failure band hail da779f10 (perceptor@isaac-verify) is investigating and is instructed to push the repair; planner releases 0.1.13 when it lands. Live impact: cancel still cancels, but the editor's pending tool indicator is not cleared.
