@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-10T05:38:57Z
+updated_at: 2026-09-10T05:41:19Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -91,7 +91,7 @@ bb features features/episodes/ features/recall/ features/comm/acp/ 2>/dev/null; 
 ```
 - All 8 green with @wip removed; suspend.feature unchanged and green with resume going through the protocol; the episodes/recall features green with :session-id.
 - `grep -rn ':conversation' src spec features` empty; `grep -rn 'episodes-crew?\|resolve-thread!\|maybe-recall-at-open!\|maybe-seal!\|compact-close!\|successor-session-key' src/isaac/bridge src/isaac/drive src/isaac/session src/isaac/comm` empty.
-- Downstream (isaac-acp `features/comm/acp/episodes.feature`, isaac-discord features) still green against this agent SHA — the verifier runs them with the pinned sibling.
+- Downstream (isaac-acp `features/comm/acp/episodes.feature`, isaac-discord features) still green against this agent SHA — the verifier runs them with the pinned sibling. **Clarified after the first verify bounce (planner, 2026-09-10):** the Discord episodes feature plants `:conversation | episodes`; that plant line is config ripple from the rename, not Discord production code (Discord calls `lifecycle/episodes-crew?`, which now reads `:session-policy`). The verifier re-keys that one plant line to `:session-policy | episodes` in its local isaac-discord checkout before running; green with that one-line change counts. The re-key lands in isaac-discord on the deploy train (planner).
 - Train note: zanebot `crew/marvin.edn` `:conversation :episodes` → `:session-store :episodes` at deploy.
 
 
