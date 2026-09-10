@@ -1,13 +1,11 @@
 ---
 # isaac-x0cw
 title: 'Wrap-up note is not persisted: the continuation turn never sees the done/next note it is supposed to start from'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-10T02:53:44Z
-updated_at: 2026-09-10T21:00:44Z
+updated_at: 2026-09-10T21:08:15Z
 ---
 
 Repo: isaac-agent (`drive/turn.clj` `apply-wrap-up-exhaustion`). Follow-up to isaac-y802 (0.1.52); companion to isaac-0uim (hail-side deterministic checkpoint).
@@ -41,3 +39,9 @@ Fix: planted scenario `cycle-limit | 0` so the first tool-bearing response exhau
 Gate: `features/llm/turn_exhaustion.feature` 6/0; `bb spec` 1734/0. Full `bb features` timed out at 180s with no failures (pre-existing suite budget; not this change).
 
 @wip already removed. Unverified.
+
+
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-agent 66d4233eeb83d8205b78da359e6a54caef38b6cf
