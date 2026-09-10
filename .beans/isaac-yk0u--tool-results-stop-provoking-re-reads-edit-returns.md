@@ -1,14 +1,14 @@
 ---
 # isaac-yk0u
 title: 'Tool results stop provoking re-reads: edit returns the updated content; per-window read/grep cache; skill loads dedupe'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - agent
     - tools
 created_at: 2026-09-10T19:01:17Z
-updated_at: 2026-09-10T19:01:17Z
+updated_at: 2026-09-10T20:52:27Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/file.clj` edit/read, `src/isaac/tool/grep.clj`,
@@ -70,12 +70,23 @@ context, so the model does not try a different window to get it.
 
 ## Acceptance
 
-Scenarios in `features/tool/edit_returns_content.feature` and
-`features/tool/window_cache.feature` (to be planned one at a time).
+Scenarios (@wip, isaac-agent 0b52ae4):
+- `features/tool/edit_returns_content.feature` — 1 scenario (decision 1).
+- `features/tool/window_cache.feature` — 4 scenarios: repeated read → stub;
+  edit between reads invalidates; repeated grep → stub; repeated skill load
+  → stub (decisions 2–3). New log event `:tool/cache-hit` with :tool :cycle.
+- "Cleared on compaction" is pinned at spec level (the cache map is emptied
+  when the turn compacts mid-turn), not as a feature scenario.
 
 ```
 cd isaac-agent
+bb features features/tool/edit_returns_content.feature
+bb features features/tool/window_cache.feature
 bb features features/tool/
-bb spec spec/isaac/tool
+bb spec spec/isaac/tool spec/isaac/drive
 bb ci
 ```
+
+All five pass with @wip removed; existing tool features stay green (the
+old "edited <path>" receipt assertion, if any, is updated, not kept). bb ci
+green.
