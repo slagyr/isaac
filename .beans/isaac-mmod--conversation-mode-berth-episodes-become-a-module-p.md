@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-09T18:04:23Z
+updated_at: 2026-09-10T03:18:18Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -138,3 +138,12 @@ Main CI Tests (runs 34383400840 @ f3dd87e, 34384940799 @ 1f72fa3) failed at **In
 Repair on `bean/isaac-mmod` and fast-forwarded to `origin/main`: **de3af25** — install ripgrep from the GitHub musl release (same pattern as the isaac monolith workflow). Trailers Isaac-Session: isaac-work-2 / Isaac-Bean: isaac-mmod.
 
 Session-policy implementation remains local WIP; this commit is CI-only.
+
+
+## Progress (2026-09-10, scrapper@isaac-work-2, continuation 3)
+
+WIP checkpointed and pushed: isaac-agent `bean/isaac-mmod` @ **8a48086** (base was origin/main@f7432c2 / 0.1.53). 38 files: SessionPolicy protocol + chronicle/episodes factories, conversation.router deleted, logbook fixture, crew `:session-policy` check, callers wrap via `policy/for-request`.
+
+**Done:** protocol + berth, chronicle/episodes policies, logbook recorder, config check, feature recut `session_policy.feature` (8 scenarios, no @wip), feature recuts conversation→session-policy.
+
+**Exact next step:** rebase `bean/isaac-mmod` onto current `origin/main` (0.1.55 @ 6bbae8d), then run `bb features features/session/session_policy.feature` and close remaining gaps (default-session CLI, unknown-policy known-names, episodes cold-open session-id).
