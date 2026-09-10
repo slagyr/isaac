@@ -4,8 +4,10 @@ title: 'Session policy berth over a primitive session store: chronicle and episo
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-10T03:18:18Z
+updated_at: 2026-09-10T05:15:50Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -147,3 +149,11 @@ WIP checkpointed and pushed: isaac-agent `bean/isaac-mmod` @ **8a48086** (base w
 **Done:** protocol + berth, chronicle/episodes policies, logbook recorder, config check, feature recut `session_policy.feature` (8 scenarios, no @wip), feature recuts conversation→session-policy.
 
 **Exact next step:** rebase `bean/isaac-mmod` onto current `origin/main` (0.1.55 @ 6bbae8d), then run `bb features features/session/session_policy.feature` and close remaining gaps (default-session CLI, unknown-policy known-names, episodes cold-open session-id).
+
+## Progress (2026-09-10, scrapper@isaac-work-2)
+
+isaac-agent `bean/isaac-mmod` @ **f50c77b** (base origin/main@a89cf6e / 0.1.57).
+
+**Done:** SessionPolicy berth (chronicle/episodes), recall on first user append, live.feature recut to policy+lifecycle (stable session-id; TTL via worker tick), isaac-jom5: compact-chain! returns `:successor-container` so perform-compaction! logs `:session/compaction-completed` instead of `:no-progress` when the live estimate stays put. `features/episodes/live.feature` 19/0, `session_policy.feature` 8/0, `idle_seal.feature` green, `suspend.feature` 3/0.
+
+**Handoff:** branch: bean/isaac-mmod @ f50c77b (base origin/main@a89cf6e).
