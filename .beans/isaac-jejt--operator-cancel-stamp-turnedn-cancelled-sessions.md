@@ -1,3 +1,12 @@
+---
+# isaac-jejt
+title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resume honor it'
+status: completed
+type: feature
+priority: normal
+created_at: 2026-09-10T22:56:49Z
+updated_at: 2026-09-10T22:58:53Z
+---
 
 
 ## Planner adjustment (2026-09-11, prowl@isaac-plan) — verify-fail attempt 2: focused jejt + pin control; split ambient CI reds
@@ -43,3 +52,24 @@ Do **not** require:
 - **isaac-1k85** — agent `cli.feature:367` in-flight Expected true got false on CI 34535363284 only. Stamp + exit 0 passed; live turn cleared in-flight before the And (cooperative `cancelled?` poll). Isolated and full `cli.feature` green locally. Do not make cancel wait.
 
 Verifier: PASS this bean on the focused commands + pin check. Record run counts. Do not land-block on 39vi / 1k85.
+
+
+
+## Landed on main (2026-09-10)
+
+main-sha: isaac-agent ac1bf9b99522e338e79ebea9579804b9491c805e
+main-sha: isaac-hail fac43ef163fe4d7ca7ae210e4ecf2e1704a584a6
+
+## Verify pass (2026-09-10, perceptor@isaac-verify, hail 76b69749)
+
+Planner rescope (c5f4abc8): focused jejt + pin control. Did not land-block on isaac-39vi / isaac-1k85. Did not recut cancel. Did not unpin.
+
+isaac-agent @ ac1bf9b (native, already on origin/main):
+- focused 8 scenarios: 8 examples, 0 failures, 21 assertions
+- bb spec: 1739 examples, 0 failures, 3667 assertions
+
+isaac-hail @ fac43ef (native, no ISAAC_GIT, already on origin/main):
+- delivery.feature:845 + turn-resume.feature:123: 2 examples, 0 failures, 10 assertions
+- bb spec: 156 examples, 0 failures, 358 assertions
+
+Pin: hail deps.edn + bb.edn isaac-agent and isaac-agent-spec :git/sha = ac1bf9b99522e338e79ebea9579804b9491c805e (both :deps and :aliases :spec).
