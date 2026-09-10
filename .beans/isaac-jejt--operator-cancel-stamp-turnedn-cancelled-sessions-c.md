@@ -4,10 +4,8 @@ title: 'Operator cancel: stamp turn.edn :cancelled; sessions cancel + hail/resum
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-09T20:46:22Z
-updated_at: 2026-09-10T22:48:24Z
+updated_at: 2026-09-10T22:52:01Z
 ---
 
 ## Problem
@@ -216,3 +214,24 @@ Native (no ISAAC_GIT), gitlibs ac1bf9b9:
 Local `bb ci` features: 146 examples, 7 failures in band-inheritance / band-prompt templating (nil pending hail). Those 7 pass isolated (`bb features features/band-inheritance.feature` → 7/0/16). CI run 34535392748 on 9887de0 (Linux, 23s) had only the two jejt pin failures — band inheritance was green there. Local full-suite pollution, not a pin regression. GitHub Actions clones siblings at the pin; native CI is the gate.
 
 Did not independent-repair hail 050d0eec / agent 8a6bee4e.
+
+
+
+## Verify fail (attempt 2, 2026-09-10): hail pin fac43ef CI Tests 34539090442 still red — 7 band-inheritance/prompt failures; agent ac1bf9b CI 34535363284 still red on cli.feature:367
+
+HEAD: hail fac43ef163fe4d7ca7ae210e4ecf2e1704a584a6 (main, clean); agent ac1bf9b99522e338e79ebea9579804b9491c805e (main, clean)
+Working tree: both clean
+
+Hail pin is correct: deps.edn + bb.edn isaac-agent / isaac-agent-spec :git/sha = ac1bf9b9. Native focused delivery.feature:845 + turn-resume.feature:123 2/0/10 green; hail bb spec 156/0/358. CI AGENT_SHA now ac1bf9b9. The two jejt hail scenarios that failed on 9887de0 are gone.
+
+GitHub Actions hail CI Tests 34539090442 (fac43ef) job verify: specs 156/0; features 146 examples, 7 failures, 2 pending:
+1-4 Hail band inheritance via base template bands — Expected truthy/maps/strings got nil
+5-7) Hail band prompt templating with params — Expected rendered prompt got nil
+https://github.com/slagyr/isaac-hail/actions/runs/34539090442
+Worker noted these 7 pass isolated locally and were not in CI 34535392748 (Linux 146/2 on 461082b8). After the pin they appear on Linux CI. Not pre-existing on main before jejt (6339b55 CI Tests 34531863683 success). Pin-only commit; jejt hail scenarios themselves green.
+
+Agent CI Tests 34535363284 on ac1bf9b still red: features/session/cli.feature:367 in-flight Expected true got false (CI-only under 808-example suite). Local focused 8/0/21 and full cli.feature 34/0/107 green. Worker did not independent-repair 8a6bee4e.
+
+Acceptance unmet: bb features not green in either repo on the published CI gate. Pin fixed attempt-1 hail scenarios only.
+EOF
+)
