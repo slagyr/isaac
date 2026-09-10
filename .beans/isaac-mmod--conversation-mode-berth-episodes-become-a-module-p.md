@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-09-09T14:52:09Z
-updated_at: 2026-09-10T05:55:11Z
+updated_at: 2026-09-10T06:15:52Z
 ---
 
 Repo: isaac-agent. First of three beans to extract episodes+recall into a module (berth → extraction → train). Planning session 2026-09-09 (planner + Micah).
@@ -217,3 +217,54 @@ isaac-agent `bean/isaac-mmod` @ **1fa612e** (base origin/main@a89cf6e / 0.1.57).
 - caller-dir `episodes-crew?|resolve-thread!|maybe-recall-at-open!|maybe-seal!|compact-close!|successor-session-key` empty except `session/policy/episodes.clj` calling `lifecycle/maybe-seal!` (policy-internal)
 
 **Handoff:** branch: bean/isaac-mmod @ 1fa612e (base origin/main@a89cf6e). Discord episodes plant re-key is verifier-local per planner note 209c8f46.
+
+
+
+## Verify fail (attempt 2, 2026-09-10): Discord/ACP episode surfaces still red vs this SHA after frequencies repair
+
+HEAD: 1fa612ed6c06de2d6b7446df34ba80b0a153569d (isaac-agent bean/isaac-mmod; merge-base origin/main a89cf6e)
+Working tree: clean
+
+### Agent gates (green — frequencies repair holds)
+
+- bb spec: 1729 examples, 0 failures, 3637 assertions (9.57s)
+- session_policy.feature: 8/0/23, @wip removed (diff vs origin/main is @wip-only)
+- cli-prompt.feature + suspend.feature: 33/0/73
+- episodes live+idle_seal+recall_logging: 55/0/205
+- episodes index+migrate_session + recall/: 18/0/134
+- grep :conversation src spec features: empty
+- caller-dir episodes-crew?|resolve-thread!|maybe-recall-at-open!|maybe-seal!|compact-close!|successor-session-key empty except session/policy/episodes.clj calling lifecycle/maybe-seal! (policy-internal)
+- berth :isaac.agent/session-policy + chronicle/episodes factories exist; session id is stable (prompt_cli_spec --session = reef-chat)
+
+### Blocking (downstream vs this SHA)
+
+Bean acceptance: isaac-discord features/comm/discord/episodes.feature and isaac-acp features/comm/acp/episodes.feature must stay green against this agent SHA. Planner 209c8f46 authorized a verifier-local Discord plant re-key conversation→session-policy.
+
+**Discord** (local plant re-key applied, then reverted after the run): 3 examples, **2 failures**, 5 assertions.
+
+1. first message … opens an episode (episodes.feature:32) — no episode exists
+2. warm second message … ( :70) — crew has 0 episodes (expected 1)
+
+Root cause is Discord **production** code, not the plant line. isaac-discord src/isaac/comm/discord.clj process-message! still:
+
+- episode? = lifecycle/episodes-crew? (now correctly reads :session-policy)
+- episode? → assoc :conversation {:kind :thread :id session-name} and **does not set :session-key**
+- not episode? → :session-key session-name
+
+Agent bridge no longer routes on :conversation (router deleted). Without :session-key, dispatch never opens a session, so the episodes policy never opens a container. Chronicle scenario still green. This is the Discord episode/chronicle request-shape branch the bean carved as a follow-up.
+
+**ACP** against local agent (bb jvm-features / :dev-local): 4 examples, **3 failures**, 14 assertions.
+
+1. session/prompt opens an episode (expected :episodes/opened thread=reef-chat; got :session/behavior-resolved, thread nil)
+2. warm second prompt (expected episode-id regex session; got session id "reef-chat")
+3. --crew attaches to a fresh thread and replays nothing — failed
+
+Native `bb features` on isaac-acp is 4/0 only because it uses the **pinned** agent SHA (bf43233), not this branch.
+
+ACP production still branches on episodes-crew?: session/new for episodes returns a thread id without creating a session; attach-session replays store/active-transcript of the **episode id**, not the stable session-id.
+
+### Contract conflict for planner
+
+Bean body both (a) carves Discord/ACP episode branches as follow-up beans after train and (b) requires those suites green against this SHA. Attempt 1 bounced on cli-prompt frequencies (fixed @ 1fa612e) plus Discord red. Attempt 2: agent acceptance is green; Discord/ACP remain red for the same module-side reason. Do not land. Do not return to the worker to "fix Discord in isaac-agent" — the agent seam is the recut; the remaining red is isaac-discord / isaac-acp request-shape.
+
+Need planner to either: waive downstream-green until the follow-up beans, or expand this bean to recut Discord/ACP dispatch onto :session-key (and recut their episode assertions: session id never changes, no :conversation on the charge).
