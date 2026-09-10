@@ -5,7 +5,7 @@ status: completed
 type: epic
 priority: high
 created_at: 2026-09-08T13:34:08Z
-updated_at: 2026-09-08T21:11:41Z
+updated_at: 2026-09-10T03:16:40Z
 ---
 
 Repo: isaac-hail (delivery_worker) / isaac-agent (drive/turn). Reopens the isaac-k4mf contract: a hail-driven work turn must not silently complete on an empty terminal model response.
@@ -61,3 +61,8 @@ All eight decisions landed and are live on zanebot:
 - isaac-xlx1 (hail 0.1.16): delivery-worker comm answers :wrap-up; a cycle-limited turn is re-queued as a checkpointed continuation (same delivery, `:continuation` +1, attempts untouched); band `:continuations` (default 3) → `:hail/continuations-exhausted` + attention + dead-letter; band `:cycle-limit` override on the charge.
 - Skills: commit on green to `bean/<id>` (work); verify squash-merges to ONE commit per bean and deletes the branch; tono bands moved from main-only to the same branch discipline (zane-isaac 5ecabf8, c677c34); 73 merged bean branches deleted.
 - isaac-3vil (wall-clock / cost budgets) stays a standalone draft (decision 6 deferral).
+
+
+
+## Post-deploy note (2026-09-10, Micah)
+The wrap-up nudge in the drive must stay generic (it drives every turn, not only bean work): agent 0.1.55 ships a neutral nudge — 'save any work in progress the way your instructions say to, then reply with a done/next note'. The git checkpoint instruction lives in the orchestration work skill ('Wrap-up on budget exhaustion'). A deterministic checkpoint run by the delivery worker (isaac-0uim) was scrapped: no shell from config; if the model chooses not to commit that is its freedom — the prompt is the lever.
