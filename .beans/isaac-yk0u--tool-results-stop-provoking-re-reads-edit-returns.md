@@ -1,14 +1,14 @@
 ---
 # isaac-yk0u
 title: 'Tool results stop provoking re-reads: edit returns the updated content; per-window read/grep cache; skill loads dedupe'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - agent
     - tools
 created_at: 2026-09-10T19:01:17Z
-updated_at: 2026-09-10T20:52:27Z
+updated_at: 2026-09-10T21:36:59Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/file.clj` edit/read, `src/isaac/tool/grep.clj`,
