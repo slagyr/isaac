@@ -1,13 +1,13 @@
 ---
 # isaac-qpdb
 title: 'Cancel mid-tool: run-handler must preserve {:error :cancelled} (ACP tool_call_update pending after 0.1.58)'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - cancel
 created_at: 2026-09-10T13:07:38Z
-updated_at: 2026-09-10T13:56:52Z
+updated_at: 2026-09-10T13:57:43Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/registry.clj` `run-handler`) + **isaac-acp** pin. Do **not** reopen **isaac-0yoc**.
