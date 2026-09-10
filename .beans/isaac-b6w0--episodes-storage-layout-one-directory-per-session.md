@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-10T17:55:19Z
+updated_at: 2026-09-10T17:58:21Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -116,3 +116,39 @@ Notes for verify:
 - Directory-count and crew-episode-count Then steps await an in-flight turn (`:turn-future`) before asserting, matching other post-send matchers.
 - MemorySessionStore hydrates from disk so CLI `sessions show` sees nested session.edn.
 - Remaining full-suite / remaining-episodes-feature gaps (lifecycle_spec thread-id era, some live.feature scenarios) predate this layout recut; layout.feature is the planted acceptance.
+
+## Planner note before verify (2026-09-10 16:40Z) — the 'predates this recut' claim is false
+
+Full suites on bean/isaac-b6w0 @ 9b4836d (base 3f94e42 = release 0.1.60), clean worktree, dev-local:
+
+    bb spec      1760 examples, 13 failures
+    bb features   807 examples, 20 failures
+
+Same commands on origin/main 3f94e42: `bb spec` 1730/0, `bb features` 799/0. Nothing here predates the branch; the bean's acceptance is `bb features && bb spec` green.
+
+Failing features:
+  1) Sessions Command rename moves an idle session to the new key, preserving its state
+  2) Unknown crew rejects the turn a turn via a non-CLI comm shows a /crew hint instead of --crew
+  3) Sessions migrate migrate of an already-migrated session is a skip
+  4) Session Storage Session sidecars are keyed by session id
+  5) Session Storage concurrent toolResult appends stay one entry per line
+  6) Session policy berth — chronicle and episodes are per-crew policies over a primitive session store (isaac-mmod) an episodes crew keeps 
+  7) Exhausted turns — every turn says how it ended, and the Comm decides what exhaustion means (isaac-ntt6) the default policy at the cycle
+  8) Exhausted turns — every turn says how it ended, and the Comm decides what exhaustion means (isaac-ntt6) a comm that answers :wrap-up ge
+  9) Exhausted turns — every turn says how it ended, and the Comm decides what exhaustion means (isaac-ntt6) an empty note after wrap-up fai
+  10) Episodes — migrate-session migrating a session materializes a closed episode
+  11) Episodes — migrate-session noisy preamble and fences around boundary lines still parse
+  12) Episodes — migrate-session compaction bounds the spans and its summary rides the next span's prompt
+  13) Episodes — migrate-session bad segmentation output — one retry, span flagged with raw, re-run resumes
+  14) Episodes — migrate-session tilde-marked scenes seal as routine
+  15) Episodes — migrate-session marker-only scenes are auto-marked routine
+  16) Episodes — live (policy + lifecycle) first prompt on an episode crew opens an episode
+  17) Episodes — live (policy + lifecycle) cold prompts close the episode and chain a successor
+  18) Episodes — live (policy + lifecycle) episodes list shows the crew's chain
+  19) Episodes — live (policy + lifecycle) cold continuation seeds parent gists by lineage, without duplication
+  20) Episodes — live (policy + lifecycle) cont marks resolve to scene ids at seal
+
+Failing specs:
+
+
+Verifier: bounce on these; do not accept layout.feature alone as the gate. Worker: the sessions/session-storage/exhaustion/unknown-crew failures say the nested `sessions/<crew>/<id>` layout broke chronicle paths that other features plant by the old `sessions/<id>` path — check the sidecar path helpers and the migrate-layout read path before the episodes features.
