@@ -71,6 +71,20 @@ save point has to move inside the turn.
            :wrap-up-prompt "Your cycle budget for this turn is exhausted. Start nothing new. Commit and push whatever is green to your bean branch. Rewrite the bean's done/next note: what is done, what is next, the exact file:line to resume from, and the last test command with its result. If acceptance is met, hand off to verify now. Reply with only that note; your next turn starts from it."}
    ```
 8. **Prerequisite:** isaac-x0cw (wrap-up note persisted for the continuation).
+9. **Default prompts are task-agnostic (Micah, 2026-09-10).** The drive's
+   built-in texts assume nothing about git, tests, beans, or the kind of task:
+   - wrap-up (unchanged from today): "Your cycle budget for this turn is
+     exhausted. Do not start new work. First save any work in progress the way
+     your instructions say to, then reply with a short note: what is done, what
+     is next, and the exact place to resume from. Your next turn resumes from
+     this note."
+   - checkpoint: "Checkpoint: save work in progress the way your instructions
+     say to, then continue. Do not stop."
+   "The way your instructions say to" is the contract: the crew's soul/skill
+   defines what saving means. Task-specific wording (bean branch, verify,
+   tests) belongs only in crew/band overrides such as scrapper's in (7). A
+   scenario pins that the defaults contain none of: git, commit, branch, bean,
+   test, verify.
 
 ## Acceptance
 
