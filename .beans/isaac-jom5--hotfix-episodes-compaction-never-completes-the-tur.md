@@ -45,3 +45,7 @@ the thread. Scenario live.feature:610 green, @wip removed. episodes/ +
 compaction_* (except pre-existing compaction_memory_flush flake on main)
 green. session_steps now pass :crew/:config so episodes dispatch resolves
 the thread.
+
+## Landed on main (2026-09-09)
+
+main-sha: isaac-agent 644bd4f0be04278c9e0a7ceb11c839d2f0bb7231
