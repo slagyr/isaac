@@ -97,3 +97,17 @@ main-sha: isaac-acp a129f43db055576112895299bb7d371cd1772627
 Released isaac-acp 0.1.12 (ae798ec), pinned (dce8de10), upgraded and restarted on zanebot; boot clean. ACP smoke: `session/new --crew marvin` answered through the episodes policy with a fresh session id (nothing persisted until the first prompt). 
 
 **Regression landed with this bean:** isaac-acp CI `verify: Run features` is red on `features/comm/acp/cancel_tool_status.feature` — after `session/cancel` the client gets `tool_call`/`pending` instead of `tool_call_update`/`cancelled` (64 examples, 1 failure). Deterministic locally on main against agent 837b6d4; the suite was 64/0 on origin/main before this bean. The worker called the sibling spec failure pre-existing and the verifier landed without gating it (ruling item 6 above). The ci-failure band hail da779f10 (perceptor@isaac-verify) is investigating and is instructed to push the repair; planner releases 0.1.13 when it lands. Live impact: cancel still cancels, but the editor's pending tool indicator is not cleared.
+
+
+## Planner note (2026-09-10, prowl@isaac-plan) — CI FAIL hail da779f10: do not reopen
+
+GitHub Actions run 34475605641: isaac-acp `verify: Run features` 64/1 on land SHA `a129f43` (release 0.1.12 `ae798ec`). Same fail locally:
+
+    ISAAC_GIT=1 clojure -M:features features/comm/acp/cancel_tool_status.feature
+    # after session/cancel expected tool_call_update/cancelled, got tool_call/pending
+
+**isaac-0yoc remains completed.** Acceptance still holds (`session.feature` + recut `episodes.feature` + `grep isaac.episodes` empty). The 0yoc diff vs `79cc310` does not change ACP cancel notifications or `session-cancel-handler`; it pins agent `bf43233` → `837b6d4` (mmod 0.1.58).
+
+Root cause is isaac-agent 0.1.58: `announce-tool-call!` CAS `:announced→:running` before execute, so in-flight `cancel-queued!` CAS `announced→cancelled` fails; `run-handler` then stringifies/caps `{:error :cancelled}` to `{:result "{:error :cancelled}"}`, so `turn.clj` never fires `on-tool-cancel`.
+
+Repair filed as draft **isaac-qpdb** (preserve `{:error :cancelled}` in `run-handler`; ACP 0.1.13 pins that agent SHA; gate `cancel_tool_status.feature` with real exec). Do not retag unverified. Do not hail work or verify on this bean. Live: cancel still aborts; editor pending indicator uncleared until qpdb + 0.1.13.
