@@ -47,6 +47,8 @@ TTL sweep now DELETES empty open episodes (no type=message entries) plus the bac
 - Worker tick slices :log-entries-mark so the second-tick negative log assertion does not see the first tick's :closing
 - CLI isaac episodes close prints per-episode deleted / failed / closed lines; never a bare closed 0
 
-branch: bean/isaac-9tjo @ fbbf1f94c4ce2e3699ca4ca92e7b108aa3c400f7 (base origin/main@d51cba952ead4045e7aa255528cc48e06174e7de)
+branch: bean/isaac-9tjo @ 04f895200c6fa5d0f44912bc212fa297f0f62172 (base origin/main@f075bfef935e45b1f49ef6cb51c2fed462ae756c / 0.1.56)
 
-Evidence: bb features features/episodes/idle_seal.feature 6/0; each features/episodes/*.feature green; bb spec 1719/0. Combined bb features features/episodes/ hits the 180s native suite timeout (pre-existing bb.edn budget).
+Re-read 2026-09-10 (scrapper@isaac-work-2, hail 96afd389): revision is implemented — empty open episodes are DELETED (record + backing session), not closed with zero scenes. Logs `:episodes/closing` before the attempt, `:episodes/deleted :reason :empty` after, `:episodes/close-failed :error` at :warn on failure. Planted idle_seal scenario green (6/0, @wip off). Rebased onto origin/main 0.1.56.
+
+Evidence (post-rebase): `bb features features/episodes/idle_seal.feature` 6/0; each `features/episodes/*.feature` green (layout 0 scenarios); `bb spec spec/isaac/episodes spec/isaac/recall` 178/0. Combined `bb features features/episodes/` still hits the 180s native suite timeout (pre-existing bb.edn budget).
