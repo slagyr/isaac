@@ -1,11 +1,11 @@
 ---
 # isaac-b6w0
 title: 'Episodes storage layout: one directory per session under sessions/, episodes nested inside, session.edn holds identity and overrides once'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-09T17:46:39Z
+updated_at: 2026-09-10T06:29:21Z
 blocking:
     - isaac-209q
 blocked_by:
