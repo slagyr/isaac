@@ -43,7 +43,12 @@ These three make the *tool results* stop provoking the re-read.
    file content hash match a read earlier *in the same context window*
    returns a short stub naming the earlier cycle instead of the content;
    same for grep keyed on (pattern, path, glob, include) when no file under
-   `path` changed since. The cache lives in the turn's cycle map and is
+   `path` changed since. **The cache stores no content — only hashes.** Each
+   entry is `key → {:hash <sha-256 of the result> :cycle N}`: the tool still
+   runs (read the file, run the grep), hashes the result, and returns the stub
+   only when the hash matches. Memory is ~150 bytes per distinct key; a
+   pathological 2000-read / 800-grep turn is ~0.5 MB, cleared on compaction
+   and at turn end. The cache lives in the turn's cycle map and is
    **cleared on compaction** — a read after compaction is legitimate, the
    content is gone from context. Edits invalidate the edited file's entries.
 3. **Skill loads dedupe per window.** A `skill__load` of a skill already
