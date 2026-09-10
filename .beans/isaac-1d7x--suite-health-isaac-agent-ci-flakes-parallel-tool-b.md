@@ -1,13 +1,13 @@
 ---
 # isaac-1d7x
 title: 'Suite health (isaac-agent): CI flakes parallel_tool_batches:124 + compaction_logging:140'
-status: draft
+status: scrapped
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-08T20:05:06Z
-updated_at: 2026-09-08T20:05:06Z
+updated_at: 2026-09-10T23:54:39Z
 ---
 
 Ambient full-suite flakes on `isaac-agent` that failed GitHub Actions CI Tests on land SHA `64f4ca7ea7d78fb6f8e6e0e814cd804127a8a317` (run 34271321013, `bb ci` / `bb features`) while **isaac-kbu0** was landing. They are **not** the MCP registry change. **isaac-kbu0 remains completed.** Do not reopen it.
@@ -68,3 +68,7 @@ This bean now owns both named parallel_tool_batches rows:
     bb features features/session/compaction_logging.feature
 
 0 failures on each, repeated enough to show **`:101`, `:124`, and `:140`** no longer flake. Isolated `clojure -M:features features/session/parallel_tool_batches.feature:85` must also be 0. Record run counts. Do not weaken scenario intent.
+
+## Reasons for Scrapping
+
+Folded into isaac-x4mr (2026-09-11), which owns the whole full-suite flake family; the parallel_tool_batches:101 row was a real qpdb regression fixed on main (f4813d9).
