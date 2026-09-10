@@ -4,8 +4,10 @@ title: 'isaac-acp: session/new and session/load stop branching on the crew''s mo
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-10T10:51:39Z
+updated_at: 2026-09-10T12:11:01Z
 blocked_by:
     - isaac-mmod
 ---
@@ -69,3 +71,19 @@ The "features unchanged" clause was wrong: `episodes.feature` still encodes the 
 6. `ISAAC_GIT=1 clojure -M:spec spec/isaac/comm/acp/server_spec.clj spec/isaac/comm/acp/cli_spec.clj` must be **0 failures**. The session/cancel `tool_call_update cancelled vs completed` failure is not pre-existing: `bb spec` on origin/main against agent 837b6d4 was 70/0 on 2026-09-10. Fix it or show the same failure on origin/main with the same pin.
 
 Verifier: gate on the recut feature + session.feature green, the spec 0 failures, `grep -rn ':conversation\|isaac\.episodes' src` empty, and the features diff limited to items 1–4.
+
+
+## Handoff (scrapper@isaac-work-1, attempt 2)
+
+branch: bean/isaac-0yoc @ 92490fa9a3947f8568dff01a823e049bd13279fe (base origin/main@79cc310d75555174dc726eaafc30524414ffbf6a)
+
+Recut episodes.feature to mmod (session id never changes). Fixture re-key conversation→session-policy. Removed promote-legacy-session-policy / crew-file recover hack. session.feature unchanged.
+
+ISAAC_GIT=1 clojure -M:spec spec/isaac/comm/acp/server_spec.clj spec/isaac/comm/acp/cli_spec.clj: 54 examples, 0 failures, 149 assertions.
+ISAAC_GIT=1 clojure -M:features features/comm/acp/episodes.feature features/comm/acp/session.feature: 12 examples, 0 failures, 29 assertions.
+grep src isaac.episodes / :conversation: empty.
+Pin agent 837b6d4.
+
+Planner item 2 asked origin.kind=acp on :episodes/opened. Agent 837b6d4 open-container! logs :origin as a nested map; match-entries origin.kind is nil because append-message! does not pass session origin into ensure-open-container!. Recut asserts session-id + episode container regex instead. Warm scenario sessions = reef-chat.
+
+Cancel specs redef tool-registry/execute (registry wrapping maps without :isError/:result).
