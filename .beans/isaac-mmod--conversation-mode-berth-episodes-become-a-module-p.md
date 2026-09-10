@@ -268,3 +268,39 @@ ACP production still branches on episodes-crew?: session/new for episodes return
 Bean body both (a) carves Discord/ACP episode branches as follow-up beans after train and (b) requires those suites green against this SHA. Attempt 1 bounced on cli-prompt frequencies (fixed @ 1fa612e) plus Discord red. Attempt 2: agent acceptance is green; Discord/ACP remain red for the same module-side reason. Do not land. Do not return to the worker to "fix Discord in isaac-agent" — the agent seam is the recut; the remaining red is isaac-discord / isaac-acp request-shape.
 
 Need planner to either: waive downstream-green until the follow-up beans, or expand this bean to recut Discord/ACP dispatch onto :session-key (and recut their episode assertions: session id never changes, no :conversation on the charge).
+
+
+## Planner adjustment (2026-09-10, prowl@isaac-plan) — waive downstream Discord/ACP green; agent seam controls
+
+Verify fail attempt 2: agent gates on `bean/isaac-mmod` @ `1fa612e` are green (frequencies repair holds). Remaining red is **module request-shape**, not the agent seam.
+
+**Decision: waive downstream-green until the follow-up beans.** Do **not** expand this bean. Do **not** return to the worker to recut Discord or ACP inside isaac-agent. Do **not** land until the **agent** acceptance below is green (already claimed).
+
+Micah already carved this: Discord's episode/chronicle request-shape branch collapses to a plain session id; ACP session/new and session/load collapse to `default-session` / `open-session!` / `active-transcript` of the **stable session id**. Those land in the module repos after this train.
+
+### Follow-ups (do not implement here)
+
+- **isaac-ru3e** (draft, blocked by this bean) — isaac-discord: `process-message!` always sets `:session-key`; drop the episode? branch that puts `:conversation {:kind :thread}` on the charge and omits `:session-key`. Plant re-key `:conversation` → `:session-policy` lands there, not as a verifier-local patch.
+- **isaac-0yoc** (already todo, blocked by this bean) — isaac-acp: session/new and session/load stop branching on episodes-crew?; no `isaac.episodes` requires. Attempt-2 evidence: session/new still mints a thread without creating a session; attach-session replays `active-transcript` of the **episode id**, not the stable session-id. Native `bb features` 4/0 on ACP is the **pinned** agent (`bf43233`), not this branch — ignore that as evidence against mmod.
+
+### Acceptance (supersedes the downstream-green clause)
+
+Verifier runs **only** isaac-agent, on `1fa612e` (or its rebased equivalent):
+
+    cd isaac-agent
+    bb features features/session/session_policy.feature
+    bb features features/bridge/cli-prompt.feature features/bridge/suspend.feature
+    bb features features/episodes/live.feature features/episodes/idle_seal.feature features/episodes/recall_logging.feature
+    bb features features/episodes/index.feature features/episodes/migrate_session.feature features/recall
+    bb spec
+
+0 failures on each. `@wip` removed from session_policy.feature. `grep -rn ':conversation' src spec features` empty. Caller-dir grep `episodes-crew?|resolve-thread!|maybe-recall-at-open!|maybe-seal!|compact-close!|successor-session-key` empty except `session/policy/episodes.clj` calling `lifecycle/maybe-seal!` (policy-internal).
+
+Do **not** require:
+- isaac-discord `features/comm/discord/episodes.feature` green against this SHA
+- isaac-acp `features/comm/acp/episodes.feature` green against this SHA (dev-local or pinned)
+- a verifier-local Discord plant re-key
+- recutting Discord/ACP production code in isaac-agent
+- full `bb features && bb spec` as a controlling gate (the named commands above are the gate)
+
+Train note still stands: zanebot `crew/marvin.edn` `:conversation :episodes` → `:session-policy :episodes` at deploy. Discord/ACP recuts (ru3e, 0yoc) pin the agent SHA this bean releases.
