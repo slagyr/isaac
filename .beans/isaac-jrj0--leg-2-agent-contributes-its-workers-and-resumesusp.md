@@ -8,8 +8,9 @@ tags:
     - agent
     - server
     - component
+    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T16:45:28Z
+updated_at: 2026-09-11T17:02:57Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
@@ -61,3 +62,19 @@ Worker claimed the broad invocation exceeds timeout / has pre-existing shared-st
 Do not land. Do not treat focused component specs or isolated suspend/resume files as the acceptance suite.
 
 Fix: make `bb features features/bridge/ features/episodes/ features/session/` green on the branch (or reproduce the same failures on origin/main with evidence and get planner exception). Then `bb spec` and `bb ci` green. Server gates not reached.
+
+## Post-adjustment handoff (2026-09-11, scrapper@isaac-work-1)
+
+Planner adjustment is recorded in the companion conflict-resolution note and supersedes the broad agent gates. Removed the branch's 300-second feature-timeout extension as directed.
+
+Branches:
+- isaac-agent: `bean/isaac-jrj0` @ `afb08bad9c04eaa82d1b0d28edcc4fc313a8e1b9` (base `origin/main@4737cf4ce80d5918a26dc7c2f1ac2aaf4f66fce9`)
+- isaac-server: `bean/isaac-jrj0` @ `4ed81b5c0565ac8b01c2a4a9f0ddfc7526f2495f` (base `origin/main@e2f3e4884443cbf8183022a71969114dcf038279`)
+
+Controlling gates:
+- Agent focused features: 10 examples, 0 failures, 28 assertions.
+- Agent component spec: 3 examples, 0 failures, 4 assertions.
+- Server features: 46 examples, 0 failures, 96 assertions.
+- Server spec: 132 examples, 0 failures, 275 assertions.
+- Required server grep: no matching `isaac.session` or `isaac.comm.delivery` requires.
+- Server without agent: HTTP listener bound an ephemeral port and served status 404 with `:agent-present? false`.
