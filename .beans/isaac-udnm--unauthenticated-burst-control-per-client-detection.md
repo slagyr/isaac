@@ -5,11 +5,12 @@ status: in-progress
 type: feature
 priority: normal
 tags:
-    - server
     - attention
     - security
+    - unverified
+    - server
 created_at: 2026-09-11T03:49:12Z
-updated_at: 2026-09-11T05:31:57Z
+updated_at: 2026-09-11T05:40:58Z
 ---
 
 Repo: **isaac-server** (`src/isaac/server/http.clj` — `wrap-auth` / `wrap-logging`
@@ -92,3 +93,16 @@ enable on zanebot with `:server {:burst {:threshold 30 :window-ms 60000
 :cooldown-ms 600000}}` (notify on, throttle off).
 
 Live sample (planner, 2026-09-11 05:15–05:16Z): client 8.235.2.103 hit GET / on zanebot:6674 ~70 times in ~75 s, every one answered 401 (`:server/response-sent :status 401`), 278 such lines in the last 3000 log lines. Auth held; the noise is the only cost. Use as the fixture shape for the burst detector.
+
+
+## Handoff (scrapper@isaac-work-1)
+
+branch: bean/isaac-udnm @ 6e2e753 (base origin/main@d49972f)
+
+Implemented per-client unauthenticated burst control in isaac-server:
+- `src/isaac/server/burst.clj` — sliding window, detect/end/throttle, attention enqueue
+- `wrap-burst` before `wrap-logging`/`wrap-auth`; 401s counted in wrap-auth
+- schema `:server :burst` knobs; absent group = off
+- @wip removed from `features/server/burst.feature` (7 scenarios)
+
+Verified: `bb spec spec/isaac/server` green (118/0); burst+logging features 10/0.
