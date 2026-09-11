@@ -1,11 +1,11 @@
 ---
 # isaac-xqy1
 title: migrate-layout must carry each crew's recall vectors into sessions/<crew>/recall/ instead of rebuilding placeholder rows
-status: in-progress
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-11T04:15:24Z
-updated_at: 2026-09-11T04:15:24Z
+updated_at: 2026-09-11T04:24:23Z
 parent: isaac-b6w0
 ---
 
@@ -17,3 +17,7 @@ Repo: isaac-agent (src/isaac/episodes/layout.clj rebuild-recall!). Rehearsed on 
 
 ## Acceptance
 layout.feature green; bb spec && bb features green; dry run + real run on the zanebot rehearsal copy: sessions/marvin/recall/index.edn has :model nomic-embed-text and the same row count as episodes/marvin/index.edn had; isaac recall --crew marvin 'Fermi' returns hits on the rehearsal root.
+
+## Summary of Changes (planner, 2026-09-11)
+
+Landed on isaac-agent main (squash a452c37; release 0.1.65 = 37a8c6c212931f8fc26964c7754130127815db54). rebuild-recall! carries the legacy per-crew index (rows + packed vectors + model) into sessions/<crew>/recall/, re-keyed with :session-id from the moved episodes; scenes not covered get placeholder rows; legacy index files and emptied episode/crew dirs are deleted (directory removal is real-fs only — the memory fs cannot delete directories, noted in the scenario). layout.feature 10/0; full features 823/0; spec 1784/2 = the two documented intermittents (file_spec, episodes_spec sibling-dirs) on isaac-x4mr.
