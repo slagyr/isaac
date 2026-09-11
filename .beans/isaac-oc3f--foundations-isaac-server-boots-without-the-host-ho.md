@@ -9,8 +9,9 @@ tags:
     - server
     - discord
     - episodes
+    - unverified
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T20:40:20Z
+updated_at: 2026-09-11T20:48:12Z
 parent: isaac-3q4m
 ---
 
@@ -135,3 +136,8 @@ Also red on this train (not treated as a second verify-fail count):
 Worker claimed these as pre-existing from the Foundation pin advance; they were not reproduced on `origin/main` in either verify turn. Either make full suites green or prove them on `origin/main`.
 
 Green this turn: foundation `bb ci` 1019 specs + 181 features; server `bb ci` 115 specs + 46 features. Fleet grep: no remaining `:isaac.server/service` contributors except Foundation diagnostic/spec.
+## Verify repair (attempt 1, 2026-09-11)
+
+Discord now pins the coordinated component-runtime train throughout `deps.edn` and `bb.edn`: Foundation `8b4a33bfff8d5ccae8aae5fff4193ea73ca42c5a`, Foundation spec/test-support and marigold modules at that same SHA, and server/runtime spec/test-support `f3e469ae8d97ea72c6fb316bbaa20b02622ec36d`. Branch: `bean/isaac-oc3f @ 26670fc` (base `origin/main@bc0c92c4d12ffd98aa7710b83ac3bda7ab75b8e4`).
+
+CI-equivalent git-pin gate: `ISAAC_GIT=1 ISAAC_TEST_TIMEOUT_MS=180000 bb ci` — green: 46 native specs, 98 JVM specs / 226 assertions, 67 features / 147 assertions.
