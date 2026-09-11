@@ -1,16 +1,15 @@
 ---
 # isaac-jrj0
 title: Leg 2 — agent contributes its workers and resume/suspend as components; server stops calling the agent by name
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - agent
     - server
     - component
-    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T17:02:57Z
+updated_at: 2026-09-11T17:10:22Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
@@ -78,3 +77,10 @@ Controlling gates:
 - Server spec: 132 examples, 0 failures, 275 assertions.
 - Required server grep: no matching `isaac.session` or `isaac.comm.delivery` requires.
 - Server without agent: HTTP listener bound an ephemeral port and served status 404 with `:agent-present? false`.
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-agent 8481d6ca2f9fca003b8600c67c29fe8732971b55
+main-sha: isaac-server befe6f102e90b4629b0d455577e5e50cb132a9c0
