@@ -1,7 +1,7 @@
 ---
 # isaac-oc3f
 title: 'Foundation''s ''isaac server'' boots without the host hooks: reloader, resume scan, delivery workers and Discord never start (legs 1+3 train rolled back 2026-09-11)'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 tags:
@@ -10,7 +10,7 @@ tags:
     - discord
     - episodes
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T15:06:55Z
+updated_at: 2026-09-11T18:48:46Z
 parent: isaac-3q4m
 ---
 
