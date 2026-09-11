@@ -1,11 +1,11 @@
 ---
 # isaac-209q
 title: Extract episodes + recall into the isaac-episodes module behind the session-store berth
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-09T16:35:02Z
+updated_at: 2026-09-11T06:11:03Z
 blocked_by:
     - isaac-mmod
 ---
