@@ -1,11 +1,11 @@
 ---
 # isaac-x62d
 title: Closing an episode writes a duplicate record into the legacy episodes/<crew>/<eid>/ tree — migrate-session! materializes without :session-id
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-11T15:10:21Z
-updated_at: 2026-09-11T15:10:21Z
+updated_at: 2026-09-11T15:18:57Z
 parent: isaac-b6w0
 ---
 
@@ -19,3 +19,7 @@ Repo: isaac-agent. Seen on zanebot after the layout migration (2026-09-11): epis
 
 ## Acceptance
 bb features features/episodes/ green; bb spec && bb features green; on zanebot after deploy + cleanup, closing an episode creates nothing under ~/.isaac/episodes.
+
+## Summary of Changes (planner, 2026-09-11)
+
+Landed on isaac-agent main (squash 3cd7d8d; release 0.1.67 = 4737cf4ce80d5918a26dc7c2f1ac2aaf4f66fce9). migrate-session! takes :nest-under from close-episode! ((or :session-id :thread) of the open record) and stamps :session-id, so the closed record nests where the live record is; the migrated-from pre-write nests the same way; the CLI migrate-session nests under the migrated session. Assertions added to live.feature (cold close/chain) and migrate_session.feature: episodes/<crew> does not exist afterwards. Step fix: ensure-current-episode! derives crews from the nested sessions tree. Gates: full features 831/0, spec 1794/1 (documented file_spec intermittent). Ops: deploy, then remove ~/.isaac/episodes after confirming each legacy id has a nested twin.
