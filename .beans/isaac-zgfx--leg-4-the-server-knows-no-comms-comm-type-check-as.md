@@ -5,11 +5,12 @@ status: in-progress
 type: feature
 priority: high
 tags:
+    - comm
+    - unverified
     - server
     - agent
-    - comm
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T22:23:18Z
+updated_at: 2026-09-11T23:50:58Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
@@ -38,4 +39,6 @@ cd isaac-server && bb features && bb spec && bb ci
 
 Done: Agent's contributed comm-type check now accepts both manifest-contributed and programmatically registered factories and preserves a dotted display path (`bean/isaac-zgfx@b6284e4`; focused checks spec: 26 examples, 0 failures). Server removed the stale Agent-owned `isaac.session.store.spi` shadow, pinned Agent `b6284e4`, propagates generic loader errors into boot rejection/logging, and fixes the spec-support module resource path/test config (`bean/isaac-zgfx@2cf3b38`). Focused config/comm/logging features are green: 6 examples, 0 failures, 17 assertions.
 
-Next: run full Agent and Server acceptance gates, fix fallout, rebase both branches on current `origin/main`, rerun gates, record final branch/base evidence, tag `unverified`, and hand off. Resume at `isaac-agent-zgfx/bb.edn:1` with `bb features features/config/ && bb spec && bb ci`.
+Completed implementation. Agent branch: `bean/isaac-zgfx@b6284e42ab37ccf971637d4dc791856c7fa231aa` (base `origin/main@e9cba6410e097992d99acbef3e31b22ef3153512`). Server branch: `bean/isaac-zgfx@e8c8a933e86674f2ee74348a79ed2d64942f5d52` (base `origin/main@99d2ad8af2e18f3b1f60c1fc9ef4b1949f2db1d5`).
+
+Evidence: Agent focused config composition features green (21 examples, 35 assertions) and full specs green (1596 examples, 3289 assertions). Agent's broader `bb features features/config/` and `bb ci` feature phase time out at the repository's 180s task limit and contain unrelated pre-existing config CLI failures; confirmed `origin/main` independently fails `features/config/cycle.feature` the same way. Server focused config/comm/logging features green (6 examples, 17 assertions), full specs green (120 examples, 246 assertions), full features green (46 examples, 96 assertions), and `bb ci` green. One-time checks pass: no `src/isaac/comm` directory and no `isaac.comm.telly` in Server `deps.edn`/`bb.edn`. Both implementation branches are rebased on current `origin/main` and clean.
