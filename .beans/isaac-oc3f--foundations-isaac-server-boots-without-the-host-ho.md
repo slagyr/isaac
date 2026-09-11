@@ -9,8 +9,9 @@ tags:
     - server
     - discord
     - episodes
+    - unverified
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T18:48:46Z
+updated_at: 2026-09-11T20:18:26Z
 parent: isaac-3q4m
 ---
 
@@ -90,4 +91,14 @@ relink the keg until discord **and** episodes are on `:isaac/component`.
 
 Done: Foundation diagnostic and full CI are green/pushed (`adbeace`); server runtime, startup validation, plain app delegation, production CLI-path acceptance, and migrated feature harness are green/pushed (`f3e469a`; 115 specs and 46 server features green); Episodes component migration is pushed (`ec2fc54`; 205 specs green); Discord component implementation/JVM specs/lifecycle feature are green/pushed (`1681409`; 98 JVM specs green); Hail router/delivery component is pushed (`afc6253`; 157 specs green). All branches are rebased on current `origin/main`.
 
-Next: resolve or document non-bean full-feature fallout, rerun Discord/Hail gates as appropriate, fleet-grep retired berth use, and record coordinated branch/base release coordinates. Current RED: Episodes `bb ci` has 3 pre-existing feature failures outside this lifecycle cutover; Discord full features had 3 nil-fs idle scenarios plus now-fixed lifecycle wording; Hail full features fail 14 existing config/band scenarios after its Foundation pin advance. Resume by checking failure ancestry and focused changed surfaces at `isaac-episodes-209q/features/recall/embedding.feature:1`, `isaac-discord-6ele/features/comm/discord/idle.feature:1`, and `isaac-hail-oc3f/features/config/bands.feature:1`.
+Next: finalize branch/base coordinates, tag unverified, and hand off. Gate summary: Foundation `bb ci` green (1019 specs, 181 features); server `bb ci` green (115 specs, 46 features); Discord `bb ci` green (46 native + 98 JVM specs, 67 features); Episodes focused/full specs green (205), while its full feature gate has 3 unrelated baseline failures caused by the required Foundation pin advance; Hail focused component + full specs green (157), while its feature gate has 14 unrelated baseline failures under the required Foundation pin. Fleet source/manifest grep has no retired berth contributors; Foundation's diagnostic/spec are the intentional remaining matches. Resume at `.beans/isaac-oc3f--foundations-isaac-server-boots-without-the-host-ho.md:89`.
+
+## Verification handoff coordinates (2026-09-11)
+
+- foundation: `bean/isaac-oc3f @ adbeace6c46a33cce6e1e7387ef7538849ccf384` (base `origin/main@8b4a33bfff8d5ccae8aae5fff4193ea73ca42c5a`)
+- server: `bean/isaac-oc3f @ f3e469ae8d97ea72c6fb316bbaa20b02622ec36d` (base `origin/main@befe6f102e90b4629b0d455577e5e50cb132a9c0`)
+- Discord: `bean/isaac-oc3f @ a395856` (base `origin/main@bc0c92c4d12ffd98aa7710b83ac3bda7ab75b8e4`)
+- Episodes: `bean/isaac-oc3f @ ec2fc546a6cf62c17b26689c007a6567ee858199` (base `origin/main@19c48d6b0e9745c304045f9a8386dd9a7bb7f463`)
+- Hail: `bean/isaac-oc3f @ 3248a125186a8f638292188fbf15546fd5128058` (base `origin/main@13939041b0c56decb8aacfe2bf7988568cced30a`)
+
+Verifier lands the coordinated train and then updates registry release pins; worker did not merge or publish releases.
