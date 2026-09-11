@@ -85,3 +85,9 @@ Redeploy train: foundation 0.1.25 keg (HEAD-1cd0bfc is still installed on
 zanebot — relink only), server fix release, discord release, episodes
 release (new key), claude 0.1.10, one restart, full checklist. Do not
 relink the keg until discord **and** episodes are on `:isaac/component`.
+
+## Work checkpoint (2026-09-11, scrapper@isaac-work-1)
+
+Done: Foundation retired-berth diagnostic is implemented and focused spec green/pushed (`bean/isaac-oc3f@adbeace`). Server runtime install/reloader teardown is now a Foundation component with a runner-path spec green/pushed (`bean/isaac-oc3f@aa7eae3`). Discord manifest cutover to `:isaac/component` is pushed (`bean/isaac-oc3f@63d5dc0`).
+
+Next: finish episodes component protocol cutover, then collapse server app hooks onto plain runner, add production CLI-path acceptance, run all four repo suites, rebase, pin/release coordinates, and hand off. Current RED: episodes focused spec cannot resolve `isaac.component.factory` because isaac-episodes still pins pre-component Foundation. Resume at `isaac-episodes/deps.edn:4` and `isaac-episodes/src/isaac/episodes/service.clj:1`.
