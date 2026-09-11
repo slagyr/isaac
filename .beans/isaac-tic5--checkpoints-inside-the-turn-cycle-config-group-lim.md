@@ -1,16 +1,15 @@
 ---
 # isaac-tic5
 title: 'Checkpoints inside the turn: :cycle config group (limit, checkpoint-every, prompts), loop nudge every N cycles, continuations default 2'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - agent
     - hail
     - config
-    - unverified
 created_at: 2026-09-10T21:15:48Z
-updated_at: 2026-09-11T07:43:12Z
+updated_at: 2026-09-11T08:06:03Z
 ---
 
 Repos: **isaac-agent** (tool loop / drive: `llm/tool_loop.clj` hooks, `drive/turn.clj`
@@ -148,3 +147,11 @@ Known pre-existing/flaky full-suite reds, reproduced outside this diff:
 - Agent `bb spec spec/isaac/drive spec/isaac/config`: three `resolve-history-retention` examples fail for missing nexus filesystem on `origin/main` too.
 - Agent `bb ci`: one file-tool cwd example failed in the full suite, then passed alone (37 examples, 0 failures).
 - Hail `bb ci`: full feature run had inheritance/template state failures; both affected feature files passed immediately when focused. Earlier CI attempt also hit the fixed 60-second suite cap.
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-agent 04f890b3bba8111bbf6bc66be2548b462f450fc9
+main-sha: isaac-hail 13939041b0c56decb8aacfe2bf7988568cced30a
+main-sha: isaac 27f8ffb72111d5dd2f71f4d502512dbb71eb838b
