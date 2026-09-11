@@ -1,13 +1,11 @@
 ---
 # isaac-b6w0
 title: 'Episodes storage layout: one directory per session under sessions/, episodes nested inside, session.edn holds identity and overrides once'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-11T00:33:54Z
+updated_at: 2026-09-11T01:07:53Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -206,3 +204,9 @@ Measured this turn (HEAD 413897a):
 `bb features` whole suite still hits the 180s bb.edn timeout (pre-existing wrapper). Combined `features/episodes/ features/recall/ features/session/` also times out at 180s even when chunked runs are green.
 
 Do not land until verify re-runs the planted remaining-features gate (and full `bb features && bb spec` if the 180s wrapper is accepted as a platform limit).
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-agent 32dd5b4950f384845fc2e0898e0d8398f06c2ed9
