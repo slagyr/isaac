@@ -1,11 +1,11 @@
 ---
 # isaac-lhnq
 title: migrate-layout stamps a post-mmod thread session as chronicle while nesting its episodes under it — session.edn and index disagree
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-11T04:07:24Z
-updated_at: 2026-09-11T04:07:24Z
+updated_at: 2026-09-11T04:10:45Z
 parent: isaac-b6w0
 ---
 
@@ -17,3 +17,7 @@ Repo: isaac-agent (src/isaac/episodes/layout.clj). Found rehearsing the zanebot 
 
 ## Acceptance
 bb features features/episodes/layout.feature green with @wip removed; bb spec && bb features green; dry-run on the zanebot rehearsal copy shows the marvin thread sessions as (episodes).
+
+## Summary of Changes (planner, 2026-09-11)
+
+Landed on isaac-agent main (squash b0f2114; release 0.1.64 = a7476034800c67aea72b4ff719e89cbfe82bd1ec). plan computes thread-sids from leftover episodes; chronicle items for those sids carry :policy :episodes; move-chronicle! stamps from the item; dry-run prints the policy. New layout.feature scenario (post-mmod thread with a flat session dir + episodes/<crew>/<eid>) green; layout.feature 9/0; full features 822/0; spec 1784/1 (the documented intermittent file_spec row, isaac-x4mr).
