@@ -2,7 +2,7 @@
 # isaac-jarr
 title: 'Scuttlebutt train: merge isaac-5nxf onto isaac-agent main and release'
 status: completed
-type: feature
+type: task
 priority: normal
 tags:
     - scuttlebutt

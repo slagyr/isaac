@@ -2,7 +2,7 @@
 # isaac-l1vb
 title: ACP /status content-match scenario is red on main (pre-existing)
 status: completed
-type: feature
+type: bug
 priority: normal
 created_at: 2026-07-08T23:05:24Z
 updated_at: 2026-07-20T00:19:14Z

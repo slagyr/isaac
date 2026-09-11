@@ -2,7 +2,7 @@
 # isaac-lrqo
 title: Ollama adapter must send options.num_ctx from :context-window (server default 4096 truncates isaac prompts)
 status: draft
-type: feature
+type: bug
 priority: high
 created_at: 2026-08-26T16:05:22Z
 updated_at: 2026-08-26T16:05:22Z

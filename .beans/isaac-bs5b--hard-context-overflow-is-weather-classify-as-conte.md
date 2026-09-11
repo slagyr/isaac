@@ -2,7 +2,7 @@
 # isaac-bs5b
 title: 'Hard context overflow is weather: classify as context-exhausted so hail defers, never 5× stuffing'
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-08-28T16:04:05Z
 updated_at: 2026-08-28T17:15:53Z

@@ -2,7 +2,7 @@
 # isaac-fq28
 title: 'xapx: verify cli-proxy/cli-server already native'
 status: completed
-type: feature
+type: task
 priority: low
 created_at: 2026-07-19T17:10:52Z
 updated_at: 2026-07-19T23:47:38Z

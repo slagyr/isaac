@@ -2,7 +2,7 @@
 # isaac-9bno
 title: 'Suite health (isaac-hail): features drift against current agent — 8 pre-existing failures, 5 order-dependent under 0.1.62 memory-store hydration'
 status: todo
-type: feature
+type: bug
 priority: high
 created_at: 2026-09-11T01:19:09Z
 updated_at: 2026-09-11T01:19:09Z

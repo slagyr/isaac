@@ -2,7 +2,7 @@
 # isaac-uxbt
 title: 'Suite health (isaac-agent): full bb features reds — boot, compaction_template, episodes/live'
 status: draft
-type: feature
+type: bug
 priority: high
 tags:
     - suite-health

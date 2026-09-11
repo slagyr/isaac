@@ -2,7 +2,7 @@
 # isaac-d13o
 title: 'Suite health (isaac-hail): crew-tool hail-send dispatch scenarios expect 1 pending got 0'
 status: draft
-type: feature
+type: bug
 priority: high
 created_at: 2026-08-24T14:15:18Z
 updated_at: 2026-08-24T14:15:18Z

@@ -2,7 +2,7 @@
 # isaac-g7g5
 title: 'foundation test-support: fixed 60s with-timeout! budget makes green module suites exit 124'
 status: draft
-type: feature
+type: bug
 tags:
     - foundation
     - gate

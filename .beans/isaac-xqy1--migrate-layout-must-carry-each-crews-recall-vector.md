@@ -2,7 +2,7 @@
 # isaac-xqy1
 title: migrate-layout must carry each crew's recall vectors into sessions/<crew>/recall/ instead of rebuilding placeholder rows
 status: completed
-type: feature
+type: bug
 priority: critical
 created_at: 2026-09-11T04:15:24Z
 updated_at: 2026-09-11T04:29:28Z

@@ -2,7 +2,7 @@
 # isaac-4e4b
 title: Uniform session selection + parameter override across tools (hail/prompt/acp/chat)
 status: draft
-type: feature
+type: epic
 priority: normal
 created_at: 2026-06-26T04:14:17Z
 updated_at: 2026-06-27T16:53:26Z

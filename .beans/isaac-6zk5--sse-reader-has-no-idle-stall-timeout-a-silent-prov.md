@@ -2,7 +2,7 @@
 # isaac-6zk5
 title: 'SSE reader has no idle-stall timeout: a silent provider stream blocks the turn until the socket dies (~15 min)'
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - agent

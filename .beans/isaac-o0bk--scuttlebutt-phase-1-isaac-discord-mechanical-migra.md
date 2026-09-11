@@ -2,7 +2,7 @@
 # isaac-o0bk
 title: 'Scuttlebutt phase 1: isaac-discord mechanical migration to the new Comm protocol'
 status: completed
-type: feature
+type: task
 priority: normal
 tags:
     - discord

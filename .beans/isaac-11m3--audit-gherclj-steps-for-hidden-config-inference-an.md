@@ -2,7 +2,7 @@
 # isaac-11m3
 title: "Audit gherclj steps for hidden config inference and implicit setup"
 status: draft
-type: feature
+type: task
 priority: low
 tags:
     - "deferred"

@@ -2,7 +2,7 @@
 # isaac-stao
 title: Feature server boots without a scenario root log into the live ~/.isaac (isaac-server command.feature)
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - isaac-server

@@ -2,7 +2,7 @@
 # isaac-qpdb
 title: 'Cancel mid-tool: run-handler must preserve {:error :cancelled} (ACP tool_call_update pending after 0.1.58)'
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - cancel

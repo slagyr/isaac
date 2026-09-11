@@ -2,7 +2,7 @@
 # isaac-0uim
 title: 'Wrap-up must checkpoint the worktree deterministically: the band names a checkpoint command the delivery worker runs before a continuation — the model ignores the commit nudge'
 status: scrapped
-type: feature
+type: bug
 priority: critical
 created_at: 2026-09-10T02:49:45Z
 updated_at: 2026-09-10T03:01:44Z

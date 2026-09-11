@@ -2,7 +2,7 @@
 # isaac-ho1s
 title: Retrofit Discord + iMessage to shared origin framing
 status: draft
-type: feature
+type: task
 priority: normal
 created_at: 2026-05-25T18:16:21Z
 updated_at: 2026-05-25T23:45:13Z

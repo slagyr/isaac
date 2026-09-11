@@ -2,7 +2,7 @@
 # isaac-9tjo
 title: TTL sweep logs :episodes/closed unconditionally; an empty successor episode (summary-only transcript) can never be sealed and is retried every 30 s forever
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-09-10T01:04:02Z
 updated_at: 2026-09-10T04:06:09Z

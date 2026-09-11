@@ -2,7 +2,7 @@
 # isaac-nrak
 title: 'Verified beans never land on main: make merge-to-main part of the verify pass'
 status: completed
-type: feature
+type: task
 priority: high
 tags:
     - process

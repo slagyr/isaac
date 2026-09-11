@@ -2,7 +2,7 @@
 # isaac-uwmg
 title: Non-module library version conflicts across modules
 status: draft
-type: feature
+type: task
 created_at: 2026-06-19T15:44:56Z
 updated_at: 2026-06-19T15:44:56Z
 ---

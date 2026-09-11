@@ -2,7 +2,7 @@
 # isaac-oum9
 title: 'Suite health: repair 24 spec casualties of the session-directories cutover'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-24T10:55:23Z
 updated_at: 2026-08-24T17:00:52Z

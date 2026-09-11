@@ -2,7 +2,7 @@
 # isaac-gx2q
 title: Discord channel is the conversation thread for episode crews
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - discord

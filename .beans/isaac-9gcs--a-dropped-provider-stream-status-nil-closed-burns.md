@@ -2,7 +2,7 @@
 # isaac-9gcs
 title: A dropped provider stream (status nil, "closed") burns a hail attempt instead of deferring as weather
 status: draft
-type: feature
+type: bug
 priority: normal
 tags:
     - hail

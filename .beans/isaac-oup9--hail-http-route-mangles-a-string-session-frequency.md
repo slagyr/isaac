@@ -2,7 +2,7 @@
 # isaac-oup9
 title: Hail HTTP route mangles a string :session frequency into a char vector → undeliverable (no-recipients)
 status: completed
-type: feature
+type: bug
 priority: normal
 tags:
     - hail

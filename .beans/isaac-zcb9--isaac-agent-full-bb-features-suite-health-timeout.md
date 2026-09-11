@@ -2,7 +2,7 @@
 # isaac-zcb9
 title: isaac-agent full bb features suite health (timeout + session/bridge/compaction flakes)
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-08-17T05:42:36Z
 updated_at: 2026-08-25T04:38:31Z

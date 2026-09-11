@@ -2,7 +2,7 @@
 # isaac-fat
 title: "Make WS handlers reloadable via c3kit.wire lazy-routes"
 status: draft
-type: feature
+type: task
 priority: deferred
 tags:
     - "deferred"

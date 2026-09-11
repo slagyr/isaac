@@ -2,7 +2,7 @@
 # isaac-0yoc
 title: 'isaac-acp: session/new and session/load stop branching on the crew''s mode — the store answers'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-09-09T16:35:02Z
 updated_at: 2026-09-10T13:56:52Z

@@ -2,7 +2,7 @@
 # isaac-6a2f
 title: Discord gateway does not self-recover from a crashed reader loop (wtg8 watchdog ineffective)
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-07-05T16:16:48Z
 updated_at: 2026-07-05T16:32:53Z

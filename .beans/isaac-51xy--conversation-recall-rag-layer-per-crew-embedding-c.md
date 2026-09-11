@@ -2,7 +2,7 @@
 # isaac-51xy
 title: 'Episodic memory: episodes, scenes, recall — per-crew RAG layer that dissolves sessions'
 status: draft
-type: feature
+type: epic
 created_at: 2026-06-26T04:13:22Z
 updated_at: 2026-09-03T20:40:00Z
 ---

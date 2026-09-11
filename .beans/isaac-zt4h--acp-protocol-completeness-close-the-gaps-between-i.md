@@ -2,7 +2,7 @@
 # isaac-zt4h
 title: 'ACP protocol completeness: close the gaps between isaac-acp and the ACP surface'
 status: draft
-type: feature
+type: epic
 priority: normal
 created_at: 2026-07-07T19:01:30Z
 updated_at: 2026-07-07T19:01:30Z

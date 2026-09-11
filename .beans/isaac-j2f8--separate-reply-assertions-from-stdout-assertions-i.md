@@ -2,7 +2,7 @@
 # isaac-j2f8
 title: "Separate reply assertions from stdout assertions in gherclj steps"
 status: draft
-type: feature
+type: task
 priority: low
 tags:
     - "deferred"

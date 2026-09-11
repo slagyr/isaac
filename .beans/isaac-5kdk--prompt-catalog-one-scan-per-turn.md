@@ -2,7 +2,7 @@
 # isaac-5kdk
 title: 'Prompt catalog: one scan per turn'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-27T20:50:44Z
 updated_at: 2026-08-27T21:00:20Z

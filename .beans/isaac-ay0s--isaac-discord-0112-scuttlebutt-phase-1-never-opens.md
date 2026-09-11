@@ -2,7 +2,7 @@
 # isaac-ay0s
 title: isaac-discord 0.1.12 (scuttlebutt phase 1) never opens the gateway and drops episode-crew replies — train rolled back
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - discord

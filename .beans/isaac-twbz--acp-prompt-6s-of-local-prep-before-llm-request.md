@@ -2,7 +2,7 @@
 # isaac-twbz
 title: 'ACP prompt: ~6s of local prep before LLM request'
 status: draft
-type: feature
+type: bug
 priority: high
 created_at: 2026-06-20T23:55:35Z
 updated_at: 2026-06-20T23:55:35Z

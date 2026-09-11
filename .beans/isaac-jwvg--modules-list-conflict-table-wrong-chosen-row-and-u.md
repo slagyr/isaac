@@ -2,7 +2,7 @@
 # isaac-jwvg
 title: 'modules list conflict table: wrong ✓ chosen row and undifferentiated severity'
 status: completed
-type: feature
+type: bug
 priority: normal
 created_at: 2026-07-02T22:55:55Z
 updated_at: 2026-07-02T23:39:48Z

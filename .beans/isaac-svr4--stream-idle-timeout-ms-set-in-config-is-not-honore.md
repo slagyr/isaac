@@ -2,7 +2,7 @@
 # isaac-svr4
 title: 'stream-idle-timeout-ms set in config is not honored by hail turns: stalls still cut at the 90 s default'
 status: draft
-type: feature
+type: bug
 priority: high
 created_at: 2026-09-06T20:08:36Z
 updated_at: 2026-09-08T23:08:22Z

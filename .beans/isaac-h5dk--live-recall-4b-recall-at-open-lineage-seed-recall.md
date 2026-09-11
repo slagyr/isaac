@@ -2,7 +2,7 @@
 # isaac-h5dk
 title: 'Live recall 4b: recall-at-open, lineage seed, recall tools, index-at-close'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-22T21:33:23Z
 updated_at: 2026-08-29T04:43:16Z

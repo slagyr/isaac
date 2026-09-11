@@ -2,7 +2,7 @@
 # isaac-qn1z
 title: 'hail-bean-work skill: exact verify-handoff hail command; never probe the CLI with placeholders'
 status: completed
-type: feature
+type: task
 priority: high
 tags:
     - toolbox

@@ -2,7 +2,7 @@
 # isaac-8slm
 title: 'claude LoopDriver: text emitted before a tool call is glued onto the final reply (aside vs reply)'
 status: completed
-type: feature
+type: bug
 priority: normal
 created_at: 2026-09-08T22:10:01Z
 updated_at: 2026-09-08T23:52:58Z

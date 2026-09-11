@@ -2,7 +2,7 @@
 # isaac-blqf
 title: 'Terminology v2 in the test language: sessions→chronicles/threads in step names'
 status: draft
-type: feature
+type: task
 priority: low
 created_at: 2026-08-30T22:48:18Z
 updated_at: 2026-08-30T23:04:02Z

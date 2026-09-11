@@ -2,7 +2,7 @@
 # isaac-2nkg
 title: Format EDN written by config mutations
 status: todo
-type: feature
+type: task
 priority: normal
 created_at: 2026-09-03T15:45:13Z
 updated_at: 2026-09-03T15:45:13Z

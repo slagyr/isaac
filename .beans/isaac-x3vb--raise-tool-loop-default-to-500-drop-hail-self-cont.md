@@ -2,7 +2,7 @@
 # isaac-x3vb
 title: Raise tool-loop default to 500; drop hail self-continuations
 status: completed
-type: feature
+type: task
 priority: high
 created_at: 2026-08-23T02:19:14Z
 updated_at: 2026-08-25T18:19:54Z

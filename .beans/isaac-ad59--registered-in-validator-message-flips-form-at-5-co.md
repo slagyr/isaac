@@ -2,7 +2,7 @@
 # isaac-ad59
 title: registered-in? validator message flips form at 5 contributions; scenarios that pin the wording break when a berth's count crosses it
 status: draft
-type: feature
+type: bug
 tags:
     - foundation
     - schema

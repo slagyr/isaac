@@ -2,7 +2,7 @@
 # isaac-khgy
 title: 'Spike: claude-cli with native tool calling — isaac as the CLI''s MCP tool server'
 status: completed
-type: feature
+type: task
 priority: normal
 tags:
     - claude-cli

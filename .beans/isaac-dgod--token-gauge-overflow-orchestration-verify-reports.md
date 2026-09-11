@@ -2,7 +2,7 @@
 # isaac-dgod
 title: 'Token gauge overflow: orchestration-verify reports 12.0M / 278K (4320%) after one compaction'
 status: draft
-type: feature
+type: bug
 created_at: 2026-09-03T00:00:08Z
 updated_at: 2026-09-03T00:00:08Z
 ---

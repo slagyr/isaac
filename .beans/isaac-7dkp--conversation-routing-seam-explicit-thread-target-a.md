@@ -2,7 +2,7 @@
 # isaac-7dkp
 title: 'Conversation routing seam: explicit thread target and origin-aware delivery'
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - episodes

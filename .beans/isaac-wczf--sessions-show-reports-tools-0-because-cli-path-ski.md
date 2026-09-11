@@ -2,7 +2,7 @@
 # isaac-wczf
 title: sessions show reports Tools 0 because CLI path skips tool registration
 status: completed
-type: feature
+type: bug
 priority: normal
 tags:
     - tools

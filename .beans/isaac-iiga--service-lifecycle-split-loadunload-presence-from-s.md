@@ -2,7 +2,7 @@
 # isaac-iiga
 title: Service lifecycle — split load/unload (presence) from start/stop (running)
 status: draft
-type: feature
+type: epic
 priority: normal
 created_at: 2026-06-15T19:45:29Z
 updated_at: 2026-06-15T19:45:29Z

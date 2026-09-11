@@ -2,7 +2,7 @@
 # isaac-ntt6
 title: 'Exhausted turns: stop reason, exhaustion policy at the loop seam, bounded continuations, commit-on-green'
 status: completed
-type: feature
+type: epic
 priority: high
 created_at: 2026-09-08T13:34:08Z
 updated_at: 2026-09-10T10:43:50Z

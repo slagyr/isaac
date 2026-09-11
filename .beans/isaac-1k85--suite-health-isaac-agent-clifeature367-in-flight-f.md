@@ -2,7 +2,7 @@
 # isaac-1k85
 title: 'Suite health (isaac-agent): cli.feature:367 in-flight false after cancel stamp (CI-only)'
 status: draft
-type: feature
+type: bug
 priority: high
 tags:
     - suite-health

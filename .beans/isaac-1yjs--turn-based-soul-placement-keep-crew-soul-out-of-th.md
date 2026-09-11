@@ -2,7 +2,7 @@
 # isaac-1yjs
 title: 'Turn-based soul placement: keep crew soul out of the cached system block to survive crew swaps'
 status: draft
-type: feature
+type: task
 priority: normal
 created_at: 2026-05-25T17:42:32Z
 updated_at: 2026-05-25T17:42:38Z

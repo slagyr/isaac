@@ -2,7 +2,7 @@
 # isaac-tuk1
 title: 'Claude Code as a first-class provider: isaac-claude-code module + native tool loop via MCP'
 status: completed
-type: feature
+type: epic
 priority: normal
 tags:
     - claude-cli

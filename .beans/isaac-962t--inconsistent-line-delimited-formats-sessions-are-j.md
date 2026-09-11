@@ -2,7 +2,7 @@
 # isaac-962t
 title: 'Inconsistent line-delimited formats: sessions are JSONL, logs are EDNL'
 status: scrapped
-type: feature
+type: task
 priority: normal
 created_at: 2026-05-23T02:49:10Z
 updated_at: 2026-08-22T22:00:53Z

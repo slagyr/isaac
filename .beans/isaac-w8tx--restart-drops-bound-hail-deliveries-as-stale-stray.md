@@ -2,7 +2,7 @@
 # isaac-w8tx
 title: Restart drops bound hail deliveries as stale strays — three bean turns lost at the 2026-09-11 04:00Z boot (hails never die)
 status: todo
-type: feature
+type: bug
 priority: critical
 created_at: 2026-09-11T04:05:47Z
 updated_at: 2026-09-11T04:43:53Z

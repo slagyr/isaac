@@ -2,7 +2,7 @@
 # isaac-wa78
 title: '`isaac sessions set <id>.tags` rejects every value: "must be a set of keywords"'
 status: draft
-type: feature
+type: bug
 tags:
     - cli
     - sessions

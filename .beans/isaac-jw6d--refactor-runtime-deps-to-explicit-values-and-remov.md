@@ -2,7 +2,7 @@
 # isaac-jw6d
 title: Refactor runtime deps to explicit values and remove thread-local system/fs
 status: completed
-type: feature
+type: epic
 priority: high
 created_at: 2026-05-21T15:54:56Z
 updated_at: 2026-07-06T15:01:37Z

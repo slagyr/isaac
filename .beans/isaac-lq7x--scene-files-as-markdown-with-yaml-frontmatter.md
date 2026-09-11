@@ -2,7 +2,7 @@
 # isaac-lq7x
 title: Scene files as markdown with YAML frontmatter
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-17T16:45:12Z
 updated_at: 2026-08-17T17:03:29Z

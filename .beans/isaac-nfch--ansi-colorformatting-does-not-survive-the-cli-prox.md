@@ -2,7 +2,7 @@
 # isaac-nfch
 title: 'ANSI color/formatting does not survive the cli proxy: remote output renders plain'
 status: completed
-type: feature
+type: bug
 priority: normal
 created_at: 2026-07-07T18:28:46Z
 updated_at: 2026-07-07T19:41:20Z

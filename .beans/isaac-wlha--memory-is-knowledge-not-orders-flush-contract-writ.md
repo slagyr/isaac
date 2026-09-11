@@ -2,7 +2,7 @@
 # isaac-wlha
 title: 'Memory is knowledge, not orders: flush contract, write-tool contract, background-framed reads'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-24T02:21:17Z
 updated_at: 2026-08-24T12:30:18Z

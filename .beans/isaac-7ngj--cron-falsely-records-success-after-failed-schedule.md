@@ -2,7 +2,7 @@
 # isaac-7ngj
 title: Cron falsely records success after failed scheduled turn
 status: draft
-type: feature
+type: bug
 priority: high
 created_at: 2026-08-11T17:02:28Z
 updated_at: 2026-08-11T18:18:40Z

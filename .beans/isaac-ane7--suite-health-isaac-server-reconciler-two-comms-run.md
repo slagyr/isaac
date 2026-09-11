@@ -2,7 +2,7 @@
 # isaac-ane7
 title: 'Suite health (isaac-server): reconciler ''Two comms run independently when both slots are present at boot'' fails under dev-local against agent 0.1.61+'
 status: todo
-type: feature
+type: bug
 created_at: 2026-09-11T01:17:55Z
 updated_at: 2026-09-11T01:17:55Z
 ---

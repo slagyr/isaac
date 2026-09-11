@@ -2,7 +2,7 @@
 # isaac-v1la
 title: 'CLI floor is redundant config resolution: every command loads and validates the config 3–5 times (~1.3 s of the 1.6 s --version)'
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - foundation

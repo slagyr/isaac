@@ -2,7 +2,7 @@
 # isaac-8lhv
 title: 'hail-send tool: reject an explicit session that names no existing session (fast feedback, no dead-letter)'
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-07-03T20:56:45Z
 updated_at: 2026-07-04T18:45:55Z

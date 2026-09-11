@@ -2,7 +2,7 @@
 # isaac-swxz
 title: 'Scuttlebutt: delete isaac-server''s divergent CliComm (src/isaac/comm/cli.clj)'
 status: completed
-type: feature
+type: task
 priority: normal
 tags:
     - scuttlebutt

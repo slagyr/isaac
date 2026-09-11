@@ -2,7 +2,7 @@
 # isaac446t
 title: 'ci-failure v2 operational rollout: deploy band, tag :ci sessions, staged end-to-end verification'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-07-03T20:30:34Z
 updated_at: 2026-07-03T20:35:52Z

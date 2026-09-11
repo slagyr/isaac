@@ -2,7 +2,7 @@
 # isaac-lrvb
 title: 'claude LoopDriver: driven turns must not teach the textual fence protocol; log MCP server status; fall back when the isaac MCP server fails'
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-09-08T18:10:29Z
 updated_at: 2026-09-08T18:53:49Z

@@ -2,7 +2,7 @@
 # isaac-e04k
 title: Turn loop can die silently — no recorded outcome, no attention
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-21T14:54:09Z
 updated_at: 2026-08-21T17:58:52Z

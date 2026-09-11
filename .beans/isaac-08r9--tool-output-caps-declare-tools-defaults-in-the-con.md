@@ -2,7 +2,7 @@
 # isaac-08r9
 title: 'Tool output caps: declare :tools :defaults in the config schema; halve the code defaults'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-07-08T23:13:08Z
 updated_at: 2026-07-09T18:10:09Z

@@ -2,7 +2,7 @@
 # isaac-ec9q
 title: 'Remote CLI: run any isaac command over a /cli websocket (client + server)'
 status: draft
-type: feature
+type: epic
 priority: normal
 created_at: 2026-06-26T20:58:42Z
 updated_at: 2026-06-27T04:06:19Z

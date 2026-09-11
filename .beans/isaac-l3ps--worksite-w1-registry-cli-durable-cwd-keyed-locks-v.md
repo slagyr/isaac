@@ -2,7 +2,7 @@
 # isaac-l3ps
 title: 'Worksite W1: registry, CLI, durable locks via :worksite turnstile'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-23T19:23:46Z
 updated_at: 2026-08-26T07:46:23Z

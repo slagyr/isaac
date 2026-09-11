@@ -2,7 +2,7 @@
 # isaac-s0qs
 title: noop demo bean (run-2026-07-19)
 status: completed
-type: feature
+type: task
 priority: low
 created_at: 2026-07-20T03:09:09Z
 updated_at: 2026-07-20T03:11:39Z

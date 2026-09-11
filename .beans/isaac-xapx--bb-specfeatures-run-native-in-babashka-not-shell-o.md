@@ -2,7 +2,7 @@
 # isaac-xapx
 title: bb spec/features run native in babashka, not shell out to clojure
 status: completed
-type: feature
+type: epic
 priority: normal
 created_at: 2026-07-15T17:38:39Z
 updated_at: 2026-07-19T23:48:54Z

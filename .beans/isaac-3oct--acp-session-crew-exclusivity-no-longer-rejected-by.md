@@ -2,7 +2,7 @@
 # isaac-3oct
 title: ACP --session + --crew exclusivity no longer rejected by frequencies_cli
 status: draft
-type: feature
+type: bug
 priority: normal
 created_at: 2026-08-29T14:42:46Z
 updated_at: 2026-08-29T14:42:46Z

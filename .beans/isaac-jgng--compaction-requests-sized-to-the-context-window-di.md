@@ -2,7 +2,7 @@
 # isaac-jgng
 title: Compaction requests sized to the context window die 'closed' on chatgpt; cap per-request tokens and adapt chunk size on failure
 status: completed
-type: feature
+type: bug
 priority: high
 tags:
     - agent

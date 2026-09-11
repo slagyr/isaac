@@ -2,7 +2,7 @@
 # isaac-0tf3
 title: 'Hail delivery: recover orphaned inflight deliveries after a mid-drive crash'
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-07-04T14:35:52Z
 updated_at: 2026-07-04T15:12:29Z

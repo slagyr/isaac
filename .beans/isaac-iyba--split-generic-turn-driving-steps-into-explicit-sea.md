@@ -2,7 +2,7 @@
 # isaac-iyba
 title: "Split generic turn-driving steps into explicit seams and waiting steps"
 status: draft
-type: feature
+type: task
 priority: low
 tags:
     - "deferred"

@@ -2,7 +2,7 @@
 # isaac-b3tl
 title: Explicit session-level :model override is ignored at the session-creation seam
 status: completed
-type: feature
+type: bug
 priority: normal
 created_at: 2026-07-04T05:04:15Z
 updated_at: 2026-07-06T14:50:51Z

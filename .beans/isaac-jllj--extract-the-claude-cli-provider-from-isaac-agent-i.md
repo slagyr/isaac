@@ -2,7 +2,7 @@
 # isaac-jllj
 title: Extract the claude-cli provider from isaac-agent into the isaac-claude-code module (pure move)
 status: completed
-type: feature
+type: task
 priority: high
 tags:
     - claude-cli

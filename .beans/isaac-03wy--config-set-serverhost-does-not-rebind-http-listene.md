@@ -2,7 +2,7 @@
 # isaac-03wy
 title: config set server.host does not rebind HTTP listener (requires full restart)
 status: draft
-type: feature
+type: bug
 priority: normal
 tags:
     - server

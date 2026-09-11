@@ -2,7 +2,7 @@
 # isaac-6eo4
 title: 'Post-deploy: enable multi_edit tool-allow for zanebot work crews'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-07-09T17:26:10Z
 updated_at: 2026-08-25T22:46:13Z

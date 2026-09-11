@@ -2,7 +2,7 @@
 # isaac-flgy
 title: Split isaac.config.loader by responsibility (pure refactor)
 status: completed
-type: feature
+type: task
 priority: normal
 tags:
     - refactor

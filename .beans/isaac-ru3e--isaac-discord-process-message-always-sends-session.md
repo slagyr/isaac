@@ -2,7 +2,7 @@
 # isaac-ru3e
 title: 'isaac-discord: process-message! always sends :session-key; drop episode/chronicle request-shape branch'
 status: scrapped
-type: feature
+type: task
 priority: high
 tags:
     - discord

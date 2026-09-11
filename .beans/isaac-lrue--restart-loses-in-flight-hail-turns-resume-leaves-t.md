@@ -2,7 +2,7 @@
 # isaac-lrue
 title: 'Restart loses in-flight hail turns: resume leaves the legacy turn marker, hail''s stray sweep deletes the just-requeued deliveries (3 beans lost 2026-09-11)'
 status: todo
-type: feature
+type: bug
 priority: critical
 tags:
     - agent

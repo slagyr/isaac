@@ -2,7 +2,7 @@
 # isaac-0oqd
 title: 'x2up residue: 3 scenarios still red on main after the merge'
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-08-31T16:27:46Z
 updated_at: 2026-08-31T17:50:07Z

@@ -2,7 +2,7 @@
 # isaac-5lri
 title: 'Embedding seam: optional :embedding config + Embedder protocol + ollama adapter + isaac embed CLI'
 status: completed
-type: feature
+type: task
 priority: normal
 tags: []
 created_at: 2026-08-17T01:09:17Z

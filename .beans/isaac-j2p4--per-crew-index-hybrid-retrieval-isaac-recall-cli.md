@@ -2,7 +2,7 @@
 # isaac-j2p4
 title: Per-crew index + hybrid retrieval + isaac recall CLI
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-17T03:21:48Z
 updated_at: 2026-08-18T22:40:57Z

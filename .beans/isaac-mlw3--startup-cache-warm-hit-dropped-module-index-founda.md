@@ -2,7 +2,7 @@
 # isaac-mlw3
 title: Startup-cache warm hit dropped :module-index; foundation 0.1.24 could not boot the server (hotfixed f5bdde0, needs scenario + decision)
 status: todo
-type: feature
+type: bug
 priority: high
 tags:
     - foundation

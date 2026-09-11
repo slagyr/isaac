@@ -2,7 +2,7 @@
 # isaac-yleu
 title: 'Scuttlebutt phase 1: isaac-imessage mechanical migration to the new Comm protocol'
 status: completed
-type: feature
+type: task
 priority: normal
 tags:
     - scuttlebutt

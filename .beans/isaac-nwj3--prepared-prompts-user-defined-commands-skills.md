@@ -2,7 +2,7 @@
 # isaac-nwj3
 title: 'Prepared prompts: user-defined commands + skills'
 status: draft
-type: feature
+type: epic
 priority: normal
 created_at: 2026-05-26T00:20:55Z
 updated_at: 2026-05-26T04:15:19Z

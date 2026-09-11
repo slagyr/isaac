@@ -2,7 +2,7 @@
 # isaac-mjr4
 title: 'Foreman F1: engine, file store, machine config, start/signal/status/list CLI'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-23T22:07:07Z
 updated_at: 2026-08-24T02:06:12Z

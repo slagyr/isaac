@@ -2,7 +2,7 @@
 # isaac-x0cw
 title: 'Wrap-up note is not persisted: the continuation turn never sees the done/next note it is supposed to start from'
 status: completed
-type: feature
+type: bug
 priority: high
 created_at: 2026-09-10T02:53:44Z
 updated_at: 2026-09-10T21:08:15Z

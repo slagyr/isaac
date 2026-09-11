@@ -2,7 +2,7 @@
 # isaac-qxvl
 title: 'Live episodes 4a: router, TTL lifecycle, compaction-close, seal-at-close'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-20T23:16:17Z
 updated_at: 2026-08-22T11:01:54Z

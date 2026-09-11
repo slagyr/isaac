@@ -2,7 +2,7 @@
 # isaac-brth
 title: CLI-as-foundation with berths as the extension model
 status: draft
-type: feature
+type: epic
 priority: normal
 created_at: 2026-05-21T20:58:30Z
 updated_at: 2026-06-12T12:51:07Z

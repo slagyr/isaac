@@ -2,7 +2,7 @@
 # isaac-n4f9
 title: modules upgrade returns before gitlib materializes — first invocation races
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-22T21:02:44Z
 updated_at: 2026-08-23T02:27:01Z

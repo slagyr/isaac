@@ -2,7 +2,7 @@
 # isaac-rxr4
 title: 'Backfill: transcripts -> scenes + gists (segmentation + gisting command)'
 status: completed
-type: feature
+type: task
 priority: normal
 tags: []
 created_at: 2026-08-17T03:21:48Z

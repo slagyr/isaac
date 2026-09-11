@@ -2,7 +2,7 @@
 # isaac-3c3z
 title: 'isaac-imessage: fix JVM feature suite (lifecycle fails + missing step vars) and re-enable in ci'
 status: completed
-type: feature
+type: bug
 priority: normal
 created_at: 2026-07-19T18:31:58Z
 updated_at: 2026-07-20T00:26:18Z

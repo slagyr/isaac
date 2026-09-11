@@ -2,7 +2,7 @@
 # isaac-g2z8
 title: 'claude LoopDriver: reply text doubled again on 0.1.8 — the stream carries the final text three times; use one source'
 status: completed
-type: feature
+type: bug
 priority: normal
 created_at: 2026-09-08T23:52:56Z
 updated_at: 2026-09-09T00:13:47Z

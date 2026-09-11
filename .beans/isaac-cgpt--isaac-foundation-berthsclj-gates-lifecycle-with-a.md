@@ -2,7 +2,7 @@
 # isaac-cgpt
 title: 'isaac-foundation: berths.clj gates lifecycle with a def-aliased Reconfigurable snapshot — extend-based implementations are never loaded'
 status: draft
-type: feature
+type: bug
 priority: high
 tags:
     - foundation

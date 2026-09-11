@@ -2,7 +2,7 @@
 # isaac-dt9h
 title: 'xapx: sweep cron/hooks/imessage — native bb specs'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-07-19T17:10:51Z
 updated_at: 2026-07-19T18:38:53Z

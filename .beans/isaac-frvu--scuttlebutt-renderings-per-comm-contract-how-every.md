@@ -2,7 +2,7 @@
 # isaac-frvu
 title: 'Scuttlebutt renderings: per-comm contract — how every Comm impl handles the new surface'
 status: completed
-type: feature
+type: task
 priority: normal
 created_at: 2026-08-30T23:29:05Z
 updated_at: 2026-08-31T16:17:57Z

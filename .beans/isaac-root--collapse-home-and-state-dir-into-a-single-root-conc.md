@@ -2,7 +2,7 @@
 # isaac-root
 title: Collapse :home and :state-dir into a single :root concept
 status: draft
-type: feature
+type: refactor
 priority: normal
 created_at: 2026-05-31T00:00:00Z
 updated_at: 2026-05-31T00:00:00Z

@@ -2,7 +2,7 @@
 # isaac-cdfb
 title: Merge bean/isaac-o14c into isaac-acp main (integration only)
 status: completed
-type: feature
+type: task
 priority: high
 created_at: 2026-07-10T11:53:05Z
 updated_at: 2026-07-10T12:07:54Z
