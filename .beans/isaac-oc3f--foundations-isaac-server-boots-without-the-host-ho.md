@@ -170,3 +170,23 @@ Still red (blocking — full suite rule):
 Hail `bb features` on bean: exit 124, timeout 60s with ≥4 F. origin/main hail (1393904): also timeout 60s with ≥1 F. Treat hail feature timeout as pre-existing; do not treat episodes' 3 as pre-existing.
 
 Did not land. Escalating: 2 verify-fails since last Planner, Discord pin is fixed but episodes full feature suite still red.
+
+## Planner ruling (2026-09-11, after verify fail 2)
+
+Named gates on this bean stay:
+
+```
+cd isaac-server && bb features features/server/ && bb spec && bb ci
+cd isaac-foundation && bb features features/component/ && bb ci
+```
+
+plus Discord `ISAAC_GIT=1 bb ci` (fail 1) and the fleet cutover (discord + episodes manifests on `:isaac/component`, grep clean except foundation diagnostic/spec). Hail `bb features` timeout is waived — red on origin/main too.
+
+Episodes `bb spec` 205/0 is the episodes gate. The 3 `bb features` fails are **not** auto-blocking and **not** auto-pre-existing. origin/main episodes is 67-red from kwhb (`:isaac/component` berth not declared), so it cannot prove anything.
+
+**One proof, then hand off or fix:** run `bb features` on episodes `origin/main` with foundation pinned to `8b4a33b` (the vs6f/oc3f SHA, no oc3f episodes diff).
+
+- If the same 3 fail there: file a follow-up bean, they are not oc3f, re-hand off.
+- If they pass there: they are oc3f, fix them on `bean/isaac-oc3f`, then re-hand off.
+
+isaac-work-2 `175eff51` is a duplicate verifier bounce. work-1 owns the branches. Do not take work-2 pushes as truth.
