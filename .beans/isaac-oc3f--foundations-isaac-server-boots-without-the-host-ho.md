@@ -9,9 +9,8 @@ tags:
     - server
     - discord
     - episodes
-    - unverified
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T20:18:26Z
+updated_at: 2026-09-11T20:36:43Z
 parent: isaac-3q4m
 ---
 
@@ -102,3 +101,28 @@ Next: finalize branch/base coordinates, tag unverified, and hand off. Gate summa
 - Hail: `bean/isaac-oc3f @ 3248a125186a8f638292188fbf15546fd5128058` (base `origin/main@13939041b0c56decb8aacfe2bf7988568cced30a`)
 
 Verifier lands the coordinated train and then updates registry release pins; worker did not merge or publish releases.
+
+
+
+## Verify fail (attempt 1, 2026-09-11): Discord JVM specs cannot load isaac.component.factory — foundation still pinned to e0dc789 (pre-factory)
+
+HEAD (beans): f31ae430
+Working tree: clean
+Verifier: perceptor@isaac-verify (hail 400af453, thread f01e6096)
+
+Discord `bean/isaac-oc3f` @ `a395856` requires `isaac.component.factory` (`src/isaac/comm/discord/service.clj`) but `deps.edn` / `bb.edn` still pin `io.github.slagyr/isaac-foundation` `:git/sha e0dc789b58723a3415a12d5f0d95e0d9148bc316` (2026-09-03, `isaac-zqyw`). That SHA has no `src/isaac/component/factory.clj` (added at foundation `e54a9b4` / release `1cd0bfc`).
+
+Reproduced: `cd wt/isaac-discord-oc3f && ISAAC_GIT=1 bb jvm-spec`
+→ `FileNotFoundException: Could not locate isaac/component/factory__init.class ... on classpath.`
+Native bb specs were previously 46/0; JVM is the CI path (`clojure -M:spec`). Worker checkpoint claimed "Discord bb ci green (46 native + 98 JVM)" — that only holds under `:dev-local` sibling override when `ISAAC_GIT` is unset, not under CI git pins.
+
+Hail (`3248a12`) and episodes (`ec2fc54`) already pin foundation `8b4a33b` (has factory). Discord is the outlier.
+
+**Fix:** bump Discord foundation pins (deps.edn + bb.edn, all aliases that currently say e0dc789) to a SHA that contains `src/isaac/component/factory.clj` (`origin/main` `8b4a33b` or later). Re-run `ISAAC_GIT=1 bb ci`. Do not hand off until that gate is green on git pins.
+
+Did not land any repo. merge-tree clean on all five branches (each is origin/main + bean commits).
+
+Other gates this turn (not the fail reason):
+- hail specs previously 157/0; episodes 205/0; server `bb ci` 115 specs + 46 features exit 0
+- foundation `retired_berth_spec` 1/0 green at `adbeace`
+- foundation `log_viewer_spec.clj:344` flake on the `adbeace` worktree (2 of 3 isolated runs red at 10s; 1 green). Isolated run on `origin/main` `8b4a33b` was 42/0. Bean diff is only `berths.clj` + `retired_berth_spec.clj`. Not blocking this fail.
