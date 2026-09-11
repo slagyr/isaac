@@ -4,8 +4,10 @@ title: Extract episodes + recall into the isaac-episodes module behind the sessi
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-11T18:00:34Z
+updated_at: 2026-09-11T18:23:50Z
 blocked_by:
     - isaac-mmod
 ---
@@ -78,3 +80,14 @@ Independent gates run this turn on the unrebased tips (not landable):
 - isaac registry branch merge-tree vs origin/main is clean (modules.edn still pins agent 4737cf4).
 
 Worker: rebase `bean/isaac-209q` onto current isaac-agent origin/main (8481d6c), take jrj0's delivery-worker shape (no episodes-worker, no nested turn-worker), re-run agent full `bb spec` and `bb features` (directory-by-directory if the native 180s cap hits), keep grep empty, then re-hand off. Do not ask the verifier to resolve the conflict.
+
+## Rebase repair handoff (2026-09-11, scrapper@isaac-work-1)
+
+Rebased isaac-agent onto jrj0 and resolved both delivery-worker conflicts by retaining jrj0's delivery-only worker shape. Because episodes now belongs to the extracted module, removed the stale agent `:episodes-worker` component factory/contribution and its spec references; agent grep for `isaac.episodes|isaac.recall` is empty.
+
+Coordinates:
+- isaac-agent: `bean/isaac-209q` @ `43fd66380a0264f00a96396297046ea9655b6811` (base `origin/main@8481d6ca2f9fca003b8600c67c29fe8732971b55`); merge-tree clean.
+- isaac-episodes: `bean/isaac-209q` @ `5008d8b57704a9adae30bc5ad1d5f59af0179751`; unchanged and `bb ci` reverified green (205 specs / 78 features).
+- isaac registry: `bean/isaac-209q` @ `621ba135169e0c01bf4cdfc9943bf9119c504bf2` (base `origin/main@7163fd4dfe50e8f5615e205d0a4cd8dcb2461e46`), pinning the rebased agent and episodes SHAs; merge-tree clean.
+
+Agent full `bb spec` is green: 1593 examples, 0 failures, 3286 assertions. Feature directory invocations still generate the entire feature tree under gherclj target semantics and reproduce ambient order-dependent failures; direct file-target runs show comm, crew, module, tool, and turn green. No product changes were made for unrelated feature-suite state leakage.
