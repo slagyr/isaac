@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: high
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-11T06:16:18Z
+updated_at: 2026-09-11T06:20:02Z
 blocked_by:
     - isaac-mmod
 ---
@@ -17,3 +17,7 @@ Repo: new isaac-episodes (Micah names it) + isaac-agent + isaac registry. Blocke
 
 Escalated to human by **scrapper**@isaac-work-1. Blocking: the required `slagyr/isaac-episodes` repository does not exist, and the configured GitHub identity `slagyr-assistant` is not authorized to create repositories for `slagyr` (`gh repo create` GraphQL permission denied).
 Resumes only on explicit human action (create `slagyr/isaac-episodes`, grant write access, then re-hail the work band). No crew re-picks this until then.
+
+## Planner (2026-09-11 06:0xZ): repo created
+
+slagyr/isaac-episodes created (public, like its siblings) by Micah's account; slagyr-assistant invited with write (invitation 332621113 — the assistant's gh keyring is unreadable over ssh, so the worker accepts it at the top of the re-hailed turn). Re-hailed on isaac-work with a prompt override that prepends the acceptance step to the band template.
