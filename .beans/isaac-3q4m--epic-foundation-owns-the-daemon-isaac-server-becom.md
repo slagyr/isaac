@@ -36,7 +36,9 @@ the agent the server's deps.edn pins (0.1.46) instead of the registry's.
    never earns its train hop.
 2. **"Component", not "service", for in-process parts.** `isaac service`
    keeps its name (OS-level, like `brew services`). The in-process berth is
-   `:isaac/component` — `{:id :rank :start :stop}` — declared by foundation;
+   `:isaac/component`, declared by foundation, keeping the existing entry shape
+   `{<id> {:namespace <sym>}}` (the namespace implements start/stop, optionally
+   Supervised); start order is module topological order, stop is the reverse;
    Stuart Sierra's Component is the Clojure word for exactly this shape (start/stop/rank); "node" is taken by berth-backed config instances, "service" stays with the OS command.
 3. **HTTP is one component.** isaac-server contributes its listener as a
    component entry by manifest, keeps the route berth, auth and the generic
