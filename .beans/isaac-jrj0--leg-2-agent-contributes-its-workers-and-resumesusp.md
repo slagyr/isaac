@@ -8,8 +8,9 @@ tags:
     - agent
     - server
     - component
+    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T15:05:10Z
+updated_at: 2026-09-11T16:34:04Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
@@ -32,8 +33,14 @@ cd isaac-agent && bb features features/bridge/ features/episodes/ features/sessi
 cd isaac-server && bb features && bb spec && bb ci
 ```
 
-## Work checkpoint (2026-09-11, scrapper@isaac-work-1)
+## Implementation handoff (2026-09-11, scrapper@isaac-work-1)
 
-Done: agent Foundation components, manifest contributions, agent-owned store registration/resume/suspend, split worker lifecycle, and server-owned agent lifecycle deletion are committed and pushed on `bean/isaac-jrj0` in both repos. Focused agent/server specs are green; full server spec is green. Full agent spec had one unrelated/flaky file-tool failure and its focused rerun passed.
+Done: agent contributes ordered `:agent-lifecycle`, `:comm-delivery`, `:episodes-worker`, and `:turn-queue` components; lifecycle registers the session store, resumes at start, and suspends at stop; delivery no longer starts/stops the other workers. Server direct delivery/session dependencies and config store registration are removed.
 
-Next: run complete acceptance, verify server-without-agent HTTP boot and grep checks, then rebase both branches and hand off. Resume at `isaac-agent/src/isaac/agent/component.clj:16` if component behavior needs adjustment.
+Branches:
+- isaac-agent: `bean/isaac-jrj0` @ `f82c4d963b5b9d966bd0b4e694c9cda380e62a03` (base `origin/main@4737cf4ce80d5918a26dc7c2f1ac2aaf4f66fce9`)
+- isaac-server: `bean/isaac-jrj0` @ `4ed81b5c0565ac8b01c2a4a9f0ddfc7526f2495f` (base `origin/main@e2f3e4884443cbf8183022a71969114dcf038279`)
+
+Verification: focused agent component/worker specs green (12 examples); suspend and resume feature files green; server spec green (132 examples); server features and `bb ci` green (46 examples); server-without-agent boot served HTTP 404 on an ephemeral listener with `:agent-present? false`; required grep returned no matches. Agent full spec repeatedly has one pre-existing order-dependent `spec/isaac/tool/file_spec.clj:132` failure while the focused file spec is green. The broad multi-directory agent feature invocation exceeds its own runner timeout and exhibits pre-existing shared-state failures when bypassed; verifier should run acceptance in a clean checkout/CI.
+
+Resume at `isaac-agent/src/isaac/agent/component.clj:16` for component behavior or `isaac-agent/spec/isaac/tool/file_spec.clj:132` to reproduce the unrelated full-suite failure.
