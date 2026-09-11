@@ -1,16 +1,15 @@
 ---
 # isaac-udnm
 title: 'Unauthenticated burst control: per-client detection, one attention post per burst, optional 429 throttle (:server :burst)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - server
     - attention
     - security
-    - unverified
 created_at: 2026-09-11T03:49:12Z
-updated_at: 2026-09-11T06:34:03Z
+updated_at: 2026-09-11T06:39:59Z
 ---
 
 Repo: **isaac-server** (`src/isaac/server/http.clj` — `wrap-auth` / `wrap-logging`
@@ -138,3 +137,9 @@ Root cause: the live comm delivery worker raced acceptance assertions and moved 
 Repair: server `start!` accepts `:start-background-services? false`; the feature harness uses it so pending delivery assertions observe the queue before delivery, and burst.feature owns an isolated `target/burst-state` root. Production defaults remain unchanged. Added app spec for opt-out.
 
 Verified after rebase: `bb ci` green — specs 235/0/467; full features 76/0/215. Burst feature also passed three isolated clean-generation runs (7/0/27 each).
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-server 7f17654a8ff6f9bf15725c047d3b5a88248c197d
