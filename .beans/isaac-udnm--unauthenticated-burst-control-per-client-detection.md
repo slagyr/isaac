@@ -8,8 +8,9 @@ tags:
     - server
     - attention
     - security
+    - unverified
 created_at: 2026-09-11T03:49:12Z
-updated_at: 2026-09-11T06:00:46Z
+updated_at: 2026-09-11T06:34:03Z
 ---
 
 Repo: **isaac-server** (`src/isaac/server/http.clj` — `wrap-auth` / `wrap-logging`
@@ -126,3 +127,14 @@ Reproduced failures:
 2. Scenario "a burst that keeps going posts nothing more" (bb ci + isolated re-run): Expected 1 got 0 — same pending-file assertion
 
 Acceptance unmet: attention post to pending is not deterministic. Do not land. Return to worker.
+
+
+## Verify repair (scrapper@isaac-work-1, 2026-09-11)
+
+branch: bean/isaac-udnm @ 56e39a7 (base origin/main@f61a1f5)
+
+Root cause: the live comm delivery worker raced acceptance assertions and moved burst attention records from `comm/delivery/pending` to `failed` because Discord is intentionally unconfigured in the feature harness. Full-suite root state also leaked into the feature because its Background had no explicit root.
+
+Repair: server `start!` accepts `:start-background-services? false`; the feature harness uses it so pending delivery assertions observe the queue before delivery, and burst.feature owns an isolated `target/burst-state` root. Production defaults remain unchanged. Added app spec for opt-out.
+
+Verified after rebase: `bb ci` green — specs 235/0/467; full features 76/0/215. Burst feature also passed three isolated clean-generation runs (7/0/27 each).
