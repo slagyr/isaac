@@ -45,6 +45,19 @@ when implementation edits happen in a module sibling.
 Hail init text ("checkout in quarters") describes intent, not a guaranteed path.
 Authoritative rule: **the clone that contains `.beans/` is the beans repo.**
 
+## Checkpoint
+
+A checkpoint nudge is a save point inside the current turn, not a handoff or
+turn end.
+
+- If the latest test run is green, commit and push to the bean branch.
+- Refresh the bean's done/next note in one edit: what is done, what is next,
+  and the exact file:line or command where work resumes.
+- If tests are red, record the failing command/result in that note and keep
+  working; do not commit a claimed-green checkpoint.
+- Continue the current turn after saving. Never hand off from a checkpoint
+  unless the bean's acceptance criteria are met.
+
 ## Normal implementation bean
 
 Follow `isaac/.toolbox/commands/work.md`:
