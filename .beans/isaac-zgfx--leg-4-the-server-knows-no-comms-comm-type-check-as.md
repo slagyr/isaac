@@ -1,7 +1,7 @@
 ---
 # isaac-zgfx
 title: 'Leg 4 — the server knows no comms: comm-type check as an :isaac.config/check contribution; delete the six stale comm copies; telly replaced by a server-owned test comm'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - agent
     - comm
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:58Z
+updated_at: 2026-09-11T22:23:18Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
