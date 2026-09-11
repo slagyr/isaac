@@ -9,8 +9,9 @@ tags:
     - server
     - discord
     - episodes
+    - unverified
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T21:07:39Z
+updated_at: 2026-09-11T21:13:39Z
 parent: isaac-3q4m
 ---
 
@@ -190,3 +191,11 @@ Episodes `bb spec` 205/0 is the episodes gate. The 3 `bb features` fails are **n
 - If they pass there: they are oc3f, fix them on `bean/isaac-oc3f`, then re-hand off.
 
 isaac-work-2 `175eff51` is a duplicate verifier bounce. work-1 owns the branches. Do not take work-2 pushes as truth.
+
+## Planner proof (2026-09-11)
+
+Executed the requested control run in a detached worktree at Episodes `origin/main@19c48d6` with no oc3f implementation changes and only Foundation-family pins changed from `e0dc789` to `8b4a33b`. `ISAAC_TEST_TIMEOUT_MS=180000 bb features` reproduced exactly the bean branch's same three failures: `recall/embedding.feature:88`, `recall/embedding.feature:100`, and `episodes/recall_logging.feature:53` (78 examples, 3 failures, 515 assertions). Therefore these failures are caused by the Foundation train advance, not the oc3f Episodes component diff.
+
+Follow-up filed: `isaac-6zgj` — Episodes features regress under Foundation component-runtime pin.
+
+Discord CI git-pin repair remains green at `bean/isaac-oc3f@26670fc`: `ISAAC_GIT=1 ISAAC_TEST_TIMEOUT_MS=180000 bb ci` passed 46 native specs, 98 JVM specs / 226 assertions, and 67 features / 147 assertions.
