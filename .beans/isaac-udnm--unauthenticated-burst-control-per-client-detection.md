@@ -1,7 +1,7 @@
 ---
 # isaac-udnm
 title: 'Unauthenticated burst control: per-client detection, one attention post per burst, optional 429 throttle (:server :burst)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - attention
     - security
 created_at: 2026-09-11T03:49:12Z
-updated_at: 2026-09-11T03:53:23Z
+updated_at: 2026-09-11T03:56:03Z
 ---
 
 Repo: **isaac-server** (`src/isaac/server/http.clj` — `wrap-auth` / `wrap-logging`
