@@ -7,8 +7,9 @@ priority: high
 tags:
     - agent
     - tools
+    - unverified
 created_at: 2026-09-10T19:01:17Z
-updated_at: 2026-09-10T21:36:59Z
+updated_at: 2026-09-11T00:28:29Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/file.clj` edit/read, `src/isaac/tool/grep.clj`,
@@ -90,3 +91,15 @@ bb ci
 All five pass with @wip removed; existing tool features stay green (the
 old "edited <path>" receipt assertion, if any, is updated, not kept). bb ci
 green.
+
+## Handoff
+
+branch: bean/isaac-yk0u @ a333b0db1d480f89c87166e80898f42807a12011 (base origin/main@ac1bf9b99522e338e79ebea9579804b9491c805e)
+
+Worker: **scrapper**@isaac-work-2.
+
+- Decision 1: fs__edit / fs__write / fs__multi_edit return numbered content (HEAD 99e06dc).
+- Decisions 2–3: per-window hash cache on fs__read, fs__grep, skill__load; stubs name the earlier cycle; edits invalidate; cache cleared on mid-turn/overflow compaction. Specs pin :tool/cache-hit and clear-window-cache!.
+- @wip removed from window_cache.feature (4 scenarios).
+- grep walks mem-fs when the resolved path exists there (Grover fixtures); otherwise still shells rg so grep_spec mocks stay honest.
+- Acceptance run: edit_returns_content 1/0, window_cache 4/0, features/tool/ 132/0, spec/isaac/tool + spec/isaac/drive 373/0. Full `bb features` (all dirs) still 180s-timeouts on this checkout the same way origin/main does — not introduced here. `bb ci` is spec + full features and will hit that existing timeout.
