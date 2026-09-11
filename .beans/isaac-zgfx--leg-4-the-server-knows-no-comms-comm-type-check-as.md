@@ -36,6 +36,6 @@ cd isaac-server && bb features && bb spec && bb ci
 
 ## Work checkpoint (2026-09-11, scrapper@isaac-work-1)
 
-Done: Agent contributes `check-comm-types` through `:isaac.config/check`; focused config specs green and pushed (`bean/isaac-zgfx@e7027b9`). Server's six stale `isaac.comm.*` copies are deleted; server-owned direct comm validation is removed from boot/reload; external telly test dependency is replaced by `spec-support` test comm; full server specs green (117 examples, 248 assertions), pushed (`bean/isaac-zgfx@6e52557`).
+Done: Agent's contributed comm-type check now accepts both manifest-contributed and programmatically registered factories and preserves a dotted display path (`bean/isaac-zgfx@b6284e4`; focused checks spec: 26 examples, 0 failures). Server removed the stale Agent-owned `isaac.session.store.spi` shadow, pinned Agent `b6284e4`, propagates generic loader errors into boot rejection/logging, and fixes the spec-support module resource path/test config (`bean/isaac-zgfx@2cf3b38`). Focused config/comm/logging features are green: 6 examples, 0 failures, 17 assertions.
 
-Next: run focused config/comm/logging features, then full Agent and Server gates; fix any fallout; rebase both branches; record final branch/base coordinates and hand off. Resume at `isaac-server-zgfx-new/features/config/reconciler.feature:1` with `bb features features/config/reconciler.feature features/module/comm_extension.feature features/server/logging.feature`.
+Next: run full Agent and Server acceptance gates, fix fallout, rebase both branches on current `origin/main`, rerun gates, record final branch/base evidence, tag `unverified`, and hand off. Resume at `isaac-agent-zgfx/bb.edn:1` with `bb features features/config/ && bb spec && bb ci`.
