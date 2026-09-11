@@ -8,8 +8,9 @@ tags:
     - agent
     - hail
     - config
+    - unverified
 created_at: 2026-09-10T21:15:48Z
-updated_at: 2026-09-11T03:59:32Z
+updated_at: 2026-09-11T07:43:12Z
 ---
 
 Repos: **isaac-agent** (tool loop / drive: `llm/tool_loop.clj` hooks, `drive/turn.clj`
@@ -119,3 +120,31 @@ to `cycle.limit` (clean cutover). Train: agent + hail bumps, then zanebot
 config cutover — crew files `:cycle-limit` → `:cycle {...}` (scrapper per
 decision 7), band files `cycle-limit:` → `cycle:`; isaac-hail default
 continuations 2 lands with the hail bump.
+
+
+## Implementation handoff (2026-09-11, scrapper@isaac-work-2)
+
+Implemented the clean `:cycle` cutover and checkpoint/wrap-up behavior.
+
+- isaac-agent branch: `bean/isaac-tic5` @ `86a9a92ce6e665526f48ce6804945f80a07c593a` (base `origin/main@dcf0954d5b68bdaa191d244471b5dd04e72b6119`)
+  - nested cycle layering, checkpoint nudges/markers/logging, configurable wrap-up prompts, persisted terminal wrap-up response, schema/checks, and clean removal of charge-level `:cycle-limit` input alias
+- isaac-hail branch: `bean/isaac-tic5` @ `9ee08f3840f29c201c68804ead4e24717` (base `origin/main@3faafd411a3e9698f260d201c68804ead4e24717`)
+  - band `:cycle` overlay, no band/charge `:cycle-limit` alias, continuation default 2; pins agent `86a9a92ce6e665526f48ce6804945f80a07c593a`
+- isaac skill documentation: main `27f8ffb72111d5dd2f71f4d502512dbb71eb838b`
+- zanebot config/installed skill: main `c932e91` (`scrapper.edn` uses the approved 250/50 cycle map and prompts); `isaac config validate` passes. No service restart performed.
+
+Acceptance evidence:
+
+- Agent four requested features: 13 examples, 0 failures, 35 assertions.
+- Agent focused charge/turn specs: 108 examples, 0 failures, 282 assertions.
+- Agent drive + directly changed config specs: 105 examples, 0 failures, 294 assertions.
+- Hail delivery feature: 30 examples, 0 failures, 107 assertions.
+- Hail specs: 156 examples, 0 failures, 359 assertions.
+- Hail inheritance/prompt features rerun after an unrelated parallel-suite collision: 12 examples, 0 failures, 46 assertions.
+- No relevant `@wip` remains.
+
+Known pre-existing/flaky full-suite reds, reproduced outside this diff:
+
+- Agent `bb spec spec/isaac/drive spec/isaac/config`: three `resolve-history-retention` examples fail for missing nexus filesystem on `origin/main` too.
+- Agent `bb ci`: one file-tool cwd example failed in the full suite, then passed alone (37 examples, 0 failures).
+- Hail `bb ci`: full feature run had inheritance/template state failures; both affected feature files passed immediately when focused. Earlier CI attempt also hit the fixed 60-second suite cap.
