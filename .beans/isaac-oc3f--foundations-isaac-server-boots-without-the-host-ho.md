@@ -196,6 +196,50 @@ isaac-work-2 `175eff51` is a duplicate verifier bounce. work-1 owns the branches
 
 Executed the requested control run in a detached worktree at Episodes `origin/main@19c48d6` with no oc3f implementation changes and only Foundation-family pins changed from `e0dc789` to `8b4a33b`. `ISAAC_TEST_TIMEOUT_MS=180000 bb features` reproduced exactly the bean branch's same three failures: `recall/embedding.feature:88`, `recall/embedding.feature:100`, and `episodes/recall_logging.feature:53` (78 examples, 3 failures, 515 assertions). Therefore these failures are caused by the Foundation train advance, not the oc3f Episodes component diff.
 
-Follow-up filed: `isaac-6zgj` — Episodes features regress under Foundation component-runtime pin.
+Follow-up: **isaac-6zgj** (todo) — Episodes features regress under Foundation component-runtime pin. Duplicate draft **isaac-2eec** is the same three rows; scrap it.
 
 Discord CI git-pin repair remains green at `bean/isaac-oc3f@26670fc`: `ISAAC_GIT=1 ISAAC_TEST_TIMEOUT_MS=180000 bb ci` passed 46 native specs, 98 JVM specs / 226 assertions, and 67 features / 147 assertions.
+
+## Planner adjustment (2026-09-11, prowl@isaac-plan) — verify-fail attempt 2: option (a) rescope; Discord is done
+
+Verifier: Discord pin is fixed (`26670fc`). Foundation `bb ci` 1019+181/0. Server `bb ci` 115+46/0. Hail spec 157/0. Episodes spec 205/0. merge-tree clean. Remaining blocker is isaac-episodes `bb features` 3-red under the required foundation pin, plus hail `bb features` 60s timeout (already waived — red on origin/main too).
+
+**Decision: (a).** Do **not** send the worker to make episodes features green on this bean. The three reds are proven on episodes `origin/main@19c48d6` + foundation `8b4a33b` with **no oc3f episodes diff** — they are the foundation-pin regression owned by **isaac-6zgj**, not oc3f's production-boot / berth-cutover product. Do **not** treat origin/main's 67-red (`:isaac/component` berth not declared — **isaac-kwhb**) as those three.
+
+The previous ruling's "prove then fix or split" is **closed by the proof above**. Verify does not wait on 6zgj.
+
+### Controlling acceptance (supersedes episodes `bb features` 0 and hail `bb features` 0)
+
+**isaac-foundation** `bean/isaac-oc3f` @ `adbeace6c46a33cce6e1e7387ef7538849ccf384`:
+
+    bb features features/component/
+    bb ci
+
+**isaac-server** `bean/isaac-oc3f` @ `f3e469ae8d97ea72c6fb316bbaa20b02622ec36d`:
+
+    bb features features/server/
+    bb spec
+    bb ci
+
+**isaac-discord** `bean/isaac-oc3f` @ `26670fc` (pin repair; not `a395856`):
+
+    ISAAC_GIT=1 clojure -M:spec
+    ISAAC_GIT=1 bb features
+    # or ISAAC_GIT=1 bb ci — JVM path must load isaac.component.factory
+
+**isaac-episodes** `bean/isaac-oc3f` @ `ec2fc546a6cf62c17b26689c007a6567ee858199`:
+
+    bb spec
+
+205/0. Manifest on `:isaac/component`. Do **not** require `bb features` 0.
+
+**isaac-hail** `bean/isaac-oc3f` @ `3248a125186a8f638292188fbf15546fd5128058`:
+
+    bb spec
+
+157/0. Manifest on `:isaac/component`. Do **not** require `bb features` (60s timeout on bean and origin/main).
+
+Fleet: no remaining `:isaac.server/service` contributors except foundation diagnostic/spec. merge-tree clean. Production boot path: `isaac server` (CLI / runner) starts http + reloader + resume + delivery as components (`runner/started :components ≥ 4`).
+
+Do **not** bounce to work. Discord is done. Verifier PASSes on the named gates above and records run counts. Do not land-block on 6zgj / kwhb / hail `bb features`.
+
