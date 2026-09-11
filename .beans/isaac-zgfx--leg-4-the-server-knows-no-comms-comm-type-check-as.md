@@ -21,4 +21,4 @@ Repo: **isaac-server** (deletes), **isaac-agent** (contributes the check).
 2. Delete isaac-server `src/isaac/comm/{protocol,memory,null,render,delivery/queue,delivery/worker}.clj` — June-14 copies that survived the "prune duplicate agent code" commit; the agent's namesakes are canonical and currently load first only by classpath order. The server's Comm protocol copy predates on-exhausted/on-bulletin/on-key.
 3. The dev alias's `isaac.comm.telly` (agent repo fixture) is replaced by a test comm in isaac-server's spec-support.
 
-Scenarios to plan: an unknown comm type in config fails validate with the same message, sourced from the check berth; the server boots with no comm namespaces of its own on the classpath (spec-level: no `isaac.comm.*` under isaac-server/src); logging.feature and the comm plumbing features stay green with the local test comm.
+Scenarios: none new — the unknown-comm-type validation scenario stays (now sourced from the check berth); the deletions and the telly replacement are one-time acceptance checks; logging.feature and the comm plumbing features stay green with the local test comm.

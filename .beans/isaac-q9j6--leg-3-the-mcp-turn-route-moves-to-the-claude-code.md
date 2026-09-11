@@ -19,4 +19,4 @@ Repo: **isaac-claude-code** (receives), **isaac-server** (sheds `server/mcp.clj`
 
 The twenty-line JSON-RPC-over-HTTP shim moves into the claude-code module and is contributed via `:isaac.server/route` (later `:isaac.http/route`) at `/claude/turns/:id`; the mcp-bridge URL builder in `claude_cli.clj` follows. The per-turn registry `isaac.mcp.turns` stays in the agent. Existing mcp_turn_registry.feature scenarios move to the claude-code repo with the new path.
 
-Scenarios to plan: tools/list and tools/call through the new path; ended turn refuses -32001; old path 404s (one-time absence check at acceptance, not a permanent scenario).
+Scenarios: none new — `features/llm/mcp_turn_registry.feature` moves to isaac-claude-code with the new path; the old path answering 404 is a one-time acceptance check.
