@@ -1,7 +1,7 @@
 ---
 # isaac-jrj0
 title: Leg 2 — agent contributes its workers and resume/suspend as components; server stops calling the agent by name
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - server
     - component
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:58Z
+updated_at: 2026-09-11T15:05:10Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
