@@ -5,12 +5,11 @@ status: in-progress
 type: feature
 priority: normal
 tags:
+    - server
     - attention
     - security
-    - unverified
-    - server
 created_at: 2026-09-11T03:49:12Z
-updated_at: 2026-09-11T05:40:58Z
+updated_at: 2026-09-11T06:00:46Z
 ---
 
 Repo: **isaac-server** (`src/isaac/server/http.clj` — `wrap-auth` / `wrap-logging`
@@ -106,3 +105,24 @@ Implemented per-client unauthenticated burst control in isaac-server:
 - @wip removed from `features/server/burst.feature` (7 scenarios)
 
 Verified: `bb spec spec/isaac/server` green (118/0); burst+logging features 10/0.
+
+
+
+## Verify fail (attempt 1, 2026-09-11): burst.feature attention pending-file assertions red (Expected 1 got 0)
+
+HEAD: 6e2e753b800c3a98f95ab59387d85ef0713be931 (bean/isaac-udnm, base origin/main@d49972f)
+Working tree: dirty: untracked verify-full-features.log (2026-09-03 leftover, not this bean; not auto-cleaned)
+
+Feature file vs origin/main: @wip removal only (7 scenarios). No ## Exceptions. Implementation exists (src/isaac/server/burst.clj, wrap-burst before wrap-logging/wrap-auth).
+
+Gates (unset ISAAC_GIT):
+- bb features features/server/burst.feature features/server/logging.feature → 10 examples, 0 failures, 30 assertions (35.8s) — not stable
+- bb spec spec/isaac/server → 118 examples, 0 failures, 207 assertions
+- bb ci → spec 234/0/466 then full features **80 examples, 2 failures, 218 assertions** (69.5s)
+- Isolated re-run after `rm -rf target/gherclj/generated/`: `bb features features/server/burst.feature` → **7 examples, 1 failure, 27 assertions** (45.9s)
+
+Reproduced failures:
+1. Scenario "thirty unauthenticated requests from one client raise one attention post" (bb ci only): Expected 1 got 0 — `comm/delivery/pending` file count
+2. Scenario "a burst that keeps going posts nothing more" (bb ci + isolated re-run): Expected 1 got 0 — same pending-file assertion
+
+Acceptance unmet: attention post to pending is not deterministic. Do not land. Return to worker.
