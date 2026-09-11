@@ -8,13 +8,20 @@ tags:
     - foundation
     - server
     - discord
+    - episodes
 created_at: 2026-09-11T15:06:55Z
 updated_at: 2026-09-11T15:06:55Z
 parent: isaac-3q4m
 ---
 
 Parent: isaac-3q4m (leg 1 follow-up). Repos: **isaac-foundation** (`isaac.runner`, the
-`server` CLI command), **isaac-server** (`server/app.clj` start!/before-components!/after-components!).
+`server` CLI command), **isaac-server** (`server/app.clj` start!/before-components!/after-components!),
+**isaac-discord** and **isaac-episodes** (same-train berth cutover).
+
+jrj0 landed 2026-09-11: agent workers + resume/suspend are already `:isaac/component`
+(agent `e9cba64` after 209q). Do not redo that. Remaining hook work is whatever
+`app/start!` still does that production `isaac server` never runs (reloader, hail
+delivery worker, any leftover named starts).
 
 ## What happened (zanebot, 2026-09-11 14:56Z — train for legs 1 + 3, rolled back at 15:04Z)
 
@@ -47,11 +54,13 @@ stay on main; the registry pins are rolled back.
    module), not dynamic bindings; `app/start!` collapses into "run the
    runner". The feature harness must boot through the same entry the unit
    file uses (`isaac server`, or the runner directly with no hooks).
-2. **Discord's contribution is stranded.** isaac-discord still contributes
-   `:isaac.server/service`; the component runtime reads only
-   `:isaac/component`. Clean cutover means discord (and any other
-   contributor: hail?) gets a release with the new key — inventory every
-   manifest for `:isaac.server/service` and bump them in the same train.
+2. **`:isaac.server/service` is stranded.** The component runtime reads only
+   `:isaac/component`. Fleet grep 2026-09-11 (after 209q): **isaac-discord**
+   `src/isaac-manifest.edn` and **isaac-episodes**
+   `resources/isaac-manifest.edn`. 209q landed the episodes worker on the old
+   key — same shape as Discord at 15:04Z. Both must cut over and pin in this
+   train. Hail is already on `:isaac/component`; do not invent extra
+   contributors.
 3. **Train checklist gap.** "port 401" is not "up". Post-boot smoke must
    require `resume/scan-complete`, `hail/bound` for every requeued marker,
    Discord liveness :ready, and `:components N` matching the expected count.
@@ -64,13 +73,15 @@ stay on main; the registry pins are rolled back.
 - isaac-foundation: a module contributing under a retired berth key fails
   load with a message naming `:isaac/component` (one-time acceptance is not
   enough here — this is the guard that would have caught Discord).
-- Every contributor manifest on `:isaac.server/service` moved (discord; grep
-  the fleet), released, and pinned in the same train as the fix.
+- Every contributor manifest on `:isaac.server/service` moved (**discord** and
+  **isaac-episodes**; grep the fleet again before release), released, and
+  pinned in the same train as the fix.
 
 ```
 cd isaac-server && bb features features/server/ && bb spec && bb ci
 cd isaac-foundation && bb features features/component/ && bb ci
 ```
 Redeploy train: foundation 0.1.25 keg (HEAD-1cd0bfc is still installed on
-zanebot — relink only), server fix release, discord release, claude 0.1.10,
-one restart, full checklist.
+zanebot — relink only), server fix release, discord release, episodes
+release (new key), claude 0.1.10, one restart, full checklist. Do not
+relink the keg until discord **and** episodes are on `:isaac/component`.

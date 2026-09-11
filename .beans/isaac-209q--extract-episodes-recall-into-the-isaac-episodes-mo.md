@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-11T18:38:57Z
+updated_at: 2026-09-11T18:47:12Z
 blocked_by:
     - isaac-mmod
 ---
@@ -97,3 +97,7 @@ Agent full `bb spec` is green: 1593 examples, 0 failures, 3286 assertions. Featu
 main-sha: isaac-agent e9cba6410e097992d99acbef3e31b22ef3153512
 main-sha: isaac-episodes 9cbba7d59f12b737b1225088526af095ca4918a1
 main-sha: isaac 511b82375e7d5c42aefef85ca4b34b6e7e20789d
+
+## Planner note (2026-09-11, post-landing)
+
+Not deployed. (1) The landing's registry commit (511b823) pinned squashed-away branch commits for isaac.agent and isaac.episodes; re-pinned to the deployed agent 0.1.67 and isaac-episodes main 9cbba7d (0ae12d2e). (2) isaac-episodes deps pinned the agent at a branch commit and could not build; re-pinned to agent main e9cba64 (module main). (3) The module's features are 67/78 red and agent main's config CLI is red for the same cause — jrj0's :isaac/component contribution is 'not declared' without foundation 0.1.25 (bean isaac-kwhb). (4) Deploy order when unblocked: foundation 0.1.25 + server 0.1.15 on zanebot (Micah's train) → agent release from main → `isaac modules install isaac.episodes` BEFORE the agent restart (marvin's :session-policy :episodes must resolve through the berth) → restart → smoke marvin episodes + recall.
