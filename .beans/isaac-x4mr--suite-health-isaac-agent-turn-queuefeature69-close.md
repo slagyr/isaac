@@ -7,7 +7,7 @@ priority: high
 tags:
     - suite-health
 created_at: 2026-09-10T14:26:21Z
-updated_at: 2026-09-10T23:54:39Z
+updated_at: 2026-09-11T01:11:44Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that failed GitHub Actions CI Tests on isaac-qpdb land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures, one of them this scenario. **Not qpdb.** Isolated run is green. Do not reopen **isaac-qpdb**.
@@ -50,3 +50,5 @@ Rows (CI run → scenario):
 Method: run `bb features` in a loop (5×) on a clean worktree of main to get a reproduction rate per row; then bisect the leak by feature ordering (gherclj runs files in path order — run the failing file immediately after each candidate predecessor). Fix the leak at the fixture: reset/await in the offending feature's teardown, or make the shared state per-scenario. Do not weaken any scenario's assertions; do not @wip.
 
 Acceptance: 5 consecutive full `bb features` runs green on the branch (report the numbers); `bb spec` green; CI Tests green on the landing commit.
+
+- 2026-09-11 full `bb spec` on main 32dd5b4: `spec/isaac/tool/file_spec.clj` 'read allows reading in session cwd only with :cwd opt in' 1777/1; isolated 35/0 ×3 (intermittent, same family)
