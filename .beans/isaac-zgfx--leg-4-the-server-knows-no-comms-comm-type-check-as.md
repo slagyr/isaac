@@ -9,8 +9,10 @@ tags:
     - agent
     - comm
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:44Z
+updated_at: 2026-09-11T05:39:58Z
 parent: isaac-3q4m
+blocked_by:
+    - isaac-jrj0
 ---
 
 Parent: isaac-3q4m (decision 6). Depends on leg 2 (the delivery worker must be a component before its copy goes).

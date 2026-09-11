@@ -8,8 +8,12 @@ tags:
     - server
     - ci
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:19Z
+updated_at: 2026-09-11T05:39:58Z
 parent: isaac-3q4m
+blocked_by:
+    - isaac-jrj0
+    - isaac-q9j6
+    - isaac-zgfx
 ---
 
 Parent: isaac-3q4m (decision 7). Depends on legs 2–4.

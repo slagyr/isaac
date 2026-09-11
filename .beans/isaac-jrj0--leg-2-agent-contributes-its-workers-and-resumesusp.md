@@ -9,8 +9,10 @@ tags:
     - server
     - component
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:43Z
+updated_at: 2026-09-11T05:39:58Z
 parent: isaac-3q4m
+blocked_by:
+    - isaac-vs6f
 ---
 
 Parent: isaac-3q4m (decision 4). Depends on leg 1.
