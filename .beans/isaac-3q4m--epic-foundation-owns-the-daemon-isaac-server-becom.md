@@ -34,15 +34,15 @@ the agent the server's deps.edn pins (0.1.46) instead of the registry's.
    scheduler's own start/stop; a UDP/SMTP/ping server module must not depend
    on HTTP to get a lifecycle; an `isaac-host` module would be a pin that
    never earns its train hop.
-2. **"Subsystem", not "service", for in-process parts.** `isaac service`
+2. **"Component", not "service", for in-process parts.** `isaac service`
    keeps its name (OS-level, like `brew services`). The in-process berth is
-   `:isaac/subsystem` — `{:id :rank :start :stop}` — declared by foundation;
-   isaac-royn's vocabulary.
-3. **HTTP is one subsystem.** isaac-server contributes its listener as a
-   subsystem entry by manifest, keeps the route berth, auth and the generic
+   `:isaac/component` — `{:id :rank :start :stop}` — declared by foundation;
+   Stuart Sierra's Component is the Clojure word for exactly this shape (start/stop/rank); "node" is taken by berth-backed config instances, "service" stays with the OS command.
+3. **HTTP is one component.** isaac-server contributes its listener as a
+   component entry by manifest, keeps the route berth, auth and the generic
    config-berth reconcile. Nothing else.
 4. **The agent contributes, never depends.** Its workers (comm outbox,
-   episodes, turn queue) and its resume/suspend pair are subsystem entries in
+   episodes, turn queue) and its resume/suspend pair are component entries in
    its manifest (resume ranks first to start, suspend last to stop). The
    agent's deps never name the server. hooks depending on the server is fine.
 5. **The MCP route belongs to the claude-code module**, renamed to say so

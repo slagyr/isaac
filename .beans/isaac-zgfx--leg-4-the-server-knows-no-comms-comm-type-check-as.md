@@ -13,7 +13,7 @@ updated_at: 2026-09-11T05:26:16Z
 parent: isaac-3q4m
 ---
 
-Parent: isaac-3q4m (decision 6). Depends on leg 2 (the delivery worker must be a subsystem before its copy goes).
+Parent: isaac-3q4m (decision 6). Depends on leg 2 (the delivery worker must be a component before its copy goes).
 
 Repo: **isaac-server** (deletes), **isaac-agent** (contributes the check).
 
