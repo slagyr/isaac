@@ -9,7 +9,7 @@ tags:
     - attention
     - security
 created_at: 2026-09-11T03:49:12Z
-updated_at: 2026-09-11T03:56:03Z
+updated_at: 2026-09-11T05:31:57Z
 ---
 
 Repo: **isaac-server** (`src/isaac/server/http.clj` — `wrap-auth` / `wrap-logging`
@@ -90,3 +90,5 @@ bb ci
 All seven pass with @wip removed; bb ci green. Deploy: server bump, then
 enable on zanebot with `:server {:burst {:threshold 30 :window-ms 60000
 :cooldown-ms 600000}}` (notify on, throttle off).
+
+Live sample (planner, 2026-09-11 05:15–05:16Z): client 8.235.2.103 hit GET / on zanebot:6674 ~70 times in ~75 s, every one answered 401 (`:server/response-sent :status 401`), 278 such lines in the last 3000 log lines. Auth held; the noise is the only cost. Use as the fixture shape for the burst detector.
