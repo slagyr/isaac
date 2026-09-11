@@ -1,16 +1,15 @@
 ---
 # isaac-q9j6
 title: Leg 3 — the MCP turn route moves to the claude-code module as /claude/turns/:id
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - claude-code
     - server
     - mcp
-    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T06:16:46Z
+updated_at: 2026-09-11T06:27:13Z
 parent: isaac-3q4m
 ---
 
@@ -45,3 +44,10 @@ Verification:
 - isaac-server: `bb spec` (222 examples), `bb features` (69 examples), `bb ci` green.
 - one-time grep confirms isaac-server has no `server.mcp` or `/mcp/turns` references.
 - real Claude smoke remains opt-in (`ISAAC_CLAUDE_REAL=1 bb smoke`) and was not enabled in this environment.
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-claude-code 433c7f81264b9c5e0c668c87011a8acd7b32d282
+main-sha: isaac-server f61a1f52763e1d13bcf6e26fa2ddd78c0a20a0b2
