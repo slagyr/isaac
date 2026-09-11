@@ -1,7 +1,7 @@
 ---
 # isaac-udnm
 title: 'Unauthenticated burst control: per-client detection, one attention post per burst, optional 429 throttle (:server :burst)'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - attention
     - security
 created_at: 2026-09-11T03:49:12Z
-updated_at: 2026-09-11T03:49:12Z
+updated_at: 2026-09-11T03:53:23Z
 ---
 
 Repo: **isaac-server** (`src/isaac/server/http.clj` — `wrap-auth` / `wrap-logging`
@@ -62,22 +62,23 @@ control lives in the server.
 Allow/deny lists by address; rate limits on authenticated traffic; anything
 at the Tailscale layer; the `:client` field itself (shipped, 0.1.14).
 
-## Acceptance (scenarios to plant, one at a time)
+## Acceptance
 
-`features/server/burst.feature`:
-1. 30 unauthenticated requests from one client inside the window → one
-   `:server/burst-detected` and exactly one attention file in
-   `comm/delivery/pending` naming the client and a path.
-2. 60 more from the same client → still one pending file, no second post.
-3. 29 from one client and 29 from another → no detection (per-client).
-4. Burst then `cooldown-ms` of quiet (test clock) → `:server/burst-ended`
-   with the total and a second pending file.
-5. `throttle? true`: the 31st request answers 429 with no body before auth;
-   a valid token from a *different* client still gets 200.
-6. `throttle? true`: a loopback client over the threshold still gets 401,
-   never 429.
-7. `config schema server.burst` lists threshold, window-ms, cooldown-ms,
-   notify?, throttle?.
+Scenarios: `isaac-server/features/server/burst.feature` (7, @wip, commit
+8d64927): threshold edge + one post; burst continues → no second post;
+per-client window; cooldown ends the burst with a total (foundation
+`the clock is fixed at` drives the window — the burst counter must read
+the foundation clock, not System/currentTimeMillis); throttle 429 before
+auth for a flagged client while another client with a valid token gets
+200; loopback never throttled; `config schema server.burst` lists the knobs.
+
+New steps (isaac-server steps, not foundation):
+- `the client sends {method} {path} with header {h} {n} times`
+- `the client sends {method} {path} {n} times with headers:` (table)
+The last response of a counted send is what `the response status is …`
+inspects. Attention goes through the isaac-agent notifier (already a
+dependency); new log events `:server/burst-detected`, `:server/burst-ended`,
+`:server/burst-throttled`.
 
 ```
 cd isaac-server
@@ -85,3 +86,7 @@ bb features features/server/burst.feature features/server/logging.feature
 bb spec spec/isaac/server
 bb ci
 ```
+
+All seven pass with @wip removed; bb ci green. Deploy: server bump, then
+enable on zanebot with `:server {:burst {:threshold 30 :window-ms 60000
+:cooldown-ms 600000}}` (notify on, throttle off).
