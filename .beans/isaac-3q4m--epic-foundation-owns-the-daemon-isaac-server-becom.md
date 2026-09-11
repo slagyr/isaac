@@ -2,7 +2,7 @@
 # isaac-3q4m
 title: 'Epic: foundation owns the daemon; isaac-server becomes isaac-http; the server stops knowing the agent'
 status: todo
-type: feature
+type: epic
 priority: high
 tags:
     - epic
