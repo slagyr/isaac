@@ -1,7 +1,7 @@
 ---
 # isaac-vs6f
 title: 'Leg 1 — foundation owns the daemon: :isaac/component berth + supervisor, process runner behind ''isaac server'', ''isaac service'' OS manager'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - server
     - component
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:26:16Z
+updated_at: 2026-09-11T05:36:56Z
 parent: isaac-3q4m
 ---
 
@@ -24,3 +24,16 @@ Note: isaac-server `features/server/services.feature` (the three berth scenarios
 Scenarios: the three services.feature scenarios move to foundation under the new berth id and event names; the `isaac service` features (service.feature, service_linux.feature) move unchanged; NEW: the HTTP listener starts as a component of isaac-server; NEW: foundation's `isaac server` boots with zero components and says so.
 
 Blocks legs 2 and 4 (the berth must exist first).
+
+## Acceptance
+
+- isaac-server d49972f: `features/server/services.feature` — NEW scenario "the HTTP listener is a component of isaac-server" (@wip). The three existing scenarios in that file move to foundation `features/component/` under `:isaac/component` with `:component/started|stopped`; explain the file's @wip tag before moving it.
+- foundation: `features/cli/service.feature` + `service_linux.feature` moved from isaac-server unchanged; spec: the runner boots with zero components and logs `:runner/started :components 0`, then stops cleanly.
+- Hail's optional-service-by-symbol path in isaac-server `app.clj` is gone (one-time check).
+
+```
+cd isaac-foundation && bb features features/component/ features/cli/service.feature features/cli/service_linux.feature && bb spec && bb ci
+cd isaac-server && bb features features/server/services.feature features/server/lifecycle.feature && bb spec && bb ci
+```
+
+All green with @wip removed; bb ci green in both repos. Train: foundation release (brew HEAD), then isaac-server bump pinned to it.
