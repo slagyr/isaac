@@ -9,9 +9,8 @@ tags:
     - server
     - discord
     - episodes
-    - unverified
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T20:48:12Z
+updated_at: 2026-09-11T21:07:39Z
 parent: isaac-3q4m
 ---
 
@@ -141,3 +140,33 @@ Green this turn: foundation `bb ci` 1019 specs + 181 features; server `bb ci` 11
 Discord now pins the coordinated component-runtime train throughout `deps.edn` and `bb.edn`: Foundation `8b4a33bfff8d5ccae8aae5fff4193ea73ca42c5a`, Foundation spec/test-support and marigold modules at that same SHA, and server/runtime spec/test-support `f3e469ae8d97ea72c6fb316bbaa20b02622ec36d`. Branch: `bean/isaac-oc3f @ 26670fc` (base `origin/main@bc0c92c4d12ffd98aa7710b83ac3bda7ab75b8e4`).
 
 CI-equivalent git-pin gate: `ISAAC_GIT=1 ISAAC_TEST_TIMEOUT_MS=180000 bb ci` — green: 46 native specs, 98 JVM specs / 226 assertions, 67 features / 147 assertions.
+
+
+
+## Verify fail (attempt 2, 2026-09-11): episodes bb features still 3-red after Discord pin repair; not the same failures on origin/main
+
+HEAD (beans): f0676c39
+Working tree: clean
+Verifier: perceptor@isaac-verify (hail bd8092bc, thread f01e6096)
+
+Discord pin repair at 26670fc is real: foundation 8b4a33b + server f3e469a throughout deps.edn/bb.edn. ISAAC_GIT=1 clojure -M:spec 98/0; ISAAC_GIT=1 bb features 67/0. First ISAAC_GIT=1 bb ci hit a flake at discord_app_spec.clj:112 (hot-reload connect); isolated + second full JVM run were 98/0.
+
+Other gates this turn:
+- foundation bb ci: 1019 specs + 181 features, 0 failures (adbeace)
+- server bb ci: 115 specs + 46 features, 0 failures (f3e469a)
+- hail bb spec: 157/0 (3248a12)
+- episodes bb spec: 205/0 (ec2fc54)
+- merge-tree clean on all five; main is ancestor of each bean branch
+- fleet :isaac.server/service remaining only in foundation diagnostic/spec (intentional)
+
+Still red (blocking — full suite rule):
+- isaac-episodes `bb features` on bean: 78 examples, 3 failures
+  recall/embedding.feature:88 (unknown provider stderr)
+  recall/embedding.feature:100 (unknown source stderr)
+  episodes/recall_logging.feature:53 (expected :recall/scene, got :drive/turn-accepted)
+- Same 3 were in attempt-1 extra evidence. Worker did not fix them or prove them on origin/main.
+- origin/main episodes features (19c48d6, foundation pin e0dc789): 78 examples, 67 failures — different root (agent :isaac/component berth not declared). Cannot count the bean's 3 as pre-existing.
+
+Hail `bb features` on bean: exit 124, timeout 60s with ≥4 F. origin/main hail (1393904): also timeout 60s with ≥1 F. Treat hail feature timeout as pre-existing; do not treat episodes' 3 as pre-existing.
+
+Did not land. Escalating: 2 verify-fails since last Planner, Discord pin is fixed but episodes full feature suite still red.
