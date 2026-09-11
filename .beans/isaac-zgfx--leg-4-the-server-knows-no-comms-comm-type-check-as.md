@@ -33,3 +33,9 @@ Unknown-comm-type validation scenario green, sourced from the :isaac.config/chec
 cd isaac-agent && bb features features/config/ && bb spec && bb ci
 cd isaac-server && bb features && bb spec && bb ci
 ```
+
+## Work checkpoint (2026-09-11, scrapper@isaac-work-1)
+
+Done: Agent contributes `check-comm-types` through `:isaac.config/check`; focused config specs green and pushed (`bean/isaac-zgfx@e7027b9`). Server's six stale `isaac.comm.*` copies are deleted; server-owned direct comm validation is removed from boot/reload; external telly test dependency is replaced by `spec-support` test comm; full server specs green (117 examples, 248 assertions), pushed (`bean/isaac-zgfx@6e52557`).
+
+Next: run focused config/comm/logging features, then full Agent and Server gates; fix any fallout; rebase both branches; record final branch/base coordinates and hand off. Resume at `isaac-server-zgfx-new/features/config/reconciler.feature:1` with `bb features features/config/reconciler.feature features/module/comm_extension.feature features/server/logging.feature`.
