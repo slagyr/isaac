@@ -1,7 +1,7 @@
 ---
 # isaac-q9j6
 title: Leg 3 — the MCP turn route moves to the claude-code module as /claude/turns/:id
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - server
     - mcp
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:26:16Z
+updated_at: 2026-09-11T05:39:43Z
 parent: isaac-3q4m
 ---
 
@@ -20,3 +20,12 @@ Repo: **isaac-claude-code** (receives), **isaac-server** (sheds `server/mcp.clj`
 The twenty-line JSON-RPC-over-HTTP shim moves into the claude-code module and is contributed via `:isaac.server/route` (later `:isaac.http/route`) at `/claude/turns/:id`; the mcp-bridge URL builder in `claude_cli.clj` follows. The per-turn registry `isaac.mcp.turns` stays in the agent. Existing mcp_turn_registry.feature scenarios move to the claude-code repo with the new path.
 
 Scenarios: none new — `features/llm/mcp_turn_registry.feature` moves to isaac-claude-code with the new path; the old path answering 404 is a one-time acceptance check.
+
+## Acceptance
+
+mcp_turn_registry.feature scenarios green in isaac-claude-code at /claude/turns/:id; the mcp-bridge smoke against the real claude binary passes (prompt --model claude-cli with a tool call); isaac-server has no server/mcp.clj and no /mcp route (one-time check).
+
+```
+cd isaac-claude-code && bb features && bb spec && bb ci
+cd isaac-server && bb ci
+```
