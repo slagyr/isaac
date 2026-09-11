@@ -66,3 +66,7 @@ Ready for verification and landing. Foundation must land/release before the serv
 
 main-sha: isaac-foundation e54a9b409bb068a3e73826d16cf4607b7176734b
 main-sha: isaac-server c1467efdcec5dafcf4c61920c2cb922172014f87
+
+## Deploy note (2026-09-11 15:10Z)
+
+Shipped as foundation 0.1.25 / server 0.1.15 and ROLLED BACK the same hour: the production `isaac server` path never enters the server's boot hooks, so only the http component started. See isaac-oc3f (critical, blocks the redeploy of this leg and of jrj0's train).
