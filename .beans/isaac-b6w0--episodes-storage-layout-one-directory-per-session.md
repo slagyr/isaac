@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-11T01:07:53Z
+updated_at: 2026-09-11T04:43:30Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -210,3 +210,7 @@ Do not land until verify re-runs the planted remaining-features gate (and full `
 ## Landed on main (2026-09-11)
 
 main-sha: isaac-agent 32dd5b4950f384845fc2e0898e0d8398f06c2ed9
+
+## Deploy note (2026-09-11 04:42Z)
+
+Store migrated on zanebot with agent 0.1.66 (b6w0 + lhnq + xqy1 fixes; rehearsed three times on a copy of the live store first). Backup ~/isaac-store-backup-20260911T044054Z.tgz. Sequence: service bootout → merge of the four worker-session twins the 0.1.63 boot had created (isaac-5gvq) → dry run (251 chronicle + 4 episodes-stamped session moves, 176 episode moves, 0 errors) → migrate → bootstrap. Result: episodes/ gone, no flat sessions, recall rows carried row-for-row (marvin 572, main 144, scrapper 1798; model nomic-embed-text), Fermi recall answers from recalled scenes, boot clean, hails re-bound. Note: the runbook script must run under a login shell (`zsh -l`) — launchd/ssh non-login shells lack `isaac` on PATH; the first attempt stopped after bootout and was finished by hand.
