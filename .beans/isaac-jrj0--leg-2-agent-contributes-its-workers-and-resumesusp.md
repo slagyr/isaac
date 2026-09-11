@@ -8,9 +8,8 @@ tags:
     - agent
     - server
     - component
-    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T16:34:04Z
+updated_at: 2026-09-11T16:45:28Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
@@ -44,3 +43,21 @@ Branches:
 Verification: focused agent component/worker specs green (12 examples); suspend and resume feature files green; server spec green (132 examples); server features and `bb ci` green (46 examples); server-without-agent boot served HTTP 404 on an ephemeral listener with `:agent-present? false`; required grep returned no matches. Agent full spec repeatedly has one pre-existing order-dependent `spec/isaac/tool/file_spec.clj:132` failure while the focused file spec is green. The broad multi-directory agent feature invocation exceeds its own runner timeout and exhibits pre-existing shared-state failures when bypassed; verifier should run acceptance in a clean checkout/CI.
 
 Resume at `isaac-agent/src/isaac/agent/component.clj:16` for component behavior or `isaac-agent/spec/isaac/tool/file_spec.clj:132` to reproduce the unrelated full-suite failure.
+
+
+
+## Verify fail (attempt 1, 2026-09-11): Agent acceptance `bb features features/bridge/ features/episodes/ features/session/` is red — 300s timeout after many failures; bean cannot pass while acceptance suite is unmet.
+
+HEAD: isaac-agent bean/isaac-jrj0 f82c4d963b5b9d966bd0b4e694c9cda380e62a03 (base origin/main@4737cf4); isaac-server bean/isaac-jrj0 4ed81b5c0565ac8b01c2a4a9f0ddfc7526f2495f (base origin/main@e2f3e48)
+Working tree: clean (detached worktrees)
+
+Acceptance command from the bean (first-fail):
+  cd isaac-agent && bb features features/bridge/ features/episodes/ features/session/
+
+Result: exit 124. `features timed out after 300000ms`. Output showed many `F` markers before the timeout (not a clean green suite). Isolated `features/bridge/suspend.feature features/session/resume_repair.feature features/session/boot.feature` is green (10 examples, 0 failures) — the *named* multi-directory acceptance run is not.
+
+Worker claimed the broad invocation exceeds timeout / has pre-existing shared-state failures. That does not waive the gate: GREEN means the repo's FULL suites (`bb ci`, else `bb spec` and `bb features`) and the bean's named acceptance command. "Pre-existing" must be reproduced on origin/main of the same command to count; verifier did not get a green named acceptance run on the branch.
+
+Do not land. Do not treat focused component specs or isolated suspend/resume files as the acceptance suite.
+
+Fix: make `bb features features/bridge/ features/episodes/ features/session/` green on the branch (or reproduce the same failures on origin/main with evidence and get planner exception). Then `bb spec` and `bb ci` green. Server gates not reached.
