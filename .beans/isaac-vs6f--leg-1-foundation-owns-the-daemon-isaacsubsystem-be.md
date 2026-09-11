@@ -1,16 +1,15 @@
 ---
 # isaac-vs6f
 title: 'Leg 1 — foundation owns the daemon: :isaac/component berth + supervisor, process runner behind ''isaac server'', ''isaac service'' OS manager'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - foundation
     - server
     - component
-    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T06:00:42Z
+updated_at: 2026-09-11T09:54:04Z
 parent: isaac-3q4m
 ---
 
@@ -60,3 +59,10 @@ Verification completed after rebasing both branches on current `origin/main`:
 - Relevant acceptance feature files contain no `@wip`; one-time search confirms no optional Hail service-by-symbol startup/shutdown path remains in `isaac.server.app`.
 
 Ready for verification and landing. Foundation must land/release before the server branch because the server pin references the Foundation implementation commit.
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-foundation e54a9b409bb068a3e73826d16cf4607b7176734b
+main-sha: isaac-server c1467efdcec5dafcf4c61920c2cb922172014f87
