@@ -2,7 +2,7 @@
 # isaac-x5ru
 title: 'xapx: Re-home bb.test-tasks into shared test-support (native runner)'
 status: completed
-type: task
+type: feature
 priority: high
 created_at: 2026-07-19T17:10:28Z
 updated_at: 2026-07-19T17:38:37Z

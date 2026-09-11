@@ -2,7 +2,7 @@
 # isaac-x4mr
 title: 'Suite health (isaac-agent): turn_queue.feature:69 closed turnstile park/wake flake'
 status: todo
-type: bug
+type: feature
 priority: high
 tags:
     - suite-health

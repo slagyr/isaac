@@ -2,7 +2,7 @@
 # isaac-modj
 title: "Make spec-structure-check runnable in this repo"
 status: draft
-type: task
+type: feature
 priority: normal
 tags:
     - "deferred"

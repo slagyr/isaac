@@ -2,7 +2,7 @@
 # isaac-qqsn
 title: 'Transcript reader races a large append: EOF while reading string on a file that is intact a minute later'
 status: scrapped
-type: bug
+type: feature
 priority: high
 created_at: 2026-09-06T18:36:19Z
 updated_at: 2026-09-06T19:01:29Z

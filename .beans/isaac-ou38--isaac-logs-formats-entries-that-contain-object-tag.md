@@ -2,7 +2,7 @@
 # isaac-ou38
 title: 'isaac logs formats entries that contain #object tagged literals'
 status: completed
-type: bug
+type: feature
 priority: normal
 created_at: 2026-09-05T03:54:22Z
 updated_at: 2026-09-05T04:17:52Z

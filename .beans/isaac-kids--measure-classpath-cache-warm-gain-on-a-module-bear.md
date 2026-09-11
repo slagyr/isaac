@@ -2,7 +2,7 @@
 # isaac-kids
 title: Measure classpath-cache warm gain on a module-bearing root (isaac-tki3 design pt 4)
 status: todo
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-12T23:48:44Z
 updated_at: 2026-09-04T16:30:55Z

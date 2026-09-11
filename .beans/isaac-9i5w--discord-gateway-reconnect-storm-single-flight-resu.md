@@ -2,7 +2,7 @@
 # isaac-9i5w
 title: 'Discord gateway reconnect storm: single-flight, RESUME on opcode 7, cap retries'
 status: completed
-type: bug
+type: feature
 priority: high
 tags:
     - discord

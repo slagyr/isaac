@@ -2,7 +2,7 @@
 # isaac-l1kz
 title: Cosine match floor + recency default 0.5 (checkpoint verdicts)
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-20T20:40:32Z
 updated_at: 2026-08-20T22:03:15Z

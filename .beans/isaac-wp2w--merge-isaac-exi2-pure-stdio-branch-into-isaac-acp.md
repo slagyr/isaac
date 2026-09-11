@@ -2,7 +2,7 @@
 # isaac-wp2w
 title: Merge isaac-exi2 pure-stdio branch into isaac-acp main, reconciled with the gnji root fix
 status: completed
-type: task
+type: feature
 priority: high
 created_at: 2026-07-07T16:11:28Z
 updated_at: 2026-07-07T16:28:43Z

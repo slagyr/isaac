@@ -2,7 +2,7 @@
 # isaac-2bni
 title: 'ACP cancellation.feature flake: session/cancel during a turn sometimes lands after end_turn'
 status: completed
-type: bug
+type: feature
 priority: high
 tags:
     - acp

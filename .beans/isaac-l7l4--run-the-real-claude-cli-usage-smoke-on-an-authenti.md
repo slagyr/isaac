@@ -2,7 +2,7 @@
 # isaac-l7l4
 title: Run the @real Claude-CLI usage smoke on an authenticated host (isaac-l70j crit 5)
 status: todo
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-12T22:29:32Z
 updated_at: 2026-07-12T22:29:32Z

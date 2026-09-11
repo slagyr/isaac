@@ -2,7 +2,7 @@
 # isaac-ggxc
 title: Crew is the only source of session behavior; drop durable session pins
 status: scrapped
-type: task
+type: feature
 priority: high
 tags:
     - planning

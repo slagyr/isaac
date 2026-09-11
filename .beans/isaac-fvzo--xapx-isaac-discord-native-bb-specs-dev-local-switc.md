@@ -2,7 +2,7 @@
 # isaac-fvzo
 title: 'xapx: isaac-discord — native bb specs (dev-local switch)'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-19T17:48:00Z
 updated_at: 2026-07-19T17:58:30Z

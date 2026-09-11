@@ -2,7 +2,7 @@
 # isaac-at5m
 title: 'Hail: bound deliveries sit unclaimed in deliveries/ forever; no operator drop'
 status: draft
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-29T14:39:53Z
 updated_at: 2026-08-29T14:39:53Z

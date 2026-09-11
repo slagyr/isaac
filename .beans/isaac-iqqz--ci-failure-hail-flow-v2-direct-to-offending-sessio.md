@@ -2,7 +2,7 @@
 # isaac-iqqz
 title: 'ci-failure hail flow v2: direct-to-offending-session, correlation trailers, full debug params, band as template only'
 status: completed
-type: task
+type: feature
 priority: high
 created_at: 2026-07-03T18:08:15Z
 updated_at: 2026-07-03T20:30:16Z

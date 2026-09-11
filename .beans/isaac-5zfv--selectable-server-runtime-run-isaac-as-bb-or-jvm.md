@@ -2,7 +2,7 @@
 # isaac-5zfv
 title: 'Selectable server runtime: run isaac as bb or JVM'
 status: draft
-type: epic
+type: feature
 created_at: 2026-06-21T01:08:19Z
 updated_at: 2026-06-21T01:08:19Z
 ---

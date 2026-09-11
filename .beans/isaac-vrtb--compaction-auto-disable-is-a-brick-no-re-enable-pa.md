@@ -2,7 +2,7 @@
 # isaac-vrtb
 title: Block broken conversations; compaction-failed is the first reason
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-31T14:15:35Z
 updated_at: 2026-09-08T15:32:53Z

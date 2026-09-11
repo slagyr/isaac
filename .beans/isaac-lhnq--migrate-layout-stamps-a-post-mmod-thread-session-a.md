@@ -2,7 +2,7 @@
 # isaac-lhnq
 title: migrate-layout stamps a post-mmod thread session as chronicle while nesting its episodes under it — session.edn and index disagree
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-09-11T04:07:24Z
 updated_at: 2026-09-11T04:10:45Z

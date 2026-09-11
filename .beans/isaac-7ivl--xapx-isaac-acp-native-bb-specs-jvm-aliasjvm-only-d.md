@@ -2,7 +2,7 @@
 # isaac-7ivl
 title: 'xapx: isaac-acp — native bb specs (JVM-alias/JVM-only deps)'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-19T17:10:52Z
 updated_at: 2026-07-19T18:42:27Z

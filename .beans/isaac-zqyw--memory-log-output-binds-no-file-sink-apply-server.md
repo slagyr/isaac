@@ -2,7 +2,7 @@
 # isaac-zqyw
 title: Memory log output binds no file sink (apply-server! under :memory)
 status: completed
-type: bug
+type: feature
 priority: high
 tags:
     - test-isolation

@@ -2,7 +2,7 @@
 # isaac-b9rh
 title: ""
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-06T14:33:41Z
 updated_at: 2026-07-06T14:50:51Z

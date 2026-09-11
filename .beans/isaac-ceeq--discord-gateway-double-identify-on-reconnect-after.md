@@ -2,7 +2,7 @@
 # isaac-ceeq
 title: Discord gateway double-IDENTIFY on reconnect after opcode 7
 status: completed
-type: bug
+type: feature
 priority: normal
 tags:
     - discord

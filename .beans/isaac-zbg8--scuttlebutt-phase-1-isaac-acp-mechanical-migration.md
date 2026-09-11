@@ -2,7 +2,7 @@
 # isaac-zbg8
 title: 'Scuttlebutt phase 1: isaac-acp mechanical migration to the new Comm protocol'
 status: completed
-type: task
+type: feature
 priority: normal
 tags:
     - acp

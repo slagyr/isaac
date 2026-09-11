@@ -2,7 +2,7 @@
 # isaac-4zr3
 title: 'Conversation persist lock + crash-safe writes: session.edn/segment spit still racy after jz6h'
 status: completed
-type: bug
+type: feature
 priority: high
 tags:
     - durability

@@ -2,7 +2,7 @@
 # isaac-uhvt
 title: MCP tool support
 status: draft
-type: epic
+type: feature
 priority: low
 created_at: 2026-06-03T06:50:37Z
 updated_at: 2026-08-21T23:06:16Z

@@ -2,7 +2,7 @@
 # isaac-wtg8
 title: Discord gateway dies with reader-loop-failed "Output closed" and does not recover (heartbeats stop)
 status: completed
-type: bug
+type: feature
 priority: high
 tags:
     - discord

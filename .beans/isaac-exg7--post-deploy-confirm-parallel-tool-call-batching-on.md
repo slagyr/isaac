@@ -2,7 +2,7 @@
 # isaac-exg7
 title: 'Post-deploy: confirm parallel tool-call batching on real zanebot beans (isaac-la8h rollout)'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-09T16:37:56Z
 updated_at: 2026-09-04T22:38:32Z

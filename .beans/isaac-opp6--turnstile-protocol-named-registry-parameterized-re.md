@@ -2,7 +2,7 @@
 # isaac-opp6
 title: 'Turnstile protocol: named registry, parameterized refs, release tokens, prompt --turnstile'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-24T15:44:46Z
 updated_at: 2026-08-24T21:51:10Z

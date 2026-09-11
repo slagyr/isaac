@@ -2,7 +2,7 @@
 # isaac-jkx7
 title: 'claude-cli provider: opus drifts to Claude''s native <invoke> tool syntax; unparsed calls end the turn early with fabricated results'
 status: draft
-type: bug
+type: feature
 priority: high
 tags:
     - claude-cli

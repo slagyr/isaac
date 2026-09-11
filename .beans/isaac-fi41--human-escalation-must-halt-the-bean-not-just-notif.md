@@ -2,7 +2,7 @@
 # isaac-fi41
 title: Human escalation must HALT the bean, not just notify
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-07-13T19:03:46Z
 updated_at: 2026-07-19T16:52:38Z

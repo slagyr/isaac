@@ -2,7 +2,7 @@
 # isaac-5cr6
 title: model-switch into a window smaller than the summary-prompt floor must still loop
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-25T03:40:35Z
 updated_at: 2026-08-25T19:30:22Z

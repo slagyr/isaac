@@ -2,7 +2,7 @@
 # isaac-a7c0
 title: Cut over downstream callers off isaac.config.loader re-exports (post-flgy)
 status: todo
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-03T21:01:59Z
 updated_at: 2026-08-03T21:01:59Z

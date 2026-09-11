@@ -2,7 +2,7 @@
 # isaac-wq8m
 title: 'Turn resilience across restarts: durable in-flight turns, drain, resume'
 status: draft
-type: epic
+type: feature
 created_at: 2026-07-06T15:43:46Z
 updated_at: 2026-07-06T15:43:46Z
 ---

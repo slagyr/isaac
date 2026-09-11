@@ -2,7 +2,7 @@
 # isaac-p9zy
 title: Compact from last provider prompt tokens; overflow compact-and-retry
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-29T05:16:01Z
 updated_at: 2026-08-29T06:28:57Z

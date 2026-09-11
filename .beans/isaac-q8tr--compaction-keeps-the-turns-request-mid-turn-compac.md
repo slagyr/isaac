@@ -2,7 +2,7 @@
 # isaac-q8tr
 title: 'Compaction keeps the turn''s request: mid-turn compaction no longer strands bean work'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-24T01:41:54Z
 updated_at: 2026-08-24T02:20:19Z

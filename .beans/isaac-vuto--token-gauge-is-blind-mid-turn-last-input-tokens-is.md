@@ -2,7 +2,7 @@
 # isaac-vuto
 title: 'Token gauge is blind mid-turn: last-input-tokens is stamped once per turn, so a long tool-loop turn compacts off the undercounting estimate'
 status: completed
-type: bug
+type: feature
 priority: high
 tags:
     - compaction

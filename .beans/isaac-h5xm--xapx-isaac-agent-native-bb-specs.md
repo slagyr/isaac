@@ -2,7 +2,7 @@
 # isaac-h5xm
 title: 'xapx: isaac-agent — native bb specs'
 status: completed
-type: task
+type: feature
 priority: high
 created_at: 2026-07-19T17:10:51Z
 updated_at: 2026-07-19T19:05:33Z

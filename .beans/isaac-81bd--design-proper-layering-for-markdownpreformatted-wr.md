@@ -2,7 +2,7 @@
 # isaac-81bd
 title: 'Design: proper layering for markdown/preformatted wrapping on human outputs (status, tool results, slash replies)'
 status: draft
-type: task
+type: feature
 priority: normal
 tags:
     - design

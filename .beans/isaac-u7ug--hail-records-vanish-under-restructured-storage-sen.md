@@ -2,7 +2,7 @@
 # isaac-u7ug
 title: Hail records vanish under restructured storage — send returns id, no file anywhere
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-23T17:12:07Z
 updated_at: 2026-08-24T14:21:15Z

@@ -2,7 +2,7 @@
 # isaac-ogiu
 title: Classpath cache resolves the real classpath, not just coords (tki3 follow-up)
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-07-13T16:03:13Z
 updated_at: 2026-07-13T18:05:03Z

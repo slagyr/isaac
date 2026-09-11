@@ -2,7 +2,7 @@
 # isaac-ugx7
 title: 'Hail: pub/sub message bus for crew and external producers'
 status: draft
-type: epic
+type: feature
 priority: normal
 created_at: 2026-05-22T22:44:57Z
 updated_at: 2026-05-23T04:25:55Z

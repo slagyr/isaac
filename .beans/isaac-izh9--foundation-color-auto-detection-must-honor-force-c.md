@@ -2,7 +2,7 @@
 # isaac-izh9
 title: Foundation color auto-detection must honor FORCE_COLOR — the missing third half of nfch
 status: completed
-type: bug
+type: feature
 priority: normal
 created_at: 2026-07-07T21:34:50Z
 updated_at: 2026-07-07T21:51:58Z

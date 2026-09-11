@@ -2,7 +2,7 @@
 # isaac-mrfu
 title: Bridge charge dispatch runs the episode router
 status: scrapped
-type: bug
+type: feature
 priority: high
 tags:
     - episodes

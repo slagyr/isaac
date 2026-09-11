@@ -2,7 +2,7 @@
 # isaac-ukof
 title: 'Skills: distinguish band-targeting from concrete-session targeting (never use band name as a session)'
 status: completed
-type: task
+type: feature
 priority: high
 created_at: 2026-07-03T20:56:20Z
 updated_at: 2026-07-04T05:15:04Z

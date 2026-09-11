@@ -2,7 +2,7 @@
 # isaac-gnji
 title: 'ACP runtime loses the top-level --root: isaac --root <dir> acp resolves the default user root'
 status: completed
-type: bug
+type: feature
 priority: normal
 created_at: 2026-07-06T19:55:07Z
 updated_at: 2026-07-06T21:42:55Z

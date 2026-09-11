@@ -2,7 +2,7 @@
 # isaac-jndk
 title: 'Verify gate: turn/compaction beans must run the FULL feature suite before pass'
 status: draft
-type: task
+type: feature
 priority: high
 created_at: 2026-08-31T16:27:46Z
 updated_at: 2026-08-31T16:27:46Z

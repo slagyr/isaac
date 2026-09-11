@@ -2,7 +2,7 @@
 # isaac-5gvq
 title: A leftover flat session gets a nested twin on first write after b6w0 — history left behind in sessions/<sid>/
 status: todo
-type: bug
+type: feature
 priority: high
 created_at: 2026-09-11T04:15:24Z
 updated_at: 2026-09-11T04:15:24Z

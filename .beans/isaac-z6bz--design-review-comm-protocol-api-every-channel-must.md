@@ -2,7 +2,7 @@
 # isaac-z6bz
 title: "Design review: Comm protocol API — every channel must implement every method"
 status: draft
-type: task
+type: feature
 priority: low
 tags:
     - "deferred"

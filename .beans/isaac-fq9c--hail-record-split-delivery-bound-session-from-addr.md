@@ -2,7 +2,7 @@
 # isaac-fq9c
 title: 'Hail record: split delivery-bound session from addressing :session'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-03T18:07:50Z
 updated_at: 2026-07-03T19:53:07Z

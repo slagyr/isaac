@@ -2,7 +2,7 @@
 # isaac-03bs
 title: 'Suite health (isaac-discord): turn_context + service_lifecycle reds on scuttlebutt train'
 status: draft
-type: bug
+type: feature
 priority: high
 tags:
     - suite-health

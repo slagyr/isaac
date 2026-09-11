@@ -2,7 +2,7 @@
 # isaac-qkqm
 title: 'Compaction logging suite health on main: max-attempt stop + toolCall/toolResult pairing'
 status: draft
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-26T07:07:32Z
 updated_at: 2026-08-26T07:07:32Z

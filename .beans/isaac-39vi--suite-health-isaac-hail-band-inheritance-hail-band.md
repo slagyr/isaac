@@ -2,7 +2,7 @@
 # isaac-39vi
 title: 'Suite health (isaac-hail): band-inheritance + hail-band-prompts nil on agent ac1bf9b pin'
 status: draft
-type: bug
+type: feature
 priority: high
 tags:
     - suite-health

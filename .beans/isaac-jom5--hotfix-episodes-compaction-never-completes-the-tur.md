@@ -2,7 +2,7 @@
 # isaac-jom5
 title: 'HOTFIX: episodes compaction never completes — the turn keeps measuring the closed episode, logs no-progress, and re-compacts every turn, spawning open successors'
 status: completed
-type: bug
+type: feature
 priority: critical
 created_at: 2026-09-09T21:22:23Z
 updated_at: 2026-09-10T00:05:13Z

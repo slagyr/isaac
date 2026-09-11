@@ -2,7 +2,7 @@
 # isaac-pl8a
 title: 'Merge pending branch work: isaac-axzg (hail) and isaac-nfch server-side (cli-server), reconciled'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-07T20:36:38Z
 updated_at: 2026-07-07T21:34:21Z

@@ -2,7 +2,7 @@
 # isaac-jz6h
 title: 'Torn transcript line poisons a session: a toolResult entry was written mid-line into another entry; every retry dies and the delivery dead-letters'
 status: completed
-type: bug
+type: feature
 priority: critical
 tags:
     - durability

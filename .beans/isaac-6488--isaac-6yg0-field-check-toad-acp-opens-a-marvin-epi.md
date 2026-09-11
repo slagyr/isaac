@@ -2,7 +2,7 @@
 # isaac-6488
 title: 'isaac-6yg0 field check: toad ACP opens a marvin episode on zanebot'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-29T14:50:28Z
 updated_at: 2026-09-03T17:32:38Z

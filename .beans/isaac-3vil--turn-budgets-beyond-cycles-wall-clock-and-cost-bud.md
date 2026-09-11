@@ -2,7 +2,7 @@
 # isaac-3vil
 title: 'Turn budgets beyond cycles: wall-clock and cost budgets for unattended turns'
 status: draft
-type: task
+type: feature
 priority: normal
 created_at: 2026-09-08T15:28:25Z
 updated_at: 2026-09-08T21:11:41Z

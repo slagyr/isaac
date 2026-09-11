@@ -2,7 +2,7 @@
 # isaac-mc62
 title: Cut over downstream modules off isaac.module.loader re-exports (post-1tce)
 status: todo
-type: task
+type: feature
 priority: high
 created_at: 2026-08-03T21:02:00Z
 updated_at: 2026-08-03T21:02:00Z

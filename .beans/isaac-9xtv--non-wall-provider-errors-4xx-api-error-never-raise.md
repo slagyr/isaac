@@ -2,7 +2,7 @@
 # isaac-9xtv
 title: Non-wall provider errors (4xx api-error) never raise attention; hooks, cron and episode seals fail silently
 status: completed
-type: bug
+type: feature
 priority: high
 tags:
     - agent

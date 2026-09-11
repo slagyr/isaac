@@ -2,7 +2,7 @@
 # isaac-xl6h
 title: 'Corpus quality: recall-worthiness at seal, what-not-how gists'
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-20T17:53:50Z
 updated_at: 2026-08-20T19:42:08Z

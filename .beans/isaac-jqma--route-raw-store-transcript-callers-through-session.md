@@ -2,7 +2,7 @@
 # isaac-jqma
 title: Route raw-store transcript callers through SessionPolicy; torn-line repair moves behind the store SPI
 status: completed
-type: task
+type: feature
 priority: high
 created_at: 2026-09-10T15:03:58Z
 updated_at: 2026-09-10T15:10:53Z

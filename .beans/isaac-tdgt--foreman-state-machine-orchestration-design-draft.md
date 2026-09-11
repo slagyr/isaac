@@ -2,7 +2,7 @@
 # isaac-tdgt
 title: 'Foreman: state-machine orchestration (design draft)'
 status: todo
-type: task
+type: feature
 created_at: 2026-08-22T17:13:32Z
 updated_at: 2026-08-22T17:13:32Z
 ---

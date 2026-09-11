@@ -2,7 +2,7 @@
 # isaac-i66k
 title: 'Episode crews: recall tools advertised by the recall block must actually be allowed'
 status: draft
-type: bug
+type: feature
 priority: normal
 created_at: 2026-08-29T04:43:16Z
 updated_at: 2026-08-29T04:43:16Z

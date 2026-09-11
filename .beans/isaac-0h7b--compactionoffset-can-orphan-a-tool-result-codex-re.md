@@ -2,7 +2,7 @@
 # isaac-0h7b
 title: Compaction/offset can orphan a tool-result; codex Responses API rejects it
 status: scrapped
-type: bug
+type: feature
 priority: high
 created_at: 2026-07-05T16:46:48Z
 updated_at: 2026-07-05T17:12:11Z

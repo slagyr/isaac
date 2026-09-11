@@ -2,7 +2,7 @@
 # isaac-ts1d
 title: Retire OpenClaw and migrate tempest-vault-sync into Isaac
 status: completed
-type: task
+type: feature
 priority: high
 created_at: 2026-08-11T18:14:18Z
 updated_at: 2026-08-11T18:22:34Z

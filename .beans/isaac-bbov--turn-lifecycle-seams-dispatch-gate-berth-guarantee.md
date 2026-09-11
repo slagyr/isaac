@@ -2,7 +2,7 @@
 # isaac-bbov
 title: Turn finalization + turn-observer interface
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-23T19:19:16Z
 updated_at: 2026-08-24T18:28:22Z

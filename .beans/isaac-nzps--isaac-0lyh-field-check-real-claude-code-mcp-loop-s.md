@@ -2,7 +2,7 @@
 # isaac-nzps
 title: 'isaac-0lyh field check: real Claude Code MCP loop smoke after 0.1.3 deploy'
 status: completed
-type: task
+type: feature
 priority: high
 tags:
     - claude-cli

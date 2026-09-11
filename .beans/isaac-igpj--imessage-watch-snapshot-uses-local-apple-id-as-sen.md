@@ -2,7 +2,7 @@
 # isaac-igpj
 title: iMessage watch snapshot uses local Apple ID as sender; inbound dropped
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-27T19:18:32Z
 updated_at: 2026-08-27T20:48:35Z

@@ -2,7 +2,7 @@
 # isaac-os7r
 title: 'Compaction summary template: nine-section built-in + optional config/compaction.md'
 status: todo
-type: task
+type: feature
 created_at: 2026-08-24T22:19:01Z
 updated_at: 2026-08-24T22:19:01Z
 ---

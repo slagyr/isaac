@@ -2,7 +2,7 @@
 # isaac-sbn7
 title: 'Server log rotate off the write path: boot+timer, fs/size, never CLI'
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-23T01:08:37Z
 updated_at: 2026-08-25T17:35:51Z

@@ -2,7 +2,7 @@
 # isaac-tx3j
 title: 'Suite health (isaac-agent): episodes/live full-suite flake at :604'
 status: draft
-type: bug
+type: feature
 priority: high
 tags:
     - suite-health

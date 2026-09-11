@@ -2,7 +2,7 @@
 # isaac-1d7x
 title: 'Suite health (isaac-agent): CI flakes parallel_tool_batches:124 + compaction_logging:140'
 status: scrapped
-type: bug
+type: feature
 priority: high
 tags:
     - suite-health

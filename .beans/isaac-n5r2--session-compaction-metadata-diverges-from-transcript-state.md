@@ -2,7 +2,7 @@
 # isaac-n5r2
 title: last-input-tokens stores turn-cumulative sum — compaction gauge lies (compaction itself is correct)
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-07-03T06:20:00Z
 updated_at: 2026-07-03T18:20:09Z

@@ -2,7 +2,7 @@
 # isaac-qgeu
 title: 'Conversation seam follow-up: activate bridge scenarios, reject legacy-chronicle collisions, take mode decision out of Discord'
 status: draft
-type: task
+type: feature
 tags:
     - episodes
     - conversation

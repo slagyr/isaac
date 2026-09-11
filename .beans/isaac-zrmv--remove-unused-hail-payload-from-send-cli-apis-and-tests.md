@@ -2,7 +2,7 @@
 # isaac-zrmv
 title: Remove unused :payload from hail send (CLI, HTTP, tool) and tests — dead code
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-06-29T18:00:00Z
 updated_at: 2026-07-02T01:23:54Z

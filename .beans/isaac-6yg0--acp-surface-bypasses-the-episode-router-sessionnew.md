@@ -2,7 +2,7 @@
 # isaac-6yg0
 title: 'ACP surface bypasses the episode router: session/new + session/prompt must dispatch through bridge for :episodes crews'
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-08-29T05:16:30Z
 updated_at: 2026-08-29T14:56:19Z

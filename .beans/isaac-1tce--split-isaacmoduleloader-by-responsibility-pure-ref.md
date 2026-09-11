@@ -2,7 +2,7 @@
 # isaac-1tce
 title: Split isaac.module.loader by responsibility (pure refactor)
 status: completed
-type: task
+type: feature
 priority: normal
 tags:
     - isaac-foundation

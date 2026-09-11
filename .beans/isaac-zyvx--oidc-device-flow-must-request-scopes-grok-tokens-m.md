@@ -2,7 +2,7 @@
 # isaac-zyvx
 title: OIDC device flow must request scopes — grok tokens minted without api:access are useless
 status: completed
-type: bug
+type: feature
 priority: high
 created_at: 2026-07-11T00:55:25Z
 updated_at: 2026-07-11T03:44:00Z

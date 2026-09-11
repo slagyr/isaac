@@ -2,7 +2,7 @@
 # isaac-xt7p
 title: Discord notifications vanish during gateway flaps — no queue, no retry
 status: completed
-type: task
+type: feature
 priority: normal
 created_at: 2026-08-23T17:12:07Z
 updated_at: 2026-08-23T17:40:11Z

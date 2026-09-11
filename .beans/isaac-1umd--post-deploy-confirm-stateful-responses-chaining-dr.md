@@ -2,7 +2,7 @@
 # isaac-1umd
 title: 'Post-deploy: confirm stateful Responses chaining drops grok cycle-2+ body size (isaac-7l5m)'
 status: todo
-type: task
+type: feature
 priority: normal
 created_at: 2026-07-13T18:27:26Z
 updated_at: 2026-07-13T18:27:26Z
