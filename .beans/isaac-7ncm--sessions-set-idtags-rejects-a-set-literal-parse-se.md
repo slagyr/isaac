@@ -1,14 +1,14 @@
 ---
 # isaac-7ncm
 title: 'sessions set <id>.tags rejects a set literal: parse-set-value never EDN-reads #{…}; error should show the .tags.<keyword> form'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - agent
     - cli
 created_at: 2026-09-11T05:50:17Z
-updated_at: 2026-09-11T05:50:17Z
+updated_at: 2026-09-11T05:58:28Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/cli.clj` `parse-set-value`, session schema `:tags` `:set-type? true`).
