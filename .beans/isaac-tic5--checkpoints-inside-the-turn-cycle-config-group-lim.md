@@ -1,7 +1,7 @@
 ---
 # isaac-tic5
 title: 'Checkpoints inside the turn: :cycle config group (limit, checkpoint-every, prompts), loop nudge every N cycles, continuations default 2'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - hail
     - config
 created_at: 2026-09-10T21:15:48Z
-updated_at: 2026-09-10T21:23:12Z
+updated_at: 2026-09-11T03:59:32Z
 ---
 
 Repos: **isaac-agent** (tool loop / drive: `llm/tool_loop.clj` hooks, `drive/turn.clj`
