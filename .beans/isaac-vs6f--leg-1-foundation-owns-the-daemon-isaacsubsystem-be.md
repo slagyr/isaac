@@ -8,6 +8,7 @@ tags:
     - foundation
     - server
     - component
+    - unverified
 created_at: 2026-09-11T05:26:16Z
 updated_at: 2026-09-11T06:00:42Z
 parent: isaac-3q4m
@@ -37,3 +38,25 @@ cd isaac-server && bb features features/server/services.feature features/server/
 ```
 
 All green with @wip removed; bb ci green in both repos. Train: foundation release (brew HEAD), then isaac-server bump pinned to it.
+
+## Implementation handoff
+
+Foundation branch: `bean/isaac-vs6f` @ `0315cc6984610599e99ad72c461e9ed2e60ffe45` (base `origin/main@80c6c1e3abbdb0c1892c70c67164bb8e05f75a8d`).
+
+Server branch: `bean/isaac-vs6f` @ `515574f` (base `origin/main@7f17654a8ff6f9bf15725c047d3b5a88248c197d`). Server pins Foundation `0315cc6984610599e99ad72c461e9ed2e60ffe45` in `bb.edn` and `deps.edn`.
+
+Implemented Foundation-owned `:isaac/component` lifecycle, topological start/reverse stop, supervision, process runner, `server`/`service` commands, service-manager migration, runtime trampoline, scheduler ownership, and lifecycle logging. Server now contributes HTTP as `:http` with `BoundPort`, uses Foundation runner hooks while retaining server-specific setup/teardown, and no longer owns generic service lifecycle or optional Hail start/stop-by-symbol behavior. The previous `services.feature` `@wip` covered the old server-owned service berth; those scenarios moved to Foundation's component feature and the new HTTP component scenario is active without `@wip`.
+
+Verification completed after rebasing both branches on current `origin/main`:
+
+- Foundation `bb features features/component/ features/cli/service.feature features/cli/service_linux.feature`: 31 examples, 0 failures, 122 assertions.
+- Foundation `bb spec`: 1018 examples, 0 failures, 1840 assertions.
+- Foundation `bb ci`: config bypass lint OK; 1018 specs / 1840 assertions and 181 features / 483 assertions, all green.
+- Server `bb features features/server/services.feature features/server/lifecycle.feature`: 3 examples, 0 failures, 5 assertions.
+- Server `bb features features/server/dev-reload.feature`: 3 examples, 0 failures, 3 assertions.
+- Server `bb spec`: 136 examples, 0 failures, 281 assertions.
+- Server `bb ci`: config bypass lint OK; 136 specs / 281 assertions and 46 features / 96 assertions, all green.
+- `git diff --check origin/main...HEAD`: clean in both repositories.
+- Relevant acceptance feature files contain no `@wip`; one-time search confirms no optional Hail service-by-symbol startup/shutdown path remains in `isaac.server.app`.
+
+Ready for verification and landing. Foundation must land/release before the server branch because the server pin references the Foundation implementation commit.
