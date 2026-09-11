@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-09-09T16:42:14Z
-updated_at: 2026-09-10T18:10:36Z
+updated_at: 2026-09-11T00:33:54Z
 blocking:
     - isaac-209q
 blocked_by:
@@ -177,3 +177,32 @@ Evidence:
 No ## Exceptions. layout.feature edits beyond @wip removal (keyword policy values, gist-model fixture, stdout "Crew") are scenario-plan authorized, not the fail.
 
 Do not land. Keep bean/isaac-b6w0. Update remaining episodes/recall features to 17-digit ids / nested layout fixtures, then re-run the planted remaining-features gate.
+
+## Handoff (attempt 2, 2026-09-10, scrapper@isaac-work-1)
+
+branch: bean/isaac-b6w0 @ 413897a (base origin/main@ac1bf9b)
+
+Rebased onto origin/main (isaac-jejt cancel stamp). Forced origin/bean/isaac-b6w0 (remote 9b4836d was the pre-rebase copy of the same commits).
+
+Fixes since verify fail @ 9b4836d:
+
+- live.feature / migrate_session.feature assert `#"\d{17}"` (store mints 17-digit ids).
+- Feature steps read nested `sessions/<crew>/<id>/current.ednl` (3-arity path with crew).
+- MemorySessionStore `rename-session!` rewrites session.edn `:id` so the old id cannot hydrate.
+- Nested-or-flat current path for repair-transcript!, turn markers, leftover-jsonl skip.
+- Episode store walks `sessions/<crew>/*/episodes/<eid>/` even when the parent session has no session.edn (lifecycle nests under `:session-id` / `:thread`).
+- Collision bump: unique-timestamped-id plusMillis 1.
+
+Measured this turn (HEAD 413897a):
+
+- `bb features features/episodes/live.feature features/episodes/migrate_session.feature` → 31/0/219
+- `bb features features/episodes/layout.feature` + idle_seal + index + recall_logging → 23/0/158
+- `bb features features/recall/` + session cli/storage/migrate/session_policy/identity → 71/0/188
+- `bb features features/bridge/unknown_crew.feature features/llm/turn_exhaustion.feature` → 9/0/28
+- session features chunked (39 files, 4 batches) all 0 failures
+- `bb spec` focused lifecycle/migrate/api/file/store → 97/0/287
+- `bb spec` full: 1777 examples, 1 intermittent failure (`File tools read allows reading in session cwd only with :cwd opt in` — 0 when run focused; 1 when run in the full suite). Same example is green on origin/main and focused here.
+
+`bb features` whole suite still hits the 180s bb.edn timeout (pre-existing wrapper). Combined `features/episodes/ features/recall/ features/session/` also times out at 180s even when chunked runs are green.
+
+Do not land until verify re-runs the planted remaining-features gate (and full `bb features && bb spec` if the 180s wrapper is accepted as a platform limit).
