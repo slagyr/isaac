@@ -1,7 +1,7 @@
 ---
 # isaac-q9j6
 title: Leg 3 — the MCP turn route moves to the claude-code module as /claude/turns/:id
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - server
     - mcp
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:43Z
+updated_at: 2026-09-11T05:49:02Z
 parent: isaac-3q4m
 ---
 
