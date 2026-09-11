@@ -11,7 +11,7 @@ tags:
     - episodes
     - unverified
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T21:13:39Z
+updated_at: 2026-09-11T21:35:33Z
 parent: isaac-3q4m
 ---
 
@@ -243,3 +243,14 @@ Fleet: no remaining `:isaac.server/service` contributors except foundation diagn
 
 Do **not** bounce to work. Discord is done. Verifier PASSes on the named gates above and records run counts. Do not land-block on 6zgj / kwhb / hail `bb features`.
 
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-foundation 7a33619be220d50efb4b23a1213aa88c1985164b
+main-sha: isaac-server 99d2ad8af2e18f3b1f60c1fc9ef4b1949f2db1d5
+main-sha: isaac-hail 731a0e6ba9d7c24cef50480f3895c830be974870
+main-sha: isaac-discord 19a26302e3c98599b8dcdb529ea4eaa8e4e7e678
+main-sha: isaac-episodes 089a764f3a8d363034e9aa07610c9ddbadb4740c
+
+Squash-landed from sibling checkouts. Bean-tip trees match main trees. Named gates recorded on bean SHAs (planner 2026-09-11): foundation bb ci 1019 specs + 181 features / 0; server bb ci 115 specs + 46 features / 0; Discord ISAAC_GIT=1 bb ci 46 native + 98 JVM / 0 and 67 features / 0; episodes bb spec 205/0; hail bb spec 157/0. Episodes bb features 3-red owned by isaac-6zgj. Hail bb features timeout waived. Did not pin, release, or relink keg.
