@@ -1,13 +1,11 @@
 ---
 # isaac-209q
 title: Extract episodes + recall into the isaac-episodes module behind the session-store berth
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-11T18:23:50Z
+updated_at: 2026-09-11T18:38:57Z
 blocked_by:
     - isaac-mmod
 ---
@@ -91,3 +89,11 @@ Coordinates:
 - isaac registry: `bean/isaac-209q` @ `621ba135169e0c01bf4cdfc9943bf9119c504bf2` (base `origin/main@7163fd4dfe50e8f5615e205d0a4cd8dcb2461e46`), pinning the rebased agent and episodes SHAs; merge-tree clean.
 
 Agent full `bb spec` is green: 1593 examples, 0 failures, 3286 assertions. Feature directory invocations still generate the entire feature tree under gherclj target semantics and reproduce ambient order-dependent failures; direct file-target runs show comm, crew, module, tool, and turn green. No product changes were made for unrelated feature-suite state leakage.
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-agent e9cba6410e097992d99acbef3e31b22ef3153512
+main-sha: isaac-episodes 9cbba7d59f12b737b1225088526af095ca4918a1
+main-sha: isaac 511b82375e7d5c42aefef85ca4b34b6e7e20789d
