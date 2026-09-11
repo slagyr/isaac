@@ -1,15 +1,14 @@
 ---
 # isaac-yk0u
 title: 'Tool results stop provoking re-reads: edit returns the updated content; per-window read/grep cache; skill loads dedupe'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - agent
     - tools
-    - unverified
 created_at: 2026-09-10T19:01:17Z
-updated_at: 2026-09-11T00:28:29Z
+updated_at: 2026-09-11T01:26:53Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/tool/file.clj` edit/read, `src/isaac/tool/grep.clj`,
@@ -103,3 +102,9 @@ Worker: **scrapper**@isaac-work-2.
 - @wip removed from window_cache.feature (4 scenarios).
 - grep walks mem-fs when the resolved path exists there (Grover fixtures); otherwise still shells rg so grep_spec mocks stay honest.
 - Acceptance run: edit_returns_content 1/0, window_cache 4/0, features/tool/ 132/0, spec/isaac/tool + spec/isaac/drive 373/0. Full `bb features` (all dirs) still 180s-timeouts on this checkout the same way origin/main does — not introduced here. `bb ci` is spec + full features and will hit that existing timeout.
+
+
+
+## Landed on main (2026-09-11)
+
+main-sha: isaac-agent 9e948e7e02cb6996c89505b29014fc1a70a41e5e
