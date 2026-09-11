@@ -1,7 +1,7 @@
 ---
 # isaac-vs6f
 title: 'Leg 1 — foundation owns the daemon: :isaac/component berth + supervisor, process runner behind ''isaac server'', ''isaac service'' OS manager'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - server
     - component
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:36:56Z
+updated_at: 2026-09-11T06:00:42Z
 parent: isaac-3q4m
 ---
 
