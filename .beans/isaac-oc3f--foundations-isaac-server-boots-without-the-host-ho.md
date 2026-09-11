@@ -10,7 +10,7 @@ tags:
     - discord
     - episodes
 created_at: 2026-09-11T15:06:55Z
-updated_at: 2026-09-11T20:36:43Z
+updated_at: 2026-09-11T20:40:20Z
 parent: isaac-3q4m
 ---
 
@@ -102,8 +102,6 @@ Next: finalize branch/base coordinates, tag unverified, and hand off. Gate summa
 
 Verifier lands the coordinated train and then updates registry release pins; worker did not merge or publish releases.
 
-
-
 ## Verify fail (attempt 1, 2026-09-11): Discord JVM specs cannot load isaac.component.factory — foundation still pinned to e0dc789 (pre-factory)
 
 HEAD (beans): f31ae430
@@ -126,3 +124,14 @@ Other gates this turn (not the fail reason):
 - hail specs previously 157/0; episodes 205/0; server `bb ci` 115 specs + 46 features exit 0
 - foundation `retired_berth_spec` 1/0 green at `adbeace`
 - foundation `log_viewer_spec.clj:344` flake on the `adbeace` worktree (2 of 3 isolated runs red at 10s; 1 green). Isolated run on `origin/main` `8b4a33b` was 42/0. Bean diff is only `berths.clj` + `retired_berth_spec.clj`. Not blocking this fail.
+
+### Additional evidence (perceptor@isaac-verify-2, hail c1caa875)
+
+Same Discord JVM pin fail independently reproduced: `bb ci` native 46/0 then `clojure -M:spec` FileNotFoundException for `isaac.component.factory`. Discord also still pins server `1207d456` (pre-component runtime).
+
+Also red on this train (not treated as a second verify-fail count):
+- isaac-episodes `bb ci` features: 3 failures (`recall/embedding.feature:88`, `:100`, `episodes/recall_logging.feature:53`). Specs 205/0.
+- isaac-hail `bb ci` features: failures then timeout after 60s. Specs 157/0.
+Worker claimed these as pre-existing from the Foundation pin advance; they were not reproduced on `origin/main` in either verify turn. Either make full suites green or prove them on `origin/main`.
+
+Green this turn: foundation `bb ci` 1019 specs + 181 features; server `bb ci` 115 specs + 46 features. Fleet grep: no remaining `:isaac.server/service` contributors except Foundation diagnostic/spec.
