@@ -31,3 +31,9 @@ Existing worker, episodes and resume/suspend features green after the moves; ser
 cd isaac-agent && bb features features/bridge/ features/episodes/ features/session/ && bb spec && bb ci
 cd isaac-server && bb features && bb spec && bb ci
 ```
+
+## Work checkpoint (2026-09-11, scrapper@isaac-work-1)
+
+Done: agent Foundation components, manifest contributions, agent-owned store registration/resume/suspend, split worker lifecycle, and server-owned agent lifecycle deletion are committed and pushed on `bean/isaac-jrj0` in both repos. Focused agent/server specs are green; full server spec is green. Full agent spec had one unrelated/flaky file-tool failure and its focused rerun passed.
+
+Next: run complete acceptance, verify server-without-agent HTTP boot and grep checks, then rebase both branches and hand off. Resume at `isaac-agent/src/isaac/agent/component.clj:16` if component behavior needs adjustment.
