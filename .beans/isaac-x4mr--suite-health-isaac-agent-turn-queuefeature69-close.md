@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - suite-health
+    - unverified
 created_at: 2026-09-10T14:26:21Z
-updated_at: 2026-09-12T16:21:46Z
+updated_at: 2026-09-12T19:42:10Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that failed GitHub Actions CI Tests on isaac-qpdb land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures, one of them this scenario. **Not qpdb.** Isolated run is green. Do not reopen **isaac-qpdb**.
@@ -57,8 +58,8 @@ Acceptance: 5 consecutive full `bb features` runs green on the branch (report th
 
 ## Worker checkpoint (scrapper@isaac-work-3, 2026-09-12)
 
-Done: branch `bean/isaac-x4mr` was rebased onto `origin/main@0164ed9`; current head `ea5bbe8`. Target queue feature is green 5/5; widened target family is green 5/5; `bb spec` green at 1606/0/3313; five consecutive unwrapped full JVM runs are green, plus a green post-rebase JVM run at 754/0/1793/1. Native runner budget is now 600s. Native full runs after the latest send-boundary fix are green three consecutive times: 754 examples, 0 failures, 1793 assertions, 1 existing pending (152.9s, 159.1s, 167.1s). Fixes cover released Grover gates, atomic scripted dequeue, queue wake coalescing, bounded future cleanup, async compaction assertion ordering, deterministic cancellation, and atomic prior-turn capture at multi-turn send boundaries.
+Done: branch `bean/isaac-x4mr` @ `c40b112` is rebased on `origin/main@0164ed9`. Root causes were shared async fixture races: Grover reset orphaned wait gates; scripted dequeue was non-atomic; concurrent turn-worker nudges were dropped; teardown forgot live futures; filesystem/transcript assertions could run before async turns; and cancellation fixtures used timing windows. Fixes release gates, atomically dequeue, coalesce worker ticks, deterministically drain/cancel futures, await async compaction/turns at assertion and send boundaries, and use blocking cancellation seams without weakening intent.
 
-Current red: native acceptance run 4 (`/tmp/x4mr-native-next-4.out`) reproduced another full-suite-only async assertion race: `features/llm/provider_attention.feature:143` expected two pending attention files immediately after two sends, got one. Earlier identical row at `:105` also reproduced once. Isolated feature is normally green. Five consecutive literal `bb features` runs are therefore not yet complete.
+Acceptance complete: target queue feature green 5/5 (5 examples, 0 failures, 20 assertions each); widened family green 5/5 (59/0/166); five consecutive literal `bb features` runs green at 754 examples, 0 failures, 1793 assertions, 1 existing pending (180.5s, 174.3s, 172.3s, 177.7s, 184.9s); prior five consecutive unwrapped JVM full runs green; final `bb spec` green at 1608 examples, 0 failures, 3316 assertions. Native task timeout was raised from 180s to 600s because successful full runs exceed 180s under load.
 
-Next: make the pending-directory assertion await any current `:turn-future` before counting, driven by a focused failing step spec, then rerun provider_attention repeatedly and restart five full native runs. Resume at `features/llm/provider_attention.feature:105/:143` and the foundation fs-step implementation found by searching `directory .* has exactly` under the pinned foundation test-support source.
+Next: verifier lands `bean/isaac-x4mr` and runs CI Tests. Review entry points: `src/isaac/llm/api/grover.clj:31`, `src/isaac/turn/worker.clj:79`, and `spec/isaac/session/session_steps.clj:582`.
