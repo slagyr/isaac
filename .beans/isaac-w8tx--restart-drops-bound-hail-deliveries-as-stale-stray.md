@@ -1,13 +1,11 @@
 ---
 # isaac-w8tx
 title: Restart drops bound hail deliveries as stale strays — three bean turns lost at the 2026-09-11 04:00Z boot (hails never die)
-status: in-progress
+status: completed
 type: bug
 priority: critical
-tags:
-    - unverified
 created_at: 2026-09-11T04:05:47Z
-updated_at: 2026-09-12T14:39:29Z
+updated_at: 2026-09-12T14:40:12Z
 ---
 
 Repo: isaac-hail (delivery worker + resume interplay; agent 0.1.63 / hail 0.1.17). At the 04:00:14Z restart on zanebot (agent 0.1.63 + hail 0.1.17 deploy) the delivery worker logged `:hail/stale-delivery-removed` for 70d4d9c5 (isaac-work-2, isaac-tic5), 7c6354f1 (tono-work-1, tono-bzg0) and a403c825 (isaac-work-1, isaac-udnm) one second after `server/started`. All three sessions still carry `turn.edn` markers naming those delivery ids; the records exist in hail/records only — not delivered, not failed, not deliveries. The turns were not resumed and no worker is bound since boot. Every earlier restart today (09:16Z, 12:16Z, 14:21Z, 15:11Z) re-bound the same kind of markers as `:hail/bound :attempts N`.
