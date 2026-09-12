@@ -1,15 +1,14 @@
 ---
 # isaac-yrxx
 title: Leg 5 — isaac-server's deps.edn drops isaac-agent at runtime; stale sibling pins are a CI check
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
-    - unverified
     - server
     - ci
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-12T16:25:31Z
+updated_at: 2026-09-12T16:37:18Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
@@ -81,3 +80,23 @@ Fix: make `bb pins` (and therefore `bb ci`) find the sibling foundation CLI with
 Server branch: `bean/isaac-yrxx` @ `9a6e1086301505d3271f0c2f1dfd1a60ca37d27e` (base `origin/main@1215832ac62bcf90ec3f56dad6a8a338652369e1`). `bb pins` now resolves the executable in required order: executable `../isaac-foundation/libexec/isaac`, then `ISAAC`, then PATH `isaac`. Added `spec/isaac/pins_task_spec.clj` regression coverage for sibling preference and ordering.
 
 Evidence in a detached CI-layout worktree with current Foundation main as `../isaac-foundation`, `ISAAC` unset, and PATH containing `bb` but no `isaac`: `bb ci` passed — config-bypass-lint ok; 121 specs, 0 failures, 249 assertions; 46 features, 0 failures, 96 assertions. Focused regression: 1 example, 0 failures, 3 assertions. Working tree clean; branch pushed.
+
+
+
+## Landed on main (2026-09-12) — repair
+
+main-sha: isaac-foundation 187356baed01e6e4aa3f7da313eb5be46e2cadbb
+main-sha: isaac-server f12dee495c2b4056d679ddddc5ab5f2d45642869
+
+Repair squash of bean/isaac-yrxx@9a6e108 onto origin/main@1215832. Bean-tip tree matches main tree.
+
+Verifier gates (perceptor@isaac-verify-2, hail fb1d9107):
+- foundation features/cli/modules_pins.feature: 3 examples, 0 failures, 6 assertions (@wip removed; isolated re-run after cleaning stale fixture-agent gitlib)
+- foundation bb spec: 1019 examples, 0 failures, 1841 assertions
+- foundation bb ci: 1019 specs + 185 features / 492 assertions, 0 failures; bb pins exit 0
+- server clojure -Spath: no isaac-agent on runtime classpath; present under :test
+- server bb pins with ISAAC unset and no PATH isaac (sibling ../isaac-foundation/libexec/isaac): exit 0
+- server bb spec: 121 examples, 0 failures, 249 assertions
+- server bb features: 46 examples, 0 failures, 96 assertions
+- pins_task_spec: 1 example, 0 failures, 3 assertions
+- One-time: Agent remains dropped from server top-level :deps; bb pins prefers sibling foundation CLI then ISAAC then PATH
