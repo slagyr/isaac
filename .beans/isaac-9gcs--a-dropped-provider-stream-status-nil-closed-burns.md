@@ -8,7 +8,7 @@ tags:
     - hail
     - provider-wall
 created_at: 2026-09-04T00:56:30Z
-updated_at: 2026-09-11T07:40:57Z
+updated_at: 2026-09-12T20:20:39Z
 ---
 
 Observed 2026-09-04 00:55Z, isaac-work-2 (scrapper on gpt-5.4/chatgpt), hail 37ec4440 (isaac-jllj extraction, 75 minutes into the turn): `:llm/http-error :status nil :error :unknown :response-body-chars 3` on the Responses stream (772K-char request), then `:chat/stream-error :error :unknown`, `:chat/response-failed :message "closed"`, and `:hail/attempt-failed :attempts 1 :error :unknown`.
@@ -35,3 +35,5 @@ Responses-API variant of the same class: `:chat/response-failed :error :llm-erro
 More samples (2026-09-11): 05:29:26Z tono-work-2 grok 'responses stream ended without response.completed' → :llm-error, attempt burned (attempts 2), re-bound 5 s later; 05:57:35Z isaac-work-1 chatgpt (gpt-5.6-sol) stream 'closed' → :error :unknown, attempt burned on the 209q delivery (85e6f59c, attempts 1). Both are transport-class drops on otherwise healthy providers (sol served 18 requests either side). Weather, not failure.
 
 07:38:07Z tono-work-1 chatgpt (sol) stream 'closed' again → :unknown, attempt burned (014edddf attempts 1), re-bound 3 s later. Third transport drop today across ~1,900 sol requests; each costs one of the delivery's attempts.
+
+2026-09-12 20:17:48Z isaac-work-1 chatgpt HTTP 503 → :api-error, attempt burned (e31362fc, x4mr rework thread 0261129e), re-bound 3 s later. A 5xx from the provider is weather by definition.
