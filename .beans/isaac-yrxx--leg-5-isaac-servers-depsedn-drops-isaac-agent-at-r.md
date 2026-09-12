@@ -31,3 +31,7 @@ Remove `io.github.slagyr/isaac-agent` from the server's top-level :deps (test al
 cd isaac-foundation && bb features features/cli/modules_pins.feature && bb spec && bb ci
 cd isaac-server && bb ci   # with no agent on the runtime classpath
 ```
+
+## Work checkpoint (scrapper@isaac-work-1)
+
+RED: `bb features features/cli/modules_pins.feature` runs all three untagged scenarios and currently reports 3 failures. Real git fixture steps and SHA interpolation exist; production pins classification/CLI dispatch exists, but acceptance output is empty because the in-memory `deps.edn` fixture is root-relative while command discovery is still using the process cwd. Next: align module-repository cwd for this command, then rerun the focused feature. Resume at `src/isaac/modules/pins.clj:16` and `spec-support/src/isaac/foundation/fs_steps.clj:159`.
