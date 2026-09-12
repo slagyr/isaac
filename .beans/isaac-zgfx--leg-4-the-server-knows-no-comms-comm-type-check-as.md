@@ -10,7 +10,7 @@ tags:
     - server
     - agent
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T23:50:58Z
+updated_at: 2026-09-12T00:03:39Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
@@ -42,3 +42,24 @@ Done: Agent's contributed comm-type check now accepts both manifest-contributed 
 Completed implementation. Agent branch: `bean/isaac-zgfx@b6284e42ab37ccf971637d4dc791856c7fa231aa` (base `origin/main@e9cba6410e097992d99acbef3e31b22ef3153512`). Server branch: `bean/isaac-zgfx@e8c8a933e86674f2ee74348a79ed2d64942f5d52` (base `origin/main@99d2ad8af2e18f3b1f60c1fc9ef4b1949f2db1d5`).
 
 Evidence: Agent focused config composition features green (21 examples, 35 assertions) and full specs green (1596 examples, 3289 assertions). Agent's broader `bb features features/config/` and `bb ci` feature phase time out at the repository's 180s task limit and contain unrelated pre-existing config CLI failures; confirmed `origin/main` independently fails `features/config/cycle.feature` the same way. Server focused config/comm/logging features green (6 examples, 17 assertions), full specs green (120 examples, 246 assertions), full features green (46 examples, 96 assertions), and `bb ci` green. One-time checks pass: no `src/isaac/comm` directory and no `isaac.comm.telly` in Server `deps.edn`/`bb.edn`. Both implementation branches are rebased on current `origin/main` and clean.
+
+
+
+## Landed on main (2026-09-12)
+
+main-sha: isaac-agent 374ea9e92306f8ee68a115ad4e92c743e2f7b221
+main-sha: isaac-server 7f54ad9d2235ab0974a871142abc352c0216f1b8
+
+Squash-landed from sibling checkouts. Bean-tip trees match main trees.
+
+Verifier gates (perceptor@isaac-verify):
+- isaac-agent bb spec: 1596 examples, 0 failures, 3289 assertions
+- isaac-agent bb spec checks_spec + check_contributions_spec: 27/0
+- isaac-agent bb features features/config/composition.feature: 21/0
+- isaac-server bb spec: 120 examples, 0 failures, 246 assertions
+- isaac-server bb features: 46 examples, 0 failures, 96 assertions
+- isaac-server focused config/comm/logging: 9 examples, 0 failures, 21 assertions
+- One-time: no src/isaac/comm; no isaac.comm.telly in server deps.edn/bb.edn
+- Unknown-comm-type scenario green (features/config/reconciler.feature unregistered :type)
+
+Agent bb features features/config/ (751 examples, 22 failures) includes pre-existing CLI failures reproduced on origin/main (cycle.feature:19, cli.feature:254 unknown-comm-type CLI schema message). Not blocking: bean does not change agent features; named product gate is the server unregistered-type scenario + agent specs.
