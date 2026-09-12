@@ -1,7 +1,7 @@
 ---
 # isaac-lrue
 title: 'Restart loses in-flight hail turns: resume leaves the legacy turn marker, hail''s stray sweep deletes the just-requeued deliveries (3 beans lost 2026-09-11)'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 tags:
@@ -9,7 +9,7 @@ tags:
     - hail
     - resume
 created_at: 2026-09-11T04:10:14Z
-updated_at: 2026-09-11T04:10:14Z
+updated_at: 2026-09-12T14:06:39Z
 ---
 
 Repos: **isaac-agent** (`bridge/resume.clj`, `session/store/impl_common.clj`
