@@ -69,3 +69,9 @@ cd isaac-hail && bb features features/turn-resume.feature features/delivery.feat
 
 Until this lands: **after every zanebot restart, grep server.log for
 `stale-delivery-removed` and re-hail session-direct anything it names.**
+
+## Work checkpoint (2026-09-12, scrapper@isaac-work-2)
+
+Done: Agent branch `bean/isaac-lrue` is pushed through `4a01f27`: turn-marker clearing deletes current, flat, and legacy paths; resume-requeued hail deliveries carry deterministic `:resume/requeued-at`; focused Agent specs are green (33 examples, 76 assertions).
+
+In progress/red: Hail has failing tests planted for resume grace and stale-removal attention. Current focused command `bb spec spec/isaac/hail/delivery_worker_spec.clj` is 30 examples, 1 failure: `tick!` now returns the attention queue enqueue result for stale removal instead of `[]`. Resume at `isaac-hail-lrue/src/isaac/hail/delivery_worker.clj:517` (`remove-stray!`); force its return to nil, rerun focused specs, then add feature scenarios and full acceptance gates.
