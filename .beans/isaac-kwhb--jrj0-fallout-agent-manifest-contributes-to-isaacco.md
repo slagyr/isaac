@@ -24,8 +24,8 @@ Repos: isaac-agent (config/checks + spec harness), possibly isaac-foundation. Si
 
 ## Checkpoint (2026-09-12, scrapper@isaac-work-3)
 
-Done: claimed bean; created and pushed `isaac-agent bean/isaac-kwhb@8df8589` with scenarios proving a foundation-declared `:isaac/component` contribution validates and an unknown berth retains the established error. The focused scenario file is green (`2 examples, 0 failures`). Confirmed the production `builtin-index` includes `:isaac.foundation` and `:isaac/component`; the red CLI suite is isolated to the feature harness's stale baseline foundation manifest.
+Done: claimed bean; created and pushed `isaac-agent bean/isaac-kwhb@8df8589` with scenarios proving a foundation-declared `:isaac/component` contribution validates and an unknown berth retains the established error. The focused scenario file is green (`2 examples, 0 failures`). Confirmed production `builtin-index` contains `:isaac.foundation` and its `:isaac/component` declaration. Traced CLI execution through `isaac.foundation.cli-steps/isaac-run`: each command registers CLI berths and then config loading rediscovers manifests during `main/run`.
 
-Current red: `features/config/cli.feature` remains `59 examples, 12 failures`; command output is replaced by the undeclared-component validation error.
+Current red: `features/config/cli.feature` is still `59 examples, 12 failures, 200 assertions`. The root-hook experiment processes the right production index but cannot affect later discovery because its binding ends before `main/run`.
 
-Next: update the agent feature harness's baseline foundation declaration, then rerun the CLI feature. Resume at `spec/isaac/marigold/agent.clj:92` (`baseline-foundation-index`).
+Next: replace the ineffective root-hook processing with a run-duration wrapper that augments any active feature override with the running foundation declaration while preserving all indexed manifests and CLI contributions; rerun the CLI feature. Resume at `spec/isaac/marigold/agent.clj:93` (`baseline-foundation-index`) and `spec/isaac/session/session_steps.clj:91` (registered root hook). Exact test: `rm -rf target/gherclj && ISAAC_TEST_TIMEOUT_MS=600000 clojure -M:features features/config/cli.feature`.
