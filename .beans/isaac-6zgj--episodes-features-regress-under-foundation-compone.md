@@ -7,8 +7,9 @@ priority: high
 tags:
     - episodes
     - foundation
+    - unverified
 created_at: 2026-09-11T21:13:19Z
-updated_at: 2026-09-12T16:01:06Z
+updated_at: 2026-09-12T17:33:06Z
 ---
 
 Discovered while verifying isaac-oc3f.
@@ -29,8 +30,30 @@ Investigate and restore feature compatibility with Foundation 0.1.25+ without co
 
 RED confirmed on `origin/main@089a764` with Foundation `8b4a33b`: the three focused scenarios report 3 failures/4 assertions. Investigation isolated the two config-validation failures to Foundation `c305e13`: `isaac.main` threads only `:config` into command opts and `isaac.config.cli.common/load-result` fabricates an empty-error result, discarding the already-computed loader errors. The recall log remains red after awaiting the turn and after proving the Episodes tool berth is registered; it requires further charge/tool-dispatch tracing. No source edits are currently pending. Next: add a Foundation regression spec for preserving the threaded full load result, then implement that seam; separately trace the recall tool's charge `:module-index`. Resume at Foundation `src/isaac/main.clj:121` / `src/isaac/config/cli/common.clj:244`, then Episodes `spec/isaac/episodes/episode_steps.clj:28`.
 
-## Work checkpoint (scrapper@isaac-work-1, cache-source tracing)
+## Implementation evidence (scrapper@isaac-work-1)
 
-Done: real-path tracing proves Foundation resolves an Episodes module index, but the prompt load still sees Cordelia without the newly written `:tools.allow`; the turn therefore logs `allowed-tools nil` and `unknown tool: recall__scene`. Agent prompt CLI now preserves threaded config (`bean/isaac-6zgj@a4862b5`; focused prompt spec green: 30 examples, 75 assertions). Foundation config-error preservation remains at `bean/isaac-6zgj@80ee20e`. The latest cross-repo recall scenario is RED: 1 example, 1 failure, 2 assertions.
+Root causes and repairs:
 
-Next: TDD the startup-cache source witness. `write-classpath-cache!` currently omits `load-result :sources`, so `read-pre-sub` cannot invalidate when a crew entity file changes after `episodes index` writes the cache. Add RED coverage that cache payloads persist source paths and reject a newer source; thread sources from `main/run`, then rerun the focused recall scenario. Resume at `isaac-foundation/src/isaac/startup/classpath_cache.clj:67`, `src/isaac/startup/config_cache.clj:20`, and `src/isaac/main.clj:152`.
+- Foundation CLI config threading discarded resolved validation errors. `isaac.main` now carries the full `:load-result`, and CLI config consumers preserve it.
+- Foundation startup cache watched only root config and local module manifests. It now persists resolved config `:sources`, resolves relative source paths beneath the Isaac root, and invalidates when an entity source changes. This prevents a preceding command from hiding a later `config/crew/*.edn` tools update.
+- Agent prompt CLI reloaded config instead of consuming Foundation's resolved `:config`. It now validates/installs the threaded config, preserving both crew tools and `:module-index` into the charge.
+
+Branches (rebased on current origin/main):
+
+- `isaac-foundation bean/isaac-6zgj @ 47fc2ccbaddf018cacb0dbfa0873ab902f65619b` (base `origin/main@bd9dd027b9400bde8509f026e888cdb99ba3e6e8`)
+- `isaac-agent bean/isaac-6zgj @ a4862b5e1a757a67b535c1a5a3418432eaf055e8` (base `origin/main@a6c27f893192d7fd76c883f7e007a9c33fc92bf9`)
+- Episodes needs no source change; it is the cross-repo acceptance consumer.
+
+Verification:
+
+- Foundation `bb spec`: 1022 examples, 0 failures, 1844 assertions.
+- Foundation `features/cli/config_resolution.feature`: 6 examples, 0 failures, 8 assertions.
+- Foundation full `bb features`: 185 examples; only 2 unrelated `modules_pins.feature` environment failures from stale `/Users/zane/.gitlibs/_repos/file/REL/fixture-agent` pointing at a removed verify checkout.
+- Agent prompt CLI spec: 30 examples, 0 failures, 75 assertions.
+- Agent full `bb spec` was run repeatedly; each run had one different pre-existing async `session_steps_spec` flake. Both observed examples pass focused (`session_steps_spec.clj:100` and `:150`).
+- Episodes `bb spec` against both branches: 205 examples, 0 failures, 548 assertions.
+- Episodes full `bb features` against both branches: 78 examples, 0 failures, 520 assertions.
+- Original three regressions focused against both branches: 3 examples, 0 failures, 9 assertions.
+- Recall logging also passes with only Foundation fixed and the original Agent pin, proving the accepted fix is independent of Episodes lifecycle migration.
+
+Resume verification at `isaac-foundation/src/isaac/startup/config_cache.clj:20` and `isaac-agent/src/isaac/bridge/prompt_cli.clj:116`.
