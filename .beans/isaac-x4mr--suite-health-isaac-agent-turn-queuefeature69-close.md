@@ -1,13 +1,13 @@
 ---
 # isaac-x4mr
 title: 'Suite health (isaac-agent): turn_queue.feature:69 closed turnstile park/wake flake'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-10T14:26:21Z
-updated_at: 2026-09-11T04:24:23Z
+updated_at: 2026-09-12T16:21:46Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that failed GitHub Actions CI Tests on isaac-qpdb land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures, one of them this scenario. **Not qpdb.** Isolated run is green. Do not reopen **isaac-qpdb**.
