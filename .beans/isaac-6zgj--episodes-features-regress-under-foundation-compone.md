@@ -1,15 +1,14 @@
 ---
 # isaac-6zgj
 title: Episodes features regress under Foundation component-runtime pin
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - episodes
     - foundation
-    - unverified
+    - episodes
 created_at: 2026-09-11T21:13:19Z
-updated_at: 2026-09-12T17:33:06Z
+updated_at: 2026-09-12T18:14:59Z
 ---
 
 Discovered while verifying isaac-oc3f.
@@ -57,3 +56,10 @@ Verification:
 - Recall logging also passes with only Foundation fixed and the original Agent pin, proving the accepted fix is independent of Episodes lifecycle migration.
 
 Resume verification at `isaac-foundation/src/isaac/startup/config_cache.clj:20` and `isaac-agent/src/isaac/bridge/prompt_cli.clj:116`.
+
+
+
+## Landed on main (2026-09-12)
+
+main-sha: isaac-foundation 6be700cd3ed5af44bfe22891e01bca736d71002d
+main-sha: isaac-agent 0164ed99c27c27136cd06cc7bf2f58e7473e9268
