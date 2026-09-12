@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-11T04:15:24Z
-updated_at: 2026-09-12T17:50:17Z
+updated_at: 2026-09-12T18:01:24Z
 parent: isaac-b6w0
 ---
 
@@ -23,3 +23,9 @@ Acceptance comparison: full Episodes features are 79 examples / 3 failures / 521
 
 main-sha: isaac-agent 2fd69fee7f0601d46972a302e3879dd8d144990d
 main-sha: isaac-episodes ffb94ff5cd42bd670cffd0769a410b3699cbf3c2
+
+
+
+## CI Tests 34709330435 (2026-09-12)
+
+GHA `bb ci` on land SHA `2fd69fee7f0601d46972a302e3879dd8d144990d` failed **after** this bean completed. Specs were green (`1598/0/3296`). Features: `753 examples, 1 failure, 1788 assertions, 1 pending` at `features/session/parallel_tool_batches.feature:124` (mixed concurrent batch events). Isolated/full-suite flake family already owned by **isaac-x4mr** (planner folded isaac-1d7x into it; :124 is an explicit row). Subsequent main SHA `ed41aa6` (isaac-lrue) CI Tests run 34709751337 is **success**. Do not reopen isaac-5gvq. Do not commission an independent repair. Hail 1f334a7e correlated here.
