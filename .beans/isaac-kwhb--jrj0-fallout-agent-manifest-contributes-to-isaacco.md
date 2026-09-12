@@ -1,13 +1,11 @@
 ---
 # isaac-kwhb
 title: 'jrj0 fallout: agent manifest contributes to :isaac/component, which only foundation 0.1.25 declares — config CLI and every CLI-driven feature fail with ''berth not declared''; main undeployable'
-status: in-progress
+status: completed
 type: bug
 priority: critical
-tags:
-    - unverified
 created_at: 2026-09-11T18:47:12Z
-updated_at: 2026-09-12T16:18:56Z
+updated_at: 2026-09-12T16:43:26Z
 parent: isaac-jrj0
 ---
 
@@ -33,3 +31,11 @@ Green evidence: focused berth `2 examples, 0 failures, 2 assertions`; config CLI
 Cross-repo: `isaac-episodes` main repinned temporarily to agent `fa2c536` and foundation `0.1.25` for acceptance. The original undeclared `:isaac/component` error is eliminated (from `78 examples, 67 failures` to `78 examples, 3 failures, 515 assertions`). The remaining three failures are unrelated existing harness/assertion failures: two embedding-validation stderr assertions and one recall-log ordering assertion.
 
 Train constraint: agent main and episodes ship only after foundation `0.1.25` and server `0.1.15` are deployed; registry remains pinned to deployed agent `0.1.67` meanwhile.
+
+
+
+## Landed on main (2026-09-12)
+
+main-sha: isaac-agent a6c27f893192d7fd76c883f7e007a9c33fc92bf9
+
+Squash-landed from sibling checkout. Bean-tip tree equals main tree (5d1f4bd2d92563a9b03af2b43405e010e577267c). Named gates on bean/isaac-kwhb @ fa2c5365: component_extension.feature 2/0/2; config/cli.feature 59/0/238; bb spec 1596/0/3289. Full native bb features times out at 180s (pre-existing wrapper); split-by-file: bean improves config CLI from 16 failures on origin/main to 0. Remaining split failures also present on origin/main (cancel_aborts_work, stateful responses, provider_attention). Isolated compaction_memory_flush, session_policy, crew_tags green on the bean (order-dependent on origin/main). Deleted origin/bean/isaac-kwhb. Did not pin, release, or deploy. Train constraint unchanged: agent main ships after foundation 0.1.25 / server 0.1.15.
