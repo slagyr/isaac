@@ -1,14 +1,14 @@
 ---
 # isaac-6zgj
 title: Episodes features regress under Foundation component-runtime pin
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - episodes
     - foundation
 created_at: 2026-09-11T21:13:19Z
-updated_at: 2026-09-11T21:13:19Z
+updated_at: 2026-09-12T16:01:06Z
 ---
 
 Discovered while verifying isaac-oc3f.
