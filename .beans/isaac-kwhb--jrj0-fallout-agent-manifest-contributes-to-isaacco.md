@@ -4,8 +4,10 @@ title: 'jrj0 fallout: agent manifest contributes to :isaac/component, which only
 status: in-progress
 type: bug
 priority: critical
+tags:
+    - unverified
 created_at: 2026-09-11T18:47:12Z
-updated_at: 2026-09-12T14:19:00Z
+updated_at: 2026-09-12T16:18:56Z
 parent: isaac-jrj0
 ---
 
@@ -22,10 +24,12 @@ Repos: isaac-agent (config/checks + spec harness), possibly isaac-foundation. Si
 - Green: features/config/cli.feature 59/0; full bb spec && bb features; isaac-episodes features against the fixed agent.
 - Note for the train: agent main + isaac-episodes ship only after foundation 0.1.25 and server 0.1.15 are live on zanebot (Micah's train); the registry is re-pinned to the deployed 0.1.67 meanwhile (0ae12d2e).
 
-## Checkpoint (2026-09-12, scrapper@isaac-work-3)
+## Verification-ready (2026-09-12, scrapper@isaac-work-3)
 
-Done: pushed `isaac-agent bean/isaac-kwhb@49e8190`. The berth scenarios are green (`2/0`), `features/config/cli.feature` is restored (`59/0/238`), and native `bb spec` is green (`1596/0/3289`). The Marigold fixture imports the component berth from the foundation resource without requiring an installed runtime fs. The global feature wrapper bypasses process-threaded config and stale startup config cache; config features are green (`101/0/346`), non-session features are green (`341/0/803`), and session features excluding an existing `session_policy.feature` harness failure are green (`246/0/514`, 1 pending).
+Implementation: `isaac-agent bean/isaac-kwhb@fa2c536510598230965c00e64bfb77835c257a33`, rebased on `origin/main@374ea9e92306f8ee68a115ad4e92c743e2f7b221`. The Marigold fixture imports foundation's `:isaac/component` declaration from the running foundation resource without requiring an installed runtime fs. The feature harness treats each in-process CLI invocation as a separate process, bypasses stale process/cache config, and captures the fresh CLI load result for subsequent config assertions. Added valid foundation-berth and unchanged unknown-berth scenarios.
 
-Current red: monolithic `bb features` exceeds its built-in 180s timeout after printing failures before completion. Scoped runs isolate one deterministic pre-existing failure in `features/session/session_policy.feature:75` (the post-CLI config assertion reads a stale harness result); isolated cancellation scenarios pass. Cross-repo episodes acceptance has not run yet.
+Green evidence: focused berth `2 examples, 0 failures, 2 assertions`; config CLI `59/0/238`; config directory `101/0/346`; agent native specs `1596/0/3289`; agent features split across all feature files `242/0/615` and `511/0/1175` (the latter retains the suite's one established pending scenario). The monolithic native feature task exceeds its fixed 180s wrapper timeout on this machine; the complete split run is green.
 
-Next: make the config assertion observe the fresh post-command load without broadening product behavior, rerun `features/session/session_policy.feature`, then run episodes against agent `49e8190`. Resume at `spec/isaac/config/agent_steps.clj:10`. Exact next command after the harness adjustment: `rm -rf target/gherclj && ISAAC_TEST_TIMEOUT_MS=600000 clojure -M:features features/session/session_policy.feature`.
+Cross-repo: `isaac-episodes` main repinned temporarily to agent `fa2c536` and foundation `0.1.25` for acceptance. The original undeclared `:isaac/component` error is eliminated (from `78 examples, 67 failures` to `78 examples, 3 failures, 515 assertions`). The remaining three failures are unrelated existing harness/assertion failures: two embedding-validation stderr assertions and one recall-log ordering assertion.
+
+Train constraint: agent main and episodes ship only after foundation `0.1.25` and server `0.1.15` are deployed; registry remains pinned to deployed agent `0.1.67` meanwhile.
