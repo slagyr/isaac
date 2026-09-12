@@ -1,14 +1,13 @@
 ---
 # isaac-x4mr
 title: 'Suite health (isaac-agent): turn_queue.feature:69 closed turnstile park/wake flake'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - suite-health
-    - unverified
 created_at: 2026-09-10T14:26:21Z
-updated_at: 2026-09-12T19:42:10Z
+updated_at: 2026-09-12T20:00:58Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that failed GitHub Actions CI Tests on isaac-qpdb land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures, one of them this scenario. **Not qpdb.** Isolated run is green. Do not reopen **isaac-qpdb**.
@@ -63,3 +62,7 @@ Done: branch `bean/isaac-x4mr` @ `c40b112` is rebased on `origin/main@0164ed9`. 
 Acceptance complete: target queue feature green 5/5 (5 examples, 0 failures, 20 assertions each); widened family green 5/5 (59/0/166); five consecutive literal `bb features` runs green at 754 examples, 0 failures, 1793 assertions, 1 existing pending (180.5s, 174.3s, 172.3s, 177.7s, 184.9s); prior five consecutive unwrapped JVM full runs green; final `bb spec` green at 1608 examples, 0 failures, 3316 assertions. Native task timeout was raised from 180s to 600s because successful full runs exceed 180s under load.
 
 Next: verifier lands `bean/isaac-x4mr` and runs CI Tests. Review entry points: `src/isaac/llm/api/grover.clj:31`, `src/isaac/turn/worker.clj:79`, and `spec/isaac/session/session_steps.clj:582`.
+
+## Landed on main (2026-09-12)
+
+main-sha: isaac-agent 7e2df9da4551a8a12d384dbca9db3997e2e0595d
