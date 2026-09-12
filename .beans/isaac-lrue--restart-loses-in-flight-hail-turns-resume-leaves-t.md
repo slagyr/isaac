@@ -63,8 +63,8 @@ isaac-hail `features/turn-resume.feature`:
   grace) is still removed, and the removal posts attention.
 
 ```
-cd isaac-agent && bb features features/bridge/suspend.feature features/session/resume_repair.feature && bb spec && bb ci
-cd isaac-hail && bb features features/turn-resume.feature features/delivery.feature && bb spec && bb ci
+cd isaac-agent && bb features features/bridge/suspend.feature features/session/resume_repair.feature && bb spec
+cd isaac-hail && bb features features/turn-resume.feature features/delivery.feature && bb spec
 ```
 
 Until this lands: **after every zanebot restart, grep server.log for
@@ -74,4 +74,43 @@ Until this lands: **after every zanebot restart, grep server.log for
 
 Done: Agent branch `bean/isaac-lrue` is clean and pushed at `3a1cbff`: marker clearing removes current, flat, and legacy paths; resume requeues carry deterministic `:resume/requeued-at`; required focused features are green (8 examples, 25 assertions) and full specs are green (1597 examples, 3292 assertions). Hail was rebased onto `origin/main@e344919`, is clean and pushed at `0bca2f6`: provenance-based 60-second sweep grace, genuine-stray removal attention, and inherited restart specs are implemented; required focused features are green (34 examples, 122 assertions), turn-marker claim is green (4 examples, 24 assertions), and full specs are green (160 examples, 371 assertions).
 
-Next/red: broad `bb ci` is still red only in known upstream suites. Agent main CI at `374ea9e` has the same 19 acceptance failures; its repair exists on `origin/bean/isaac-kwhb@fa2c536` but is not landed, and full-suite execution hits the 180-second cap. Hail main CI cannot resolve its Agent pin `86a9a92`; this bean pins its public Agent SHA and advances to feature execution, where 13 pre-existing band/config failures remain (focused reruns reproduce 6; prompt templating passes in isolation). Clean branch-vs-main comparisons confirm the bean adds no failure: Agent LLM has the same one flaky broken-provider failure on both trees, prompts is green on the bean while main flakes, and session has the same two failures on both trees; Hail's predecessor main was already red before this bean. The literal `bb ci` acceptance gate therefore conflicts with the instruction to perform only this bean's work. Planner must either permit baseline-red verification or sequence `isaac-kwhb` plus the existing Hail band/config repairs first. Resume at `isaac-agent-lrue/spec/isaac/config/agent_steps.clj:1` if `isaac-kwhb` lands; otherwise rerun Hail `bb ci` from `isaac-hail-lrue/bb.edn:35` after upstream main repairs.
+Next/red: broad `bb ci` is still red only in known upstream suites. Agent main CI at `374ea9e` has the same 19 acceptance failures; its repair exists on `origin/bean/isaac-kwhb@fa2c536` but is not landed, and full-suite execution hits the 180-second cap. Hail main CI cannot resolve its Agent pin `86a9a92`; this bean pins its public Agent SHA and advances to feature execution, where 13 pre-existing band/config failures remain (focused reruns reproduce 6; prompt templating passes in isolation). Clean branch-vs-main comparisons confirm the bean adds no failure: Agent LLM has the same one flaky broken-provider failure on both trees, prompts is green on the bean while main flakes, and session has the same two failures on both trees; Hail's predecessor main was already red before this bean. The literal `bb ci` acceptance gate therefore conflicts with the instruction to perform only this bean's work.
+
+## Planner adjustment (2026-09-12, prowl@isaac-plan) — conflict resolve: focused resume/sweep gates control; drop full `bb ci`
+
+Conflict: implementation on agent `bean/isaac-lrue` @ `3a1cbff` and hail `bean/isaac-lrue` @ `0bca2f6` is complete; focused features and full specs are green. The bean also named `bb ci` in both repos. Those full gates are red on **origin/main independently of this bean**.
+
+**Decision: focused gates control. Do not sequence isaac-kwhb (or hail band/config repairs) in front of this bean.** This bean is the restart-loss defect (legacy marker path + stray sweep eating just-requeued deliveries). Waiting on kwhb leaves that hole open. Do not absorb kwhb's 19 feature failures or hail's 13 band/config failures.
+
+### Ambient owners (not this bean)
+
+- **isaac-kwhb** (in-progress) — agent main 19 feature failures / 180s timeout (`:isaac/component` berth not declared). Same on origin/main `374ea9e`.
+- **isaac-9bno** (todo) / **isaac-39vi** (draft) — hail band-inheritance + config-validate + templating reds against current agent pins. Hail main cannot resolve unpublished agent pin `86a9a92`; with this bean's public pin, 13 pre-existing band/config failures remain (focused reruns reproduce 6; prompt templating passes in isolation).
+
+Clean branch-vs-main: this bean adds no failure.
+
+### Controlling acceptance (supersedes `bb ci` in both repos)
+
+**isaac-agent** `bean/isaac-lrue` @ `3a1cbff` (or rebased equivalent):
+
+    bb features features/bridge/suspend.feature features/session/resume_repair.feature
+    bb spec
+
+0 failures. A suspended hail marker at the **legacy** path is requeued **and** the legacy file is gone (no marker at either path).
+
+**isaac-hail** `bean/isaac-lrue` @ `0bca2f6` (or rebased equivalent):
+
+    bb features features/turn-resume.feature features/delivery.feature
+    bb spec
+
+0 failures. A delivery requeued by resume with its marker still on disk is **not** swept on the next tick; a genuine claim-crash stray is still removed and posts attention.
+
+Do **not** require:
+
+- agent `bb ci` / full `bb features` exit 0
+- hail `bb ci` / full `bb features` exit 0
+- landing kwhb first
+- repairing hail band-inheritance / config-validate in this bean
+- unpinning hail to hide the 13
+
+Standing rule: name the runner and files that measure the bean. File ambient full-suite reds separately. Do not weaken the legacy-marker-clear or hails-never-die contracts.
