@@ -1,11 +1,11 @@
 ---
 # isaac-kwhb
 title: 'jrj0 fallout: agent manifest contributes to :isaac/component, which only foundation 0.1.25 declares — config CLI and every CLI-driven feature fail with ''berth not declared''; main undeployable'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-09-11T18:47:12Z
-updated_at: 2026-09-11T18:47:12Z
+updated_at: 2026-09-12T14:06:50Z
 parent: isaac-jrj0
 ---
 
