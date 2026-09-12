@@ -1,14 +1,15 @@
 ---
 # isaac-yrxx
 title: Leg 5 — isaac-server's deps.edn drops isaac-agent at runtime; stale sibling pins are a CI check
-status: completed
+status: in-progress
 type: feature
 priority: high
 tags:
     - server
     - ci
+    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-12T15:49:49Z
+updated_at: 2026-09-12T15:54:27Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
@@ -57,3 +58,20 @@ Verifier gates (perceptor@isaac-verify) on bean/isaac-yrxx:
 - server bb spec: 120 examples, 0 failures, 246 assertions
 - server bb features: 46 examples, 0 failures, 96 assertions
 - One-time: Agent dropped from server top-level :deps; bb pins wired into foundation and server `bb ci`
+
+
+
+## Verify fail (attempt 1, 2026-09-12): isaac-server main CI `bb pins` cannot run `isaac`
+
+HEAD (beans): cc4f66d0
+Working tree: clean
+Verifier: perceptor@isaac-verify (hail 24ef195a)
+Landed main-sha isaac-server 1215832ac62bcf90ec3f56dad6a8a338652369e1
+
+GitHub Actions CI Tests run 34703356125 (https://github.com/slagyr/isaac-server/actions/runs/34703356125) failed at `bb ci` after config-bypass-lint ok:
+
+    Cannot run program "isaac": Exec failed, error: 2 (No such file or directory)
+
+`bb.edn` pins task shells PATH `isaac` when ISAAC is unset. GH Actions does not install an isaac binary. CI already clones isaac-foundation to `../isaac-foundation`; `../isaac-foundation/libexec/isaac modules pins` is the working local path (worker used ISAAC= that way). Local `bb pins` without ISAAC: "Unknown modules subcommand: pins" on the keg isaac, then would still not exist on CI.
+
+Fix: make `bb pins` (and therefore `bb ci`) find the sibling foundation CLI without a PATH isaac — e.g. prefer `../isaac-foundation/libexec/isaac` then ISAAC then PATH. Re-run `bb ci` in an environment without PATH isaac. Do not treat this as a new bean; repair on isaac-yrxx.
