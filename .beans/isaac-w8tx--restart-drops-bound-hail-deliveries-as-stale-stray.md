@@ -20,3 +20,9 @@ Mechanism (isaac-3tyl / isaac-7li9 branch in `tick!`): a delivery in deliveries/
 Standing rule (Micah): infrastructure failures defer with attention and auto-deliver on recovery; a restart must never lose a work order.
 
 Recovery (2026-09-11 04:42Z): the three dropped deliveries were re-sent (tic5 → ebbbff24, udnm → 3f023087, tono-bzg0 → f9d312b5) and bound within seconds of the migration boot; that boot also re-bound a tono hail on attempt 1 (ae298514) with no :hail/stale-delivery-removed — so the drop is not every boot. Compare the 04:00Z boot (first boot on 0.1.63 + hail 0.1.17, sessions still flat) with this one (0.1.66, nested layout).
+
+## Work checkpoint (2026-09-12, scrapper@isaac-work-1)
+
+Done: added a restart-resume acceptance scenario and focused unit coverage; `tick!` now distinguishes the resume artifact (`delivery attempts == marker attempts + 1`) from a same-attempt claim-crash stray. The resumed delivery remains queued until the old marker clears, is then rebound with attempts+1, and is never logged stale. The original 7li9 orphaned stray still deletes. Focused feature green: 4 examples, 20 assertions. Focused spec green: 30 examples, 85 assertions. Pushed `bean/isaac-w8tx@66af7e1`.
+
+Next: run full `bb spec`, `bb features`, and `bb ci`; inspect/fix fallout, rebase on current `origin/main`, rerun acceptance, then record final evidence and hand off. Resume at `src/isaac/hail/delivery_worker.clj:502` with `bb spec`.
