@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: critical
 created_at: 2026-09-11T18:47:12Z
-updated_at: 2026-09-12T14:06:50Z
+updated_at: 2026-09-12T14:19:00Z
 parent: isaac-jrj0
 ---
 
@@ -21,3 +21,11 @@ Repos: isaac-agent (config/checks + spec harness), possibly isaac-foundation. Si
 - Scenario (@wip → green) in isaac-agent: a manifest contribution to a foundation-declared berth validates; an unknown berth still fails with the same message.
 - Green: features/config/cli.feature 59/0; full bb spec && bb features; isaac-episodes features against the fixed agent.
 - Note for the train: agent main + isaac-episodes ship only after foundation 0.1.25 and server 0.1.15 are live on zanebot (Micah's train); the registry is re-pinned to the deployed 0.1.67 meanwhile (0ae12d2e).
+
+## Checkpoint (2026-09-12, scrapper@isaac-work-3)
+
+Done: claimed bean; created and pushed `isaac-agent bean/isaac-kwhb@8df8589` with scenarios proving a foundation-declared `:isaac/component` contribution validates and an unknown berth retains the established error. The focused scenario file is green (`2 examples, 0 failures`). Confirmed the production `builtin-index` includes `:isaac.foundation` and `:isaac/component`; the red CLI suite is isolated to the feature harness's stale baseline foundation manifest.
+
+Current red: `features/config/cli.feature` remains `59 examples, 12 failures`; command output is replaced by the undeclared-component validation error.
+
+Next: update the agent feature harness's baseline foundation declaration, then rerun the CLI feature. Resume at `spec/isaac/marigold/agent.clj:92` (`baseline-foundation-index`).
