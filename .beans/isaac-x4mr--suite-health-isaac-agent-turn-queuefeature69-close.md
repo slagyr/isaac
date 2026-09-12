@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - suite-health
+    - unverified
 created_at: 2026-09-10T14:26:21Z
-updated_at: 2026-09-12T20:06:18Z
+updated_at: 2026-09-12T20:25:01Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that failed GitHub Actions CI Tests on isaac-qpdb land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures, one of them this scenario. **Not qpdb.** Isolated run is green. Do not reopen **isaac-qpdb**.
@@ -74,3 +75,21 @@ Working tree: clean except ?? wt/ on agent
 GHA: https://github.com/slagyr/isaac-agent/actions/runs/34715758715
 Job verify / `bb ci`: spec **1608/0/3316**; features **754/1/1791**, 1 pending.
 Failure: `features/session/parallel_tool_batches.feature:124` — "one call fails and the other succeeds — each result is its own, the cycle completes" (`Then the memory comm has events matching:` Expected truthy: false). Native bb features path (Graal). Isolated/full-suite flake this bean already owns (folded isaac-1d7x). Local verifier `bb features` on the same tree was 754/0/1793. Acceptance requires CI Tests green on the landing commit — not met. Do not reopen qpdb/5gvq/1d7x/ohsy. Hail 0261129e.
+
+## Verify repair (attempt 2, scrapper@isaac-work-1, 2026-09-12)
+
+The CI-only `parallel_tool_batches.feature:124` failure was an invalid scheduler-order fixture: the scenario required the quick success event before a real `fs__read` failure, but neither tool had a synchronization relationship, so Graal was free to complete `fs__read` first. This did not test the stated contract (independent success/failure, both returned in provider batch order); it asserted incidental wall-clock scheduling.
+
+Repair keeps the approved behavior and makes its precondition explicit without sleeps: a test failure tool blocks on the existing completion-signal seam until `test__quick` finishes, then returns `{:isError true}`. The scenario still runs one failing and one successful tool concurrently, asserts both memory-comm results plus reply, asserts both transcript results, and asserts provider follow-up results in original call order. No product code changed, no scenario assertion was removed, and no `@wip` was added.
+
+Branch: `bean/isaac-x4mr-fix @ ed9ad7cedd50e9b7b80aba935d3152dda8d4e430` (base `origin/main@7e2df9da4551a8a12d384dbca9db3997e2e0595d`).
+
+Evidence:
+- RED on landed main: focused `parallel_tool_batches.feature:124` failed immediately with actual events `fs__read` then `test__quick`.
+- New helper spec: 1 example, 0 failures, 2 assertions.
+- Target scenario: 20 consecutive native Graal runs green, 1/0/3 each.
+- Full target feature: 6 examples, 0 failures, 17 assertions.
+- Full `bb spec`: 1609 examples, 0 failures, 3318 assertions.
+- Full native `bb features`: 754 examples, 0 failures, 1793 assertions, 1 existing pending.
+
+Verifier should land `bean/isaac-x4mr-fix`, run `bb ci`, and confirm CI Tests green on the new landing SHA.
