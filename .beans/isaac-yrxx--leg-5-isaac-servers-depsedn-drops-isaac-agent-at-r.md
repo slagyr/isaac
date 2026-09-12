@@ -1,14 +1,14 @@
 ---
 # isaac-yrxx
 title: Leg 5 — isaac-server's deps.edn drops isaac-agent at runtime; stale sibling pins are a CI check
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - server
     - ci
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:58Z
+updated_at: 2026-09-12T14:36:35Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
