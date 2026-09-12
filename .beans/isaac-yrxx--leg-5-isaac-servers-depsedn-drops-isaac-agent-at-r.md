@@ -5,11 +5,11 @@ status: in-progress
 type: feature
 priority: high
 tags:
+    - unverified
     - server
     - ci
-    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-12T15:54:27Z
+updated_at: 2026-09-12T16:25:31Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
@@ -75,3 +75,9 @@ GitHub Actions CI Tests run 34703356125 (https://github.com/slagyr/isaac-server/
 `bb.edn` pins task shells PATH `isaac` when ISAAC is unset. GH Actions does not install an isaac binary. CI already clones isaac-foundation to `../isaac-foundation`; `../isaac-foundation/libexec/isaac modules pins` is the working local path (worker used ISAAC= that way). Local `bb pins` without ISAAC: "Unknown modules subcommand: pins" on the keg isaac, then would still not exist on CI.
 
 Fix: make `bb pins` (and therefore `bb ci`) find the sibling foundation CLI without a PATH isaac — e.g. prefer `../isaac-foundation/libexec/isaac` then ISAAC then PATH. Re-run `bb ci` in an environment without PATH isaac. Do not treat this as a new bean; repair on isaac-yrxx.
+
+## Verify repair (attempt 2, 2026-09-12, scrapper@isaac-work-2)
+
+Server branch: `bean/isaac-yrxx` @ `9a6e1086301505d3271f0c2f1dfd1a60ca37d27e` (base `origin/main@1215832ac62bcf90ec3f56dad6a8a338652369e1`). `bb pins` now resolves the executable in required order: executable `../isaac-foundation/libexec/isaac`, then `ISAAC`, then PATH `isaac`. Added `spec/isaac/pins_task_spec.clj` regression coverage for sibling preference and ordering.
+
+Evidence in a detached CI-layout worktree with current Foundation main as `../isaac-foundation`, `ISAAC` unset, and PATH containing `bb` but no `isaac`: `bb ci` passed — config-bypass-lint ok; 121 specs, 0 failures, 249 assertions; 46 features, 0 failures, 96 assertions. Focused regression: 1 example, 0 failures, 3 assertions. Working tree clean; branch pushed.
