@@ -1,15 +1,14 @@
 ---
 # isaac-mlw3
 title: Startup-cache warm hit dropped :module-index; foundation 0.1.24 could not boot the server (hotfixed f5bdde0, needs scenario + decision)
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - config
-    - unverified
     - foundation
+    - config
 created_at: 2026-09-10T03:49:50Z
-updated_at: 2026-09-12T15:58:29Z
+updated_at: 2026-09-12T16:12:10Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj` `try-cached-result`,
@@ -69,3 +68,11 @@ bb ci
 - Fixed pre-existing order-dependent `config check-compose` spec isolation by installing a mem-fs nexus.
 - Final gates after rebase: startup-caching feature 8 examples/10 assertions green; config specs 338 examples/674 assertions green; `bb ci` specs 1019 examples/1841 assertions green and features 182 examples/486 assertions green.
 - Note: a first `bb ci` attempt exposed stale tools.gitlibs fixture state left by an unrelated `modules_pins` branch verification checkout. The required feature/config gates and a subsequent clean full CI run passed; no product change was needed for this external cache contamination.
+
+
+
+## Landed on main (2026-09-12)
+
+main-sha: isaac-foundation bd9dd027b9400bde8509f026e888cdb99ba3e6e8
+
+Squash-landed from sibling checkout. Bean-tip tree equals main tree (f2dff4e534ace37ecaaf070e614e18bcc197b339). Named gates on bean/isaac-mlw3 @ f8dc5938: `bb features features/cli/startup-caching.feature` 8 examples / 0 failures / 10 assertions; `bb spec spec/isaac/config` 338 examples / 0 failures / 674 assertions; `bb ci` 1019 examples / 0 failures / 1841 assertions (specs) and 185 examples / 0 failures / 492 assertions (features) after clearing stale tools.gitlibs fixture-agent cache pointing at deleted yrxx worktree. Hotfix f5bdde0 already on origin/main; this bean pins the warm-path scenario, decision, and CI server-boot smoke. Deleted origin/bean/isaac-mlw3. Did not pin, release, or deploy.
