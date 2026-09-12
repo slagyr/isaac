@@ -1,14 +1,14 @@
 ---
 # isaac-mlw3
 title: Startup-cache warm hit dropped :module-index; foundation 0.1.24 could not boot the server (hotfixed f5bdde0, needs scenario + decision)
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - foundation
     - config
 created_at: 2026-09-10T03:49:50Z
-updated_at: 2026-09-10T03:49:50Z
+updated_at: 2026-09-12T15:41:59Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj` `try-cached-result`,
