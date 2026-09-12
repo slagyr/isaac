@@ -4,8 +4,10 @@ title: A leftover flat session gets a nested twin on first write after b6w0 — 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-11T04:15:24Z
-updated_at: 2026-09-12T16:27:14Z
+updated_at: 2026-09-12T17:13:14Z
 parent: isaac-b6w0
 ---
 
@@ -15,6 +17,6 @@ Related sample (2026-09-11): the hooks module runs one-shot turns on sessions na
 
 ## Work checkpoint (2026-09-12, scrapper@isaac-work-2)
 
-Done: Agent `bean/isaac-5gvq` is clean and pushed at `d0668ae`: located flat sessions receive sidecar updates, transcript appends, and markers without creating nested twins; stale index rows fall back to the actual flat record; unpersisted hook sessions no longer create flat marker directories. Focused Agent specs are green (36 examples, 86 assertions), storage/marker features are green (20 examples, 44 assertions), and full Agent specs are green (1598 examples, 3296 assertions). Episodes `bean/isaac-5gvq` is clean and pushed at `b06a4b9`: migrate-layout includes flat/nested twins, preserves the flat frozen/current history as the next nested frozen segments, deletes flat files, remains idempotent, and pins the Agent repair. Layout specs are green (206 examples, 552 assertions); layout acceptance is green (11 examples, 110 assertions).
+Done: Agent `bean/isaac-5gvq` is clean and pushed at `d0668ae` (base `origin/main@a6c27f8`): located flat sessions receive sidecar updates, transcript appends, and markers without creating nested twins; stale index rows fall back to the actual flat record; unpersisted hook sessions no longer create flat marker directories. Focused Agent specs are green (36 examples, 86 assertions), storage/marker features are green (20 examples, 44 assertions), and full Agent specs are green (1598 examples, 3296 assertions). Episodes `bean/isaac-5gvq` is clean and pushed at `b06a4b9` (base `origin/main@089a764`): migrate-layout includes flat/nested twins, preserves flat frozen/current history as the next nested frozen segments, deletes flat files, remains idempotent, and pins the Agent repair. Full Episodes specs are green (206 examples, 552 assertions); layout acceptance is green (11 examples, 110 assertions).
 
-Next/red: Episodes full `bb spec` did not execute because concurrent dependency resolution hit a local gitlibs fetch race (`incorrect old value provided` for Agent refs); this is tooling state, not a test failure. Retry it serially, then run full Episodes features/CI and Agent features/CI. Full Episodes features before the bean pin had three known unrelated main failures (embedding config validation ×2, recall log ×1); compare against main if they persist. Resume at `isaac-episodes-5gvq/bb.edn:2` with `CLOJURE_DEPS_PARALLEL=false bb spec`, then `bb features` and `bb ci`.
+Acceptance comparison: full Episodes features are 79 examples / 3 failures / 521 assertions; clean `origin/main` is 78 / the identical 3 failures / 515 assertions (embedding config validation ×2 and recall log ×1), so the added scenario is green with no regression. Full Agent features hit the repository's 180-second timeout with one progress failure; full Agent specs initially showed two alternating async harness flakes, but immediate focused `session_steps_spec` is green (16/0/36) and a subsequent full spec is green. Implementation is ready for baseline-aware verification. Resume at `isaac-episodes-5gvq/src/isaac/episodes/layout.clj:147` for migration review and `isaac-agent-5gvq/src/isaac/session/store/impl_common.clj:370` for write-path review.
