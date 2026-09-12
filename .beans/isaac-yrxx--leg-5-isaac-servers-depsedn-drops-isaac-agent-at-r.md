@@ -7,8 +7,9 @@ priority: high
 tags:
     - server
     - ci
+    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-12T14:36:35Z
+updated_at: 2026-09-12T15:40:07Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-jrj0
@@ -32,6 +33,9 @@ cd isaac-foundation && bb features features/cli/modules_pins.feature && bb spec 
 cd isaac-server && bb ci   # with no agent on the runtime classpath
 ```
 
-## Work checkpoint (scrapper@isaac-work-1)
+## Implementation evidence (scrapper@isaac-work-1)
 
-GREEN: Foundation implements `isaac modules pins`, real git fixture steps/SHA interpolation, removes all three `@wip` tags, and integrates `bb pins` into CI. Server removes Agent from top-level runtime deps, retains it in `:test`, and integrates `bb pins`; `clojure -Spath` contains no Agent. Evidence: focused feature 3 examples/6 assertions green; Foundation `bb spec` 1019 examples/1841 assertions green; Foundation `bb ci` 1019 specs + 184 features green; Server `bb ci` 120 specs + 46 features green using the Foundation branch launcher. Next: rebase both branches on current `origin/main`, rerun required gates, record final branch/base SHAs, tag `unverified`, and hand off. Resume at `src/isaac/modules/pins.clj:36` for any rebase/test repair.
+- Foundation: `bean/isaac-yrxx` @ `c041dccb70e4b0e20b96c15d64d52113486f8757` (base `origin/main@7a33619be220d50efb4b23a1213aa88c1985164b`). Implements `isaac modules pins`, real git fixture steps/SHA interpolation, untagged acceptance scenarios, and Foundation `bb pins` CI integration.
+- Server: `bean/isaac-yrxx` @ `69106b14325c245df45b4409ee76d1c63f1d87e9` (base `origin/main@7f54ad9d2235ab0974a871142abc352c0216f1b8`). Removes Agent from top-level runtime deps, retains Agent under `:test`, and runs `bb pins` from CI.
+- Final gates after rebase: Foundation focused feature 3 examples/6 assertions; `bb spec` 1019 examples/1841 assertions; `bb ci` 1019 specs and 184 features/489 assertions. Server `bb ci` 120 specs/246 assertions and 46 features/96 assertions using `ISAAC="../isaac-foundation-yrxx/libexec/isaac --root /tmp/yrxx-root"`; `clojure -Spath` confirms `isaac-agent` absent from runtime classpath.
+- Resume point if verification returns: `src/isaac/modules/pins.clj:36`.
