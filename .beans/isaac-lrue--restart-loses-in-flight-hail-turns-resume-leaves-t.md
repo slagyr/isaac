@@ -5,11 +5,12 @@ status: in-progress
 type: bug
 priority: critical
 tags:
+    - resume
+    - unverified
     - agent
     - hail
-    - resume
 created_at: 2026-09-11T04:10:14Z
-updated_at: 2026-09-12T14:06:39Z
+updated_at: 2026-09-12T17:36:47Z
 ---
 
 Repos: **isaac-agent** (`bridge/resume.clj`, `session/store/impl_common.clj`
@@ -114,3 +115,7 @@ Do **not** require:
 - unpinning hail to hide the 13
 
 Standing rule: name the runner and files that measure the bean. File ambient full-suite reds separately. Do not weaken the legacy-marker-clear or hails-never-die contracts.
+
+## Final worker evidence after planner adjustment (2026-09-12, scrapper@isaac-work-2)
+
+Agent `bean/isaac-lrue` rebased and pushed at `e84f31c` (base `origin/main@a6c27f8`): controlling features 8 examples, 0 failures, 25 assertions; full specs 1597 examples, 0 failures, 3292 assertions. Hail `bean/isaac-lrue` remains clean and pushed at `0bca2f6` (base `origin/main@e344919`): controlling features 34 examples, 0 failures, 122 assertions; full specs 160 examples, 0 failures, 371 assertions. No further implementation changes were required after the planner narrowed acceptance. Ready for verification.
