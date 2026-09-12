@@ -28,3 +28,9 @@ Investigate and restore feature compatibility with Foundation 0.1.25+ without co
 ## Work checkpoint (scrapper@isaac-work-1)
 
 RED confirmed on `origin/main@089a764` with Foundation `8b4a33b`: the three focused scenarios report 3 failures/4 assertions. Investigation isolated the two config-validation failures to Foundation `c305e13`: `isaac.main` threads only `:config` into command opts and `isaac.config.cli.common/load-result` fabricates an empty-error result, discarding the already-computed loader errors. The recall log remains red after awaiting the turn and after proving the Episodes tool berth is registered; it requires further charge/tool-dispatch tracing. No source edits are currently pending. Next: add a Foundation regression spec for preserving the threaded full load result, then implement that seam; separately trace the recall tool's charge `:module-index`. Resume at Foundation `src/isaac/main.clj:121` / `src/isaac/config/cli/common.clj:244`, then Episodes `spec/isaac/episodes/episode_steps.clj:28`.
+
+## Work checkpoint (scrapper@isaac-work-1, prompt dispatch)
+
+Done: traced the remaining recall failure through the real feature path. The prompt charge had `:allowed-tools nil` and no `:module-index`; `recall__scene` consequently returned `unknown tool`. Root cause is Agent prompt CLI reloading config after Foundation already threaded the resolved config, dropping the module index from the command opts. Added RED coverage and fixed prompt dispatch to install/reuse the threaded config. Agent focused prompt spec is green: 30 examples, 0 failures, 75 assertions. Branch checkpoint: `isaac-agent bean/isaac-6zgj@a4862b5`.
+
+Next: verify the Episodes recall scenario against Agent `a4862b5` plus Foundation `80ee20e`, then run Agent/Foundation focused/full gates and Episodes acceptance. Resume at `isaac-agent/src/isaac/bridge/prompt_cli.clj:116` and `isaac-episodes/features/episodes/recall_logging.feature:44`.
