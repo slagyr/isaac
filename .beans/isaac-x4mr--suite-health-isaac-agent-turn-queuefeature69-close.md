@@ -1,14 +1,13 @@
 ---
 # isaac-x4mr
 title: 'Suite health (isaac-agent): turn_queue.feature:69 closed turnstile park/wake flake'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - suite-health
-    - unverified
 created_at: 2026-09-10T14:26:21Z
-updated_at: 2026-09-12T20:25:01Z
+updated_at: 2026-09-12T20:33:00Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that failed GitHub Actions CI Tests on isaac-qpdb land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures, one of them this scenario. **Not qpdb.** Isolated run is green. Do not reopen **isaac-qpdb**.
@@ -93,3 +92,7 @@ Evidence:
 - Full native `bb features`: 754 examples, 0 failures, 1793 assertions, 1 existing pending.
 
 Verifier should land `bean/isaac-x4mr-fix`, run `bb ci`, and confirm CI Tests green on the new landing SHA.
+
+## Landed on main (2026-09-12)
+
+main-sha: isaac-agent 44c3e3c2ef6709c2c598af0a799d29841a6967ea
