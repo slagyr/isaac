@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - foundation
     - config
+    - unverified
+    - foundation
 created_at: 2026-09-10T03:49:50Z
-updated_at: 2026-09-12T15:41:59Z
+updated_at: 2026-09-12T15:58:29Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj` `try-cached-result`,
@@ -58,3 +59,13 @@ bb features features/cli/startup-caching.feature
 bb spec spec/isaac/config
 bb ci
 ```
+
+## Implementation evidence (scrapper@isaac-work-1)
+
+- Branch: `bean/isaac-mlw3` @ `f8dc5938c955437c1580f4123f07418b14f85cd5` (base `origin/main@187356baed01e6e4aa3f7da313eb5be46e2cadbb`).
+- Added a startup-caching scenario that runs `config validate` cold then warm with `marigold.bridge`/`marigold.longwave`, and asserts the captured warm load result retains `:module-index`, accepts the contributed `:longwave` config type, has no validation errors, and exits zero. Reversing hotfix `f5bdde0` makes this scenario fail at the missing module-index assertion.
+- Decision recorded at `doc/decisions/startup-cache-module-discovery.md`: keep discovery on warm config loads; measured fixture warm loads at 0.45–0.66s (median 0.65s), versus 0.56–0.59s fast-path process floor. Do not cache module index without profiling and complete manifest/transitive invalidation design.
+- Added a Foundation CI server/config boot smoke that checks out `isaac-server`, configures a module-provided fixture type, and validates twice through the startup cache.
+- Fixed pre-existing order-dependent `config check-compose` spec isolation by installing a mem-fs nexus.
+- Final gates after rebase: startup-caching feature 8 examples/10 assertions green; config specs 338 examples/674 assertions green; `bb ci` specs 1019 examples/1841 assertions green and features 182 examples/486 assertions green.
+- Note: a first `bb ci` attempt exposed stale tools.gitlibs fixture state left by an unrelated `modules_pins` branch verification checkout. The required feature/config gates and a subsequent clean full CI run passed; no product change was needed for this external cache contamination.
