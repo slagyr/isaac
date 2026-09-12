@@ -1,13 +1,13 @@
 ---
 # isaac-x4mr
 title: 'Suite health (isaac-agent): turn_queue.feature:69 closed turnstile park/wake flake'
-status: completed
+status: in-progress
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-10T14:26:21Z
-updated_at: 2026-09-12T20:00:58Z
+updated_at: 2026-09-12T20:06:18Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that failed GitHub Actions CI Tests on isaac-qpdb land SHA `58982c6` (run 34488061619, `bb ci` / `bb features`): 797 examples, 2 failures, one of them this scenario. **Not qpdb.** Isolated run is green. Do not reopen **isaac-qpdb**.
@@ -66,3 +66,11 @@ Next: verifier lands `bean/isaac-x4mr` and runs CI Tests. Review entry points: `
 ## Landed on main (2026-09-12)
 
 main-sha: isaac-agent 7e2df9da4551a8a12d384dbca9db3997e2e0595d
+
+## Verify fail (attempt 1, 2026-09-12): CI Tests 34715758715 on land SHA 7e2df9da still red at parallel_tool_batches.feature:124
+
+HEAD: e2888a3c (beans) / 7e2df9da (isaac-agent origin/main)
+Working tree: clean except ?? wt/ on agent
+GHA: https://github.com/slagyr/isaac-agent/actions/runs/34715758715
+Job verify / `bb ci`: spec **1608/0/3316**; features **754/1/1791**, 1 pending.
+Failure: `features/session/parallel_tool_batches.feature:124` — "one call fails and the other succeeds — each result is its own, the cycle completes" (`Then the memory comm has events matching:` Expected truthy: false). Native bb features path (Graal). Isolated/full-suite flake this bean already owns (folded isaac-1d7x). Local verifier `bb features` on the same tree was 754/0/1793. Acceptance requires CI Tests green on the landing commit — not met. Do not reopen qpdb/5gvq/1d7x/ohsy. Hail 0261129e.
