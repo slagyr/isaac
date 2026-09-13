@@ -55,12 +55,13 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker completion checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: clean-cutover branches are pushed and clean. HTTP is `11e4301`; Hooks `65a9e63`; Hail
-`4dc44ef`; CLI Server `ae0743a`; Claude Code `edf0195`; ACP `738fe6b`; Discord `d7db28d`.
-ACP loads Episodes `0cbe24b`, repairs coordinate-scoped pins, and explicitly registers the Episodes
-policy. Hail now waits for its asynchronous tool turn before inspecting the pending queue. Discord
-selects dev-local only when every split dependency exists and gives JVM features a 180-second budget.
-Registry train pins are `d93d6907`; undeployed zanebot config notes are `c6705ace`.
+Done: clean-cutover branches are pushed and clean. Foundation is `ad0a97b`; HTTP `11e4301`; Agent
+`74f9d83`; Hail `4dc44ef`; Hooks `65a9e63`; CLI Server `ae0743a`; Claude Code `edf0195`; ACP
+`738fe6b`; Discord `d7db28d`; Episodes `0cbe24b`; Cron `0bbac06`; iMessage `3f71179`; MCP
+`2ac9056`; CLI Proxy `d1380ad`. ACP repairs coordinate-scoped pins and explicitly registers the
+Episodes policy. Hail now waits for its asynchronous tool turn before inspecting the pending queue.
+Discord selects dev-local only when every split dependency exists and gives JVM features a 180-second
+budget. Registry train pins are `d93d6907`; undeployed zanebot config notes are `c6705ace`.
 
 Verification: the complete seven-repository `bb ci` acceptance loop is green. Final counts include
 HTTP 122/0/250 specs + 46/0/96 features; Hail 160/0/371 specs + 149/0/573 features (2 pending);
