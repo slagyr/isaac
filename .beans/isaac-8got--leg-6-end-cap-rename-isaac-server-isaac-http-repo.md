@@ -31,3 +31,10 @@ modules list on zanebot shows isaac.http and no isaac.server; every route smokes
 ```
 for r in isaac-http isaac-hooks isaac-hail isaac-cli-server isaac-claude-code isaac-acp isaac-discord; do (cd $r && bb ci); done
 ```
+
+## Held (awaiting human, 2026-09-12)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: the GitHub credential cannot rename
+`slagyr/isaac-server` (`PATCH /repos/slagyr/isaac-server` returned 404), and the required zanebot
+service restart is reserved for the human operator. Resumes only on explicit human action (re-hail
+the work/plan band, or re-promote). No crew re-picks this until then.
