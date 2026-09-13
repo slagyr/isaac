@@ -54,11 +54,11 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: coordinated `bean/isaac-8got` branches are pushed for all affected repositories, including registry (`961e8010`) and deployment manifest (`38d3cd0`). HTTP `bb ci` green (121/0/249 specs; 46/0/96 features), hooks `bb ci` green, cli-server `bb ci` green (9/0/38; 10/0/41), Claude Code `bb ci` green (64/0/207 + 3 pending; 39/0/127). ACP specs green (72/0/198).
+Done: pushed coordinated `bean/isaac-8got` branches across 18 repositories. HTTP `bb ci` is green (121/0/249 specs; 46/0/96 features); hooks, cli-server, and Claude Code `bb ci` are green; ACP specs are green. Registry is `961e8010`; deployment manifest is `38d3cd0`. The bean is HOLD with human notifications sent because the clean cutover needs an explicit multi-repo landing order for branches that pin unlanded Foundation/Agent/HTTP commits.
 
-Current RED: hail full-suite-only seven inheritance/prompt failures remain despite each affected feature passing alone; this is pre-existing/shared harness ordering around config snapshots. ACP features have three Episodes-policy failures because the coordinated run does not yet pin/load the Episodes branch. These prevent acceptance handoff.
+Current RED: hail full suite has seven cross-scenario inheritance/prompt failures; ACP features have three Episodes-policy failures in the partial train. Last test command: `bb features features/delivery.feature:847 features/band-inheritance.feature` in `isaac-hail-8got`; result: 8 examples, 4 failures, 21 assertions (all four failures in band inheritance after the cancellation scenario).
 
-Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:41`; isolate the first preceding feature that poisons the band config snapshot and add deterministic scenario reset. Then pin ACP's Episodes dependency to `isaac-episodes-8got` head and rerun ACP. Finish Discord, update final train SHAs in registry/config, run the seven-repo CI loop and old-id grep.
+Next after explicit planner/human release: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:41`; define the train landing order or split the bean, then verify each contributor against landed Foundation/Agent/HTTP commits. Diagnose/reset cancellation-scenario state before band inheritance, pin ACP to the Episodes train, complete Discord, update final registry/config SHAs, run the seven-repo `bb ci` loop, and run the old-id grep.
 ## Held (awaiting human, 2026-09-13)
 
 Escalated to human by **scrapper**@isaac-work-1. Blocking: coordinated clean-cutover requires an
