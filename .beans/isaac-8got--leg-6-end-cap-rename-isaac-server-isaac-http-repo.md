@@ -7,8 +7,9 @@ priority: high
 tags:
     - server
     - rename
+    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-13T21:16:08Z
+updated_at: 2026-09-13T23:47:51Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
@@ -52,25 +53,27 @@ zanebot `config/isaac.edn` as a note for the deploy, or patch it in Zane's confi
 restarting. Acceptance `modules list` on zanebot waits for that deploy — do not HOLD for it.
 Verify on the code grep + `bb ci` loop.
 
-## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
+## Worker completion checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: ACP now loads Episodes `0cbe24b`, repairs coordinate-scoped feature pins, and explicitly
-registers the Episodes policy at `738fe6b`; focused Episodes features pass 4/0/17 and ACP `bb ci`
-passes (72/0/198 specs; 64/0/151 features). Discord `bb ci` passes after its checkout/timeout repair
-at `d7db28d` (46/0/96 native specs; 98/0/226 JVM specs; 67/0/134 features, 3 pending). Registry
-train pins are updated at `125feed9`; undeployed zanebot config notes are updated at `e00cf3c`.
-HTTP and Hooks passed in the final acceptance-loop attempt.
+Done: clean-cutover branches are pushed and clean. HTTP is `11e4301`; Hooks `65a9e63`; Hail
+`4dc44ef`; CLI Server `ae0743a`; Claude Code `edf0195`; ACP `738fe6b`; Discord `d7db28d`.
+ACP loads Episodes `0cbe24b`, repairs coordinate-scoped pins, and explicitly registers the Episodes
+policy. Hail now waits for its asynchronous tool turn before inspecting the pending queue. Discord
+selects dev-local only when every split dependency exists and gives JVM features a 180-second budget.
+Registry train pins are `d93d6907`; undeployed zanebot config notes are `c6705ace`.
 
-Current RED: the acceptance loop stopped in Hail at 149 examples, 1 failure, 572 assertions,
-2 pending. `features/crew-tool.feature:78` inspected the pending queue before the asynchronous turn
-completed. A local, untested repair now makes `sole-pending-hail-edn-contains` await the turn.
+Verification: the complete seven-repository `bb ci` acceptance loop is green. Final counts include
+HTTP 122/0/250 specs + 46/0/96 features; Hail 160/0/371 specs + 149/0/573 features (2 pending);
+ACP 72/0/198 specs + 64/0/151 features; Discord 46/0/96 native specs + 98/0/226 JVM specs +
+67/0/134 features (3 pending). Active module repositories, registry files, and deployment config have
+zero matches for `:isaac.server/`, `isaac.server`, `io.github.slagyr/isaac-server`, and
+`slagyr/isaac-server`. Historical bean and archived hail records were intentionally excluded.
 
-Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:188`; run
-`bb features features/crew-tool.feature:78`, commit/push if green, rerun Hail `bb ci`, then continue
-the seven-repository loop from CLI Server through Discord and run the old-ID grep.
+Next: verifier starts at `isaac-http-8got/resources/isaac-manifest.edn:1`, reviews the coordinated
+branch heads and registry pins, and repeats the bean's grep + seven-repository `bb ci` gate.
 
-No zanebot install, removal, restart, modules-list check, or route smoke is performed by this worker.
-Those deployment checks remain deferred to the human.
+No zanebot install, removal, restart, modules-list check, or route smoke was performed. Those deploy
+checks remain deferred to the human per planner release.
 
 ## Held (awaiting human, 2026-09-13)
 
