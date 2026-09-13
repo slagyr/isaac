@@ -54,8 +54,8 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: all rename-train branches remain pushed. HTTP `bb ci` is green (121/0/249 specs; 46/0/96 features). Hooks `bb ci` is green after pinning Foundation `ad0a97b7f039814dc92916299baf3c07a5b86f3a`, Agent `8aecfc3a57fef0803c35f81bd4a3f76292b227f1`, and HTTP `11e43014ad5c7b9c8bb693e0eb4f673bbd23991d`. Hail now explicitly loads the Agent config CLI refresh wrapper; its three focused failing features are individually green.
+Done: coordinated `bean/isaac-8got` branches are pushed for all affected repositories, including registry (`961e8010`) and deployment manifest (`38d3cd0`). HTTP `bb ci` green (121/0/249 specs; 46/0/96 features), hooks `bb ci` green, cli-server `bb ci` green (9/0/38; 10/0/41), Claude Code `bb ci` green (64/0/207 + 3 pending; 39/0/127). ACP specs green (72/0/198).
 
-Current RED: hail full `bb ci` still fails seven inheritance/prompt cases only when the complete generated suite runs in one process; focused runs are green. The ordering reproducer is a multi-feature invocation, indicating shared harness state between generated `describe`s, not product behavior.
+Current RED: hail full-suite-only seven inheritance/prompt failures remain despite each affected feature passing alone; this is pre-existing/shared harness ordering around config snapshots. ACP features have three Episodes-policy failures because the coordinated run does not yet pin/load the Episodes branch. These prevent acceptance handoff.
 
-Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:41`; inspect/reset hail band registry and cached `:loaded-config-result` in `after-scenario` so each scenario starts clean, then rerun full hail `bb ci`. Continue remaining five acceptance repos, registry/config final pins, and old-id grep.
+Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:41`; isolate the first preceding feature that poisons the band config snapshot and add deterministic scenario reset. Then pin ACP's Episodes dependency to `isaac-episodes-8got` head and rerun ACP. Finish Discord, update final train SHAs in registry/config, run the seven-repo CI loop and old-id grep.
