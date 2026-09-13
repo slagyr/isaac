@@ -1,14 +1,14 @@
 ---
 # isaac-8got
 title: 'Leg 6 (end cap) — rename isaac-server → isaac-http: repo, module id :isaac.http, berth ids, registry, contributor manifests, zanebot config'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - server
     - rename
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-11T05:39:58Z
+updated_at: 2026-09-13T21:16:08Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
