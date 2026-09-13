@@ -54,11 +54,11 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: pushed coordinated `bean/isaac-8got` branches across 18 repositories. HTTP `bb ci` is green (121/0/249 specs; 46/0/96 features); hooks, cli-server, and Claude Code `bb ci` are green; ACP specs are green. Registry is `961e8010`; deployment manifest is `38d3cd0`. The bean is HOLD with human notifications sent because the clean cutover needs an explicit multi-repo landing order for branches that pin unlanded Foundation/Agent/HTTP commits.
+Done: pushed coordinated `bean/isaac-8got` branches across 18 repositories. HTTP `bb ci` green (121/0/249 specs; 46/0/96 features); hooks, cli-server, and Claude Code `bb ci` green; ACP specs green. Registry is `961e8010`; deployment manifest is `38d3cd0`. Confirmed the hail RED is caused by `sessions cancel` clearing the ambient config snapshot: after `features/delivery.feature:847`, queued hail records lack inherited prompt/data even though a fresh loader result contains the resolved bands.
 
-Current RED: hail full suite has seven cross-scenario inheritance/prompt failures; ACP features have three Episodes-policy failures in the partial train. Last test command: `bb features features/delivery.feature:847 features/band-inheritance.feature` in `isaac-hail-8got`; result: 8 examples, 4 failures, 21 assertions (all four failures in band inheritance after the cancellation scenario).
+Current RED: `bb features features/delivery.feature:847 features/band-inheritance.feature` in `isaac-hail-8got` gives 8 examples, 4 failures, 21 assertions. The CLI's `session.cli/install-cli!` loads then clears ambient config, so later `hail send` calls in the same native suite see nil through `queue/snapshot-config`. ACP features also still have three Episodes-policy failures in the partial train.
 
-Next after explicit planner/human release: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:41`; define the train landing order or split the bean, then verify each contributor against landed Foundation/Agent/HTTP commits. Diagnose/reset cancellation-scenario state before band inheritance, pin ACP to the Episodes train, complete Discord, update final registry/config SHAs, run the seven-repo `bb ci` loop, and run the old-id grep.
+Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:53`. Add a hail feature CLI wrapper that reloads/installs current config immediately around `main/run` without suppressing classpath loading or weakening scenarios, prove the cancellation→inheritance pair green, then full hail `bb ci`. Then pin ACP to Episodes train, finish Discord, update final registry/config SHAs, run seven-repo `bb ci` loop and old-id grep.
 ## Held (awaiting human, 2026-09-13)
 
 Escalated to human by **scrapper**@isaac-work-1. Blocking: coordinated clean-cutover requires an
