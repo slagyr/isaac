@@ -54,11 +54,24 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: pushed coordinated `bean/isaac-8got` branches across 18 repositories. HTTP `bb ci` green (121/0/249 specs; 46/0/96 features); hooks, cli-server, and Claude Code `bb ci` green; ACP specs green. Registry is `961e8010`; deployment manifest is `38d3cd0`. Confirmed the hail RED is caused by `sessions cancel` clearing the ambient config snapshot: after `features/delivery.feature:847`, queued hail records lack inherited prompt/data even though a fresh loader result contains the resolved bands.
+Done: pushed coordinated `bean/isaac-8got` branches across 18 repositories. HTTP `bb ci` is green
+(121/0/249 specs; 46/0/96 features); hooks, CLI Server, Claude Code, and Hail are green. Hail's
+full-suite config leakage and missing Agent config fixture are fixed at `1de868f` (149 examples,
+0 failures, 573 assertions, 2 pending). Registry is `961e8010`; deployment manifest is `38d3cd0`.
+ACP dependency corruption has been repaired locally by coordinate, and Episodes `0cbe24b` is now on
+the feature classpath with explicit policy registration from `isaac.session.policy.episodes`.
 
-Current RED: `bb features features/delivery.feature:847 features/band-inheritance.feature` in `isaac-hail-8got` gives 8 examples, 4 failures, 21 assertions. The CLI's `session.cli/install-cli!` loads then clears ambient config, so later `hail send` calls in the same native suite see nil through `queue/snapshot-config`. ACP features also still have three Episodes-policy failures in the partial train.
+Current state: ACP changes are untested, so no ACP checkpoint commit was made. The previous ACP run
+was RED with 3 Episodes-policy failures (`unknown session policy: :episodes`).
 
-Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:53`. Add a hail feature CLI wrapper that reloads/installs current config immediately around `main/run` without suppressing classpath loading or weakening scenarios, prove the cancellation→inheritance pair green, then full hail `bb ci`. Then pin ACP to Episodes train, finish Discord, update final registry/config SHAs, run seven-repo `bb ci` loop and old-id grep.
+Next: resume at `isaac-acp-8got/spec/isaac/comm/acp/acp_steps.clj:20`; run
+`bb features features/comm/acp/episodes.feature`, repair any integration failures, then run ACP
+`bb ci`, commit/push, confirm Discord `bb ci`, update changed registry/config SHAs, and run the full
+seven-repository `bb ci` loop plus old-ID grep.
+
+No zanebot install, removal, restart, modules-list check, or route smoke is performed by this worker.
+Those deployment checks remain deferred to the human.
+
 ## Held (awaiting human, 2026-09-13)
 
 Escalated to human by **scrapper**@isaac-work-1. Blocking: coordinated clean-cutover requires an
