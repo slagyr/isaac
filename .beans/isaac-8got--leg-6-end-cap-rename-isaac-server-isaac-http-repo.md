@@ -54,8 +54,8 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: pushed coordinated `bean/isaac-8got` branches for HTTP, Foundation, Agent, hooks, hail, cli-server, claude-code, ACP, Discord, iMessage, cron, episodes, cli-proxy, MCP, worksite, foreman, root registry, and zane config. HTTP `bb ci` is green (121/0/249 specs; 46/0/96 features). Hooks specs are green and its product/feature classpath now uses Foundation/Agent/HTTP rename-train commits.
+Done: all rename-train branches remain pushed. HTTP `bb ci` is green (121/0/249 specs; 46/0/96 features). Hooks `bb ci` is green after pinning Foundation `ad0a97b7f039814dc92916299baf3c07a5b86f3a`, Agent `8aecfc3a57fef0803c35f81bd4a3f76292b227f1`, and HTTP `11e43014ad5c7b9c8bb693e0eb4f673bbd23991d`. Hail now explicitly loads the Agent config CLI refresh wrapper; its three focused failing features are individually green.
 
-Current RED: hooks full `bb ci` reaches the feature suite but cannot resolve `isaac.tool.names` from the Agent spec support until every Agent coordinate in hooks is pinned to the train head; hail focused/full features separately show config entity loading failures that likely have the same mixed-pin cause.
+Current RED: hail full `bb ci` still fails seven inheritance/prompt cases only when the complete generated suite runs in one process; focused runs are green. The ordering reproducer is a multi-feature invocation, indicating shared harness state between generated `describe`s, not product behavior.
 
-Next: resume at `isaac-hooks-8got/deps.edn:7`; audit every Agent SHA in deps.edn/bb.edn with `grep -n isaac-agent`, pin all to `8aecfc3a57fef0803c35f81bd4a3f76292b227f1`, rerun hooks `bb ci`, then repeat pin audit/CI for hail and the remaining five acceptance repos. Finally update registry/config to final SHAs and run cross-repo old-id grep.
+Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:41`; inspect/reset hail band registry and cached `:loaded-config-result` in `after-scenario` so each scenario starts clean, then rerun full hail `bb ci`. Continue remaining five acceptance repos, registry/config final pins, and old-id grep.
