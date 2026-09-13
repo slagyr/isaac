@@ -59,3 +59,11 @@ Done: coordinated `bean/isaac-8got` branches are pushed for all affected reposit
 Current RED: hail full-suite-only seven inheritance/prompt failures remain despite each affected feature passing alone; this is pre-existing/shared harness ordering around config snapshots. ACP features have three Episodes-policy failures because the coordinated run does not yet pin/load the Episodes branch. These prevent acceptance handoff.
 
 Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:41`; isolate the first preceding feature that poisons the band config snapshot and add deterministic scenario reset. Then pin ACP's Episodes dependency to `isaac-episodes-8got` head and rerun ACP. Finish Discord, update final train SHAs in registry/config, run the seven-repo CI loop and old-id grep.
+## Held (awaiting human, 2026-09-13)
+
+Escalated to human by **scrapper**@isaac-work-1. Blocking: coordinated clean-cutover requires an
+atomic landing order across 18 repositories, but verifier can only fast-forward one `bean/isaac-8got`
+branch per repo while each contributor branch pins unlanded Foundation/Agent/HTTP SHAs; current hail
+and ACP full-suite failures also depend on that train state. Planner must split or explicitly define
+landing order/pinned branch verification. Resumes only on explicit human action (re-hail the work/plan
+band, or re-promote). No crew re-picks this until then.
