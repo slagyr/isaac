@@ -54,20 +54,20 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: pushed coordinated `bean/isaac-8got` branches across 18 repositories. HTTP `bb ci` is green
-(121/0/249 specs; 46/0/96 features); hooks, CLI Server, Claude Code, and Hail are green. Hail's
-full-suite config leakage and missing Agent config fixture are fixed at `1de868f` (149 examples,
-0 failures, 573 assertions, 2 pending). Registry is `961e8010`; deployment manifest is `38d3cd0`.
-ACP dependency corruption has been repaired locally by coordinate, and Episodes `0cbe24b` is now on
-the feature classpath with explicit policy registration from `isaac.session.policy.episodes`.
+Done: ACP now loads Episodes `0cbe24b`, repairs coordinate-scoped feature pins, and explicitly
+registers the Episodes policy at `738fe6b`; focused Episodes features pass 4/0/17 and ACP `bb ci`
+passes (72/0/198 specs; 64/0/151 features). Discord `bb ci` passes after its checkout/timeout repair
+at `d7db28d` (46/0/96 native specs; 98/0/226 JVM specs; 67/0/134 features, 3 pending). Registry
+train pins are updated at `125feed9`; undeployed zanebot config notes are updated at `e00cf3c`.
+HTTP and Hooks passed in the final acceptance-loop attempt.
 
-Current state: ACP changes are untested, so no ACP checkpoint commit was made. The previous ACP run
-was RED with 3 Episodes-policy failures (`unknown session policy: :episodes`).
+Current RED: the acceptance loop stopped in Hail at 149 examples, 1 failure, 572 assertions,
+2 pending. `features/crew-tool.feature:78` inspected the pending queue before the asynchronous turn
+completed. A local, untested repair now makes `sole-pending-hail-edn-contains` await the turn.
 
-Next: resume at `isaac-acp-8got/spec/isaac/comm/acp/acp_steps.clj:20`; run
-`bb features features/comm/acp/episodes.feature`, repair any integration failures, then run ACP
-`bb ci`, commit/push, confirm Discord `bb ci`, update changed registry/config SHAs, and run the full
-seven-repository `bb ci` loop plus old-ID grep.
+Next: resume at `isaac-hail-8got/feature-steps/isaac/hail_steps.clj:188`; run
+`bb features features/crew-tool.feature:78`, commit/push if green, rerun Hail `bb ci`, then continue
+the seven-repository loop from CLI Server through Discord and run the old-ID grep.
 
 No zanebot install, removal, restart, modules-list check, or route smoke is performed by this worker.
 Those deployment checks remain deferred to the human.
