@@ -61,7 +61,7 @@ Done: clean-cutover branches are pushed and clean. Foundation is `ad0a97b`; HTTP
 `2ac9056`; CLI Proxy `d1380ad`. ACP repairs coordinate-scoped pins and explicitly registers the
 Episodes policy. Hail now waits for its asynchronous tool turn before inspecting the pending queue.
 Discord selects dev-local only when every split dependency exists and gives JVM features a 180-second
-budget. Registry train pins are `d93d6907`; undeployed zanebot config notes are `c6705ace`.
+budget. Registry train pins are `c255ad16`; undeployed zanebot config notes are `c6705ace`.
 
 Verification: the complete seven-repository `bb ci` acceptance loop is green. Final counts include
 HTTP 122/0/250 specs + 46/0/96 features; Hail 160/0/371 specs + 149/0/573 features (2 pending);
