@@ -54,8 +54,8 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: all coordinated repositories have pushed `bean/isaac-8got` branches with canonical `isaac-http` dependency coordinates, `:isaac.http` module/berth ids, renamed HTTP namespaces, contributor manifests, CI references, and docs. HTTP startup now filters stale pre-discovery comm-type errors; its helper spec is green (4/0/6). CLI-server and Claude Code `bb ci` are green.
+Done: pushed coordinated `bean/isaac-8got` branches for HTTP, Foundation, Agent, hooks, hail, cli-server, claude-code, ACP, Discord, iMessage, cron, episodes, cli-proxy, MCP, worksite, foreman, root registry, and zane config. HTTP `bb ci` is green (121/0/249 specs; 46/0/96 features). Hooks specs are green and its product/feature classpath now uses Foundation/Agent/HTTP rename-train commits.
 
-Current RED: HTTP `features/module/activation.feature:6` logs `no implementation creates comm impl :test-comm`; root setup removes the defmethod after the module was already marked active, so `activate!` returns `:already-active` and cannot reinstall it. This fixture lifecycle defect blocks HTTP feature acceptance. Hail parallel run also showed unrelated state interference and needs serial rerun.
+Current RED: hooks full `bb ci` reaches the feature suite but cannot resolve `isaac.tool.names` from the Agent spec support until every Agent coordinate in hooks is pinned to the train head; hail focused/full features separately show config entity loading failures that likely have the same mixed-pin cause.
 
-Next: resume at `isaac-http-8got/spec/isaac/http/server_steps.clj:67`; pair removal of the test comm method/namespace with `isaac.module.lifecycle/clear-activations!` (or avoid removing the method), rerun `features/module/activation.feature:6`, `:44`, and `features/module/comm_extension.feature`. Then repin consumers to HTTP head `99b6ef4`, run all acceptance `bb ci` serially, update final registry/config pins, and run old-id grep.
+Next: resume at `isaac-hooks-8got/deps.edn:7`; audit every Agent SHA in deps.edn/bb.edn with `grep -n isaac-agent`, pin all to `8aecfc3a57fef0803c35f81bd4a3f76292b227f1`, rerun hooks `bb ci`, then repeat pin audit/CI for hail and the remaining five acceptance repos. Finally update registry/config to final SHAs and run cross-repo old-id grep.
