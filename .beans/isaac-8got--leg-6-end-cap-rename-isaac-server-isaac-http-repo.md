@@ -51,3 +51,11 @@ This turn: module id `:isaac.http`, berth ids, registry, contributor manifests, 
 zanebot `config/isaac.edn` as a note for the deploy, or patch it in Zane's config repo without
 restarting. Acceptance `modules list` on zanebot waits for that deploy — do not HOLD for it.
 Verify on the code grep + `bb ci` loop.
+
+## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
+
+Done: renamed the HTTP repository's module id, berth ids, product/test namespaces, dependency coordinates, contributor manifests, and CI/docs references across the coordinated train. All branches are pushed as `bean/isaac-8got`. HTTP helper spec is green (4/0/6); cli-server and claude-code `bb ci` are green.
+
+Current RED: HTTP focused `features/module/activation.feature:6` activates `isaac.http.test-comm` but does not emit `:lifecycle/started` for `comms.bert`. Manual runner startup does start it, so this is feature harness state/pinning. Also hail feature failures appear caused by parallel suite interference and must be rerun serially.
+
+Next: resume at `isaac-http-8got/spec/isaac/http/server_steps.clj:353`; inspect the focused harness config/registry after `app/start!`, then rerun the three affected HTTP scenarios serially. After HTTP is green, repin consumers from HTTP head `99b6ef4`, run the bean's seven-repo `bb ci` loop, update `modules.edn`/docs/config pins to final train SHAs, and run the cross-repo old-id grep.
