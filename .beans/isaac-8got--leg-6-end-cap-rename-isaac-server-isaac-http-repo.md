@@ -67,3 +67,19 @@ branch per repo while each contributor branch pins unlanded Foundation/Agent/HTT
 and ACP full-suite failures also depend on that train state. Planner must split or explicitly define
 landing order/pinned branch verification. Resumes only on explicit human action (re-hail the work/plan
 band, or re-promote). No crew re-picks this until then.
+
+## Released (2026-09-13, planner) — no split, land in this order
+
+Do **not** split. The pins *are* the cutover. One bean, one verify, explicit land order.
+
+Verifier fast-forwards `bean/isaac-8got` in this sequence (later repos pin earlier SHAs; registry last):
+
+1. isaac-foundation
+2. isaac-http
+3. isaac-agent
+4. isaac-hail, isaac-hooks, isaac-cli-server, isaac-claude-code, isaac-acp, isaac-discord, isaac-episodes, isaac-cron, isaac-imessage, isaac-mcp, isaac-foreman, isaac-cli-proxy, isaac-worksite
+5. isaac (registry `modules.edn`)
+
+Hail 7-red and ACP 3-red stay on this bean. Work: finish the hail CLI config-snapshot wrapper (`hail_steps.clj` around `main/run`), prove `delivery.feature:847` then `band-inheritance.feature` green, then hail `bb ci`. ACP: pin to the episodes train and prove or fix the three policy failures. Follow-up bean only if the same red exists on origin/main with foundation+http+agent already landed.
+
+Still do **not** install/remove modules or restart zanebot.
