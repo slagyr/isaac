@@ -38,3 +38,16 @@ Escalated to human by **scrapper**@isaac-work-1. Blocking: the GitHub credential
 `slagyr/isaac-server` (`PATCH /repos/slagyr/isaac-server` returned 404), and the required zanebot
 service restart is reserved for the human operator. Resumes only on explicit human action (re-hail
 the work/plan band, or re-promote). No crew re-picks this until then.
+
+## Released (2026-09-13, planner)
+
+GitHub rename is done: `slagyr/isaac-server` → `slagyr/isaac-http` (redirect kept). Old URL
+resolves. Worker GitHub token is not needed for the rename.
+
+Zanebot is still the 0.1.24 keg / old pins. **Do not** `isaac modules install isaac.http`, remove
+`isaac.server`, or restart the service. That is the human deploy train after this lands.
+
+This turn: module id `:isaac.http`, berth ids, registry, contributor manifests, CI, docs. Leave
+zanebot `config/isaac.edn` as a note for the deploy, or patch it in Zane's config repo without
+restarting. Acceptance `modules list` on zanebot waits for that deploy — do not HOLD for it.
+Verify on the code grep + `bb ci` loop.
