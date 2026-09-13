@@ -54,8 +54,8 @@ Verify on the code grep + `bb ci` loop.
 
 ## Worker checkpoint (scrapper@isaac-work-1, 2026-09-13)
 
-Done: renamed the HTTP repository's module id, berth ids, product/test namespaces, dependency coordinates, contributor manifests, and CI/docs references across the coordinated train. All branches are pushed as `bean/isaac-8got`. HTTP helper spec is green (4/0/6); cli-server and claude-code `bb ci` are green.
+Done: all coordinated repositories have pushed `bean/isaac-8got` branches with canonical `isaac-http` dependency coordinates, `:isaac.http` module/berth ids, renamed HTTP namespaces, contributor manifests, CI references, and docs. HTTP startup now filters stale pre-discovery comm-type errors; its helper spec is green (4/0/6). CLI-server and Claude Code `bb ci` are green.
 
-Current RED: HTTP focused `features/module/activation.feature:6` activates `isaac.http.test-comm` but does not emit `:lifecycle/started` for `comms.bert`. Manual runner startup does start it, so this is feature harness state/pinning. Also hail feature failures appear caused by parallel suite interference and must be rerun serially.
+Current RED: HTTP `features/module/activation.feature:6` logs `no implementation creates comm impl :test-comm`; root setup removes the defmethod after the module was already marked active, so `activate!` returns `:already-active` and cannot reinstall it. This fixture lifecycle defect blocks HTTP feature acceptance. Hail parallel run also showed unrelated state interference and needs serial rerun.
 
-Next: resume at `isaac-http-8got/spec/isaac/http/server_steps.clj:353`; inspect the focused harness config/registry after `app/start!`, then rerun the three affected HTTP scenarios serially. After HTTP is green, repin consumers from HTTP head `99b6ef4`, run the bean's seven-repo `bb ci` loop, update `modules.edn`/docs/config pins to final train SHAs, and run the cross-repo old-id grep.
+Next: resume at `isaac-http-8got/spec/isaac/http/server_steps.clj:67`; pair removal of the test comm method/namespace with `isaac.module.lifecycle/clear-activations!` (or avoid removing the method), rerun `features/module/activation.feature:6`, `:44`, and `features/module/comm_extension.feature`. Then repin consumers to HTTP head `99b6ef4`, run all acceptance `bb ci` serially, update final registry/config pins, and run old-id grep.
