@@ -1,45 +1,45 @@
-{:isaac.agent         {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                               :git/sha "74f9d83ed354004478889520c8efb11d8c2e0d42"}
-                       :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
- :isaac.episodes      {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
-                               :git/sha "0cbe24b55a2d94be0579a2400a11163748d5913d"}
-                       :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
- :isaac.llm.claude    {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
-                               :git/sha "edf01951d0375b5c9d7c813d797b1ffb3453b9fa"}
-                       :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
- :isaac.cli-proxy     {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
-                               :git/sha "d1380ad0216a14c13323548c537f3e1e9bbed9d7"}
-                       :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
- :isaac.cli-server    {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
-                               :git/sha "ae0743a566063ed87dce26c31783a37bbab9cbee"}
-                       :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
- :isaac.http        {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
-                               :git/sha "11e43014ad5c7b9c8bb693e0eb4f673bbd23991d"}
-                       :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
- :isaac.comm.acp      {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                               :git/sha "738fe6b67806b41b59a951e06f1a7e5d8b9823a1"}
-                       :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
- :isaac.cron          {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
-                               :git/sha "0bbac06bfc934e971cd78ea13efe4941ac0fddaa"}
-                       :desc  "Scheduled cron jobs and heartbeat prompts."}
- :isaac.hail          {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
-                               :git/sha "4dc44eff35803e1329152154e453345d31b98391"}
-                       :desc  "Cross-session hail messaging — tool and CLI."}
- :isaac.hooks         {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
-                               :git/sha "65a9e632ccbb7c21471c708de981ff833ef50464"}
-                       :desc  "Event hooks and inbound webhook routing."}
- :isaac.mcp           {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
-                               :git/sha "2ac90561124d0c03315d79def3e7e4a02e5ff502"}
-                       :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
- :isaac.comm.discord  {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                               :git/sha "d7db28d1e10a5746ab8202abd37ea652d4c7b8f5"}
-                       :desc  "Discord bot comm channel and background service."}
- :isaac.comm.imessage {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
-                               :git/sha "3f71179b518915ac92e5319b8ac39817416fb9ff"}
-                       :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
- :isaac.foreman       {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
-                               :git/sha "a2057ae907a167c11c70c261fe13517923276a40"}
-                       :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
- :isaac.worksite      {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
-                               :git/sha "99ff219322b5313577e982bd4a8fbb8cad574e96"}
-                       :desc  "Worksite registry, locks, and pools — named working directories for crews."}}
+{:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
+                                      :git/sha "74f9d83ed354004478889520c8efb11d8c2e0d42"}
+                              :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
+ :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
+                                      :git/sha "e0c7dddaccfce6f480d611a535571dc67d77cbbd"}
+                              :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
+ :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
+                                      :git/sha "dbde9bb292e023b23d1e244ed4b5238e1fd08b63"}
+                              :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
+ :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
+                                      :git/sha "d1380ad0216a14c13323548c537f3e1e9bbed9d7"}
+                              :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
+ :isaac.cli-server           {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
+                                      :git/sha "ae0743a566063ed87dce26c31783a37bbab9cbee"}
+                              :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
+ :isaac.http                 {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
+                                        :git/sha "11e43014ad5c7b9c8bb693e0eb4f673bbd23991d"}
+                                :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
+ :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
+                                      :git/sha "738fe6b67806b41b59a951e06f1a7e5d8b9823a1"}
+                              :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
+ :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
+                                      :git/sha "0bbac06bfc934e971cd78ea13efe4941ac0fddaa"}
+                              :desc  "Scheduled cron jobs and heartbeat prompts."}
+ :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
+                                      :git/sha "4dc44eff35803e1329152154e453345d31b98391"}
+                              :desc  "Cross-session hail messaging — tool and CLI."}
+ :isaac.hooks                {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
+                                      :git/sha "65a9e632ccbb7c21471c708de981ff833ef50464"}
+                              :desc  "Event hooks and inbound webhook routing."}
+ :isaac.tool.mcp             {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
+                                      :git/sha "32300a2eb7f15d60d7aea2448d29491e2e4cfde7"}
+                              :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
+ :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
+                                      :git/sha "d7db28d1e10a5746ab8202abd37ea652d4c7b8f5"}
+                              :desc  "Discord bot comm channel and background service."}
+ :isaac.comm.imessage        {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
+                                      :git/sha "3f71179b518915ac92e5319b8ac39817416fb9ff"}
+                              :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
+ :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
+                                      :git/sha "a2057ae907a167c11c70c261fe13517923276a40"}
+                              :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
+ :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
+                                      :git/sha "99ff219322b5313577e982bd4a8fbb8cad574e96"}
+                              :desc  "Worksite registry, locks, and pools — named working directories for crews."}}
