@@ -1,15 +1,14 @@
 ---
 # isaac-8got
 title: 'Leg 6 (end cap) — rename isaac-server → isaac-http: repo, module id :isaac.http, berth ids, registry, contributor manifests, zanebot config'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - server
     - rename
-    - unverified
 created_at: 2026-09-11T05:26:16Z
-updated_at: 2026-09-13T23:47:51Z
+updated_at: 2026-09-14T00:21:30Z
 parent: isaac-3q4m
 blocked_by:
     - isaac-vs6f
@@ -122,3 +121,27 @@ schema CLI features pass 7/0/39. The local full run exposed two timing flakes in
 `session_steps_spec`; the focused file immediately passed 21/0/43. GitHub Actions run 34791934319
 passed the full `bb ci` gate at Agent `104b3c4`. The repair is pushed to main and
 `bean/isaac-8got`.
+
+
+
+## Landed on main (2026-09-14)
+
+main-sha: isaac-foundation 82e3594346cb5f0e780c0fa05e0eca22634e3a06
+main-sha: isaac-http 11e43014ad5c7b9c8bb693e0eb4f673bbd23991d
+main-sha: isaac-agent 104b3c4a9c62cff62607a28d3c60da5038688d9f
+main-sha: isaac-hail 4dc44eff35803e1329152154e453345d31b98391
+main-sha: isaac-hooks 65a9e632ccbb7c21471c708de981ff833ef50464
+main-sha: isaac-cli-server ae0743a566063ed87dce26c31783a37bbab9cbee
+main-sha: isaac-claude-code edf01951d0375b5c9d7c813d797b1ffb3453b9fa
+main-sha: isaac-acp 738fe6b67806b41b59a951e06f1a7e5d8b9823a1
+main-sha: isaac-discord d7db28d1e10a5746ab8202abd37ea652d4c7b8f5
+main-sha: isaac-episodes 0cbe24b55a2d94be0579a2400a11163748d5913d
+main-sha: isaac-cron 0bbac06bfc934e971cd78ea13efe4941ac0fddaa
+main-sha: isaac-imessage 3f71179b518915ac92e5319b8ac39817416fb9ff
+main-sha: isaac-mcp 2ac90561124d0c03315d79def3e7e4a02e5ff502
+main-sha: isaac-foreman a2057ae907a167c11c70c261fe13517923276a40
+main-sha: isaac-cli-proxy d1380ad0216a14c13323548c537f3e1e9bbed9d7
+main-sha: isaac-worksite 99ff219322b5313577e982bd4a8fbb8cad574e96
+main-sha: isaac 648b57c9a35d9fe5fe7f6fe96b6ee036388d5ea0
+
+Verify gate (perceptor@isaac-verify): leftover grep of `:isaac.server/`, `isaac.server`, `io.github.slagyr/isaac-server`, `slagyr/isaac-server` on git-tracked files excluding `.beans` is empty across active module repos after registry land. Seven-repo `bb ci` green on origin/main: HTTP 122/0/250 + 46/0/96; hooks 29/0/43 + 17/0/33; hail 160/0/371 + 149/0/573 (2 pending); cli-server 9/0/38 + 10/0/41; claude-code 64/0/207 (3 pending) + 39/0/127; ACP 72/0/198 + 64/0/151; Discord 46/0/96 native + 98/0/226 JVM + 67/0/134 (3 pending). Hail/Discord first local `bb ci` hit the 60s default timeout; both green with `ISAAC_TEST_TIMEOUT_MS=600000` (Discord CI). No zanebot install/remove/restart; `modules list` deferred to human deploy.
