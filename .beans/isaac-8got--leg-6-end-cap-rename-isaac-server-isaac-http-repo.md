@@ -157,3 +157,9 @@ Repair commit `0422f6d9f9afa91c70c6517fcd2d1d7b8bbc6d61` is pushed to both `main
 Reproduced Actions run 34791228232 (`isaac.tool.names` missing). Re-pinned CLI Proxy's native/test Agent dependencies to landed Agent `104b3c4`, Foundation dependencies to landed Foundation `82e3594`, and CLI Server dependencies/fixtures to landed `ae0743a`. Updated empty-vector argv matching for current Agent step-table semantics, disabled accidental use of stale local CLI Server siblings, supplied a stable log source for HTTP-kit virtual-thread dispatch in the feature harness, and advanced the embedded ACP integration fixture from pre-cutover `3b48d97` to landed ACP `738fe6b`.
 
 Repair head `7b32217e85e55fc3248f2520e98b620ea4eec53c` is pushed to `main` and `bean/isaac-8got`. Verification: `bb spec` 17/0/52; `bb features` 11/0/40; `bb features-slow` 4/0/10; full `bb ci` green with the same counts. GitHub Actions run 34797088398 passed. CI repair only; no verify hail, landing coordination, or zanebot operation was performed.
+
+## ACP CI repair (scrapper@isaac-work-1, 2026-09-14)
+
+Reproduced Actions run 34791220774: JVM specs loaded `isaac.session.policy.episodes` from ACP step definitions, but `isaac-episodes` existed only in the `:features` alias. Added Episodes to `:spec`, then excluded Episodes' stale/squashed platform and test coordinates from all ACP classpaths so ACP's explicit Foundation/Agent/HTTP train pins win. Repair head `9c825880b1334035b5d9218ee4b8b4ace4878c14` is pushed to `main` and `bean/isaac-8got`.
+
+Verification: native specs 72/0/198; clean JVM specs 72/0/198; `ISAAC_GIT=1 bb ci` 72/0/198 specs + 64/0/151 features. GitHub Actions run 34797685529 passed specs and features. CI repair only; no verify hail, landing coordination, or zanebot operation was performed.
