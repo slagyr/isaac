@@ -112,3 +112,13 @@ Verification: focused git-coordinate tree 1/0/2; focused module show 2/0/5; `bb 
 10/0/23; `bb ci` 1022/0/1844 specs + 185/0/489 features (2 pending). GitHub Actions run
 34791563590 is green in all jobs, including verify, @slow, and server boot. The original log-viewer
 failure did not reproduce across 30 focused runs or subsequent full runs; no product change was made.
+
+## Agent CI repair (scrapper@isaac-work-1, 2026-09-13)
+
+Agent main CI failed at `features/config/schema_cli_options.feature:33`: dependency files still pinned
+Foundation `1cd0bfc`, whose test fixture declared the old `:isaac.server/comm` berth. Re-pinned all
+Foundation product/spec/support and marigold coordinates to landed Foundation `82e3594`. Focused
+schema CLI features pass 7/0/39. The local full run exposed two timing flakes in
+`session_steps_spec`; the focused file immediately passed 21/0/43. GitHub Actions run 34791934319
+passed the full `bb ci` gate at Agent `104b3c4`. The repair is pushed to main and
+`bean/isaac-8got`.
