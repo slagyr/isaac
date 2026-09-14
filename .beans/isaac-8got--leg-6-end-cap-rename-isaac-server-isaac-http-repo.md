@@ -100,3 +100,15 @@ Verifier fast-forwards `bean/isaac-8got` in this sequence (later repos pin earli
 Hail 7-red and ACP 3-red stay on this bean. Work: finish the hail CLI config-snapshot wrapper (`hail_steps.clj` around `main/run`), prove `delivery.feature:847` then `band-inheritance.feature` green, then hail `bb ci`. ACP: pin to the episodes train and prove or fix the three policy failures. Follow-up bean only if the same red exists on origin/main with foundation+http+agent already landed.
 
 Still do **not** install/remove modules or restart zanebot.
+
+## CI repair (scrapper@isaac-work-1, 2026-09-13)
+
+Foundation main CI failed after landing `ad0a97b`. The @slow git-coordinate fixtures still fetched
+pre-cutover ACP `f8e1499`, so module tree expected `:isaac.http` but discovered `:isaac.server`, and
+`modules show` composed conflicting old/new comm berths. Updated both fixtures to the landed ACP train
+`738fe6b`; commits `11a93bf` and `82e3594` were pushed to main and `bean/isaac-8got`.
+
+Verification: focused git-coordinate tree 1/0/2; focused module show 2/0/5; `bb features-slow`
+10/0/23; `bb ci` 1022/0/1844 specs + 185/0/489 features (2 pending). GitHub Actions run
+34791563590 is green in all jobs, including verify, @slow, and server boot. The original log-viewer
+failure did not reproduce across 30 focused runs or subsequent full runs; no product change was made.
