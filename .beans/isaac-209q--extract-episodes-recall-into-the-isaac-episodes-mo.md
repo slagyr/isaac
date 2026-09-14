@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: high
 created_at: 2026-09-09T16:35:02Z
-updated_at: 2026-09-14T01:59:36Z
+updated_at: 2026-09-14T01:59:59Z
 blocked_by:
     - isaac-mmod
 ---
@@ -104,4 +104,4 @@ Not deployed. (1) The landing's registry commit (511b823) pinned squashed-away b
 
 ## Planner note (2026-09-13)
 
-isaac-episodes main pins were unreachable again after the rename-train cut-over (d0668ae, a squashed-away branch commit) — re-pinned agent + agent-spec to agent main 104b3c4 (module c12e359); `bb spec` 206/0, `bb features` 79/3 (bean ). The plan crew's isaac-acp pushes today ('Add Episodes to ACP spec classpath', 'Exclude stale Episodes platform pins', 'Exclude Episodes test dependency pins') fail on that same unreachable pin; pin the module at c12e359 or later instead of excluding. The module still has no CI workflow.
+isaac-episodes main pins were unreachable again after the rename-train cut-over (d0668ae, a squashed-away branch commit) — re-pinned agent + agent-spec to agent main 104b3c4 (module c12e359); `bb spec` 206/0, `bb features` 79/3 (bean isaac-obeb). The plan crew's isaac-acp pushes today ('Add Episodes to ACP spec classpath', 'Exclude stale Episodes platform pins', 'Exclude Episodes test dependency pins') fail on that same unreachable pin; pin the module at c12e359 or later instead of excluding. The module still has no CI workflow.
