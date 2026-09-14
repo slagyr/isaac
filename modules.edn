@@ -36,4 +36,10 @@
                        :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                :git/sha "3f71179b518915ac92e5319b8ac39817416fb9ff"}
-                       :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}}
+                       :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
+ :isaac.foreman       {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
+                               :git/sha "a2057ae907a167c11c70c261fe13517923276a40"}
+                       :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
+ :isaac.worksite      {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
+                               :git/sha "99ff219322b5313577e982bd4a8fbb8cad574e96"}
+                       :desc  "Worksite registry, locks, and pools — named working directories for crews."}}
