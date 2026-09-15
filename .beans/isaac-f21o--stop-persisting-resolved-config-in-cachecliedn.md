@@ -9,7 +9,7 @@ tags:
     - foundation
     - cli
 created_at: 2026-09-15T19:37:03Z
-updated_at: 2026-09-15T20:15:46Z
+updated_at: 2026-09-15T20:21:41Z
 ---
 
 Stop writing the resolved config into `cache/cli.edn`. Keep the classpath pairs cache and the in-process memo (launcher threads the load; `config.api/load-resolved`).
@@ -102,3 +102,9 @@ Verification run:
 ## Landed on main (2026-09-15)
 
 main-sha: isaac-foundation c89964d47db4ef6a7275d2f7c0f1ed5d7c8d5f82
+
+
+
+## CI hail (2026-09-15, hail 1ab41fbb)
+
+GitHub run 35018494124 failed `bb spec` on squash `c89964d` at `spec/isaac/log_viewer_spec.clj:344` (`tail! does not skip a line appended between the initial dump and follow seek`). Not caused by isaac-f21o (diff is config-cache only; this spec is unchanged since c12ebe3 / 2026-06-15). Subsequent main `b374929` CI Tests is green (run 35018639672). Isolated `bb spec spec/isaac/log_viewer_spec.clj` failed 5/5 locally on the same assertion — tracked as isaac-efb5 (todo). No reopen, no independent repair.
