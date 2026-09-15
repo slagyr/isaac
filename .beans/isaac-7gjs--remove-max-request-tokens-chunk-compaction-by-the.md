@@ -72,3 +72,8 @@ Gates: baseline `bb ci` 1610 specs / 754 features green; branch `bb ci` 1610 spe
 **Deploy coupling — needs Micah:** isaac-agent `main` also carries `7ba21ce` (isaac-ejj3: built-in `:claude` template removed; `{:type :claude}` now fails validation). Releasing agent from `main` requires, in one restart: pin agent + claude-code `2a9023f`; zanebot `isaac.edn :modules` ids `:isaac.llm.claude` → `:isaac.provider.claude-code` and `:isaac.episodes` → `:isaac.session.episodes`; zanebot `providers/claude.edn` → `{:type :claude-code}`; remove the `gpt.edn` compaction line; yopp `providers/claude-code.edn` → `{:type :claude-code}`.
 
 Next: on Micah's answers — (a) acceptance for the removed key, (b) deploy path — hand to verification, squash-merge, release, and run the train.
+
+## Decisions (2026-09-15, checkpoint follow-up)
+
+- Decision (2026-09-15, Micah): a leftover `:max-request-tokens` key is accepted as silently ignored. The one-time acceptance check "`{:compaction {:max-request-tokens 1}}` fails `isaac config validate`" is replaced by "that key has no effect: the resolved compaction policy never contains it and chunking uses the window". Reporting stale nested keys is a separate foundation bean.
+- Decision (2026-09-15, Micah): combined deploy — this release ships with isaac-ejj3's agent and claude-code changes and the zanebot module-id renames in one restart script (see "Deploy coupling" above), with rollback pins ready and the full post-restart checks.
