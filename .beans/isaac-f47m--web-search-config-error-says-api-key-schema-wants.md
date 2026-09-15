@@ -7,8 +7,9 @@ priority: normal
 tags:
     - agent
     - tools
+    - unverified
 created_at: 2026-09-15T20:17:16Z
-updated_at: 2026-09-15T20:34:19Z
+updated_at: 2026-09-15T20:41:36Z
 ---
 
 The unconfigured `web_search` error tells the operator to set `:api_key`. Schema, `config set`, and `config schema tools.web_search.api-key` all use kebab `:api-key`. Following the error produces `unrecognized segment: api_key`.
@@ -44,3 +45,11 @@ ISAAC_GIT=1 bb features features/tool/web_search.feature:52
 bb spec spec/isaac/tool/web_search_spec.clj
 bb ci
 ```
+
+## Worker evidence (2026-09-15, scrapper@isaac-work-2)
+
+Implemented on isaac-agent `bean/isaac-f47m` @ `3cefee1` (base `origin/main@3f9fdc2`). The unconfigured web search error now directs operators to `:api-key`; unit and acceptance coverage require `api-key` and reject `api_key`; the authorized scenario is no longer `@wip`.
+
+- `bb spec spec/isaac/tool/web_search_spec.clj`: 4 examples, 0 failures, 14 assertions.
+- `ISAAC_GIT=1 bb features features/tool/web_search.feature:52`: 1 example, 0 failures, 4 assertions.
+- `bb ci`: all 1628 specs passed (3345 assertions); feature suite had one unrelated transient failure in `features/config/schema_cli_options.feature:45`, which passed immediately in focused rerun (1 example, 0 failures, 4 assertions). The f47m focused feature remained green.
