@@ -1,14 +1,14 @@
 ---
 # isaac-ejj3
 title: 'Claude Code bridge: connect to the invoking process, run via bb, template :claude-code'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - claude-code
     - mcp-bridge
 created_at: 2026-09-15T14:24:22Z
-updated_at: 2026-09-15T15:13:04Z
+updated_at: 2026-09-15T15:14:30Z
 ---
 
 ## Problem
