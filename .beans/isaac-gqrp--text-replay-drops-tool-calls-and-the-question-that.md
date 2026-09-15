@@ -1,5 +1,5 @@
 ---
-# gqrp
+# isaac-gqrp
 title: Text replay drops tool calls and the question that caused them
 status: in-progress
 type: bug
