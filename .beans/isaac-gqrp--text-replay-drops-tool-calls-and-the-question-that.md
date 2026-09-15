@@ -1,11 +1,11 @@
 ---
 # isaac-gqrp
 title: Text replay drops tool calls and the question that caused them
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-15T19:35:28Z
-updated_at: 2026-09-15T19:35:28Z
+updated_at: 2026-09-15T19:41:48Z
 ---
 
 ## Problem
@@ -27,3 +27,11 @@ Clean cutover; no switch for the old behavior. OpenAI and Anthropic filters unch
 - `bb spec spec/isaac/llm/prompt/builder_spec.clj`
 - `bb ci` green
 - zanebot: agent release deployed; yopp claude-code follow-up turn recalls prior tool output (yopp only if Micah asks)
+
+## Delivered (2026-09-15)
+
+- isaac-agent `6b41e63` (squash), release 0.1.70 `2ed58f77d33d3f0ee72cb840401f793c97eba5e2`; registry pin `ee0443df`.
+- Proven red on 3e3ef7e (old filter replayed "main up" where "hoist the sails" belonged); `bb ci` green: 1626 specs, 763 features, 0 failures. One existing scenario (context_management "Large tool results are truncated in prompts") moved its assertion from messages[1] to messages[3]; the question now precedes the result.
+- zanebot deploy 19:38:40Z. `modules upgrade` refused again in the live root (isaac-784x); upgraded via a rehearsal root instead, and the isaac.edn diff was the agent sha only. Boot: 401, runner 8 components, resume requeued 1 + hail/bound, discord ready, no validation errors, no stale-delivery removals.
+- Smoke on zanebot `claude-cli`: turn 1 ran `echo kite-292862244`; turn 2, with no tools, answered "I ran `echo kite-292862244`, which printed `kite-292862244`."
+- yopp not upgraded (deploys skip yopp unless asked).
