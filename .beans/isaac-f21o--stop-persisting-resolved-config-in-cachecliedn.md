@@ -72,3 +72,9 @@ One-time checks (not scenarios):
 
 - `git grep -n "config-cache\\|read-pre-sub\\|cacheable-config\\|try-cached-result" -- src` in isaac-foundation is empty.
 - After a warm `isaac config get defaults`, `cache/cli.edn` has no `:data :config`.
+
+## Work checkpoint (2026-09-15, scrapper@isaac-work-1)
+
+Done: removed resolved-config disk reads/writes, deleted `isaac.startup.config-cache`, bumped startup cache version to 4, preserved classpath pairs/commands, and activated the three replacement scenarios. Added an inline module schema fixture so the new-entity scenario exercises a real entity directory. Focused config-resolution feature and classpath-cache spec are green; edited-file lint has zero errors (two pre-existing loader warnings).
+
+Next: run the remaining acceptance specs and full CI, perform the one-time cache check, then rebase, push, and hand off. Resume at `src/isaac/main.clj:152` (updated six-argument classpath-cache writer call) with `bb spec spec/isaac/startup spec/isaac/config/loader_spec.clj spec/isaac/config/mutate_spec.clj`.
