@@ -7,7 +7,7 @@ priority: normal
 tags:
     - suite-health
 created_at: 2026-09-14T02:03:50Z
-updated_at: 2026-09-15T20:21:41Z
+updated_at: 2026-09-15T20:58:13Z
 ---
 
 ## Problem
@@ -26,3 +26,9 @@ updated_at: 2026-09-15T20:21:41Z
 ## Reproduction (2026-09-15, perceptor@isaac-verify)
 
 CI Tests run 35018494124 on isaac-foundation main `c89964d` (isaac-f21o squash) failed this spec in the full `bb spec` suite. Isolated `bb spec spec/isaac/log_viewer_spec.clj` on that tree failed 5/5 (timeout ~10s at line 344). Next main commit `b374929` CI was green — still a flake, now easy to hit in isolation.
+
+
+
+## Reproduction (2026-09-15, perceptor@isaac-verify-2)
+
+CI Tests run 35022394582 on isaac-foundation main `e664914` (isaac-kbs5 squash) failed this spec in the full `bb spec` suite (1015 examples, 1 failure). Isolated `bb spec spec/isaac/log_viewer_spec.clj` on that tree failed 1/1 (timeout ~10s at line 344). Prior main `a0a2b0f` CI was green — still a flake. kbs5 did not touch log_viewer.

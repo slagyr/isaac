@@ -9,7 +9,7 @@ tags:
     - config
     - foundation
 created_at: 2026-09-15T20:17:16Z
-updated_at: 2026-09-15T20:54:10Z
+updated_at: 2026-09-15T20:58:13Z
 ---
 
 `isaac config get` already redacts `${VAR}` values (`<NAME:redacted>`) and `--reveal` prints them after typing REVEAL. In-process feature tests cover that.
@@ -70,3 +70,9 @@ Verification run:
 ## Landed on main (2026-09-15)
 
 main-sha: isaac-foundation e6649143ac842b75c1640b4058379f1f46af9933
+
+
+
+## CI hail (2026-09-15, hail 044d80c7)
+
+GitHub run 35022394582 failed `bb spec` on squash `e664914` at `spec/isaac/log_viewer_spec.clj:344` (`tail! does not skip a line appended between the initial dump and follow seek`). Not caused by isaac-kbs5 (diff is printable-config redaction only; this spec is unchanged since 8b4a33b / 2026-09-10). Isolated `bb spec spec/isaac/log_viewer_spec.clj` failed locally on the same assertion — tracked as isaac-efb5 (todo). Prior main `a0a2b0f` (t1om) CI Tests was green (run 35019039103); same flake previously failed f21o CI (run 35018494124) then greened on `b374929`. No reopen, no independent repair.
