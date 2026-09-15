@@ -7,8 +7,9 @@ priority: high
 tags:
     - agent
     - performance
+    - unverified
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T17:34:25Z
+updated_at: 2026-09-15T17:41:28Z
 ---
 
 ## Problem
@@ -56,3 +57,23 @@ bb ci
 ```
 
 After deploy (evidence, not a gate for verify): for one `isaac-work-1` cycle on zanebot, the timing events between `tool/result` and the next `chat/stream-request` sum to within ~10% of that gap. Record the per-step numbers on this bean; isaac-4erp uses them as its before-picture.
+
+
+## Verification handoff
+
+Worker: grok @ work-3
+Branch: isaac-agent `bean/isaac-vfg8` @ `0c4684d0d29b8d95eff5d76f8c32570a75ce0d21`
+@wip removed from features/session/cycle_timing.feature:12
+
+Acceptance:
+  ISAAC_GIT=1 bb features features/session/cycle_timing.feature
+  bb ci
+  → spec 1610/0, features 755/0/1 pending (unrelated compaction_mid_turn @wip)
+
+Debug events: :tool/call-persisted, :tool/result-persisted, :session/transcript-read
+(:path :entries :bytes :elapsed-ms), :session/token-estimate (:caller :before/:check/:after
+plus :overflow), :turn/followup-built (logged after estimates so the scenario subsequence
+matches; elapsed-ms is the followup-fn wall time), :turn/after-tools, :session/token-drift
+:elapsed-ms.
+
+Zanebot gap evidence is still post-deploy, not a verify gate.
