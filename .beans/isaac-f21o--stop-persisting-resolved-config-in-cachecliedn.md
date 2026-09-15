@@ -1,16 +1,15 @@
 ---
 # isaac-f21o
 title: Stop persisting resolved config in cache/cli.edn
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - cache
-    - unverified
     - foundation
     - cli
 created_at: 2026-09-15T19:37:03Z
-updated_at: 2026-09-15T20:03:56Z
+updated_at: 2026-09-15T20:15:46Z
 ---
 
 Stop writing the resolved config into `cache/cli.edn`. Keep the classpath pairs cache and the in-process memo (launcher threads the load; `config.api/load-resolved`).
@@ -97,3 +96,9 @@ Verification run:
 - `bb ci` — 1014 specs and 183 features, 0 failures (2 pre-existing pending scenarios). Initial CI run hit a stale generated gitlibs remote; deleting `~/.gitlibs/_repos/file/REL/fixture-agent` restored the fixture and the rerun passed.
 - Required source grep is empty.
 - Manual warm two-run check read cache version 4 with data keys exactly `(:classpath-pairs :commands)` and no `:config`.
+
+
+
+## Landed on main (2026-09-15)
+
+main-sha: isaac-foundation c89964d47db4ef6a7275d2f7c0f1ed5d7c8d5f82
