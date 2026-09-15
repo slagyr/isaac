@@ -1,6 +1,6 @@
 ---
 # isaac-784x
-title: 'modules upgrade validates new coords before fetching them: unfetched shas fail with bogus comm type errors'
+title: 'modules upgrade refuses a valid upgrade in the live root: staged validation reports comm type errors the pre-change load does not'
 status: draft
 type: bug
 priority: high
@@ -14,30 +14,31 @@ updated_at: 2026-09-15T18:31:56Z
 
 ## Problem
 
-`isaac modules upgrade <id>` refuses to upgrade to a coordinate that is not already checked out, printing misleading downstream validation errors.
-
-Seen on zanebot 2026-09-15 (agent 0.1.68 → 0.1.69, `3e3ef7e`): `isaac modules upgrade isaac.agent` printed
+`isaac modules upgrade <id>` refused a valid upgrade on zanebot's live root, printing
 
 ```
 error: comms[:discord] - unknown :type "discord"
 error: comms[:imessage] - unknown :type "imessage"
 ```
 
-and left `:modules` unchanged. `isaac config validate` on the same config reported no comm errors. The same kind of upgrade worked at 17:53Z earlier that day only because `isaac modules install` ran first and its validation checked out the new shas.
+and leaving `:modules` unchanged (2026-09-15, agent 0.1.68 `f6dd38d` → 0.1.69 `3e3ef7e`, twice).
 
-Cause, isaac-foundation `src/isaac/modules/cli.clj` `run-upgrade`:
-- `mutate-modules!` (→ `mutate/set-config root "modules" merged :skip-ref-validation? true :skip-module-validation? true`) validates the whole config against the NEW coordinates first (line ~471).
-- `loader/warm-module-checkouts!` fetches those coordinates only afterwards (line ~473), and only when the mutation succeeded.
-- With the new agent sha not on disk, discovery cannot load the agent's comm berth, so comm types contributed by other modules (`discord`, `imessage`) become "unknown :type". `:skip-module-validation?` strips only `module-discovery-error?` errors, not these downstream errors, so the write is refused.
+Evidence:
+- `isaac config validate` on the same live config reports no comm errors.
+- Pre-fetching the new gitlib (`~/.gitlibs/libs/isaac.agent/isaac.agent/3e3ef7e…`) did NOT help — so it is not "validates before fetching" (this bean's first diagnosis was wrong).
+- The same foundation (brew keg `82e3594`, which is also the agent's foundation pin) and the same config copied into a fresh root (`ISAAC_ROOT=~/isaac-rehearsal-0169a`) upgraded fine: `Upgraded isaac.agent: f6dd38d -> 3e3ef7e`, `modules list` 0.1.69 ok.
+- `cli.log` records no warn/error for the failed attempts.
 
-Workaround used: pre-fetch the gitlib on the host (`clojure -Sdeps '{:deps {isaac.agent/isaac.agent {:git/url … :git/sha …}}}' -P`), then re-run `isaac modules upgrade`.
+Mechanism (isaac-foundation `src/isaac/config/mutate.clj` `set-config`): the write is blocked only by errors that are *new* versus `current` (`loader/load-config-result {:root root}` on the real fs). `validate-plan` stages the config tree into a mem-fs and loads it there. The staged load reports the comm type errors in both roots; in a fresh root the pre-change load reports them too (so they count as pre-existing and the write proceeds), while in the live root the pre-change load does not (suspect: the live root's startup cache / warm module index), so they count as new and the write is refused. Not yet confirmed which part of the live root makes the difference.
 
-## Proposal
+Workaround used: run the upgrade in a fresh copy of the config root, diff the resulting `isaac.edn` against the live one (only `:isaac.agent` sha differed), copy it over, verify `isaac modules list`, restart.
 
-- Warm (fetch) the upgraded coordinates before validating the mutated config, or
-- Treat validation errors caused by an unfetched coordinate as module-discovery errors so `:skip-module-validation?` covers them, then warm after the write.
+## Proposal (not decided)
+
+- Make the staged validation load modules the same way the pre-change load does (same fs view of module checkouts / cache), so comm types contributed by comm modules resolve in both.
+- Add a regression: `modules upgrade` of a registry module in a root with a warm startup cache succeeds.
 
 ## Acceptance (draft — scenarios TBD)
 
-- Upgrading a registry module to a sha that is not yet checked out succeeds and prints "Upgraded <id>: <old> -> <new>".
+- Upgrading a registry module on a root with a warm startup cache succeeds and prints `Upgraded <id>: <old> -> <new>`.
 - A genuinely invalid config still blocks the upgrade with its real errors.
