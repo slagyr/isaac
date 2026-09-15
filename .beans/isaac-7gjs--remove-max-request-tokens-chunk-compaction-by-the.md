@@ -1,14 +1,14 @@
 ---
 # isaac-7gjs
 title: 'Remove :max-request-tokens: chunk compaction by the context window'
-status: draft
+status: todo
 type: task
 priority: high
 tags:
     - agent
     - compaction
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T17:12:15Z
+updated_at: 2026-09-15T17:29:09Z
 ---
 
 ## Problem
@@ -33,10 +33,30 @@ On a 1.05M-window model it forces a ~330K-token history into 12–13 summary req
 - Specs/features that pin the cap: `features/session/compaction_requests.feature` (description line 4, row `compaction.max-request-tokens | 670` at ~79), `spec/isaac/session/compaction_spec.clj` (including "chunks a 90k-token history under max-request-tokens 32000 on a 278k window", ~922), `compaction_schema_spec.clj`, `context_spec.clj`. Rewrite chunking specs to chunk by window; delete cap-specific ones.
 - **zanebot config:** `~/.isaac/config/models/gpt.edn` currently carries `:compaction {:max-request-tokens 400000}` (added 2026-09-15 as a stopgap; backup `gpt.edn.bak-20260915-maxreq`). The new runtime will reject it, so remove that line in the same script as the restart.
 
-## Acceptance (draft — scenarios TBD)
+## Scenarios
 
-- A history below the window compacts in a single summary request (`:session/compaction-chunk-plan` absent or `:chunk-count 0`).
-- A summary prompt larger than the window still chunks by window.
-- A stalled chunk still retries once at half size.
-- One-time checks: `git grep max-request-tokens` in isaac-agent src/resources is empty; `{:compaction {:max-request-tokens 1}}` fails `isaac config validate`.
-- After the train: the next `isaac-work-1` compaction on zanebot logs no chunk plan and completes in minutes.
+Scenarios approved 2026-09-15 (Micah). Committed `@wip` in isaac-agent `515a40b`; no new steps.
+
+`features/session/compaction_requests.feature`
+- `:140` a history that fits the window is summarized in a single request (isaac-7gjs) — **new**
+- `:168` a summary prompt larger than the window is compacted in chunks that fit the window (isaac-7gjs) — **replaces** `:73` "a history under the window but over the request cap is compacted in chunks"
+
+At landing:
+- Delete the scenario at `:73` (it configures `compaction.max-request-tokens`).
+- Remove `@wip` from `:140` and `:168`. The `context-window 700` / `last-input-tokens 600` figures in `:168` were sized from the old 670-token cap splitting that history into 3 chunks; retune them to the estimator if the chunk count differs, keeping the assertion (3 chunks, merged summary).
+- Feature description: title drops "a size cap"; replace "never larger than compaction.max-request-tokens (default 32k) regardless of the model window" with "never larger than the model's context window".
+- The two effort scenarios and "a dropped summary request is retried at half size" stay unchanged.
+
+## Acceptance
+
+```
+ISAAC_GIT=1 bb features features/session/compaction_requests.feature
+bb ci
+```
+
+Trust `examples, 0 failures` plus the unwrapped exit (`clojure -M:features …` if in doubt).
+
+One-time checks (not scenarios):
+- `git grep max-request-tokens -- src resources spec features` in isaac-agent is empty.
+- `{:compaction {:max-request-tokens 1}}` in a model config fails `isaac config validate`.
+- After the train: zanebot `models/gpt.edn` no longer has the `:compaction {:max-request-tokens 400000}` line (removed in the restart script), and the next `isaac-work-1` compaction logs `:chunk-count 0` (or no chunk plan) and completes in minutes.

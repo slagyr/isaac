@@ -1,14 +1,14 @@
 ---
 # isaac-vfg8
 title: 'Cycle timing: log where the gap between a tool batch and the next request goes'
-status: draft
+status: todo
 type: task
 priority: high
 tags:
     - agent
     - performance
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T17:12:15Z
+updated_at: 2026-09-15T17:29:09Z
 ---
 
 ## Problem
@@ -36,7 +36,23 @@ Debug-level events with `:elapsed-ms` (plus sizes where cheap: entry count, char
 
 Follow the logging skill (`:domain/action` keywords, debug level, no noise at info).
 
-## Acceptance (draft — scenarios TBD)
+## Scenarios
 
-- A feature shows one driven tool batch producing timing events for each step above with `:elapsed-ms`.
-- On zanebot after deploy: the events for one `isaac-work-1` cycle sum to within ~10% of the measured `tool/result → chat/stream-request` gap.
+Scenario approved 2026-09-15 (Micah). Committed `@wip` in isaac-agent `515a40b`; no new steps.
+
+`features/session/cycle_timing.feature` (new file)
+- `:12` one tool batch logs the elapsed time of each step before the next request
+
+Event contract the scenario pins (all debug level, each with `:elapsed-ms`):
+`:tool/call-persisted`, `:tool/result-persisted`, `:session/transcript-read` (also `:entries`, `:bytes`), `:session/token-estimate` with `:caller` `:before` / `:check` / `:after`, `:turn/followup-built`, `:turn/after-tools`. The spec layer may add `:overflow` as a caller and a `log-token-drift!` timing; the scenario does not require them.
+
+At landing: remove `@wip` from `:12`.
+
+## Acceptance
+
+```
+ISAAC_GIT=1 bb features features/session/cycle_timing.feature
+bb ci
+```
+
+After deploy (evidence, not a gate for verify): for one `isaac-work-1` cycle on zanebot, the timing events between `tool/result` and the next `chat/stream-request` sum to within ~10% of that gap. Record the per-step numbers on this bean; isaac-4erp uses them as its before-picture.

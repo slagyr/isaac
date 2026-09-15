@@ -1,14 +1,14 @@
 ---
 # isaac-gihe
 title: 'Persist tool batches as batches: one assistant entry per batch, results in call order'
-status: draft
+status: todo
 type: bug
 priority: normal
 tags:
     - agent
     - tools
 created_at: 2026-09-15T17:12:16Z
-updated_at: 2026-09-15T17:12:16Z
+updated_at: 2026-09-15T17:29:09Z
 ---
 
 ## Problem
@@ -32,14 +32,36 @@ Measurement impact: every zanebot session's transcript shows exactly one tool ca
 - Persist results in call order (buffer until the batch completes, or write with a batch index and order on read).
 - Replay per API reconstructs the batch: one assistant message with N tool calls followed by N results in call order.
 
+## Decisions
+
+- Decision (2026-09-15, Micah): Anthropic replay dropping tool calls is out of scope here — isaac-lddb (blocked by this bean).
+- Decision (2026-09-15, Micah): no migration of existing transcripts. Old one-call assistant entries keep replaying as they do today; only new batches are written batch-shaped.
+- Results must land on disk in call order. Whether to buffer results until the batch completes or write with a batch index and order on read is the implementer's call; record which, and what a crash mid-batch leaves on disk.
+
 ## Open questions (not decided)
 
-- Streaming visibility: today each call is persisted as soon as it is announced. Writing the batch entry at announce time keeps that; buffering results changes when a result becomes visible on disk (crash mid-batch).
-- Anthropic replay dropping tool calls entirely — separate bean, or in scope?
-- Migration of existing transcripts (clean cutover per project stance, or tolerate old one-call entries on read?).
+- Streaming visibility on disk: today each call is written as it is announced. Keeping the batch's assistant entry written at announce time preserves that; note any change in when a result becomes visible.
 
-## Acceptance (draft — scenarios TBD)
+## Scenarios
 
-- A response with 3 tool calls whose tools finish out of order produces one assistant entry with 3 calls and 3 results in call order.
-- Rebuilding the prompt from that transcript yields, for chat-completions, one assistant message with 3 `tool_calls` immediately followed by 3 `tool` messages in call order.
-- The transcript scan of calls per assistant message matches the server log's calls per response.
+Scenarios approved 2026-09-15 (Micah). Committed `@wip` in isaac-agent `515a40b`; no new steps.
+
+`features/session/parallel_tool_batches.feature`
+- `:141` the transcript records a batch as one assistant entry, with results in call order (isaac-gihe) — **replaces** `:58` "the transcript records every call before any result, and results pair with calls by id"
+- `:161` one call fails and the other succeeds — results are recorded in call order (isaac-gihe) — **replaces** the completion-order transcript Then in `:114`
+- `:179` a batch rebuilt from the transcript replays as one assistant message with every call, then the results in call order (isaac-gihe) — **new**
+
+At landing:
+- Delete the scenario at `:58`.
+- In `:114` "one call fails and the other succeeds — each result is its own, the cycle completes", delete its `session "on-deck" has transcript matching:` step (quick done before broken winch); keep its memory-comm and last-LLM-request assertions. `:161` now owns the transcript order.
+- Remove `@wip` from `:141`, `:161`, `:179`.
+- `:16`, `:38`, `:80`, `:85` stay unchanged.
+
+## Acceptance
+
+```
+ISAAC_GIT=1 bb features features/session/parallel_tool_batches.feature
+bb ci
+```
+
+After deploy (evidence): a transcript scan of calls per assistant message on zanebot matches the server log's calls per response for new turns.
