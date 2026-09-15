@@ -1,14 +1,14 @@
 ---
 # isaac-vfg8
 title: 'Cycle timing: log where the gap between a tool batch and the next request goes'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - agent
     - performance
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T17:29:09Z
+updated_at: 2026-09-15T17:34:25Z
 ---
 
 ## Problem
