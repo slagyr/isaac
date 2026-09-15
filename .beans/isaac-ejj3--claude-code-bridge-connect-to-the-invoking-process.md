@@ -222,6 +222,6 @@ One-time checks (not scenarios, per the no-absence-tests rule):
 
 ## Worker checkpoint (2026-09-15)
 
-Done: authenticated per-turn loopback listener, direct Babashka stdio bridge, driver wiring for process classpath + `ISAAC_MCP_NONCE`, cleanup specs, and initial provider/feature cutover. Green commits pushed through claude-code `5f6d264`; current feature edits are uncommitted because the focused driver feature is red.
+Done: authenticated per-turn loopback listener, direct Babashka stdio bridge, driver wiring for process classpath + `ISAAC_MCP_NONCE`, cleanup specs, and initial provider/feature cutover. Green commits pushed through claude-code `5f6d264`. Feature harness now resolves `:claude-code`; the focused driver feature improved from 20 failures to 1.
 
-Next: make the feature harness discover the local module's renamed `:claude-code` template, then complete listener-backed registry/bridge feature steps and remove Agent's built-in `:claude` template. Resume at `spec/isaac/llm/claude_cli_steps.clj:132` (`declare-module!`); current RED is `ISAAC_GIT=1 bb features features/llm/api/claude_driver.feature` reporting unknown provider `claude-code` because the harness baseline module index does not include the declared local module.
+Next: fix the remaining pre-existing thinking/reckoning scenario harness mismatch, then commit provider feature cutover; complete listener-backed registry/bridge feature steps and remove Agent's built-in `:claude` template. Resume at `features/llm/api/claude_driver.feature:87`; current RED is `ISAAC_GIT=1 bb features features/llm/api/claude_driver.feature` with 21 examples, 1 failure (expected reckoning/chatter ordering).
