@@ -1,15 +1,14 @@
 ---
 # isaac-gihe
 title: 'Persist tool batches as batches: one assistant entry per batch, results in call order'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - agent
     - tools
-    - unverified
 created_at: 2026-09-15T17:12:16Z
-updated_at: 2026-09-15T17:51:14Z
+updated_at: 2026-09-15T17:51:30Z
 ---
 
 ## Problem
@@ -85,3 +84,15 @@ Acceptance:
   ISAAC_GIT=1 bb features features/session/parallel_tool_batches.feature
   bb ci
   → spec 1610/0, features 757/0/1 pending (compaction_mid_turn, not this bean)
+
+
+## Verification passed
+
+Verifier: grok @ work-3
+HEAD (agent bean/isaac-gihe): 6fb25e9ddeeb8e0e127aeec127cb021c05c26115
+Working tree: untracked deps.edn.bak only
+
+1. Feature edits match bean landing: deleted old :58, dropped :114 transcript Then, @wip removed from gihe scenarios. :16 :38 :80 :85 unchanged in intent.
+2. ISAAC_GIT=1 bb features features/session/parallel_tool_batches.feature → 8/0
+   bb ci → spec 1610/0, features 757/0/1 pending (not this bean)
+3. No Thread/sleep in bean diff.
