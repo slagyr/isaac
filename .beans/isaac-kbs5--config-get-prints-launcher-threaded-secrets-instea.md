@@ -1,16 +1,15 @@
 ---
 # isaac-kbs5
 title: config get prints launcher-threaded secrets instead of redacting
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
-    - foundation
     - cli
     - config
+    - foundation
 created_at: 2026-09-15T20:17:16Z
-updated_at: 2026-09-15T20:47:59Z
+updated_at: 2026-09-15T20:54:10Z
 ---
 
 `isaac config get` already redacts `${VAR}` values (`<NAME:redacted>`) and `--reveal` prints them after typing REVEAL. In-process feature tests cover that.
@@ -65,3 +64,9 @@ Verification run:
 - `ISAAC_GIT=1 bb features features/cli/config_resolution.feature` — 6 examples, 0 failures; confirms one config resolution per real command remains intact.
 - `bb spec spec/isaac/config/cli/common_spec.clj spec/isaac/config/cli/get_spec.clj` — 23 examples, 0 failures.
 - `bb ci` — 1015 specs and 184 features, 0 failures (2 pre-existing pending scenarios). Cleared the recurring stale `~/.gitlibs/_repos/file/REL/fixture-agent` generated remote before the successful CI run.
+
+
+
+## Landed on main (2026-09-15)
+
+main-sha: isaac-foundation e6649143ac842b75c1640b4058379f1f46af9933
