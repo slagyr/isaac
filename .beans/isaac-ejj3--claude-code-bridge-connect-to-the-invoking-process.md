@@ -219,3 +219,9 @@ One-time checks (not scenarios, per the no-absence-tests rule):
 - isaac-agent `resources/isaac-manifest.edn` has no `:claude` provider template; `isaac config validate` rejects `{:type :claude}` on a root with both released.
 - `grep -rn "mcp-server-url\|mcp-server-token\|running-server\|ISAAC_SERVER_TOKEN" src/` in isaac-claude-code is empty.
 - Real-binary smoke after the train, on yopp: `isaac prompt --crew claude -m "Use a tool to list /home/yopp/.isaac/config/models …"` performs a real tool call; cli.log shows `:claude/mcp-status` with `:tools` = the crew's allowed tool count; no `:mcp/turn-not-active` in either log. Repeat a hail-driven tool call on zanebot.
+
+## Worker checkpoint (2026-09-15)
+
+Done: authenticated per-turn loopback listener, direct Babashka stdio bridge, driver wiring for process classpath + `ISAAC_MCP_NONCE`, cleanup specs, and initial provider/feature cutover. Green commits pushed through claude-code `5f6d264`; current feature edits are uncommitted because the focused driver feature is red.
+
+Next: make the feature harness discover the local module's renamed `:claude-code` template, then complete listener-backed registry/bridge feature steps and remove Agent's built-in `:claude` template. Resume at `spec/isaac/llm/claude_cli_steps.clj:132` (`declare-module!`); current RED is `ISAAC_GIT=1 bb features features/llm/api/claude_driver.feature` reporting unknown provider `claude-code` because the harness baseline module index does not include the declared local module.
