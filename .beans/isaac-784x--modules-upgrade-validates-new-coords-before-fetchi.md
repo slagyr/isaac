@@ -8,8 +8,9 @@ tags:
     - foundation
     - modules
     - deploy
+    - unverified
 created_at: 2026-09-15T18:31:56Z
-updated_at: 2026-09-15T18:41:19Z
+updated_at: 2026-09-15T18:52:18Z
 ---
 
 ## Problem
@@ -42,3 +43,11 @@ Workaround used: run the upgrade in a fresh copy of the config root, diff the re
 
 - Upgrading a registry module on a root with a warm startup cache succeeds and prints `Upgraded <id>: <old> -> <new>`.
 - A genuinely invalid config still blocks the upgrade with its real errors.
+
+## Implementation (2026-09-15)
+
+Root cause confirmed: config mutation compared the staged cold load against `loader/load-config-result` without bypassing the warm startup config snapshot. On a live root, cached validation errors could differ from the staged filesystem load and be misclassified as newly introduced.
+
+Implemented `:skip-cache?` on `load-config-result` and use it for both `set-config` and `unset-config` pre-change baselines. Staged and current comparisons now both validate filesystem state directly while genuine new errors remain blocking.
+
+Branch: `bean/isaac-784x @ 7c20ccf` (base `origin/main@c629ec4`). Verification: focused loader/mutate specs 36 examples, 0 failures; `features/module/modules_upgrade.feature` 2 examples, 0 failures; `ISAAC_GIT=1 bb ci` 1025 specs + 184 feature examples, 0 failures (2 pre-existing pending berth-observability scenarios). Initial CI feature run encountered a stale global gitlibs fixture remote referencing another worktree; removing only that generated cache entry produced the clean rerun.
