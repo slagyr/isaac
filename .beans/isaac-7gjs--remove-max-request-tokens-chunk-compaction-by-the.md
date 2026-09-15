@@ -1,14 +1,14 @@
 ---
 # isaac-7gjs
 title: 'Remove :max-request-tokens: chunk compaction by the context window'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - agent
     - compaction
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T17:31:52Z
+updated_at: 2026-09-15T17:51:20Z
 ---
 
 ## Problem
@@ -77,3 +77,13 @@ Next: on Micah's answers — (a) acceptance for the removed key, (b) deploy path
 
 - Decision (2026-09-15, Micah): a leftover `:max-request-tokens` key is accepted as silently ignored. The one-time acceptance check "`{:compaction {:max-request-tokens 1}}` fails `isaac config validate`" is replaced by "that key has no effect: the resolved compaction policy never contains it and chunking uses the window". Reporting stale nested keys is a separate foundation bean.
 - Decision (2026-09-15, Micah): combined deploy — this release ships with isaac-ejj3's agent and claude-code changes and the zanebot module-id renames in one restart script (see "Deploy coupling" above), with rollback pins ready and the full post-restart checks.
+
+## Verification (2026-09-15, plan session)
+
+Verify pass.
+- Merged onto agent `main` with isaac-vfg8 (`137729f`): `bb ci` 1610 specs / 756 features, 0 failures, exit 0.
+- `features/session/compaction_requests.feature`: 5 examples, 0 failures (chunking scenario window retuned 700 → 670).
+- `git grep max-request-tokens -- src resources spec features`: empty.
+- Leftover key (accepted as ignored, Micah 2026-09-15): resolved compaction policy never contains `:max-request-tokens` (specs); stale-key reporting is isaac-60lm.
+- Squash-merged as isaac-agent `8a39c1f`; branch `bean/isaac-7gjs` deleted. Released in isaac-agent 0.1.68 (`f6dd38d`), shipped with isaac-claude-code 0.1.11 (`dfa91e8`) per the combined-deploy decision.
+- claude-code `2a9023f` suite against the merged agent (override proven on classpath): 42 features / 60 specs, 0 failures.
