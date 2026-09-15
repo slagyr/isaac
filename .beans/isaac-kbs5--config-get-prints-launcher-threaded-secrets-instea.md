@@ -5,11 +5,12 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - foundation
     - cli
     - config
 created_at: 2026-09-15T20:17:16Z
-updated_at: 2026-09-15T20:34:49Z
+updated_at: 2026-09-15T20:47:59Z
 ---
 
 `isaac config get` already redacts `${VAR}` values (`<NAME:redacted>`) and `--reveal` prints them after typing REVEAL. In-process feature tests cover that.
@@ -49,3 +50,18 @@ ISAAC_GIT=1 bb features features/cli/config_resolution.feature:74
 bb spec spec/isaac/config/cli/common_spec.clj spec/isaac/config/cli/get_spec.clj
 bb ci
 ```
+
+## Implementation (2026-09-15, scrapper@isaac-work-1)
+
+- Removed the unsafe printable-config shortcut that returned launcher-threaded resolved config verbatim.
+- Preserved once-per-process resolution: printable output now uses the threaded load result and discovers `${VAR}` token names from its source files, then replaces matching resolved secret values with `<NAME:redacted>`.
+- Kept the raw/reveal paths unchanged and activated the launcher-backed redaction scenario.
+- Branch: `bean/isaac-kbs5` @ `520edd8356767999b641292caeae5e8b7df30593` (base `origin/main@a0a2b0f25bbdca9f391832ce0a11bc24137afd99`).
+
+Verification run:
+
+- `bb lint src/isaac/config/cli/common.clj spec/isaac/config/cli/common_spec.clj` — 0 errors, 0 warnings.
+- `ISAAC_GIT=1 bb features features/cli/config_resolution.feature:84` — 1 example, 0 failures.
+- `ISAAC_GIT=1 bb features features/cli/config_resolution.feature` — 6 examples, 0 failures; confirms one config resolution per real command remains intact.
+- `bb spec spec/isaac/config/cli/common_spec.clj spec/isaac/config/cli/get_spec.clj` — 23 examples, 0 failures.
+- `bb ci` — 1015 specs and 184 features, 0 failures (2 pre-existing pending scenarios). Cleared the recurring stale `~/.gitlibs/_repos/file/REL/fixture-agent` generated remote before the successful CI run.
