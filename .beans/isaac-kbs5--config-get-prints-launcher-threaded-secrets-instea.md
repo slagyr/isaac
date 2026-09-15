@@ -1,7 +1,7 @@
 ---
 # isaac-kbs5
 title: config get prints launcher-threaded secrets instead of redacting
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - cli
     - config
 created_at: 2026-09-15T20:17:16Z
-updated_at: 2026-09-15T20:17:16Z
+updated_at: 2026-09-15T20:34:49Z
 ---
 
 `isaac config get` already redacts `${VAR}` values (`<NAME:redacted>`) and `--reveal` prints them after typing REVEAL. In-process feature tests cover that.
