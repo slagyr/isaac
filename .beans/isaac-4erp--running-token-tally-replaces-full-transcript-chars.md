@@ -98,3 +98,7 @@ elapsed-ms rows.
 
 The post-deploy `tool/result → chat/stream-request` median is recorded after
 deploy, not on this checkout.
+
+## Deployed (2026-09-15)
+
+Shipped to zanebot in isaac-agent 0.1.69 (`3e3ef7e`, registry `ea4cff3d`), restarted 18:34:01Z. Boot: http 401, `resume/scan-complete` (0 requeued), `runner/started :components 8`, Discord ready, no validation errors or stale-delivery removals. Smoke: `isaac prompt -M gpt` → pong; `session/compaction-check` logs the tally gauge (no drift ratio). The `modules upgrade` step needed the fresh-root workaround (isaac-784x).

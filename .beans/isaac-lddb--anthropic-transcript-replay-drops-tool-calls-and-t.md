@@ -68,3 +68,7 @@ Verify pass.
 - Feature `features/llm/api/anthropic_replay.feature`: 3 scenarios green; all 3 confirmed red against unfixed `6fb50a3` (tool_use missing, preceding user message dropped, no is_error).
 - Gates: branch `bb ci` 1616 specs / 761 features; merged with isaac-4erp (`22bba5c`) 1625 specs / 762 features; 0 failures, exit 0.
 - Squash-merged as isaac-agent `565d994`; branch `bean/isaac-lddb` deleted. Not released or deployed.
+
+## Deployed (2026-09-15)
+
+Shipped to zanebot in isaac-agent 0.1.69 (`3e3ef7e`, registry `ea4cff3d`), restarted 18:34:01Z. Boot: http 401, `resume/scan-complete` (0 requeued), `runner/started :components 8`, Discord ready, no validation errors or stale-delivery removals. Smoke: `isaac prompt -M gpt` → pong; `session/compaction-check` logs the tally gauge (no drift ratio). The `modules upgrade` step needed the fresh-root workaround (isaac-784x).

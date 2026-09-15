@@ -96,3 +96,7 @@ Working tree: untracked deps.edn.bak only
 2. ISAAC_GIT=1 bb features features/session/parallel_tool_batches.feature → 8/0
    bb ci → spec 1610/0, features 757/0/1 pending (not this bean)
 3. No Thread/sleep in bean diff.
+
+## Deployed (2026-09-15)
+
+Shipped to zanebot in isaac-agent 0.1.69 (`3e3ef7e`, registry `ea4cff3d`), restarted 18:34:01Z. Boot: http 401, `resume/scan-complete` (0 requeued), `runner/started :components 8`, Discord ready, no validation errors or stale-delivery removals. Smoke: `isaac prompt -M gpt` → pong; `session/compaction-check` logs the tally gauge (no drift ratio). The `modules upgrade` step needed the fresh-root workaround (isaac-784x).
