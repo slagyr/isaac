@@ -1,7 +1,7 @@
 ---
 # isaac-lddb
 title: Anthropic transcript replay drops tool calls and turns tool results into user text
-status: draft
+status: in-progress
 type: bug
 priority: normal
 tags:
@@ -9,9 +9,7 @@ tags:
     - tools
     - anthropic
 created_at: 2026-09-15T17:24:58Z
-updated_at: 2026-09-15T17:24:58Z
-blocked_by:
-    - isaac-gihe
+updated_at: 2026-09-15T18:11:11Z
 ---
 
 ## Problem
@@ -37,12 +35,27 @@ Effects:
 
 - isaac-gihe (batch-shaped transcript).
 
-## Open questions (not decided)
+## Decisions
 
-- Truncation: `tool_result` content today goes through `truncate-tool-result` as text; keep the same cap inside the block?
-- Cache breakpoints (`apply-cache-breakpoints`, `penultimate-user-index`) assume the current message shape — verify placement once `tool_result` user messages appear.
+- Decision (2026-09-15, Micah approved planning): consecutive tool-call entries group into one assistant message of `tool_use` blocks and consecutive `toolResult` entries into one user message of `tool_result` blocks. isaac-gihe (landed `6fb50a3`) writes a batch as one assistant entry; older transcripts have one call per entry (no migration, per isaac-gihe) — grouping replays both alike and avoids back-to-back assistant messages the Anthropic API rejects.
+- Decision (2026-09-15): `tool_result` content keeps the existing `truncate-tool-result` cap; `is_error` is set from the entry's `:isError`.
+- Decision (2026-09-15): the user message preceding a tool call is kept.
+- Cache breakpoints: `apply-cache-breakpoints` marks the last block of the penultimate user message; with `tool_result` user messages that can be a `tool_result` block, which the API accepts. Cover placement with a spec, not a scenario.
 
-## Acceptance (draft — scenarios TBD)
+## Scenarios
 
-- A transcript containing a tool batch, rebuilt for an Anthropic provider, yields an assistant message whose content holds `tool_use` blocks for every call, followed by a user message holding `tool_result` blocks in call order with matching ids.
-- The user message before the tool call is present in the rebuilt prompt.
+Approved 2026-09-15 (Micah: "print scenarios, pause only for new steps" — none invented). File `features/llm/api/anthropic_replay.feature` (new), committed on the bean branch.
+1. a tool batch replays as one assistant message of tool_use blocks, then one user message of tool_result blocks in call order
+2. older one-call entries and the user message before them replay with ids paired
+3. a failed tool result replays with is_error
+
+Steps reused: `default Grover setup`, `config:`, `the built-in tools are registered`, `the isaac EDN file … exists with:`, gated/streaming test tools, `the following model responses are queued:`, `the user sends … via memory comm`, `the following sessions exist:`, `session … has transcript:` (`toolCall` / `toolResult` rows), `the prompt … on session … matches:` (builds with `messages-api/build` when the crew model's provider is anthropic). Message indices may need retuning to the builder's framing blocks; keep the assertions.
+
+## Acceptance
+
+```
+ISAAC_GIT=1 bb features features/llm/api/anthropic_replay.feature
+bb ci
+```
+
+Specs: `filter-messages-anthropic` grouping (batch entry, consecutive one-call entries, mixed text), `is_error` passthrough, truncation cap inside `tool_result`, cache breakpoint placement on a `tool_result` user message.
