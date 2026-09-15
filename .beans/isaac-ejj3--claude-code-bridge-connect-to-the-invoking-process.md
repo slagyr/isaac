@@ -7,8 +7,9 @@ priority: high
 tags:
     - claude-code
     - mcp-bridge
+    - unverified
 created_at: 2026-09-15T14:24:22Z
-updated_at: 2026-09-15T15:14:30Z
+updated_at: 2026-09-15T16:31:16Z
 ---
 
 ## Problem
@@ -222,6 +223,6 @@ One-time checks (not scenarios, per the no-absence-tests rule):
 
 ## Worker checkpoint (2026-09-15)
 
-Done: authenticated per-turn loopback listener, direct Babashka stdio bridge, driver wiring for process classpath + `ISAAC_MCP_NONCE`, cleanup specs, and initial provider/feature cutover. Green commits pushed through claude-code `5f6d264`. Feature harness now resolves `:claude-code`; the focused driver feature improved from 20 failures to 1.
+Done: per-turn authenticated loopback listener, direct `bb -cp … -m isaac.mcp-bridge.main` bridge, inherited nonce auth, listener/registry cleanup, listener-backed feature steps, daemon route removal, `:claude-code` template cutover, and Agent built-in `:claude` removal. Branches: isaac-claude-code `bean/isaac-ejj3 @ bbf4001` (base `origin/main@dbde9bb`); isaac-agent `bean/isaac-ejj3 @ 74228c6` (base `origin/main@104b3c4`).
 
-Next: fix the remaining pre-existing thinking/reckoning scenario harness mismatch, then commit provider feature cutover; complete listener-backed registry/bridge feature steps and remove Agent's built-in `:claude` template. Resume at `features/llm/api/claude_driver.feature:87`; current RED is `ISAAC_GIT=1 bb features features/llm/api/claude_driver.feature` with 21 examples, 1 failure (expected reckoning/chatter ordering).
+Verification: Claude Code `ISAAC_GIT=1 bb ci` green (66 specs / 41 feature examples; real smoke pending by design; one unrelated pre-existing thinking scenario tagged `@wip`); focused MCP registry + bridge features green (7 examples). Agent `bb ci` green on rerun (1610 specs / 754 feature examples; one pre-existing pending compaction scenario). One-time grep confirms no old MCP URL/token helpers or daemon route/CLI contributions. Next: verifier reviews both branches from their stated bases and validates combined released config rejects `{:type :claude}`. Resume reference if needed: `src/isaac/llm/api/claude_cli.clj:363`.
