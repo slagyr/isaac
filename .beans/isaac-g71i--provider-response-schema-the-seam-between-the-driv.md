@@ -135,3 +135,9 @@ The drive and tool loop read raw provider wire keys and guess conventions (surve
 ## Open
 
 - Scenario plan not yet written (planning skill: plan first, then scenarios one at a time).
+
+## Scenario plan note (2026-09-15)
+
+gherclj v1.5.0 (`c1df8cc`) now substitutes outline `<placeholders>` in a step's data table and doc-string (gherclj-83m0), so scenarios 1 and 7 use plain `Then ... matches:` tables with `<placeholder>` cells. The workaround steps drafted against v1.4.0 — `the last provider response stop-reason is {reason}` and per-field `the isaac config path` lines standing in for a model file table — are dropped. isaac-agent's gherclj pin (deps.edn, bb.edn) moves to v1.5.0 with this work.
+
+gherclj v1.5.0 also sweeps generated specs whose `.feature` was deleted or renamed (gherclj-cfeq); previously a removed feature kept running from its leftover generated spec.
