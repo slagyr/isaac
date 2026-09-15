@@ -60,3 +60,15 @@ One-time checks (not scenarios):
 - `git grep max-request-tokens -- src resources spec features` in isaac-agent is empty.
 - `{:compaction {:max-request-tokens 1}}` in a model config fails `isaac config validate`.
 - After the train: zanebot `models/gpt.edn` no longer has the `:compaction {:max-request-tokens 400000}` line (removed in the restart script), and the next `isaac-work-1` compaction logs `:chunk-count 0` (or no chunk plan) and completes in minutes.
+
+## Worker checkpoint (2026-09-15, plan session)
+
+Done: isaac-agent `bean/isaac-7gjs` @ `b3d309f` (from `origin/main` `515a40b`). `:max-request-tokens` removed from `compaction.clj` (chunk plan and `needs-chunking?` use the window), `context.clj` (policy keys, static and code defaults), `compaction_schema.clj`, and all four manifest compaction schemas. Specs updated (resolved policies drop the key; the 90k-history spec now expects one request on a 278k window). `compaction_requests.feature`: old cap scenario deleted, new scenarios un-`@wip`, description updated. The chunking scenario's window was retuned 700 → 670 (700 planned 2 chunks; 670 plans the asserted 3).
+
+Gates: baseline `bb ci` 1610 specs / 754 features green; branch `bb ci` 1610 specs / 755 features, 0 failures, exit 0. `git grep max-request-tokens -- src resources spec features` is empty.
+
+**Acceptance gap — needs Micah:** `{:compaction {:max-request-tokens 1}}` in a model config does NOT fail validation; it is silently dropped (no error, no warning). Probe against the branch: errors `[]`, warnings `[]`; control `{:compaction {:threshold 5.0}}` does error (`models.harbor.compaction.threshold`), so compaction values are validated but unknown compaction keys are not reported. Cause is in isaac-foundation `src/isaac/config/warnings.clj`: entity kinds (`models`, `crew`, `providers`, …) get a shallow unknown-key scan (`collect-unknown-key-warnings`, one level), only static config tables get the recursive `nested-unknown-key-warnings`, and all unknown-key findings are warnings, not errors. The "hard-reject" decision cannot be met inside isaac-agent.
+
+**Deploy coupling — needs Micah:** isaac-agent `main` also carries `7ba21ce` (isaac-ejj3: built-in `:claude` template removed; `{:type :claude}` now fails validation). Releasing agent from `main` requires, in one restart: pin agent + claude-code `2a9023f`; zanebot `isaac.edn :modules` ids `:isaac.llm.claude` → `:isaac.provider.claude-code` and `:isaac.episodes` → `:isaac.session.episodes`; zanebot `providers/claude.edn` → `{:type :claude-code}`; remove the `gpt.edn` compaction line; yopp `providers/claude-code.edn` → `{:type :claude-code}`.
+
+Next: on Micah's answers — (a) acceptance for the removed key, (b) deploy path — hand to verification, squash-merge, release, and run the train.
