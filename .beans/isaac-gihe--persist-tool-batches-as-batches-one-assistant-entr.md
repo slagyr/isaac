@@ -7,8 +7,9 @@ priority: normal
 tags:
     - agent
     - tools
+    - unverified
 created_at: 2026-09-15T17:12:16Z
-updated_at: 2026-09-15T17:47:06Z
+updated_at: 2026-09-15T17:51:14Z
 ---
 
 ## Problem
@@ -65,3 +66,22 @@ bb ci
 ```
 
 After deploy (evidence): a transcript scan of calls per assistant message on zanebot matches the server log's calls per response for new turns.
+
+
+## Implementer decision (crash / visibility)
+
+Buffer results until the batch completes, then write in model call order.
+Assistant batch entry is written at announce (all N toolCall items). Comm
+still fires on-tool-call / on-tool-result per call. Disk: results appear only
+when the whole batch finishes. Mid-batch crash: assistant entry on disk, no
+toolResult rows for that batch.
+
+## Verification handoff
+
+Worker: grok @ work-3
+Branch: isaac-agent `bean/isaac-gihe` @ `6fb25e9ddeeb8e0e127aeec127cb021c05c26115`
+
+Acceptance:
+  ISAAC_GIT=1 bb features features/session/parallel_tool_batches.feature
+  bb ci
+  → spec 1610/0, features 757/0/1 pending (compaction_mid_turn, not this bean)
