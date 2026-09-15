@@ -1,14 +1,14 @@
 ---
 # isaac-f47m
 title: web_search config error says :api_key; schema wants :api-key
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - agent
     - tools
 created_at: 2026-09-15T20:17:16Z
-updated_at: 2026-09-15T20:17:16Z
+updated_at: 2026-09-15T20:34:19Z
 ---
 
 The unconfigured `web_search` error tells the operator to set `:api_key`. Schema, `config set`, and `config schema tools.web_search.api-key` all use kebab `:api-key`. Following the error produces `unrecognized segment: api_key`.
