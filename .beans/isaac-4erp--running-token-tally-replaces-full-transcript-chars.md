@@ -1,16 +1,15 @@
 ---
 # isaac-4erp
 title: Running token tally replaces full-transcript chars/4 estimates
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - agent
     - performance
     - compaction
-    - unverified
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T18:18:40Z
+updated_at: 2026-09-15T18:19:32Z
 blocked_by:
     - isaac-vfg8
 ---
