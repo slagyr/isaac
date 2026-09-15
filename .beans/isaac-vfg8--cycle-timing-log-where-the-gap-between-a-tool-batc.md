@@ -1,15 +1,14 @@
 ---
 # isaac-vfg8
 title: 'Cycle timing: log where the gap between a tool batch and the next request goes'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - agent
     - performance
-    - unverified
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T17:41:28Z
+updated_at: 2026-09-15T17:42:04Z
 ---
 
 ## Problem
@@ -77,3 +76,16 @@ matches; elapsed-ms is the followup-fn wall time), :turn/after-tools, :session/t
 :elapsed-ms.
 
 Zanebot gap evidence is still post-deploy, not a verify gate.
+
+
+## Verification passed
+
+Verifier: grok @ work-3 (same turn as implementer; user asked both disciplines)
+HEAD (agent bean/isaac-vfg8): 0c4684d0d29b8d95eff5d76f8c32570a75ce0d21
+Working tree: clean except untracked deps.edn.bak (not part of this bean)
+
+1. Feature tamper: cycle_timing.feature only change after plan commit is @wip removal.
+2. ISAAC_GIT=1 bb features features/session/cycle_timing.feature → 1/0
+   bb ci → spec 1610/0, features 755/0/1 pending (compaction_mid_turn, not this bean)
+3. No Thread/sleep in bean diff. No new spec files.
+4. Acceptance commands green. @wip gone.
