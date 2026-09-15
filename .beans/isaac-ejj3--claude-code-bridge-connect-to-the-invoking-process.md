@@ -1,14 +1,14 @@
 ---
 # isaac-ejj3
 title: 'Claude Code bridge: connect to the invoking process, run via bb, template :claude-code'
-status: draft
+status: todo
 type: bug
 priority: high
 tags:
     - claude-code
     - mcp-bridge
 created_at: 2026-09-15T14:24:22Z
-updated_at: 2026-09-15T14:24:22Z
+updated_at: 2026-09-15T15:13:04Z
 ---
 
 ## Problem
@@ -54,10 +54,168 @@ The module contributes `:isaac.agent/provider-template {:claude …}` (`src/isaa
 - isaac-agent: delete the built-in `:claude` provider template.
 - Train: module release + agent release pinned together in `isaac/modules.edn`; zanebot `~/.isaac/config/providers/claude.edn` → `{:type :claude-code}` in the same script as the restart (old runtime rejects the new key, new runtime rejects the old). yopp `providers/claude-code.edn` likewise.
 
-## Acceptance (draft — scenarios TBD)
+## Scenarios
 
-- A CLI-process turn (`isaac prompt`) on a root whose daemon is running makes a real tool call through Claude Code: `claude/mcp-status :tools N` with N = the crew's allowed tool count, and no `mcp/turn-not-active` in either log.
-- The generated MCP config's command is `bb`, not `isaac`; `isaac help` lists no `mcp-bridge`.
-- `{:type :claude-code}` resolves; `{:type :claude}` fails `isaac config validate`.
-- One-time grep: no `:claude` template key in isaac-agent or isaac-claude-code manifests.
-- Real-binary smoke on yopp and zanebot after the train (see isaac deploy lessons: exercise the real `claude`, not the fake CLI).
+Scenario plan approved 2026-09-15 (Micah), after trimming from 12 scenarios / 8 new steps to 6 scenarios / 1 new step + 1 matcher row. Loopback binding and listener shutdown on cleanup are **unit specs**, not scenarios (resource hygiene; the MCP-config URL already asserts `127.0.0.1`).
+
+Work from isaac-claude-code `origin/main` (`dbde9bb`). The unpushed `7fe99a3`/`8d696f1` are reconciled afterwards (Micah, 2026-09-15); scenarios 5–6 therefore **create** `features/llm/mcp_bridge.feature`.
+
+### features/llm/api/claude_driver.feature
+
+Background: the provider file becomes `config/providers/claude-code.edn` (same rows) and `config/models/sub-sonnet.edn` names `provider | claude-code`. Name-based template inheritance (`same-name-base` in isaac-agent `llm/providers.clj`) makes every existing scenario exercise the `:claude-code` template. Update `provider` log columns that carry the provider *name* (e.g. `:turn/loop-driver`) to `claude-code`; the `:claude/*` driver events log a literal `"claude"` today — leave those unless the implementation changes them.
+
+**Replaces** "a driven turn writes an MCP config that points Claude Code at isaac's mcp-bridge for this turn (isaac-6z4r)":
+
+```gherkin
+  Scenario: a driven turn's MCP config runs the bridge under bb against this turn's own listener (isaac-ejj3)
+    The bridge is not an isaac command: it runs with the invoking process's
+    classpath and talks to the per-turn listener that process opened.
+    Given a fake Claude Code on the path scripted with:
+      | cycle | kind     | payload                                            |
+      | 1     | tool_use | {"name":"exec__run","input":{"command":"echo hi"}} |
+      | 2     | text     | hi came back                                       |
+    When the user sends "run it" on session "main"
+    Then the response is "hi came back"
+    And the fake Claude Code was invoked with:
+      | arg                 | value       |
+      | --strict-mcp-config |             |
+      | --mcp-config        | #".*\.json" |
+    And the MCP config handed to the fake Claude Code names server "isaac" running:
+      | argv                                                                                                   |
+      | #"^bb -cp .+ -m isaac\.mcp-bridge\.main --turn [0-9a-f-]{36} --url http://127\.0\.0\.1:[0-9]+$" |
+```
+
+**Replaces** "the MCP config carries the running server's own URL and auth token (isaac-o2fh)":
+
+```gherkin
+  Scenario: the turn's nonce reaches Claude Code only through its environment, never the server's port or token (isaac-ejj3)
+    Given the isaac EDN file "config/isaac.edn" exists with:
+      | path              | value         |
+      | server.port       | 7912          |
+      | server.auth.token | harbor-secret |
+    And a fake Claude Code on the path scripted with:
+      | cycle | kind     | payload                                            |
+      | 1     | tool_use | {"name":"exec__run","input":{"command":"echo hi"}} |
+      | 2     | text     | hi came back                                       |
+    When the user sends "run it" on session "main"
+    Then the response is "hi came back"
+    And the fake Claude Code was invoked with:
+      | arg                      | value |
+      | (ISAAC_MCP_NONCE in env) |       |
+    And the MCP config handed to the fake Claude Code names server "isaac" running:
+      | argv                                                        |
+      | #"^(?!.*7912)(?!.*harbor-secret)(?!.*--token)(?!.*NONCE).+$" |
+```
+
+**New:**
+
+```gherkin
+  Scenario: a provider of type claude-code under another name drives the turn (isaac-ejj3)
+    Given the isaac EDN file "config/providers/harbor.edn" exists with:
+      | path              | value       |
+      | type              | claude-code |
+      | command           | claude      |
+      | drives-tool-loop? | true        |
+    And the isaac EDN file "config/models/harbor-sonnet.edn" exists with:
+      | path     | value  |
+      | model    | sonnet |
+      | provider | harbor |
+    And the isaac EDN file "config/crew/deckhand.edn" exists with:
+      | path  | value        |
+      | model | harbor-sonnet |
+      | soul  | Think hard.  |
+    And the following sessions exist:
+      | name   | crew     |
+      | harbor | deckhand |
+    And a fake Claude Code on the path scripted with:
+      | cycle | kind | payload        |
+      | 1     | text | harbor answers |
+    When the user sends "ahoy" on session "harbor"
+    Then the response is "harbor answers"
+    And the fake Claude Code was invoked exactly once
+```
+
+### features/llm/mcp_turn_registry.feature
+
+Scenarios unchanged. Only the feature description changes: the registry is served by the per-turn listener the driver opens, not an HTTP route owned by this module. The `{path}` values in the existing post step stay as written (the step uses the last segment as the turn id).
+
+### features/llm/mcp_bridge.feature (new file)
+
+```gherkin
+Feature: The mcp bridge relays Claude Code's MCP lines to the turn's listener (isaac-ejj3)
+  Claude Code spawns the bridge as a stdio MCP server: `bb -cp <classpath> -m
+  isaac.mcp-bridge.main --turn <id> --url <listener>`. It answers initialize
+  locally, drops notifications, and POSTs every other line to the listener,
+  authenticated with the turn's nonce from ISAAC_MCP_NONCE. A refused nonce
+  comes back as a JSON-RPC error so the CLI reports a failed tool call
+  rather than hanging.
+
+  Background:
+    Given default Grover setup
+    And the built-in tools are registered
+    And the crew "main" allows tools: "exec/run,fs/read"
+    And the following sessions exist:
+      | name     |
+      | mcp-sess |
+
+  Scenario: the bridge answers initialize itself and relays tools/list to the turn's listener
+    Given a turn "t-relay" is registered for session "mcp-sess"
+    When the mcp bridge relays for turn "t-relay":
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
+      {"jsonrpc":"2.0","method":"notifications/initialized"}
+      {"jsonrpc":"2.0","id":2,"method":"tools/list"}
+      """
+    Then the MCP response matches:
+      | key                  | value     |
+      | id                   | 2         |
+      | result.tools[0].name | exec__run |
+      | result.tools[1].name | fs__read  |
+
+  Scenario: a bridge whose nonce the listener refuses answers with a JSON-RPC error and nothing executes
+    Given a turn "t-guard" is registered for session "mcp-sess"
+    And environment variable "ISAAC_MCP_NONCE" is "not-the-nonce"
+    When the mcp bridge relays for turn "t-guard":
+      """
+      {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"exec__run","arguments":{"command":"echo never"}}}
+      """
+    Then the MCP response matches:
+      | key           | value                 |
+      | id            | 3                     |
+      | error.code    | -32001                |
+      | error.message | #"(?i)unauthorized"   |
+    And session "mcp-sess" has transcript not matching:
+      | type     | name      |
+      | toolCall | exec__run |
+```
+
+### Step ledger (approved 2026-09-15)
+
+| Step | Status | Notes |
+|---|---|---|
+| `a turn {turn-id:string} is registered for session {session-key:string}` | existing, **extended** | also opens the turn's listener and keeps its URL + nonce, as production registration does; `after-scenario` closes listeners |
+| `the turn {turn-id:string} is cleared` | existing, **extended** | also stops the listener |
+| **`the mcp bridge relays for turn {turn-id:string}:`** | **NEW** | runs `bb -cp <classpath> -m isaac.mcp-bridge.main --turn <id> --url <listener>` as a real subprocess with the docstring on stdin and `ISAAC_MCP_NONCE` = the turn's nonce unless an `environment variable "ISAAC_MCP_NONCE"` override is set; stores the **last** stdout line, parsed, as `:mcp-response` |
+| `the fake Claude Code was invoked with:` row `(ISAAC_MCP_NONCE in env)` | **NEW row** in existing matcher | beside `(no ANTHROPIC_API_KEY in env)` |
+| `the MCP response matches:`, `environment variable {name} is {value}`, `session {key} has transcript not matching:`, fake Claude Code steps, EDN-file steps | existing | unchanged |
+
+Delete the two replaced scenarios; no alias scenario for the old `isaac mcp-bridge` argv or `--token`.
+
+## Acceptance
+
+Feature and spec gates (run with `ISAAC_GIT=1`; trust `examples, 0 failures` + unwrapped exit per deploy lessons):
+
+```
+bb features features/llm/api/claude_driver.feature
+bb features features/llm/mcp_turn_registry.feature
+bb features features/llm/mcp_bridge.feature
+bb ci
+```
+
+Unit specs (new): the per-turn listener binds `127.0.0.1` only; it is stopped when the turn is cleaned up (a POST afterwards is refused at the socket); a request without the turn's nonce gets 401 and never reaches the registry.
+
+One-time checks (not scenarios, per the no-absence-tests rule):
+- isaac-claude-code `src/isaac-manifest.edn` has no `:isaac/cli` and no `:isaac.http/route`; template key is `:claude-code`.
+- isaac-agent `resources/isaac-manifest.edn` has no `:claude` provider template; `isaac config validate` rejects `{:type :claude}` on a root with both released.
+- `grep -rn "mcp-server-url\|mcp-server-token\|running-server\|ISAAC_SERVER_TOKEN" src/` in isaac-claude-code is empty.
+- Real-binary smoke after the train, on yopp: `isaac prompt --crew claude -m "Use a tool to list /home/yopp/.isaac/config/models …"` performs a real tool call; cli.log shows `:claude/mcp-status` with `:tools` = the crew's allowed tool count; no `:mcp/turn-not-active` in either log. Repeat a hail-driven tool call on zanebot.
