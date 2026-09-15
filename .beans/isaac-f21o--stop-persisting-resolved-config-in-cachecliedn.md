@@ -1,7 +1,7 @@
 ---
 # isaac-f21o
 title: Stop persisting resolved config in cache/cli.edn
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - cli
     - cache
 created_at: 2026-09-15T19:37:03Z
-updated_at: 2026-09-15T19:37:03Z
+updated_at: 2026-09-15T19:39:42Z
 ---
 
 Stop writing the resolved config into `cache/cli.edn`. Keep the classpath pairs cache and the in-process memo (launcher threads the load; `config.api/load-resolved`).
