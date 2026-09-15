@@ -1,11 +1,11 @@
 ---
 # isaac-g71i
 title: 'Provider response schema: the seam between the drive and adapters'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-15T22:03:49Z
-updated_at: 2026-09-15T22:03:49Z
+updated_at: 2026-09-15T23:59:06Z
 ---
 
 ## Problem
@@ -141,3 +141,40 @@ The drive and tool loop read raw provider wire keys and guess conventions (surve
 gherclj v1.5.0 (`c1df8cc`) now substitutes outline `<placeholders>` in a step's data table and doc-string (gherclj-83m0), so scenarios 1 and 7 use plain `Then ... matches:` tables with `<placeholder>` cells. The workaround steps drafted against v1.4.0 — `the last provider response stop-reason is {reason}` and per-field `the isaac config path` lines standing in for a model file table — are dropped. isaac-agent's gherclj pin (deps.edn, bb.edn) moves to v1.5.0 with this work.
 
 gherclj v1.5.0 also sweeps generated specs whose `.feature` was deleted or renamed (gherclj-cfeq); previously a removed feature kept running from its leftover generated spec.
+
+## Decision: which side owns the schema (2026-09-15, Micah)
+
+The drive defines the schema it needs; every LLM API adapter returns maps in that shape. There is ONE drive — no per-provider drive variants, and no provider branches left in drive code (`:stop_reason` then `:done_reason`, `[:message :tool_calls]` at three depths, cache added to input for every provider all move into adapters). The only provider-supplied behavior is the tool loop itself (claude-code's LoopDriver, `:drives-tool-loop? true`), and it returns the same `loop-result`/`turn-usage` as the default loop, so the drive cannot tell which loop ran.
+
+Today's drift is the case in point: the claude-code module packs provider prompt tokens into `:input-tokens` (claude_cli.clj, "isaac-vuto decision 5") precisely because the drive re-derives them differently. That workaround is deleted; the module reports `:prompt-tokens` like every other adapter.
+
+## Scenarios (committed @wip)
+
+isaac-agent `features/llm/api/response_schema.feature` — 12 scenarios (1-12 of the plan):
+1. Outline: each built-in adapter (grover:anthropic/openai/chatgpt/ollama) returns a reply in the schema
+2. An off-contract adapter return fails the turn as `:provider-contract`
+3. A valid return reaches the drive with unlisted keys intact (validate, never conform)
+4. OpenAI-style usage: context size excludes cached-token double count
+5. Anthropic-style usage: input + cache read + cache write
+6. Tool turn: totals for stats, context size from the last request
+7. Outline: wire stop reasons map to the closed set, `:refused` included
+8. Unparseable tool arguments return to the model as the tool result
+9. Rate limit: adapter parses retry-after into `:retry-after-ms`
+10. Context overflow as an error kind, no regex over provider prose
+11. Outline: each adapter streams `:text-delta` chunks (pins the suspected chatgpt no-streaming gap)
+12. Reasoning streams; transcript records the requested 0-10 effort, not the provider's echoed string
+
+isaac-claude-code `features/llm/api/claude_driver.feature` — scenario 13: a driven turn reports context size from its last cycle.
+
+New steps this bean introduces (3): `the last provider response matches:`, `grover's next reply stops with wire reason {reason}`, `grover's next reply calls {tool} with raw arguments:`.
+
+Rewritten/removed at implementation: `features/session/turn_usage.feature` and `features/session/token_accounting.feature` assertions on old key names; `context_management.feature` "Assistant response persists reasoning on transcript entry" (superseded by scenario 12); claude-code's existing usage scenarios on `:input-tokens`.
+
+## Acceptance
+
+- `clojure -M:features features/llm/api/response_schema.feature` (isaac-agent, @wip removed)
+- `bb ci` green in isaac-agent
+- `clojure -M:features features/llm/api/claude_driver.feature` (isaac-claude-code, @wip removed)
+- `bb ci` green in isaac-claude-code
+- No wire-key reads left in `src/isaac/drive` or `src/isaac/llm/tool_loop.clj`: `git grep -nE ':[a-z]+_[a-z_]+|\[:response :response' src/isaac/drive src/isaac/llm/tool_loop.clj` returns nothing outside adapter namespaces
+- Requires gherclj >= v1.5.0 (pinned in isaac-agent as of `2168a74`)
