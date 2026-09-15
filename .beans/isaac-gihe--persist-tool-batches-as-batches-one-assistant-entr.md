@@ -1,14 +1,14 @@
 ---
 # isaac-gihe
 title: 'Persist tool batches as batches: one assistant entry per batch, results in call order'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - agent
     - tools
 created_at: 2026-09-15T17:12:16Z
-updated_at: 2026-09-15T17:29:09Z
+updated_at: 2026-09-15T17:47:06Z
 ---
 
 ## Problem
