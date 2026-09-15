@@ -1,16 +1,15 @@
 ---
 # isaac-784x
 title: 'modules upgrade refuses a valid upgrade in the live root: staged validation reports comm type errors the pre-change load does not'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - foundation
     - modules
     - deploy
-    - unverified
 created_at: 2026-09-15T18:31:56Z
-updated_at: 2026-09-15T18:52:18Z
+updated_at: 2026-09-15T18:55:49Z
 ---
 
 ## Problem
@@ -51,3 +50,11 @@ Root cause confirmed: config mutation compared the staged cold load against `loa
 Implemented `:skip-cache?` on `load-config-result` and use it for both `set-config` and `unset-config` pre-change baselines. Staged and current comparisons now both validate filesystem state directly while genuine new errors remain blocking.
 
 Branch: `bean/isaac-784x @ 7c20ccf` (base `origin/main@c629ec4`). Verification: focused loader/mutate specs 36 examples, 0 failures; `features/module/modules_upgrade.feature` 2 examples, 0 failures; `ISAAC_GIT=1 bb ci` 1025 specs + 184 feature examples, 0 failures (2 pre-existing pending berth-observability scenarios). Initial CI feature run encountered a stale global gitlibs fixture remote referencing another worktree; removing only that generated cache entry produced the clean rerun.
+
+
+
+## Landed on main (2026-09-15)
+
+main-sha: isaac-foundation 25244a6b3c5690f1dafb5254c27aea0a96dc9477
+
+Verify gate (perceptor@isaac-verify): loader/mutate specs 36/0/85; modules_upgrade.feature 2/0/7; bb spec 1025/0/1850. Full bb features hit 2 reds in cli/modules_pins.feature (stale gitlibs remote pointing at /Users/zane/agents/isaac/work-1/isaac-foundation-784x/fixture-agent); same 2 reds reproduce on origin/main c629ec4 — pre-existing machine cache, not this bean. No feature tampering. Real-root upgrade smoke deferred (no zanebot restart).
