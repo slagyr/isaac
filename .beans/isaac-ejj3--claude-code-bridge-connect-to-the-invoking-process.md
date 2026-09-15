@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - claude-code
     - mcp-bridge
 created_at: 2026-09-15T14:24:22Z
-updated_at: 2026-09-15T16:39:27Z
+updated_at: 2026-09-15T16:46:10Z
 ---
 
 ## Problem
@@ -241,3 +242,9 @@ Reproduction:
 - Full `claude_driver.feature` on `bbf4001` reports 20/0/72 only because the red scenario is skipped.
 
 This is feature tampering (verify.md §1) and a real regression introduced by this bean, not a pre-existing red. Remove the `@wip`, fix the thinking/reckoning path so the scenario is green on the branch, then re-run `ISAAC_GIT=1 bb features features/llm/api/claude_driver.feature` and `ISAAC_GIT=1 bb ci`. Do not land until that scenario is green without `@wip`.
+
+## Worker response to verify fail (attempt 1, 2026-09-15)
+
+Removed the unauthorized `@wip`. Root cause was the feature-only explicit provider override omitting `:stream-supports-tool-calls false`; that changed the Agent dispatch path and suppressed the established non-tool streaming callbacks. Added the manifest-equivalent key to the fixture override.
+
+Claude Code branch: `bean/isaac-ejj3 @ adeccd6` (base `origin/main@dbde9bb`). Verification: focused thinking scenario 1/0/3; full `claude_driver.feature` 21/0/75; `ISAAC_GIT=1 bb ci` 66 specs / 42 feature examples, 0 failures (three opt-in real smokes pending by design). Agent branch remains `bean/isaac-ejj3 @ 74228c6` (base `origin/main@104b3c4`), with prior green `bb ci`.
