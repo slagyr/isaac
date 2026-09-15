@@ -87,3 +87,17 @@ Verify pass.
 - Leftover key (accepted as ignored, Micah 2026-09-15): resolved compaction policy never contains `:max-request-tokens` (specs); stale-key reporting is isaac-60lm.
 - Squash-merged as isaac-agent `8a39c1f`; branch `bean/isaac-7gjs` deleted. Released in isaac-agent 0.1.68 (`f6dd38d`), shipped with isaac-claude-code 0.1.11 (`dfa91e8`) per the combined-deploy decision.
 - claude-code `2a9023f` suite against the merged agent (override proven on classpath): 42 features / 60 specs, 0 failures.
+
+## Deploy (2026-09-15, combined train)
+
+Registry `7d3a0bc5`: isaac.agent 0.1.68 `f6dd38d`, isaac.provider.claude-code 0.1.11 `dfa91e8` (isaac.session.episodes `e0c7ddd` unchanged).
+
+zanebot (`~/deploy-7gjs.sh`, rollback `~/rollback-7gjs.sh`; backups `*.bak-20260915-7gjs` for `isaac.edn`, `providers/claude.edn`, `models/gpt.edn`):
+- `modules remove isaac.llm.claude` + `modules remove isaac.episodes`; `modules install isaac.provider.claude-code isaac.session.episodes`; `modules upgrade isaac.agent` (104b3c4 → f6dd38d). Coords verified before restart.
+- `providers/claude.edn` → `{:type :claude-code}`; `models/gpt.edn` → cap line removed. Kicked 17:53:22Z.
+- Boot: http 401; `resume/scan-complete` (0 markers); `runner/started :components 8`; `server/started`; `discord.gateway/ready` +2s; no `config/validation-error`, no `hail/stale-delivery-removed`; only error `discord.gateway/transport-close-failed` at kill. claude-code `:claude-cli` llm-api and episodes berths registered. `isaac config validate`: only the pre-existing marvin/pilot `session-policy "episodes"` CLI errors.
+- Smoke: `isaac prompt -M gpt` → `pong`. `isaac prompt -M claude-cli` with a tool call: `claude/mcp-status :tools 18` (bb bridge → per-turn listener works), but the `claude` CLI itself failed "OAuth session expired and could not be refreshed" — zanebot's Claude Code login needs a re-login (auth weather, not the deploy).
+
+yopp: `modules upgrade` (agent 74f9d83 → f6dd38d, claude-code dbde9bb → dfa91e8), `providers/claude-code.edn` → `{:type :claude-code}` (backup `.bak-20260915-7gjs`), service restarted, `OK - config is valid`. Real CLI turn with the daemon running: `exec__run printf <nonce>` executed through the bridge, reply was the nonce, `claude/mcp-status :tools 8`, `turn/ended :ended-by :reply` (isaac-ejj3's original failure case, now passing).
+
+Pending evidence: the next `isaac-work-1` compaction on zanebot should log no chunk plan (or `:chunk-count 0`) and finish in minutes.
