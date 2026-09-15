@@ -5,11 +5,12 @@ status: in-progress
 type: task
 priority: high
 tags:
+    - cache
+    - unverified
     - foundation
     - cli
-    - cache
 created_at: 2026-09-15T19:37:03Z
-updated_at: 2026-09-15T19:39:42Z
+updated_at: 2026-09-15T20:03:56Z
 ---
 
 Stop writing the resolved config into `cache/cli.edn`. Keep the classpath pairs cache and the in-process memo (launcher threads the load; `config.api/load-resolved`).
@@ -78,3 +79,21 @@ One-time checks (not scenarios):
 Done: removed resolved-config disk reads/writes, deleted `isaac.startup.config-cache`, bumped startup cache version to 4, preserved classpath pairs/commands, and activated the three replacement scenarios. Added an inline module schema fixture so the new-entity scenario exercises a real entity directory. Focused config-resolution feature and classpath-cache spec are green; edited-file lint has zero errors (two pre-existing loader warnings).
 
 Next: run the remaining acceptance specs and full CI, perform the one-time cache check, then rebase, push, and hand off. Resume at `src/isaac/main.clj:152` (updated six-argument classpath-cache writer call) with `bb spec spec/isaac/startup spec/isaac/config/loader_spec.clj spec/isaac/config/mutate_spec.clj`.
+
+## Implementation (2026-09-15, scrapper@isaac-work-1)
+
+- Removed the loader's resolved-config disk-cache read path and deleted `isaac.startup.config-cache` plus its spec.
+- Startup cache version is now 4; `write-classpath-cache!` persists only `:classpath-pairs` and `:commands`.
+- Kept process memoization and launcher-threaded load results; `:skip-cache?` remains accepted as a compatibility no-op.
+- Activated all three replacement config-resolution scenarios. The new-entity scenario declares a minimal schema-providing module so `config/crew/*.edn` is a real entity directory in the foundation-only feature world.
+- Branch: `bean/isaac-f21o` @ `f67fdcd80abf4d1f52b277fbae8b0c7f1a63f75c` (base `origin/main@ae4eda6904fbc609bde0c281007ad25779234d0d`).
+
+Verification run:
+
+- `bb lint ...` — 0 errors (existing warnings only).
+- `ISAAC_GIT=1 bb features features/cli/config_resolution.feature` — 5 examples, 0 failures.
+- `ISAAC_GIT=1 bb features features/cli/startup-caching.feature` — 8 examples, 0 failures.
+- `bb spec spec/isaac/startup spec/isaac/config/loader_spec.clj spec/isaac/config/mutate_spec.clj` — 45 examples, 0 failures.
+- `bb ci` — 1014 specs and 183 features, 0 failures (2 pre-existing pending scenarios). Initial CI run hit a stale generated gitlibs remote; deleting `~/.gitlibs/_repos/file/REL/fixture-agent` restored the fixture and the rerun passed.
+- Required source grep is empty.
+- Manual warm two-run check read cache version 4 with data keys exactly `(:classpath-pairs :commands)` and no `:config`.
