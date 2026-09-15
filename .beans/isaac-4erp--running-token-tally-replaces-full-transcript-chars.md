@@ -8,8 +8,9 @@ tags:
     - agent
     - performance
     - compaction
+    - unverified
 created_at: 2026-09-15T17:12:15Z
-updated_at: 2026-09-15T17:55:16Z
+updated_at: 2026-09-15T18:18:40Z
 blocked_by:
     - isaac-vfg8
 ---
@@ -74,3 +75,27 @@ One-time checks (not scenarios):
 - `git grep -n "token-drift-ratio\|calibration-ratio\|log-token-drift" -- src` in isaac-agent is empty.
 - With isaac-vfg8's timing events, a cycle with no compaction shows zero `:session/transcript-read` and zero `:session/token-estimate` events between `:tool/result-persisted` and `:turn/after-tools`.
 - On zanebot after deploy: the `tool/result → chat/stream-request` median for an `isaac-work-1` cycle drops well below the 2.3s measured on 2026-09-15 (record the number here).
+
+
+## Exceptions
+
+### token_accounting.feature (authorized at landing, 2026-09-15)
+
+Landing edits listed under ## Scenarios / At landing: rewrite the feature
+description contract item (3) to the running-tally wording; delete the three
+drift-era scenarios; drop @wip and the "(isaac-4erp)" title suffix from the
+four 4erp scenarios. No new steps.
+
+### cycle_timing.feature (authorized, 2026-09-15)
+
+Acceptance one-time check: a no-compaction cycle must show zero
+`:session/transcript-read` and zero `:session/token-estimate` between
+`:tool/result-persisted` and `:turn/after-tools`. Encoded as: drop those
+three Then rows from the vfg8 subsequence and add `the log has no entries
+matching` for those events. Keep the persist / followup / after-tools
+elapsed-ms rows.
+
+### zanebot median (not blocking land)
+
+The post-deploy `tool/result → chat/stream-request` median is recorded after
+deploy, not on this checkout.
