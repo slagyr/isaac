@@ -5,11 +5,12 @@ status: in-progress
 type: task
 priority: normal
 tags:
+    - unverified
     - agent
     - foundation
     - config
 created_at: 2026-09-15T19:50:19Z
-updated_at: 2026-09-15T19:58:59Z
+updated_at: 2026-09-15T20:11:27Z
 ---
 
 Retire `:role` as a directory-ACL token. It is a dwjy-era alias of `:cwd` (session workdir), not a crew key and not `~/agents/isaac/<role>`. ukg4 said no back-compat aliases; this leftover stayed.
@@ -68,3 +69,10 @@ bb ci
 ```
 
 One-time: `git grep -n ':role' -- src/isaac/tool/names.clj src/isaac/config/checks.clj resources/isaac-manifest.edn` in isaac-agent has no directory-token hits.
+
+## Worker evidence (2026-09-15, scrapper@isaac-work-2)
+
+Implemented the clean cutover in both repos.
+
+- isaac-foundation `bean/isaac-t1om` @ `1c8e45b` (base `origin/main@ae4eda6`): `:cwd-or-path?` now accepts only `:cwd`, `:quarters`, or a string; the validation message and focused specs were updated. `bb spec spec/isaac/config/validation_spec.clj`: 22 examples, 0 failures, 25 assertions. Foundation `bb ci` reached the feature suite after 1026 specs passed, then hit two unrelated stale local gitlibs fixture failures referencing the removed `/Users/zane/agents/isaac/work-1/isaac-foundation-f21o/fixture-agent`; no t1om failures occurred.
+- isaac-agent `bean/isaac-t1om` @ `2fa5037` (base `origin/main@8e7cab5`): pinned Foundation `1c8e45b`; removed `:role`/`"role"` expansion; changed broad-directory guidance and manifest descriptions to `:cwd`; updated unit coverage; removed `@wip` from the three authorized scenarios. `bb ci`: 1628 specs and 765 feature examples, 0 failures (one pre-existing pending). Focused directories: 8 examples, 0 failures, 8 assertions. Focused CLI scenarios: 2 examples, 0 failures, 8 assertions. One-time scoped grep reports no `:role` hits.
