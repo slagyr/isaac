@@ -1,15 +1,14 @@
 ---
 # isaac-ejj3
 title: 'Claude Code bridge: connect to the invoking process, run via bb, template :claude-code'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
     - claude-code
     - mcp-bridge
 created_at: 2026-09-15T14:24:22Z
-updated_at: 2026-09-15T16:46:10Z
+updated_at: 2026-09-15T16:54:21Z
 ---
 
 ## Problem
@@ -248,3 +247,12 @@ This is feature tampering (verify.md §1) and a real regression introduced by th
 Removed the unauthorized `@wip`. Root cause was the feature-only explicit provider override omitting `:stream-supports-tool-calls false`; that changed the Agent dispatch path and suppressed the established non-tool streaming callbacks. Added the manifest-equivalent key to the fixture override.
 
 Claude Code branch: `bean/isaac-ejj3 @ adeccd6` (base `origin/main@dbde9bb`). Verification: focused thinking scenario 1/0/3; full `claude_driver.feature` 21/0/75; `ISAAC_GIT=1 bb ci` 66 specs / 42 feature examples, 0 failures (three opt-in real smokes pending by design). Agent branch remains `bean/isaac-ejj3 @ 74228c6` (base `origin/main@104b3c4`), with prior green `bb ci`.
+
+
+
+## Landed on main (2026-09-15)
+
+main-sha: isaac-claude-code 2a9023f3fb94a4e34de6cc98d66f4d8708e2a000
+main-sha: isaac-agent 7ba21ce45433b6756f72b075928b62aab5ffb6a4
+
+Verify gate (perceptor@isaac-verify): thinking scenario no longer @wip; ISAAC_GIT=1 claude_driver.feature 21/0/75; mcp_turn_registry 5/0/8; mcp_bridge 2/0/5; claude-code bb ci 66/0/219 specs (3 pending real smokes) + 42/0/136 features; agent bb ci 1610/0/3315 specs + 754/0/1793 features (1 pending). Manifest :claude-code, no :isaac/cli or :isaac.http/route; agent has no :claude template; grep of mcp-server-url/mcp-server-token/running-server/ISAAC_SERVER_TOKEN in src/ empty. Real-binary yopp/zanebot smoke deferred to human deploy train.
