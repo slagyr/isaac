@@ -1,7 +1,7 @@
 ---
 # isaac-t1om
 title: Retire :role directory-token alias of :cwd
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - foundation
     - config
 created_at: 2026-09-15T19:50:19Z
-updated_at: 2026-09-15T19:50:19Z
+updated_at: 2026-09-15T19:58:59Z
 ---
 
 Retire `:role` as a directory-ACL token. It is a dwjy-era alias of `:cwd` (session workdir), not a crew key and not `~/agents/isaac/<role>`. ukg4 said no back-compat aliases; this leftover stayed.
