@@ -1,7 +1,7 @@
 ---
 # isaac-784x
 title: 'modules upgrade refuses a valid upgrade in the live root: staged validation reports comm type errors the pre-change load does not'
-status: draft
+status: todo
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - modules
     - deploy
 created_at: 2026-09-15T18:31:56Z
-updated_at: 2026-09-15T18:31:56Z
+updated_at: 2026-09-15T18:40:28Z
 ---
 
 ## Problem
