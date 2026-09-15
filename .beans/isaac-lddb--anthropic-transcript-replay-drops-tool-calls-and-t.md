@@ -1,7 +1,7 @@
 ---
 # isaac-lddb
 title: Anthropic transcript replay drops tool calls and turns tool results into user text
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - tools
     - anthropic
 created_at: 2026-09-15T17:24:58Z
-updated_at: 2026-09-15T18:11:11Z
+updated_at: 2026-09-15T18:22:05Z
 ---
 
 ## Problem
@@ -59,3 +59,12 @@ bb ci
 ```
 
 Specs: `filter-messages-anthropic` grouping (batch entry, consecutive one-call entries, mixed text), `is_error` passthrough, truncation cap inside `tool_result`, cache breakpoint placement on a `tool_result` user message.
+
+## Verification (2026-09-15, plan session)
+
+Verify pass.
+- `filter-messages-anthropic` (`src/isaac/llm/prompt/builder.clj`) rewritten: tool calls → assistant `tool_use` blocks; results → user `tool_result` blocks keyed by `:toolCallId`/`:id`, with `is_error`, the `truncate-tool-result` cap, and `(empty)` for blank results; adjacent calls/results group; the preceding user message is kept; a result with no id falls back to the old user-text shape.
+- Specs: 6 new/rewritten in `builder_spec.clj` (the old "drops blank tool results" became "(empty) keeps the call paired"), 1 new cache-breakpoint spec in `anthropic_spec.clj`. Red before the change, green after (87 examples across builder/anthropic/messages specs).
+- Feature `features/llm/api/anthropic_replay.feature`: 3 scenarios green; all 3 confirmed red against unfixed `6fb50a3` (tool_use missing, preceding user message dropped, no is_error).
+- Gates: branch `bb ci` 1616 specs / 761 features; merged with isaac-4erp (`22bba5c`) 1625 specs / 762 features; 0 failures, exit 0.
+- Squash-merged as isaac-agent `565d994`; branch `bean/isaac-lddb` deleted. Not released or deployed.
