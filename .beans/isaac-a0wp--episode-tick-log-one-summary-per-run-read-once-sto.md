@@ -4,10 +4,8 @@ title: 'Episode tick: log one summary per run, read once, stop re-warning every 
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-16T15:15:42Z
-updated_at: 2026-09-16T17:10:42Z
+updated_at: 2026-09-16T17:16:24Z
 ---
 
 ## Problem
@@ -62,3 +60,20 @@ Done: implementation branch `bean/isaac-a0wp` through `1553b82` logs one `:episo
 Red: `bb features` and therefore `bb ci` still have three baseline failures unrelated to this bean: validation stderr assertions at `features/recall/embedding.feature:88` and `:100`, plus the recall tool log assertion at `features/episodes/recall_logging.feature:53`. The same failures reproduce unchanged at `origin/main@9d05181` in a clean detached worktree; each failing scenario passes when targeted alone. Owned a0wp acceptance is green.
 
 Next: acceptance cannot be made fully green without expanding scope into baseline feature-harness defects. Resume from `features/recall/embedding.feature:82` and `features/episodes/recall_logging.feature:44` if the baseline gate must be repaired before verification.
+
+
+
+## Verify fail (attempt 1, 2026-09-16): feature table edited without ## Exceptions — idle_seal scenario 1 gained transcript-reads column
+
+HEAD: isaac-episodes bean/isaac-a0wp @ 1553b82 (base origin/main 9d05181)
+Working tree: clean
+
+verify.md §1 — feature files not tampered with. Bean has no ## Exceptions section.
+
+Unauthorized edit vs origin/main (beyond permitted @wip removal on the three isaac-a0wp scenarios):
+
+features/episodes/idle_seal.feature scenario "the worker logs one summary per tick (isaac-a0wp)" — assertion table gained a `transcript-reads` column (`1`). Original @wip table was `level | event | episodes-examined | sealed | closed | elapsed-ms`. Bean scenario 1 text matches that original table; the design note about `:transcript-reads` lives under scenario 2, which already asserts it.
+
+Quoted Exceptions: none (`^## Exceptions` not present). Remaining checks not run (stop on first fail).
+
+Do not land. Restore that table to only remove @wip, OR add `## Exceptions` authorizing the extra column. Keep implementation. Then re-hand off.
