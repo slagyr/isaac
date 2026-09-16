@@ -75,8 +75,8 @@ One-time:
 
 ## Worker checkpoint (2026-09-16, scrapper@isaac-work-2)
 
-Done: claimed the bean; activated the three authorized scenarios; captured RED for missing `defaults.crew`, invented crew-list `main`, and charge's `main` exemption; implemented the manifest requirement, crew-list removal, charge precedence/check, and most runtime/store/tool default-crew replacements.
+Done: implemented required `defaults.crew`, removed runtime `"main"` fallbacks across charge/bridge/session/store/tools, removed crew-list invention, activated all three authorized scenarios, and aligned core fixtures. Pushed implementation commits `a860b3a` and `6b01417`; focused acceptance specs are green (395 examples, 844 assertions), and all three focused scenarios are green.
 
-Current state: RED/not yet rerun after the latest edits. Four hardcoded production fallbacks remain in `src/isaac/session/store/impl_common.clj`; focused acceptance and full CI are pending.
+Current state: full CI is RED with seven fixture/flaky failures. Two session-step races pass focused. Remaining deterministic fixture failures are config provider validation, cancellation marker setup, and prompt CLI origin/default expectations.
 
-Next: remove the remaining store fallbacks, lint production changes, then resume at `src/isaac/session/store/impl_common.clj:339` and run `bb spec spec/isaac/charge_spec.clj spec/isaac/config/schema_spec.clj spec/isaac/crew spec/isaac/session`.
+Next: align those fixtures with required `defaults.crew`, then resume at `spec/isaac/bridge/prompt_cli_origin_spec.clj:35`; rerun the failing focused specs followed by `ISAAC_TEST_TIMEOUT_MS=180000 bb ci`.
