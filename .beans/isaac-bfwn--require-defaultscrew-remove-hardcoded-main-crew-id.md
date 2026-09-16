@@ -75,8 +75,8 @@ One-time:
 
 ## Worker checkpoint (2026-09-16, scrapper@isaac-work-2)
 
-Done: implemented required `defaults.crew`, removed runtime `"main"` fallbacks across charge/bridge/session/store/tools, removed crew-list invention, activated all three authorized scenarios, and aligned core fixtures. Pushed implementation commits `a860b3a` and `6b01417`; focused acceptance specs are green (395 examples, 844 assertions), and all three focused scenarios are green.
+Done: required `defaults.crew`, removed production runtime `"main"` fallbacks, activated the three authorized scenarios, aligned unit fixtures, and added feature-fixture stamping that preserves configured crew data. Pushed through `06e1069`. Green evidence: full specs 1631 examples/3348 assertions; focused acceptance 395 examples/844 assertions; authorized scenarios green; web-search config 7/7; config composition 21/35; provider extension 9/9; session-step specs 21/43; production `git grep '"main"' -- src` clean.
 
-Current state: full CI is RED with seven fixture/flaky failures. Two session-step races pass focused. Remaining deterministic fixture failures are config provider validation, cancellation marker setup, and prompt CLI origin/default expectations.
+Current state: full CI remains RED in aggregate features after reducing failures from 56 to 50. The remaining failures are other feature helpers that create unlabeled sessions or resolve crew with fixture-only `"main"` assumptions; one unrelated suspend timing assertion also appeared.
 
-Next: align those fixtures with required `defaults.crew`, then resume at `spec/isaac/bridge/prompt_cli_origin_spec.clj:35`; rerun the failing focused specs followed by `ISAAC_TEST_TIMEOUT_MS=180000 bb ci`.
+Next: resume fixture alignment at `spec/isaac/comm/comm_steps.clj:107`, then inspect the first remaining focused failure (`features/session/context_mode.feature`) and replace direct store-open/path fixture defaults with configured-default-aware fixture helpers. Rerun each failing feature focused, then `ISAAC_TEST_TIMEOUT_MS=180000 bb ci`.
