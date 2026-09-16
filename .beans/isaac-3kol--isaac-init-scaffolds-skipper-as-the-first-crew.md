@@ -1,7 +1,7 @@
 ---
 # isaac-3kol
 title: isaac init scaffolds Skipper as the first crew
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
@@ -9,7 +9,7 @@ tags:
     - cli
     - crew
 created_at: 2026-09-16T17:40:36Z
-updated_at: 2026-09-16T17:40:36Z
+updated_at: 2026-09-16T17:53:29Z
 ---
 
 `isaac init` scaffolds a crew named `main` with soul "You are Isaac, a helpful AI assistant." After dropping hardcoded `main` as a code identity, the first crew should be a character: **Skipper**.
