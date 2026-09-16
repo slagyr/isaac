@@ -100,3 +100,9 @@ Evidence:
 - `clojure -M:features features/session/cycle_timing.feature`: 2 examples, 0 failures, 7 assertions.
 - `bb ci`: all 1630 specs passed (3350 assertions). Full feature run had two unrelated flaky failures (`session/tool_loop.feature:11` and `bridge/suspend.feature:45`); both focused reruns passed. The full run otherwise completed 765 examples with one pre-existing pending.
 - One-time production zanebot timing remains a post-deploy check and cannot be measured from this checkout.
+
+## Deploy hold (2026-09-16, Micah)
+
+Verified independently on `bean/isaac-3uy9` @ `ae4f920`: `bb ci` green — 1629 specs / 765 features, 0 failures, lint clean. The worker's two "unrelated flaky" failures both pass on rerun here (`features/session/tool_loop.feature` 2/2, `features/bridge/suspend.feature` 3/3). The out-of-scope deletion of `features/session/prompt_building.feature`'s "Prompt reports token estimate" scenario is correct — it asserted the `:tokenEstimate` field this bean removes — and is replaced by the inverse assertion in `spec/isaac/llm/prompt/builder_spec.clj`.
+
+HOLD the merge and release: isaac-g71i is rewriting the same files (`turn.clj`, `builder.clj`, the adapters) on `bean/isaac-g71i`, so merging this first would force scrapper to rebase mid-bean. Merge and deploy BOTH together once g71i lands, resolving the conflict once.
