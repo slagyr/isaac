@@ -181,6 +181,6 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: agent branch `bean/isaac-g71i` is pushed through `3b9dbde`; focused contract specs are green (160 examples, 440 assertions), the temporary token bridge is removed, and the required drive/tool-loop wire-key grep is empty. Claude Code now pins agent `3b9dbde` and gherclj v1.5.0, and its adapter/LoopDriver migration is in progress.
+Done: agent branch `bean/isaac-g71i` is pushed through `6fda917`; focused contract/turn specs are green, the temporary token bridge is removed, and the required wire-key grep is empty. Claude Code branch is pushed through `076cd8a`; its unit specs are green (66 examples, 219 assertions, 3 opt-in real pending) and the required Claude driver feature is green (22 examples, 78 assertions).
 
-RED: `clojure -M:features features/llm/api/claude_driver.feature` runs all 22 examples but has 3 failures while legacy Claude fixtures and response consumers are being migrated to top-level `:content` and normalized usage. Resume at `src/isaac/llm/api/claude_cli.clj:940`; exact command: `clojure -M:features features/llm/api/claude_driver.feature`.
+RED: the last full CI runs exposed remaining legacy-suite work: agent had one intermittent fast-future fixture plus an Anthropic prompt expectation now fixed; Claude Code's broader `claude_cli.feature` still needs a clean rerun against pinned agent `6fda917` after fixture migration. Resume at `features/llm/api/claude_cli.feature:227`; exact command: `clojure -M:features features/llm/api/claude_cli.feature`.
