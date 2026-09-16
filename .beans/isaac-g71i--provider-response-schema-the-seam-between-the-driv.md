@@ -181,8 +181,8 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: claimed bean; pushed agent branch through `21ddce5` and claude-code branch through `2740c53`; activated all 13 scenarios; implemented/routed the three authorized agent feature steps (`last provider response`, wire stop reason, raw tool arguments) and corrected the outline title quoting so gherclj v1.5 generates all examples.
+Done: activated all 13 scenarios and routed the three approved feature steps. Implemented the rev-3 protocol schemas and focused green protocol specs; migrated Messages, Chat Completions, Responses, Ollama, and Grover toward normalized response/error/usage/stream shapes; added dispatch contract validation that preserves original maps; began schema-only tool-loop and drive accounting.
 
-RED: `clojure -M:features features/llm/api/response_schema.feature` now executes 29 examples with 29 expected behavioral failures (no pending/compile failures). Current failures prove adapters still return legacy `:message`/wire usage/stop shapes, drive double-counts cached tokens, and streams use raw chunks. Claude scenario still pending until agent shared step-support/schema cutover lands and module is rebased/pinned.
+RED: current source does not compile because legacy wrap-up token aggregation still calls removed `usage-input-tokens` helpers at `src/isaac/drive/turn.clj:513`. No checkpoint commit was made because the latest run is red. Last pushed agent/Claude commits remain `21ddce5` / `2740c53`.
 
-Next: implement schema and adapter cutover incrementally from `src/isaac/llm/api/protocol.clj:52`, then simplify `src/isaac/llm/tool_loop.clj:14` and `src/isaac/drive/turn.clj:60`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature`.
+Next: finish the drive cutover starting at `src/isaac/drive/turn.clj:503` by replacing wrap-up/retry `:token-counts` logic with normalized `:usage`, then remove remaining `[:response :message]` and wire-key fallbacks. Exact resume command: `clojure -M:test -e '(require (quote isaac.drive.turn)) (println :ok)'`.
