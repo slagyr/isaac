@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: high
 created_at: 2026-09-16T14:32:36Z
-updated_at: 2026-09-16T15:19:55Z
+updated_at: 2026-09-16T15:44:56Z
 ---
 
 ## Problem
@@ -125,3 +125,31 @@ Micah's Deploy hold (above) independently accepted the prompt_building deletion;
 ## Verify repair (attempt 1, 2026-09-16, scrapper@isaac-work-2)
 
 Restored `features/session/prompt_building.feature` exactly to `origin/main` and removed the unasked blank-caller row from `features/session/cycle_timing.feature`. The only remaining feature diff is the authorized `@wip` removal for the `:turn/request-built` timing scenario. Repair commit: isaac-agent `bean/isaac-3uy9` @ `79a9663` (base remains `origin/main@a00aca5`). Focused evidence: `clojure -M:features features/session/cycle_timing.feature` — 2 examples, 0 failures, 6 assertions; `bb spec spec/isaac/llm/prompt/builder_spec.clj spec/isaac/session/compaction_spec.clj` — 113 examples, 0 failures, 250 assertions. Per Micah's deploy hold, verifier must not land until `isaac-g71i` lands; this handoff repairs §1 only.
+
+
+
+## Verify fail (attempt 2, 2026-09-16): restored prompt_building tokenEstimate scenario is red (tokenEstimate nil) — §1 vs acceptance conflict; bouncing
+
+HEAD: isaac-agent bean/isaac-3uy9 @ 79a9663 (base origin/main a00aca5)
+Working tree: clean (untracked wt/ only)
+
+Attempt 1 failed §1 (deleted prompt_building scenario + extra cycle_timing absence row; no ## Exceptions).
+Worker restored features only (repair 79a9663). §1 now PASSES: feature diff vs origin/main is solely @wip removal on cycle_timing "the prompt build reports its own elapsed time (isaac-3uy9)". prompt_building.feature matches origin/main.
+
+§2 FAIL — stop on first failure. Remaining checks not run.
+
+Evidence:
+- `clojure -M:features features/session/cycle_timing.feature`: 2 examples, 0 failures, 6 assertions
+- `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/llm/prompt/builder_spec.clj spec/isaac/drive/turn_spec.clj`: 197 examples, 0 failures, 495 assertions
+- `clojure -M:features features/session/prompt_building.feature`: 4 examples, 1 failure
+- Isolated `features/session/prompt_building.feature:85` ("Prompt reports token estimate"): 1 example, 1 failure
+  got: ["tokenEstimate: Expected match for (?s)\\d+, got: nil"]
+  This scenario is green on origin/main (builder still assoc's :tokenEstimate). Red is caused by this bean removing :tokenEstimate from prompt/builder.clj.
+
+Conflict the worker cannot resolve by restoring features:
+- Bean acceptance: "No estimate-tokens walk on the live turn path"
+- Bean also: tokenEstimate removal is bean acceptance, not a permanent test, "not done unasked"
+- verify.md §1: must not delete the scenario without ## Exceptions
+- Micah Deploy hold: deletion is correct; HOLD merge until isaac-g71i (still in-progress) lands
+
+Restoring the scenario (attempt-1 instruction) makes §2 red. Deleting it again without ## Exceptions re-fails §1. Escalating; do not return to worker. Do not land.
