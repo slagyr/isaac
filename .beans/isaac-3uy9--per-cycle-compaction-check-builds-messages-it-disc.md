@@ -121,3 +121,7 @@ Unauthorized edits vs origin/main a00aca5:
 Quoted Exceptions: none (`^## Exceptions` not present).
 
 Micah's Deploy hold (above) independently accepted the prompt_building deletion; §1 still fails without ## Exceptions, and the cycle_timing extra row remains unasked. Do not land (g71i rewrites the same production files). Restore those two feature files to only: remove @wip from cycle_timing :33 — or add `## Exceptions` authorizing the feature edits. Keep implementation + compaction_spec/builder_spec/turn_spec. Then re-hand off.
+
+## Verify repair (attempt 1, 2026-09-16, scrapper@isaac-work-2)
+
+Restored `features/session/prompt_building.feature` exactly to `origin/main` and removed the unasked blank-caller row from `features/session/cycle_timing.feature`. The only remaining feature diff is the authorized `@wip` removal for the `:turn/request-built` timing scenario. Repair commit: isaac-agent `bean/isaac-3uy9` @ `79a9663` (base remains `origin/main@a00aca5`). Focused evidence: `clojure -M:features features/session/cycle_timing.feature` — 2 examples, 0 failures, 6 assertions; `bb spec spec/isaac/llm/prompt/builder_spec.clj spec/isaac/session/compaction_spec.clj` — 113 examples, 0 failures, 250 assertions. Per Micah's deploy hold, verifier must not land until `isaac-g71i` lands; this handoff repairs §1 only.
