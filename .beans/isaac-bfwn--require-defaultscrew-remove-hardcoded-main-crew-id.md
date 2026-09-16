@@ -8,8 +8,9 @@ tags:
     - agent
     - config
     - crew
+    - unverified
 created_at: 2026-09-16T15:49:57Z
-updated_at: 2026-09-16T17:05:28Z
+updated_at: 2026-09-16T20:47:00Z
 ---
 
 `:defaults :crew` is the default crew. Stop using a hardcoded `"main"` identity in production code.
@@ -75,8 +76,8 @@ One-time:
 
 ## Worker checkpoint (2026-09-16, scrapper@isaac-work-2)
 
-Done: required `defaults.crew`, removed production runtime `"main"` fallbacks, activated the three authorized scenarios, aligned unit and feature fixtures, preserved configured crew data, stamped direct feature session creation, and preserved existing session crew in comm fixtures. Implementation is pushed through `8c8a3bb`. Green evidence: full specs 1634 examples/3351 assertions; focused acceptance 395 examples/844 assertions; all three authorized scenarios green; web-search config 7/7; config composition 21/35; provider extension 9/9; behavior funnel 40/40; turn exhaustion 11/33; unknown crew 4/15; session-step specs 21/43; production `git grep '"main"' -- src` clean.
+Done: required `defaults.crew`, removed production runtime `"main"` fallbacks, activated the three authorized scenarios, aligned unit and feature fixtures, preserved configured crew data, stamped direct feature session creation, and preserved existing session crew in comm fixtures. The last red filesystem scenario was an invalid EDN fixture (missing closing brace), repaired at `features/tool/filesystem_boundaries.feature:90`. Rebased onto `origin/main` `0eda379`; implementation is pushed at `6c0a9e0`.
 
-Current state: RED. `bb features features/tool/filesystem_boundaries.feature:87` fails at the transcript assertion because no `toolResult` is present (`type` and `message.role` are nil). The failure persists with this bean's production/session-step changes temporarily reverted, while an older checkout with different foundation/gherclj pins passes. Worktree restoration is complete and clean.
+Evidence: all three authorized scenarios green (1 example/2 assertions each); focused acceptance specs 398 examples, 0 failures, 847 assertions; focused filesystem regression 1/1; full `bb ci` green with 1635 specs/3353 assertions and 767 feature examples/1814 assertions (1 pre-existing pending); `git diff --check` clean; `git grep -n '"main"' -- src` clean; manifest contains no `:default "main"`.
 
-Next: inspect the completed turn and transcript immediately after `await-turn!` to determine why the queued `fs__read` call is not persisted under the current foundation pin. Resume at `spec/isaac/session/session_steps.clj:1595` (`session-transcript-matching*`), tracing back through `spec/isaac/session/session_steps.clj:623` (`await-turn!`) and the send path. Then rerun the focused scenario and `ISAAC_TEST_TIMEOUT_MS=180000 bb ci`.
+Next: verifier review from `resources/isaac-manifest.edn:441` and `src/isaac/charge.clj:83`, then exercise runtime default resolution across the production files listed in Scope. Bean remains `in-progress` and is tagged `unverified` pending verification.
