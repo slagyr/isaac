@@ -181,8 +181,6 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: `clojure -M:features features/llm/api/response_schema.feature` is green (29 examples, 39 assertions). Agent branch commits `f43a018` and `611ff16` are pushed. Adapter/tool-loop focused specs are updated and green (173 examples, 382 assertions).
+Done: agent branch `bean/isaac-g71i` is pushed through `dc56cc4`. The response-schema feature is green (29 examples, 39 assertions), focused turn specs are green (69 examples, 210 assertions), and the complete agent spec suite is green (1605 examples, 3301 assertions). Adapter/tool-loop, compaction, provider-wall, and auth fixtures now use the rev-3 contract.
 
-RED: `bb spec` still has 45 legacy failures, concentrated in `spec/isaac/drive/turn_spec.clj`, `spec/isaac/session/compaction_spec.clj`, and provider-wall/auth specs that assert pre-rev-3 wire shapes. Current uncommitted changes update adapter/tool-loop specs and add a temporary public `merge-response-tokens` bridge.
-
-Next: migrate turn specs to normalized `:usage`/`:response` at `spec/isaac/drive/turn_spec.clj:94`, then compaction response fixtures at `spec/isaac/session/compaction_spec.clj:730`. Exact resume command: `bb spec spec/isaac/drive/turn_spec.clj`.
+Next: remove the temporary `merge-response-tokens` bridge and move outbound request wire translation fully behind adapters so the required drive/tool-loop grep is empty. Resume at `src/isaac/llm/tool_loop.clj:28` (stateful response chaining), then migrate Claude Code at `src/isaac/llm/api/claude_cli.clj:1003`. Exact resume command: `git grep -nE ':[a-z]+_[a-z_]+|\[:response :response' src/isaac/drive src/isaac/llm/tool_loop.clj`.
