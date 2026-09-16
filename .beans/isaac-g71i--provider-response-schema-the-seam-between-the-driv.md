@@ -181,8 +181,8 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: claimed the bean; created/pushed `bean/isaac-g71i` in both isaac-agent (`ca2da02`) and isaac-claude-code (`2740c53`); activated all 12 agent scenarios and the Claude driven-loop scenario. Investigated current adapter/drive wire-shape coupling and attempted a broad schema cutover, then reverted the unverified production edits rather than checkpointing broken code.
+Done: claimed bean; pushed agent branch through `21ddce5` and claude-code branch through `2740c53`; activated all 13 scenarios; implemented/routed the three authorized agent feature steps (`last provider response`, wire stop reason, raw tool arguments) and corrected the outline title quoting so gherclj v1.5 generates all examples.
 
-RED: agent feature compilation currently fails at generated `target/gherclj/generated/llm/api/response_schema_spec.clj:145` because the new `grover's next reply stops with wire reason "<wire>"` step is not implemented/routed and the placeholder is emitted as a symbol. Claude scenario is pending due the shared new `the last provider response matches:` step also being absent.
+RED: `clojure -M:features features/llm/api/response_schema.feature` now executes 29 examples with 29 expected behavioral failures (no pending/compile failures). Current failures prove adapters still return legacy `:message`/wire usage/stop shapes, drive double-counts cached tokens, and streams use raw chunks. Claude scenario still pending until agent shared step-support/schema cutover lands and module is rebased/pinned.
 
-Next: implement the three authorized steps in `spec/isaac/session/session_steps.clj`, starting at `spec/isaac/session/session_steps.clj:415` (queued response fixture parsing), then implement the schema/adapters incrementally from `src/isaac/llm/api/protocol.clj:52`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature`.
+Next: implement schema and adapter cutover incrementally from `src/isaac/llm/api/protocol.clj:52`, then simplify `src/isaac/llm/tool_loop.clj:14` and `src/isaac/drive/turn.clj:60`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature`.
