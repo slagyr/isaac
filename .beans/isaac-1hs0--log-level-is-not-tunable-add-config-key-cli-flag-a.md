@@ -4,8 +4,10 @@ title: 'Log level is not tunable: add config key, CLI flag, and viewer filter'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-16T15:15:03Z
-updated_at: 2026-09-16T15:44:52Z
+updated_at: 2026-09-16T16:52:28Z
 ---
 
 ## Problem
@@ -59,8 +61,17 @@ isaac-foundation `features/logs/cli.feature` — 4 scenarios, all reusing existi
 
 The config key and the `--log-level` flag stay at spec level (`log/output_spec.clj`, `logger_spec.clj`, `cli/args.clj` specs) as the acceptance section already states — the harness logs to memory, so asserting "what got written" through a feature would test the harness rather than the behavior.
 
-## Worker checkpoint (2026-09-16)
+## Worker evidence (2026-09-16)
 
-Done: implemented config and global CLI log-level precedence, server propagation, `isaac logs --level` filtering for initial/follow output, post-filter limits, unknown-level handling, plain bypass, manifest/help docs, and removed the four authorized `@wip` tags. Checkpoint `7758027` pushed on `bean/isaac-1hs0`; focused main spec is green (34 examples, 66 assertions).
+Implemented config and global CLI log-level precedence, server propagation, `isaac logs --level` filtering for initial and follow output, post-filter limits, unknown-level handling, plain bypass, manifest/help docs, and the direct configured-path logger assertion. Removed only the four authorized `@wip` tags.
 
-Next: run all focused acceptance suites, diagnose the combined viewer follow-race if reproduced, run `ISAAC_TEST_TIMEOUT_MS=180000 bb ci`, manually verify write/view filtering, review/rebase, and hand off. Resume at `spec/isaac/log_viewer_spec.clj:354` with `bb spec spec/isaac/log_viewer_spec.clj spec/isaac/logs/cli_spec.clj`.
+- branch: `bean/isaac-1hs0` @ `2985d7e70d8a386758573411498bb755511b3985` (base `origin/main@0c25934e6175c08b497f5ac53b3707aabe9ad515`)
+- focused affected specs: 143 examples, 0 failures, 256 assertions
+- `bb features features/logs/cli.feature`: 21 examples, 0 failures, 52 assertions
+- `ISAAC_TEST_TIMEOUT_MS=180000 bb ci`: 1031 specs / 188 features, 0 failures (2 pre-existing pending scenarios)
+- CI prerequisite repair: first feature run found a stale global tools.gitlibs mirror pointing at a deleted worktree; removing that cached fixture mirror made the clean rerun green. No repository change was required.
+- manual global write filter: debug invocation wrote one debug entry; `--log-level info` wrote zero debug entries
+- manual viewer filter: `isaac logs --level warn` showed warn/error and hid debug
+- `git diff --check`: clean
+
+Ready for verification.
