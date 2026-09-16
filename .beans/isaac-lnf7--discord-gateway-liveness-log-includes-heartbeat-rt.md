@@ -6,8 +6,9 @@ type: task
 priority: normal
 tags:
     - discord
+    - unverified
 created_at: 2026-09-16T14:47:41Z
-updated_at: 2026-09-16T14:47:56Z
+updated_at: 2026-09-16T14:54:33Z
 ---
 
 ## Problem
@@ -22,6 +23,16 @@ Timestamps use the gateway scheduler clock so tests and interval math share a ti
 isaac-discord (`src/isaac/comm/discord/gateway.clj`)
 
 ## Acceptance
-- [ ] `bb features features/comm/discord/gateway.feature` — liveness-after-ack scenario (no `@wip`)
-- [ ] `bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj` — existing heartbeat/timeout specs plus rtt/sequence on liveness
+- [ ] `bb features features/comm/discord/gateway.feature:55`
+- [ ] `bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj`
 - [ ] No `:discord.gateway/heartbeat` or `:discord.gateway/heartbeat-ack` log events on the healthy path
+
+## Done (2026-09-16, plan@isaac-lnf7)
+Stamp `:last-heartbeat-sent-at-ms` from the gateway scheduler clock. Opcode 11 stamps ack time. Next heartbeat tick emits one info `:discord.gateway/liveness` with `:status`, `:sequence`, `:rtt-ms`, `:last-ack-ms-ago`. Dropped debug send/ack events. Warn paths unchanged. Branch `bean/isaac-lnf7`. `bb ci` green (3 pre-existing pending episode scenarios).
+
+## Next
+Verify on isaac-discord `bean/isaac-lnf7`:
+```
+bb features features/comm/discord/gateway.feature:55
+bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj
+```
