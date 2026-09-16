@@ -1,13 +1,11 @@
 ---
 # isaac-g71i
 title: 'Provider response schema: the seam between the drive and adapters'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-15T22:03:49Z
-updated_at: 2026-09-16T21:08:55Z
+updated_at: 2026-09-16T21:36:31Z
 ---
 
 ## Problem
@@ -192,3 +190,10 @@ Implementation complete and ready for verification.
 - Claude driver acceptance: 22 examples, 0 failures, 78 assertions.
 - Claude CI: 66 unit examples, 0 failures, 219 assertions, 3 opt-in real-binary pending; 43 feature examples, 0 failures, 139 assertions.
 - Required drive/tool-loop wire-key grep returned no matches. Both implementation worktrees are clean and pushed.
+
+
+
+## Landed on main (2026-09-16)
+
+main-sha: isaac-agent 2a6dd0fa14337b18d3cd8c85283387302cf1cec9
+main-sha: isaac-claude-code 88b974790f8e98a96512539302b607a19fe93e33
