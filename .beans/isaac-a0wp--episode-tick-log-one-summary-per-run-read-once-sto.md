@@ -1,11 +1,11 @@
 ---
 # isaac-a0wp
 title: 'Episode tick: log one summary per run, read once, stop re-warning every 30s'
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-09-16T15:15:42Z
-updated_at: 2026-09-16T15:15:42Z
+updated_at: 2026-09-16T15:22:01Z
 ---
 
 ## Problem
@@ -42,3 +42,13 @@ Three log/IO problems, measured on zanebot 2026-09-16:
 ## Note
 
 isaac-episodes is its own repo (`isaac.session.episodes`, deployed sha `e0c7ddd`; gitlib checkout on zanebot is `0cbe24b`). Tests: `bb spec`, `bb features`, `bb ci`. Features live under `features/episodes` and `features/recall`.
+
+## Scenarios (committed @wip, 2026-09-16)
+
+isaac-episodes `features/episodes/idle_seal.feature` — 3 scenarios, all reusing existing steps (`the episodes worker ticks at {iso}`, `the log has entries matching:`, the standard prompt/queue setup). No new steps.
+
+1. **the worker logs one summary per tick** — one `:info :episodes/tick` entry carrying `episodes-examined`, `sealed`, `closed`, `elapsed-ms`.
+2. **an unchanged episode is not re-read on the next tick** — the second tick's summary reports `transcript-reads 0`.
+3. **repeated seal failures report a streak instead of one warn per tick** — two failing ticks produce a `:episodes/seal-failed` entry with `:consecutive 2`.
+
+Design note from scenario 2: the tick summary must carry a **`:transcript-reads`** count alongside the other counters. That makes "we stopped re-reading" observable from the same line you wanted for the heartbeat, and avoided inventing a log-clearing step to isolate the second tick.

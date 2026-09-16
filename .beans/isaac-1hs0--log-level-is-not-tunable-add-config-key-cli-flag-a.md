@@ -1,11 +1,11 @@
 ---
 # isaac-1hs0
 title: 'Log level is not tunable: add config key, CLI flag, and viewer filter'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-16T15:15:03Z
-updated_at: 2026-09-16T15:15:03Z
+updated_at: 2026-09-16T15:22:01Z
 ---
 
 ## Problem
@@ -47,3 +47,14 @@ Precedence: `--log-level` flag > `:logging {:level}` config > default `:debug`.
 ## Note
 
 Deploying foundation is heavier than a module: version bump, tag, manual `gh workflow run Release`, homebrew-tap dispatch, then `brew upgrade` + relink on zanebot. See [[isaac-deploy-train]]. Batch this with other foundation work rather than shipping alone.
+
+## Scenarios (committed @wip, 2026-09-16)
+
+isaac-foundation `features/logs/cli.feature` — 4 scenarios, all reusing existing steps (`isaac is run with …`, `a file … exists with content:`, stdout assertions). No new steps.
+
+1. **--level shows that severity and above** — `--level warn` on a four-level fixture prints the error and warn entries, not info or debug.
+2. **--level debug shows everything.**
+3. **an unknown level is more verbose than debug and is hidden above it** — settles the parked question with the suggested rule: the file already contains a `:level :trace` entry the logger cannot emit; `--level info` hides it.
+4. **--plain bypasses level filtering** — raw passthrough stays raw.
+
+The config key and the `--log-level` flag stay at spec level (`log/output_spec.clj`, `logger_spec.clj`, `cli/args.clj` specs) as the acceptance section already states — the harness logs to memory, so asserting "what got written" through a feature would test the harness rather than the behavior.
