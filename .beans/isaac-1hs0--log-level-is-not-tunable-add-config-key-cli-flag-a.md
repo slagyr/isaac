@@ -58,3 +58,9 @@ isaac-foundation `features/logs/cli.feature` — 4 scenarios, all reusing existi
 4. **--plain bypasses level filtering** — raw passthrough stays raw.
 
 The config key and the `--log-level` flag stay at spec level (`log/output_spec.clj`, `logger_spec.clj`, `cli/args.clj` specs) as the acceptance section already states — the harness logs to memory, so asserting "what got written" through a feature would test the harness rather than the behavior.
+
+## Worker checkpoint (2026-09-16)
+
+Done: implemented config and global CLI log-level precedence, server propagation, `isaac logs --level` filtering for initial/follow output, post-filter limits, unknown-level handling, plain bypass, manifest/help docs, and removed the four authorized `@wip` tags. Checkpoint `7758027` pushed on `bean/isaac-1hs0`; focused main spec is green (34 examples, 66 assertions).
+
+Next: run all focused acceptance suites, diagnose the combined viewer follow-race if reproduced, run `ISAAC_TEST_TIMEOUT_MS=180000 bb ci`, manually verify write/view filtering, review/rebase, and hand off. Resume at `spec/isaac/log_viewer_spec.clj:354` with `bb spec spec/isaac/log_viewer_spec.clj spec/isaac/logs/cli_spec.clj`.
