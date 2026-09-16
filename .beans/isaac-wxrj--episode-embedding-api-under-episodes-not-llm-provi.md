@@ -1,13 +1,13 @@
 ---
 # isaac-wxrj
 title: Episode Embedding API under :episodes, not LLM providers
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - episodes
 created_at: 2026-09-16T17:02:33Z
-updated_at: 2026-09-16T17:52:12Z
+updated_at: 2026-09-16T18:23:10Z
 ---
 
 ## Problem
