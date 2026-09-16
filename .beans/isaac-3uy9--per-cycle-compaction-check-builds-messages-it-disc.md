@@ -1,11 +1,11 @@
 ---
 # isaac-3uy9
 title: Per-cycle compaction check builds messages it discards; prompt build is untimed
-status: draft
+status: todo
 type: task
 priority: high
 created_at: 2026-09-16T14:32:36Z
-updated_at: 2026-09-16T14:32:36Z
+updated_at: 2026-09-16T14:38:52Z
 ---
 
 ## Problem
@@ -63,3 +63,26 @@ Transcript reads are NOT the cost (isaac-vfg8's logging made that visible; Micah
 ## Deferred — not decided
 
 - **Incremental prompt build.** Only the tail changes each cycle, yet the entire message list is rebuilt and re-sanitized every time. Caching the built prefix keyed on the last transcript entry id could remove most of the remaining ~1.6s, but it interacts with compaction splices, turn framing injection, and nonce sanitization. Measure after items 1–3 before scoping.
+
+## Scenarios (2026-09-16)
+
+Committed `@wip` in isaac-agent `features/session/cycle_timing.feature` (the file isaac-vfg8 created for exactly this gap):
+
+- **the prompt build reports its own elapsed time (isaac-3uy9)** — a one-tool-call turn logs `:turn/request-built` carrying `:build-ms` and `:messages-count`. Proposal item 2; makes the ~1.6s measurable instead of inferred.
+
+Specs to write beside the existing `plan-compaction` describe (`spec/isaac/session/compaction_spec.clj:134`, which already asserts stamped `:tokens-before`):
+
+- `plan-compaction` returns correct `:compact-count`, `:tokens-before`, and `:first-kept-entry-id` for BOTH `:rubberband` and `:slinky` with `->compact-message` and `tool-pair-message` redefined to throw. This is the real guard for proposal item 1: it fails the moment anything reintroduces per-cycle stringification. Reuse the fixtures in the "sliding compaction target" describe below it.
+- Actual compaction still renders messages when it fires — covered by the existing compaction feature suites; keep them green rather than adding new ones.
+
+Deliberately NOT permanent scenarios:
+
+- **The speed itself.** "compaction-check under 100ms" is wall-clock and would be flaky in the suite. It is a one-time acceptance check on zanebot (below).
+- **The removed `:tokenEstimate` walk.** A removal check, which per standing practice is bean acceptance, not a permanent test. NOTE: `cycle_timing.feature` already carries an absence block from isaac-4erp (`the log has no entries matching: :session/token-estimate :before/:check/:after`), so extending that block with the turn-path estimate is a one-line change if Micah prefers the precedent over the rule — not done unasked.
+
+## Acceptance (runnable)
+
+- `clojure -M:features features/session/cycle_timing.feature` (isaac-agent, after removing the `@wip` tag)
+- `bb spec spec/isaac/session/compaction_spec.clj`
+- `bb ci` green in isaac-agent
+- One-time on zanebot after deploy, on a session with >=300 history entries and >=1MB transcript: `session/compaction-check :elapsed-ms` below 100ms (today 1052-2094ms, avg 1280ms over 289 checks), and `session/token-estimate` still the only place a full-prompt estimate is computed.
