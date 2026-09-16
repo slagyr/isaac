@@ -65,7 +65,7 @@ Scenario plan in planning chat — draft until those are approved and committed.
 ## Decision (2026-09-16, Micah)
 Embedding API is a **multimethod**, not a protocol. Dispatch value is
 `:api` on the `:episodes :embedding` map. No long-lived adapter object —
-LLM `Api` is a multi-method instance because chat has many operations and
+LLM `Api` is a protocol instance because chat has many operations and
 a bound connection; embed is one function over config.
 
 `(defmulti embed (fn [embedding-cfg texts] (keyword (:api embedding-cfg))))`
