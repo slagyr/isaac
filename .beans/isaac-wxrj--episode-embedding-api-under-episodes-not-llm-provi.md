@@ -1,14 +1,13 @@
 ---
 # isaac-wxrj
 title: Episode Embedding API under :episodes, not LLM providers
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
-    - unverified
     - episodes
 created_at: 2026-09-16T17:02:33Z
-updated_at: 2026-09-16T19:21:39Z
+updated_at: 2026-09-16T19:46:10Z
 ---
 
 ## Problem
@@ -119,3 +118,10 @@ Evidence:
 - `isaac-agent bb spec spec/isaac/llm/http_spec.clj`: 31 examples, 0 failures, 82 assertions.
 - Full isaac-agent spec reached 1629 examples with one unrelated, known flaky `session_steps_spec.clj:139` timing failure; focused HTTP coverage is green.
 - `git diff --check` clean; no legacy root/provider embedding references remain in episodes source/spec/features/resources.
+
+
+
+## Landed on main (2026-09-16)
+
+main-sha: isaac-episodes a2f5edadb420df4efc47f8fa8765f0a5a3503535
+main-sha: isaac-agent 0eda3795a4b7424d15ce81e8058e41f1fbccb420
