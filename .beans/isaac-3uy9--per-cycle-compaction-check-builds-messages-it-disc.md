@@ -5,7 +5,9 @@ status: in-progress
 type: task
 priority: high
 created_at: 2026-09-16T14:32:36Z
-updated_at: 2026-09-16T15:44:56Z
+updated_at: 2026-09-16T15:53:07Z
+blocked_by:
+    - isaac-g71i
 ---
 
 ## Problem
@@ -153,3 +155,31 @@ Conflict the worker cannot resolve by restoring features:
 - Micah Deploy hold: deletion is correct; HOLD merge until isaac-g71i (still in-progress) lands
 
 Restoring the scenario (attempt-1 instruction) makes §2 red. Deleting it again without ## Exceptions re-fails §1. Escalating; do not return to worker. Do not land.
+
+
+
+## Exceptions
+
+### prompt_building.feature (authorized, 2026-09-16, prowl@isaac-plan)
+
+Delete scenario "Prompt reports token estimate". It asserted `:tokenEstimate` on the live prompt, which this bean removes from the turn path. Inverse assertion lives in `spec/isaac/llm/prompt/builder_spec.clj` (prompt build does not call `estimate-tokens`). Micah's Deploy hold (2026-09-16) already accepted this deletion.
+
+Do **not** extend `cycle_timing.feature`'s absence block with a `:session/token-estimate` row. That remains unasked. Only permitted `cycle_timing` edit: `@wip` removal on "the prompt build reports its own elapsed time (isaac-3uy9)".
+
+## Planner adjustment (2026-09-16, prowl@isaac-plan) — authorize prompt_building deletion; keep implementation; do not land until g71i
+
+Conflict: verify.md §1 forbids deleting the tokenEstimate scenario without Exceptions; bean acceptance forbids the `estimate-tokens` walk on the live turn path; restoring the scenario makes §2 red (`tokenEstimate` nil).
+
+**Decision: keep the implementation (no `:tokenEstimate` / `estimate-tokens` on `prompt/build`). Authorize the scenario deletion via ## Exceptions.** Do not put `:tokenEstimate` back on the prompt. Do not split this into a later bean.
+
+**Land sequencing (Micah Deploy hold, unchanged):** do not squash-merge or complete isaac-3uy9 while isaac-g71i is still rewriting `turn.clj` / `builder.clj`. This bean is now `blocked-by` isaac-g71i. Merge both together once g71i lands (rebase 3uy9 if needed).
+
+Worker now:
+1. Re-delete `features/session/prompt_building.feature` scenario "Prompt reports token estimate" (authorized above).
+2. Do not re-add the cycle_timing absence row.
+3. Keep implementation + `builder_spec` inverse assertion.
+4. Confirm focused gates:
+       clojure -M:features features/session/cycle_timing.feature
+       clojure -M:features features/session/prompt_building.feature
+       bb spec spec/isaac/session/compaction_spec.clj spec/isaac/llm/prompt/builder_spec.clj spec/isaac/drive/turn_spec.clj
+5. Do **not** land. Do **not** hail isaac-verify while g71i is still in-progress. Append a checkpoint that the deletion is restored and gates are green, then stop. Completing is blocked until isaac-g71i has `main-sha` on isaac-agent.
