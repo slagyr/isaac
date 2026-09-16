@@ -1,13 +1,13 @@
 ---
 # isaac-wxrj
 title: Episode Embedding API under :episodes, not LLM providers
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
     - episodes
 created_at: 2026-09-16T17:02:33Z
-updated_at: 2026-09-16T17:07:53Z
+updated_at: 2026-09-16T17:52:12Z
 ---
 
 ## Problem
@@ -56,10 +56,32 @@ Small isaac-agent grover stub for `POST …/embeddings` so features can capture
 the request without a live call.
 
 ## Acceptance
-Runnable commands land when `@wip` scenarios are committed (see Next).
+isaac-episodes (remove `@wip`; all must pass):
 
-## Next
-Scenario plan in planning chat — draft until those are approved and committed.
+    bb features features/recall/embedding.feature:17
+    bb features features/recall/embedding.feature:30
+    bb features features/recall/embedding.feature:43
+    bb features features/recall/embedding.feature:55
+    bb features features/recall/embedding.feature:69
+    bb features features/recall/embedding.feature:83
+    bb features features/recall/embedding.feature:104
+    bb features features/recall/embedding.feature
+    bb spec
+    bb ci
+
+Also rewrite every other episode feature/spec that still uses root
+`{:embedding {:source :provider …}}` to `{:episodes {:embedding {:api "grover" :model "mini-embed"}}}`.
+Unknown `:source` / unknown LLM-provider embedding scenarios are deleted (clean cutover).
+
+## Scenario verdicts (2026-09-16, Micah)
+embedding.feature — keep/rewrite/new as landed `@wip`:
+1. help — rewrite (provider → API)
+2. unconfigured — rewrite (error names `:episodes` `:embedding`)
+3. grover embed hello — rewrite (new config)
+4. batch — rewrite (new config)
+5. ollama HTTP — rewrite (`:api "ollama"` + simulate-provider)
+6. embeddings HTTP — new (bearer, text-embedding-3-large)
+7. unknown api — new (replaces unknown provider/source)
 
 
 ## Decision (2026-09-16, Micah)
