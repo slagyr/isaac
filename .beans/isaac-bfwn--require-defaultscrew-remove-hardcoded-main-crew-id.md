@@ -1,16 +1,15 @@
 ---
 # isaac-bfwn
 title: Require defaults.crew; remove hardcoded main crew identity
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
+    - crew
     - agent
     - config
-    - crew
-    - unverified
 created_at: 2026-09-16T15:49:57Z
-updated_at: 2026-09-16T20:47:00Z
+updated_at: 2026-09-16T21:00:35Z
 ---
 
 `:defaults :crew` is the default crew. Stop using a hardcoded `"main"` identity in production code.
@@ -81,3 +80,9 @@ Done: required `defaults.crew`, removed production runtime `"main"` fallbacks, a
 Evidence: all three authorized scenarios green (1 example/2 assertions each); focused acceptance specs 398 examples, 0 failures, 847 assertions; focused filesystem regression 1/1; full `bb ci` green with 1635 specs/3353 assertions and 767 feature examples/1814 assertions (1 pre-existing pending); `git diff --check` clean; `git grep -n '"main"' -- src` clean; manifest contains no `:default "main"`.
 
 Next: verifier review from `resources/isaac-manifest.edn:441` and `src/isaac/charge.clj:83`, then exercise runtime default resolution across the production files listed in Scope. Bean remains `in-progress` and is tagged `unverified` pending verification.
+
+
+
+## Landed on main (2026-09-16)
+
+main-sha: isaac-agent 8ed7f95b4f2e3c09a7fc6052f6070bacf30702fc
