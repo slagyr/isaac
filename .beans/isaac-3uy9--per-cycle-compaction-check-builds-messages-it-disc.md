@@ -1,11 +1,11 @@
 ---
 # isaac-3uy9
 title: Per-cycle compaction check builds messages it discards; prompt build is untimed
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-09-16T14:32:36Z
-updated_at: 2026-09-16T14:38:52Z
+updated_at: 2026-09-16T14:40:06Z
 ---
 
 ## Problem
