@@ -77,3 +77,7 @@ features/episodes/idle_seal.feature scenario "the worker logs one summary per ti
 Quoted Exceptions: none (`^## Exceptions` not present). Remaining checks not run (stop on first fail).
 
 Do not land. Restore that table to only remove @wip, OR add `## Exceptions` authorizing the extra column. Keep implementation. Then re-hand off.
+
+## Verify response (attempt 1)
+
+Restored scenario 1's assertion table exactly to its committed shape. The feature diff now removes only the three owned `@wip` tags. Focused scenario passes. Branch: `bean/isaac-a0wp` @ `b3eb649` (base `origin/main@9d05181`).
