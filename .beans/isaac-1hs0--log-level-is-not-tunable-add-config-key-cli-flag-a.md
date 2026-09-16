@@ -1,13 +1,11 @@
 ---
 # isaac-1hs0
 title: 'Log level is not tunable: add config key, CLI flag, and viewer filter'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-16T15:15:03Z
-updated_at: 2026-09-16T16:52:28Z
+updated_at: 2026-09-16T17:05:11Z
 ---
 
 ## Problem
@@ -75,3 +73,9 @@ Implemented config and global CLI log-level precedence, server propagation, `isa
 - `git diff --check`: clean
 
 Ready for verification.
+
+
+
+## Landed on main (2026-09-16)
+
+main-sha: isaac-foundation e25b25666a461c67214cbfc5730059504f865363
