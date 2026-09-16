@@ -72,3 +72,11 @@ One-time:
 
 - `git grep -n '"main"' -- src` in isaac-agent has no crew-identity fallback (session-key strings and fixture-only comments do not count). Charge `unknown?` does not special-case `"main"`.
 - Manifest `:defaults :crew` has no `:default "main"`.
+
+## Worker checkpoint (2026-09-16, scrapper@isaac-work-2)
+
+Done: claimed the bean; activated the three authorized scenarios; captured RED for missing `defaults.crew`, invented crew-list `main`, and charge's `main` exemption; implemented the manifest requirement, crew-list removal, charge precedence/check, and most runtime/store/tool default-crew replacements.
+
+Current state: RED/not yet rerun after the latest edits. Four hardcoded production fallbacks remain in `src/isaac/session/store/impl_common.clj`; focused acceptance and full CI are pending.
+
+Next: remove the remaining store fallbacks, lint production changes, then resume at `src/isaac/session/store/impl_common.clj:339` and run `bb spec spec/isaac/charge_spec.clj spec/isaac/config/schema_spec.clj spec/isaac/crew spec/isaac/session`.
