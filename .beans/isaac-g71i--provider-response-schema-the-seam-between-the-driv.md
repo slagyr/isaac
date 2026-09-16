@@ -178,3 +178,11 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 - `bb ci` green in isaac-claude-code
 - No wire-key reads left in `src/isaac/drive` or `src/isaac/llm/tool_loop.clj`: `git grep -nE ':[a-z]+_[a-z_]+|\[:response :response' src/isaac/drive src/isaac/llm/tool_loop.clj` returns nothing outside adapter namespaces
 - Requires gherclj >= v1.5.0 (pinned in isaac-agent as of `2168a74`)
+
+## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
+
+Done: claimed the bean; created/pushed `bean/isaac-g71i` in both isaac-agent (`ca2da02`) and isaac-claude-code (`2740c53`); activated all 12 agent scenarios and the Claude driven-loop scenario. Investigated current adapter/drive wire-shape coupling and attempted a broad schema cutover, then reverted the unverified production edits rather than checkpointing broken code.
+
+RED: agent feature compilation currently fails at generated `target/gherclj/generated/llm/api/response_schema_spec.clj:145` because the new `grover's next reply stops with wire reason "<wire>"` step is not implemented/routed and the placeholder is emitted as a symbol. Claude scenario is pending due the shared new `the last provider response matches:` step also being absent.
+
+Next: implement the three authorized steps in `spec/isaac/session/session_steps.clj`, starting at `spec/isaac/session/session_steps.clj:415` (queued response fixture parsing), then implement the schema/adapters incrementally from `src/isaac/llm/api/protocol.clj:52`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature`.
