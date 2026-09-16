@@ -181,8 +181,8 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: activated all 13 scenarios and routed the three approved feature steps. Implemented the rev-3 protocol schemas and focused green protocol specs; migrated Messages, Chat Completions, Responses, Ollama, and Grover toward normalized response/error/usage/stream shapes; added dispatch contract validation that preserves original maps; began schema-only tool-loop and drive accounting.
+Done: implemented rev-3 protocol schemas, normalized all five agent adapters, dispatch contract validation, schema-only tool-loop usage, drive usage persistence, malformed-argument tool results, normalized errors/stops, and stream delta plumbing. Focused protocol specs are green. Feature progress improved from 29 failures to 7.
 
-RED: current source does not compile because legacy wrap-up token aggregation still calls removed `usage-input-tokens` helpers at `src/isaac/drive/turn.clj:513`. No checkpoint commit was made because the latest run is red. Last pushed agent/Claude commits remain `21ddce5` / `2740c53`.
+RED: `clojure -M:features features/llm/api/response_schema.feature` reports 29 examples, 7 failures. Remaining failures: off-contract helper selection, second OpenAI session stamping, overflow helper selection, and four stream event ordering/chunking examples. No implementation checkpoint committed because acceptance remains red.
 
-Next: finish the drive cutover starting at `src/isaac/drive/turn.clj:503` by replacing wrap-up/retry `:token-counts` logic with normalized `:usage`, then remove remaining `[:response :message]` and wire-key fallbacks. Exact resume command: `clojure -M:test -e '(require (quote isaac.drive.turn)) (println :ok)'`.
+Next: inspect captured stream events and finish stream normalization at `src/isaac/llm/api/grover.clj:399`, then fix final-response selection at `spec/isaac/session/session_steps.clj:1769`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature`.
