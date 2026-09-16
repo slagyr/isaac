@@ -181,8 +181,8 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: implemented rev-3 protocol schemas, normalized all five agent adapters, dispatch contract validation, schema-only tool-loop usage, drive usage persistence, malformed-argument tool results, normalized errors/stops, and stream delta plumbing. Focused protocol specs are green; 27/29 response-schema examples pass.
+Done: `clojure -M:features features/llm/api/response_schema.feature` is green (29 examples, 39 assertions). Agent branch commits `f43a018` and `611ff16` are pushed. Adapter/tool-loop focused specs are updated and green (173 examples, 382 assertions).
 
-RED: the full response-schema feature has 2 failures. OpenAI cached-token accounting is green in isolation but order-dependent in the full feature; context-overflow still ends context-exhausted because Grover's compaction request consumes or cannot reach the queued retry response. No implementation checkpoint committed because acceptance remains red.
+RED: `bb spec` still has 45 legacy failures, concentrated in `spec/isaac/drive/turn_spec.clj`, `spec/isaac/session/compaction_spec.clj`, and provider-wall/auth specs that assert pre-rev-3 wire shapes. Current uncommitted changes update adapter/tool-loop specs and add a temporary public `merge-response-tokens` bridge.
 
-Next: finish the Grover compaction/retry seam at `src/isaac/llm/api/grover.clj:250`, then diagnose the full-suite-only queue ordering at `spec/isaac/session/session_steps.clj:727`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature:269`.
+Next: migrate turn specs to normalized `:usage`/`:response` at `spec/isaac/drive/turn_spec.clj:94`, then compaction response fixtures at `spec/isaac/session/compaction_spec.clj:730`. Exact resume command: `bb spec spec/isaac/drive/turn_spec.clj`.
