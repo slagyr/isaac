@@ -1,11 +1,11 @@
 ---
 # isaac-1hs0
 title: 'Log level is not tunable: add config key, CLI flag, and viewer filter'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-16T15:15:03Z
-updated_at: 2026-09-16T15:22:01Z
+updated_at: 2026-09-16T15:44:52Z
 ---
 
 ## Problem
