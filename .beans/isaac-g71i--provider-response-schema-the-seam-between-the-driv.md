@@ -181,6 +181,6 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: agent branch `bean/isaac-g71i` is pushed through `dc56cc4`. The response-schema feature is green (29 examples, 39 assertions), focused turn specs are green (69 examples, 210 assertions), and the complete agent spec suite is green (1605 examples, 3301 assertions). Adapter/tool-loop, compaction, provider-wall, and auth fixtures now use the rev-3 contract.
+Done: agent branch `bean/isaac-g71i` is pushed through `3b9dbde`; focused contract specs are green (160 examples, 440 assertions), the temporary token bridge is removed, and the required drive/tool-loop wire-key grep is empty. Claude Code now pins agent `3b9dbde` and gherclj v1.5.0, and its adapter/LoopDriver migration is in progress.
 
-Next: remove the temporary `merge-response-tokens` bridge and move outbound request wire translation fully behind adapters so the required drive/tool-loop grep is empty. Resume at `src/isaac/llm/tool_loop.clj:28` (stateful response chaining), then migrate Claude Code at `src/isaac/llm/api/claude_cli.clj:1003`. Exact resume command: `git grep -nE ':[a-z]+_[a-z_]+|\[:response :response' src/isaac/drive src/isaac/llm/tool_loop.clj`.
+RED: `clojure -M:features features/llm/api/claude_driver.feature` runs all 22 examples but has 3 failures while legacy Claude fixtures and response consumers are being migrated to top-level `:content` and normalized usage. Resume at `src/isaac/llm/api/claude_cli.clj:940`; exact command: `clojure -M:features features/llm/api/claude_driver.feature`.
