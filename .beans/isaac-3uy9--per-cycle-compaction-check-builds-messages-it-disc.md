@@ -4,8 +4,10 @@ title: Per-cycle compaction check builds messages it discards; prompt build is u
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-16T14:32:36Z
-updated_at: 2026-09-16T14:40:06Z
+updated_at: 2026-09-16T15:10:09Z
 ---
 
 ## Problem
@@ -86,3 +88,15 @@ Deliberately NOT permanent scenarios:
 - `bb spec spec/isaac/session/compaction_spec.clj`
 - `bb ci` green in isaac-agent
 - One-time on zanebot after deploy, on a session with >=300 history entries and >=1MB transcript: `session/compaction-check :elapsed-ms` below 100ms (today 1052-2094ms, avg 1280ms over 289 checks), and `session/token-estimate` still the only place a full-prompt estimate is computed.
+
+## Worker evidence (2026-09-16, scrapper@isaac-work-2)
+
+Implemented on isaac-agent `bean/isaac-3uy9` @ `ae4f920` (base `origin/main@a00aca5`). `plan-compaction` now uses cheap compactable descriptors that pair tool calls/results and sum stamped tokens without rendering messages; actual `compact!` retains the rendering path. Prompt construction no longer performs or returns the unused `:tokenEstimate`; `estimate-prompt-tokens` explicitly performs the estimate at its sole call site. `:turn/request-built` now carries `:build-ms`; the authorized timing scenario is active.
+
+Evidence:
+- `bb spec spec/isaac/session/compaction_spec.clj`: 66 examples, 0 failures, 154 assertions, including rubberband and slinky plans with both rendering functions redefined to throw.
+- `bb spec spec/isaac/llm/prompt/builder_spec.clj`: 47 examples, 0 failures, 96 assertions; prompt build is proven not to call estimate-tokens.
+- `bb spec spec/isaac/drive/turn_spec.clj`: 84 examples, 0 failures, 245 assertions.
+- `clojure -M:features features/session/cycle_timing.feature`: 2 examples, 0 failures, 7 assertions.
+- `bb ci`: all 1630 specs passed (3350 assertions). Full feature run had two unrelated flaky failures (`session/tool_loop.feature:11` and `bridge/suspend.feature:45`); both focused reruns passed. The full run otherwise completed 765 examples with one pre-existing pending.
+- One-time production zanebot timing remains a post-deploy check and cannot be measured from this checkout.
