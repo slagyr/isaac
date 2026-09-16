@@ -52,3 +52,11 @@ isaac-episodes `features/episodes/idle_seal.feature` — 3 scenarios, all reusin
 3. **repeated seal failures report a streak instead of one warn per tick** — two failing ticks produce a `:episodes/seal-failed` entry with `:consecutive 2`.
 
 Design note from scenario 2: the tick summary must carry a **`:transcript-reads`** count alongside the other counters. That makes "we stopped re-reading" observable from the same line you wanted for the heartbeat, and avoided inventing a log-clearing step to isolate the second tick.
+
+## Work checkpoint (2026-09-16, scrapper@isaac-work-3)
+
+Done: implementation branch `bean/isaac-a0wp` through `b78af3c` logs one `:episodes/tick` summary, caches transcripts by mtime and shares each read across seal/close, suppresses repeated seal warnings except power-of-two streak reports, and resets worker state between feature scenarios. The three owned scenarios pass; `bb spec` passed (206 examples, 552 assertions).
+
+Red: full `bb features` still has three pre-existing/order-dependent failures outside this bean: `features/recall/embedding.feature:79`, `features/recall/embedding.feature:91`, and `features/episodes/recall_logging.feature:43`. All three pass when run together in isolation (`2 examples, 0 failures` for the two targeted files/lines); the owned a0wp failure is fixed.
+
+Next: diagnose full-suite scenario-state leakage causing those three unrelated failures, then rerun `bb features` and `bb ci`. Resume from `spec/isaac/episodes/episode_steps.clj:28` (shared `before-scenario` reset hook) and the failing assertions above.
