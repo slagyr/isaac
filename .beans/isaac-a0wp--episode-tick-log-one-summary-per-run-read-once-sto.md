@@ -4,8 +4,10 @@ title: 'Episode tick: log one summary per run, read once, stop re-warning every 
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-16T15:15:42Z
-updated_at: 2026-09-16T15:45:46Z
+updated_at: 2026-09-16T17:10:42Z
 ---
 
 ## Problem
