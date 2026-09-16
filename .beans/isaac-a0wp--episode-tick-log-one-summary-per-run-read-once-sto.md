@@ -1,11 +1,11 @@
 ---
 # isaac-a0wp
 title: 'Episode tick: log one summary per run, read once, stop re-warning every 30s'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-16T15:15:42Z
-updated_at: 2026-09-16T15:22:01Z
+updated_at: 2026-09-16T15:45:46Z
 ---
 
 ## Problem
