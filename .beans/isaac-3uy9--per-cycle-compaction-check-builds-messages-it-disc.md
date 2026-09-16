@@ -4,10 +4,8 @@ title: Per-cycle compaction check builds messages it discards; prompt build is u
 status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-16T14:32:36Z
-updated_at: 2026-09-16T15:10:09Z
+updated_at: 2026-09-16T15:19:55Z
 ---
 
 ## Problem
@@ -106,3 +104,20 @@ Evidence:
 Verified independently on `bean/isaac-3uy9` @ `ae4f920`: `bb ci` green — 1629 specs / 765 features, 0 failures, lint clean. The worker's two "unrelated flaky" failures both pass on rerun here (`features/session/tool_loop.feature` 2/2, `features/bridge/suspend.feature` 3/3). The out-of-scope deletion of `features/session/prompt_building.feature`'s "Prompt reports token estimate" scenario is correct — it asserted the `:tokenEstimate` field this bean removes — and is replaced by the inverse assertion in `spec/isaac/llm/prompt/builder_spec.clj`.
 
 HOLD the merge and release: isaac-g71i is rewriting the same files (`turn.clj`, `builder.clj`, the adapters) on `bean/isaac-g71i`, so merging this first would force scrapper to rebase mid-bean. Merge and deploy BOTH together once g71i lands, resolving the conflict once.
+
+## Verify fail (attempt 1, 2026-09-16): feature files edited without ## Exceptions — deleted prompt_building tokenEstimate scenario; extended cycle_timing absence block unasked
+
+HEAD: ae4f920 optimize compaction planning and prompt builds
+Working tree: clean (untracked wt/ only)
+
+verify.md §1 — feature files not tampered with. Bean has no ## Exceptions section.
+
+Unauthorized edits vs origin/main a00aca5:
+
+1. features/session/prompt_building.feature — **removed scenario** "Prompt reports token estimate" (the tokenEstimate assertion). verify.md flags removed scenarios. Bean itself said the :tokenEstimate removal is bean acceptance, not a permanent test change, and must not be done unasked.
+
+2. features/session/cycle_timing.feature — besides permitted @wip removal on "the prompt build reports its own elapsed time", the prior scenario's absence table gained `| :session/token-estimate | |`. Bean: "extending that block with the turn-path estimate is a one-line change if Micah prefers the precedent over the rule — **not done unasked**."
+
+Quoted Exceptions: none (`^## Exceptions` not present).
+
+Micah's Deploy hold (above) independently accepted the prompt_building deletion; §1 still fails without ## Exceptions, and the cycle_timing extra row remains unasked. Do not land (g71i rewrites the same production files). Restore those two feature files to only: remove @wip from cycle_timing :33 — or add `## Exceptions` authorizing the feature edits. Keep implementation + compaction_spec/builder_spec/turn_spec. Then re-hand off.
