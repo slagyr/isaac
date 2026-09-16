@@ -4,8 +4,10 @@ title: 'Provider response schema: the seam between the drive and adapters'
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-15T22:03:49Z
-updated_at: 2026-09-16T00:07:55Z
+updated_at: 2026-09-16T21:08:55Z
 ---
 
 ## Problem
@@ -181,6 +183,12 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: rebased agent branch `bean/isaac-g71i` is clean and pushed at `5f8f3ae55342b4a92941d3308e935f8b612b7d6a` on `origin/main@0eda3795a4b7424d15ce81e8058e41f1fbccb420`. Required response-schema acceptance is green (29 examples, 39 assertions); post-rebase units are green (1607 examples, 3306 assertions); full post-rebase features are green (793 examples, 1847 assertions, one pre-existing pending); the required wire-key grep is empty. Claude Code branch is clean and pushed at `d0153e9`, pins final agent SHA `5f8f3ae`, and remains based on `origin/main@d26d410`.
+Implementation complete and ready for verification.
 
-Next: run Claude Code acceptance and CI after the final agent pin, then rebase Claude Code if needed and complete the unverified verify handoff. Resume at `deps.edn:6` in `/Users/zane/agents/isaac/work-1/isaac-claude-code-g71i`. Exact commands: `clojure -Sforce -M:features features/llm/api/claude_driver.feature && bb ci`. Last test command/result: `bb features` in isaac-agent completed green — 793 examples, 0 failures, 1847 assertions, 1 pre-existing pending (85.16677s).
+- isaac-agent: `bean/isaac-g71i` @ `5f8f3ae55342b4a92941d3308e935f8b612b7d6a`, base `origin/main@0eda3795a4b7424d15ce81e8058e41f1fbccb420`.
+- isaac-claude-code: `bean/isaac-g71i` @ `906d281a4e36af5673d6553e54171f70f10293f7`, base `origin/main@d26d41098789900010300f8c81d4a5b38953e21f`, pinning agent `5f8f3ae55342b4a92941d3308e935f8b612b7d6a`.
+- Agent response-schema acceptance: 29 examples, 0 failures, 39 assertions.
+- Agent CI: 1607 unit examples, 0 failures, 3306 assertions; 793 feature examples, 0 failures, 1847 assertions, one pre-existing pending.
+- Claude driver acceptance: 22 examples, 0 failures, 78 assertions.
+- Claude CI: 66 unit examples, 0 failures, 219 assertions, 3 opt-in real-binary pending; 43 feature examples, 0 failures, 139 assertions.
+- Required drive/tool-loop wire-key grep returned no matches. Both implementation worktrees are clean and pushed.
