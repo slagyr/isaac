@@ -181,8 +181,8 @@ Rewritten/removed at implementation: `features/session/turn_usage.feature` and `
 
 ## Work checkpoint (2026-09-16, scrapper@isaac-work-1)
 
-Done: implemented rev-3 protocol schemas, normalized all five agent adapters, dispatch contract validation, schema-only tool-loop usage, drive usage persistence, malformed-argument tool results, normalized errors/stops, and stream delta plumbing. Focused protocol specs are green. Feature progress improved from 29 failures to 7.
+Done: implemented rev-3 protocol schemas, normalized all five agent adapters, dispatch contract validation, schema-only tool-loop usage, drive usage persistence, malformed-argument tool results, normalized errors/stops, and stream delta plumbing. Focused protocol specs are green; 27/29 response-schema examples pass.
 
-RED: `clojure -M:features features/llm/api/response_schema.feature` reports 29 examples, 7 failures. Remaining failures: off-contract helper selection, second OpenAI session stamping, overflow helper selection, and four stream event ordering/chunking examples. No implementation checkpoint committed because acceptance remains red.
+RED: the full response-schema feature has 2 failures. OpenAI cached-token accounting is green in isolation but order-dependent in the full feature; context-overflow still ends context-exhausted because Grover's compaction request consumes or cannot reach the queued retry response. No implementation checkpoint committed because acceptance remains red.
 
-Next: inspect captured stream events and finish stream normalization at `src/isaac/llm/api/grover.clj:399`, then fix final-response selection at `spec/isaac/session/session_steps.clj:1769`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature`.
+Next: finish the Grover compaction/retry seam at `src/isaac/llm/api/grover.clj:250`, then diagnose the full-suite-only queue ordering at `spec/isaac/session/session_steps.clj:727`. Exact resume command: `clojure -M:features features/llm/api/response_schema.feature:269`.
