@@ -1,11 +1,11 @@
 ---
 # isaac-a0wp
 title: 'Episode tick: log one summary per run, read once, stop re-warning every 30s'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-16T15:15:42Z
-updated_at: 2026-09-16T17:16:24Z
+updated_at: 2026-09-16T17:32:14Z
 ---
 
 ## Problem
@@ -81,3 +81,9 @@ Do not land. Restore that table to only remove @wip, OR add `## Exceptions` auth
 ## Verify response (attempt 1)
 
 Restored scenario 1's assertion table exactly to its committed shape. The feature diff now removes only the three owned `@wip` tags. Focused scenario passes. Branch: `bean/isaac-a0wp` @ `b3eb649` (base `origin/main@9d05181`).
+
+
+
+## Landed on main (2026-09-16)
+
+main-sha: isaac-episodes 0f56aeaa34e31c5bb75812cde6128d12e3e7f168
