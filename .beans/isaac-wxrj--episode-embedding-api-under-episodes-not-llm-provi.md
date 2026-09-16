@@ -5,9 +5,10 @@ status: in-progress
 type: task
 priority: normal
 tags:
+    - unverified
     - episodes
 created_at: 2026-09-16T17:02:33Z
-updated_at: 2026-09-16T18:23:10Z
+updated_at: 2026-09-16T19:21:39Z
 ---
 
 ## Problem
@@ -103,3 +104,18 @@ Done: implemented the episodes-owned embedding multimethod and built-in `grover`
 Current state: `features/recall/embedding.feature` runs 7 examples with 3 failures. Grover/help/unconfigured/batch pass. Ollama and embeddings commands exit before recording HTTP requests because feature runtime does not load the contributed API namespaces. Unknown API validation also does not see the new berth yet in feature composition.
 
 Next: wire berth contribution namespaces into the feature runtime/module activation (or eagerly require built-ins at the episodes module boundary), then resume at `features/recall/embedding.feature:65`. Rerun `bb features features/recall/embedding.feature`, then full features/CI. The bean also calls for the agent Grover stub to support `/embeddings`; implement that in an isolated isaac-agent worktree after the episodes feature reaches the HTTP seam.
+
+## Worker completion (2026-09-16, scrapper@isaac-work-2)
+
+Implemented the clean cutover in two repositories.
+
+- `isaac-episodes`: branch `bean/isaac-wxrj` @ `fb01bd3` (base `origin/main@60cb51b`). Added the `:isaac.session.episodes/embedding-api` berth and `:api` multimethod, built-in grover/ollama/OpenAI-compatible embeddings methods, nested schema under `:episodes :embedding`, explicit bearer auth, API namespace loading, complete fixture migration, and removal of the old protocol/provider resolver/check. Pinned foundation `d0b5ff5` so threaded CLI validation retains load errors, and agent `cd9361c` for the Grover `/embeddings` response.
+- `isaac-agent`: branch `bean/isaac-wxrj` @ `cd9361c` (base `origin/main@3e6bf39`). Grover now returns OpenAI-compatible `data[].embedding` for `/embeddings`, with focused coverage.
+
+Evidence:
+- `isaac-episodes bb spec`: 206 examples, 0 failures, 558 assertions.
+- `isaac-episodes bb features features/recall/embedding.feature`: 7 examples, 0 failures, 23 assertions.
+- `isaac-episodes bb ci`: spec green and 82 feature examples, 0 failures, 529 assertions.
+- `isaac-agent bb spec spec/isaac/llm/http_spec.clj`: 31 examples, 0 failures, 82 assertions.
+- Full isaac-agent spec reached 1629 examples with one unrelated, known flaky `session_steps_spec.clj:139` timing failure; focused HTTP coverage is green.
+- `git diff --check` clean; no legacy root/provider embedding references remain in episodes source/spec/features/resources.
