@@ -7,7 +7,7 @@ priority: normal
 tags:
     - suite-health
 created_at: 2026-09-14T02:03:50Z
-updated_at: 2026-09-15T20:58:13Z
+updated_at: 2026-09-16T17:10:41Z
 ---
 
 ## Problem
@@ -32,3 +32,9 @@ CI Tests run 35018494124 on isaac-foundation main `c89964d` (isaac-f21o squash) 
 ## Reproduction (2026-09-15, perceptor@isaac-verify-2)
 
 CI Tests run 35022394582 on isaac-foundation main `e664914` (isaac-kbs5 squash) failed this spec in the full `bb spec` suite (1015 examples, 1 failure). Isolated `bb spec spec/isaac/log_viewer_spec.clj` on that tree failed 1/1 (timeout ~10s at line 344). Prior main `a0a2b0f` CI was green — still a flake. kbs5 did not touch log_viewer.
+
+
+
+## Reproduction (2026-09-16, perceptor@isaac-verify)
+
+CI Tests run 35125878258 on isaac-foundation main `e25b256` (isaac-1hs0 squash) failed this spec in the full `bb spec` suite (1031 examples, 1 failure) at `spec/isaac/log_viewer_spec.clj:376` (same `it`, line shifted by 1hs0 viewer-filter specs). Isolated `bb spec spec/isaac/log_viewer_spec.clj` on that tree failed 2/3 (~10s timeout). 1hs0 did change `log_viewer.clj` (level filter on `print-line!` / `read-initial-lines`) but the follow-seek race is the existing isaac-efb5 flake, not a 1hs0 regression. Do not reopen isaac-1hs0.
