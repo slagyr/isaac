@@ -1,16 +1,15 @@
 ---
 # isaac-3kol
 title: isaac init scaffolds Skipper as the first crew
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - crew
-    - unverified
     - foundation
     - cli
 created_at: 2026-09-16T17:40:36Z
-updated_at: 2026-09-16T18:19:23Z
+updated_at: 2026-09-16T18:31:07Z
 ---
 
 `isaac init` scaffolds a crew named `main` with soul "You are Isaac, a helpful AI assistant." After dropping hardcoded `main` as a code identity, the first crew should be a character: **Skipper**.
@@ -69,3 +68,9 @@ Acceptance evidence:
 - Focused changed CLI specs (`:205`, `:227`, `:261`) pass.
 - Full `bb spec spec/isaac/cli_spec.clj` has one baseline failure at line 248 caused by berth registration logs in captured stderr; reproduced unchanged on clean `origin/main@a1df8bc`.
 - `bb ci` reaches features and has two baseline `modules pins` failures because the cached fixture-agent remote points at missing `/Users/zane/agents/isaac/verify/isaac-foundation/fixture-agent`; unrelated to this bean.
+
+
+
+## Landed on main (2026-09-16)
+
+main-sha: isaac-foundation d0b5ff547f1c98d68da26f3ef1503ed1acb32b2b
