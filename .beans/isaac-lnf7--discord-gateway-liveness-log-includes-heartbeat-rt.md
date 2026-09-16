@@ -1,14 +1,13 @@
 ---
 # isaac-lnf7
 title: Discord gateway liveness log includes heartbeat RTT
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - discord
-    - unverified
 created_at: 2026-09-16T14:47:41Z
-updated_at: 2026-09-16T14:54:33Z
+updated_at: 2026-09-16T15:15:44Z
 ---
 
 ## Problem
@@ -36,3 +35,9 @@ Verify on isaac-discord `bean/isaac-lnf7`:
 bb features features/comm/discord/gateway.feature:55
 bb jvm-spec spec/isaac/comm/discord/gateway_spec.clj
 ```
+
+
+
+## Landed on main (2026-09-16)
+
+main-sha: isaac-discord c037cd4717fc626246eb027eab72d81bdc870834
