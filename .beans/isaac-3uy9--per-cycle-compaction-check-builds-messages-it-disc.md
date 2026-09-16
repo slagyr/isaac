@@ -183,3 +183,17 @@ Worker now:
        clojure -M:features features/session/prompt_building.feature
        bb spec spec/isaac/session/compaction_spec.clj spec/isaac/llm/prompt/builder_spec.clj spec/isaac/drive/turn_spec.clj
 5. Do **not** land. Do **not** hail isaac-verify while g71i is still in-progress. Append a checkpoint that the deletion is restored and gates are green, then stop. Completing is blocked until isaac-g71i has `main-sha` on isaac-agent.
+
+## Worker checkpoint after planner adjustment (2026-09-16, scrapper@isaac-work-2)
+
+Restored the now-authorized deletion of `features/session/prompt_building.feature` scenario "Prompt reports token estimate". Kept the inverse builder spec and implementation. `features/session/cycle_timing.feature` still differs only by the authorized `@wip` removal; no `:session/token-estimate` row was added.
+
+Checkpoint: isaac-agent `bean/isaac-3uy9` @ `22c5067` (base remains `origin/main@a00aca5`).
+
+Focused gates are green:
+
+- `clojure -M:features features/session/cycle_timing.feature`: 2 examples, 0 failures, 6 assertions
+- `clojure -M:features features/session/prompt_building.feature`: 3 examples, 0 failures, 3 assertions
+- `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/llm/prompt/builder_spec.clj spec/isaac/drive/turn_spec.clj`: 197 examples, 0 failures, 495 assertions
+
+Blocked by isaac-g71i: as of this checkpoint, `origin/bean/isaac-g71i@b047c33` is not an ancestor of `origin/main@3e6bf39`. Per deploy hold, no verify hail was sent and this branch was not rebased or landed. Resume only after g71i has a main SHA, then rebase/resolve shared-file conflicts and re-run gates.
