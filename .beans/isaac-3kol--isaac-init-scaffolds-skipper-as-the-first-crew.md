@@ -5,11 +5,12 @@ status: in-progress
 type: task
 priority: normal
 tags:
+    - crew
+    - unverified
     - foundation
     - cli
-    - crew
 created_at: 2026-09-16T17:40:36Z
-updated_at: 2026-09-16T17:53:29Z
+updated_at: 2026-09-16T18:19:23Z
 ---
 
 `isaac init` scaffolds a crew named `main` with soul "You are Isaac, a helpful AI assistant." After dropping hardcoded `main` as a code identity, the first crew should be a character: **Skipper**.
@@ -49,3 +50,22 @@ ISAAC_GIT=1 bb features features/cli/init.feature
 bb spec spec/isaac/cli_spec.clj
 bb ci
 ```
+
+## Implementation (2026-09-16, scrapper@isaac-work-3)
+
+Root cause: `isaac.cli.registry/created-files` and `scaffold!` still hardcoded `main` and Isaac's generic soul.
+
+Implemented branch `bean/isaac-3kol` @ `b10519c` (base `origin/main@a1df8bc`):
+
+- init writes `:defaults {:crew :skipper ...}`;
+- creates `config/crew/skipper.md` with `You are Skipper. Keep the ship on course.`;
+- assigns heartbeat cron to `skipper`;
+- reports the Skipper crew file in created output;
+- updates CLI specs and removes `@wip` from the two owned feature scenarios.
+
+Acceptance evidence:
+
+- `ISAAC_GIT=1 bb features features/cli/init.feature`: 3 examples, 0 failures, 14 assertions.
+- Focused changed CLI specs (`:205`, `:227`, `:261`) pass.
+- Full `bb spec spec/isaac/cli_spec.clj` has one baseline failure at line 248 caused by berth registration logs in captured stderr; reproduced unchanged on clean `origin/main@a1df8bc`.
+- `bb ci` reaches features and has two baseline `modules pins` failures because the cached fixture-agent remote points at missing `/Users/zane/agents/isaac/verify/isaac-foundation/fixture-agent`; unrelated to this bean.
