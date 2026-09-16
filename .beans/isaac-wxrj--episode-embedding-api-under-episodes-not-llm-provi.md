@@ -95,3 +95,11 @@ with `defmethod` per API (`:ollama`, `:embeddings`, `:grover`). A new wire
 format is another `defmethod` in a loaded ns (berth still lists api ids for
 `registered-in?` and ns load). Unknown `:api` is an error method, not
 Ollama. Drop `Embedder` / `resolve-embedder` returning an object.
+
+## Worker checkpoint (2026-09-16, scrapper@isaac-work-2)
+
+Done: implemented the episodes-owned embedding multimethod and built-in `grover`, `ollama`, and OpenAI-compatible `embeddings` methods; moved schema/config to `:episodes :embedding`; declared the embedding API berth; removed the legacy protocol, provider resolver, and provider validation check; rewrote specs/features to the clean-cutover config. Pushed WIP commit `49e7703`. Full `bb spec` is green: 206 examples, 0 failures, 558 assertions.
+
+Current state: `features/recall/embedding.feature` runs 7 examples with 3 failures. Grover/help/unconfigured/batch pass. Ollama and embeddings commands exit before recording HTTP requests because feature runtime does not load the contributed API namespaces. Unknown API validation also does not see the new berth yet in feature composition.
+
+Next: wire berth contribution namespaces into the feature runtime/module activation (or eagerly require built-ins at the episodes module boundary), then resume at `features/recall/embedding.feature:65`. Rerun `bb features features/recall/embedding.feature`, then full features/CI. The bean also calls for the agent Grover stub to support `/embeddings`; implement that in an isolated isaac-agent worktree after the episodes feature reaches the HTTP seam.
