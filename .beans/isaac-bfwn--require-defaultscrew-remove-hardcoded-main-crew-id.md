@@ -1,7 +1,7 @@
 ---
 # isaac-bfwn
 title: Require defaults.crew; remove hardcoded main crew identity
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - config
     - crew
 created_at: 2026-09-16T15:49:57Z
-updated_at: 2026-09-16T15:49:57Z
+updated_at: 2026-09-16T17:05:28Z
 ---
 
 `:defaults :crew` is the default crew. Stop using a hardcoded `"main"` identity in production code.
