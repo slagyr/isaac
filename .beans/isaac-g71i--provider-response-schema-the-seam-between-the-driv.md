@@ -1,11 +1,11 @@
 ---
 # isaac-g71i
 title: 'Provider response schema: the seam between the drive and adapters'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-15T22:03:49Z
-updated_at: 2026-09-15T23:59:06Z
+updated_at: 2026-09-16T00:07:55Z
 ---
 
 ## Problem
