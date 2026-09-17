@@ -1,16 +1,15 @@
 ---
 # isaac-s9e3
 title: HTTP auth token takes effect on hot reload without a restart
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - server
     - auth
     - hot-reload
-    - unverified
 created_at: 2026-09-17T17:19:26Z
-updated_at: 2026-09-17T17:29:00Z
+updated_at: 2026-09-17T17:32:24Z
 ---
 
 Repo: **isaac-http** (local checkout `isaac-server`). Production HTTP component is `src/isaac/http/component/http.clj`; wrap-auth is `src/isaac/http/http.clj`.
@@ -67,3 +66,9 @@ Verification:
 - `bb spec spec/isaac/http`: 104 examples, 0 failures, 176 assertions.
 - `bb ci`: 125 specs + 48 features, 0 failures.
 - Edited-file lint: 0 errors; `git diff --check` clean.
+
+
+
+## Landed on main (2026-09-17)
+
+main-sha: isaac-http e090257ce5947d25410b291e701fe9af95c19737
