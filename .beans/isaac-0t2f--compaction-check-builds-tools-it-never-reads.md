@@ -1,11 +1,11 @@
 ---
 # isaac-0t2f
 title: Compaction check builds :tools it never reads
-status: todo
+status: in-progress
 type: task
 priority: low
 created_at: 2026-09-17T22:32:02Z
-updated_at: 2026-09-17T22:56:28Z
+updated_at: 2026-09-17T23:01:49Z
 ---
 
 ## Problem
