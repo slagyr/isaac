@@ -38,7 +38,7 @@ Stdin readers (`acp`, `mcp-bridge`, `hail send`, `config set/validate`, `auth`) 
 1. **isaac-dq4v** — CLI host library in foundation + foundation commands migrated + lint.
 2. **isaac-1fwl** — Module commands migrated to the host (`ensure-runtime!`); sessions nil-out, acp hacks, worksite lock owner fixed.
 3. **isaac-qvhy** — cli-server embedded dispatch (thread per stream; `:local-only` refusal; subprocess kept only for not-yet-migrated commands).
-4. **isaac-gar0** — Local `isaac` routes into the running server — this, not the remote pipe, is the major second-writer source (every crew tool shell-out + every SSH'd command). Server down ⇒ cold (safe: no other writer). Basis stale ⇒ reads cold, mutators refuse "restart pending".
+4. **isaac-gar0** — Remote-by-default CLI: default stays a separate local process; `:cli :remote {:url :token}` in `~/.config/isaac.edn` routes every non-local-only command through the server (same-machine = localhost remote). Unreachable ⇒ fail with reason, never cold fallback; `--local` bypasses; stale basis is refused SERVER-side for non-read-only commands. This, not the remote pipe, closes the major second-writer source (crew tool shell-outs + SSH'd commands).
 5. **isaac-dqy9** — Embed `prompt` + `acp`; delete subprocess spawning from cli-server.
 
 ## Accepted risks
