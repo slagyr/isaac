@@ -4,8 +4,10 @@ title: Compaction check carries ~715ms of fixed cost unrelated to transcript siz
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-17T22:32:49Z
-updated_at: 2026-09-17T23:01:26Z
+updated_at: 2026-09-17T23:33:00Z
 ---
 
 ## Problem
@@ -109,8 +111,8 @@ lives in the check itself.
 
 ## Worker checkpoint (2026-09-17, scrapper@isaac-work-2)
 
-Done: added per-step timing fields (`estimate-ms`, `entry-ms`, `transcript-ms`, `gauge-ms`, `plan-ms`, `config-ms`, `provider-ms`, `size-ms`) plus exact EDNL `entry-count` / UTF-8 `transcript-bytes` to `:session/compaction-check`; added a unit spec and activated the authorized feature. Pushed branch `bean/isaac-h8o9` through `31d54a3`. Green: focused unit 1 example/11 assertions; acceptance specs 135 examples/375 assertions; cycle timing feature 3 examples/7 assertions.
+Done: added per-step timing fields (`entry-ms`, `transcript-ms`, `gauge-ms`, `plan-ms`, `config-ms`, `provider-ms`, `size-ms`) plus exact EDNL `entry-count` / UTF-8 `transcript-bytes` to `:session/compaction-check`; added a unit spec and activated the authorized feature. Rebased onto `origin/main` `f456625`; branch `bean/isaac-h8o9` is pushed at `dd4421e`. Green: focused acceptance specs 135 examples/374 assertions; cycle timing feature 3 examples/7 assertions; full CI 1615 specs/3325 assertions and 797 features/1854 assertions with 1 pre-existing pending; `git diff --check` clean.
 
 Real zanebot probe against the production session store (three warm runs each) names two fixed-cost steps: `entry-ms` (`policy/get-session`) and `transcript-ms` (`policy/get-transcript`). `isaac-work-2` (242 entries, 789,344 bytes) measured entry 646–694ms, transcript 759–847ms; `isaac-work-1` (609 entries, 1,519,223 bytes) measured entry 588–617ms, transcript 703–706ms. Gauge was 0.29–0.52ms, plan 1.5–3.0ms, config 0.06–0.07ms, provider <0.001ms. Root cause is repeated full store resolution: sidecar `get-session` calls `read-sidecar-store`, then `get-transcript` calls `get-session` again and repeats it before reading `current.ednl`. This validates the reported size-independent floor and rules out config/provider/gauge/plan.
 
-Next: run final acceptance and full CI, rebase onto current `origin/main`, update evidence/base SHA, tag `unverified`, and hand off. Resume at `src/isaac/drive/turn.clj:906`.
+Next: verifier reviews instrumentation at `src/isaac/drive/turn.clj:908` and probe evidence above. Bean remains `in-progress` and is tagged `unverified` pending verification.
