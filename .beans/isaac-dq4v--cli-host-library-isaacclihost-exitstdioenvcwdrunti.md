@@ -7,8 +7,9 @@ priority: high
 tags:
     - cli
     - foundation
+    - unverified
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-17T16:15:22Z
+updated_at: 2026-09-17T16:42:45Z
 parent: isaac-eqkb
 ---
 
@@ -60,14 +61,18 @@ isaac-foundation only.
 ## Worker checkpoint (2026-09-17, scrapper@isaac-work-1)
 
 Done:
-- Added `isaac.cli.host` process/embedded host seam and RED→GREEN focused coverage for embedded exit, stdio/future binding conveyance, cwd/env/tty, live-state preservation, local-only/root/error handling, and cancellation.
-- Added manifest `:local-only` support and marked foundation server/service/modules commands.
-- Began migrating color, config stdin, runner shutdown/block, log follow cancellation, cwd/env command reads, and wired `lint-cli-host` into `bb ci`.
-- Checkpoint branch: `bean/isaac-dq4v` @ `6260cee`.
+- Implemented `isaac.cli.host` with process and embedded hosts, live-registry `run-embedded`, embedded exit/stdio/env/cwd/tty/cancellation behavior, local-only/root/error handling, and binding conveyance coverage.
+- Migrated foundation command process access, config stdin, color detection, runner shutdown/blocking, and log-follow cancellation through the host seam.
+- Replaced discovery `with-redefs` logging suppression with binding-based `logger/*quiet?*`.
+- Added optional manifest `:local-only`, marked server/service/modules, added reusable `lint-cli-host`, wired it into `bb ci`, and added the namespace to the foundation boundary.
+- Branch: `bean/isaac-dq4v` @ `43440478b386a8d5ac758408f12bf58d32fa4aca` (base `origin/main@f9ae3fd97b4cd882a624493ef3ca74940c96d856`).
 
-Current state:
-- `bb spec --focus spec/isaac/cli/host_spec.clj` is green: 7 examples, 0 failures, 25 assertions.
-- Acceptance is not green: `bb lint-cli-host` is red on remaining process-global reads in config/module/runner/logger namespaces and one docstring false positive.
+Verification:
+- `bb spec spec/isaac/cli` — 44 examples, 0 failures, 90 assertions.
+- `bb spec` — 1038 examples, 0 failures, 1888 assertions.
+- `bb lint-cli-host` — ok.
+- `bb lint` — 0 errors (pre-existing warnings).
+- `bb features features/cli` and local `bb ci` reach the known local fixture-agent cache failure in two modules-pins scenarios; unrelated to this branch and GitHub CI has a valid fixture.
 
 Next:
-- Resume at `spec-support/src/isaac/foundation/cli_host_lint.clj:17`: scope lint to command-facing code/ignore comments, migrate required remaining `user.dir` and env reads through `isaac.cli.host`, then run CLI specs/features, lint, and `bb ci`.
+- Verifier starts at `src/isaac/cli/host.clj:7` and `spec/isaac/cli/host_spec.clj:21`, runs acceptance in a clean checkout/CI, and reviews whether modules may later narrow `:local-only` to install/upgrade subcommands.
