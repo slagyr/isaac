@@ -1,14 +1,14 @@
 ---
 # isaac-tvcg
 title: 'isaac remote: authenticate without the token in argv (--token-file / --token-env / ISAAC_REMOTE_TOKEN / pointer file); deprecate --token'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - cli
     - security
 created_at: 2026-09-17T22:51:02Z
-updated_at: 2026-09-17T22:51:02Z
+updated_at: 2026-09-17T22:54:44Z
 blocking:
     - isaac-gar0
 ---
@@ -30,44 +30,53 @@ Token resolution, first hit wins — none of them put the secret in argv:
 
 (Env is visible only to the same uid/root — `ps e`, `/proc/<pid>/environ` — unlike argv. The file forms are strongest and are what editor/launchd configs should use.)
 
-- **`--token TOKEN` is deprecated**: still works for one release, prints `isaac remote: --token exposes the secret in the process list; use --token-file, --token-env, or ISAAC_REMOTE_TOKEN` on stderr. Removal is a follow-up (one-time acceptance there, no permanent absence scenario).
+- **`--token TOKEN` is deprecated, not removed** (decision 2026-09-17, Micah): it keeps working and prints `isaac remote: --token exposes the secret in the process list; use --token-file, --token-env, or ISAAC_REMOTE_TOKEN` on stderr. The warning never echoes the token. Removal is a later follow-up bean (one-time acceptance there, no permanent absence scenario).
 - No token resolved ⇒ connect unauthenticated as today (server answers 401; error says which sources were tried).
 - The token never appears in logs, error messages, the `start` frame, or `cache/cli.edn`.
 - `isaac remote --help` documents the order.
 - Resolver lives in its own ns (`isaac.cli-proxy.token`) so isaac-gar0's launcher routing calls it without the option parser.
 
-## Scenarios (isaac-cli-proxy `features/remote.feature`, to be planted @wip at promotion)
+## Scenarios (committed @wip — isaac-cli-proxy `features/remote.feature` @ 1bcc33e)
 
-1. a token file supplies the bearer credential — `--token-file ${tmp}/tok` (0600) ⇒ authorization is "Bearer file-secret".
-2. a group/world-readable token file is refused — 0644 ⇒ nonzero exit, stderr contains "chmod 600", no connection made.
-3. a named env var supplies the bearer credential — `--token-env MY_TOK`.
-4. an unset named env var is an error naming the variable.
-5. ISAAC_REMOTE_TOKEN supplies the bearer credential with no flag.
-6. the pointer file's remote token is used when the url matches (`${VAR}` form in a 0644 file).
-7. a literal pointer-file token in a 0644 file is refused.
-8. precedence: `--token-file` beats `ISAAC_REMOTE_TOKEN`.
-9. `--token` still authenticates and warns on stderr (existing scenario :68 gains the stderr assertion).
+| line | scenario |
+|------|----------|
+| :79 | --token still authenticates but warns that it exposes the secret |
+| :91 | a private token file supplies the bearer credential |
+| :101 | a group- or world-readable token file is refused before connecting |
+| :113 | a named environment variable supplies the bearer credential |
+| :123 | an unset named environment variable is an error naming the variable |
+| :133 | ISAAC_REMOTE_TOKEN supplies the bearer credential with no flag |
+| :143 | the home config's remote token is used when the url matches |
+| :157 | a literal token in a readable home config is refused |
+| :172 | the home config's token is ignored for a different url |
+| :185 | an explicit token file beats ISAAC_REMOTE_TOKEN |
+
+Refusals exit 1 and make NO connection; no error or warning ever echoes a secret.
 
 ## Step ledger
 
 | step | status |
 |------|--------|
-| a stub /cli server that replies with frames: | reuse |
-| isaac remote is run with {args} | reuse |
+| a stub /cli server that replies with frames: | reuse (cli_proxy_steps) |
+| isaac remote is run with {args} | reuse — **extend: substitute `${tmp}` (per-scenario temp dir) alongside `${stub.url}`** |
 | the stub connection authorization is {expected} | reuse |
+| environment variable {name} is {value} | reuse (foundation `isaac.config.config-steps` — overrides both `isaac.config.env` and `c3env`; the resolver must read env through one of those seams, not `System/getenv`) |
+| the stderr contains {expected} / the stderr does not contain {expected} | reuse (foundation `cli_steps.clj:589,591`) |
 | the exit code is {n} | reuse |
-| the stderr contains {text} | reuse (verify phrasing with `gherclj match`) |
-| **a file {path} with mode {mode} containing {content}** | **NEW — writes under the scenario tmp dir, sets POSIX perms** |
-| **the environment variable {name} is {value}** | **NEW — binds the proxy's env seam (`c3env` override), not the real process env** |
-| **the home config file contains:** | **NEW — writes `~/.config/isaac.edn` under a bound `root/*user-home*`; takes a mode column/arg for scenario 7** |
-| **the stub server received no connection** | **NEW — asserts the stub's connection count is 0** |
+| **a file {path} with mode {mode} containing {content}** | **NEW — writes on the REAL fs under `${tmp}` and sets POSIX perms (mode is octal text)** |
+| **the home config file with mode {mode} contains:** | **NEW — docstring EDN written to `<home>/.config/isaac.edn` under a bound `isaac.config.root/*user-home*` in `${tmp}`; substitutes `${stub.url}` but leaves other `${VAR}` text literal** |
+| **the stub server received no connection** | **NEW — stub connection count is 0** |
+| **the stub connection has no authorization** | **NEW — no Authorization header on the stub's connect** |
 
-Four new steps; all generic (no token knowledge in the step text).
+Four new steps + one substitution added to an existing step; none carries token knowledge in its text.
 
 ## Acceptance
 
 ```
-cd isaac-cli-proxy && bb features features/remote.feature && bb spec && bb ci
+cd isaac-cli-proxy && bb features features/remote.feature   # all 10 above green with @wip removed
+bb spec && bb ci
 ```
-Field (after the train): on zanebot `ISAAC_REMOTE_TOKEN=… isaac remote wss://…/cli -- version &` then `ps -ww -o args= -p $!` shows no token.
-Docs: README + `remote --help`. Module version bump + registry pin (train step).
+- Unit specs for `isaac.cli-proxy.token`: resolution order; mode check (`& 077`); `${VAR}` substitution; trailing-newline trim on token files.
+- `isaac remote --help` and README document the order and the deprecation.
+- Module version bump; registry pin is a train step (planner).
+- Field check after the train (verifier, zanebot): `ISAAC_REMOTE_TOKEN=… isaac remote wss://…/cli -- logs --follow &` then `ps -ww -o args= -p $!` shows no token.
