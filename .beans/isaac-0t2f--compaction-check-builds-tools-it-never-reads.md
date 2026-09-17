@@ -1,13 +1,11 @@
 ---
 # isaac-0t2f
 title: Compaction check builds :tools it never reads
-status: in-progress
+status: completed
 type: task
 priority: low
-tags:
-    - unverified
 created_at: 2026-09-17T22:32:02Z
-updated_at: 2026-09-17T23:13:25Z
+updated_at: 2026-09-17T23:22:24Z
 ---
 
 ## Problem
@@ -80,3 +78,9 @@ Verification:
 - `clojure -M:features features/session/cycle_timing.feature` — 2 examples, 0 failures, 6 assertions.
 - One-time no-compaction removal check passed before deletion.
 - Edited-file lint: 0 errors (6 pre-existing warnings); `git diff --check` clean.
+
+
+
+## Landed on main (2026-09-17)
+
+main-sha: isaac-agent f456625b1422b287937c86d03384edf23714c79d
