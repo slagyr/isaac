@@ -4,10 +4,8 @@ title: Provider unavailability is mislabeled as :context-exhausted
 status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-17T22:53:29Z
-updated_at: 2026-09-17T23:18:01Z
+updated_at: 2026-09-17T23:21:14Z
 ---
 
 ## Problem
@@ -105,3 +103,9 @@ Acceptance evidence:
 - `bb spec spec/isaac/drive/turn_spec.clj`: 71 examples, 0 failures, 213 assertions.
 - provider-wall feature scenario: 1 example, 0 failures, 2 assertions.
 - hard-overflow feature scenario currently fails because its single queued HTTP error is consumed by the pre-turn compaction request; the turn then receives Grover's default reply and ends `:reply`. This scenario fixture issue is independent of the classification split; the unit spec proves genuine context exhaustion remains unchanged.
+
+## Conflict (2026-09-17)
+
+The committed hard-overflow scenario cannot exercise the stated behavior as written: its only queued HTTP 400 is consumed by the pre-turn compaction request. The actual turn then receives Grover's default successful reply and ends `:reply`. Removing `@wip` makes acceptance red for a fixture-design reason unrelated to ended-by classification. I restored `@wip` on that scenario only; provider-unavailable scenario and all three unit classifications are green.
+
+Current branch: `bean/isaac-zveu` @ `48dc579` (base `origin/main@7969122`). Planner decision needed: authorize adding a second queued overflow response / otherwise amend the scenario, or move that hard-overflow feature repair to a separate bean while accepting unit coverage here.
