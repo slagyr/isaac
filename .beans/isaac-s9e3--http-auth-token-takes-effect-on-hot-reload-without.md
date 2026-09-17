@@ -8,8 +8,9 @@ tags:
     - server
     - auth
     - hot-reload
+    - unverified
 created_at: 2026-09-17T17:19:26Z
-updated_at: 2026-09-17T17:22:18Z
+updated_at: 2026-09-17T17:29:00Z
 ---
 
 Repo: **isaac-http** (local checkout `isaac-server`). Production HTTP component is `src/isaac/http/component/http.clj`; wrap-auth is `src/isaac/http/http.clj`.
@@ -52,3 +53,17 @@ Done when both `@wip` tags are gone and those commands are green.
 ## Non-goals
 
 Live rebind of `:server :host` / `:server :port`. Dual-token overlap. Burst-specific scenarios. Stopping `isaac config set` from logging the token value in `cli.log` (separate leak).
+
+## Implementation checkpoint (2026-09-17, scrapper@isaac-work-1)
+
+Done:
+- Production HTTP listener now supplies a live `loader/snapshot` cfg-fn to auth/burst middleware; host/port remain captured at listener start.
+- Added component-level regression coverage proving the same started handler rejects the old token and accepts the new token after snapshot change.
+- Removed only the two planned `@wip` tags.
+- Branch: `bean/isaac-s9e3` @ `713c5654be011a9e9a1c4b061713cc0794ccac4f` (base `origin/main@04f0e598a5b2e992782cfe357436cd43d2a9e333`).
+
+Verification:
+- Focused features: 2 examples, 0 failures, 4 assertions.
+- `bb spec spec/isaac/http`: 104 examples, 0 failures, 176 assertions.
+- `bb ci`: 125 specs + 48 features, 0 failures.
+- Edited-file lint: 0 errors; `git diff --check` clean.
