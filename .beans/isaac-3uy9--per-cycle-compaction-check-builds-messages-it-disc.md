@@ -197,3 +197,19 @@ Focused gates are green:
 - `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/llm/prompt/builder_spec.clj spec/isaac/drive/turn_spec.clj`: 197 examples, 0 failures, 495 assertions
 
 Blocked by isaac-g71i: as of this checkpoint, `origin/bean/isaac-g71i@b047c33` is not an ancestor of `origin/main@3e6bf39`. Per deploy hold, no verify hail was sent and this branch was not rebased or landed. Resume only after g71i has a main SHA, then rebase/resolve shared-file conflicts and re-run gates.
+
+## Exceptions
+
+Authorized (2026-09-17, Micah via planner): delete the scenario "Prompt reports token estimate" from `features/session/prompt_building.feature`.
+
+That scenario asserts `tokenEstimate | #"\d+"` on the built prompt. This bean's whole purpose is that `prompt/build` no longer computes or returns `:tokenEstimate` on the turn path — the value had exactly one consumer (`compaction.clj:128`, inside `estimate-prompt-tokens`, which is not on that path), so the walk over the ~970KB prompt was pure waste. The scenario therefore tests a behaviour the bean deliberately removes; it cannot pass and must not be kept. Its replacement is the inverse assertion already on the branch: `spec/isaac/llm/prompt/builder_spec.clj:241` — `(should-not (contains? p :tokenEstimate))`.
+
+This was missing from the original bean. The planner scoped feature edits to `cycle_timing.feature` without grepping `features/` for assertions on `:tokenEstimate`, so attempt 1 made a necessary edit that was never authorized. Verifier §1 was right to fail it; the gap was in the plan, not the work.
+
+NOT authorized, and correctly reverted in the repair commit: extending the isaac-4erp absence block in `features/session/cycle_timing.feature` with a `:session/token-estimate` row for the turn path. Removal checks stay bean acceptance, not permanent scenarios. Leave that block as it is on `origin/main`.
+
+### Current branch state (verified 2026-09-17)
+
+`bean/isaac-3uy9` @ `79a9663` is RED: the repair restored `prompt_building.feature` in full, so the suite now contains both the scenario demanding `:tokenEstimate` and the spec asserting its absence. `clojure -M:features features/session/prompt_building.feature` fails 1 of 4 — `tokenEstimate: Expected match for \d+, got: nil`.
+
+Next attempt: re-apply the deletion above (now authorized), leave `cycle_timing.feature` matching `origin/main` except the `@wip` removal on the timing scenario, and re-run `bb ci` in full — not focused runs, which is what let the red slip through last time. Then re-hand off. The deploy hold still stands: merge with isaac-g71i, not before.
