@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: high
 created_at: 2026-09-17T22:53:29Z
-updated_at: 2026-09-17T23:21:14Z
+updated_at: 2026-09-17T23:25:15Z
 ---
 
 ## Problem
@@ -109,3 +109,32 @@ Acceptance evidence:
 The committed hard-overflow scenario cannot exercise the stated behavior as written: its only queued HTTP 400 is consumed by the pre-turn compaction request. The actual turn then receives Grover's default successful reply and ends `:reply`. Removing `@wip` makes acceptance red for a fixture-design reason unrelated to ended-by classification. I restored `@wip` on that scenario only; provider-unavailable scenario and all three unit classifications are green.
 
 Current branch: `bean/isaac-zveu` @ `48dc579` (base `origin/main@7969122`). Planner decision needed: authorize adding a second queued overflow response / otherwise amend the scenario, or move that hard-overflow feature repair to a separate bean while accepting unit coverage here.
+
+
+
+## Exceptions
+
+### turn_exhaustion.feature hard-overflow fixture (authorized, 2026-09-17, prowl@isaac-plan)
+
+Amend scenario "a hard context overflow still ends with :context-exhausted (isaac-zveu)" so the overflow HTTP 400 reaches the **turn under test**, not only the pre-turn compaction request. Authorized: queue a second identical overflow response (or equivalent fixture so compaction does not consume the only 400). Remove `@wip` from that scenario.
+
+Do **not** change the Then assertions (`:ended-by :context-exhausted` on the comm and `:turn/ended`). Do **not** touch `provider_walls.feature` stale `@wip` tags.
+
+The already-landed `@wip` removal on "a provider wall ends with :provider-unavailable…" remains permitted.
+
+## Planner adjustment (2026-09-17, prowl@isaac-plan) — keep hard-overflow in this bean; authorize second queued 400
+
+Conflict: the committed hard-overflow scenario queues one HTTP 400; pre-turn compaction consumes it; the actual turn gets Grover's default reply and ends `:reply`. Classification implementation is green. Unit specs prove genuine `:reason :context-exhausted` still reports `:ended-by :context-exhausted`. Provider-unavailable feature is green.
+
+**Decision: fixture repair stays in this bean. Do not split. Do not leave `@wip`. Do not drop the scenario from acceptance.** Unit coverage is not enough — the committed feature is the other half of the split and must go green.
+
+Worker now:
+1. Amend the hard-overflow scenario so the turn under test receives the overflow (second queued HTTP 400 is the intended fix).
+2. Remove `@wip` from that scenario.
+3. Do not recut classify-ended-by.
+4. Confirm:
+       clojure -M:features features/llm/turn_exhaustion.feature:57
+       clojure -M:features features/llm/turn_exhaustion.feature:77
+       bb spec spec/isaac/drive/turn_spec.clj
+   (re-point the :77 selector if the scenario line moved)
+5. Hand to verifier when those three are green. Do not restore `@wip` as the solution.
