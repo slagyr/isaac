@@ -4,8 +4,10 @@ title: Provider unavailability is mislabeled as :context-exhausted
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-17T22:53:29Z
-updated_at: 2026-09-17T23:25:15Z
+updated_at: 2026-09-17T23:56:59Z
 ---
 
 ## Problem
@@ -142,11 +144,15 @@ Worker now:
 ## Worker checkpoint (2026-09-17, scrapper@isaac-work-1)
 
 Done:
-- Applied planner-authorized hard-overflow fixture change: scenario is no longer `@wip` and queues repeated overflow responses so the retry reaches the turn under test.
-- Added the missing exhausted-after-retry conversion and focused unit coverage; provider-wall classification itself was not recut.
-- Pushed `bean/isaac-zveu` at `0029ee3`.
-- Hard-overflow scenario is green: 1 example, 0 failures, 2 assertions.
+- Applied planner-authorized hard-overflow fixture repair and removed its `@wip`; `provider_walls.feature` was untouched.
+- Preserved the provider-unavailable/context-exhausted split and added exhausted-after-compact-retry behavior plus focused regression coverage.
+- Rebased and pushed `bean/isaac-zveu` @ `ee70ac49f504309249b798732a794e665716c7fd` (base `origin/main@e9ffb5aa92f29330ee8e3d5a8cef543c1d51ab24`).
+
+Verification:
+- `clojure -M:features features/llm/turn_exhaustion.feature:56` — 1 example, 0 failures, 2 assertions.
+- `clojure -M:features features/llm/turn_exhaustion.feature:75` — 1 example, 0 failures, 2 assertions.
+- `bb spec spec/isaac/drive/turn_spec.clj` — 73 examples, 0 failures, 226 assertions.
+- Edited-file lint: 0 errors; `git diff --check` clean.
 
 Next:
-- Run the other focused scenario and full turn spec, then rebase on `origin/main` and repeat acceptance.
-- Resume at `src/isaac/drive/turn.clj:1453` and `features/llm/turn_exhaustion.feature:75`.
+- Verify at `src/isaac/drive/turn.clj:1489`, `spec/isaac/drive/turn_spec.clj:1069`, and `features/llm/turn_exhaustion.feature:75`.
