@@ -1,11 +1,11 @@
 ---
 # isaac-zveu
 title: Provider unavailability is mislabeled as :context-exhausted
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-09-17T22:53:29Z
-updated_at: 2026-09-17T22:59:03Z
+updated_at: 2026-09-17T23:01:33Z
 ---
 
 ## Problem
