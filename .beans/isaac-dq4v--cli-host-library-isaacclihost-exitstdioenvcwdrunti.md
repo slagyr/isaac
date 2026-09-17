@@ -56,3 +56,18 @@ cd isaac-foundation && bb spec spec/isaac/cli && bb features features/cli && bb 
 ## Likely repo scope
 
 isaac-foundation only.
+
+## Worker checkpoint (2026-09-17, scrapper@isaac-work-1)
+
+Done:
+- Added `isaac.cli.host` process/embedded host seam and RED→GREEN focused coverage for embedded exit, stdio/future binding conveyance, cwd/env/tty, live-state preservation, local-only/root/error handling, and cancellation.
+- Added manifest `:local-only` support and marked foundation server/service/modules commands.
+- Began migrating color, config stdin, runner shutdown/block, log follow cancellation, cwd/env command reads, and wired `lint-cli-host` into `bb ci`.
+- Checkpoint branch: `bean/isaac-dq4v` @ `6260cee`.
+
+Current state:
+- `bb spec --focus spec/isaac/cli/host_spec.clj` is green: 7 examples, 0 failures, 25 assertions.
+- Acceptance is not green: `bb lint-cli-host` is red on remaining process-global reads in config/module/runner/logger namespaces and one docstring false positive.
+
+Next:
+- Resume at `spec-support/src/isaac/foundation/cli_host_lint.clj:17`: scope lint to command-facing code/ignore comments, migrate required remaining `user.dir` and env reads through `isaac.cli.host`, then run CLI specs/features, lint, and `bb ci`.
