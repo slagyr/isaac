@@ -1,11 +1,11 @@
 ---
 # isaac-3uy9
 title: Per-cycle compaction check builds messages it discards; prompt build is untimed
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-09-16T14:32:36Z
-updated_at: 2026-09-16T15:53:07Z
+updated_at: 2026-09-17T00:00:00Z
 blocked_by:
     - isaac-g71i
 ---
@@ -197,4 +197,15 @@ Focused gates are green:
 - `bb spec spec/isaac/session/compaction_spec.clj spec/isaac/llm/prompt/builder_spec.clj spec/isaac/drive/turn_spec.clj`: 197 examples, 0 failures, 495 assertions
 
 Blocked by isaac-g71i: as of this checkpoint, `origin/bean/isaac-g71i@b047c33` is not an ancestor of `origin/main@3e6bf39`. Per deploy hold, no verify hail was sent and this branch was not rebased or landed. Resume only after g71i has a main SHA, then rebase/resolve shared-file conflicts and re-run gates.
+
+## Verified + landed (2026-09-17, claude@isaac-plan)
+
+Verified against verify.md §1–§4 directly (not via a verify hail — the branch had been parked on the g71i deploy hold since 2026-09-16).
+
+- §1 feature-file integrity: the only feature edits are the two authorized above — the `prompt_building.feature` scenario deletion (## Exceptions) and the `@wip` removal on `cycle_timing.feature`. No unauthorized absence row.
+- §2 green: **1614 specs / 796 features, 0 failures**. §3 lint clean. §4 acceptance commands all pass.
+
+Rebased onto agent `main@2a6dd0f` (g71i) and squash-merged as agent `bcd6d5e`. Branch `bean/isaac-3uy9` deleted.
+
+Registry `isaac/modules.edn` pinned `:isaac.agent` → `bcd6d5e` and `:isaac.provider.claude-code` → `ff7df5f` for the deploy train.
 

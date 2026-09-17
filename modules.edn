@@ -1,11 +1,11 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "2ed58f77d33d3f0ee72cb840401f793c97eba5e2"}
+                                      :git/sha "bcd6d5e7e0a0a812e7c8147f20fe586b0f9be795"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "e0c7dddaccfce6f480d611a535571dc67d77cbbd"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
-                                      :git/sha "dfa91e880b903a1a6f60f29d6a242cd99e9a63b5"}
+                                      :git/sha "ff7df5f445cdf602e08f98b0e8ac59b63b5bfa60"}
                               :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
                                       :git/sha "d1380ad0216a14c13323548c537f3e1e9bbed9d7"}
