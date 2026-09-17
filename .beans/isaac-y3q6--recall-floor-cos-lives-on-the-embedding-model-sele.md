@@ -1,10 +1,11 @@
 ---
 # isaac-y3q6
 title: Recall floor-cos lives on the embedding model; select-injected is the live path
-status: draft
+status: todo
 type: task
+priority: normal
 created_at: 2026-09-17T00:07:10Z
-updated_at: 2026-09-17T00:07:10Z
+updated_at: 2026-09-17T01:30:23Z
 parent: isaac-51xy
 ---
 
@@ -34,3 +35,52 @@ The rank-then-admit pipeline (blend → shortlist 8 → cos-floor OR lex-floor �
 - Renames (`recency-half-life`, `message-cap`, inject map keys)
 - Markdown `doc/recall.md`
 - Re-index / zanebot floor calibration
+
+## Scenarios (committed @wip, 2026-09-16)
+
+isaac-episodes `5ca99b0`.
+
+- `features/recall/query.feature:245` — rewrite: floor resolves defaults, then `[:episodes :embedding :floor-cos]`, then CLI `--floor-cos`; 0 disables
+- `features/episodes/live.feature:310` — rewrite: below-floor inject reads embedding `:floor-cos` (not `:recall`)
+- `features/recall/query.feature:268` — new: leftover `:recall {:floor-cos 0.999}` does not raise the floor
+
+## Specs (not Gherkin)
+
+`select-injected` is the live selection path `inject-on-open!` calls. Named constants at the top of that namespace (shortlist 8, lex-floor 0.5, search-full 1, search-gists 2, thread-gists 10, default floor-cos 0.47). Specs on synthetic scored scenes:
+
+- rank by blend, then take 8, then admit on `floor-cos` **or** `lex-floor`
+- all 8 fail both floors → empty search
+- thread gists are a separate block (no floors)
+- format: 1 full + 2 gists of admitted search hits
+
+`resolve-floor`: defaults `0.47` → `[:episodes :embedding :floor-cos]` → CLI. Must not read `[:recall :floor-cos]`.
+
+## Implementation
+
+- Add `:floor-cos {:type :double}` under `:episodes :embedding` in the manifest schema; drop it from `:recall`.
+- `score/resolve-floor` reads `[:episodes :embedding :floor-cos]`.
+- Extract `select-injected`; `inject-on-open!` is I/O around it (embed, log `:episodes/recalled` / `:episodes/recall-empty`, append blocks).
+- Clean cutover: no alias for `:recall :floor-cos`.
+- Existing fixtures that set `:recall {:floor-cos}` in specs must move to the embedding map (same as the feature rewrites).
+- Do not rename other knobs. Do not add drift to embedding config.
+
+## Acceptance
+
+Remove `@wip` from the three scenarios and they pass:
+
+```
+bb features features/recall/query.feature:245
+bb features features/recall/query.feature:268
+bb features features/episodes/live.feature:310
+```
+
+Regression (untagged floor/inject scenarios stay green):
+
+```
+bb features features/recall/query.feature features/episodes/live.feature features/episodes/recall_logging.feature
+bb spec spec/isaac/recall spec/isaac/episodes
+```
+
+## Exceptions
+
+Feature files may only change by `@wip` removal unless a later planner note authorizes more.
