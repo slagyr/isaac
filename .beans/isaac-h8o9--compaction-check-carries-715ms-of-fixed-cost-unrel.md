@@ -1,13 +1,11 @@
 ---
 # isaac-h8o9
 title: Compaction check carries ~715ms of fixed cost unrelated to transcript size
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-17T22:32:49Z
-updated_at: 2026-09-17T23:33:00Z
+updated_at: 2026-09-17T23:43:01Z
 ---
 
 ## Problem
@@ -116,3 +114,9 @@ Done: added per-step timing fields (`entry-ms`, `transcript-ms`, `gauge-ms`, `pl
 Real zanebot probe against the production session store (three warm runs each) names two fixed-cost steps: `entry-ms` (`policy/get-session`) and `transcript-ms` (`policy/get-transcript`). `isaac-work-2` (242 entries, 789,344 bytes) measured entry 646–694ms, transcript 759–847ms; `isaac-work-1` (609 entries, 1,519,223 bytes) measured entry 588–617ms, transcript 703–706ms. Gauge was 0.29–0.52ms, plan 1.5–3.0ms, config 0.06–0.07ms, provider <0.001ms. Root cause is repeated full store resolution: sidecar `get-session` calls `read-sidecar-store`, then `get-transcript` calls `get-session` again and repeats it before reading `current.ednl`. This validates the reported size-independent floor and rules out config/provider/gauge/plan.
 
 Next: verifier reviews instrumentation at `src/isaac/drive/turn.clj:908` and probe evidence above. Bean remains `in-progress` and is tagged `unverified` pending verification.
+
+
+
+## Landed on main (2026-09-17)
+
+main-sha: isaac-agent e9ffb5aa92f29330ee8e3d5a8cef543c1d51ab24
