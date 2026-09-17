@@ -1,11 +1,11 @@
 ---
 # isaac-h8o9
 title: Compaction check carries ~715ms of fixed cost unrelated to transcript size
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-09-17T22:32:49Z
-updated_at: 2026-09-17T22:32:49Z
+updated_at: 2026-09-17T22:59:03Z
 ---
 
 ## Problem
@@ -84,3 +84,25 @@ number attached to it.
 
        bb spec spec/isaac/drive/turn_spec.clj spec/isaac/session/compaction_spec.clj
        clojure -M:features features/session/cycle_timing.feature
+
+## Scenarios (2026-09-17)
+
+Committed `@wip` on isaac-agent `main` @ `7969122`:
+
+- `features/session/cycle_timing.feature:47` — the compaction check reports where its
+  own time went
+
+Reuses existing steps; no new steps invented.
+
+Acceptance command:
+
+    clojure -M:features features/session/cycle_timing.feature:47
+
+Remove `@wip` when the instrumentation lands.
+
+## Extra datapoint (2026-09-17)
+
+The same check ran in **241ms** on yopp against **715ms** on zanebot, on identical code
+(`bcd6d5e`). The fixed cost is therefore host- or config-dependent, not inherent to the
+code path — worth comparing the two hosts' config resolution before assuming the cost
+lives in the check itself.

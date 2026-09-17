@@ -1,16 +1,16 @@
 ---
 # isaac-zveu
 title: Provider unavailability is mislabeled as :context-exhausted
-status: draft
+status: todo
 type: task
 priority: high
 created_at: 2026-09-17T22:53:29Z
-updated_at: 2026-09-17T22:53:29Z
+updated_at: 2026-09-17T22:59:03Z
 ---
 
 ## Problem
 
-`classify-ended-by` (isaac-agent `src/isaac/drive/turn.clj:531`) collapses provider
+`classify-ended-by` (isaac-agent `src/isaac/drive/turn.clj:447`) collapses provider
 unavailability into context exhaustion:
 
 ```clojure
@@ -25,7 +25,7 @@ opposite remedy: context exhaustion means compact or start a fresh session, whil
 unavailability means wait, back off, or fix credentials. Reporting one as the other
 sends the operator to the wrong fix.
 
-Ordering note: `(:error result)` is matched first (line 539), so this only bites when
+Ordering note: `(:error result)` is matched first (line 455), so this only bites when
 `:unavailable?` is set *without* an `:error` key.
 
 ## Field evidence (2026-09-17)
@@ -39,7 +39,7 @@ time on a live incident.
 ## Proposal
 
 Give unavailability its own terminal value — `:provider-unavailable` — add it to
-`ended-by-values`, and reserve `:context-exhausted` for
+`ended-by-values` (`turn.clj:445`), and reserve `:context-exhausted` for
 `(= :context-exhausted (:reason result))` only.
 
 Clean cutover: no alias, no back-compat mapping. Any consumer switching on
@@ -59,3 +59,29 @@ defer and retry, not be treated as a session that needs compacting.
 4. Green:
 
        bb spec spec/isaac/drive/turn_spec.clj
+
+## Scenarios (2026-09-17)
+
+Committed `@wip` on isaac-agent `main` @ `7969122`:
+
+- `features/llm/turn_exhaustion.feature:57` — a provider wall ends with
+  `:provider-unavailable`, not `:context-exhausted`
+- `features/llm/turn_exhaustion.feature:77` — a hard context overflow still ends with
+  `:context-exhausted`
+
+The feature narrative's `:ended-by` enumeration was extended to include
+`:provider-unavailable` in the same commit. Both scenarios reuse existing steps; no new
+steps were invented.
+
+Acceptance commands:
+
+    clojure -M:features features/llm/turn_exhaustion.feature:57
+    clojure -M:features features/llm/turn_exhaustion.feature:77
+    bb spec spec/isaac/drive/turn_spec.clj
+
+Remove `@wip` when the split lands.
+
+Heads-up, NOT in this bean's scope: `features/llm/provider_walls.feature` lines 97 and
+119 still carry `@wip` tags although isaac-bs5b (which implemented them) is completed.
+They are stale, not unimplemented behavior — do not treat them as missing work, and do
+not "fix" them here.
