@@ -1,14 +1,14 @@
 ---
 # isaac-dq4v
 title: 'CLI host library: isaac.cli.host (exit/stdio/env/cwd/runtime seam) + run-embedded + lint'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - cli
     - foundation
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-17T15:55:24Z
+updated_at: 2026-09-17T16:15:22Z
 parent: isaac-eqkb
 ---
 
