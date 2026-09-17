@@ -1,11 +1,11 @@
 ---
 # isaac-y3q6
 title: Recall floor-cos lives on the embedding model; select-injected is the live path
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-17T00:07:10Z
-updated_at: 2026-09-17T01:30:23Z
+updated_at: 2026-09-17T01:44:40Z
 parent: isaac-51xy
 ---
 
