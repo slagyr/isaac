@@ -138,3 +138,15 @@ Worker now:
        bb spec spec/isaac/drive/turn_spec.clj
    (re-point the :77 selector if the scenario line moved)
 5. Hand to verifier when those three are green. Do not restore `@wip` as the solution.
+
+## Worker checkpoint (2026-09-17, scrapper@isaac-work-1)
+
+Done:
+- Applied planner-authorized hard-overflow fixture change: scenario is no longer `@wip` and queues repeated overflow responses so the retry reaches the turn under test.
+- Added the missing exhausted-after-retry conversion and focused unit coverage; provider-wall classification itself was not recut.
+- Pushed `bean/isaac-zveu` at `0029ee3`.
+- Hard-overflow scenario is green: 1 example, 0 failures, 2 assertions.
+
+Next:
+- Run the other focused scenario and full turn spec, then rebase on `origin/main` and repeat acceptance.
+- Resume at `src/isaac/drive/turn.clj:1453` and `features/llm/turn_exhaustion.feature:75`.
