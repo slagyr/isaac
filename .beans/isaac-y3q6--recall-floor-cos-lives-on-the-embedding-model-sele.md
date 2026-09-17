@@ -4,8 +4,10 @@ title: Recall floor-cos lives on the embedding model; select-injected is the liv
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-17T00:07:10Z
-updated_at: 2026-09-17T01:44:40Z
+updated_at: 2026-09-17T02:16:06Z
 parent: isaac-51xy
 ---
 
@@ -84,3 +86,15 @@ bb spec spec/isaac/recall spec/isaac/episodes
 ## Exceptions
 
 Feature files may only change by `@wip` removal unless a later planner note authorizes more.
+
+## Implementation checkpoint (2026-09-17, scrapper@isaac-work-1)
+
+Done:
+- Moved `:floor-cos` schema/config resolution to `[:episodes :embedding :floor-cos]`; leftover `[:recall :floor-cos]` is ignored.
+- Added the public live `select-injected` path with named selection constants; `inject-on-open!` consumes its search tiers and independent thread gists.
+- Removed only the three authorized `@wip` tags.
+- Pushed `bean/isaac-y3q6` at `dd6a137d2e011b9be2b10dd25c6c15c8983bc0d0`, based on `origin/main@5ca99b0ba8e27f1b1dfaea7dc28c86d28bb3c7ca`.
+- Verification passed: focused scenarios 4/2/4 assertions; regression features 35 examples, 0 failures, 209 assertions; regression specs 209 examples, 0 failures, 563 assertions; `git diff --check` clean; edited production namespaces load successfully.
+
+Next:
+- Hand off to `isaac-verify` with reply-to `9aa11c51`; verifier resumes review at `src/isaac/recall/inject.clj:73` (`select-injected`) and `src/isaac/recall/inject.clj:187` (`inject-on-open!`).
