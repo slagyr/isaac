@@ -1,42 +1,52 @@
 ---
 # isaac-eqkb
-title: Warm CLI via isaac-server in-process execution (daemon) — PARKED
-status: draft
-type: feature
-priority: normal
+title: 'Epic: CLI runs inside the server process (single-writer sessions, warm CLI)'
+status: todo
+type: epic
+priority: high
 created_at: 2026-07-13T17:29:33Z
-updated_at: 2026-09-04T16:30:55Z
+updated_at: 2026-09-17T15:55:24Z
 ---
 
-## Goal (PARKED — design captured 2026-07-13, not yet prioritized)
+## Goal (reopened 2026-09-17, Micah)
 
-Erase the ~1.3s babashka source-load floor on every isaac CLI command by executing commands warm inside the already-running isaac-server, falling back to cold bb only when no current server is available. Addresses isaac-ogiu Hotspot #1 (the floor tki3/ogiu classpath caching CANNOT touch).
+Run isaac CLI commands INSIDE the running server process. Primary reason is **single-writer**: every `prompt` / `acp` / `sessions set` / `hail` from a second process is an unguarded writer against files the server is mid-turn on (isaac-4zr3's persist lock is a JVM monitor — "a second process won't see it; do not invent flock"). In-process closes that gap with no new locking. Startup speed (no bb boot, no config resolve, live hot-reloaded config) is the second payoff.
 
-## Why this and not alternatives
+Reverses isaac-895i's subprocess decision. Its reasons, answered: streaming duplex → bound `*in*`/`*out*`/`*err*` over the frame pipe; cwd → already off the wire; `System/exit` + friends → the CLI host library (child 1); crash containment → ACCEPTED residual risk (timeouts + cancellation; a runaway/OOM command hurts the server).
 
-- **Native-image / custom bb binary: ruled out.** GraalVM native-image needs a closed world at build time (no runtime require / dynamic classloading / eval). Isaac loads modules DYNAMICALLY at runtime via add-deps (the berth architecture). Native-image would force baking modules in at build time, abandoning the module system. Plus slow, memory-hungry, per-platform builds. bb was chosen precisely to keep dynamic loading — native fights the design.
-- **Use the EXISTING isaac-server, not a new daemon.** It already has modules + config + command registry loaded warm. A new daemon re-pays all that. cli-server is already the entry module.
+## Decisions (2026-09-17, Micah)
 
-## Design
+- **No subprocess backdoor.** No client-selectable "run as process" flag. SSH + the cold `isaac` binary is the escape hatch (and the only thing that works when the server is wedged). Subprocess spawning in cli-server is migration scaffolding and is DELETED when the last command is embedded.
+- **All commands embed by default; `:local-only true` in the manifest opts out** (`server`, `service`, `modules install|upgrade`, `remote`). Over the pipe a local-only command refuses with "run this on the host".
+- **Every CLI command goes through one CLI host library**; nothing in a command touches `System/exit`, stdin/stdout, env, cwd, tty, shutdown hooks, or process-global runtime installs directly.
+- **PROTOCOL.md is unchanged** — execution model is a server-side detail (only the "Execution model" prose changes).
+- Native-image stays ruled out; reuse the existing server, not a new daemon (unchanged from the 07-13 design).
 
-1. **In-process command dispatch in isaac-server**: invoke a command against the server's already-loaded registry and capture output, instead of the current cli-server behavior which SPAWNS `isaac <argv>` subprocesses (dispatch.clj:50-54 — pays full bb tax per command today). This in-process path is where ~2.3s -> ~sub-100ms lives.
-2. **Thin non-bb client shim** as the local `isaac` entrypoint: ping the server socket in milliseconds (curl/shell), send the command if up, fall back to `bb isaac.bb` if down. The decision MUST NOT boot bb (that already loses the 1.3s). curl-to-localhost is ~ms.
-3. **Staleness guard via basis check (reuses tki3's :basis)**: warm execution is valid ONLY when the server's loaded module-basis (foundation version + module SHAs) == current on-disk basis.
-   - Match -> execute warm.
-   - Mismatch (module upgraded / foundation bumped) -> cold-bb fallback (server is behind for its own orchestration too; signal 'restart pending').
-   - **Config mtime EXEMPT** — config is hot-reloaded and live in the server, so warm reads are current (better than cold bb re-reading files). Only the un-hot-reloadable parts (module SHAs, foundation version) gate warm validity.
-   By construction the daemon cannot return stale results — it self-demotes to cold exactly when its classpath is behind.
+## Survey findings (2026-09-17) — what actually endangers a long-running server
 
-## Trade-offs to resolve at spec time
+`System/exit` is the smallest hazard: ONE call, `isaac.main/-main` (foundation main.clj:180); every command already returns an exit code. The real hazards:
 
-- **Isolation**: commands would run inside the orchestration server (crews/hail/discord). A pathological command could disturb it. Needs try/catch boundary + timeout; likely scope warm-eligibility to READS (mutating/long-running commands stay cold).
-- Relationship to parked isaac-5zfv ('run as bb or jvm') — likely supersedes or absorbs it.
+1. **`isaac.main/run` is a process bootstrap**: `config-api/clear-process-memo!`, `registry/clear-berth-commands!`, `lifecycle/reconcile-modules!` (would unload/reload the server's live modules), `log-output/apply-cli!` (redirects the server's logger to cli.log), `nexus/init!`, and a process-global `with-redefs` on `log/log*`. ⇒ the embedded path must NEVER call `main/run`; it is `registry/get-command` → run-fn against the live nexus.
+2. **Commands re-bootstrap themselves**: `loader/load-config!` (auth, crew, sessions, prompt, embed, recall, episodes), `runtime/install!`, `builtin/register-all!`, acp's `config/set-snapshot!` + `store/register!`, and `sessions`' `config/dangerously-install-config! nil` in `finally` (session/cli.clj:277,454 — would nil the server's config).
+3. **`isaac.nexus` is a global atom** with save/restore (`-with-nested-nexus`), not a binding — concurrent nested installs clobber each other. Embedded commands use the live nexus and never nest.
+4. Misc: acp `System/setProperty "user.dir"` (acp/server.clj:39-47) and `with-redefs` for `--verbose` (acp/cli.clj:148); `logs --follow` and `server` block forever; worksite locks are PID-stamped (worksite/lock.clj:28); `color/tty?`, `System/getenv`, `user.dir` would reflect the server, not the caller.
 
-## Status
+Stdin readers (`acp`, `mcp-bridge`, `hail send`, `config set/validate`, `auth`) ARE hostable — `*in*` is bindable.
 
-DRAFT / parked per Micah 2026-07-13 ('big and complicated... might be the right move, but for now just get the classpath cached'). Revisit after the low-hanging classpath cache (isaac-ogiu) ships and we see the residual floor in practice.
+## Children (in order)
 
+1. **isaac-dq4v** — CLI host library in foundation + foundation commands migrated + lint.
+2. **isaac-1fwl** — Module commands migrated to the host (`ensure-runtime!`); sessions nil-out, acp hacks, worksite lock owner fixed.
+3. **isaac-qvhy** — cli-server embedded dispatch (thread per stream; `:local-only` refusal; subprocess kept only for not-yet-migrated commands).
+4. **isaac-gar0** — Local `isaac` routes into the running server — this, not the remote pipe, is the major second-writer source (every crew tool shell-out + every SSH'd command). Server down ⇒ cold (safe: no other writer). Basis stale ⇒ reads cold, mutators refuse "restart pending".
+5. **isaac-dqy9** — Embed `prompt` + `acp`; delete subprocess spawning from cli-server.
 
+## Accepted risks
 
-## Premise revised (2026-09-04, see isaac-v1la)
-The "1.33 s bb source-load floor" this bean was built on is not source loading: `isaac --version` spends 1296 of 1307 ms in three full config resolutions (launcher, main, cli-logging). Fix that first; re-measure the residual floor before reviving the daemon.
+- A runaway/OOM embedded command degrades the server (mitigation: per-command timeout, cancellation on grace expiry).
+- A server restart drops embedded long-lived streams (`acp`); proxy reattach fails with unknown stream-id and the editor reconnects.
+- Embedded `prompt` shares the in-flight gate — now CORRECT: it honors `:max-in-flight`.
+
+## History
+
+Parked 2026-07-13 as a read-only speed daemon justified by a "1.3 s bb source-load floor"; isaac-v1la (09-04) showed that floor was redundant config resolution. Supersedes/absorbs the warm-CLI part of isaac-5zfv's motivation.
