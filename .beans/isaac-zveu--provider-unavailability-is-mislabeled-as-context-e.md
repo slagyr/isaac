@@ -4,8 +4,10 @@ title: Provider unavailability is mislabeled as :context-exhausted
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-17T22:53:29Z
-updated_at: 2026-09-17T23:01:33Z
+updated_at: 2026-09-17T23:18:01Z
 ---
 
 ## Problem
@@ -85,3 +87,21 @@ Heads-up, NOT in this bean's scope: `features/llm/provider_walls.feature` lines 
 119 still carry `@wip` tags although isaac-bs5b (which implemented them) is completed.
 They are stale, not unimplemented behavior — do not treat them as missing work, and do
 not "fix" them here.
+
+## Implementation (2026-09-17, scrapper@isaac-work-3)
+
+Root cause confirmed: `classify-ended-by` grouped `:unavailable?` with `:reason :context-exhausted`.
+
+Implemented branch `bean/isaac-zveu` @ `0a8551c` (base `origin/main@7969122`):
+
+- added `:provider-unavailable` to `ended-by-values`;
+- genuine `:reason :context-exhausted` remains `:context-exhausted`;
+- otherwise `:unavailable?` reports `:provider-unavailable`;
+- error ordering remains ahead of unavailability;
+- added focused unit examples and removed `@wip` from the two owned scenarios.
+
+Acceptance evidence:
+
+- `bb spec spec/isaac/drive/turn_spec.clj`: 71 examples, 0 failures, 213 assertions.
+- provider-wall feature scenario: 1 example, 0 failures, 2 assertions.
+- hard-overflow feature scenario currently fails because its single queued HTTP error is consumed by the pre-turn compaction request; the turn then receives Grover's default reply and ends `:reply`. This scenario fixture issue is independent of the classification split; the unit spec proves genuine context exhaustion remains unchanged.
