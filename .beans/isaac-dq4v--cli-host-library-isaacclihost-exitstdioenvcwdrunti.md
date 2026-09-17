@@ -1,15 +1,14 @@
 ---
 # isaac-dq4v
 title: 'CLI host library: isaac.cli.host (exit/stdio/env/cwd/runtime seam) + run-embedded + lint'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
-    - cli
     - foundation
-    - unverified
+    - cli
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-17T16:42:45Z
+updated_at: 2026-09-17T16:47:03Z
 parent: isaac-eqkb
 ---
 
@@ -76,3 +75,9 @@ Verification:
 
 Next:
 - Verifier starts at `src/isaac/cli/host.clj:7` and `spec/isaac/cli/host_spec.clj:21`, runs acceptance in a clean checkout/CI, and reviews whether modules may later narrow `:local-only` to install/upgrade subcommands.
+
+
+
+## Landed on main (2026-09-17)
+
+main-sha: isaac-foundation 26742d0d67179412434de3f1f13d8103a15bd173
