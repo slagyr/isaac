@@ -1,11 +1,11 @@
 ---
 # isaac-h8o9
 title: Compaction check carries ~715ms of fixed cost unrelated to transcript size
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-17T22:32:49Z
-updated_at: 2026-09-17T22:59:03Z
+updated_at: 2026-09-17T23:01:26Z
 ---
 
 ## Problem
