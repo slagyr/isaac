@@ -4,8 +4,10 @@ title: Compaction check builds :tools it never reads
 status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-09-17T22:32:02Z
-updated_at: 2026-09-17T23:01:49Z
+updated_at: 2026-09-17T23:13:25Z
 ---
 
 ## Problem
@@ -64,3 +66,17 @@ goes uncalled.
 
        bb spec spec/isaac/drive/turn_spec.clj spec/isaac/session/compaction_spec.clj
        clojure -M:features features/session/cycle_timing.feature
+
+## Implementation checkpoint (2026-09-17, scrapper@isaac-work-1)
+
+Done:
+- Removed eager `compaction-estimate-opts`; the common check path now evaluates gauge/plan/config directly from existing opts.
+- Added `compaction-tools-opts` only at the synchronous compaction boundary; async compaction defers the same computation until its check actually fires.
+- Honored the one-time removal-check rule: temporarily redefined `tool-registry/tool-definitions` to throw and verified a non-firing check succeeds, then removed that check from the committed suite.
+- Branch: `bean/isaac-0t2f` @ `752b9d7` (base `origin/main@7969122e210197c1be59a9074fb879eca3b7bbd2`).
+
+Verification:
+- `bb spec spec/isaac/drive/turn_spec.clj spec/isaac/session/compaction_spec.clj` — 134 examples, 0 failures, 364 assertions.
+- `clojure -M:features features/session/cycle_timing.feature` — 2 examples, 0 failures, 6 assertions.
+- One-time no-compaction removal check passed before deletion.
+- Edited-file lint: 0 errors (6 pre-existing warnings); `git diff --check` clean.
