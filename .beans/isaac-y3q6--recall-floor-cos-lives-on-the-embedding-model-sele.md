@@ -1,13 +1,11 @@
 ---
 # isaac-y3q6
 title: Recall floor-cos lives on the embedding model; select-injected is the live path
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-17T00:07:10Z
-updated_at: 2026-09-17T02:16:06Z
+updated_at: 2026-09-17T02:23:25Z
 parent: isaac-51xy
 ---
 
@@ -98,3 +96,9 @@ Done:
 
 Next:
 - Hand off to `isaac-verify` with reply-to `9aa11c51`; verifier resumes review at `src/isaac/recall/inject.clj:73` (`select-injected`) and `src/isaac/recall/inject.clj:187` (`inject-on-open!`).
+
+
+
+## Landed on main (2026-09-17)
+
+main-sha: isaac-episodes 36dedf2018505a5316948db655f3dc1a44de4c98
