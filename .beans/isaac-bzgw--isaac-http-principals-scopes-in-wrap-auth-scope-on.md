@@ -73,7 +73,7 @@ Log events this bean defines: `:http/request` (info; `:principal :uri :status`),
 | **a fixture route {method} {path} requires scope {scope}** / **… declares no scope** / **… requires scope {scope} and its handler requires {scope2}** | **NEW — registers a 200-handler route through the :isaac.http/route berth path (with/without :scope; the third variant's handler calls `isaac.http.auth/require-scope!`)** |
 | **the log has exactly {n} entries matching:** | **NEW — count variant of the existing matcher** |
 
-Five new step families.
+Five new step families. **Where they live (Micah, 2026-09-17):** steps 1–3 (principal configured/removed, fixture route) are HTTP-specific → isaac-http `spec/` step ns. Steps 4–5 (`the log has exactly {n} entries matching:`, `the isaac config path {path} matches {regex}`) are generic → **isaac-foundation `spec-support`** next to their siblings (`cli_steps.clj` log matchers, `config_steps.clj` config-path Given), released with a foundation spec-support bump and pinned from isaac-http (dev-local while iterating). Same shape as tvcg/gar0's placeholder-substitution steps.
 
 ## Acceptance
 ```
