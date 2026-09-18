@@ -1,13 +1,13 @@
 ---
 # isaac-auie
 title: isaac server auth mint|rotate|revoke|list — secret printed once, hash written to config (hot-reload), overlap rotation
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - security
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T04:13:56Z
+updated_at: 2026-09-18T04:49:11Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -30,3 +30,45 @@ Child 2 of isaac-gym1 (principals epic). Repo: isaac-http. Blocked by child 1.
 3. revoke removes the principal and the next request with its token is 401
 4. list shows scopes and expiry; the secret column does not exist
 5. the minted token authenticates against a running server without restart (integration, reuses child 1's steps)
+
+
+
+## Scenarios (committed @wip — isaac-http `features/cli/auth_principals.feature` @ 0cd9d1d)
+
+| line | scenario |
+|------|----------|
+| :12 | mint prints the secret once and writes only its hash to config |
+| :25 | the minted secret authenticates as that principal |
+| :36 | mint with --expires records the expiry |
+| :42 | mint refuses an existing name |
+| :51 | mint requires at least one scope |
+| :58 | rotate replaces the hash and the old secret stops working |
+| :71 | rotate with --overlap keeps the old secret valid until the window ends |
+| :86 | revoke removes the principal and its overlap twin |
+| :95 | revoke of an unknown principal is an error |
+| :101 | list shows name, scopes and expiry, never a hash or secret |
+| :113 | a running server honours a principal minted from the CLI without a restart |
+
+Overlap twin naming: `<name>@prev` with `:expires` = now + overlap; child 1 already treats `:expires` uniformly, and the request log names the twin (`ci@prev`) so audit can tell old from new. `list` columns: name, scopes, expires (`-` when none), last-used (`never` until isaac-2a2x).
+
+## Step ledger
+
+| step | status |
+|------|--------|
+| an Isaac root at … / config: / the Isaac server is started / the isaac config is reloaded | reuse |
+| isaac is run with … / the exit code is … / the stdout is empty / the stdout does not contain … / the stderr contains … / the stdout lines match: | reuse (foundation cli_steps) |
+| the config file … does not contain … / the isaac config path … matches … / the log has (no) entries matching: | reuse (foundation; `matches` lands with isaac-bzgw) |
+| principal … is configured with secret … and scopes … (+ expiring …) / a fixture route … requires scope … | reuse (isaac-bzgw) |
+| the client sends GET … with header … / the response status is … | reuse |
+| **the stdout has exactly {n} line(s)** | **NEW — foundation spec-support (generic)** |
+| **the stdout line is a bearer secret of at least {n} characters** | **NEW — captures the printed line as `<the printed secret>` for later steps; asserts length + charset** |
+| **`<the printed secret>` placeholder** in `Authorization: Bearer <the printed secret>` / `does not contain the printed secret` / log `#".*<the printed secret>.*"` | **NEW — substitution in the client-header, config-file and log-matcher steps (same pattern as `${stub.url}` in cli-proxy)** |
+| **the isaac config path {path} is absent** | **NEW — foundation spec-support (generic)** |
+
+Four new step families (two generic → foundation spec-support, two HTTP-side).
+
+## Acceptance
+```
+cd isaac-server && bb features features/cli/auth_principals.feature && bb features features/server/principals.feature && bb ci
+```
+`isaac server auth --help` documents mint/rotate/revoke/list and the one-time-secret rule. Version bump; pin is a train step.
