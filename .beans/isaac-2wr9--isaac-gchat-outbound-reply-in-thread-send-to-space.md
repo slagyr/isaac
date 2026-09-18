@@ -1,14 +1,14 @@
 ---
 # isaac-2wr9
 title: 'isaac-gchat outbound: reply in thread; send to space, DM by email, group DM'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
     - comm
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:56:57Z
+updated_at: 2026-09-18T20:51:14Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
