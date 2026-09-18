@@ -7,9 +7,8 @@ priority: high
 tags:
     - claude-code
     - compaction
-    - unverified
 created_at: 2026-09-18T14:42:28Z
-updated_at: 2026-09-18T16:24:20Z
+updated_at: 2026-09-18T16:27:04Z
 ---
 
 Compaction over the claude-code provider (`:provider :claude`, Claude Code CLI driver) never succeeds: the CLI completes the summary call, but Isaac records the raw stream-json output as the error and marks the compaction failed.
@@ -69,3 +68,20 @@ zanebot on 53aa2bf too (restart 16:06Z, resume requeued 2, clean). Both hosts no
 isaac-work-3 compacted on claude-opus with 53aa2bf: 751,170 → 7,057 tokens (`✨ compacted`, `:session/compaction-completed :provider "claude"`). isaac-work-2 earlier with e61df08: 753k → 51k. Both hosts on 53aa2bf. Handing to verify: acceptance = `cd isaac-claude-code && bb ci` (72/0 native specs incl. 5 new), plus the three production compactions above as the @real evidence. Registry pin (modules.edn) to follow the squash.
 
 Verify hail: b51b77d8 2026-09-18T16:24Z (band isaac-verify)
+
+
+## Verify fail (attempt 1, 2026-09-18): squash onto origin/main conflicts src/isaac-manifest.edn (isaac-4o6r)
+
+HEAD isaac-claude-code: 53aa2bf (bean/isaac-t098). Working tree: clean.
+
+§1: no feature files in this bean (spec-only). Remaining checks ran.
+
+Green: `bb ci` 72/0/236 native specs (3 @real pending) + 43/0/139 features.
+
+Land: `git merge --squash bean/isaac-t098` onto origin/main 7490a20 would conflict. merge-tree: `changed in both` `src/isaac-manifest.edn`.
+
+- origin/main 7490a20 (isaac-4o6r, landed this session) adds `:isaac.http/route` POST `/claude/turns/:id` `:scope :mcp`.
+- bean/isaac-t098 @ 53aa2bf (base 459a236) only bumps `:version` "0.1.11" → "0.1.12".
+- Bean is not based on current main (ancestor? no). Verifier does not resolve squash conflicts.
+
+Do not land. Rebase bean/isaac-t098 onto origin/main 7490a20 (keep both the :mcp route and 0.1.12), then re-hand. Specs/CI were green on 53aa2bf; re-run `bb ci` after rebase.
