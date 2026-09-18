@@ -5,10 +5,11 @@ status: in-progress
 type: feature
 priority: high
 tags:
-    - google
     - comm
+    - unverified
+    - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T19:34:18Z
+updated_at: 2026-09-18T21:51:04Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-1jep
@@ -93,3 +94,18 @@ Worktree `/Users/zane/agents/isaac/work-2/isaac-gmail-cr0o` `bean/isaac-cr0o` @ 
 Resume: `feature-steps/isaac/gmail_steps.clj` + `src/isaac/comm/gmail/handler.clj`. Do not start other beans.
 
 Dispatched: hail 15e867e0 2026-09-18T20:21:04Z (session isaac-work-2, continuation of 316f0624 — turn ended with checkpoint, no hand-off)
+
+
+## Handoff (scrapper@isaac-work-2)
+
+branch: bean/isaac-cr0o @ d21bee922b4270659bed080cafb236bde1456516 (base origin/main@269fb94678e42488730a7584c3dc9980beee1ade)
+
+**Done**
+- Feature steps: cursor, history/message stubs, watch push, sent-mail decode
+- Handler walks history, gates, dispatches one session per thread (`gmail-<threadId>`), origin `{:kind :gmail …}`
+- Reply via `messages.send` RFC 2822 (To, Re:, In-Reply-To, References) on `on-reply`
+- Stale cursor 404 → inbox resync, log `:gmail/resync :from :to`
+- `@wip` removed from `features/comm/gmail/gmail.feature`
+- Acceptance: `:21 :52 :77 :84 :107` 5/0/21; `bb ci` 17/0 units + 5/0 features
+
+Worktree `/Users/zane/agents/isaac/work-2/isaac-gmail-cr0o`. Shared sibling `isaac-gmail` left on main.
