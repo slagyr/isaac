@@ -70,3 +70,24 @@ Unit specs for: history walk (cursor advance, dedupe, 404 → resync), the gate,
 Ops note: grant `gmail-api-push@system.gserviceaccount.com` publish on the topic before `users.watch` accepts it.
 
 Dispatched: hail 316f0624 2026-09-18T19:33:38Z (band isaac-work)
+
+## Checkpoint (scrapper@isaac-work-2)
+
+Worktree `/Users/zane/agents/isaac/work-2/isaac-gmail-cr0o` `bean/isaac-cr0o` @ `bb3c2f1` (base origin/main@269fb94). Shared sibling `/Users/zane/agents/isaac/work-2/isaac-gmail` left on main.
+
+**Done (units)**
+- cursor persist `google/gmail-cursor.edn`
+- gate: INBOX + allow-from fail-closed; :not-inbox / :sender
+- history walk-page: messageAdded, skip label-only, 404 → resync
+- RFC 2822 reply-raw (To, Re:, In-Reply-To, References)
+- watch registration-entry weekly INBOX + seed cursor
+- stub handler `handle-watch!` + manifest `:isaac.google/handler` `"gmail/watch"`, scopes readonly+send, version 0.1.1
+- `bb spec spec/isaac/comm/gmail` 17/0
+
+**Next**
+1. Feature steps in `feature-steps/isaac/gmail_steps.clj` (cursor Given/Then, history/message stubs, watch push, sent-mail decode).
+2. Wire handler to real Gmail HTTP + `run-turn!` with session `gmail-<threadId>` and origin `{:kind :gmail …}`.
+3. Reply via messages.send using rfc2822.
+4. Un-@wip `features/comm/gmail/gmail.feature`; `bb features` per-line then `bb ci`.
+
+Resume: `feature-steps/isaac/gmail_steps.clj` + `src/isaac/comm/gmail/handler.clj`. Do not start other beans.
