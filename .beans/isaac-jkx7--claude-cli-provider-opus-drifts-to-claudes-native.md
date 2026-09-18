@@ -1,14 +1,14 @@
 ---
 # isaac-jkx7
 title: 'claude-cli provider: opus drifts to Claude''s native <invoke> tool syntax; unparsed calls end the turn early with fabricated results'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - claude-cli
     - tool-protocol
 created_at: 2026-09-03T22:20:42Z
-updated_at: 2026-09-18T05:00:43Z
+updated_at: 2026-09-18T05:49:02Z
 ---
 
 Observed 2026-09-03 after scrapper/prowl moved to :claude-opus (claude-cli provider) during the grok credit outage.
