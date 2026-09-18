@@ -91,3 +91,9 @@ bb spec && bb ci
 cd isaac-cli-proxy && bb features-slow features/integration.feature   # remote ACP e2e still green (acp still subprocess until isaac-dqy9)
 ```
 PROTOCOL.md "Execution model" prose updated in both repos, lockstep. Module version bump; registry pin is a train step.
+
+## Worker checkpoint (2026-09-17, scrapper@isaac-work-2)
+
+Done: claimed bean; created/pushed Foundation branch `bean/isaac-qvhy` at `71200b5` with manifest `:hosted` propagation plus caller-owned `host/run-embedded*`; created/pushed cli-server branch `bean/isaac-qvhy` at `79eff6a` with initial hosted dispatch, piped stdin, frame writers, task exit handling, and task cancellation. First hosted-dispatch unit is green (1 example/4 assertions).
+
+Current state: RED overall; authorized features and full suite are not yet run. Next: implement fixture commands/new steps and drive `features/cli/endpoint.feature:114` onward, then add timeout/config behavior and protocol/version updates. Resume at `spec/isaac/cli_server/cli_server_steps.clj:48` and `src/isaac/cli_server/dispatch.clj:79`.
