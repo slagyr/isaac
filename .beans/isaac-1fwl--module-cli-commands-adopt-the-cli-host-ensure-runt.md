@@ -1,13 +1,13 @@
 ---
 # isaac-1fwl
 title: 'Module CLI commands adopt the CLI host: ensure-runtime!, no ambient installs, acp/worksite fixes'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-17T15:55:24Z
+updated_at: 2026-09-18T00:59:45Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-dq4v
@@ -43,3 +43,15 @@ for r in isaac-agent isaac-acp isaac-hail isaac-episodes isaac-claude-code isaac
 Planner note: split per repo at dispatch time if a worker wants smaller units (agent / acp / rest is the natural 3-way cut). Draft until the fixture shape from child 1 is known.
 
 Each migrated command sets `:hosted true` on its `:isaac/cli` manifest entry — the transitional marker child 3 reads to choose embedded vs subprocess; child 5 deletes it.
+
+
+
+## Landed upstream (isaac-dq4v, foundation main 26742d0) — what this bean builds on
+`isaac.cli.host`: `*host*` (ProcessHost default), `exit!`, `ensure-runtime!`, `in/out/err`, `cwd`, `env`, `tty?`, `on-shutdown!`, `block-until-cancelled!`, `cancelled?`, `cancel!`, `embedded-host`, `run-embedded`. Foundation's `bb lint-cli-host` (`isaac.foundation.cli-host-lint/lint!`, takes paths) is reusable from module `bb.edn`s. Manifest `:isaac/cli` entries accept `:local-only`.
+
+**Foundation leg (do first, bump pins):** `ProcessHost/-ensure-runtime!` is a no-op today, so a module command has nowhere to put its process-side bootstrap. Extend the contract: `(host/ensure-runtime! {:install! (fn [] …)})` — the process host calls `:install!` once per process (memoized on identity, so several commands/subcommands in one invocation don't re-install); the embedded host ignores `:install!` and only asserts the live nexus (as landed). Commands pass their existing config-load + store/tool registration as `:install!`. This is how "no ambient installs when embedded" is achieved without every module growing an if.
+
+Each migrated command sets `:hosted true` on its `:isaac/cli` manifest entry (isaac-qvhy reads it; isaac-dqy9 deletes it). The registry passthrough for `:hosted` lands in isaac-qvhy's foundation leg — coordinate on the pin; if this bean lands first, add the passthrough here instead (one line at `registry.clj:229-236`).
+
+## Fixture for the per-repo spec
+`(host/run-embedded {:argv [...] :in (StringReader. "...") :out (StringWriter.) :err (StringWriter.) :root <root> :env {} :cwd <root>})` on a thread whose nexus is the live one (the spec installs a real config + store via the module's own `:install!` first, then snapshots the ambient config object, `(nexus/get-in [:sessions :store])`, and the tool registry, runs the command, and asserts identical objects after). `sessions` must be run through this — the `finally` nil-out is the named regression.
