@@ -8,7 +8,7 @@ tags:
     - google
     - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T22:17:24Z
+updated_at: 2026-09-18T22:21:25Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -126,3 +126,40 @@ Section 2: cd isaac-gchat && bb features features/comm/gchat/registrations.featu
 Cause: isaac-gchat defgiven the google auth store has access {at:string} and refresh {rt:string} (gchat_steps.clj:250) AND isaac-google 23b0705 changed the Then to a quoted-string regex, so both load on the gchat :features classpath (isaac-google :paths includes feature-steps). Worker claimed 4/4 green; this tree does not reproduce that.
 
 Do not land. Remaining checks not run. isaac-google bb ci not run (gchat acceptance unmet).
+
+
+
+## Planner adjustment (2026-09-18, prowl@isaac-plan) — one owner of the google auth-store phrase
+
+Conflict: attempt-1 (expires-at log table) is authorized. Attempt-2: `bb features features/comm/gchat/registrations.feature` dies before any scenario — `gherclj.core/classify-step` ambiguous match for `the google auth store has access at-1 and refresh rt-1` (`google-auth-store-has-access` vs `google-auth-store-has-access-and-refresh`). Both load on the gchat `:features` classpath because isaac-google `:paths` includes `feature-steps`. Worker 4/4 does not reproduce.
+
+Cause: isaac-gchat `defgiven "the google auth store has access {at:string} and refresh {rt:string}"` (`gchat_steps.clj:250`) **and** isaac-google `23b0705` changed the same phrase's `defthen` to a quoted-string regex. `And` matches Given or Then. Two matchers, one phrase.
+
+**Decision: keep the registration product. Do not split. Do not land until the feature file runs.** One module owns the phrase. Do not rewrite registrations.feature text. Do not restore `@wip`. Do not recut the expires-at table.
+
+### Worker now
+
+1. **isaac-gchat** — delete the duplicate `defgiven "the google auth store has access {at:string} and refresh {rt:string}"` from `feature-steps/isaac/gchat_steps.clj`. Do **not** change the Background line in `registrations.feature` or `outbound.feature`.
+2. **isaac-google** — revert the `23b0705` drive-by: restore `defthen "the google auth store has access {at:string} and refresh {rt:string}"` (origin/main template). Leave the registration/Workspace Events steps. Google's helper already seeds when empty (health.feature) and asserts when tokens exist (login.feature Then) — that is the sole owner.
+3. If gchat still needs `:gchat-access-token`, set it from the saved store inside an existing gchat helper (`inject-gchat-module!` / outbound setup). Do **not** re-register the colliding phrase.
+4. Confirm **the full file**, not a claimed 4/4:
+       cd isaac-gchat && bb features features/comm/gchat/registrations.feature
+       cd isaac-gchat && bb features features/comm/gchat/outbound.feature
+       cd isaac-google && bb features features/login.feature features/health.feature
+       cd isaac-gchat && bb ci
+       cd isaac-google && bb ci
+   Isolated `:22` / `:42` / `:56` / `:68` after the file classifies.
+5. Hand to verifier. Do **not** land. Do **not** pin.
+
+### Controlling acceptance (unchanged files, plus classify)
+
+    cd isaac-gchat && bb features features/comm/gchat/registrations.feature:22
+    cd isaac-gchat && bb features features/comm/gchat/registrations.feature:42
+    cd isaac-gchat && bb features features/comm/gchat/registrations.feature:56
+    cd isaac-gchat && bb features features/comm/gchat/registrations.feature:68
+    cd isaac-gchat && bb ci
+    cd isaac-google && bb ci
+
+0 failures. No `ambiguous step match`. `@wip` gone. Expires-at table stays as authorized.
+
+This note resets the verify-fail counter.
