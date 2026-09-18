@@ -7,8 +7,9 @@ priority: high
 tags:
     - mcp
     - agent
+    - unverified
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T01:43:33Z
+updated_at: 2026-09-18T02:02:30Z
 parent: isaac-uhvt
 ---
 
@@ -80,3 +81,54 @@ cd isaac-mcp && bb ci
 - Adding MCP to isaac-http `optional-registry-syms` (server-only; superseded by the provider seam).
 
 Worker note: the acp scenario needs isaac-acp's steps (`stdin is:`, `isaac is run with` for acp) on the `:features` alias — add isaac-acp + its spec-support as `:features` extra-deps, pinned to the same train as the agent pin.
+
+## Work checkpoint (2026-09-18, plan@local) — handed to verify, `tag=unverified`
+
+Both legs implemented and green locally. Design as approved; two things the
+implementation taught that the plan did not know:
+
+1. **The cascade drops globs before the registry sees them.** `turn/allowed-tool-names`
+   computes concrete wire names (registered ∪ declared-exact) and removes `ns/*`
+   tokens, so a provider hook in `tool-definitions` alone never fires for `lens/*`.
+   Fix: registry gains public `ensure-policy-tools!` (globs → provider for the
+   namespace when nothing is registered there; exact → berth module or provider);
+   the cascade calls it on global + crew `:allow` first, `tool-definitions` shares it.
+2. **A registration can outlive its server.** The prompt scenario left `lens__*`
+   registered against a stopped client (harness reset), and the acp turn hit
+   "Stream closed". Handlers no longer close over a client: they look up the live
+   client by server id and reconnect on demand (`:mcp/connected` again), else
+   return "MCP server <id> is not connected". Same rule protects a long-lived
+   server whose MCP child crashed.
+
+Also: the drive attaches `:progress!` (a fn) to tool args; the MCP runtime now
+strips callables and the injected `session_key`/`state_dir` before `tools/call`.
+
+### Spec changes (planner-owned, recorded here)
+
+- `features/lifecycle.feature` rewritten to turn-level scenarios (dead command
+  logged once + turn survives; two servers distinct). Its old "executed with"
+  scenarios could not pass without a hand-start (the step bypasses allow-lists),
+  and they were duplicates of turn.feature's live/prefix scenarios.
+- `feature-steps/isaac/mcp_steps.clj` no longer calls `start!`. It registers the
+  `acp` CLI command at load time exactly as isaac-acp's own steps do (ACP is not
+  `:builtin?`, so main/run cannot discover it in the harness). No new phrases.
+
+### Landed (bean branches, squash on verify)
+
+| repo | branch | sha | what |
+|---|---|---|---|
+| isaac-agent | `bean/isaac-vadd` | 10d7ebf, 8c6835c | `:isaac.agent/tool-providers` berth; provider lookup; `ensure-policy-tools!`; cascade change; specs (registry 61/0, turn 75/0, suite 1632/0) |
+| isaac-mcp | `bean/isaac-vadd` | b2ee765 | `ensure-server!` + retry hold + live-client reconnect; manifest contribution; harness; `hosts.feature` un-@wip; lifecycle rewrite; pins → agent 8c6835c, isaac-acp 9c82588 on `:features` |
+
+### Verified
+
+- isaac-mcp `bb spec` 26/0; JVM features 22/0 (all four feature files) against the agent branch.
+- isaac-agent `bb spec` 1632/0 in the worktree; pre-push `bb verify` ran on push.
+
+### Pin note for the verifier
+
+isaac-mcp pins isaac-agent at the bean-branch sha. After squash-merging isaac-agent,
+re-advance isaac-mcp's agent pins (deps.edn ×3, bb.edn ×2) to the squashed sha
+before merging isaac-mcp, then the isaac modules.edn train.
+
+Worktree used: `plan/isaac-agent-vadd` (another session was live on `plan/isaac-agent`).
