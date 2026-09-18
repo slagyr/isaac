@@ -114,3 +114,18 @@ Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` `bean/isaac-auie` @
 Resume: `src/isaac/http/cli.clj` `run-fn` / new auth subcommand dispatch. Do not start other beans.
 
 Dispatched: hail 1f64d796 2026-09-18T19:58:03Z (session isaac-work-2, continuation of b6b3d9f6 — turn ended at cycle budget without hand-off)
+
+## Checkpoint (scrapper@isaac-work-2, resume 3)
+
+Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` `bean/isaac-auie` @ 8570a75 (base origin/main db2b639). Units 47/0. Features not yet green.
+
+**Done**
+- `isaac server auth mint|rotate|revoke|list` dispatch in `src/isaac/http/cli.clj` (does not start HTTP)
+- Overlap twin nested as `:previous`; wrap-auth expands to `name@prev`
+- Feature steps: stdout line count, bearer-secret capture (`:printed-secret`), config path is/matches/absent (Given `isaac-config-path-is` asserts after CLI via `:exit-code`)
+- Un-@wip `features/cli/auth_principals.feature`; version 0.1.16
+
+**Red / next**
+`bb features features/cli/auth_principals.feature` timed out after 180s on first scenario after ambiguity fix. Resume: run one scenario (`bb features features/cli/auth_principals.feature:12`) and fix remaining step/product failures. Then `bb features features/server/principals.feature && bb ci`. Hand off unverified + hail isaac-verify reply_to 1f64d796.
+
+Resume: `bb features features/cli/auth_principals.feature:12` from `/Users/zane/agents/isaac/work-2/isaac-server-auie`. Do not start other beans.
