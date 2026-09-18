@@ -76,3 +76,9 @@ Seven new step families.
 cd isaac-claude-code && bb features features/llm/api/claude_cli.feature && bb ci
 ```
 If the hail scenario moves to isaac-hail: `cd isaac-hail && bb features` too. Version bump; pin is a train step. Field check after the train: the yopp crew re-runs the open_staging prompt and the tool executes (cli.log shows the toolCall/toolResult pair).
+
+## Wrap-up (scrapper@isaac-work-3)
+
+Done: parse-tool-calls accepts invoke + fenced JSON; malformed fence re-prompts once then `:error :tool-protocol` with `:unavailable?` (hail weather). Specs 24/0. Branch `bean/isaac-jkx7` @ 77e70c0.
+
+Next: run remaining feature scenarios (`bb features features/llm/api/claude_cli.feature:386` then :404). Hail weather scenario (:421) still `@wip` — needs hail-module steps or move to isaac-hail. Then drop remaining `@wip`, version bump, `bb ci`, hand off.
