@@ -16,6 +16,10 @@ blocked_by:
     - isaac-kk0o
     - isaac-ow5u
     - isaac-x2lp
+    - isaac-kjzq
+    - isaac-kk0o
+    - isaac-ow5u
+    - isaac-x2lp
 ---
 
 Child 5 of isaac-eqkb (end cap). Blocked by children 2, 3, 4.
