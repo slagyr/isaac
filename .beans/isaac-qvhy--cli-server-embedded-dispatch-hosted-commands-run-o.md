@@ -1,14 +1,13 @@
 ---
 # isaac-qvhy
 title: 'cli-server: embedded dispatch — hosted commands run on a server thread, not a subprocess'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
-    - unverified
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-18T01:20:51Z
+updated_at: 2026-09-18T02:25:52Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-dq4v
@@ -100,3 +99,11 @@ Done: Foundation `bean/isaac-qvhy` @ `3963266` exposes caller-owned `host/run-em
 Green: cli-server endpoint 20 examples/86 assertions; cli-server specs 11/44; full cli-server CI green; proxy slow integration 4 examples/10 assertions; focused Foundation host/registry specs green. Foundation full CI specs are green (1040/1892); its features have two unrelated `modules pins` failures from a stale absolute fixture repo path and 2 pre-existing pending scenarios. `git diff --check` clean.
 
 Next: verifier reviews the three branches and lands Foundation before cli-server (server pins Foundation branch commit), then cli-proxy protocol branch. Bean remains `in-progress`, tagged `unverified`.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-foundation 5779897e5f507b3fcb21ea8e07a78dafc73e899a
+main-sha: isaac-cli-server 2df64a344714c2f731c78bc5ebc0a61e5376cc12
+main-sha: isaac-cli-proxy 5630bc256c2afd14d3eab1f28fa82209a36f36b3
