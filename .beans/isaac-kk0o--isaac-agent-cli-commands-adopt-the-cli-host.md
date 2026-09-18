@@ -1,13 +1,13 @@
 ---
 # isaac-kk0o
 title: isaac-agent CLI commands adopt the CLI host
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T04:41:46Z
+updated_at: 2026-09-18T16:14:01Z
 parent: isaac-eqkb
 ---
 
