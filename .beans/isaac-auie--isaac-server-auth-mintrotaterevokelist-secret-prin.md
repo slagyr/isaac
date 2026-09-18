@@ -1,13 +1,13 @@
 ---
 # isaac-auie
 title: isaac server auth mint|rotate|revoke|list — secret printed once, hash written to config (hot-reload), overlap rotation
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - security
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T04:49:11Z
+updated_at: 2026-09-18T16:13:07Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
