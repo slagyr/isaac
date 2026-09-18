@@ -9,7 +9,7 @@ tags:
     - config
     - server
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T02:43:21Z
+updated_at: 2026-09-18T03:04:08Z
 parent: isaac-3q4m
 ---
 
@@ -126,3 +126,22 @@ Resolved both findings:
 
 1. Foundation main spec now asserts only `:server/dev-mode-enabled` when `runner/start!` is stubbed; process startup owns `:server/started`. `bb spec spec/isaac/runner spec/isaac/main_spec.clj`: 34 examples, 0 failures, 66 assertions. Foundation head `4274b15`.
 2. Replaced the gherclj-1.3-incompatible Scenario Outline with seven equivalent concrete scenarios, preserving every planned case and assertion. `bb features features/http/config.feature features/http/listening.feature`: 9 examples, 0 failures, 13 assertions. `bb spec spec/isaac/http`: 102 examples, 0 failures, 170 assertions. HTTP head `c75d359`, pinned to corrected Foundation head.
+
+
+## Verify fail (attempt 2, 2026-09-18): Foundation and HTTP full bb ci still red — leftover specs assert the old :server names
+
+HEAD foundation: 4274b15 (bean/isaac-tdlz). HTTP: c75d359. Working trees: clean except untracked wt/ on foundation.
+
+Attempt-1 findings are fixed:
+- Foundation `bb spec spec/isaac/runner spec/isaac/main_spec.clj` 34/0/66. `features/cli/server.feature:9` 1/0/1.
+- HTTP `bb features features/http/config.feature features/http/listening.feature` 9/0/13. `bb spec spec/isaac/http` 102/0/170. `@wip` gone from the three acceptance files. Outline rewritten as seven concrete scenarios (same keys/assertions).
+
+GREEN requires full `bb ci` on the rebased branch. Both still fail. Isolated reruns reproduce; origin/main of each spec still matches the old implementation, so these are bean-introduced, not pre-existing.
+
+1. `cd isaac-foundation && bb ci` — 1043 examples, 1 failure. `spec/isaac/logs/cli_spec.clj:21` "foundation contributes the server stream so isaac logs server works without http" still expects `{:file "logs/server.log", :description "HTTP server logs"}`. Implementation at `src/isaac-manifest.edn:95` is `"Isaac process logs"` (bean implementation: process logs, not HTTP server logs). Isolated `bb spec spec/isaac/logs/cli_spec.clj` 12/1/22.
+
+2. `cd isaac-http && bb ci` — 123 examples, 1 failure. `spec/isaac/manifest_self_consistency_spec.clj:57` still expects `#{:server :comms}` for `(:isaac.config/schema manifest)` keys. Implementation contributes `#{:http :comms}` (decisions 1 and 4). Isolated `bb spec spec/isaac/manifest_self_consistency_spec.clj` 5/1/48.
+
+Do not land. Update those two specs to the new names. Additional land blocker if CI is later green: isaac-agent `bean/isaac-tdlz` @ a38d403 is not based on current `origin/main` 0e804c0; squash would conflict `resources/isaac-manifest.edn` (`:isaac.config/schema` both sides). Rebase agent onto 0e804c0 before a third verify.
+
+Other named branches (hooks b764fd6, claude-code fc701d8, cli-proxy aeb849a) merge-tree clean vs their mains.
