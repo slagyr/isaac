@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - cli
+    - unverified
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T16:14:01Z
+updated_at: 2026-09-18T16:47:11Z
 parent: isaac-eqkb
 ---
 
@@ -55,14 +56,14 @@ Done when `@wip` is gone and those commands are green.
 
 Do **not** migrate acp or other modules. Do **not** land foundation. Pin bump is isaac-1fwl.
 
-## Resume (isaac-work-1, 2026-09-18)
+## Handoff (isaac-work-1, 2026-09-18)
 
-Checkpoint on `bean/isaac-kk0o` @ `65caa74` (base origin/main@d455915).
+branch: bean/isaac-kk0o @ 0f7b1e45eae203e3ae62d88b5d3b0fe609b6e9df (base origin/main@d4559157eebb94be644e4de59a94e1c6bfeada43)
 
-**Done:** foundation pin `cc53d69`; sessions/prompt/auth/crew/turns via `host/ensure-runtime!`; no `dangerously-install-config! nil` in sessions finally; prompt `host/cwd`; auth `host/in` + device-code `host/cancelled?`; `:hosted true` on those manifest entries; embedded steps in session_steps; scoped `bb lint-cli-host`; CLI unit specs green (107/0); lint-cli-host ok.
+Acceptance green:
 
-**Next (acceptance still unrun):**
-```
-cd /Users/zane/agents/isaac/work-1/isaac-agent-kk0o && bb features features/cli/host_embed.feature && bb lint-cli-host
-```
-Then `bb ci`, rebase FF onto origin/main, `beans update isaac-kk0o --tag=unverified`, hail isaac-verify reply_to 72ecfe65.
+- `bb features features/cli/host_embed.feature` — 2 examples, 0 failures, 5 assertions (`@wip` already gone)
+- `bb lint-cli-host` — ok
+- `bb ci` — 1635 spec examples 0 failures; 801 feature examples 0 failures (1 pending, pre-existing mid-turn compaction)
+
+Embedded fixture registers builtin `:isaac/cli` berths once against the live Grover runtime (`session_steps.clj:894`) because `host/run-embedded` does not call `main/run`. No config re-install. Verify lands the branch — do not merge or pin.
