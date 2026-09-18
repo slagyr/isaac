@@ -8,7 +8,7 @@ tags:
     - google
     - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T21:44:28Z
+updated_at: 2026-09-18T22:17:24Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -108,3 +108,21 @@ Verify-fail repair. Restoring the planner table makes refused-create red: `:goog
 - `features/comm/gchat/registrations.feature`, scenario "a refused create is logged with Google's reason and retried on the next tick", the `the log has entries matching:` table (line 72 on `bean/isaac-vo2q` @ d8b0df0): the planner table put the `:google/registered` expiry under the `reason` column. The bean pins that event as logging `:key :expires-at` (not `:reason`), so the worker's table is the correct reading: an `expires-at` column added, the `:google/registered` row's `reason` cell emptied and `2026-09-25T12:00:00Z` moved to `expires-at`. Authorized by the planner 2026-09-18; no other feature edits beyond `@wip` removal.
 
 Verify hail: 60f87183 2026-09-18T22:14:35Z (band isaac-verify, re-verify after Exceptions)
+
+
+
+## Verify fail (attempt 2, 2026-09-18): registrations.feature does not run — ambiguous google auth-store step
+
+HEAD isaac-gchat: d8b0df0 (bean/isaac-vo2q). isaac-google: 23b0705 (bean/isaac-vo2q). Working trees: clean.
+
+Section 1: ## Exceptions authorizes the expires-at column on the refused-create log table. Remaining feature delta vs planner is @wip removal plus that table. Implementation exists (registration berth, timer, Chat contribution).
+
+Section 2: cd isaac-gchat && bb features features/comm/gchat/registrations.feature fails before any scenario:
+
+  Execution error at gherclj.core/classify-step
+  ambiguous step match: the google auth store has access at-1 and refresh rt-1
+  matches: google-auth-store-has-access, google-auth-store-has-access-and-refresh
+
+Cause: isaac-gchat defgiven the google auth store has access {at:string} and refresh {rt:string} (gchat_steps.clj:250) AND isaac-google 23b0705 changed the Then to a quoted-string regex, so both load on the gchat :features classpath (isaac-google :paths includes feature-steps). Worker claimed 4/4 green; this tree does not reproduce that.
+
+Do not land. Remaining checks not run. isaac-google bb ci not run (gchat acceptance unmet).
