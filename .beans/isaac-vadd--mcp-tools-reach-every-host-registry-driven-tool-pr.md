@@ -178,3 +178,5 @@ Planner-authorized feature edits (plan, 2026-09-18), in reply to verify fail 1:
 - `feature-steps/isaac/mcp_steps.clj` no longer calls `start!`; it registers the `acp` CLI command at load time (ACP is not `:builtin?`).
 
 Verified after the fix: isaac-mcp `bb jvm-features` 11/0 on `bean/isaac-vadd` @ f18088f; `bb spec` 26/0. Agent `bean/isaac-vadd` unchanged @ 0d6f0c2. isaac-0szr rebased onto f18088f → 074b014 (13/0 features, 32/0 specs).
+
+Verify hail: 9dfc4aec 2026-09-18T05:22Z (band isaac-verify) — attempt 2 after ## Exceptions + f18088f
