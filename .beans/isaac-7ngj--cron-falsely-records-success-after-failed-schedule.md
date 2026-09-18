@@ -1,13 +1,11 @@
 ---
 # isaac-7ngj
 title: Cron falsely records success after failed scheduled turn
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-11T17:02:28Z
-updated_at: 2026-09-18T17:36:55Z
+updated_at: 2026-09-18T17:44:00Z
 ---
 
 Cron state can falsely record `:last-status :succeeded` even when the scheduled turn failed before any tool execution.
@@ -106,3 +104,9 @@ Do not land. Restore the planner table, http-error wall fixture, `:unavailable` 
 branch: bean/isaac-7ngj @ 1119a3f (base origin/main@f3b3a7c)
 
 Restored planner scenarios (http-error 429 wall fixture, :unavailable outcome, last-error nil). Feature regex cell is `#"(?i).*wall.*"` because Gherkin splits on unescaped `|`. Pinned grover rewrites http-error rows; dispatch classified as a wall. `bb spec` 23/0, `bb features` 9/0, `bb ci` 23 spec / 21 feature green.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-cron 01e165eb52f442a0add5b2d5990ef3bae726a8f1
