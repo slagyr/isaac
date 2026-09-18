@@ -51,3 +51,12 @@ Origin/main `459a236` ("clip claude CLI error text") only shortens the message.
 ## Fix landed on branch (2026-09-18, plan)
 
 isaac-claude-code `bean/isaac-t098` @ **e61df08** (Release 0.1.12). `failed?` = nonzero exit ∨ result event `is_error` ∨ auth signature in the CLI's own text (stderr, result error text, or bare stdout when no structured result). Model content never consulted. Specs: 70/0 native (3 new: json success mentioning Unauthorized; stream-json success mentioning Unauthorized; is_error result carrying "OAuth session expired" → :auth). Deploying to zanebot + yopp by direct isaac.edn pin at Micah's request; registry pin follows verify.
+
+## Second cause, same class (2026-09-18 15:26Z) — fixed in 53aa2bf
+
+isaac-work-3's first Claude Code compaction (on e61df08) returned its summary, but the driver's `invoke!` took the `:mcp-failed` fence-fallback because `reply-contains-fence?` found the literal `<tool_call>` marker in stdout — the summary quotes the worker's earlier tool calls. The fallback retry then died in `parse-tool-calls` with `JsonParseException: Unexpected character ('.')` on a fence payload that was prose. Both are "model content mistaken for control":
+- fence detection now applies only when the request offered tools (`(and (seq (:tools request)) (reply-contains-fence? result))`); a tool-less request's text is content in full (`success-response` takes the request);
+- `parse-tool-calls` skips a fence whose payload is not a JSON object with `:name`.
+Specs: 72/0 native. Branch `bean/isaac-t098` @ **53aa2bf** (two commits, both under Release 0.1.12).
+
+Deploy state: yopp on 53aa2bf (restart 15:49Z, clean). zanebot on e61df08 (restart 15:12Z); 53aa2bf goes on once isaac-work-3's in-flight compaction finishes. isaac-work-2 compacted on Claude Code with e61df08: 753k → 51k tokens (15:43Z, ~30 min).
