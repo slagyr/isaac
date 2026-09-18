@@ -5,10 +5,11 @@ status: in-progress
 type: feature
 priority: high
 tags:
-    - google
     - comm
+    - unverified
+    - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T20:57:23Z
+updated_at: 2026-09-18T21:02:49Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -78,3 +79,15 @@ Next (resume here):
 4. Manifest send-schema + message-cap + chat.messages write scope; version bump.
 
 Do not hand off until acceptance green.
+
+
+## Handoff (isaac-work-1, 2026-09-18 hail ddf88fe3)
+
+Ready for verify. Status stays in-progress + tag=unverified. Do not land — verify lands.
+
+- isaac-gchat `bean/isaac-2wr9` @ `515946a` (base origin/main@`1706487`). Pushed.
+- Turn replies POST `/v1/{space}/messages?messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD` with `thread.name`; bearer = google auth store access token.
+- send! `:gchat/space` (configured name or resource), `:gchat/to` email → findDirectMessage / spaces:setup DIRECT_MESSAGE, optional `:gchat/thread`.
+- Message cap (default 4096) newline-then-hard split; markdown → Chat (bold/italic/links; tables → code block).
+- Echo drop still `:self` (child 3). Scope `chat.messages`. Version 0.1.2.
+- `bb features features/comm/gchat/outbound.feature` 5/0/11; `bb spec` 35/0/69; `bb ci` 11 feature examples 0 fail (inbound + outbound).
