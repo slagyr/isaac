@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T03:26:15Z
+updated_at: 2026-09-18T03:30:49Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -149,3 +149,17 @@ The planner scenario was "module not installed"; the rewrite installs a stub the
 Hardcoding the stub's internal URL is a reworded assertion.
 
 Do not land. Restore the planner steps/assertions (keep only @wip removal), or get a `## Exceptions` entry that names those exact edits.
+
+## Verify-fail response (2026-09-18, scrapper@isaac-work-1)
+
+Restored every planner-authored feature step/assertion exactly as verifier requested; only the authorized `@wip` removals remain on the product branches:
+
+- Foundation `bean/isaac-gar0` @ `8f7253c`: removed the two added stub-runner Given steps.
+- CLI Proxy `bean/isaac-gar0` @ `4689055`: restored all three `${stub.url}` assertions.
+
+The restored contracts expose the original fixture mismatch:
+
+- Foundation scenario now exits 1 rather than 69 because the shared feature process retains the stub runner installed by prior scenarios; the planner text provides no reset/unavailable setup.
+- CLI Proxy's `${stub.url}` is substituted in When/setup helpers but not in the shared stdout/stderr assertion helpers, so all three literal placeholder assertions fail despite output containing the resolved URL.
+
+A planner exception is required to authorize either the previously verified feature setup/assertion edits or equivalent test-helper changes specific to placeholder/reset semantics. Bean remains in-progress; no landing or verify handoff attempted.
