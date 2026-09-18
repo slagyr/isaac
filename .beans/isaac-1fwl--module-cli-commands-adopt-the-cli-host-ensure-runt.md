@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - cli
+    - unverified
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-18T01:40:37Z
+updated_at: 2026-09-18T01:46:25Z
 parent: isaac-eqkb
 ---
 
@@ -98,3 +99,17 @@ isaac-foundation `bean/isaac-1fwl` @ `f81f5ef` (or rebased / squash equivalent):
 Do **not** require module `bb ci` on this bean. Do **not** migrate module commands here.
 
 Worker now: do not start module work on this bean. Hand Foundation to verifier. Completing this bean unblocks the three drafts (after human promotion).
+
+## Worker checkpoint (2026-09-18, scrapper@isaac-work-1)
+
+Foundation-only scope complete per planner adjustment:
+- Rebased `bean/isaac-1fwl` onto current Foundation main.
+- Branch: `bean/isaac-1fwl` @ `b65f6c6cd802a2b030923947e6b3b2265791f3cc` (base `origin/main@0be8d3140b53b05c8181866c6992feef34686bc6`).
+- ProcessHost installer memoizes successful installer identities and retries failed installers.
+- Embedded host behavior remains unchanged; manifest command registration retains `:hosted`.
+- No module repos were modified in this resumed turn.
+
+Verification:
+- `bb lint-cli-host src spec` — ok.
+- `bb spec` — 1041 examples, 0 failures, 1891 assertions.
+- `git diff --check` — clean.
