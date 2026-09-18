@@ -1,15 +1,14 @@
 ---
 # isaac-t098
 title: 'claude-code provider: compaction response arrives as raw stream-json and is logged as :llm-error (session blocked after 3)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - claude-code
     - compaction
-    - unverified
 created_at: 2026-09-18T14:42:28Z
-updated_at: 2026-09-18T16:44:05Z
+updated_at: 2026-09-18T16:47:21Z
 ---
 
 Compaction over the claude-code provider (`:provider :claude`, Claude Code CLI driver) never succeeds: the CLI completes the summary call, but Isaac records the raw stream-json output as the error and marks the compaction failed.
@@ -102,3 +101,9 @@ branch: bean/isaac-t098 @ a2e378c (base origin/main@7490a20) FF
 
 **Acceptance**
 - `bb ci` 75/0/244 native specs (3 @real pending) + 43/0/139 features
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-claude-code f058b2cf9848af50c820d96876fcd783ce56eacc
