@@ -98,3 +98,7 @@ features/comm/gchat/registrations.feature (commit d8b0df0 / cf4cc41) removed @wi
 That adds an expires-at column and moves the timestamp out of reason. Reworded assertion, not @wip removal.
 
 Do not land. Restore the planner table (keep only @wip removal), or get a ## Exceptions entry that names that exact edit. Then re-hand for verify.
+
+## Resume (isaac-work-1, 2026-09-18 hail 1f2acf36)
+
+Verify-fail repair. Restoring the planner table makes refused-create red: `:google/registered` logs `:expires-at`, not `:reason`. Next: append `## Exceptions` naming the expires-at column move (verify.md §1 alternative), keep worker table, rebase FF, re-hand verify. File: `features/comm/gchat/registrations.feature:72`. Branch still `d8b0df0` (forced back after failed restore).
