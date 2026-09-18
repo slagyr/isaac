@@ -65,3 +65,7 @@ Check at implementation: the `http-error` row type lives in isaac-agent's sessio
 cd isaac-cron && bb features features/scheduling.feature && bb ci
 ```
 Version bump; pin is a train step. Field check: on zanebot, `cron.edn` for `health-checkin` after the next walled morning shows `:failed` + a reason.
+
+
+## Note (planner, 2026-09-18)
+Scenario :99 (a provider wall records :failed) is interim. isaac-ugpq decides that a walled turn SUSPENDS and resumes; cron will record :suspended then the final status. Implement :99 as written now (it is still better than false success); isaac-a0q6 re-cuts it.

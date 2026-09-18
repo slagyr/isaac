@@ -48,3 +48,6 @@ Field: on zanebot after the train, a 429 burst shows `:hail/delivery-deferred` a
 
 ## Operator note (tonight)
 Any bean that dead-letters during this burst is NOT poison: `isaac hail requeue <id>` once the wall clears (ids above). Planner will requeue.
+
+
+Related: isaac-ugpq (turn-level suspend/resume) depends on this classification — a mid-stream 429 must surface as :unavailable? for the drive to suspend on it.
