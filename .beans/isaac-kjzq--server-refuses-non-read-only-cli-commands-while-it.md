@@ -1,14 +1,13 @@
 ---
 # isaac-kjzq
 title: Server refuses non-read-only CLI commands while its module basis is stale (restart pending); :read-only manifest hints
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
-    - unverified
 created_at: 2026-09-18T01:24:43Z
-updated_at: 2026-09-18T02:55:01Z
+updated_at: 2026-09-18T02:59:34Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -77,3 +76,10 @@ Verification:
 - `git diff --check`: clean.
 
 Note: the requested module-wide read-only hints/version bumps are a train operation after Foundation schema lands; this handoff contains the defining Foundation seam and cli-server enforcement.
+
+
+
+## Landed on main (2026-09-17)
+
+main-sha: isaac-cli-server f65d041496a9de9b56da26e60c223432e223775e
+main-sha: isaac-foundation e4da6e0c5e0d6c2390e33437f08a27f42bccaeb0
