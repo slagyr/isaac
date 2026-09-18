@@ -1,14 +1,14 @@
 ---
 # isaac-cr0o
 title: 'isaac-gmail comm: watch on INBOX, history walk with durable cursor + resync, thread→session, reply on thread'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
     - comm
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T05:01:13Z
+updated_at: 2026-09-18T19:34:18Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-1jep
