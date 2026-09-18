@@ -1,15 +1,14 @@
 ---
 # isaac-0gtc
 title: 'isaac-gchat inbound: gate (echo, allow-lists, mention, policy) → route → dispatch for one space'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - google
     - comm
-    - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T20:09:02Z
+updated_at: 2026-09-18T20:10:57Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-1jep
@@ -85,3 +84,9 @@ Done:
 - Evidence: bb features inbound.feature 6/0/13; bb ci 17 spec + 6 features, 0 failures
 
 Handoff in-progress + unverified. Verify: cd isaac-gchat && bb features features/comm/gchat/inbound.feature && bb ci.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-gchat 1706487def4bf1375a08f81e0a0f9f12bf7b78bd
