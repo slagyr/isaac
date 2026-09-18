@@ -1,11 +1,11 @@
 ---
 # isaac-twbz
 title: 'ACP prompt: ~6s of local prep before LLM request'
-status: draft
-type: bug
+status: todo
+type: task
 priority: high
 created_at: 2026-06-20T23:55:35Z
-updated_at: 2026-06-20T23:55:35Z
+updated_at: 2026-09-18T05:04:27Z
 ---
 
 On zanebot (isaac 0.1.6), there is ~5.7s of local work between receiving an ACP `session/prompt` frame and the outbound `llm/http-request`. Observed in /tmp/isaac.log for session "tidy-comet"; the model response itself comes back faster (~3.5s) than the prep that precedes it. Same on every prompt.
@@ -40,3 +40,16 @@ From two consecutive prompts (23:38:04 and 23:39:03), nearly identical:
 - Host: zanebot, isaac 0.1.6 (Homebrew Cellar)
 - Provider: chatgpt, model gpt-5.4, context-window 278528
 - Source refs seen in log: isaac.agent @ 9ba425d (drive/turn.clj, session/context.clj, prompt/catalog.clj), isaac.comm.acp @ d986755 (websocket.clj)
+
+
+## Re-scoped (planner, 2026-09-18): measure first
+
+The July numbers predate isaac-v1la (config resolved once), isaac-3uy9 (compaction check no longer materializes messages; prompt build timed), isaac-h8o9 (per-step compaction timings) and isaac-gwdz (store reads 1.4 s → ms, deployed 2026-09-18). Root cause 1 (over-window, no compaction) may be gone; root cause 2 (per-prompt re-resolution of config/behavior/catalog/tool berths) is unmeasured on current code. Do NOT implement from the July table.
+
+## Task
+1. On zanebot (agent 0.1.71+), drive three consecutive ACP prompts on one long-lived session (`isaac remote … -- acp` or the editor) and rebuild the table frame-received → llm/http-request from cli.log/server.log with the events that now exist (`config/set-snapshot`, `session/behavior-resolved`, `prompt/catalog-resolved`, `session/compaction-check` with its step fields, `turn/request-built`, `llm/http-request`). Record it here.
+2. Any stage ≥ 300 ms gets its own bean with the number attached (candidates: config snapshot re-resolution per prompt — should be served from the hot-reloaded live config now; catalog/behavior memoization per session; request serialization size).
+3. If total prep is under ~1 s, close this bean with the table.
+
+## Acceptance
+The re-measured table on this bean (three prompts, same session), each stage named, and either follow-up bean ids or a closing note. No code change in this bean.
