@@ -42,3 +42,8 @@ cd isaac-cli-server && bb ci        # green on main after merge
 cd isaac-server && bb ci            # green with the agent repin
 ```
 CI green on both repos' main; the sweep above re-run shows no unreachable pins.
+
+
+## Structural fix
+
+The root cause (in-flight cross-repo pins that verify squashes away) is **isaac-j4jr**: verify repins before merging, `bb lint-pins` in every `bb ci`, `:dev-local` while in flight. This bean stays the symptom fix; the rule in "Fix 3" above is superseded by that bean.

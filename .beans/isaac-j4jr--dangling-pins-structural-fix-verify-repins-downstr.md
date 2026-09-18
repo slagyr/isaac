@@ -1,0 +1,33 @@
+---
+# isaac-j4jr
+title: 'Dangling pins, structural fix: verify repins downstream before squash; bb lint-pins (fetch-reachability) in every bb ci; dev-local for in-flight cross-repo beans'
+status: todo
+type: feature
+priority: high
+tags:
+    - ci
+    - process
+created_at: 2026-09-18T04:53:38Z
+updated_at: 2026-09-18T04:53:38Z
+blocked_by:
+    - isaac-lsz2
+---
+
+Structural follow-up to isaac-lsz2 (the symptom fix). Root cause: a bean spanning two repos must point the downstream repo at the upstream BEAN BRANCH while in flight; verify then squash-merges that branch into a new sha and deletes it, so the pin dangles (cli-server → foundation 3963266; isaac-server → agent b6284e42). A rule alone cannot fix a workflow that requires the bad pin temporarily.
+
+## Decisions (2026-09-18, Micah)
+
+1. **Verify repins before it merges.** For a multi-repo bean, verify merges the upstream repo first, then rewrites the downstream branch's pins from the pre-squash sha to the squashed main sha (`grep -l <old> deps.edn bb.edn` → sed → commit on the bean branch), re-runs that repo's CI, and only then squash-merges it. Step in `.toolbox/commands/verify.md` + the squash helper script (wherever verify's squash lives — `isaac/.toolbox/skills/…`; find it, don't add a second).
+2. **`bb lint-pins` in every repo's `bb ci`, fails fast.** For each isaac-* `:git/sha` in `deps.edn` and `bb.edn`: `git fetch --depth 1 <url> <sha>` into a scratch dir (GitHub serves only ref-reachable shas, so a failed fetch IS the reachability test; no ancestry logic). Lives in isaac-foundation next to `lint-cli-host` (`isaac.foundation.pin-lint/lint!`), reusable by module repos exactly like `lint-cli-host`. Cache fetched shas under `~/.gitlibs` or a scratch dir so repeated runs are cheap; skip with `ISAAC_LINT_PINS=0` for offline runs (prints a warning, does not fail).
+3. **In-flight cross-repo development uses `:dev-local`, not sha pins.** The downstream repo runs against the sibling checkout during the bean; the sha pin changes only at handoff, and after (1) it is always a main sha. Document in `isaac/AGENTS.md` (bean workflow, cross-repo section) and the hail-bean-work skill.
+
+Rejected: `--no-ff` merges (keeps every bean commit reachable but gives up one-commit-per-bean history); tagging the pre-squash head (keeps the object alive but pins would point at pre-squash code).
+
+## Acceptance
+
+Specs (isaac-foundation `spec/isaac/foundation/pin_lint_spec.clj`): (a) a pin whose sha the fetch seam reports reachable passes; (b) an unreachable sha fails naming file, dep and sha; (c) `ISAAC_LINT_PINS=0` warns and passes; (d) non-isaac deps (c3kit, gherclj, …) are ignored. Fetch is a seam (`*fetch-sha*`) so specs never touch the network.
+
+```
+cd isaac-foundation && bb spec spec/isaac/foundation/pin_lint_spec.clj && bb lint-pins && bb ci
+```
+Then: `bb lint-pins` wired into `bb ci` of isaac-agent, isaac-server, isaac-cli-server, isaac-cli-proxy, isaac-acp, isaac-hail, isaac-hooks, isaac-mcp, isaac-discord, isaac-imessage, isaac-claude-code, isaac-episodes, isaac-foreman, isaac-worksite, isaac-cron (one commit each; green means every current pin is reachable — isaac-lsz2 must land first for cli-server/isaac-server). verify.md + squash helper + AGENTS.md updated. One-time check (not a permanent scenario): re-run the reachability sweep from isaac-lsz2 → empty.
