@@ -112,3 +112,5 @@ Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` `bean/isaac-auie` @
 4. `bb features features/cli/auth_principals.feature && bb features features/server/principals.feature && bb ci`
 
 Resume: `src/isaac/http/cli.clj` `run-fn` / new auth subcommand dispatch. Do not start other beans.
+
+Dispatched: hail 1f64d796 2026-09-18T19:58:03Z (session isaac-work-2, continuation of b6b3d9f6 — turn ended at cycle budget without hand-off)

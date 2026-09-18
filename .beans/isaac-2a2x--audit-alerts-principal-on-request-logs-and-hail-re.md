@@ -100,3 +100,5 @@ Still red / unfinished:
 - Hail `bb features features/http.feature` not re-run. Native hail still pins isaac-http `ad4ba5d`. Point hail classpath at `../isaac-server-2a2x` (do not rename shared `../isaac-http`).
 
 Do not hand off until both acceptance feature runs are green.
+
+Dispatched: hail 3e9b6500 2026-09-18T19:58:03Z (session isaac-work-1, continuation of c3052eaf — turn ended at cycle budget without hand-off)
