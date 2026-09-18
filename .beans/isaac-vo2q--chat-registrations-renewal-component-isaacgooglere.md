@@ -1,13 +1,13 @@
 ---
 # isaac-vo2q
 title: Chat registrations + renewal component (:isaac.google/registration berth, pointer subscriptions per space)
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:12:15Z
+updated_at: 2026-09-18T04:59:19Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -21,11 +21,41 @@ Chat stays subscribed without a human. Registration = a Workspace Events subscri
 - isaac-gchat: contributes one registration whose keys are the configured spaces; `events.subscriptions.create` with `targetResource` = the space, `eventTypes` = message created/updated/deleted, `notificationEndpoint.pubsubTopic` = the shared topic, no `payloadOptions.includeResource` (pointer). Scopes contributed to `:isaac.google/scopes` (confirm: chat.messages.readonly, chat.spaces.readonly).
 - Adding a space = one config entry; the timer picks it up on the next tick (config hot-reload later).
 
-## Scenarios to draft (stubbed Workspace Events API)
+## Scenarios (approved 2026-09-18, Micah) — committed `@wip` in isaac-gchat `4378f26` `features/comm/gchat/registrations.feature`
 
-1. On start with two configured spaces and no subscriptions, two are created against the shared topic.
-2. A subscription within the renew window is renewed; its new expiry is read back from Google.
-3. A space removed from config has its subscription deleted.
-4. Google refusing a create is logged with the reason and retried on the next tick (no crash loop).
+| line | scenario |
+|---|---|
+| :22 | the first tick subscribes every configured space, pointer-only, to the shared topic |
+| :42 | a subscription inside the renew window is renewed and its new expiry read back |
+| :56 | a space removed from config is unsubscribed |
+| :68 | a refused create is logged with Google's reason and retried on the next tick |
+
+Pinned: create = `POST workspaceevents/v1/subscriptions` with `targetResource //chat.googleapis.com/<space>`, message created/updated/deleted event types, `notificationEndpoint.pubsubTopic` = `google.topic`, `payloadOptions.includeResource false`; renew = `PATCH /v1/<name>?updateMask=ttl` body `{:ttl "604800s"}` when expiry is within `google.renew-within-hours` (default 24); expiry always taken from Google's response / `GET`, persisted per host in `google/registrations.edn` keyed by registration key (`spaces/ENG`). Log events: `:google/registered` `:google/renewed` `:google/unregistered` (info; `:key :expires-at`), `:google/registration-failed` (error; `:key :reason`, retried next tick, no backoff beyond the tick).
+
+## Step ledger
+
+| step | status |
+|---|---|
+| default Grover setup in … / config: / the clock is fixed at … / the test clock advances … / an outbound HTTP request to … matches: / the log has entries matching: | reuse |
+| the google auth store has access … and refresh … | reuse (6aw3) |
+| **the google registration timer ticks** | **NEW (isaac-google steps) — one pass of the renewal component on the caller thread** |
+| **the Workspace Events API has no subscriptions** / **… has subscription {name} for {space} expiring at {ts}** / **… grants subscriptions expiring at {ts}** / **… rejects creates for {space} with {status} {message}** | **NEW — stubs for list/get/create/patch/delete** |
+| **no outbound HTTP request to {url} was made** / **{n} outbound HTTP requests to {url} for {space} were made** | **NEW — Discord has the count phrase; the `for {space}` filter matches on body.targetResource** |
+| config row `comms.gchat.gchat/spaces.spaces/PROD \| #remove` | **check**: if the `config:` table has no removal directive, replace with the http harness's `config is updated:` / a `the config key {path} is removed` step and fix the scenario at promotion (planner exception, record here) |
+
+## Acceptance
+
+Definition of done: `@wip` removed and
+
+```
+cd isaac-gchat && bb features features/comm/gchat/registrations.feature:22
+cd isaac-gchat && bb features features/comm/gchat/registrations.feature:42
+cd isaac-gchat && bb features features/comm/gchat/registrations.feature:56
+cd isaac-gchat && bb features features/comm/gchat/registrations.feature:68
+cd isaac-gchat && bb ci
+cd isaac-google && bb ci   # registration berth + timer component + state file
+```
+
+Unit specs for: the reconcile function (configured keys × Google state → create/renew/delete/noop), window arithmetic, state persistence.
 
 Ops note (config, not code): the topic must grant `chat-api-push@system.gserviceaccount.com` publish rights before create succeeds.
