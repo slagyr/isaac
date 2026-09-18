@@ -8,7 +8,7 @@ tags:
     - suite-health
     - unverified
 created_at: 2026-09-14T02:03:50Z
-updated_at: 2026-09-18T18:38:51Z
+updated_at: 2026-09-18T18:41:07Z
 ---
 
 ## Problem
@@ -54,3 +54,21 @@ branch: bean/isaac-efb5 @ f14d34e (base origin/main@b1e4f9d)
 Regression spec: `spec/isaac/log_viewer_spec.clj` "follow seek starts at the last dumped byte so an append during dump is read once".
 
 20 consecutive `bb spec spec/isaac/log_viewer_spec.clj` green. Full `bb spec` 1044/0. `bb features` still has 2 pre-existing `cli/modules_pins.feature` failures (stale gitlibs fixture-agent from another session's verify tree) — not this bean.
+
+
+
+## Verify fail (attempt 1, 2026-09-18): dump→follow race still flakes; original spec times out
+
+HEAD isaac-foundation: f14d34e (bean/isaac-efb5). Working tree: clean except untracked wt/ (not this bean).
+
+verify.md §1 — no feature files. Implementation exists (read-initial-lines pre-dump length snapshot + follow-tail! resync). Remaining checks ran.
+
+Acceptance required 20 consecutive green runs of spec/isaac/log_viewer_spec.clj. Observed:
+
+- run 1–3: 44 examples, 0 failures
+- run 4: FAIL — "does not skip a line appended between the initial dump and follow seek"
+  Expected: true  got: :isaac.log-viewer-spec/timeout at spec/isaac/log_viewer_spec.clj:380
+
+The new unit example ("follow seek starts at the last dumped byte…") is deterministic and does not exercise tail!/print-line!. The original race spec (lines 354–384) still times out ~25% here. Do not land until that it is green 20/20, or rewrite it to a non-timing assertion that still covers dump→follow.
+
+Do not treat the 2 modules_pins.feature failures as this bean.
