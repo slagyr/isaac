@@ -1,15 +1,14 @@
 ---
 # isaac-gwdz
 title: 'Sidecar store reads every session on the host to answer for one: get-session/get-transcript/update scan+conform all 456 session.edn (the 1.5 s compaction check)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - session
     - performance
-    - unverified
 created_at: 2026-09-18T01:49:41Z
-updated_at: 2026-09-18T01:49:41Z
+updated_at: 2026-09-18T02:02:35Z
 ---
 
 Micah (2026-09-17, watching zanebot logs): "these compaction checks all take about 1.5 seconds … it seems like wasted effort. What is going on there?" Follow-up to isaac-h8o9, which instrumented the check and named the two fixed-cost steps (`entry-ms` = `policy/get-session` ≈ 650ms, `transcript-ms` = `policy/get-transcript` ≈ 750ms) but did not say why.
@@ -48,3 +47,9 @@ Local: 1630 specs / 0 failures; 799 features / 0 failures / 1 pending. After the
 ## Handoff
 
 branch: `bean/isaac-gwdz` @ 0110454 (base origin/main@372b03b). Implemented by the planner at Micah's request (2026-09-17); verifier: squash-merge on green, then the train (agent version bump + pin).
+
+
+
+## Landed on main (2026-09-17)
+
+main-sha: isaac-agent 9d51897c8ad3d69b0cee0e8125dddd3649ec7f11
