@@ -1,13 +1,13 @@
 ---
 # isaac-fu2m
 title: 'isaac-google health + attention: silence and expiry checks, google status command'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T05:02:49Z
+updated_at: 2026-09-18T22:38:15Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-vo2q
