@@ -1,16 +1,15 @@
 ---
 # isaac-tdlz
 title: Reserve :server for the process; HTTP config and bind logs move to :http
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - http
     - config
     - server
-    - unverified
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T17:09:33Z
+updated_at: 2026-09-18T17:14:53Z
 parent: isaac-3q4m
 ---
 
@@ -238,3 +237,14 @@ HTTP evidence:
 - `bb ci` — 0 failures
 
 Do not land. Do not restore @wip.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-foundation b1e4f9d24d6211c46a09a3970417517d9d0cf799
+main-sha: isaac-http db2b6394956c0d7583db62f22c606716bbbb9408
+main-sha: isaac-agent 679aee82149d85f5e62a82988f7e1a4066a073cd
+main-sha: isaac-hooks 55e228d606066609a7c6da4bac9ce6647af679f5
+main-sha: isaac-claude-code 2b365ff5b92d6b47b44955a8fbc01b66b019937f
+main-sha: isaac-cli-proxy 1f96845af83f6013f384eb6f4347446c8ad1df44
