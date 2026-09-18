@@ -1,16 +1,14 @@
 ---
 # isaac-1fwl
-title: 'Module CLI commands adopt the CLI host: ensure-runtime!, no ambient installs, acp/worksite fixes'
+title: 'Foundation CLI host: ensure-runtime! installer memoization + :hosted passthrough'
 status: in-progress
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-18T01:20:47Z
+updated_at: 2026-09-18T01:40:37Z
 parent: isaac-eqkb
-blocked_by:
-    - isaac-dq4v
 ---
 
 Child 2 of isaac-eqkb. Blocked by the host-library bean. Behavior in a plain process is unchanged; commands become SAFE to embed.
@@ -61,3 +59,42 @@ Each migrated command sets `:hosted true` on its `:isaac/cli` manifest entry (is
 Completed and pushed the prerequisite Foundation leg on `bean/isaac-1fwl` @ `f81f5ef` (base `origin/main@f16efcf`): process-host `ensure-runtime!` invokes each installer identity once, retries failed installers, embedded hosts continue to reject missing live runtime without invoking installers, and manifest CLI registration retains the transitional `:hosted` marker. Foundation host specs (9 examples/26 assertions), hosted-marker spec, and `bb lint-cli-host src spec` pass.
 
 Remaining scope is the eight module migrations plus server duplicate-command cleanup. Current foundation commit must land first and module pins must then be advanced before module code can compile against the extended contract. Repo inventory/checkouts exist for agent, acp, hail, episodes, claude-code, worksite, cli-proxy, foreman, and server.
+
+
+
+## Planner adjustment (2026-09-18, prowl@isaac-plan) — Foundation-only; split remaining modules
+
+Conflict: this bean spanned Foundation plus eight module repos and server cleanup — an unverifiable nine-repo mega-handoff. The bean already permitted a dispatch-time 3-way cut (agent / acp / rest). Worker completed the Foundation prerequisite on `bean/isaac-1fwl` @ `f81f5ef`.
+
+**Decision: this bean is now Foundation-only.** Module migrations are split. Do not migrate agent/acp/hail/episodes/claude-code/worksite/cli-proxy/foreman/server on this bean.
+
+### Split (draft — human promote to todo)
+
+| bean | repo(s) | status |
+|---|---|---|
+| **isaac-1fwl** (this) | isaac-foundation | in-progress — land `f81f5ef` |
+| **isaac-kk0o** | isaac-agent (`sessions`, `prompt`, `auth`, `crew`, `turns`) | draft, blocked-by 1fwl |
+| **isaac-ow5u** | isaac-acp (`acp`) | draft, blocked-by 1fwl |
+| **isaac-x2lp** | hail, episodes, claude-code, worksite, cli-proxy, foreman, server | draft, blocked-by 1fwl |
+
+isaac-dqy9 (end cap) now blocked-by **kk0o + ow5u + x2lp** (plus existing qvhy / gar0 / kjzq), not this bean.
+
+### Landing / pin order
+
+1. Land isaac-foundation `bean/isaac-1fwl` @ `f81f5ef` on main (verifier squash). Record `main-sha`.
+2. **Planner** pins `modules.edn` to that SHA. Human `modules upgrade`. Do not pin from verify.
+3. Then kk0o / ow5u / x2lp may compile (each bumps its own foundation pin after the registry pin). They may run in parallel.
+4. qvhy stays independent (transitional subprocess for un-hosted commands).
+
+### Controlling acceptance (this bean, Foundation only)
+
+isaac-foundation `bean/isaac-1fwl` @ `f81f5ef` (or rebased / squash equivalent):
+
+    bb lint-cli-host src spec
+    bb spec
+
+0 failures. `ProcessHost/-ensure-runtime!` calls each installer identity once (memoized), retries a failed installer, embedded host still rejects a missing live runtime without invoking installers. Manifest CLI registration retains `:hosted`.
+
+Do **not** require module `bb ci` on this bean. Do **not** migrate module commands here.
+
+Worker now: do not start module work on this bean. Hand Foundation to verifier. Completing this bean unblocks the three drafts (after human promotion).

@@ -7,13 +7,15 @@ priority: normal
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T01:24:43Z
+updated_at: 2026-09-18T01:39:35Z
 parent: isaac-eqkb
 blocked_by:
-    - isaac-1fwl
     - isaac-qvhy
     - isaac-gar0
     - isaac-kjzq
+    - isaac-kk0o
+    - isaac-ow5u
+    - isaac-x2lp
 ---
 
 Child 5 of isaac-eqkb (end cap). Blocked by children 2, 3, 4.
