@@ -76,3 +76,12 @@ cd isaac-hail && bb features features/http.feature && bb ci
 Version bumps; pins are a train step (rides with isaac-4o6r's train or after).
 
 Dispatched: hail 6e179553 2026-09-18T06:14Z (band isaac-work)
+
+## Resume (isaac-work-1, 2026-09-18)
+
+Checkpoint after wrap-up. Implementation on `bean/isaac-2a2x` (not landed).
+
+- isaac-hail `878976c` (base origin/main@8dbba29): POST /hail/send stamps `:principal`; `isaac hail show`; `@wip` removed; version 0.1.18. Unit specs green (33/0). `bb features features/http.feature` still pending the 2a2x scenario — hail `bb.edn` pins isaac-http to origin SHA `11e4301`, so native features load the published server-steps, not this worktree. Resume: point hail features at the local isaac-http-2a2x tree (`../isaac-server-2a2x` or equivalent) then re-run `bb features features/http.feature`.
+- isaac-http `b3f8cc9` (base origin/main@ad4ba5d): audit.clj, wrap-auth revoked/remember/record-use, auth-list last-used, clock/sweep/newest-file steps, `@wip` stripped, version 0.1.16. Unit specs green (60/0). `bb features features/server/auth_audit.feature` timed out (180s) this turn — resume from that command.
+
+Next: green the two acceptance feature runs, then `bb ci` per repo, rebase FF onto origin/main, `beans update isaac-2a2x --tag=unverified`, hail isaac-verify reply_to 6e179553.
