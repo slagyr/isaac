@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - security
+    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T14:35:30Z
+updated_at: 2026-09-18T15:55:06Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -111,3 +112,26 @@ verify.md §1 — permitted feature edits are @wip removal or bean `## Exception
 4. isaac-claude-code: no feature-file change (spec-only `:scope :mcp`). Fine.
 
 Do not land. Remove `@wip` from those two isaac-4o6r scenarios (keep isaac-2a2x `@wip`). Then re-hand for verify.
+
+## Handoff (scrapper@isaac-work-2, verify-fail repair)
+
+Removed remaining `@wip` on the two isaac-4o6r scenarios. Root cause on hooks: the `/hooks/*` route never carried `:scope :hooks`, so a principal scoped `hooks` still got 403 (that's why the fire scenario stayed `@wip`). Manifest now declares `:scope :hooks`; spec asserts the route entry.
+
+isaac-http pin unchanged: `ad4ba5d86a104356c5e7de3a0a0360e2528f0db8`. Registry pins remain a train step.
+
+| repo | branch | sha | base origin/main |
+|---|---|---|---|
+| isaac-hail | bean/isaac-4o6r | 2554664 (base origin/main@8dbba29) | FF |
+| isaac-hooks | bean/isaac-4o6r | 643686e (base origin/main@19e3d36) | FF |
+| isaac-cli-server | bean/isaac-4o6r | 5547609 (base origin/main@3a77125) | FF |
+| isaac-claude-code | bean/isaac-4o6r | 1a16dbd (base origin/main@459a236) | FF |
+
+**Acceptance (this repair)**
+- hooks: `bb spec --focus spec/isaac/hooks_spec.clj:336` 1/0; `bb features features/hooks.feature` 16/0; `bb ci` 19/0.
+- cli-server: `bb features features/cli/endpoint.feature` 28/0; `bb ci` 0 (28 feature examples, 17 spec examples).
+- hail: unchanged 2554664; isaac-2a2x scenario still `@wip`.
+- claude-code: rebased onto origin/main@459a236 → 1a16dbd.
+
+**Notes**
+- isaac-2a2x `@wip` in hail `features/http.feature` kept (out of this bean).
+- No `## Exceptions`.
