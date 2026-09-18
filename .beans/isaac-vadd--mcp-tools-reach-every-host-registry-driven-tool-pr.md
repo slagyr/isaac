@@ -7,9 +7,8 @@ priority: high
 tags:
     - mcp
     - agent
-    - unverified
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T02:02:30Z
+updated_at: 2026-09-18T04:44:24Z
 parent: isaac-uhvt
 ---
 
@@ -142,3 +141,26 @@ Worktree used: `plan/isaac-agent-vadd` (another session was live on `plan/isaac-
 - Verifier: registry pins still to advance after squash (agent, then mcp, then modules.edn); yopp is already on bean shas and needs re-pinning to the squashed shas in the same train.
 
 Verify hail: 0a682554 2026-09-18T04:53Z (band isaac-verify)
+
+
+## Verify fail (attempt 1, 2026-09-18): lifecycle.feature rewritten beyond @wip; no ## Exceptions
+
+HEAD agent: 0d6f0c2 (bean/isaac-vadd). HEAD mcp: d288165 (bean/isaac-vadd). Working trees: clean except untracked wt/ on agent.
+
+verify.md §1 — permitted feature edits are @wip removal or bean `## Exceptions`. There is no `## Exceptions` section (absence confirmed). Remaining checks were not run.
+
+1. isaac-mcp `features/hosts.feature` (b2ee765): only `@wip` removed. Permitted.
+
+2. isaac-mcp `features/lifecycle.feature` (b2ee765): not permitted. Planner acceptance was "existing lifecycle + turn scenarios pass with the helper no longer hand-starting the runtime (no new scenario; the diff to mcp_steps.clj is the assertion)." The file was rewritten:
+
+- Removed: "a live lens server registers prefixed tools that execute"
+- Removed: "MCP name catalog is not registered without the server prefix"
+- Removed: "a hung MCP call is a tool error" (timeout path)
+- Rewrote "a dead command does not fail boot" into a turn-level scenario with allow-list + queued model + user send
+- Rewrote "two servers … stay distinct" from direct `tool is executed with` into a turn with queued tool_calls
+
+A worker checkpoint calls this "planner-owned" under `## Work checkpoint` / `### Spec changes`. That is not `## Exceptions`. The original approved contract required the old scenarios to go green through the real seam.
+
+Do not land. Restore `features/lifecycle.feature` to origin/main (keep only harness/step changes that make those scenarios pass without `start!`), or get a `## Exceptions` entry that names the removed/rewritten scenarios. Then re-hand for verify.
+
+Land note only: agent `bean/isaac-vadd` is based on 0e804c0; origin/main has since moved to c1c61e2 (`wip: agent CLI is safe to embed`). merge-tree vs that commit is clean.
