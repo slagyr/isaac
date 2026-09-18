@@ -1,13 +1,13 @@
 ---
 # isaac-2a2x
 title: 'Audit + alerts: :principal on request logs and hail records; last-used; Discord alerts for 401 bursts, first use, expired/revoked use, expiring soon'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - security
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T04:49:11Z
+updated_at: 2026-09-18T14:56:19Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
