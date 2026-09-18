@@ -1,14 +1,13 @@
 ---
 # isaac-2a2x
 title: 'Audit + alerts: :principal on request logs and hail records; last-used; Discord alerts for 401 bursts, first use, expired/revoked use, expiring soon'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - security
-    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T20:50:24Z
+updated_at: 2026-09-18T20:52:46Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -118,3 +117,10 @@ Ready for verify. Status stays in-progress + tag=unverified. Do not land — ver
   `bb ci` 166 spec + 156 features, 0 failures, 2 pending (pre-existing hail-get search).
 
 Pins are a train step (rides with isaac-4o6r).
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-http 5c8148e56eaf3b168233896d77f6c0b5808aa263
+main-sha: isaac-hail 37479ada61c05b1e5d14713350bcdfcdcf3a696c
