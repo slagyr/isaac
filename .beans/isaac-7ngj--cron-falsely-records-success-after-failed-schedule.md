@@ -4,8 +4,10 @@ title: Cron falsely records success after failed scheduled turn
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-11T17:02:28Z
-updated_at: 2026-09-18T16:13:30Z
+updated_at: 2026-09-18T17:36:55Z
 ---
 
 Cron state can falsely record `:last-status :succeeded` even when the scheduled turn failed before any tool execution.
@@ -98,3 +100,9 @@ verify.md §1 — permitted feature edits are @wip removal or bean `## Exception
 2. "a successful cron run clears a previous failure" — Given table became a JSON/EDN blob; Then dropped `| health-check.last-error | nil |` (weakened: previous failure may linger).
 
 Do not land. Restore the planner table, http-error wall fixture, `:unavailable` outcome, and last-error nil assertion (keep only @wip removal), or get a `## Exceptions` entry that names those exact edits. Then re-hand for verify.
+
+## Handoff (scrapper@isaac-work-3)
+
+branch: bean/isaac-7ngj @ 1119a3f (base origin/main@f3b3a7c)
+
+Restored planner scenarios (http-error 429 wall fixture, :unavailable outcome, last-error nil). Feature regex cell is `#"(?i).*wall.*"` because Gherkin splits on unescaped `|`. Pinned grover rewrites http-error rows; dispatch classified as a wall. `bb spec` 23/0, `bb features` 9/0, `bb ci` 23 spec / 21 feature green.
