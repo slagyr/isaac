@@ -114,3 +114,10 @@ features/push_door.feature (commits 40084dc, e2b0edb) removed @wip (permitted) A
 That is a reworded step (quotes + un-keyworded scope), not @wip removal.
 
 Do not land. Restore the planner step text (keep only @wip removal), or get a ## Exceptions entry that names that exact edit. Then re-hand for verify.
+
+## Exceptions
+
+Planner-authorized feature edits (plan, 2026-09-18), in reply to verify fail 1:
+
+- `isaac-google features/push_door.feature` scenario "a Google token opens only the door" (:59): the step `Given a fixture route GET /fixture requires scope :fixture/read` may read `Given a fixture route GET "/fixture" requires scope "fixture/read"`. Reason: the planner wrote the line from isaac-bzgw's step ledger before that step landed; bzgw's step as landed takes quoted string arguments (`{method} {path:string} requires scope {scope:string}`). Same assertion, same fixture, only the argument quoting. No other wording change is authorized.
+- `@wip` removal on the file is permitted as usual.
