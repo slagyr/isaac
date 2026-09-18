@@ -6,8 +6,9 @@ type: feature
 priority: normal
 tags:
     - security
+    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T14:56:19Z
+updated_at: 2026-09-18T20:50:24Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -102,3 +103,18 @@ Still red / unfinished:
 Do not hand off until both acceptance feature runs are green.
 
 Dispatched: hail 3e9b6500 2026-09-18T19:58:03Z (session isaac-work-1, continuation of c3052eaf — turn ended at cycle budget without hand-off)
+
+
+## Handoff (isaac-work-1, 2026-09-18 continuation 3e9b6500)
+
+Ready for verify. Status stays in-progress + tag=unverified. Do not land — verify lands.
+
+- isaac-http `bean/isaac-2a2x` @ `5fd166a` (base origin/main@`db2b639`). Pushed.
+  Audit last-used, wrap-auth :revoked/remember/record-use, auth-list intercept, namespaced scopes, headerless regex stdout-lines-match. First-use attention skipped for the synthesized `:admin` legacy token (burst quiet-cooldown extra pending file). Version 0.1.16.
+  `ISAAC_GIT=1 bb features features/server/auth_audit.feature` 9/0/36.
+  `ISAAC_GIT=1 bb ci` 137 spec + 75 features, 0 failures.
+- isaac-hail `bean/isaac-2a2x` @ `f95b2e0` (base origin/main@`4fa70e2`). Pushed.
+  POST /hail/send stamps `:principal`; `isaac hail show` prints EDN. Version 0.1.18.
+  `bb ci` 166 spec + 156 features, 0 failures, 2 pending (pre-existing hail-get search).
+
+Pins are a train step (rides with isaac-4o6r).
