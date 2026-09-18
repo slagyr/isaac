@@ -5,9 +5,10 @@ status: in-progress
 type: feature
 priority: high
 tags:
+    - unverified
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T17:21:29Z
+updated_at: 2026-09-18T18:57:47Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-6aw3
@@ -83,20 +84,15 @@ Dispatched: hail 8c9bfd7d 2026-09-18T17:20Z (band isaac-work)
 
 ## Checkpoint (scrapper@isaac-work-2)
 
-Worktrees: isaac-google-1jep @ bean/isaac-1jep (from origin/main da538e6); isaac-server-1jep unused so far — identity berth already exists on isaac-http main (bzgw).
+branch: bean/isaac-1jep @ e2b0edbf63a793eb6bad3329788a3d83ab248a62 (base origin/main@da538e67f57f1505bb232728a26c24e26de60c84)
+Worktree `/Users/zane/agents/isaac/work-2/isaac-google-1jep`.
 
 **Done**
-- Inbox persist + dedupe (`isaac.google.inbox`)
-- Envelope unwrap Chat ce-type / Gmail watch (`isaac.google.push`)
-- POST /google/pubsub handler 204 + log (`isaac.google.http`)
-- Identity verifier stub (`isaac.google.identity`)
-- Handler berth + worker tick (`isaac.google.handler` / `isaac.google.worker`)
-- Manifest: route :scope :google/push, identity contribution, handler berth, :push config, version 0.1.1
-- Feature @wip stripped; google_steps for all five scenarios
-- Pin isaac-http to db2b639 (current main)
+- Inbox persist + dedupe, envelope unwrap, POST /google/pubsub 204, handler berth, worker tick
+- Manifest: route `:scope :google/push`, `:isaac.http/identity` contribution, `:isaac.google/handler` berth, `:google :push` config, version 0.1.1
+- Identity verifier fail-closed on aud/email; loads `:google :push` from snapshot or `load-config-result` when snapshot empty
+- `:features` extra-dep `isaac-http-spec` (server-steps)
+- `@wip` stripped from `features/push_door.feature`
+- Evidence: `bb features features/push_door.feature` 5/0/19; `bb ci` 31 spec + 10 features, 0 failures. isaac-http identity berth already on main (db2b639); no http code change.
 
-**Next**
-`cd /Users/zane/agents/isaac/work-2/isaac-google-1jep && bb features features/push_door.feature`
-Fix identity/config wiring, then `bb ci`. isaac-http identity berth already on main — no http code change unless wrap-auth consult order needs the verifier before bearer-hash (already does).
-
-Dispatched: hail 2282520b 2026-09-18T18:23Z (session isaac-work-2, continuation of 8c9bfd7d — turn ended at cycle budget without hand-off)
+**Handoff** in-progress + unverified. Verify: `cd isaac-google && bb features features/push_door.feature && bb ci`. isaac-http `bb ci` not required (no http diff).
