@@ -87,3 +87,16 @@ Checkpoint after wrap-up. Implementation on `bean/isaac-2a2x` (not landed).
 Next: green the two acceptance feature runs, then `bb ci` per repo, rebase FF onto origin/main, `beans update isaac-2a2x --tag=unverified`, hail isaac-verify reply_to 6e179553.
 
 Dispatched: hail c3052eaf 2026-09-18T18:23Z (session isaac-work-1, continuation of 6e179553 — turn ended at cycle budget without hand-off)
+
+## Resume (isaac-work-1, 2026-09-18 continuation c3052eaf)
+
+Rebased both branches onto current origin/main (conflicts resolved).
+
+- isaac-hail `bean/isaac-2a2x` @ `f95b2e0` (base origin/main@4fa70e2). Merged 4o6r prompt-override + principal stamp. Not pushed.
+- isaac-http `bean/isaac-2a2x` @ `3789b2f` (base origin/main@db2b639). wrap-auth uses `:http :burst`; audit reads `:http :auth :alerts` / `:http :auth :principals`. Unit specs 133/0. Not fully pushed.
+
+Still red / unfinished:
+- `ISAAC_GIT=1 bb features features/server/auth_audit.feature` still times out at 180s after 4 green dots (scenario 5 `isaac is run with "server auth list"` likely hangs because `isaac.http.cli/run` `block!`s when `auth list` is not dispatched). Resume: isolate that scenario; `run-fn` already special-cases `auth list` — check whether `main/run` reaches it or falls through to `run`/`block!`.
+- Hail `bb features features/http.feature` not re-run. Native hail still pins isaac-http `ad4ba5d`. Point hail classpath at `../isaac-server-2a2x` (do not rename shared `../isaac-http`).
+
+Do not hand off until both acceptance feature runs are green.
