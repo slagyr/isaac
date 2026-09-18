@@ -74,3 +74,17 @@ cd isaac-server && bb features features/cli/auth_principals.feature && bb featur
 `isaac server auth --help` documents mint/rotate/revoke/list and the one-time-secret rule. Version bump; pin is a train step.
 
 Dispatched: hail 5c00df09 2026-09-18T06:14Z (band isaac-work)
+
+## Checkpoint (scrapper@isaac-work-2, 2026-09-18)
+
+Claimed. Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` on `bean/isaac-auie` @ ad4ba5d (origin/main, isaac-bzgw landed). Feature file already committed @wip at `features/cli/auth_principals.feature`.
+
+Resume: implement `isaac server auth mint|rotate|revoke|list` in isaac-http (`src/isaac/http/cli.clj` currently only starts the server). Write unit specs first (auth secret generation + config mutate via `isaac.config.mutate/set-config`/`unset-config`), then un-wip scenarios.
+
+Missing steps named in the bean (must land in foundation spec-support or http spec-support):
+- the stdout has exactly {n} line(s)
+- the stdout line is a bearer secret of at least {n} characters (captures <the printed secret>)
+- substitution of <the printed secret> in Authorization / does not contain / log matchers
+- the isaac config path {path} is absent
+
+`server` CLI is registered via `cli-api/run :server` in `isaac.http.cli` (not the http manifest's `:isaac/cli`, which only has mcp-bridge). Subcommands via `cli-api/subcommands :server`. Version currently 0.1.15; bump on green. Pin is a train step.
