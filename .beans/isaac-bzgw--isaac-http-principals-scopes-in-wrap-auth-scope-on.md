@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - security
+    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T05:34:22Z
+updated_at: 2026-09-18T06:00:47Z
 parent: isaac-gym1
 ---
 
@@ -85,16 +86,25 @@ Note for the worker: on a fresh clone the current deps pin for isaac-agent (`b62
 
 Dispatched: hail 498cd641 2026-09-18T05:20Z (band isaac-work)
 
-## Worker checkpoint (2026-09-18, scrapper@isaac-work-1)
+## Worker completion (2026-09-18, scrapper@isaac-work-1)
 
-Done:
-- Principal auth core plus route scopes, 401/403 + burst accounting, request principal logging, and require-scope!.
-- Legacy token warning now deduplicates per auth-config generation; malformed expiry is refused safely.
-- Added :isaac.http/identity request-verifier berth and config checks for non-empty scopes/full ISO dates.
-- Added generic foundation exact-log-count and config-path-regex steps; foundation main @ 1afd934 and isaac-http pins updated.
-- Focused auth/http/routes/manifest suite green: 34 examples, 0 failures, 92 assertions.
-- Pushed bean/isaac-bzgw @ 100c97d.
+Implemented:
+- Named SHA-256 bearer principals with constant-time all-hash comparison, expiry, scoped routes, wildcard admin, request principal propagation, and structured refusal/request logs.
+- `require-scope!` with HTTP 403 mapping; both 401 and 403 feed burst accounting.
+- Legacy token synthesizes admin and warns once per auth-config generation.
+- Principal additions and revocations take effect on the next request through the live config seam.
+- Added `:isaac.http/identity` request-verifier berth for future OIDC identities.
+- Added non-empty scopes/full ISO-date config checks and generic foundation exact-log-count/config-path-regex helpers.
+- Removed all 11 owned `@wip` tags.
 
-Next:
-- Resume at spec/isaac/http/server_steps.clj:253: add principal/fixture-route helpers and routes, then enable/run principals.feature.
-- Exact command: bb features features/server/principals.feature after removing owned @wip tags.
+Delivery:
+- branch: `bean/isaac-bzgw` @ `00c8a0de4630542e67faf28a506d160804348299`
+- base: `origin/main@cacb263e4b1cee0047bf2d3bd66ecabb4d6840ad`
+- foundation helper dependency: `isaac-foundation@1afd934fff001cd9b75c4121546d961d96e6e02a`
+
+Verification:
+- `bb features features/server/principals.feature`: 11 examples, 0 failures, 28 assertions.
+- `bb features features/server/auth.feature features/server/burst.feature`: 17 examples, 0 failures, 43 assertions.
+- `bb spec`: 134 examples, 0 failures, 270 assertions.
+- `bb ci`: spec 134/0/270; features 57/0/126; config-bypass-lint and pins passed.
+- focused lint: 0 errors (4 pre-existing/style warnings); `git diff --check` passed.
