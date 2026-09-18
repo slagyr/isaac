@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T03:30:49Z
+updated_at: 2026-09-18T03:34:59Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -163,3 +163,47 @@ The restored contracts expose the original fixture mismatch:
 - CLI Proxy's `${stub.url}` is substituted in When/setup helpers but not in the shared stdout/stderr assertion helpers, so all three literal placeholder assertions fail despite output containing the resolved URL.
 
 A planner exception is required to authorize either the previously verified feature setup/assertion edits or equivalent test-helper changes specific to placeholder/reset semantics. Bean remains in-progress; no landing or verify handoff attempted.
+
+
+
+## Exceptions
+
+### remote_routing.feature last scenario (authorized, 2026-09-18, prowl@isaac-plan)
+
+On scenario "a remote setting without the remote CLI module installed is an error naming the module", add these two Givens before the When:
+
+    And a stub remote runner is installed
+    And the remote runner module becomes unavailable
+
+Shared feature-process state retains the stub from earlier scenarios; without the unbind, the command hits the stub and exits 1 instead of 69. The Then assertions stay: exit 69, stderr contains `isaac.cli-proxy` and `--local`. Do **not** change any other scenario in this file beyond `@wip` removal.
+
+### remote.feature (not authorized to hardcode URLs)
+
+Keep `${stub.url}` in the three Then/And stdout/stderr assertions (status, rejected token, refused connection). Do **not** rewrite them to `loopback://cli-stub` or `ws://127.0.0.1:1/cli`. Interpolation is a helper fix, not a feature rewrite.
+
+## Planner adjustment (2026-09-18, prowl@isaac-plan) — isolate last Foundation scenario; interpolate ${stub.url} in proxy assertions
+
+Conflict: restoring planner feature text (only `@wip` removal) makes acceptance red. Foundation shared feature state keeps the prior stub runner (expected 69, got 1). CLI Proxy shared stdout/stderr helpers do not interpolate `${stub.url}`.
+
+**Decision: authorize the two Foundation Givens. Keep the three `${stub.url}` assertions. Fix proxy helpers so stdout/stderr interpolate `${stub.url}` the same way When already does.** Do not hardcode stub URLs. Do not split. Do not leave `@wip`.
+
+### Worker now
+
+1. **isaac-foundation** `features/cli/remote_routing.feature` — restore the two authorized Givens on the last scenario (as at `4163bcd`). Then assertions unchanged.
+2. **isaac-cli-proxy** `features/remote.feature` — keep `${stub.url}` in:
+   - remote status: `Then the stdout contains "${stub.url}"`
+   - rejected token: `And the stderr contains "${stub.url}"`
+   - refused connection: `And the stderr contains "${stub.url}"`
+   Teach the shared stdout/stderr assertion helpers to interpolate `${stub.url}` (and the existing placeholder set) the same way the When/`isaac remote is run with` helpers already do. Do not hardcode `loopback://cli-stub` or `ws://127.0.0.1:1/cli`.
+3. Do not recut routing or remote use/off/status product code unless a helper cannot interpolate.
+4. Confirm:
+       cd isaac-foundation && bb features features/cli/remote_routing.feature
+       cd isaac-cli-proxy && bb features features/remote.feature
+5. Hand to verifier. Do **not** land. Do **not** pin.
+
+### Controlling acceptance
+
+    cd isaac-foundation && bb features features/cli/remote_routing.feature && bb ci
+    cd isaac-cli-proxy && bb features features/remote.feature && bb ci
+
+0 failures. `@wip` gone from both files. Last Foundation scenario is the two authorized Givens + original Thens. Proxy still asserts `${stub.url}`.
