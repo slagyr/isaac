@@ -77,3 +77,5 @@ The `:features` alias needs `isaac-http-spec` (server steps) — add alongside t
 ## Out of scope
 
 Chat/Gmail semantics, registrations, pull.
+
+Dispatched: hail 8c9bfd7d 2026-09-18T17:20Z (band isaac-work)
