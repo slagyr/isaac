@@ -1,13 +1,13 @@
 ---
 # isaac-gar0
 title: 'Remote-by-default CLI: ~/.config/isaac.edn :cli :remote routes isaac commands through the server (--local bypass; unreachable fails)'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T03:34:59Z
+updated_at: 2026-09-18T05:41:45Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -219,3 +219,10 @@ Controlling focused acceptance is green:
 - CLI Proxy remote feature: 29 examples, 0 failures, 93 assertions.
 
 No product routing/use/off/status code, pins, landing, or `@wip` changes were made in this adjustment. Bean remains `in-progress` + `unverified`.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-foundation 643ec9ba0d37fa0fdbbfc4a6db73ced798639c07
+main-sha: isaac-cli-proxy c31162f1ac14709b566fc7aaa6535fb937fcd217
