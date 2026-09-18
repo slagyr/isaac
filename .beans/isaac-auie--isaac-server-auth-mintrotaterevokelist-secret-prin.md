@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - security
+    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T22:09:16Z
+updated_at: 2026-09-18T22:10:30Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -129,3 +130,16 @@ Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` `bean/isaac-auie` @
 `bb spec && bb features` (full suite — `bb ci` pins task is red on main: "Unknown modules subcommand: pins"). Then unverified + hail isaac-verify reply_to 1f64d796.
 
 Resume: `bb spec && bb features` from `/Users/zane/agents/isaac/work-2/isaac-server-auie`. Do not start other beans.
+
+
+## Handoff (scrapper@isaac-work-2)
+
+branch: bean/isaac-auie @ dd69234228f062eb5233be45e9a7ccb6f935ae9d (base origin/main@5c8148e56eaf3b168233896d77f6c0b5808aa263)
+
+**Done**
+- `isaac server auth mint|rotate|revoke|list` — secret printed once, hash in config, overlap twin nested as `:previous` (wrap-auth expands `name@prev`)
+- Feature steps: printed-secret capture, `@prev` rewrite, `#"…"` stdout-matches
+- `--dev` logs `:server/dev-mode-enabled`; list shows last-used from audit store
+- Acceptance: `bb spec` 155/0; `bb features` 86/0 (includes auth_principals + principals). `bb ci` pins task is red on main (`Unknown modules subcommand: pins`) — not this bean.
+
+Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie`. Shared sibling isaac-http left on main.
