@@ -6,6 +6,7 @@ type: feature
 priority: high
 tags:
     - cli
+    - unverified
 created_at: 2026-09-17T15:55:25Z
 updated_at: 2026-09-18T02:44:05Z
 parent: isaac-eqkb
@@ -118,6 +119,8 @@ zanebot after the train: `isaac remote use ws://127.0.0.1:<port>/cli --token-env
 
 ## Worker checkpoint (2026-09-18, scrapper@isaac-work-2)
 
-Done: Foundation `bean/isaac-gar0` @ `e273eba` adds raw pointer reading, `--local`, pre-config remote routing, failure/module diagnostics, and activated scenarios; 7/8 routing scenarios pass and root/args specs are green. Proxy `bean/isaac-gar0` @ `cfb2b79` adds `remote use|off|status`, pointer preservation/private literal-token writes, exit 69/77 diagnostics, activated scenarios; full proxy CI is green (24 specs/61 assertions, 29 features/93 assertions, 4 slow features/10 assertions).
+Done: Foundation `bean/isaac-gar0` @ `4163bcd` adds raw pointer reading, `--local`, pre-config remote routing, failure/module diagnostics, and all 8 authorized routing scenarios. Proxy `bean/isaac-gar0` @ `cfb2b79` adds `remote use|off|status`, pointer preservation/private literal-token writes, exit 69/77 diagnostics, failure fixture steps, and all 8 authorized proxy scenarios. Both branches are rebased on current origin/main.
 
-Current state: RED only in Foundation routing scenario “remote setting without module” (expected 69, got local unknown-command 1) because it has no Given runner step and the feature pointer is not seeded before `main/run`. Red checkpoint pushed. Next: fix the feature preflight at `spec/isaac/remote_routing_steps.clj:54`, rerun `bb features features/cli/remote_routing.feature`, then Foundation CI, rebase both branches, update evidence/tag and hand off.
+Green: Foundation specs 1044 examples/1896 assertions; routing feature 8/20; combined routing+startup cache 16/30; full Foundation features have only two unrelated stale absolute `modules pins` fixture failures and 2 pre-existing pending. Proxy full CI green: 24 specs/61 assertions, 29 features/93 assertions, 4 slow features/10 assertions. `git diff --check` clean.
+
+Next: verifier reviews Foundation and proxy branches; land Foundation first, then proxy/pins. Bean remains `in-progress`, tagged `unverified`.
