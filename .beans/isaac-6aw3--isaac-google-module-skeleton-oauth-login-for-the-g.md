@@ -65,3 +65,9 @@ zanebot pushes as `slagyr-assistant` (ssh key). Its **write invitation to slagyr
 Dispatched: hail 3533ee28 2026-09-18T04:38Z (band isaac-work)
 
 Update 2026-09-18 05:27Z: slagyr-assistant write invitations on isaac-google/gchat/gmail are ACCEPTED (Micah). Push is unblocked.
+
+## Wrap-up (scrapper@isaac-work-3)
+
+Done: unit specs green on `bean/isaac-6aw3` @ f91641b. OAuth URL/exchange/refresh, token seam, `:google` config schema, `isaac google login` CLI berth, feature-step stubs, scopes berth.
+
+Next: run login.feature scenarios (still `@wip`). Resume at `features/login.feature:17` — `cd isaac-google && bb features features/login.feature:17`. Then drop `@wip` once all 5 pass and `bb ci`.
