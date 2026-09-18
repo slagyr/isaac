@@ -72,3 +72,5 @@ Four new step families (two generic → foundation spec-support, two HTTP-side).
 cd isaac-server && bb features features/cli/auth_principals.feature && bb features features/server/principals.feature && bb ci
 ```
 `isaac server auth --help` documents mint/rotate/revoke/list and the one-time-secret rule. Version bump; pin is a train step.
+
+Dispatched: hail 5c00df09 2026-09-18T06:14Z (band isaac-work)

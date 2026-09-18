@@ -70,3 +70,5 @@ cd isaac-cli-server && bb features && bb ci
 cd isaac-claude-code && bb spec && bb ci
 ```
 Each repo: pin bump to the isaac-http sha carrying `:scope` + `:isaac/principal`; version bump. Registry pins are a train step; all five must ride ONE train with isaac-http (a route without `:scope` requires admin, so shipping http before the modules would lock out scoped principals — the legacy admin token keeps working either way).
+
+Dispatched: hail 1f501242 2026-09-18T06:14Z (band isaac-work)

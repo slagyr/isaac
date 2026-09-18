@@ -74,3 +74,5 @@ cd isaac-server && bb features features/server/auth_audit.feature && bb ci
 cd isaac-hail && bb features features/http.feature && bb ci
 ```
 Version bumps; pins are a train step (rides with isaac-4o6r's train or after).
+
+Dispatched: hail 6e179553 2026-09-18T06:14Z (band isaac-work)
