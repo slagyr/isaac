@@ -54,3 +54,5 @@ cd isaac-google && bb ci
 ```
 
 Unit specs for: the health evaluation as a pure function (state + now + config → conditions), throttle/clear semantics, status table rendering.
+
+Dispatched: hail 0abe6348 2026-09-18T22:37:29Z (band isaac-work)
