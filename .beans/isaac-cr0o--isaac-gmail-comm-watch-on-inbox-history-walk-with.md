@@ -1,14 +1,14 @@
 ---
 # isaac-cr0o
 title: 'isaac-gmail comm: watch on INBOX, history walk with durable cursor + resync, thread→session, reply on thread'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - google
     - comm
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:12:15Z
+updated_at: 2026-09-18T05:01:13Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-1jep
@@ -27,12 +27,44 @@ Gmail as a comm. Google tells Isaac "something changed" and Isaac finds out what
 
 - Reply path: `messages.send` with `threadId` + In-Reply-To/References headers so it threads in clients; unprompted send: to/subject/body. Plain text v1; HTML later.
 
-## Scenarios to draft (stubbed Gmail API)
+## Scenarios (approved 2026-09-18, Micah) — committed `@wip` in isaac-gmail `269fb94` `features/comm/gmail/gmail.feature`
 
-1. A watch push after two new INBOX messages starts one turn per thread with sender/subject/body in the transcript.
-2. A push whose history id is already processed starts nothing.
-3. A stale cursor triggers resync and continues.
-4. A reply is sent on the originating thread with the right headers.
-5. Sent mail and label-only changes never start a turn.
+| line | scenario |
+|---|---|
+| :21 | a watch push after two new INBOX messages starts one turn per thread |
+| :52 | a reply goes out on the originating thread with the headers clients need |
+| :77 | an already-processed push starts nothing |
+| :84 | a stale cursor resyncs from the inbox and continues |
+| :107 | sent mail, label-only changes, and unknown senders never start a turn |
+
+Pinned: cursor persisted at `google/gmail-cursor.edn` (per host); `history.list?startHistoryId=<cursor>&historyTypes=messageAdded&labelId=INBOX` (a 404 = cursor gone → `messages.list?labelIds=INBOX&q=after:<last-known>` resync, `:gmail/resync :from :to` warn, cursor = the newest message's historyId); `messages.get?format=full`; reply = `messages.send` `{:raw <base64url RFC 2822> :threadId}` with `To`, `Subject: Re: …`, `In-Reply-To`, `References`; session name `gmail-<threadId>`; drop reasons `:not-inbox :sender :self`. The watch registration (`users.watch` INBOX to `google.topic`, weekly) is contributed to `:isaac.google/registration` and covered by a unit spec — vo2q already proves the timer.
+
+## Step ledger
+
+| step | status |
+|---|---|
+| default Grover setup in … / config: / model responses queued / session … has transcript matching: / the session count is / grover records zero provider requests / an outbound HTTP request to … matches: / the log has entries matching: | reuse |
+| the google auth store has access … and refresh … | reuse (6aw3) |
+| no outbound HTTP request to {url} was made | reuse (vo2q NEW) |
+| **the gmail history cursor is {id}** (Given seeds, Then asserts) | **NEW** |
+| **the Gmail API history since {id} adds messages:** / **… since {id} contains:** (kind/id/threadId/labelIds rows) / **… since {id} is gone** (404) | **NEW — history.list stubs** |
+| **the Gmail API returns message {id}:** (from/to/subject/message-id/body) / **the Gmail API inbox lists messages:** | **NEW — messages.get / messages.list stubs** |
+| **Gmail pushes a watch notification with history id {id}** | **NEW — hands `{emailAddress historyId}` to the gmail handler, awaits turns** |
+| **the sent mail decodes to:** | **NEW — base64url-decodes the last send's `raw`, matches headers + text** |
+
+## Acceptance
+
+Definition of done: `@wip` removed and
+
+```
+cd isaac-gmail && bb features features/comm/gmail/gmail.feature:21
+cd isaac-gmail && bb features features/comm/gmail/gmail.feature:52
+cd isaac-gmail && bb features features/comm/gmail/gmail.feature:77
+cd isaac-gmail && bb features features/comm/gmail/gmail.feature:84
+cd isaac-gmail && bb features features/comm/gmail/gmail.feature:107
+cd isaac-gmail && bb ci
+```
+
+Unit specs for: history walk (cursor advance, dedupe, 404 → resync), the gate, RFC 2822 reply building, the watch registration entry (create/renew/expiry from the watch response).
 
 Ops note: grant `gmail-api-push@system.gserviceaccount.com` publish on the topic before `users.watch` accepts it.
