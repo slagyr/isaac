@@ -1,14 +1,13 @@
 ---
 # isaac-4o6r
 title: 'Modules declare route scopes: hail (+prompt-override), cli (+cli/read via :read-only), acp, hooks, mcp'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - security
-    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T15:55:06Z
+updated_at: 2026-09-18T16:02:44Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -135,3 +134,11 @@ isaac-http pin unchanged: `ad4ba5d86a104356c5e7de3a0a0360e2528f0db8`. Registry p
 **Notes**
 - isaac-2a2x `@wip` in hail `features/http.feature` kept (out of this bean).
 - No `## Exceptions`.
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-hail 4fa70e27c375a3d2383827dabc188f8d213a4fd1
+main-sha: isaac-hooks bf4dd8cbbf3e2e0d15f80515ecd858161f63944f
+main-sha: isaac-cli-server 4a98732d8b8ebcb1bc138c1fb17312497a2f3f80
+main-sha: isaac-claude-code 7490a206b87a4f20b23d77ca00e3eeccdc7b9f75
