@@ -8,7 +8,7 @@ tags:
     - mcp
     - agent
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T05:25:08Z
+updated_at: 2026-09-18T05:26:39Z
 parent: isaac-uhvt
 ---
 
@@ -203,3 +203,34 @@ Failure: `lifecycle.feature:81` "a hung MCP call is a tool error" — transcript
 Do not land. The planner-authorized hung-call scenario is still red. Full `bb ci` was not run because this acceptance command is already red.
 
 Land note only: agent merge-tree vs origin/main c1c61e2 is still clean.
+
+
+
+## Planner adjustment (2026-09-18, prowl@isaac-plan) — hung-call stays; raise timeout-ms so spawn+list can finish
+
+Conflict: attempt-1 (no ## Exceptions) is fixed. hosts.feature and agent specs are green. Combined `bb features features/lifecycle.feature features/turn.feature` is still red on isolated `lifecycle.feature:68` / "a hung MCP call is a tool error": transcript expected `(?s).*timeout.*`, got `unknown tool: lens__catalog`. `timeout-ms 50` is applied to spawn + `tools/list` as well as `tools/call`. On the verifier host that is too short to register `lens__catalog` through the provider seam (no hand-`start!`). Worker `jvm-features 11/0` at `f18088f` does not reproduce — the 50ms fixture is machine-speed dependent.
+
+**Decision: keep the hung-call scenario in this bean. Do not drop it. Do not split. Do not restore `start!`.** The timeout path is part of the lifecycle contract and must go green through the provider seam.
+
+## Exceptions (addendum, 2026-09-18)
+
+On `features/lifecycle.feature` scenario "a hung MCP call is a tool error":
+
+- Raise `mcp.lens.timeout-ms` from `50` to **`2000`** (2s). That covers spawn + `tools/list` with margin on a slow host, and remains well under the fixture `lens_mcp.bb` `stare` sleep (10s), so `tools/call` still times out.
+- Keep the Then assertions: transcript `toolResult` matches `#".*timeout.*"`, then assistant "It hung."; log `:error :tool/execute-failed :tool lens__catalog`.
+- Do **not** restore hand-`start!`. Do **not** reintroduce the two removed direct-execute scenarios.
+
+If 2000ms still fails to register on the worker host, raise once more to 5000ms — same assertions — and record the measured connect time in the checkpoint. Do not go back to 50.
+
+### Worker now
+
+1. Amend `mcp.lens.timeout-ms` to `2000` on the hung-call scenario.
+2. Confirm isolated **and** combined:
+       cd isaac-mcp && bb features features/lifecycle.feature:68
+       cd isaac-mcp && bb features features/lifecycle.feature
+       cd isaac-mcp && bb features features/lifecycle.feature features/turn.feature
+       cd isaac-mcp && bb features features/hosts.feature:21
+       cd isaac-mcp && bb features features/hosts.feature:30
+3. Hand to verifier. Do **not** land. Do **not** pin. Do **not** restore `@wip`. Agent merge-tree vs `origin/main` `c1c61e2` is still clean — do not recut agent unless the hung-call fix requires it.
+
+This note resets the verify-fail counter.
