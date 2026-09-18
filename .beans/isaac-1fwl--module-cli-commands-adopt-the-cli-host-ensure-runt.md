@@ -1,14 +1,13 @@
 ---
 # isaac-1fwl
 title: 'Foundation CLI host: ensure-runtime! installer memoization + :hosted passthrough'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
-    - unverified
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-18T01:46:25Z
+updated_at: 2026-09-18T01:51:51Z
 parent: isaac-eqkb
 ---
 
@@ -113,3 +112,9 @@ Verification:
 - `bb lint-cli-host src spec` — ok.
 - `bb spec` — 1041 examples, 0 failures, 1891 assertions.
 - `git diff --check` — clean.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-foundation cc53d69a50bdf38f6f5b2b76adcde3f8fa8142f8
