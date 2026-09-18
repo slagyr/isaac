@@ -61,3 +61,18 @@ Unit specs for: the reconcile function (configured keys × Google state → crea
 Ops note (config, not code): the topic must grant `chat-api-push@system.gserviceaccount.com` publish rights before create succeeds.
 
 Dispatched: hail 4f29c23e 2026-09-18T20:21:04Z (band isaac-work)
+
+## Done / next (scrapper@isaac-work-3)
+
+Done:
+- isaac-google `bean/isaac-vo2q` @ 23b0705 pushed: berth, reconcile `plan`, state file, timer component, events client, feature steps.
+- isaac-gchat `bean/isaac-vo2q` worktree: Chat registration contribution + scopes; first 3 scenarios green; refused-create log table aligned to headers.
+- google `bb spec` 41/41 green.
+
+Next:
+- Finish refused-create scenario (`registrations.feature:68`) — table now has `reason` + `expires-at` columns; re-run `cd isaac-gchat-vo2q && clojure -M:features features/comm/gchat/registrations.feature`.
+- Revert gchat `deps.edn`/`bb.edn` local pin to `../isaac-google-vo2q` before verify (CI clones pinned sha).
+- `cd isaac-google-vo2q && bb ci`; `cd isaac-gchat-vo2q && bb ci`.
+- Then unverified hail.
+
+Resume: `isaac-gchat-vo2q/features/comm/gchat/registrations.feature:68`
