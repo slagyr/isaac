@@ -69,3 +69,15 @@ Done when `@wip` is gone from those three files and the commands are green. Exis
 ## Non-goals
 
 Rename `isaac server`. Rename `logs/server.log` / `isaac logs server`. Dual-token overlap. Live rebind of host/port (isaac-03wy). `:server-runtime` rename. `features/server/` directory rename. Stopping `isaac config set` from logging token values.
+
+## Work checkpoint (2026-09-18, scrapper@isaac-work-3)
+
+Done:
+
+- Foundation `bean/isaac-tdlz` @ `01e9a13`: base schema owns top-level `:hot-reload` and retired `:server` leaves; `runner/start!` emits process-only `:server/started`; runner CLI no longer adds bind fields; process log stream description updated. Focused schema/runner specs and `features/cli/server.feature:9` green.
+- HTTP `bean/isaac-tdlz` @ `6517ecd`: manifest contributes `:http`; runtime reads HTTP host/auth and top-level hot reload; handler reads live `:http` auth/burst; listener emits `:http/listening`; old HTTP CLI no longer emits `:server/started`; focused HTTP schema/component/auth/burst/runtime specs green (33 examples, 69 assertions).
+
+Red / next:
+
+- `features/http/listening.feature` is still red in the existing harness: explicit `http.port 9876` is overridden by the harness ephemeral port (logged 61431), and the default scenario still observes a legacy `:server/started` with port from the foundation pin. Resume at `spec/isaac/http/server_steps.clj:382-416` to migrate harness bind resolution to `:http`/`:hot-reload`, then pin this bean's Foundation SHA into HTTP and rerun both HTTP features.
+- After HTTP green: migrate Agent `src/isaac/agent/component.clj:45`, Hooks retired hint, sweep remaining module fixtures, run acceptance, rebase all branches, and hand off.
