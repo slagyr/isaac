@@ -1,13 +1,13 @@
 ---
 # isaac-bzgw
 title: 'isaac-http: principals + scopes in wrap-auth; :scope on the route berth; request principal; require-scope!; legacy token = admin; hot-reload'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - security
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T04:18:19Z
+updated_at: 2026-09-18T05:22:14Z
 parent: isaac-gym1
 ---
 
