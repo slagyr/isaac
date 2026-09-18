@@ -51,4 +51,15 @@ Routing vocabulary is the one Discord channels and hooks already use: crew, sess
 - Exact scopes for user-authorized Chat message subscriptions (believed: chat.messages.readonly + chat.spaces.readonly; confirm against current docs in child 1/5).
 - Whether non-mention space messages should be recorded into the session as ambient context without a turn (child 3 proposes a `respond` policy: mentions | all | never; ambient recording is out of scope for v1).
 
+## Security alignment with isaac-gym1 (per-principal scoped auth), 2026-09-18
+
+- The push door is **not a bearer-secret principal**: Google signs a per-request OIDC token; Isaac holds no secret to hash. Under gym1 the door must be an **identity source** (the `:isaac.http/identity` berth gym1 names for pluggable sources) that verifies the token and yields principal `{:name :google-pubsub :scopes #{:google/push}}`, and the route declares `:scope :google/push`. Child 2 is blocked by isaac-bzgw for that berth and the route `:scope`; an unscoped door would require `:*` after bzgw and break push.
+- gym1 audit (isaac-2a2x) will log `:principal :google-pubsub` on every push and alert on first use — desired.
+- OAuth client secret and user tokens never sit in config: `${GOOGLE_CLIENT_SECRET}` from `.env`, tokens in the auth store. Same principle as gym1's hashed secrets.
+- Exposure: the door is the reason yopp gets a public Funnel; gym1 parks Funnel scope as a separate question. With per-principal scopes every other route stays admin/scoped behind that exposure.
+
+## Repos (created 2026-09-18)
+
+`slagyr/isaac-google`, `slagyr/isaac-gchat`, `slagyr/isaac-gmail` — public, MIT, scaffolded from isaac-mcp (bb ci, pre-push hook, CI workflows, module skeleton + spec green). `slagyr-assistant` invited with write (pending acceptance).
+
 Source strategy doc dated 2026-09-12, amended 2026-09-16; Micah's architecture session 2026-09-18.

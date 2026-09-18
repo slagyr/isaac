@@ -32,3 +32,8 @@ Child 1 of isaac-gym1 (principals epic). Repo: isaac-http (local checkout `isaac
 7. the bearer never appears in any log line (existing log-scrub steps)
 
 Step ledger at promotion (mirror s9e3's `features/http/auth_reload.feature` steps).
+
+
+## Consumer note (planner, 2026-09-18) — Google push door (isaac-1jep)
+
+The Google Workspace epic (isaac-bv1l) needs the `:isaac.http/identity` berth to accept a **request verifier**, `(fn [request] -> {:name … :scopes #{…}} | nil)`, not only a header→principal mapping: Pub/Sub push carries a Google-signed OIDC JWT, there is no shared secret to hash. The door route will declare `:scope :google/push`. Please keep the verifier shape in this bean's berth design (or tell isaac-1jep to add it).

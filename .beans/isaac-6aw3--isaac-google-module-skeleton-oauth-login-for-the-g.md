@@ -35,4 +35,6 @@ Refresh tokens for an internal Workspace app do not expire; a weekly re-login me
 
 Pub/Sub, any Google API call beyond OAuth, service-account auth.
 
-Blocker: the `slagyr/isaac-google` repo must exist (Micah creates; workers clone on demand).
+Repo exists (created 2026-09-18, scaffold on main: manifest `:isaac.google`, module + spec, bb ci, hooks, CI). `slagyr-assistant` invited with write.
+
+Secrets rule (aligned with isaac-gym1): `:oauth {:client-id … :client-secret "${GOOGLE_CLIENT_SECRET}"}` — the secret comes from `.env`, never plaintext in isaac.edn; user tokens live only in the auth store. `config get` must stay safe to read.
