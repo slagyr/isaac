@@ -7,7 +7,7 @@ priority: high
 tags:
     - security
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T05:23:55Z
+updated_at: 2026-09-18T05:34:22Z
 parent: isaac-gym1
 ---
 
@@ -84,3 +84,17 @@ bb spec && bb ci
 Note for the worker: on a fresh clone the current deps pin for isaac-agent (`b6284e42…`) is not fetchable from GitHub (the commit was squashed away); CI's gitlibs cache still has it. If `bb` fails "Commit not found", bump the agent pin in deps.edn + bb.edn to agent main (`0e804c0` or newer) as the first commit of this bean and note any spec follow-ups.
 
 Dispatched: hail 498cd641 2026-09-18T05:20Z (band isaac-work)
+
+## Worker checkpoint (2026-09-18, scrapper@isaac-work-1)
+
+Done:
+- Added core principal auth namespace: SHA-256 hashes, constant-time all-principal comparison, expiry/scope checks, legacy admin synthesis, handler `require-scope!`.
+- Extended route entries/schema with optional `:scope` and live route-scope lookup.
+- Extended auth config schema with principal hash/scopes/expires.
+- Updated middleware for 401/403 refusal, burst counting, request principal attachment, and `:http/request` logging.
+- Added focused auth specs; core auth/http/routes suite is green: 23 examples, 0 failures, 35 assertions.
+- Pushed `bean/isaac-bzgw` @ `0097e6c`.
+
+Next:
+- Resume at `src/isaac/http/http.clj:45` and `features/server/principals.feature:20`.
+- Implement legacy-warning once-per-reload semantics, HTTP identity verifier berth, fixture/config/log-count steps, then remove the 11 owned @wip tags and run acceptance/full CI.
