@@ -1,13 +1,13 @@
 ---
 # isaac-kjzq
 title: Server refuses non-read-only CLI commands while its module basis is stale (restart pending); :read-only manifest hints
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-18T01:24:43Z
-updated_at: 2026-09-18T01:24:43Z
+updated_at: 2026-09-18T02:44:29Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
