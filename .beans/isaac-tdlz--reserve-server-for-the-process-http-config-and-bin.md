@@ -9,7 +9,7 @@ tags:
     - config
     - server
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T03:04:08Z
+updated_at: 2026-09-18T03:05:38Z
 parent: isaac-3q4m
 ---
 
@@ -145,3 +145,37 @@ GREEN requires full `bb ci` on the rebased branch. Both still fail. Isolated rer
 Do not land. Update those two specs to the new names. Additional land blocker if CI is later green: isaac-agent `bean/isaac-tdlz` @ a38d403 is not based on current `origin/main` 0e804c0; squash would conflict `resources/isaac-manifest.edn` (`:isaac.config/schema` both sides). Rebase agent onto 0e804c0 before a third verify.
 
 Other named branches (hooks b764fd6, claude-code fc701d8, cli-proxy aeb849a) merge-tree clean vs their mains.
+
+
+
+## Planner adjustment (2026-09-18, prowl@isaac-plan) — leftover specs follow renamed slots; rebase agent
+
+Conflict: attempt-1 findings are fixed (Foundation 4274b15, HTTP c75d359). Full `bb ci` is still red on two leftover specs that still assert the old `:server` names. Isolated reruns reproduce; origin/main of each spec still matches the old implementation — bean-introduced, not pre-existing. Agent `bean/isaac-tdlz` @ `a38d403` is not based on `origin/main` `0e804c0`; squash would conflict `resources/isaac-manifest.edn` (`:isaac.config/schema`).
+
+**Decision: leftover-spec updates and the agent rebase stay in this bean. Do not split. Do not land until both `bb ci` gates are green and agent is rebased.** Specs follow the renamed slots. Do not restore "HTTP server logs" or `#{:server :comms}`.
+
+### Worker now
+
+1. **isaac-foundation** `spec/isaac/logs/cli_spec.clj:21` — expect `{:file "logs/server.log", :description "Isaac process logs"}` (file path stays; description is process logs, not HTTP). Decision 5 / implementation: log-stream description is process logs.
+2. **isaac-http** `spec/isaac/manifest_self_consistency_spec.clj:57` — expect `#{:http :comms}` for `(:isaac.config/schema manifest)` keys. Decisions 1 and 4: HTTP contributes `:http`; Foundation owns retired `:server`; HTTP does not keep contributing `:server`.
+3. **isaac-agent** rebase `bean/isaac-tdlz` onto `origin/main` `0e804c0`. Resolve `resources/isaac-manifest.edn` `:isaac.config/schema`: keep this bean's `:bridge` **and** main's later provider-table work. Do not drop either.
+4. Hooks `b764fd6`, claude-code `fc701d8`, cli-proxy `aeb849a` are merge-tree clean — do not recut them.
+5. Confirm:
+       cd isaac-foundation && bb spec spec/isaac/logs/cli_spec.clj && bb ci
+       cd isaac-http && bb spec spec/isaac/manifest_self_consistency_spec.clj && bb ci
+       cd isaac-agent && git merge-base --is-ancestor origin/main HEAD
+   (agent focused `:bridge` specs still green after rebase)
+6. Hand to verifier. Do **not** land. Do **not** restore `@wip`. Do **not** pin.
+
+### Controlling acceptance (unchanged, plus the leftover specs)
+
+    cd isaac-foundation && bb features features/cli/server.feature:9
+    cd isaac-http && bb features features/http/config.feature features/http/listening.feature
+    cd isaac-http && bb spec spec/isaac/http
+    cd isaac-foundation && bb spec spec/isaac/runner spec/isaac/main_spec.clj
+    cd isaac-foundation && bb spec spec/isaac/logs/cli_spec.clj
+    cd isaac-http && bb spec spec/isaac/manifest_self_consistency_spec.clj
+    cd isaac-http && bb ci
+    cd isaac-foundation && bb ci
+
+0 failures. `@wip` gone from the three acceptance feature files. Agent branch is an ancestor-clean rebase of `origin/main` `0e804c0` (or later) with `:bridge` intact.
