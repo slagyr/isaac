@@ -54,3 +54,15 @@ Done when `@wip` is gone and those commands are green.
 ## Non-goals
 
 Do **not** migrate acp or other modules. Do **not** land foundation. Pin bump is isaac-1fwl.
+
+## Resume (isaac-work-1, 2026-09-18)
+
+Checkpoint on `bean/isaac-kk0o` @ `65caa74` (base origin/main@d455915).
+
+**Done:** foundation pin `cc53d69`; sessions/prompt/auth/crew/turns via `host/ensure-runtime!`; no `dangerously-install-config! nil` in sessions finally; prompt `host/cwd`; auth `host/in` + device-code `host/cancelled?`; `:hosted true` on those manifest entries; embedded steps in session_steps; scoped `bb lint-cli-host`; CLI unit specs green (107/0); lint-cli-host ok.
+
+**Next (acceptance still unrun):**
+```
+cd /Users/zane/agents/isaac/work-1/isaac-agent-kk0o && bb features features/cli/host_embed.feature && bb lint-cli-host
+```
+Then `bb ci`, rebase FF onto origin/main, `beans update isaac-kk0o --tag=unverified`, hail isaac-verify reply_to 72ecfe65.
