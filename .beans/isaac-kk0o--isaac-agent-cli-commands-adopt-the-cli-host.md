@@ -1,14 +1,13 @@
 ---
 # isaac-kk0o
 title: isaac-agent CLI commands adopt the CLI host
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
-    - unverified
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T16:47:11Z
+updated_at: 2026-09-18T16:51:43Z
 parent: isaac-eqkb
 ---
 
@@ -67,3 +66,9 @@ Acceptance green:
 - `bb ci` — 1635 spec examples 0 failures; 801 feature examples 0 failures (1 pending, pre-existing mid-turn compaction)
 
 Embedded fixture registers builtin `:isaac/cli` berths once against the live Grover runtime (`session_steps.clj:894`) because `host/run-embedded` does not call `main/run`. No config re-install. Verify lands the branch — do not merge or pin.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-agent b46ef7ab2c71b20904bfea085e3ddf31a733d603
