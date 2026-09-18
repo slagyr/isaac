@@ -7,8 +7,9 @@ priority: high
 tags:
     - claude-code
     - compaction
+    - unverified
 created_at: 2026-09-18T14:42:28Z
-updated_at: 2026-09-18T15:10:44Z
+updated_at: 2026-09-18T16:24:20Z
 ---
 
 Compaction over the claude-code provider (`:provider :claude`, Claude Code CLI driver) never succeeds: the CLI completes the summary call, but Isaac records the raw stream-json output as the error and marks the compaction failed.
@@ -62,3 +63,7 @@ Specs: 72/0 native. Branch `bean/isaac-t098` @ **53aa2bf** (two commits, both un
 Deploy state: yopp on 53aa2bf (restart 15:49Z, clean). zanebot on e61df08 (restart 15:12Z); 53aa2bf goes on once isaac-work-3's in-flight compaction finishes. isaac-work-2 compacted on Claude Code with e61df08: 753k → 51k tokens (15:43Z, ~30 min).
 
 zanebot on 53aa2bf too (restart 16:06Z, resume requeued 2, clean). Both hosts now carry both fixes; isaac-work-3 compaction rerun launched 16:07Z on claude-opus.
+
+## Verified in production (2026-09-18 16:2xZ)
+
+isaac-work-3 compacted on claude-opus with 53aa2bf: 751,170 → 7,057 tokens (`✨ compacted`, `:session/compaction-completed :provider "claude"`). isaac-work-2 earlier with e61df08: 753k → 51k. Both hosts on 53aa2bf. Handing to verify: acceptance = `cd isaac-claude-code && bb ci` (72/0 native specs incl. 5 new), plus the three production compactions above as the @real evidence. Registry pin (modules.edn) to follow the squash.
