@@ -21,7 +21,7 @@ Chat stays subscribed without a human. Registration = a Workspace Events subscri
 - isaac-gchat: contributes one registration whose keys are the configured spaces; `events.subscriptions.create` with `targetResource` = the space, `eventTypes` = message created/updated/deleted, `notificationEndpoint.pubsubTopic` = the shared topic, no `payloadOptions.includeResource` (pointer). Scopes contributed to `:isaac.google/scopes` (confirm: chat.messages.readonly, chat.spaces.readonly).
 - Adding a space = one config entry; the timer picks it up on the next tick (config hot-reload later).
 
-## Scenarios (approved 2026-09-18, Micah) — committed `@wip` in isaac-gchat `4378f26` `features/comm/gchat/registrations.feature`
+## Scenarios (approved 2026-09-18, Micah) — committed `@wip` in isaac-gchat `4378f26` (+ `7bd9e35`) `features/comm/gchat/registrations.feature`
 
 | line | scenario |
 |---|---|
@@ -41,7 +41,7 @@ Pinned: create = `POST workspaceevents/v1/subscriptions` with `targetResource //
 | **the google registration timer ticks** | **NEW (isaac-google steps) — one pass of the renewal component on the caller thread** |
 | **the Workspace Events API has no subscriptions** / **… has subscription {name} for {space} expiring at {ts}** / **… grants subscriptions expiring at {ts}** / **… rejects creates for {space} with {status} {message}** | **NEW — stubs for list/get/create/patch/delete** |
 | **no outbound HTTP request to {url} was made** / **{n} outbound HTTP requests to {url} for {space} were made** | **NEW — Discord has the count phrase; the `for {space}` filter matches on body.targetResource** |
-| config row `comms.gchat.gchat/spaces.spaces/PROD \| #remove` | **check**: if the `config:` table has no removal directive, replace with the http harness's `config is updated:` / a `the config key {path} is removed` step and fix the scenario at promotion (planner exception, record here) |
+| config row `comms.gchat.gchat/spaces.spaces/PROD \| #delete` | reuse — TABLES.md `#delete` sentinel removes the leaf (feature fixed at `7bd9e35`) |
 
 ## Acceptance
 
