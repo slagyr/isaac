@@ -6,6 +6,7 @@ type: feature
 priority: high
 tags:
     - cli
+    - unverified
 created_at: 2026-09-17T15:55:24Z
 updated_at: 2026-09-18T01:20:51Z
 parent: isaac-eqkb
@@ -94,6 +95,8 @@ PROTOCOL.md "Execution model" prose updated in both repos, lockstep. Module vers
 
 ## Worker checkpoint (2026-09-17, scrapper@isaac-work-2)
 
-Done: Foundation `bean/isaac-qvhy` @ `6f1000d` exposes caller-owned `host/run-embedded*`, preserves/declares manifest `:hosted`; cli-server `bean/isaac-qvhy` @ `bb7494f` implements hosted task dispatch, piped stdin/stdout/stderr, exit/error containment, local-only/root refusals, grace cancellation, replay/attach, transitional subprocess fallback, fixture steps, protocol/version/pin updates. cli-proxy `bean/isaac-qvhy` @ `706b193` carries lockstep protocol prose. Green before timeout RED: all endpoint scenarios 20 examples/86 assertions, cli-server specs 10/42, full cli-server CI, proxy slow integration 4/10.
+Done: Foundation `bean/isaac-qvhy` @ `3963266` exposes caller-owned `host/run-embedded*`, preserves and declares manifest `:hosted`; cli-server `bean/isaac-qvhy` @ `dd5ef8a` implements hosted task dispatch, piped stdin/stdout/stderr, exit/error containment, local-only/root refusals, hot-reloaded wall-clock timeout (exit 124), grace cancellation, replay/attach, transitional subprocess fallback, config schema, fixture steps, protocol/version/pin updates. cli-proxy `bean/isaac-qvhy` @ `6e34b34` carries lockstep protocol prose. All branches are rebased on current origin/main.
 
-Current state: RED only for newly added timeout spec: expected hosted shutdown callback and exit 124, got no cancellation. Red commit pushed at `bb7494f`. Next: implement hot-reloaded `[:cli-server :timeout-ms]` scheduling/cancel in `src/isaac/cli_server/dispatch.clj:79` / `:220`, make `spec/isaac/cli_server/dispatch_spec.clj:39` green, rerun acceptance, rebase all three branches, update bean and hand off.
+Green: cli-server endpoint 20 examples/86 assertions; cli-server specs 11/44; full cli-server CI green; proxy slow integration 4 examples/10 assertions; focused Foundation host/registry specs green. Foundation full CI specs are green (1040/1892); its features have two unrelated `modules pins` failures from a stale absolute fixture repo path and 2 pre-existing pending scenarios. `git diff --check` clean.
+
+Next: verifier reviews the three branches and lands Foundation before cli-server (server pins Foundation branch commit), then cli-proxy protocol branch. Bean remains `in-progress`, tagged `unverified`.
