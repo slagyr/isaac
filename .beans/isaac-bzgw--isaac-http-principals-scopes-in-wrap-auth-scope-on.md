@@ -1,14 +1,13 @@
 ---
 # isaac-bzgw
 title: 'isaac-http: principals + scopes in wrap-auth; :scope on the route berth; request principal; require-scope!; legacy token = admin; hot-reload'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - security
-    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T06:00:47Z
+updated_at: 2026-09-18T06:06:13Z
 parent: isaac-gym1
 ---
 
@@ -108,3 +107,9 @@ Verification:
 - `bb spec`: 134 examples, 0 failures, 270 assertions.
 - `bb ci`: spec 134/0/270; features 57/0/126; config-bypass-lint and pins passed.
 - focused lint: 0 errors (4 pre-existing/style warnings); `git diff --check` passed.
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-http ad4ba5d86a104356c5e7de3a0a0360e2528f0db8
+main-sha: isaac-foundation 1afd934fff001cd9b75c4121546d961d96e6e02a
