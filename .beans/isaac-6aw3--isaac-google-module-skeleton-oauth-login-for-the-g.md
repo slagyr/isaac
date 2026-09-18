@@ -1,13 +1,13 @@
 ---
 # isaac-6aw3
 title: 'isaac-google: module skeleton + OAuth login for the Google user (scopes berth, auth store)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:37:02Z
+updated_at: 2026-09-18T16:25:51Z
 parent: isaac-bv1l
 ---
 
