@@ -6,9 +6,8 @@ type: feature
 priority: high
 tags:
     - security
-    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T14:33:08Z
+updated_at: 2026-09-18T14:35:30Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -95,3 +94,20 @@ isaac-http pin: `ad4ba5d86a104356c5e7de3a0a0360e2528f0db8` (on origin/main). Reg
 - isaac-acp / isaac-mcp not in this child except claude-code MCP route.
 - Hail handler defaults missing `:isaac/principal` to admin `:*` so the legacy token still overrides band prompts (wrap-auth already passed the route).
 - cli-server `bb ci` not fully green due to the qvhy flake; focused isaac-4o6r scenarios pass.
+
+
+## Verify fail (attempt 1, 2026-09-18): isaac-4o6r scenarios still @wip in hooks and cli-server
+
+HEAD hail: 2554664. hooks: 5ab87eb. cli-server: 8145f86. claude-code: 0ad4f2c. Working trees: clean except untracked wt/ on hail.
+
+verify.md §1 — permitted feature edits are @wip removal or bean `## Exceptions`. There is no `## Exceptions` section. Remaining checks were not run.
+
+1. isaac-hail `features/http.feature`: all six isaac-4o6r scenarios had `@wip` removed. Remaining `@wip` at line 161 is isaac-2a2x (out of this bean). Permitted.
+
+2. isaac-hooks `features/hooks.feature`: only the 403 scenario lost `@wip`. Scenario "a principal scoped hooks can fire a configured hook (isaac-4o6r)" is still `@wip` (line 202). Planner listed both as this bean's acceptance.
+
+3. isaac-cli-server `features/cli/endpoint.feature`: three isaac-4o6r scenarios lost `@wip`, but "a principal scoped cli/read is refused a mutating command before it runs (isaac-4o6r)" is still `@wip` (line 271). Planner listed that scenario.
+
+4. isaac-claude-code: no feature-file change (spec-only `:scope :mcp`). Fine.
+
+Do not land. Remove `@wip` from those two isaac-4o6r scenarios (keep isaac-2a2x `@wip`). Then re-hand for verify.
