@@ -102,3 +102,7 @@ Do not land. Restore the planner table (keep only @wip removal), or get a ## Exc
 ## Resume (isaac-work-1, 2026-09-18 hail 1f2acf36)
 
 Verify-fail repair. Restoring the planner table makes refused-create red: `:google/registered` logs `:expires-at`, not `:reason`. Next: append `## Exceptions` naming the expires-at column move (verify.md §1 alternative), keep worker table, rebase FF, re-hand verify. File: `features/comm/gchat/registrations.feature:72`. Branch still `d8b0df0` (forced back after failed restore).
+
+## Exceptions
+
+- `features/comm/gchat/registrations.feature`, scenario "a refused create is logged with Google's reason and retried on the next tick", the `the log has entries matching:` table (line 72 on `bean/isaac-vo2q` @ d8b0df0): the planner table put the `:google/registered` expiry under the `reason` column. The bean pins that event as logging `:key :expires-at` (not `:reason`), so the worker's table is the correct reading: an `expires-at` column added, the `:google/registered` row's `reason` cell emptied and `2026-09-25T12:00:00Z` moved to `expires-at`. Authorized by the planner 2026-09-18; no other feature edits beyond `@wip` removal.
