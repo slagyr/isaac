@@ -1,13 +1,13 @@
 ---
 # isaac-4o6r
 title: 'Modules declare route scopes: hail (+prompt-override), cli (+cli/read via :read-only), acp, hooks, mcp'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - security
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T04:49:11Z
+updated_at: 2026-09-18T14:00:57Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
