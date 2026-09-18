@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - cli
+    - unverified
 created_at: 2026-09-18T01:24:43Z
-updated_at: 2026-09-18T02:44:29Z
+updated_at: 2026-09-18T02:55:01Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -54,3 +55,25 @@ cd isaac-cli-server && bb features features/cli/endpoint.feature && bb ci
 cd isaac-foundation && bb spec spec/isaac/cli   # :read-only passthrough
 ```
 Manifests with `:read-only` hints: each module's `bb ci` green (manifest schema accepts the key). Version bumps; pins are a train step.
+
+## Implementation checkpoint (2026-09-18, scrapper@isaac-work-1)
+
+Done:
+- cli-server checks the live loaded-basis seam before hosted dispatch, refuses stale mutating commands with stderr guidance, exit 75, and `:cli/refused-stale-basis` argv logging.
+- `:read-only true` and per-subcommand sets are honored; current-basis behavior is unchanged.
+- Added fixture commands/step, removed the four owned `@wip` tags, bumped cli-server to 0.2.1.
+- Foundation manifest schema and registry now retain `:read-only` alongside landed `:hosted`.
+
+Branches:
+- isaac-cli-server `bean/isaac-kjzq` @ `955a61ebe2fc811ee03d31dded02d1e10a20658f` (base `origin/main@2df64a344714c2f731c78bc5ebc0a61e5376cc12`).
+- isaac-foundation `bean/isaac-kjzq` @ `b6a96bd313b4746a7c7175e8a8876fd637bfc932` (base `origin/main@5779897e5f507b3fcb21ea8e07a78dafc73e899a`).
+
+Verification:
+- cli-server focused scenarios: 4 examples, 0 failures, 16 assertions.
+- cli-server endpoint feature: 24 examples, 0 failures, 102 assertions.
+- cli-server specs: 14 examples, 0 failures, 50 assertions.
+- cli-server `bb ci`: green.
+- Foundation CLI specs: 47 examples, 0 failures, 95 assertions.
+- `git diff --check`: clean.
+
+Note: the requested module-wide read-only hints/version bumps are a train operation after Foundation schema lands; this handoff contains the defining Foundation seam and cli-server enforcement.
