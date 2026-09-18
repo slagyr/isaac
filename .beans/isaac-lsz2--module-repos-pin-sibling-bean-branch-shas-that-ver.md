@@ -20,13 +20,17 @@ Sweep (2026-09-18, every module repo's deps.edn + bb.edn, pins to isaac-* repos)
 |---|---|---|
 | isaac-cli-server | foundation `3963266` (bb.edn ×3, deps.edn) | **no** — CI red |
 | isaac-server | agent `b6284e42` (`:test` alias, bb.edn + deps.edn) | **no** — CI green by cache only |
+| isaac-agent | foundation `1c8e45b` (bb.edn ×5, deps.edn) | **only via leftover branch `bean/isaac-t1om`** — a time bomb: the moment that branch is deleted, agent main stops building from a cold cache (isaac-2yh9, 2026-09-15, folded in here) |
 | everything else | — | yes |
+
+The reachability test is **reachable from `origin/main`** (`git merge-base --is-ancestor <sha> origin/main`), not "on any remote branch" — the first sweep used the weaker test and missed the agent case.
 
 ## Fix (this bean; planner-implemented)
 
 1. isaac-cli-server: repin foundation (test-support, marigold.*, foundation) to foundation **main** `e4da6e0` (carries 1fwl/qvhy/kjzq). Surfaced one racy spec: `dispatch_spec.clj` "runs a read-only hosted command when the loaded basis is stale" exited its `-with-nexus` scope before the hosted task ran (the task is a future that reads the nexus) — hold the scope until the exit frame. `bb spec` 5/5 green after.
-2. isaac-server: repin the `:test` alias agent to agent main (`0e804c0` or newer). **Worker leg** — planner tried it: `bb spec` green (125), `bb features` has 4 failures against agent main (Comm extension "Multiple comm instances of the same :type coexist"; Module activation "Comm slot starts when configured at boot", "Declared module is activated during server boot even without a slot", "Module activation failure surfaces a structured error") — a week of agent changes since b6284e4; fix the features/steps for the current agent, don't pin backwards.
-3. **Rule (add to isaac/AGENTS.md bean workflow + the verify checklist):** a bean may only pin a sibling repo at a sha reachable from that repo's `main` (`git branch -r --contains <sha>` includes `origin/main`). Never a bean-branch sha — verify squashes and deletes it. Verify rejects a handoff whose pins fail this check.
+2. isaac-agent: repin foundation (bb.edn ×5 + deps.edn) to foundation main; `bb spec && bb features` (expect spec follow-ups — a week of foundation since 1c8e45b; foundation cc53d69+ carries the CLI host).
+3. isaac-server: repin the `:test` alias agent to agent main (`0e804c0` or newer). **Worker leg** — planner tried it: `bb spec` green (125), `bb features` has 4 failures against agent main (Comm extension "Multiple comm instances of the same :type coexist"; Module activation "Comm slot starts when configured at boot", "Declared module is activated during server boot even without a slot", "Module activation failure surfaces a structured error") — a week of agent changes since b6284e4; fix the features/steps for the current agent, don't pin backwards.
+4. **Rule (add to isaac/AGENTS.md bean workflow + the verify checklist):** a bean may only pin a sibling repo at a sha reachable from that repo's `main` (`git branch -r --contains <sha>` includes `origin/main`). Never a bean-branch sha — verify squashes and deletes it. Verify rejects a handoff whose pins fail this check.
 
 ## Also observed (not fixed here)
 isaac-cli-server `features/cli/endpoint.feature` "a reattached client receives frames buffered while detached (isaac-qvhy)" is flaky (~1 in 3 locally): the echo's two output writes ("while away", "\n") race the attach replay, and the frame matcher sees "\n" first. Needs its own look (buffer/replay ordering in dispatch, or the scenario's stdin-while-detached step) — bean it if it bites CI.

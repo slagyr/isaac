@@ -1,11 +1,11 @@
 ---
 # isaac-2yh9
 title: isaac-agent main pins a foundation commit reachable from no branch
-status: draft
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-15T23:45:52Z
-updated_at: 2026-09-15T23:45:52Z
+updated_at: 2026-09-18T04:59:14Z
 ---
 
 ## Problem
@@ -42,3 +42,7 @@ After that, isaac-agent main builds and `bb features` passes (765 examples, 0 fa
 
 - isaac-agent main builds from a cold gitlib cache (no by-sha rescue fetch).
 - Every foundation sha in `bb.edn`/`deps.edn` is reachable from a foundation branch.
+
+
+## Scrapped (2026-09-18, planner)
+Superseded: the repin is isaac-lsz2 (agent leg added), the guard is isaac-j4jr (`bb lint-pins`, verify repins before squash). Note: 1c8e45b is currently reachable only via the leftover `bean/isaac-t1om` branch — do not delete that branch until lsz2 lands.
