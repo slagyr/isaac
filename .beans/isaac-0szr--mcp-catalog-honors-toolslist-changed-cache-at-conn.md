@@ -1,14 +1,13 @@
 ---
 # isaac-0szr
 title: 'MCP catalog honors tools/list_changed: cache at connect, re-catalog on notification'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
-    - unverified
     - mcp
 created_at: 2026-09-18T02:43:52Z
-updated_at: 2026-09-18T03:13:11Z
+updated_at: 2026-09-18T06:01:11Z
 parent: isaac-uhvt
 blocked_by:
     - isaac-vadd
@@ -79,3 +78,8 @@ Rebased 2026-09-18 onto isaac-vadd f18088f (lifecycle timeout scenario restored)
 
 Rebased 2026-09-18 onto isaac-mcp main de45378 (isaac-vadd squashed; agent main c827f23): `bean/isaac-0szr` @ **a2118a1**, features 13/0, specs 32/0, force-pushed. No pin change needed — main already pins agent c827f23.
 Verify hail: cf2b1d20 2026-09-18T05:57Z (band isaac-verify)
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-mcp 8583ebcd5fd9865e12777239c704d0ab9131ccfd
