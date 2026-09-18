@@ -140,3 +140,5 @@ Worktree used: `plan/isaac-agent-vadd` (another session was live on `plan/isaac-
 - **Deployed to yopp at Micah's request** (not zanebot): `isaac modules install isaac.tool.mcp`, isaac.edn `:modules` pinned agent→0d6f0c2, mcp→d288165 (backup `isaac.edn.bak-vadd-20260918-025339`), `systemctl --user restart isaac` 02:55Z. Boot clean (runner 6 components, resume scan 0/0). Smoke 02:56Z: crew yopp (`:linear/*`) prompt → `:mcp/connected :server :linear`, model listed the Linear catalog. The long-running standalone `isaac acp` process on yopp predates the restart and keeps the old code until it is restarted.
 - `isaac config validate` on yopp reports `crew.yopp.session-policy … known: chronicle` on BOTH old and new pins (CLI validate does not see the episodes module's policy berth); the server boot registers `:episodes` fine. Pre-existing; not this bean.
 - Verifier: registry pins still to advance after squash (agent, then mcp, then modules.edn); yopp is already on bean shas and needs re-pinning to the squashed shas in the same train.
+
+Verify hail: 0a682554 2026-09-18T04:53Z (band isaac-verify)

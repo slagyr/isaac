@@ -61,3 +61,5 @@ Secrets rule (aligned with isaac-gym1): `:oauth {:client-id … :client-secret "
 ## Push access note (2026-09-18 04:40Z, plan)
 
 zanebot pushes as `slagyr-assistant` (ssh key). Its **write invitation to slagyr/isaac-google is pending** and its `gh` token on zanebot is broken, so a worker cannot accept it from there. Until Micah accepts the invitation as slagyr-assistant, the worker will land green commits locally and fail to push (the isaac-mcp qgtn episode). If that happens: HOLD with the branch name and sha; do not retry the push in a loop.
+
+Dispatched: hail 3533ee28 2026-09-18T04:38Z (band isaac-work)
