@@ -8,7 +8,7 @@ tags:
     - unverified
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T18:57:47Z
+updated_at: 2026-09-18T18:58:33Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-6aw3
@@ -96,3 +96,21 @@ Worktree `/Users/zane/agents/isaac/work-2/isaac-google-1jep`.
 - Evidence: `bb features features/push_door.feature` 5/0/19; `bb ci` 31 spec + 10 features, 0 failures. isaac-http identity berth already on main (db2b639); no http code change.
 
 **Handoff** in-progress + unverified. Verify: `cd isaac-google && bb features features/push_door.feature && bb ci`. isaac-http `bb ci` not required (no http diff).
+
+
+
+## Verify fail (attempt 1, 2026-09-18): push_door.feature rewritten beyond @wip; no ## Exceptions
+
+HEAD isaac-google: e2b0edb (bean/isaac-1jep). Working tree: clean.
+
+verify.md §1 — permitted feature edits are @wip removal or bean ## Exceptions. There is no ## Exceptions section. Remaining checks were not run.
+
+features/push_door.feature (commits 40084dc, e2b0edb) removed @wip (permitted) AND rewrote a planner step:
+
+  Scenario: a Google token opens only the door
+  - Given a fixture route GET /fixture requires scope :fixture/read
+  + Given a fixture route GET "/fixture" requires scope "fixture/read"
+
+That is a reworded step (quotes + un-keyworded scope), not @wip removal.
+
+Do not land. Restore the planner step text (keep only @wip removal), or get a ## Exceptions entry that names that exact edit. Then re-hand for verify.
