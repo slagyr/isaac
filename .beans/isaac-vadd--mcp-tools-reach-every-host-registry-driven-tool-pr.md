@@ -1,14 +1,14 @@
 ---
 # isaac-vadd
 title: 'MCP tools reach every host: registry-driven tool-provider berth (server, prompt, acp)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - mcp
     - agent
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T01:41:56Z
+updated_at: 2026-09-18T01:43:33Z
 parent: isaac-uhvt
 ---
 
