@@ -4,10 +4,8 @@ title: Cron falsely records success after failed scheduled turn
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-11T17:02:28Z
-updated_at: 2026-09-18T16:11:24Z
+updated_at: 2026-09-18T16:13:30Z
 ---
 
 Cron state can falsely record `:last-status :succeeded` even when the scheduled turn failed before any tool execution.
@@ -85,3 +83,18 @@ Pinned grover (`10093b4e`) has no `http-error` row type and no provider-wall cla
 - `bb features features/scheduling.feature` 9/0
 - `bb ci` 23 spec / 21 feature, 0 failures
 - version 0.1.3; pin is a train step.
+
+
+## Verify fail (attempt 1, 2026-09-18): scheduling.feature rewritten beyond @wip; no ## Exceptions
+
+HEAD isaac-cron: 3eba886 (bean/isaac-7ngj). Working tree: clean.
+
+verify.md §1 — permitted feature edits are @wip removal or bean `## Exceptions`. There is no `## Exceptions` section. Remaining checks were not run.
+
+`features/scheduling.feature` (commit 3eba886) removed @wip (permitted) AND rewrote planner scenarios:
+
+1. "a provider wall during a cron turn records failed with the reason" — queued `http-error` 429 / retry-after 60 became a generic `error` "HTTP 429 rate limited". last-error regex dropped `wall|unavailable`. log `:outcome` changed from `:unavailable` to `:error`. That is not a provider wall; it is a different failure class. Worker note admits grover has no http-error row / wall classifier.
+
+2. "a successful cron run clears a previous failure" — Given table became a JSON/EDN blob; Then dropped `| health-check.last-error | nil |` (weakened: previous failure may linger).
+
+Do not land. Restore the planner table, http-error wall fixture, `:unavailable` outcome, and last-error nil assertion (keep only @wip removal), or get a `## Exceptions` entry that names those exact edits. Then re-hand for verify.
