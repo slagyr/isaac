@@ -7,7 +7,7 @@ priority: high
 tags:
     - security
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T16:13:07Z
+updated_at: 2026-09-18T22:00:54Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -115,17 +115,21 @@ Resume: `src/isaac/http/cli.clj` `run-fn` / new auth subcommand dispatch. Do not
 
 Dispatched: hail 1f64d796 2026-09-18T19:58:03Z (session isaac-work-2, continuation of b6b3d9f6 — turn ended at cycle budget without hand-off)
 
-## Checkpoint (scrapper@isaac-work-2, resume 3)
+## Checkpoint (scrapper@isaac-work-2, resume 4)
 
-Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` `bean/isaac-auie` @ 8570a75 (base origin/main db2b639). Units 47/0. Features not yet green.
+Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` `bean/isaac-auie` @ 9b5f336 (base origin/main@5c8148e isaac-2a2x). Units 41/0 on auth+cli specs. Shared sibling isaac-http left on main.
 
 **Done**
-- `isaac server auth mint|rotate|revoke|list` dispatch in `src/isaac/http/cli.clj` (does not start HTTP)
-- Overlap twin nested as `:previous`; wrap-auth expands to `name@prev`
-- Feature steps: stdout line count, bearer-secret capture (`:printed-secret`), config path is/matches/absent (Given `isaac-config-path-is` asserts after CLI via `:exit-code`)
-- Un-@wip `features/cli/auth_principals.feature`; version 0.1.16
+- Rebased onto origin/main (alerts + last-used from 2a2x); overlap schema `:previous` kept
+- `isaac server auth mint|rotate|revoke|list` dispatch; mint feature `:12` green
+- Feature steps: stdout line count, bearer-secret capture, printed-secret interpolation, config path is/absent (Given asserts after CLI)
 
 **Red / next**
-`bb features features/cli/auth_principals.feature` timed out after 180s on first scenario after ambiguity fix. Resume: run one scenario (`bb features features/cli/auth_principals.feature:12`) and fix remaining step/product failures. Then `bb features features/server/principals.feature && bb ci`. Hand off unverified + hail isaac-verify reply_to 1f64d796.
+`bb features features/cli/auth_principals.feature` 11 examples, 5 failures:
+1. `:25` minted secret authenticates — 401 (`<the printed secret>` not captured; scenario has no bearer-secret Then)
+2. `:58` rotate old secret 401s then new secret 401s — same capture gap
+3. `:71` overlap Then `http.auth.principals.ci@prev.expires` — foundation `config-path-matches` does not rewrite `@prev` → `:previous` (nil)
+4. `:101` list stdout regex nil
+5. `:113` mint-without-restart 401 — same capture gap
 
-Resume: `bb features features/cli/auth_principals.feature:12` from `/Users/zane/agents/isaac/work-2/isaac-server-auie`. Do not start other beans.
+Resume: capture printed secret from mint/rotate stdout (feature-steps `spec/isaac/http/server_steps.clj:687` interpolate-printed-secret) and make overlap visible at config path `ci@prev`. Then `bb features features/cli/auth_principals.feature:25`. Do not start other beans.
