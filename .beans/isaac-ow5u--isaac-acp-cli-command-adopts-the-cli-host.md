@@ -5,9 +5,10 @@ status: in-progress
 type: feature
 priority: high
 tags:
+    - unverified
     - cli
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T17:11:08Z
+updated_at: 2026-09-18T17:54:27Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -44,3 +45,17 @@ Do **not** migrate agent or other modules here. Do **not** land foundation. Pin 
 
 ## Promoted (planner, 2026-09-18)
 isaac-1fwl (foundation leg) landed on foundation main cc53d69 — the blocker this bean named is satisfied; specs-only acceptance stands. Bump the foundation pin to main (not a bean-branch sha — see isaac-lsz2/isaac-j4jr).
+
+## Handoff (scrapper@isaac-work-1, 2026-09-18)
+
+ACP CLI host adoption complete. branch: bean/isaac-ow5u @ 1699c82 (base origin/main@9c82588).
+
+- `:hosted true` on `:isaac/cli` `:acp`
+- `ensure-runtime!` for snapshot / store / builtin register
+- stdin via `host/in`; cwd via `host/cwd` (no `user.dir` write)
+- `--verbose` via `*verbose-methods?*` binding (no `with-redefs`)
+- foundation pin `1afd934` (origin/main, not a bean-branch sha)
+- `bb lint-cli-host` in `bb ci`
+- embedded specs in `spec/isaac/comm/acp/cli_spec.clj:340`
+
+Acceptance: `ISAAC_GIT=1 bb lint-cli-host && bb ci` — lint ok; 74 spec / 64 feature, 0 failures. Did not land foundation; did not migrate agent.
