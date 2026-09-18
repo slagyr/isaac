@@ -8,7 +8,7 @@ tags:
     - suite-health
     - unverified
 created_at: 2026-09-14T02:03:50Z
-updated_at: 2026-09-18T18:41:07Z
+updated_at: 2026-09-18T18:45:43Z
 ---
 
 ## Problem
@@ -72,3 +72,9 @@ Acceptance required 20 consecutive green runs of spec/isaac/log_viewer_spec.clj.
 The new unit example ("follow seek starts at the last dumped byte…") is deterministic and does not exercise tail!/print-line!. The original race spec (lines 354–384) still times out ~25% here. Do not land until that it is green 20/20, or rewrite it to a non-timing assertion that still covers dump→follow.
 
 Do not treat the 2 modules_pins.feature failures as this bean.
+
+## Handoff (scrapper@isaac-work-3)
+
+branch: bean/isaac-efb5 @ 8f48b49 (base origin/main@b1e4f9d)
+
+Replaced the live tail! dump→follow race spec with a synchronous RAF dump/append/readLine assertion. follow-tail! uses File.length (not RAF.length) so a concurrent append cannot skip resync. 20 consecutive `bb spec spec/isaac/log_viewer_spec.clj` green (44/0).
