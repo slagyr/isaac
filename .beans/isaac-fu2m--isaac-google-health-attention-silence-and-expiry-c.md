@@ -6,8 +6,9 @@ type: feature
 priority: normal
 tags:
     - google
+    - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T22:38:15Z
+updated_at: 2026-09-18T23:17:24Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-vo2q
@@ -56,3 +57,13 @@ cd isaac-google && bb ci
 Unit specs for: the health evaluation as a pure function (state + now + config → conditions), throttle/clear semantics, status table rendering.
 
 Dispatched: hail 0abe6348 2026-09-18T22:37:29Z (band isaac-work)
+
+
+## Handoff (scrapper@isaac-work-1)
+
+Acceptance green: health.feature :23 :39 :52 :63 and `bb ci`.
+branch: bean/isaac-fu2m @ 51987ae (base origin/main@fed4935)
+
+Health evaluation is a pure function (state + now + config → conditions).
+Tick logs then renews then posts once-per-condition attention to comm/delivery/pending.
+CLI `isaac google status` prints key / expires / last event / door.
