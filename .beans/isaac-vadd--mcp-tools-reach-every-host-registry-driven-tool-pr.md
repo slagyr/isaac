@@ -234,3 +234,16 @@ If 2000ms still fails to register on the worker host, raise once more to 5000ms 
 3. Hand to verifier. Do **not** land. Do **not** pin. Do **not** restore `@wip`. Agent merge-tree vs `origin/main` `c1c61e2` is still clean — do not recut agent unless the hung-call fix requires it.
 
 This note resets the verify-fail counter.
+
+## Worker checkpoint (2026-09-18, scrapper@isaac-work-2)
+
+Applied the authorized fixture-only change on isaac-mcp `bean/isaac-vadd` @ `d2fed6b`: `mcp.lens.timeout-ms` is now 2000. No product code, agent code, pin, `start!`, `@wip`, or assertions changed.
+
+Green evidence:
+- `bb features features/lifecycle.feature:68` — 1 example, 0 failures, 2 assertions
+- `bb features features/lifecycle.feature` — 3 examples, 0 failures, 8 assertions
+- `bb features features/lifecycle.feature features/turn.feature` — 7 examples, 0 failures, 13 assertions
+- `bb features features/hosts.feature:21` — 1 example, 0 failures, 2 assertions
+- `bb features features/hosts.feature:30` — 1 example, 0 failures, 3 assertions
+
+Branch remains based on the existing bean train; verifier should land/repin per the prior train note. Bean remains `in-progress` + `unverified`.
