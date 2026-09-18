@@ -7,8 +7,9 @@ priority: high
 tags:
     - mcp
     - agent
+    - unverified
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T04:44:24Z
+updated_at: 2026-09-18T05:22:25Z
 parent: isaac-uhvt
 ---
 
@@ -164,3 +165,16 @@ A worker checkpoint calls this "planner-owned" under `## Work checkpoint` / `###
 Do not land. Restore `features/lifecycle.feature` to origin/main (keep only harness/step changes that make those scenarios pass without `start!`), or get a `## Exceptions` entry that names the removed/rewritten scenarios. Then re-hand for verify.
 
 Land note only: agent `bean/isaac-vadd` is based on 0e804c0; origin/main has since moved to c1c61e2 (`wip: agent CLI is safe to embed`). merge-tree vs that commit is clean.
+
+## Exceptions
+
+Planner-authorized feature edits (plan, 2026-09-18), in reply to verify fail 1:
+
+- `isaac-mcp features/hosts.feature` — `@wip` removed only (b2ee765).
+- `isaac-mcp features/lifecycle.feature` (b2ee765, f18088f):
+  - **Removed** "a live lens server registers prefixed tools that execute" and "MCP name catalog is not registered without the server prefix". Reason: they drove `tool "lens__catalog" is executed with:` directly, which bypasses the crew allow-list, so under the approved design (tools reach a turn only through the tool-provider seam) they cannot pass without the hand-start the bean exists to remove. Their assertions are carried by `features/turn.feature:12` (prefixed names offered, bare names not) and `:31` (a turn invokes `lens__catalog`, result contains marigold).
+  - **Rewritten** "a dead command does not fail boot and leaves no tools" → "a dead command does not fail the turn and is logged once" (turn-level; same `:mcp/connect-failed` log assertion, adds that the turn survives and the tool is not offered), and "two servers with the same MCP tool name stay distinct" → turn-level with both tools invoked and both `:mcp/connected` logged.
+  - **Restored** "a hung MCP call is a tool error" (dropped in b2ee765 by mistake; restored turn-level in f18088f): `timeout-ms 50`, queued `lens__catalog {"query":"stare"}`, transcript toolResult matches `timeout`, log `:error :tool/execute-failed :tool lens__catalog`.
+- `feature-steps/isaac/mcp_steps.clj` no longer calls `start!`; it registers the `acp` CLI command at load time (ACP is not `:builtin?`).
+
+Verified after the fix: isaac-mcp `bb jvm-features` 11/0 on `bean/isaac-vadd` @ f18088f; `bb spec` 26/0. Agent `bean/isaac-vadd` unchanged @ 0d6f0c2. isaac-0szr rebased onto f18088f → 074b014 (13/0 features, 32/0 specs).
