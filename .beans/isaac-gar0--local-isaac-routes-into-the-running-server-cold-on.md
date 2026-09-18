@@ -6,9 +6,8 @@ type: feature
 priority: high
 tags:
     - cli
-    - unverified
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T02:44:05Z
+updated_at: 2026-09-18T03:26:15Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -124,3 +123,29 @@ Done: Foundation `bean/isaac-gar0` @ `4163bcd` adds raw pointer reading, `--loca
 Green: Foundation specs 1044 examples/1896 assertions; routing feature 8/20; combined routing+startup cache 16/30; full Foundation features have only two unrelated stale absolute `modules pins` fixture failures and 2 pre-existing pending. Proxy full CI green: 24 specs/61 assertions, 29 features/93 assertions, 4 slow features/10 assertions. `git diff --check` clean.
 
 Next: verifier reviews Foundation and proxy branches; land Foundation first, then proxy/pins. Bean remains `in-progress`, tagged `unverified`.
+
+
+## Verify fail (attempt 1, 2026-09-18): feature files edited beyond @wip removal; no ## Exceptions
+
+HEAD foundation: 4163bcd (bean/isaac-gar0). HEAD cli-proxy: cfb2b79 (bean/isaac-gar0). Working trees: clean except untracked wt/ on foundation.
+
+verify.md §1 — permitted feature edits are @wip removal or bean `## Exceptions`. There is no `## Exceptions` section. Remaining checks were not run.
+
+1. isaac-foundation `features/cli/remote_routing.feature` (commits 3b9fa48, 4163bcd): @wip tags removed (permitted) AND the last scenario gained two Given steps that were not in origin/main:
+
+```
+And a stub remote runner is installed
+And the remote runner module becomes unavailable
+```
+
+The planner scenario was "module not installed"; the rewrite installs a stub then unbinds it. That is a reworded setup, not @wip removal.
+
+2. isaac-cli-proxy `features/remote.feature` (commit e9ea2ce): @wip tags removed (permitted) AND three assertions were rewritten off `${stub.url}`:
+
+- remote status: `Then the stdout contains "${stub.url}"` → `"loopback://cli-stub"`
+- rejected token: `And the stderr contains "${stub.url}"` → `"loopback://cli-stub"`
+- refused connection: `And the stderr contains "${stub.url}"` → `"ws://127.0.0.1:1/cli"`
+
+Hardcoding the stub's internal URL is a reworded assertion.
+
+Do not land. Restore the planner steps/assertions (keep only @wip removal), or get a `## Exceptions` entry that names those exact edits.
