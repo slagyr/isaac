@@ -7,8 +7,9 @@ priority: high
 tags:
     - claude-code
     - compaction
+    - unverified
 created_at: 2026-09-18T14:42:28Z
-updated_at: 2026-09-18T16:27:04Z
+updated_at: 2026-09-18T16:43:34Z
 ---
 
 Compaction over the claude-code provider (`:provider :claude`, Claude Code CLI driver) never succeeds: the CLI completes the summary call, but Isaac records the raw stream-json output as the error and marks the compaction failed.
@@ -85,3 +86,7 @@ Land: `git merge --squash bean/isaac-t098` onto origin/main 7490a20 would confli
 - Bean is not based on current main (ancestor? no). Verifier does not resolve squash conflicts.
 
 Do not land. Rebase bean/isaac-t098 onto origin/main 7490a20 (keep both the :mcp route and 0.1.12), then re-hand. Specs/CI were green on 53aa2bf; re-run `bb ci` after rebase.
+
+## Rebased for verify fail 1 (2026-09-18 16:4xZ, plan)
+
+`bean/isaac-t098` rebased onto origin/main 7490a20 (isaac-4o6r route kept alongside 0.1.12): now **6f86183, 5d5e2d2** (head 5d5e2d2). `bb ci` on the rebase: 75/0 native specs (3 @real pending), 43/0 features. Force-pushed. Hosts stay on 53aa2bf (same code, pre-rebase sha) until the squash lands; re-pin both to main then.
