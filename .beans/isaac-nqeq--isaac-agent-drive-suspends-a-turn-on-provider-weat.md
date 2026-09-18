@@ -1,13 +1,13 @@
 ---
 # isaac-nqeq
 title: 'isaac-agent: drive suspends a turn on provider weather; resume sweep re-drives it after retry-at; boot resume honours retry-at'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - turn
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-18T15:10:41Z
+updated_at: 2026-09-18T16:27:28Z
 parent: isaac-ugpq
 ---
 
