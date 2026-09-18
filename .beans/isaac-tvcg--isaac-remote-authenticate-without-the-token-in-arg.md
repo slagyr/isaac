@@ -8,7 +8,7 @@ tags:
     - cli
     - security
 created_at: 2026-09-17T22:51:02Z
-updated_at: 2026-09-18T00:53:34Z
+updated_at: 2026-09-18T00:55:09Z
 blocking:
     - isaac-gar0
 ---
