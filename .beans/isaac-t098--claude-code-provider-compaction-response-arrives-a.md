@@ -67,3 +67,5 @@ zanebot on 53aa2bf too (restart 16:06Z, resume requeued 2, clean). Both hosts no
 ## Verified in production (2026-09-18 16:2xZ)
 
 isaac-work-3 compacted on claude-opus with 53aa2bf: 751,170 → 7,057 tokens (`✨ compacted`, `:session/compaction-completed :provider "claude"`). isaac-work-2 earlier with e61df08: 753k → 51k. Both hosts on 53aa2bf. Handing to verify: acceptance = `cd isaac-claude-code && bb ci` (72/0 native specs incl. 5 new), plus the three production compactions above as the @real evidence. Registry pin (modules.edn) to follow the squash.
+
+Verify hail: b51b77d8 2026-09-18T16:24Z (band isaac-verify)
