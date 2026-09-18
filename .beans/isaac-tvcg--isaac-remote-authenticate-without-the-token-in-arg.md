@@ -7,8 +7,9 @@ priority: high
 tags:
     - cli
     - security
+    - unverified
 created_at: 2026-09-17T22:51:02Z
-updated_at: 2026-09-18T00:55:09Z
+updated_at: 2026-09-18T01:35:46Z
 blocking:
     - isaac-gar0
 ---
@@ -84,13 +85,13 @@ bb spec && bb ci
 ## Worker checkpoint (2026-09-18, scrapper@isaac-work-1)
 
 Done:
-- Added `isaac.cli-proxy.token` with precedence, mode validation, token-file trimming, named/default env, and pointer-token resolution unit coverage.
-- Extended remote CLI options/deprecation warning, added acceptance steps, removed the ten owned `@wip` tags, documented auth order, and bumped module to 0.1.4.
-- Unit resolver/CLI specs are green: 10 examples, 0 failures, 12 assertions.
-- Pushed `bean/isaac-tvcg` @ `e9087b3`.
+- Added reusable `isaac.cli-proxy.token` resolver with `--token-file`, `--token-env`, `ISAAC_REMOTE_TOKEN`, and matching home-config resolution; secure file-mode enforcement, `${VAR}` expansion, precedence, and newline trimming are covered.
+- Kept deprecated `--token` functional with a non-secret stderr warning; unauthenticated fallback names tried sources.
+- Added/extended feature seams, removed all ten owned `@wip` tags, documented auth order, and bumped module version to 0.1.4.
+- Rebased and pushed `bean/isaac-tvcg` @ `7777a2cfac089cc86a53cbb11f0aecda90290cb3` (base `origin/main@3bc45647b98dedb1551319bf8b0a0fe98e6a6f2b`).
 
-Current RED:
-- Full remote feature has one remaining pointer `${VAR}` failure: expected `Bearer pointer-secret`, got no Authorization. Literal-readable refusal and mismatched-URL scenarios are green in focused run.
-
-Next:
-- Resume at `spec/isaac/cli_proxy/cli_proxy_steps.clj:204` and `src/isaac/cli_proxy/token.clj:76`; inspect why feature env override `ZANE_TOK` is absent from the resolver map, then run all `features/remote.feature`, `bb spec`, and `bb ci`.
+Verification:
+- `bb features features/remote.feature` — 21 examples, 0 failures, 68 assertions.
+- `bb spec` — 24 examples, 0 failures, 61 assertions.
+- `bb ci` — specs/features/slow features all green; slow lane 4 examples, 0 failures, 10 assertions.
+- `git diff --check` clean.
