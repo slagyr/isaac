@@ -107,3 +107,7 @@ branch: bean/isaac-t098 @ a2e378c (base origin/main@7490a20) FF
 ## Landed on main (2026-09-18)
 
 main-sha: isaac-claude-code f058b2cf9848af50c820d96876fcd783ce56eacc
+
+## Hosts on squashed main (2026-09-18 17:0xZ, plan watch)
+
+yopp and zanebot re-pinned isaac.provider.claude-code 53aa2bf → **f058b2c** (main). yopp restart 17:00Z clean; zanebot restart 17:01Z clean (runner 8, resume requeued 2, no stale deliveries). Registry modules.edn still pins ff7df5f — advancing it is the zanebot train step for Micah.
