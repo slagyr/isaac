@@ -88,13 +88,13 @@ Dispatched: hail 498cd641 2026-09-18T05:20Z (band isaac-work)
 ## Worker checkpoint (2026-09-18, scrapper@isaac-work-1)
 
 Done:
-- Added core principal auth namespace: SHA-256 hashes, constant-time all-principal comparison, expiry/scope checks, legacy admin synthesis, handler `require-scope!`.
-- Extended route entries/schema with optional `:scope` and live route-scope lookup.
-- Extended auth config schema with principal hash/scopes/expires.
-- Updated middleware for 401/403 refusal, burst counting, request principal attachment, and `:http/request` logging.
-- Added focused auth specs; core auth/http/routes suite is green: 23 examples, 0 failures, 35 assertions.
-- Pushed `bean/isaac-bzgw` @ `0097e6c`.
+- Principal auth core plus route scopes, 401/403 + burst accounting, request principal logging, and require-scope!.
+- Legacy token warning now deduplicates per auth-config generation; malformed expiry is refused safely.
+- Added :isaac.http/identity request-verifier berth and config checks for non-empty scopes/full ISO dates.
+- Added generic foundation exact-log-count and config-path-regex steps; foundation main @ 1afd934 and isaac-http pins updated.
+- Focused auth/http/routes/manifest suite green: 34 examples, 0 failures, 92 assertions.
+- Pushed bean/isaac-bzgw @ 100c97d.
 
 Next:
-- Resume at `src/isaac/http/http.clj:45` and `features/server/principals.feature:20`.
-- Implement legacy-warning once-per-reload semantics, HTTP identity verifier berth, fixture/config/log-count steps, then remove the 11 owned @wip tags and run acceptance/full CI.
+- Resume at spec/isaac/http/server_steps.clj:253: add principal/fixture-route helpers and routes, then enable/run principals.feature.
+- Exact command: bb features features/server/principals.feature after removing owned @wip tags.
