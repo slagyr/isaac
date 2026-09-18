@@ -1,14 +1,13 @@
 ---
 # isaac-fu2m
 title: 'isaac-google health + attention: silence and expiry checks, google status command'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - google
-    - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T23:17:24Z
+updated_at: 2026-09-18T23:19:20Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-vo2q
@@ -67,3 +66,9 @@ branch: bean/isaac-fu2m @ 51987ae (base origin/main@fed4935)
 Health evaluation is a pure function (state + now + config → conditions).
 Tick logs then renews then posts once-per-condition attention to comm/delivery/pending.
 CLI `isaac google status` prints key / expires / last event / door.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-google 235cb1e14a6e256714a899015e905273e4698f9d
