@@ -1,14 +1,13 @@
 ---
 # isaac-auie
 title: isaac server auth mint|rotate|revoke|list — secret printed once, hash written to config (hot-reload), overlap rotation
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - security
-    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T22:16:28Z
+updated_at: 2026-09-18T22:32:13Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -177,3 +176,9 @@ Ready for verify. Status stays in-progress + tag=unverified. Do not land — ver
 - `ISAAC_GIT=1 bb features features/cli/auth_principals.feature` 11/0/44
 - `ISAAC_GIT=1 bb features features/server/principals.feature` 11/0/28
 - `bb spec` 155/0/326
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-http 234304e5ef631755ed2ec80bcd573e3e9019756b
