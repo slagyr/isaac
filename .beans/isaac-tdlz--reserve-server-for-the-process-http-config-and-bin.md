@@ -10,7 +10,7 @@ tags:
     - server
     - unverified
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T03:24:28Z
+updated_at: 2026-09-18T03:33:12Z
 parent: isaac-3q4m
 ---
 
@@ -202,3 +202,21 @@ Verification:
 - HTTP acceptance features: 9 examples, 0 failures, 13 assertions.
 - Agent bridge specs: 42 examples, 0 failures, 122 assertions; `origin/main` is an ancestor of HEAD.
 - Local full `bb ci` feature lanes are polluted by load-bearing stale sibling checkouts (Foundation modules-pins absolute fixture path; HTTP feature runtime resolving stale sibling Foundation). Product/spec gates named above are green; clean-checkout CI remains verifier's gate.
+
+
+
+## Verify fail (attempt 1, 2026-09-18): HTTP full features still use retired server.* fixtures
+
+HEAD foundation: 0892c7e (bean/isaac-tdlz). HTTP: b53abb1. Working trees: clean.
+
+Planner leftover-spec items are fixed:
+- Foundation bb spec 1043/0/1899; logs/cli_spec 12/0 (process logs); runner+main+logs 46/0/89; features/cli/server.feature:9 1/0/1. @wip gone.
+- HTTP bb spec 123/0/249; spec/isaac/http 102/0/170; manifest_self_consistency 5/0/48 (#{:http :comms}); features/http/config.feature + listening.feature 9/0/13. @wip gone. Outline rewritten as seven concrete scenarios.
+- Agent bean/isaac-tdlz @ 60a6514: origin/main 0e804c0 is an ancestor; :bridge + provider table present; component+bridge specs 45/0/126.
+
+GREEN requires full `bb ci` / `bb features` on the rebased branch. HTTP full features fail. Isolated named gates stay green; origin/main HTTP features are green — bean-introduced, not pre-existing.
+
+1. `cd isaac-http && ISAAC_GIT=1 bb features` — 55 examples, 23 failures, 84 assertions. Leftover `features/server/*.feature` still set `server.port` / `server.host` / `server.auth.token` / `server.hot-reload` / `server.burst` (auth, burst, hot_reload_logging, lifecycle, log_lifecycle, services, mcp_bridge, command, status, logging, dev-reload). Retired `:server` table now rejects those keys (`:config/validation-error` "retired; use :http :host", 200 instead of 401, missing :http/listening / :config.watch/started). Bean: "Existing server.* fixtures in other modules must load or they are in this bean's sweep." HTTP's own `features/server/` is the remaining sweep; `bb ci` is a named acceptance command.
+2. Reproduced: `origin/main@1245bfb` full HTTP features 46/0/98. Foundation `modules_pins.feature:32/:55` 2-red on origin/main (stale gitlibs fixture-agent) — not this bean.
+
+Do not land. Sweep remaining `server.*` fixtures in isaac-http `features/server/` (and any other module fixture that cannot load) onto `:http` / top-level `:hot-reload` / `:bridge`. Then `cd isaac-http && bb ci` must be 0 failures. Do not restore @wip. Do not pin.
