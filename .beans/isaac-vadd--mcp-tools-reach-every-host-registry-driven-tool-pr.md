@@ -1,14 +1,14 @@
 ---
 # isaac-vadd
 title: 'MCP tools reach every host: registry-driven tool-provider berth (server, prompt, acp)'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - mcp
     - agent
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T05:26:39Z
+updated_at: 2026-09-18T05:39:44Z
 parent: isaac-uhvt
 ---
 
@@ -247,3 +247,9 @@ Green evidence:
 - `bb features features/hosts.feature:30` — 1 example, 0 failures, 3 assertions
 
 Branch remains based on the existing bean train; verifier should land/repin per the prior train note. Bean remains `in-progress` + `unverified`.
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-agent c827f232e585a9a159b26293a5de05108baa9f7c
+main-sha: isaac-mcp de45378d2962b1eee677223883a628b53b6b2c28
