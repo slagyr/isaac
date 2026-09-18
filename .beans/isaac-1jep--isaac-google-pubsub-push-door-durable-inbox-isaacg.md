@@ -79,3 +79,22 @@ The `:features` alias needs `isaac-http-spec` (server steps) — add alongside t
 Chat/Gmail semantics, registrations, pull.
 
 Dispatched: hail 8c9bfd7d 2026-09-18T17:20Z (band isaac-work)
+
+
+## Checkpoint (scrapper@isaac-work-2)
+
+Worktrees: isaac-google-1jep @ bean/isaac-1jep (from origin/main da538e6); isaac-server-1jep unused so far — identity berth already exists on isaac-http main (bzgw).
+
+**Done**
+- Inbox persist + dedupe (`isaac.google.inbox`)
+- Envelope unwrap Chat ce-type / Gmail watch (`isaac.google.push`)
+- POST /google/pubsub handler 204 + log (`isaac.google.http`)
+- Identity verifier stub (`isaac.google.identity`)
+- Handler berth + worker tick (`isaac.google.handler` / `isaac.google.worker`)
+- Manifest: route :scope :google/push, identity contribution, handler berth, :push config, version 0.1.1
+- Feature @wip stripped; google_steps for all five scenarios
+- Pin isaac-http to db2b639 (current main)
+
+**Next**
+`cd /Users/zane/agents/isaac/work-2/isaac-google-1jep && bb features features/push_door.feature`
+Fix identity/config wiring, then `bb ci`. isaac-http identity berth already on main — no http code change unless wrap-auth consult order needs the verifier before bearer-hash (already does).
