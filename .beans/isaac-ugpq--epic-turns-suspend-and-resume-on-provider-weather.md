@@ -1,7 +1,7 @@
 ---
 # isaac-ugpq
 title: 'Epic: turns suspend and resume on provider weather (wall/auth/stall) — origin-agnostic via the turn marker; hail stops retrying'
-status: draft
+status: todo
 type: epic
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - turn
     - hail
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-18T14:42:12Z
+updated_at: 2026-09-18T14:57:44Z
 ---
 
 ## Why (Micah, 2026-09-18)
@@ -33,13 +33,14 @@ A wall is, from the turn's point of view, the same event as a server restart: th
 1. **isaac-nqeq** — drive suspends on weather; marker state; resume sweep; boot resume honours retry-at; `:turn/suspended` + `:turn/resumed` events; session parked semantics with the turn queue.
 2. **isaac-q2v5** — delete defer-on-unavailable; delivery stays claimed through a suspension; `hail show` prints suspended state; scenarios in delivery.feature re-cut.
 3. **isaac-a0q6** — `:suspended` status; final status on completion (re-cuts 7ngj :99).
-4. **isaac-h5v8** — Comms (Discord/iMessage/ACP) — one-line suspend notice and the eventual reply; decide per comm (open).
+4. **isaac-h5v8** — Originator notice on suspend (reason + retry-at) and the normal reply on completion, per origin (hail, Discord, iMessage, cron, ACP).
 
 Prerequisite/related: isaac-v64q (mid-stream 429 must classify as weather, or the drive never sees `:unavailable?` to suspend on). isaac-1umd / `:stateful true` reduces what a resumed cycle re-sends.
 
-## Open
-- Does a suspended turn count toward `:max-in-flight`? Proposed: no (slot released), but the session is parked so no second turn starts on it.
-- Max suspension age before a turn is failed instead (a week?), so a dead provider config can't park a session forever. Proposed: configurable `:turn :max-suspended-ms`, default 24 h, then `:error :provider-unavailable` and the origin's error path.
-- Comm notice wording/whether at all (Discord users vs. hail).
+## Resolved (2026-09-18, Micah)
 
-Status: DRAFT — design for review; children get scenarios after Micah signs off on the decisions above.
+- **In-flight**: no position — the in-flight gate is slated for deletion; the suspended turn releases its thread and the session is parked via the turn queue.
+- **Backoff / age**: `retry-at` = provider `retry-after` when given, else exponential from 30 s capped at 30 min. Nothing accumulates; age is wall-clock since first suspension and grows only while the provider is down. **No auto-fail.** After `:turn :suspended-attention-ms` (default 6 h) post ONE attention notice ("turn <id> on <session> suspended <age>, reason <r>") and stay parked; an operator cancels (`sessions cancel`, isaac-jejt) or fixes the provider, and the turn resumes on its own.
+- **Originator notice**: yes. On suspend the originator gets one message (reason + retry-at); on resume/completion the normal reply. Per origin: hail → notification comm + the delivery record; Discord/iMessage → the same channel; cron → its delivery comm; ACP → the session notification stream. Child 4 is a feature, not an open question.
+
+Status: DESIGN APPROVED — children get scenarios next (child 1 first).

@@ -1,13 +1,13 @@
 ---
 # isaac-h5v8
-title: 'Comms: what a Discord/iMessage/ACP user sees when their turn suspends on provider weather (open design)'
+title: Originator is told when its turn suspends on provider weather (reason + retry-at) and gets the normal reply on completion — hail, Discord, iMessage, cron, ACP
 status: draft
-type: task
-priority: low
+type: feature
+priority: normal
 tags:
     - comm
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-18T14:42:12Z
+updated_at: 2026-09-18T14:57:44Z
 parent: isaac-ugpq
 blocked_by:
     - isaac-nqeq
