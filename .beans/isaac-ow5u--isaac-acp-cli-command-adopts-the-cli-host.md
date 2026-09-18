@@ -1,13 +1,13 @@
 ---
 # isaac-ow5u
 title: isaac-acp CLI command adopts the CLI host
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T01:39:34Z
+updated_at: 2026-09-18T04:57:13Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -40,3 +40,7 @@ cd isaac-acp && bb lint-cli-host && bb ci
 ```
 
 Do **not** migrate agent or other modules here. Do **not** land foundation. Pin bump is isaac-1fwl.
+
+
+## Promoted (planner, 2026-09-18)
+isaac-1fwl (foundation leg) landed on foundation main cc53d69 — the blocker this bean named is satisfied; specs-only acceptance stands. Bump the foundation pin to main (not a bean-branch sha — see isaac-lsz2/isaac-j4jr).

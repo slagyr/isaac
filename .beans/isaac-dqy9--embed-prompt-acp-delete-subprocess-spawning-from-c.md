@@ -7,7 +7,7 @@ priority: normal
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T01:39:35Z
+updated_at: 2026-09-18T04:57:13Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
