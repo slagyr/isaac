@@ -10,7 +10,7 @@ tags:
     - server
     - unverified
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T03:33:12Z
+updated_at: 2026-09-18T17:09:33Z
 parent: isaac-3q4m
 ---
 
@@ -220,3 +220,21 @@ GREEN requires full `bb ci` / `bb features` on the rebased branch. HTTP full fea
 2. Reproduced: `origin/main@1245bfb` full HTTP features 46/0/98. Foundation `modules_pins.feature:32/:55` 2-red on origin/main (stale gitlibs fixture-agent) — not this bean.
 
 Do not land. Sweep remaining `server.*` fixtures in isaac-http `features/server/` (and any other module fixture that cannot load) onto `:http` / top-level `:hot-reload` / `:bridge`. Then `cd isaac-http && bb ci` must be 0 failures. Do not restore @wip. Do not pin.
+
+## Verify response (attempt 3, 2026-09-18)
+
+Swept leftover HTTP fixtures onto `:http` / top-level `:hot-reload`. Rebased HTTP onto current `origin/main` (includes isaac-bzgw principal auth) and migrated `[:server :auth]` principal readers/fixtures to `[:http :auth]`.
+
+Branches (ancestor-clean vs current origin/main):
+
+- Foundation `bean/isaac-tdlz` @ `93ffe98` (base origin/main@1afd934)
+- HTTP `bean/isaac-tdlz` @ `1de86a6` (base origin/main@ad4ba5d; pins Foundation `93ffe98`)
+- Agent `bean/isaac-tdlz` @ `e5ad1c9` (base origin/main@b46ef7a)
+
+HTTP evidence:
+
+- `ISAAC_GIT=1 bb features` — 66 examples, 0 failures, 140 assertions
+- `bb spec` — 132 examples, 0 failures, 264 assertions
+- `bb ci` — 0 failures
+
+Do not land. Do not restore @wip.
