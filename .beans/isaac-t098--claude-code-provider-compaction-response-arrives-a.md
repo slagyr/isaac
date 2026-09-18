@@ -1,14 +1,14 @@
 ---
 # isaac-t098
 title: 'claude-code provider: compaction response arrives as raw stream-json and is logged as :llm-error (session blocked after 3)'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - claude-code
     - compaction
 created_at: 2026-09-18T14:42:28Z
-updated_at: 2026-09-18T15:03:10Z
+updated_at: 2026-09-18T15:10:44Z
 ---
 
 Compaction over the claude-code provider (`:provider :claude`, Claude Code CLI driver) never succeeds: the CLI completes the summary call, but Isaac records the raw stream-json output as the error and marks the compaction failed.
@@ -47,3 +47,7 @@ Origin/main `459a236` ("clip claude CLI error text") only shortens the message.
 ## Fix
 
 `failed?` trusts the CLI's verdict: nonzero exit, OR the parsed `result` event has `is_error true`, OR the auth regex matches **stderr or the result's own error text** — never the summary/content body. Spec: fake-CLI run whose result text contains "Unauthorized" with `is_error false` is a success; a real auth failure (`is_error true`, "OAuth session expired") is still `:unavailable? :auth`.
+
+## Fix landed on branch (2026-09-18, plan)
+
+isaac-claude-code `bean/isaac-t098` @ **e61df08** (Release 0.1.12). `failed?` = nonzero exit ∨ result event `is_error` ∨ auth signature in the CLI's own text (stderr, result error text, or bare stdout when no structured result). Model content never consulted. Specs: 70/0 native (3 new: json success mentioning Unauthorized; stream-json success mentioning Unauthorized; is_error result carrying "OAuth session expired" → :auth). Deploying to zanebot + yopp by direct isaac.edn pin at Micah's request; registry pin follows verify.
