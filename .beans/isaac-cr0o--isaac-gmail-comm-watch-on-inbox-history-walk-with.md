@@ -1,15 +1,14 @@
 ---
 # isaac-cr0o
 title: 'isaac-gmail comm: watch on INBOX, history walk with durable cursor + resync, thread→session, reply on thread'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
-    - comm
-    - unverified
     - google
+    - comm
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T21:51:04Z
+updated_at: 2026-09-18T21:53:02Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-1jep
@@ -109,3 +108,9 @@ branch: bean/isaac-cr0o @ d21bee922b4270659bed080cafb236bde1456516 (base origin/
 - Acceptance: `:21 :52 :77 :84 :107` 5/0/21; `bb ci` 17/0 units + 5/0 features
 
 Worktree `/Users/zane/agents/isaac/work-2/isaac-gmail-cr0o`. Shared sibling `isaac-gmail` left on main.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-gmail 17bbf10d8cbe60d0042039992f6206f523a8e35c
