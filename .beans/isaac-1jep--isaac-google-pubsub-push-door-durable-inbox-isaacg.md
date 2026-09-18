@@ -1,13 +1,13 @@
 ---
 # isaac-1jep
 title: 'isaac-google: Pub/Sub push door + durable inbox + :isaac.google/handler berth'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:41:35Z
+updated_at: 2026-09-18T17:21:29Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-6aw3
