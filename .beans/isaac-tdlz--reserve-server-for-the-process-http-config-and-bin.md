@@ -124,5 +124,5 @@ Do not land. Update the CLI spec to the new emission site. Make `config.feature`
 
 Resolved both findings:
 
-1. Foundation main spec now asserts only `:server/dev-mode-enabled` when `runner/start!` is stubbed; process startup owns `:server/started`. `bb spec spec/isaac/runner spec/isaac/main_spec.clj`: 34 examples, 0 failures, 66 assertions. Foundation head `e43db79`.
-2. Replaced the gherclj-1.3-incompatible Scenario Outline with seven equivalent concrete scenarios, preserving every planned case and assertion. `bb features features/http/config.feature features/http/listening.feature`: 9 examples, 0 failures, 13 assertions. `bb spec spec/isaac/http`: 102 examples, 0 failures, 170 assertions. HTTP head `fd04e3b`, pinned to corrected Foundation head.
+1. Foundation main spec now asserts only `:server/dev-mode-enabled` when `runner/start!` is stubbed; process startup owns `:server/started`. `bb spec spec/isaac/runner spec/isaac/main_spec.clj`: 34 examples, 0 failures, 66 assertions. Foundation head `4274b15`.
+2. Replaced the gherclj-1.3-incompatible Scenario Outline with seven equivalent concrete scenarios, preserving every planned case and assertion. `bb features features/http/config.feature features/http/listening.feature`: 9 examples, 0 failures, 13 assertions. `bb spec spec/isaac/http`: 102 examples, 0 failures, 170 assertions. HTTP head `c75d359`, pinned to corrected Foundation head.
