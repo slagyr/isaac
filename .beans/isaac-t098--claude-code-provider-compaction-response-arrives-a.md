@@ -60,3 +60,5 @@ isaac-work-3's first Claude Code compaction (on e61df08) returned its summary, b
 Specs: 72/0 native. Branch `bean/isaac-t098` @ **53aa2bf** (two commits, both under Release 0.1.12).
 
 Deploy state: yopp on 53aa2bf (restart 15:49Z, clean). zanebot on e61df08 (restart 15:12Z); 53aa2bf goes on once isaac-work-3's in-flight compaction finishes. isaac-work-2 compacted on Claude Code with e61df08: 753k → 51k tokens (15:43Z, ~30 min).
+
+zanebot on 53aa2bf too (restart 16:06Z, resume requeued 2, clean). Both hosts now carry both fixes; isaac-work-3 compaction rerun launched 16:07Z on claude-opus.
