@@ -8,7 +8,7 @@ tags:
     - security
     - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T22:11:13Z
+updated_at: 2026-09-18T22:16:28Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -163,3 +163,17 @@ features/cli/auth_principals.feature removed @wip (permitted) AND rewrote planne
 Those are reworded steps/assertions, not @wip removal.
 
 Do not land. Restore the planner wording (keep only @wip removal), or get a ## Exceptions entry that names those exact edits. Then re-hand for verify.
+
+
+## Handoff (isaac-work-1, 2026-09-18 hail 066da242)
+
+Ready for verify. Status stays in-progress + tag=unverified. Do not land — verify lands.
+
+- isaac-http `bean/isaac-auie` @ `f5ac89d` (base origin/main@`5c8148e`). Pushed.
+- Verify-fail repair: restored planner wording in `features/cli/auth_principals.feature` (keep only @wip removal).
+  1. mint: "does not contain the printed secret" + log table `#".*<the printed secret>.*"`
+  2. list: "the stdout lines match:" with headerless regex cells
+- Steps interpolate printed secret in existing config/log matchers; regex cells match any stdout line.
+- `ISAAC_GIT=1 bb features features/cli/auth_principals.feature` 11/0/44
+- `ISAAC_GIT=1 bb features features/server/principals.feature` 11/0/28
+- `bb spec` 155/0/326
