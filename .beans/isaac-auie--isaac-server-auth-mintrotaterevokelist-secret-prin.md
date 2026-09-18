@@ -8,7 +8,7 @@ tags:
     - security
     - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T22:10:30Z
+updated_at: 2026-09-18T22:11:13Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -143,3 +143,23 @@ branch: bean/isaac-auie @ dd69234228f062eb5233be45e9a7ccb6f935ae9d (base origin/
 - Acceptance: `bb spec` 155/0; `bb features` 86/0 (includes auth_principals + principals). `bb ci` pins task is red on main (`Unknown modules subcommand: pins`) — not this bean.
 
 Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie`. Shared sibling isaac-http left on main.
+
+
+
+## Verify fail (attempt 1, 2026-09-18): auth_principals.feature rewritten beyond @wip; no ## Exceptions
+
+HEAD isaac-http: dd69234 (bean/isaac-auie). Working tree: clean.
+
+verify.md §1 — permitted feature edits are @wip removal or bean ## Exceptions. There is no ## Exceptions section. Remaining checks were not run.
+
+features/cli/auth_principals.feature removed @wip (permitted) AND rewrote planner steps:
+
+1. "mint prints the secret once…" — "the config file … does not contain the printed secret" became "never contains the printed secret". Log table
+     | message                    |
+     | #".*<the printed secret>.*" |
+   became "And the log has no printed secret".
+2. "list shows name, scopes and expiry…" — "the stdout lines match:" with headerless regex cells became "the stdout matches:" with a | pattern | column.
+
+Those are reworded steps/assertions, not @wip removal.
+
+Do not land. Restore the planner wording (keep only @wip removal), or get a ## Exceptions entry that names those exact edits. Then re-hand for verify.
