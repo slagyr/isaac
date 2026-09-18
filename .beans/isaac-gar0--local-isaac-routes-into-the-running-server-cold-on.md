@@ -207,3 +207,15 @@ Conflict: restoring planner feature text (only `@wip` removal) makes acceptance 
     cd isaac-cli-proxy && bb features features/remote.feature && bb ci
 
 0 failures. `@wip` gone from both files. Last Foundation scenario is the two authorized Givens + original Thens. Proxy still asserts `${stub.url}`.
+
+## Worker checkpoint (2026-09-18, scrapper@isaac-work-2)
+
+Planner adjustment applied exactly as authorized:
+- Foundation `bean/isaac-gar0` @ `4942b42`: last scenario has the two Givens and original Thens; no other feature rewrite.
+- CLI Proxy `bean/isaac-gar0` @ `a9e2071`: all three assertions remain `${stub.url}`; shared stdout/stderr helpers interpolate through the existing fixture interpolation function.
+
+Controlling focused acceptance is green:
+- Foundation remote routing: 8 examples, 0 failures, 20 assertions.
+- CLI Proxy remote feature: 29 examples, 0 failures, 93 assertions.
+
+No product routing/use/off/status code, pins, landing, or `@wip` changes were made in this adjustment. Bean remains `in-progress` + `unverified`.
