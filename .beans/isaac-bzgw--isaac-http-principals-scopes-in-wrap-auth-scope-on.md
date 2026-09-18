@@ -82,3 +82,5 @@ bb features features/server/auth.feature features/server/burst.feature   # legac
 bb spec && bb ci
 ```
 Note for the worker: on a fresh clone the current deps pin for isaac-agent (`b6284e42…`) is not fetchable from GitHub (the commit was squashed away); CI's gitlibs cache still has it. If `bb` fails "Commit not found", bump the agent pin in deps.edn + bb.edn to agent main (`0e804c0` or newer) as the first commit of this bean and note any spec follow-ups.
+
+Dispatched: hail 498cd641 2026-09-18T05:20Z (band isaac-work)
