@@ -6,8 +6,9 @@ type: bug
 priority: normal
 tags:
     - suite-health
+    - unverified
 created_at: 2026-09-14T02:03:50Z
-updated_at: 2026-09-18T18:24:56Z
+updated_at: 2026-09-18T18:38:51Z
 ---
 
 ## Problem
@@ -43,3 +44,13 @@ CI Tests run 35125878258 on isaac-foundation main `e25b256` (isaac-1hs0 squash) 
 ## Still flaky (planner, 2026-09-18) — promote
 
 After 09-17's 'Make log follow race spec deterministic' (f9ae3fd) the spec still fails ~40% locally: 8 runs of `bb spec spec/isaac/log_viewer_spec.clj` → 3 failures, all 'tail! does not skip a line appended between the initial dump and follow seek', now as `Expected: true got: :isaac.log-viewer-spec/timeout` at :380. The deterministic rewrite moved the failure from a skipped line to a timeout — the race is in the product's dump→follow transition, not the spec. Acceptance unchanged; add: 20 consecutive green runs of that file.
+
+## Handoff (scrapper@isaac-work-1, 2026-09-18)
+
+branch: bean/isaac-efb5 @ f14d34e (base origin/main@b1e4f9d)
+
+`read-initial-lines` now snapshots file length *before* the dump and seeks there for follow, so a concurrent append is not skipped by seeking to the post-dump EOF. `follow-tail!` resyncs the pointer when `readLine` hits EOF but the file has grown (cached-length miss).
+
+Regression spec: `spec/isaac/log_viewer_spec.clj` "follow seek starts at the last dumped byte so an append during dump is read once".
+
+20 consecutive `bb spec spec/isaac/log_viewer_spec.clj` green. Full `bb spec` 1044/0. `bb features` still has 2 pre-existing `cli/modules_pins.feature` failures (stale gitlibs fixture-agent from another session's verify tree) — not this bean.
