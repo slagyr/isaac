@@ -64,3 +64,7 @@ MCP tools are just tools on the existing crew `:tools :allow` list. No
   execute. `isaac-mcp` `config_validate.feature` + `lifecycle.feature`.
 - **isaac-6b5z** (todo, blocked by ek0r + qgtn) — crew allow in a turn.
   `isaac-mcp` `turn.feature`.
+
+## Status note (2026-09-17, plan)
+
+qgtn + 6b5z are green only through the feature-step helper that hand-starts `isaac.mcp.runtime`; no production host wires it. Deployed `:mcp` config is a no-op until **isaac-vadd** lands (registry-driven tool-provider berth).
