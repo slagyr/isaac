@@ -1,14 +1,14 @@
 ---
 # isaac-t098
 title: 'claude-code provider: compaction response arrives as raw stream-json and is logged as :llm-error (session blocked after 3)'
-status: draft
+status: todo
 type: bug
 priority: high
 tags:
     - claude-code
     - compaction
 created_at: 2026-09-18T14:42:28Z
-updated_at: 2026-09-18T14:42:28Z
+updated_at: 2026-09-18T15:03:10Z
 ---
 
 Compaction over the claude-code provider (`:provider :claude`, Claude Code CLI driver) never succeeds: the CLI completes the summary call, but Isaac records the raw stream-json output as the error and marks the compaction failed.
@@ -37,3 +37,13 @@ The compaction chat (`compaction-tools-opts` → `dispatch/dispatch-chat-with-to
 ## Repro on zanebot
 
 `isaac remote wss://<host>/cli --token … -- prompt --session <big-session> --with-model claude-opus -m "Reply OK."` with `models.claude-opus.context-window 200000` and a window > 160k tokens.
+
+## Root cause (confirmed 2026-09-18 15:2xZ, plan)
+
+Not a parse problem. `isaac.llm.api.claude-cli/failed?` (isaac-claude-code, ~line 323) treats a run as failed when exit ≠ 0 **or** `auth-failure?` matches — and `auth-failure?` (~line 314) runs `(?i)not logged in|please run /login|invalid api key|not authenticated|no credentials|unauthorized` over the CLI's whole stdout+stderr. A compaction's stdout is the stream-json carrying the model's summary; isaac-work-2/3 spent the night on the principals/auth beans, so their summaries contain "Unauthorized". Verified on zanebot: the one successful compaction run's log line has `is_error":false` and the word `Unauthorized` twice in the summary text. The regex matched model content → `error-response` → `{:error :llm-error :unavailable? true :reason :auth}` → `compaction-failed` ×3 → `:block`.
+
+Origin/main `459a236` ("clip claude CLI error text") only shortens the message.
+
+## Fix
+
+`failed?` trusts the CLI's verdict: nonzero exit, OR the parsed `result` event has `is_error true`, OR the auth regex matches **stderr or the result's own error text** — never the summary/content body. Spec: fake-CLI run whose result text contains "Unauthorized" with `is_error false` is a success; a real auth failure (`is_error true`, "OAuth session expired") is still `:unavailable? :auth`.
