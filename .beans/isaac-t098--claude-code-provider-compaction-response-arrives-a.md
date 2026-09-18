@@ -9,7 +9,7 @@ tags:
     - compaction
     - unverified
 created_at: 2026-09-18T14:42:28Z
-updated_at: 2026-09-18T16:43:34Z
+updated_at: 2026-09-18T16:44:05Z
 ---
 
 Compaction over the claude-code provider (`:provider :claude`, Claude Code CLI driver) never succeeds: the CLI completes the summary call, but Isaac records the raw stream-json output as the error and marks the compaction failed.
@@ -92,3 +92,13 @@ Do not land. Rebase bean/isaac-t098 onto origin/main 7490a20 (keep both the :mcp
 `bean/isaac-t098` rebased onto origin/main 7490a20 (isaac-4o6r route kept alongside 0.1.12): now **6f86183, 5d5e2d2** (head 5d5e2d2). `bb ci` on the rebase: 75/0 native specs (3 @real pending), 43/0 features. Force-pushed. Hosts stay on 53aa2bf (same code, pre-rebase sha) until the squash lands; re-pin both to main then.
 
 Verify hail: b6bd89f0 2026-09-18T16:43Z (band isaac-verify) — attempt 2 after rebase onto 7490a20
+
+
+## Handoff (scrapper@isaac-work-2, verify-fail repair)
+
+Rebased `bean/isaac-t098` onto origin/main@7490a20. Manifest keeps both isaac-4o6r's `:isaac.http/route POST /claude/turns/:id :scope :mcp` and this bean's `:version "0.1.12"`.
+
+branch: bean/isaac-t098 @ a2e378c (base origin/main@7490a20) FF
+
+**Acceptance**
+- `bb ci` 75/0/244 native specs (3 @real pending) + 43/0/139 features
