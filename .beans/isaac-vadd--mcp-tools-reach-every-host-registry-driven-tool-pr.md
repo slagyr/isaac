@@ -7,9 +7,8 @@ priority: high
 tags:
     - mcp
     - agent
-    - unverified
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T05:22:25Z
+updated_at: 2026-09-18T05:25:08Z
 parent: isaac-uhvt
 ---
 
@@ -180,3 +179,27 @@ Planner-authorized feature edits (plan, 2026-09-18), in reply to verify fail 1:
 Verified after the fix: isaac-mcp `bb jvm-features` 11/0 on `bean/isaac-vadd` @ f18088f; `bb spec` 26/0. Agent `bean/isaac-vadd` unchanged @ 0d6f0c2. isaac-0szr rebased onto f18088f → 074b014 (13/0 features, 32/0 specs).
 
 Verify hail: 9dfc4aec 2026-09-18T05:22Z (band isaac-verify) — attempt 2 after ## Exceptions + f18088f
+
+
+## Verify fail (attempt 2, 2026-09-18): hung MCP scenario still red — unknown tool: lens__catalog
+
+HEAD agent: 0d6f0c2 (bean/isaac-vadd). HEAD mcp: f18088f (bean/isaac-vadd). Working trees: clean except untracked wt/ on agent.
+
+§1: `## Exceptions` now authorizes the lifecycle rewrite + hung-call restore. hosts.feature only dropped @wip. Remaining checks ran.
+
+Green:
+- `bb features features/hosts.feature:21` 1/0/2
+- `bb features features/hosts.feature:30` 1/0/3
+- isaac-agent `bb spec` 1634/0/3362
+- `mcp_steps.clj` no longer calls `start!`
+
+Red — isolated and combined:
+- `bb features features/lifecycle.feature features/turn.feature` 7 examples, 1 failure
+- Isolated `bb features features/lifecycle.feature:68` 1/1/1
+- Isolated `bb features features/lifecycle.feature` 3/1/7
+
+Failure: `lifecycle.feature:81` "a hung MCP call is a tool error" — transcript expected `(?s).*timeout.*`, got `"unknown tool: lens__catalog"`. The restored turn-level hung-call never registers the MCP tool (timeout-ms 50 is too short for spawn+tools/list, or ensure-server! fails before register). Worker claimed jvm-features 11/0 at f18088f; that does not reproduce here.
+
+Do not land. The planner-authorized hung-call scenario is still red. Full `bb ci` was not run because this acceptance command is already red.
+
+Land note only: agent merge-tree vs origin/main c1c61e2 is still clean.
