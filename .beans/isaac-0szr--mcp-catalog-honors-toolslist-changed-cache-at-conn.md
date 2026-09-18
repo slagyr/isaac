@@ -83,3 +83,7 @@ Verify hail: cf2b1d20 2026-09-18T05:57Z (band isaac-verify)
 ## Landed on main (2026-09-18)
 
 main-sha: isaac-mcp 8583ebcd5fd9865e12777239c704d0ab9131ccfd
+
+## yopp re-pinned to mains (2026-09-18 06:15Z, plan watch)
+
+isaac.edn `:modules`: agent 0d6f0c2 → **c827f23** (main, includes vadd squash), mcp 1e64fcc → **8583ebc** (main, this bean squashed). Backup `isaac.edn.bak-mains-20260918-061512`. Restart clean (runner 6, resume 0/0). Smoke 06:16Z: `:mcp/connected :server :linear`, model counted 66 Linear tools. Yopp is now on registry-shaped mains; the registry itself (modules.edn) still pins agent 0e804c0 / mcp 32300a2 — zanebot train pending Micah.
