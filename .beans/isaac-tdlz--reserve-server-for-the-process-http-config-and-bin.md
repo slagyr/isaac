@@ -5,12 +5,11 @@ status: in-progress
 type: feature
 priority: high
 tags:
-    - unverified
     - http
     - config
     - server
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T02:37:05Z
+updated_at: 2026-09-18T02:43:21Z
 parent: isaac-3q4m
 ---
 
@@ -108,3 +107,15 @@ Acceptance evidence:
 - CLI Proxy CLI/proxy specs: 13 examples, 0 failures, 39 assertions.
 
 Known planner-scenario tooling defect: full `features/http/config.feature` cannot compile its precommitted Scenario Outline because gherclj 1.3.0 injects quoted EDN example values into generated Clojure test names/forms. The valid-config scenario and retired schema unit coverage are green; feature content was not modified beyond removing the authorized file-level `@wip`.
+
+
+
+## Verify fail (attempt 1, 2026-09-18): Foundation main_spec still expects :server/started from runner-cli/run; HTTP config.feature outline does not parse under gherclj 1.3.0
+
+HEAD foundation: c5ac437 (bean/isaac-tdlz). Working tree: clean except untracked wt/.
+
+1. `bb spec spec/isaac/runner spec/isaac/main_spec.clj` — 34 examples, 1 failure. `spec/isaac/main_spec.clj:50` "logs dev mode before server started" stubs `runner/start!` as a no-op then asserts `[:server/dev-mode-enabled :server/started]` from `runner-cli/run`. The implementation correctly moved `:server/started` into `runner/start!` (no host/port). The spec was not updated, so the event never fires. Feature `features/cli/server.feature:9` is green (1/0/1).
+
+2. `bb features features/http/config.feature` — parse error `Invalid number: 0.0.0.0` in generated `target/gherclj/generated/http/config_spec.clj` (gherclj 1.3.0 injects quoted EDN outline examples into test names/forms). File-level `@wip` was removed, so the acceptance command is now red. Isolated `features/http/listening.feature` is green (2/0/3). `bb spec spec/isaac/http` is green (102/0/170).
+
+Do not land. Update the CLI spec to the new emission site. Make `config.feature` compile and run green without restoring `@wip` as the solution (planner already required the outline; rewrite examples so generated Clojure is valid, or get a planner exception).
