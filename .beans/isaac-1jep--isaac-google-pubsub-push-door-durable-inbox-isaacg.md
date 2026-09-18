@@ -98,3 +98,5 @@ Worktrees: isaac-google-1jep @ bean/isaac-1jep (from origin/main da538e6); isaac
 **Next**
 `cd /Users/zane/agents/isaac/work-2/isaac-google-1jep && bb features features/push_door.feature`
 Fix identity/config wiring, then `bb ci`. isaac-http identity berth already on main — no http code change unless wrap-auth consult order needs the verifier before bearer-hash (already does).
+
+Dispatched: hail 2282520b 2026-09-18T18:23Z (session isaac-work-2, continuation of 8c9bfd7d — turn ended at cycle budget without hand-off)

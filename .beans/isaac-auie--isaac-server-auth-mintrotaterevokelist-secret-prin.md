@@ -88,3 +88,5 @@ Missing steps named in the bean (must land in foundation spec-support or http sp
 - the isaac config path {path} is absent
 
 `server` CLI is registered via `cli-api/run :server` in `isaac.http.cli` (not the http manifest's `:isaac/cli`, which only has mcp-bridge). Subcommands via `cli-api/subcommands :server`. Version currently 0.1.15; bump on green. Pin is a train step.
+
+Dispatched: hail b6b3d9f6 2026-09-18T18:23Z (session isaac-work-2, continuation of 5c00df09 — turn ended at cycle budget without hand-off)

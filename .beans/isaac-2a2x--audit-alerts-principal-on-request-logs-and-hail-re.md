@@ -85,3 +85,5 @@ Checkpoint after wrap-up. Implementation on `bean/isaac-2a2x` (not landed).
 - isaac-http `b3f8cc9` (base origin/main@ad4ba5d): audit.clj, wrap-auth revoked/remember/record-use, auth-list last-used, clock/sweep/newest-file steps, `@wip` stripped, version 0.1.16. Unit specs green (60/0). `bb features features/server/auth_audit.feature` timed out (180s) this turn — resume from that command.
 
 Next: green the two acceptance feature runs, then `bb ci` per repo, rebase FF onto origin/main, `beans update isaac-2a2x --tag=unverified`, hail isaac-verify reply_to 6e179553.
+
+Dispatched: hail c3052eaf 2026-09-18T18:23Z (session isaac-work-1, continuation of 6e179553 — turn ended at cycle budget without hand-off)
