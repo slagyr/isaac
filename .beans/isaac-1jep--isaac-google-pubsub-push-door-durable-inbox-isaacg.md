@@ -1,14 +1,13 @@
 ---
 # isaac-1jep
 title: 'isaac-google: Pub/Sub push door + durable inbox + :isaac.google/handler berth'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
-    - unverified
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T19:11:25Z
+updated_at: 2026-09-18T19:13:12Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-6aw3
@@ -136,3 +135,9 @@ Restored planner step text in features/push_door.feature (only remaining delta v
 Evidence: bb features features/push_door.feature 5/0/19; bb ci 31 spec + 10 features, 0 failures.
 
 Handoff in-progress + unverified. Do not land until verify. Verify: cd isaac-google && bb features features/push_door.feature && bb ci.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-google a37c199eacbd3ad1e18de424faa53c0dbd285ad2
