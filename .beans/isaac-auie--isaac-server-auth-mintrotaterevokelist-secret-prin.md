@@ -90,3 +90,25 @@ Missing steps named in the bean (must land in foundation spec-support or http sp
 `server` CLI is registered via `cli-api/run :server` in `isaac.http.cli` (not the http manifest's `:isaac/cli`, which only has mcp-bridge). Subcommands via `cli-api/subcommands :server`. Version currently 0.1.15; bump on green. Pin is a train step.
 
 Dispatched: hail b6b3d9f6 2026-09-18T18:23Z (session isaac-work-2, continuation of 5c00df09 — turn ended at cycle budget without hand-off)
+
+## Checkpoint (scrapper@isaac-work-2, resume 2)
+
+Worktree `/Users/zane/agents/isaac/work-2/isaac-server-auie` `bean/isaac-auie` @ pushed HEAD (base origin/main db2b639 after rebase).
+
+**Done**
+- `src/isaac/http/auth_cli.clj` mint/rotate/revoke/list-rows + generate-secret (32-byte unpadded base64url)
+- Overlap twin stored as `:prev` on the principal — schema `:id` key-spec cannot hold `ci@prev` as a map key (`path/parse` splits `@`)
+- `auth/principals` expands `:prev` to `:ci@prev` so wrap-auth / request log name the twin
+- Unit specs in `spec/isaac/http/auth_cli_spec.clj` + overlap example in `auth_spec.clj`
+
+**Red / next**
+1. Wire CLI: `cli-api/subcommands :server` + `run-fn` dispatch `auth mint|rotate|revoke|list` (print secret alone on stdout; errors on stderr). Help documents one-time-secret rule. Bump version 0.1.15 → 0.1.16.
+2. Feature steps (http `server_steps` unless already in foundation):
+   - Then the stdout has exactly {n} line(s)
+   - Then the stdout line is a bearer secret of at least {n} characters (capture `:printed-secret`)
+   - interpolate `<the printed secret>` in header / config-does-not-contain / log matcher
+   - Then the isaac config path {path} is/matches/is absent (Then, not Given)
+3. Un-@wip `features/cli/auth_principals.feature`. Overlap scenario asserts `http.auth.principals.ci.prev.expires` (not `ci@prev`) unless we also write a sibling key — prefer updating the planted feature to `.prev` if planner agrees; otherwise keep expanding twins only at auth time and adjust the Then path.
+4. `bb features features/cli/auth_principals.feature && bb features features/server/principals.feature && bb ci`
+
+Resume: `src/isaac/http/cli.clj` `run-fn` / new auth subcommand dispatch. Do not start other beans.
