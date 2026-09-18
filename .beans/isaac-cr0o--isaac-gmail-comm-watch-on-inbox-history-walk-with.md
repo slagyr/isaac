@@ -68,3 +68,5 @@ cd isaac-gmail && bb ci
 Unit specs for: history walk (cursor advance, dedupe, 404 → resync), the gate, RFC 2822 reply building, the watch registration entry (create/renew/expiry from the watch response).
 
 Ops note: grant `gmail-api-push@system.gserviceaccount.com` publish on the topic before `users.watch` accepts it.
+
+Dispatched: hail 316f0624 2026-09-18T19:33:38Z (band isaac-work)

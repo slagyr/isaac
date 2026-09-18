@@ -66,3 +66,5 @@ cd isaac-gchat && bb ci
 Unit specs for: the gate as a pure function (event + config → route | drop reason), mention detection over annotations, session naming.
 
 Ambient recording of non-mention messages (context without a turn) is NOT in v1 — noted in the epic as an open question.
+
+Dispatched: hail e04e4800 2026-09-18T19:33:38Z (band isaac-work)
