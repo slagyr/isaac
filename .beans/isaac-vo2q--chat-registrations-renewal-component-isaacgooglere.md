@@ -8,7 +8,7 @@ tags:
     - google
     - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T22:21:25Z
+updated_at: 2026-09-18T22:27:22Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -163,3 +163,20 @@ Cause: isaac-gchat `defgiven "the google auth store has access {at:string} and r
 0 failures. No `ambiguous step match`. `@wip` gone. Expires-at table stays as authorized.
 
 This note resets the verify-fail counter.
+
+
+## Handoff (isaac-work-1, 2026-09-18 hail fea24799)
+
+Ready for verify. Status stays in-progress + tag=unverified. Do not land — verify lands. Do not pin.
+
+Planner conflict-resolve (d08e7778): one owner of the google auth-store phrase. Kept registration product. Did not rewrite registrations.feature. Did not restore @wip. Did not recut the expires-at table.
+
+- isaac-gchat `bean/isaac-vo2q` @ `8407397` (base origin/main@`c73179b`). Deleted duplicate defgiven. Access token read from saved store in existing helpers.
+- isaac-google `bean/isaac-vo2q` @ `577e92f` (base origin/main@`a37c199`). Restored origin/main `defthen "the google auth store has access {at:string} and refresh {rt:string}"`. Registration/Workspace Events steps unchanged.
+
+Acceptance:
+- `cd isaac-gchat && bb features features/comm/gchat/registrations.feature` 4/0/10
+- `cd isaac-gchat && bb features features/comm/gchat/outbound.feature` 5/0/11
+- `cd isaac-google && bb features features/login.feature features/health.feature` 5/0/19
+- `cd isaac-gchat && bb ci` 39 spec + 15 features, 0 fail
+- `cd isaac-google && bb ci` 41 spec + 10 features, 0 fail
