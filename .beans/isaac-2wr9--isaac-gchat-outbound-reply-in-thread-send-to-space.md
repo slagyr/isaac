@@ -59,3 +59,5 @@ cd isaac-gchat && bb ci
 ```
 
 Unit specs for: target resolution (name/resource/email), markdown → Chat text, chunking.
+
+Dispatched: hail ddf88fe3 2026-09-18T20:21:04Z (band isaac-work)

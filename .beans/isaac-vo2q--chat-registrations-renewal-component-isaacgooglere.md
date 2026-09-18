@@ -59,3 +59,5 @@ cd isaac-google && bb ci   # registration berth + timer component + state file
 Unit specs for: the reconcile function (configured keys × Google state → create/renew/delete/noop), window arithmetic, state persistence.
 
 Ops note (config, not code): the topic must grant `chat-api-push@system.gserviceaccount.com` publish rights before create succeeds.
+
+Dispatched: hail 4f29c23e 2026-09-18T20:21:04Z (band isaac-work)

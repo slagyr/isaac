@@ -91,3 +91,5 @@ Worktree `/Users/zane/agents/isaac/work-2/isaac-gmail-cr0o` `bean/isaac-cr0o` @ 
 4. Un-@wip `features/comm/gmail/gmail.feature`; `bb features` per-line then `bb ci`.
 
 Resume: `feature-steps/isaac/gmail_steps.clj` + `src/isaac/comm/gmail/handler.clj`. Do not start other beans.
+
+Dispatched: hail 15e867e0 2026-09-18T20:21:04Z (session isaac-work-2, continuation of 316f0624 — turn ended with checkpoint, no hand-off)
