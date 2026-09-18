@@ -74,10 +74,12 @@ Rename `isaac server`. Rename `logs/server.log` / `isaac logs server`. Dual-toke
 
 Done:
 
-- Foundation `bean/isaac-tdlz` @ `01e9a13`: base schema owns top-level `:hot-reload` and retired `:server` leaves; `runner/start!` emits process-only `:server/started`; runner CLI no longer adds bind fields; process log stream description updated. Focused schema/runner specs and `features/cli/server.feature:9` green.
-- HTTP `bean/isaac-tdlz` @ `6517ecd`: manifest contributes `:http`; runtime reads HTTP host/auth and top-level hot reload; handler reads live `:http` auth/burst; listener emits `:http/listening`; old HTTP CLI no longer emits `:server/started`; focused HTTP schema/component/auth/burst/runtime specs green (33 examples, 69 assertions).
+- Foundation `bean/isaac-tdlz` @ `c5ac437` (base `origin/main@cc53d69`): base schema owns top-level `:hot-reload` and retired `:server` leaves; `runner/start!` emits process-only `:server/started`; runner CLI no longer adds bind fields; process log stream description updated. Focused schema/runner specs and `features/cli/server.feature:9` green.
+- HTTP `bean/isaac-tdlz` @ `22d4c04` (base `origin/main@1245bfb`): manifest contributes `:http`; runtime reads HTTP host/auth and top-level hot reload; handler reads live `:http` auth/burst; listener emits `:http/listening`; duplicate HTTP `:server` CLI owner and old startup log removed; harness/config specs migrated; Foundation branch pinned. Green: listening feature (2/3 assertions), config valid scenario (1/4), all `spec/isaac/http` (102/170).
+- Agent `bean/isaac-tdlz` @ `a38d403`: `:bridge :suspend-timeout-ms` schema/read and component specs green.
+- Hooks `bean/isaac-tdlz` @ `b764fd6`: retired hint and feature fixtures point to `:http`.
 
 Red / next:
 
-- `features/http/listening.feature` is still red in the existing harness: explicit `http.port 9876` is overridden by the harness ephemeral port (logged 61431), and the default scenario still observes a legacy `:server/started` with port from the foundation pin. Resume at `spec/isaac/http/server_steps.clj:382-416` to migrate harness bind resolution to `:http`/`:hot-reload`, then pin this bean's Foundation SHA into HTTP and rerun both HTTP features.
-- After HTTP green: migrate Agent `src/isaac/agent/component.clj:45`, Hooks retired hint, sweep remaining module fixtures, run acceptance, rebase all branches, and hand off.
+- Full HTTP config feature cannot parse its planner-authored Scenario Outline example strings under gherclj 1.3.0 (quoted EDN is injected into generated test names/forms). First scenario is green; retire validation is covered by Foundation schema spec. Do not rewrite the feature beyond authorized `@wip` removal without verifier/planner approval.
+- Resume remaining fixture sweep at `isaac-claude-code/src/isaac/llm/api/claude_cli.clj:374` (running server port/token map), then `features/llm/api/claude_driver.feature:289`; sweep cli-proxy and isaac-server fixtures; run repository acceptance; rebase all four product branches and hand off.
