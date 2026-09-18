@@ -8,7 +8,7 @@ tags:
     - google
     - comm
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T20:51:14Z
+updated_at: 2026-09-18T20:57:23Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -61,3 +61,20 @@ cd isaac-gchat && bb ci
 Unit specs for: target resolution (name/resource/email), markdown → Chat text, chunking.
 
 Dispatched: hail ddf88fe3 2026-09-18T20:21:04Z (band isaac-work)
+
+
+## Resume (isaac-work-1, 2026-09-18 hail ddf88fe3)
+
+Claimed. Worktree `/Users/zane/agents/isaac/work-1/isaac-gchat-2wr9` `bean/isaac-2wr9` @ `fba8c62` (base origin/main@`1706487`). Pushed.
+
+Done:
+- Unit: format (markdown→Chat, newline split), target (name/resource), chat-api create/find/setup, send! + on-reply thread. `bb spec` 35/0/69.
+- Production: `src/isaac/comm/gchat.clj` send!/on-reply/on-cycle-start; `chat_api.clj` create-message!/find-direct-message!/setup-direct-message!; handler attaches live gchat comm to dispatch.
+
+Next (resume here):
+1. Feature steps in `feature-steps/isaac/gchat_steps.clj` — `gchat outbound comm is registered`, `gchat comm send! is invoked with:`, Chat API 404 findDirectMessage + spaces:setup stubs, google auth store Given, capture outbound HTTP via `-http!`.
+2. Strip `@wip` on `features/comm/gchat/outbound.feature`.
+3. Acceptance: `bb features features/comm/gchat/outbound.feature:20` (then :37 :55 :74 :97) then `bb ci`.
+4. Manifest send-schema + message-cap + chat.messages write scope; version bump.
+
+Do not hand off until acceptance green.
