@@ -1,13 +1,13 @@
 ---
 # isaac-0szr
 title: 'MCP catalog honors tools/list_changed: cache at connect, re-catalog on notification'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - mcp
 created_at: 2026-09-18T02:43:52Z
-updated_at: 2026-09-18T02:43:52Z
+updated_at: 2026-09-18T03:10:01Z
 parent: isaac-uhvt
 blocked_by:
     - isaac-vadd
