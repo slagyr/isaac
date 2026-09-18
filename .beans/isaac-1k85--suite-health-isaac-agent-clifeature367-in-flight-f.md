@@ -1,13 +1,13 @@
 ---
 # isaac-1k85
 title: 'Suite health (isaac-agent): cli.feature:367 in-flight false after cancel stamp (CI-only)'
-status: draft
+status: scrapped
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-10T22:55:38Z
-updated_at: 2026-09-10T22:55:38Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Ambient / CI-only flake on `isaac-agent` `features/session/cli.feature:367` after **isaac-jejt** landed (`ac1bf9b`). **Not a product miss of `sessions cancel`.** Do not reopen **isaac-jejt**.
@@ -50,3 +50,8 @@ Do **not** make `sessions cancel` wait for unwind (that violates fire-and-forget
     bb features features/session/cli.feature
 
 0 failures, including on GitHub Actions `bb ci` (the 808-example suite). Record the CI run. Do not reopen jejt. Do not require hail `bb features` here.
+
+
+## Scrapped (planner, 2026-09-18) — does not reproduce
+
+cli.feature:367 in-flight-after-cancel: seen once in CI on 09-10 (run 34535363284); not in any of the last 30 CI runs nor in three local full runs. Reopen with the run id if it returns.

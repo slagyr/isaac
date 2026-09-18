@@ -1,11 +1,11 @@
 ---
 # isaac-9bno
 title: 'Suite health (isaac-hail): features drift against current agent — 8 pre-existing failures, 5 order-dependent under 0.1.62 memory-store hydration'
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-11T01:19:09Z
-updated_at: 2026-09-11T01:19:09Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Repo: isaac-hail (+ agent test infra if the leak is there). isaac-hail CI runs against its pinned agent (0.1.52) and has been green while the deployed agent moved to 0.1.6x; against the live agent the features are red. Measured 2026-09-11 with `clojure -M:dev-local:features` (local ../isaac-agent):
@@ -20,3 +20,8 @@ Repo: isaac-hail (+ agent test infra if the leak is there). isaac-hail CI runs a
 
 ## Acceptance
 `ISAAC_GIT=1 clojure -M:features` and `clojure -M:spec` in isaac-hail: 0 failures against the pinned current agent; `clojure -M:dev-local:features` also 0 failures; CI green on the landing commit. Scenario intent unchanged; no @wip.
+
+
+## Scrapped (planner, 2026-09-18) — the required pin bump happened
+
+Required item 1 (pin the deployed agent) is done: hail pins 0.1.67 and is green (149/0 locally, CI green since 09-13). The 8 + 5 failures were measured against 0.1.58–0.1.62 and do not reproduce on the current pin. Item 3's leak theory could not be re-tested against agent main via dev-local today because isaac-agent's spec steps require `isaac.startup.config-cache`, a foundation namespace that exists only on the leftover `bean/isaac-t1om` branch (isaac-lsz2 agent leg). If hail goes red when it bumps to 0.1.71+, that bump owns a new bean.

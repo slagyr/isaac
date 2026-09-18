@@ -1,13 +1,13 @@
 ---
 # isaac-uxbt
 title: 'Suite health (isaac-agent): full bb features reds — boot, compaction_template, episodes/live'
-status: draft
+status: scrapped
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-03T23:35:31Z
-updated_at: 2026-09-03T23:35:31Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Ambient feature reds on `isaac-agent` main that fail the full `bb features` gate for beans whose own surface is green. Filed 2026-09-03 by planner while adjudicating **isaac-vuto**; the same four reds are the reason vuto's `bb features && bb spec` clause was dropped.
@@ -57,3 +57,8 @@ For each of the three currently-observed reds:
     clojure -M:features
 
 unwrapped, exit 0 — or, if reds remain, each remaining red is named in this bean with an owning bean id. Record wall time; the 180s `bb features` wrapper timeout under load is not by itself a red.
+
+
+## Scrapped (planner, 2026-09-18) — full suite green
+
+isaac-agent main @ 0e804c0+: full `bb features` 799/0 (1 pending) three consecutive runs locally; CI Tests 29/30 success over the last 30 runs (the one failure, 09-13, was a config-schema scenario on a reverted experiment, not boot/compaction_template/episodes). The four reds listed here no longer exist.

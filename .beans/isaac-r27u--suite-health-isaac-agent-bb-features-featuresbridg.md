@@ -1,13 +1,13 @@
 ---
 # isaac-r27u
 title: 'Suite health (isaac-agent): bb features features/bridge/ episodes/ session/ times out on main'
-status: draft
+status: scrapped
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-11T16:54:38Z
-updated_at: 2026-09-11T16:54:38Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Ambient agent feature-gate: the named multi-directory invocation
@@ -40,3 +40,8 @@ Do **not** weaken scenario intent. Do **not** `@wip` without a dedicated owner.
 Reproduce on current `isaac-agent` main in a clean worktree. Record wall time, example counts, and every failing file:line. Then either green the trees or replace this bean's contract with a named-file policy plus owning beans for each remaining red.
 
 The 180s `bb features` wrapper timeout under load is not by itself a product red; an `F` before timeout is.
+
+
+## Scrapped (planner, 2026-09-18) — does not reproduce
+
+Full `bb features` (which covers bridge/, episodes/, session/) completes in ~50 s at 799/0 on agent main, three runs in a row; no 124 timeout. Runner budget was raised on 09-10 (ISAAC_TEST_TIMEOUT). If the three-directory invocation specifically is still slow for someone, that is a new measurement, not this bean.

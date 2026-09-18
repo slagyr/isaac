@@ -1,13 +1,13 @@
 ---
 # isaac-39vi
 title: 'Suite health (isaac-hail): band-inheritance + hail-band-prompts nil on agent ac1bf9b pin'
-status: draft
+status: scrapped
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-10T22:55:38Z
-updated_at: 2026-09-10T22:55:38Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Ambient hail CI failures that appeared **after** pinning isaac-hail to agent `ac1bf9b9` (isaac-jejt pin-only commit `fac43ef`). **Not jejt product.** Do not reopen **isaac-jejt**.
@@ -49,3 +49,8 @@ Make band-inheritance and hail-band-prompts green on **published native CI** aga
 0 failures on each on GitHub Actions `bb ci` / `bb features` (the published gate). Isolated green is not enough — CI 34539090442 is the reproduction.
 
 Do **not** reopen isaac-jejt. Do **not** require `sessions cancel` / `hail/cancelled/` work here.
+
+
+## Scrapped (planner, 2026-09-18) — resolved by the pin move
+
+isaac-hail now pins agent 0.1.67 (2acb8fa, 09-13); band-inheritance + hail-band-prompts run green locally (24/0 in the focused run, 149/0 full) and hail CI has been green since 09-13. Drift on a future pin bump gets its own bean (isaac-j4jr's lint will catch an unreachable pin; a red suite after a bump is the bump's bean).

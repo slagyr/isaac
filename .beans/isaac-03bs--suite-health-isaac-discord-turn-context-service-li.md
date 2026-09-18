@@ -1,13 +1,13 @@
 ---
 # isaac-03bs
 title: 'Suite health (isaac-discord): turn_context + service_lifecycle reds on scuttlebutt train'
-status: draft
+status: scrapped
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-04T03:21:09Z
-updated_at: 2026-09-04T03:21:09Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Ambient/full-gate failures on `isaac-discord` after the scuttlebutt train pin bump to agent `bf4323326c150bdcda4be2c0245cf2f7b0cbd629`, observed while adjudicating **isaac-o0bk**. These failures are outside the phase-1 mechanical Comm migration itself and must not block beans whose own scuttlebutt surface is green.
@@ -46,3 +46,8 @@ If either failure belongs to an existing owner, record the handoff here with the
     bb jvm-features features/comm/discord/service_lifecycle.feature
 
 0 failures on each, on current main / current train pin, with no new `@wip` tags. Record the train SHAs used.
+
+
+## Scrapped (planner, 2026-09-18) — green on the current pin
+
+isaac-discord pins agent 0.1.67; `ISAAC_GIT=1 bb features features/comm/discord/turn_context.feature features/comm/discord/service_lifecycle.feature` → 8/0 today; discord CI green on every run since 09-10 (the `:true` rendering was fixed on the 6ele/lnf7 line).

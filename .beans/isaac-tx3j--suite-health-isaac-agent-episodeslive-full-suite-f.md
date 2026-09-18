@@ -1,13 +1,13 @@
 ---
 # isaac-tx3j
 title: 'Suite health (isaac-agent): episodes/live full-suite flake at :604'
-status: draft
+status: scrapped
 type: bug
 priority: high
 tags:
     - suite-health
 created_at: 2026-09-04T06:54:16Z
-updated_at: 2026-09-04T06:54:16Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Ambient full-suite flake on `isaac-agent` that blocks beans whose own surface is elsewhere. Filed 2026-09-04 while adjudicating **isaac-j2v0**.
@@ -48,3 +48,8 @@ Make the `features/episodes/live.feature` scenario suite-stable without weakenin
     clojure -M:features
 
 unwrapped, repeated enough to show the `features/episodes/live.feature:604` scenario no longer flakes. Record run counts and wall times. If other unrelated reds remain, name them with owning bean ids instead of silently absorbing them.
+
+
+## Scrapped (planner, 2026-09-18) — does not reproduce
+
+episodes/live flake at :604: full `bb features` 799/0 ×3 locally and 29/30 CI runs green on agent main (0.1.71). Not seen since 09-04.

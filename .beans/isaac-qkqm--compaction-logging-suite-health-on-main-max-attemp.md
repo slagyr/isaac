@@ -1,11 +1,11 @@
 ---
 # isaac-qkqm
 title: 'Compaction logging suite health on main: max-attempt stop + toolCall/toolResult pairing'
-status: draft
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-08-26T07:07:32Z
-updated_at: 2026-08-26T07:07:32Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 Pre-existing red on isaac-agent origin/main (reported during isaac-pqjn verify handoff narrowing):
@@ -33,3 +33,8 @@ bb features features/session/compaction_logging.feature
 
 - pqjn acceptance must not name this file broadly while it is red on main independent of pqjn.
 - Related beans: isaac-pqjn (token accounting), isaac-63f3 (toolCall/toolResult pairing history-offset context), isaac-5cr6 (completed compaction logging scenario), isaac-os7r (summary template).
+
+
+## Scrapped (planner, 2026-09-18) — both scenarios green
+
+compaction_logging.feature 'stops retrying after max-compaction-attempts' and 'keeps toolCall and toolResult together' pass in the full run (799/0 ×3) on agent main; the compaction line has moved a long way since 08-26 (3uy9, h8o9, gwdz, zveu, os7r).

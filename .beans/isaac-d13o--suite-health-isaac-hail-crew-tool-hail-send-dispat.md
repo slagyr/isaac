@@ -1,11 +1,11 @@
 ---
 # isaac-d13o
 title: 'Suite health (isaac-hail): crew-tool hail-send dispatch scenarios expect 1 pending got 0'
-status: draft
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-08-24T14:15:18Z
-updated_at: 2026-08-24T14:15:18Z
+updated_at: 2026-09-18T05:13:23Z
 ---
 
 ## Problem
@@ -39,3 +39,8 @@ cd isaac-hail && bb features features/crew-tool.feature
 ## Sequencing
 
 Unblocks honest full-suite verify for subsequent isaac-hail beans. Independent of isaac-u7ug product scope (durable ledger).
+
+
+## Scrapped (planner, 2026-09-18) — fixed
+
+isaac-hail 09-13 `Await tool turn before pending hail assertions` was exactly the diagnosis above. Verified today: `bb features features/crew-tool.feature …` 24/0 and full `bb features` 149/0, 2 pending; hail CI green on every run since 09-13.
