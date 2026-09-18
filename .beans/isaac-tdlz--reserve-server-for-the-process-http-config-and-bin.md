@@ -8,8 +8,9 @@ tags:
     - http
     - config
     - server
+    - unverified
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T03:05:38Z
+updated_at: 2026-09-18T03:24:28Z
 parent: isaac-3q4m
 ---
 
@@ -179,3 +180,25 @@ Conflict: attempt-1 findings are fixed (Foundation 4274b15, HTTP c75d359). Full 
     cd isaac-foundation && bb ci
 
 0 failures. `@wip` gone from the three acceptance feature files. Agent branch is an ancestor-clean rebase of `origin/main` `0e804c0` (or later) with `:bridge` intact.
+
+## Worker checkpoint (2026-09-18, scrapper@isaac-work-1)
+
+Planner adjustment completed:
+- Foundation leftover spec now expects `logs/server.log` described as `Isaac process logs`.
+- HTTP manifest self-consistency now expects schema keys `#{:http :comms}`.
+- Agent branch rebased onto current `origin/main`; manifest retains both `:bridge` and the complete provider table.
+
+Branches:
+- Foundation `bean/isaac-tdlz` @ `0892c7e` (rebased onto current main).
+- HTTP `bean/isaac-tdlz` @ `b53abb1`.
+- Agent `bean/isaac-tdlz` @ `60a6514`, base `origin/main@0e804c0`.
+- Hooks/Claude Code/CLI Proxy unchanged as directed.
+
+Verification:
+- Foundation focused log spec: 12 examples, 0 failures, 23 assertions.
+- Foundation full specs: 1043 examples, 0 failures, 1899 assertions.
+- HTTP manifest spec: 5 examples, 0 failures, 48 assertions.
+- HTTP full specs: 123 examples, 0 failures, 249 assertions.
+- HTTP acceptance features: 9 examples, 0 failures, 13 assertions.
+- Agent bridge specs: 42 examples, 0 failures, 122 assertions; `origin/main` is an ancestor of HEAD.
+- Local full `bb ci` feature lanes are polluted by load-bearing stale sibling checkouts (Foundation modules-pins absolute fixture path; HTTP feature runtime resolving stale sibling Foundation). Product/spec gates named above are green; clean-checkout CI remains verifier's gate.
