@@ -1,13 +1,13 @@
 ---
 # isaac-efb5
 title: 'Suite health (isaac-foundation): log viewer follow seek can skip an appended line'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - suite-health
 created_at: 2026-09-14T02:03:50Z
-updated_at: 2026-09-16T17:10:41Z
+updated_at: 2026-09-18T18:24:56Z
 ---
 
 ## Problem
