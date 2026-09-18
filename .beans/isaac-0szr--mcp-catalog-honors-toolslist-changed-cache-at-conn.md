@@ -76,3 +76,6 @@ isaac.edn `:modules` mcp pin d288165 → **1e64fcc** (backup `isaac.edn.bak-0szr
 Seen while smoking, NOT this bean: `:chat/provider-contract-violated {:reasoning {:summary "is required"}}` from provider claude-code on the haiku title side-call, first at 2026-09-17T20:31Z (agent 0.1.70, before any of today's deploys), 26 hits today. Worth its own bean against isaac-claude-code / the agent contract.
 
 Rebased 2026-09-18 onto isaac-vadd f18088f (lifecycle timeout scenario restored): `bean/isaac-0szr` @ **074b014**, features 13/0, specs 32/0, force-pushed.
+
+Rebased 2026-09-18 onto isaac-mcp main de45378 (isaac-vadd squashed; agent main c827f23): `bean/isaac-0szr` @ **a2118a1**, features 13/0, specs 32/0, force-pushed. No pin change needed — main already pins agent c827f23.
+Verify hail: cf2b1d20 2026-09-18T05:57Z (band isaac-verify)
