@@ -1,13 +1,13 @@
 ---
 # isaac-1fwl
 title: 'Module CLI commands adopt the CLI host: ensure-runtime!, no ambient installs, acp/worksite fixes'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-17T15:55:24Z
-updated_at: 2026-09-18T00:59:45Z
+updated_at: 2026-09-18T01:20:47Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-dq4v
