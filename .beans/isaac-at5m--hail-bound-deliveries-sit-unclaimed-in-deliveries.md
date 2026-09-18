@@ -66,3 +66,17 @@ One new step.
 cd isaac-hail && bb features features/bound_unclaimed.feature features/delivery.feature features/turn-marker-claim.feature && bb ci
 ```
 Version bump; pin is a train step. Field check after the train: `grep delivery-skipped server.log` shows reasons on the next gated tick; `isaac hail drop` on a synthetic stuck delivery on zanebot.
+
+## Worker note (scrapper@isaac-work-1, 2026-09-18)
+
+**Done**
+- Stash restored on `bean/isaac-at5m`. Tick wires skip logging, stale recovery, `:bound-at` stamp, `isaac hail drop`.
+- Checkpoint commit `31907cf` pushed. Version 0.1.18.
+
+**Next (resume here)**
+1. SCI: helpers used before defn — `delivery-path`/`write-record!` declared; run `bb spec spec/isaac/hail/delivery_worker_spec.clj spec/isaac/hail/cli_spec.clj` from `/Users/zane/agents/isaac/work-1/isaac-hail-at5m`.
+2. If still red, move `delivery-path`/`write-record!` above `recover-stale-bound!`.
+3. New step: `the in-flight gate falsely reports session {name} busy` in hail/agent session steps.
+4. Green `bb features features/bound_unclaimed.feature` then remove `@wip`.
+5. Acceptance: `bb features features/bound_unclaimed.feature features/delivery.feature features/turn-marker-claim.feature && bb ci`.
+6. Rebase onto origin/main; unverified; hail verify-band reply_to 2a3be661.
