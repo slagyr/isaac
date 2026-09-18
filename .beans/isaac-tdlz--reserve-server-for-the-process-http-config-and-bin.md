@@ -1,7 +1,7 @@
 ---
 # isaac-tdlz
 title: Reserve :server for the process; HTTP config and bind logs move to :http
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - config
     - server
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T01:34:41Z
+updated_at: 2026-09-18T01:44:19Z
 parent: isaac-3q4m
 ---
 
