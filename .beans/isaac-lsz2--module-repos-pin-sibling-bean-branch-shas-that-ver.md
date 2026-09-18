@@ -1,13 +1,13 @@
 ---
 # isaac-lsz2
 title: 'Module repos pin sibling bean-branch shas that verify squashes away: isaac-cli-server CI red (foundation 3963266), isaac-server agent pin unreachable'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - ci
 created_at: 2026-09-18T04:46:20Z
-updated_at: 2026-09-18T04:46:20Z
+updated_at: 2026-09-18T17:55:58Z
 ---
 
 ## Problem
