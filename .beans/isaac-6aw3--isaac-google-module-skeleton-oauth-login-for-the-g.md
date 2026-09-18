@@ -1,13 +1,13 @@
 ---
 # isaac-6aw3
 title: 'isaac-google: module skeleton + OAuth login for the Google user (scopes berth, auth store)'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:12:15Z
+updated_at: 2026-09-18T04:37:02Z
 parent: isaac-bv1l
 ---
 
@@ -24,12 +24,31 @@ First brick of isaac-google. A module that owns the Google user's OAuth and noth
 
 Refresh tokens for an internal Workspace app do not expire; a weekly re-login means the consent screen is still in Testing — that is an ops fix, not code. The login command must say so when Google returns a 7-day token.
 
-## Scenarios to draft (feature-first; none written yet)
+## Scenarios (approved 2026-09-18, Micah) — committed `@wip` in isaac-google `4dc6b8d` `features/login.feature`
 
-1. `isaac auth login google` against a stubbed token endpoint stores refresh + access tokens; `google/token` returns the access token.
-2. An expired access token is refreshed silently on the next `google/token`.
-3. Scopes requested = union of contributions (a fixture module contributes one extra scope).
-4. Missing `:google` config fails closed with a clear validate error.
+Design pinned by the scenarios: command is **`isaac google login`** (module CLI berth; not `auth login --provider`, which resolves LLM provider templates); **authorization-code flow with `--code` paste** (Google refuses the device flow for Chat/Gmail scopes; paste is what a headless host needs); the token POST goes through `isaac.llm.http` so request-match steps see it; tokens under provider `google` in `isaac.llm.auth.store`.
+
+New module-owned step phrases (implement in `feature-steps/isaac/google_steps.clj`, one helper each — everything else is existing foundation/agent steps):
+- `the Google token endpoint returns access token {at} and refresh token {rt} expiring in {n}` / `… returns access token {at} expiring in {n}` / `… rejects refresh with {error}`
+- `the google auth store has access {at} and refresh {rt}` / `the google auth store has an expired access token with refresh {rt}`
+- `the google access token is resolved`
+- `the skybeam fixture module contributes the Google scope {scope}` (fixture manifest under `test-resources/marigold/`)
+- `the error mentions {text}`
+
+## Acceptance
+
+Definition of done: `@wip` removed from `features/login.feature`, and:
+
+```
+cd isaac-google && bb features features/login.feature:17
+cd isaac-google && bb features features/login.feature:30
+cd isaac-google && bb features features/login.feature:40
+cd isaac-google && bb features features/login.feature:48
+cd isaac-google && bb features features/login.feature:54
+cd isaac-google && bb ci
+```
+
+Unit specs for: auth-URL construction (scopes union, redirect, state), code exchange, refresh, `invalid_grant` message, config validation of `:google`.
 
 ## Out of scope
 
