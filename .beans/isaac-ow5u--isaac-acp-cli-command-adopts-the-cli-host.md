@@ -1,14 +1,13 @@
 ---
 # isaac-ow5u
 title: isaac-acp CLI command adopts the CLI host
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
-    - unverified
     - cli
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T17:54:27Z
+updated_at: 2026-09-18T17:56:17Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -59,3 +58,9 @@ ACP CLI host adoption complete. branch: bean/isaac-ow5u @ 1699c82 (base origin/m
 - embedded specs in `spec/isaac/comm/acp/cli_spec.clj:340`
 
 Acceptance: `ISAAC_GIT=1 bb lint-cli-host && bb ci` — lint ok; 74 spec / 64 feature, 0 failures. Did not land foundation; did not migrate agent.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-acp c3560df78f8c163923c8965b2c2cfe76264a6c36
