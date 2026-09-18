@@ -1,13 +1,11 @@
 ---
 # isaac-zveu
 title: Provider unavailability is mislabeled as :context-exhausted
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-17T22:53:29Z
-updated_at: 2026-09-17T23:56:59Z
+updated_at: 2026-09-18T00:05:18Z
 ---
 
 ## Problem
@@ -156,3 +154,9 @@ Verification:
 
 Next:
 - Verify at `src/isaac/drive/turn.clj:1489`, `spec/isaac/drive/turn_spec.clj:1069`, and `features/llm/turn_exhaustion.feature:75`.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-agent 372b03b26476105b2b01138cd7abdc487992afbd
