@@ -55,3 +55,9 @@ Each migrated command sets `:hosted true` on its `:isaac/cli` manifest entry (is
 
 ## Fixture for the per-repo spec
 `(host/run-embedded {:argv [...] :in (StringReader. "...") :out (StringWriter.) :err (StringWriter.) :root <root> :env {} :cwd <root>})` on a thread whose nexus is the live one (the spec installs a real config + store via the module's own `:install!` first, then snapshots the ambient config object, `(nexus/get-in [:sessions :store])`, and the tool registry, runs the command, and asserts identical objects after). `sessions` must be run through this — the `finally` nil-out is the named regression.
+
+## Work checkpoint (2026-09-17, scrapper@isaac-work-3)
+
+Completed and pushed the prerequisite Foundation leg on `bean/isaac-1fwl` @ `f81f5ef` (base `origin/main@f16efcf`): process-host `ensure-runtime!` invokes each installer identity once, retries failed installers, embedded hosts continue to reject missing live runtime without invoking installers, and manifest CLI registration retains the transitional `:hosted` marker. Foundation host specs (9 examples/26 assertions), hosted-marker spec, and `bb lint-cli-host src spec` pass.
+
+Remaining scope is the eight module migrations plus server duplicate-command cleanup. Current foundation commit must land first and module pins must then be advanced before module code can compile against the extended contract. Repo inventory/checkouts exist for agent, acp, hail, episodes, claude-code, worksite, cli-proxy, foreman, and server.
