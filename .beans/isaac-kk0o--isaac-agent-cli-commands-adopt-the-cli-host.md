@@ -1,29 +1,27 @@
 ---
 # isaac-kk0o
 title: isaac-agent CLI commands adopt the CLI host
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T01:39:34Z
+updated_at: 2026-09-18T04:41:46Z
 parent: isaac-eqkb
-blocked_by:
-    - isaac-1fwl
 ---
 
 Split from isaac-1fwl (child 2 of isaac-eqkb). Agent-only CLI host adoption.
 
-Blocked by isaac-1fwl: Foundation `ensure-runtime!` installer memoization/retry and `:hosted` passthrough must be on main, and this repo's foundation pin must be advanced to that SHA before compile.
+isaac-1fwl landed on foundation `cc53d69` (`ensure-runtime! {:install! …}` + `:hosted` passthrough). Bump this repo's foundation pin to that SHA or later before compile. Do **not** land foundation.
 
 ## Commands
 
 | command | change |
 |---|---|
-| `sessions` | `install-cli!` (session/cli.clj:238) → `host/ensure-runtime!`; **delete `config/dangerously-install-config! nil` in the `finally`s (:277, :454)** — process host can do its own teardown; `builtin/register-all!` (:269) moves behind ensure-runtime! |
-| `prompt` | `install-config!` (prompt_cli.clj:130), `runtime/install!` (:311), `builtin/register-all!` (:252) → ensure-runtime!; `user.dir` (:163,:202) → `host/cwd` |
-| `auth`, `crew`, `turns` | `load-config!` → ensure-runtime!; `auth` read-line via host in; device-code poll loop checks `host/cancelled?` |
+| `sessions` | `install-cli!` → `host/ensure-runtime!`; **delete `config/dangerously-install-config! nil` in the `finally`s** (session/cli.clj show + mutation); `builtin/register-all!` moves behind ensure-runtime! |
+| `prompt` | install/runtime/register-all! → ensure-runtime!; `user.dir` → `host/cwd` |
+| `auth`, `crew`, `turns` | `load-config!` → ensure-runtime!; `auth` read-line via host in; device-code poll checks `host/cancelled?` |
 
 Each migrated command sets `:hosted true` on its `:isaac/cli` manifest entry.
 
@@ -31,14 +29,28 @@ Adopt foundation's `bb lint-cli-host` in this repo's `bb ci`.
 
 ## Fixture
 
-`(host/run-embedded {:argv [...] :in (StringReader. "...") :out (StringWriter.) :err (StringWriter.) :root <root> :env {} :cwd <root>})` on a thread whose nexus is the live one (the spec installs a real config + store via the module's own `:install!` first, then snapshots the ambient config object, `(nexus/get-in [:sessions :store])`, and the tool registry, runs the command, and asserts identical objects after). **`sessions` must be run through this — the `finally` nil-out is the named regression.**
+`host/run-embedded` against the already-installed Grover runtime. No per-command re-install — a second cold `isaac is run with` would reload from disk and hide the `finally` nil.
+
+New steps (isaac-agent):
+
+- `the command is run embedded with argv {argv:string}`
+- `the command is run embedded with argv {argv:string} and cwd {cwd:string}`
 
 ## Acceptance
 
-A spec that runs each command via `host/run-embedded` with a live-runtime fixture and asserts (a) correct output/exit, (b) the ambient config snapshot, nexus `:sessions :store`, and tool registry are IDENTICAL objects before and after, (c) stdin-driven subcommands read from the supplied stream.
+@wip `features/cli/host_embed.feature` (commit c1c61e2):
+
+- `features/cli/host_embed.feature:9` — An embedded sessions show does not clear the live config
+- `features/cli/host_embed.feature:19` — An embedded prompt records the supplied cwd
+
+Identity/`identical?` specs for config, session store, and tool registry are worker tests, not the review contract.
 
 ```
-cd isaac-agent && bb lint-cli-host && bb ci
+cd isaac-agent && bb features features/cli/host_embed.feature && bb lint-cli-host && bb ci
 ```
 
-Do **not** migrate acp or other modules here. Do **not** land foundation. Pin bump is isaac-1fwl.
+Done when `@wip` is gone and those commands are green.
+
+## Non-goals
+
+Do **not** migrate acp or other modules. Do **not** land foundation. Pin bump is isaac-1fwl.
