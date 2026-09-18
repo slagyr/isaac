@@ -5,11 +5,12 @@ status: in-progress
 type: feature
 priority: high
 tags:
+    - unverified
     - http
     - config
     - server
 created_at: 2026-09-18T01:34:41Z
-updated_at: 2026-09-18T01:44:19Z
+updated_at: 2026-09-18T02:37:05Z
 parent: isaac-3q4m
 ---
 
@@ -83,3 +84,27 @@ Red / next:
 
 - Full HTTP config feature cannot parse its planner-authored Scenario Outline example strings under gherclj 1.3.0 (quoted EDN is injected into generated test names/forms). First scenario is green; retire validation is covered by Foundation schema spec. Do not rewrite the feature beyond authorized `@wip` removal without verifier/planner approval.
 - Resume remaining fixture sweep at `isaac-claude-code/src/isaac/llm/api/claude_cli.clj:374` (running server port/token map), then `features/llm/api/claude_driver.feature:289`; sweep cli-proxy and isaac-server fixtures; run repository acceptance; rebase all four product branches and hand off.
+
+## Implementation summary (2026-09-18)
+
+Branches rebased onto current repo mains:
+
+- Foundation `bean/isaac-tdlz` @ `c5ac437` (base `cc53d69`)
+- HTTP `bean/isaac-tdlz` @ `94e7205` (base `1245bfb`; pins Foundation `c5ac437`)
+- Agent `bean/isaac-tdlz` @ `a38d403` (base `9d51897`)
+- Hooks `bean/isaac-tdlz` @ `b764fd6` (base `65a9e63`)
+- Claude Code `bean/isaac-tdlz` @ `fc701d8` (base `ff7df5f`)
+- CLI Proxy `bean/isaac-tdlz` @ `aeb849a` (base `5630bc2`)
+
+Acceptance evidence:
+
+- Foundation focused schema/runner specs green; `features/cli/server.feature:9` green.
+- HTTP listening feature: 2 examples, 0 failures, 3 assertions.
+- HTTP valid-config scenario: 1 example, 0 failures, 4 assertions.
+- `bb spec spec/isaac/http`: 102 examples, 0 failures, 170 assertions.
+- Agent component specs: 3 examples, 0 failures, 4 assertions.
+- Hooks specs: 29 examples, 0 failures, 43 assertions.
+- Claude CLI/driver specs: 57 examples, 0 failures, 203 assertions.
+- CLI Proxy CLI/proxy specs: 13 examples, 0 failures, 39 assertions.
+
+Known planner-scenario tooling defect: full `features/http/config.feature` cannot compile its precommitted Scenario Outline because gherclj 1.3.0 injects quoted EDN example values into generated Clojure test names/forms. The valid-config scenario and retired schema unit coverage are green; feature content was not modified beyond removing the authorized file-level `@wip`.
