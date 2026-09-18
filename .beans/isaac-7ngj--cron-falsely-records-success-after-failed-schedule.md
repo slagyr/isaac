@@ -1,11 +1,11 @@
 ---
 # isaac-7ngj
 title: Cron falsely records success after failed scheduled turn
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-11T17:02:28Z
-updated_at: 2026-09-18T05:02:30Z
+updated_at: 2026-09-18T05:49:02Z
 ---
 
 Cron state can falsely record `:last-status :succeeded` even when the scheduled turn failed before any tool execution.
