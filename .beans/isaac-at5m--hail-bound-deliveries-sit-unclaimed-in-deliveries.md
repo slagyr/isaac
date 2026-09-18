@@ -1,11 +1,11 @@
 ---
 # isaac-at5m
 title: 'Hail: bound deliveries sit unclaimed in deliveries/ forever; no operator drop'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-08-29T14:39:53Z
-updated_at: 2026-09-18T05:04:05Z
+updated_at: 2026-09-18T06:02:54Z
 ---
 
 ## Problem (2026-08-29, zanebot)
