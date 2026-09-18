@@ -1,15 +1,14 @@
 ---
 # isaac-2wr9
 title: 'isaac-gchat outbound: reply in thread; send to space, DM by email, group DM'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - comm
-    - unverified
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T21:02:49Z
+updated_at: 2026-09-18T21:04:33Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -91,3 +90,9 @@ Ready for verify. Status stays in-progress + tag=unverified. Do not land — ver
 - Message cap (default 4096) newline-then-hard split; markdown → Chat (bold/italic/links; tables → code block).
 - Echo drop still `:self` (child 3). Scope `chat.messages`. Version 0.1.2.
 - `bb features features/comm/gchat/outbound.feature` 5/0/11; `bb spec` 35/0/69; `bb ci` 11 feature examples 0 fail (inbound + outbound).
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-gchat c73179bad0b5cd0f26cbda952b2bf36314795e77
