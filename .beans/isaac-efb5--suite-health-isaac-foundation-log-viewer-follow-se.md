@@ -1,14 +1,13 @@
 ---
 # isaac-efb5
 title: 'Suite health (isaac-foundation): log viewer follow seek can skip an appended line'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - suite-health
-    - unverified
 created_at: 2026-09-14T02:03:50Z
-updated_at: 2026-09-18T18:45:43Z
+updated_at: 2026-09-18T18:48:02Z
 ---
 
 ## Problem
@@ -78,3 +77,9 @@ Do not treat the 2 modules_pins.feature failures as this bean.
 branch: bean/isaac-efb5 @ 8f48b49 (base origin/main@b1e4f9d)
 
 Replaced the live tail! dump→follow race spec with a synchronous RAF dump/append/readLine assertion. follow-tail! uses File.length (not RAF.length) so a concurrent append cannot skip resync. 20 consecutive `bb spec spec/isaac/log_viewer_spec.clj` green (44/0).
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-foundation 0b120ccf68d1ca43b7f66547344796195957ab6e
