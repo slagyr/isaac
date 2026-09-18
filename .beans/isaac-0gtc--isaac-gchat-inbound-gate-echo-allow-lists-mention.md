@@ -1,14 +1,14 @@
 ---
 # isaac-0gtc
 title: 'isaac-gchat inbound: gate (echo, allow-lists, mention, policy) → route → dispatch for one space'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
     - comm
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:54:49Z
+updated_at: 2026-09-18T19:31:53Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-1jep
