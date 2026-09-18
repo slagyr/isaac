@@ -1,13 +1,13 @@
 ---
 # isaac-gar0
 title: 'Remote-by-default CLI: ~/.config/isaac.edn :cli :remote routes isaac commands through the server (--local bypass; unreachable fails)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T01:24:43Z
+updated_at: 2026-09-18T02:44:05Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
