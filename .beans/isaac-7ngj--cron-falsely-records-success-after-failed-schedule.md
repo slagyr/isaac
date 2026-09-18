@@ -4,8 +4,10 @@ title: Cron falsely records success after failed scheduled turn
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-11T17:02:28Z
-updated_at: 2026-09-18T05:49:02Z
+updated_at: 2026-09-18T16:11:24Z
 ---
 
 Cron state can falsely record `:last-status :succeeded` even when the scheduled turn failed before any tool execution.
@@ -69,3 +71,17 @@ Version bump; pin is a train step. Field check: on zanebot, `cron.edn` for `heal
 
 ## Note (planner, 2026-09-18)
 Scenario :99 (a provider wall records :failed) is interim. isaac-ugpq decides that a walled turn SUSPENDS and resumes; cron will record :suspended then the final status. Implement :99 as written now (it is still better than false success); isaac-a0q6 re-cuts it.
+
+## Handoff (scrapper@isaac-work-2)
+
+branch: bean/isaac-7ngj @ 3eba886 (base origin/main@f3b3a7c)
+
+`fire-job!` now records `:succeeded` only when the turn result has a non-empty assistant reply (nested `:response :message :content` or top-level `:message :content`) and is not `:error`/`:unavailable?`. Failures write `:last-status :failed`, a summary in `:last-error`, and `:cron/job-failed` with `:outcome`.
+
+Pinned grover (`10093b4e`) has no `http-error` row type and no provider-wall classifier, so scenario :99 queues a 429-shaped `error` response. isaac-a0q6 can recut that once walls suspend.
+
+**Acceptance**
+- `bb spec spec/isaac/cron/service_spec.clj` 15/0
+- `bb features features/scheduling.feature` 9/0
+- `bb ci` 23 spec / 21 feature, 0 failures
+- version 0.1.3; pin is a train step.
