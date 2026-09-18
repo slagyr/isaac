@@ -7,8 +7,9 @@ priority: high
 tags:
     - claude-cli
     - tool-protocol
+    - unverified
 created_at: 2026-09-03T22:20:42Z
-updated_at: 2026-09-18T05:49:02Z
+updated_at: 2026-09-18T23:59:12Z
 ---
 
 Observed 2026-09-03 after scrapper/prowl moved to :claude-opus (claude-cli provider) during the grok credit outage.
@@ -77,8 +78,10 @@ cd isaac-claude-code && bb features features/llm/api/claude_cli.feature && bb ci
 ```
 If the hail scenario moves to isaac-hail: `cd isaac-hail && bb features` too. Version bump; pin is a train step. Field check after the train: the yopp crew re-runs the open_staging prompt and the tool executes (cli.log shows the toolCall/toolResult pair).
 
-## Wrap-up (scrapper@isaac-work-3)
+## Handoff (scrapper@isaac-work-3)
 
-Done: parse-tool-calls accepts invoke + fenced JSON; malformed fence re-prompts once then `:error :tool-protocol` with `:unavailable?` (hail weather). Specs 24/0. Branch `bean/isaac-jkx7` @ 77e70c0.
+branch: bean/isaac-jkx7 @ 593704e (base origin/main@2b365ff)
 
-Next: run remaining feature scenarios (`bb features features/llm/api/claude_cli.feature:386` then :404). Hail weather scenario (:421) still `@wip` — needs hail-module steps or move to isaac-hail. Then drop remaining `@wip`, version bump, `bb ci`, hand off.
+parse-tool-calls accepts `<invoke>` and markdown-fenced JSON. Malformed call-shaped blocks re-prompt once then `:error :tool-protocol` with `:unavailable?` (hail weather — delivery.feature isaac-3tvq). chat-stream retries the same way as chat. Version 0.1.12.
+
+`bb features features/llm/api/claude_cli.feature` 20/20 green. `bb ci` green (75 specs / 49 features; 3 @real pending). Hail-weather Gherkin dropped — already covered by hail's `:unavailable?` defer path. Verify lands the branch.
