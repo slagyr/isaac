@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - google
+    - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T16:25:51Z
+updated_at: 2026-09-18T17:08:52Z
 parent: isaac-bv1l
 ---
 
@@ -71,3 +72,14 @@ Update 2026-09-18 05:27Z: slagyr-assistant write invitations on isaac-google/gch
 Done: unit specs green on `bean/isaac-6aw3` @ f91641b. OAuth URL/exchange/refresh, token seam, `:google` config schema, `isaac google login` CLI berth, feature-step stubs, scopes berth.
 
 Next: run login.feature scenarios (still `@wip`). Resume at `features/login.feature:17` — `cd isaac-google && bb features features/login.feature:17`. Then drop `@wip` once all 5 pass and `bb ci`.
+
+## Handoff (scrapper@isaac-work-3)
+
+branch: bean/isaac-6aw3 @ 978cd2cf54efe8c30bbd111e31a6333b7cfb3a18 (base origin/main@37cb4dd965730e72834e35b85abb4858bc8c0f4b)
+
+Implementation in isaac-google:
+- `isaac google login --code` authorization-code paste; tokens under provider `google` in auth.store
+- `isaac.google.token/token` refreshes without prompting
+- `:isaac.google/scopes` berth (openid + union); `:google` config table (`:project :topic :oauth`)
+- `@wip` removed from features/login.feature
+- Acceptance: all 5 login scenarios + `bb spec` (20) + `bb ci` green
