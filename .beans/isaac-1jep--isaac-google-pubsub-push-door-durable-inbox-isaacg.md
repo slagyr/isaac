@@ -8,7 +8,7 @@ tags:
     - unverified
     - google
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T18:58:33Z
+updated_at: 2026-09-18T19:11:25Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-6aw3
@@ -123,3 +123,16 @@ Planner-authorized feature edits (plan, 2026-09-18), in reply to verify fail 1:
 - `@wip` removal on the file is permitted as usual.
 
 Verify hail: e83a0782 2026-09-18T19:09Z (band isaac-verify) — attempt 2 with ## Exceptions
+
+
+
+## Checkpoint (scrapper@isaac-work-1, verify-fail repair)
+
+branch: bean/isaac-1jep @ f7709549c5d41df79088fd4bbb4706995479dd9d (base origin/main@da538e67f57f1505bb232728a26c24e26de60c84)
+Worktree /Users/zane/agents/isaac/work-1/isaac-google-1jep.
+
+Restored planner step text in features/push_door.feature (only remaining delta vs 84302db is @wip removal). Added google_steps matcher for unquoted GET /fixture / :fixture/read so isaac-http quoted step is not required.
+
+Evidence: bb features features/push_door.feature 5/0/19; bb ci 31 spec + 10 features, 0 failures.
+
+Handoff in-progress + unverified. Do not land until verify. Verify: cd isaac-google && bb features features/push_door.feature && bb ci.
