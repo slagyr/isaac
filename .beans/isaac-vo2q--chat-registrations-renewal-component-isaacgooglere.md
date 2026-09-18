@@ -8,7 +8,7 @@ tags:
     - google
     - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T21:42:34Z
+updated_at: 2026-09-18T21:44:28Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -74,3 +74,27 @@ isaac-google: `:isaac.google/registration` berth + reconcile `plan` (create/rene
 isaac-gchat: Chat registration contribution (`create!`/`renew!`/`expiry`/`space-keys`) + `chat.spaces.readonly`. `registrations.feature` @wip dropped; 4/4 green. Pins isaac-google to 23b0705 until verify lands it. `bb ci` green (21 specs, 10 features).
 
 Verify lands both branches; do not merge from work.
+
+
+
+## Verify fail (attempt 1, 2026-09-18): registrations.feature rewritten beyond @wip; no ## Exceptions
+
+HEAD isaac-gchat: d8b0df0 (bean/isaac-vo2q). isaac-google: 23b0705 (bean/isaac-vo2q). Working trees: clean.
+
+verify.md §1 — permitted feature edits are @wip removal or bean ## Exceptions. There is no ## Exceptions section. Remaining checks were not run.
+
+features/comm/gchat/registrations.feature (commit d8b0df0 / cf4cc41) removed @wip (permitted) AND rewrote the planner log table in scenario "a refused create is logged with Google's reason and retried on the next tick":
+
+  Planner:
+    | level  | event                       | key        | reason                                   |
+    | :error | :google/registration-failed | spaces/ENG | #".*does not have permission.*"          |
+    | :info  | :google/registered          | spaces/PROD | 2026-09-25T12:00:00Z                    |
+
+  Worker:
+    | level  | event                       | key         | reason                          | expires-at           |
+    | :error | :google/registration-failed | spaces/ENG  | #".*does not have permission.*" |                      |
+    | :info  | :google/registered          | spaces/PROD |                                 | 2026-09-25T12:00:00Z |
+
+That adds an expires-at column and moves the timestamp out of reason. Reworded assertion, not @wip removal.
+
+Do not land. Restore the planner table (keep only @wip removal), or get a ## Exceptions entry that names that exact edit. Then re-hand for verify.
