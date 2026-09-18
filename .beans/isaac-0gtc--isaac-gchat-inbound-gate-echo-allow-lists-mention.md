@@ -7,8 +7,9 @@ priority: high
 tags:
     - google
     - comm
+    - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T19:31:53Z
+updated_at: 2026-09-18T20:09:02Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-1jep
@@ -68,3 +69,19 @@ Unit specs for: the gate as a pure function (event + config → route | drop rea
 Ambient recording of non-mention messages (context without a turn) is NOT in v1 — noted in the epic as an open question.
 
 Dispatched: hail e04e4800 2026-09-18T19:33:38Z (band isaac-work)
+
+
+
+## Checkpoint (scrapper@isaac-work-1)
+
+branch: bean/isaac-0gtc @ c56a49a314ea58f5441330ea6beb0ed0ce5637e4 (base origin/main@7bd9e3588dd0e9b562b2f2cefb2e335f4ea2064c)
+Worktree /Users/zane/agents/isaac/work-1/isaac-gchat-0gtc.
+
+Done:
+- Pure gate (echo, allow-from fail-closed, space, mention, respond policy, session naming)
+- Handler: fetch via Chat API stub seam, gate, dispatch with origin {:kind :gchat :space :thread}
+- Comm factory :gchat + :isaac.http/comm extra-schema + :isaac.google/handler contributions
+- @wip removed from features/comm/gchat/inbound.feature
+- Evidence: bb features inbound.feature 6/0/13; bb ci 17 spec + 6 features, 0 failures
+
+Handoff in-progress + unverified. Verify: cd isaac-gchat && bb features features/comm/gchat/inbound.feature && bb ci.
