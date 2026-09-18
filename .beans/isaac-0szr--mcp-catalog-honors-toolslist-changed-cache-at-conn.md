@@ -5,9 +5,10 @@ status: in-progress
 type: feature
 priority: normal
 tags:
+    - unverified
     - mcp
 created_at: 2026-09-18T02:43:52Z
-updated_at: 2026-09-18T03:10:01Z
+updated_at: 2026-09-18T03:13:11Z
 parent: isaac-uhvt
 blocked_by:
     - isaac-vadd
@@ -55,3 +56,15 @@ Half a worker day: ~2–3 h implementation (client + runtime + fixture + specs),
 ## Out of scope
 
 Background reader thread (would see idle notifications immediately; revisit only if a real server needs it). Hot reload of `:mcp` config.
+
+## Work checkpoint (2026-09-18, plan@local) — handed to verify, `tag=unverified`
+
+Implemented on isaac-mcp **`bean/isaac-0szr` @ 1e64fcc**, stacked on `bean/isaac-vadd` (d288165) because the scenarios need the vadd runtime and vadd has not merged. Verify vadd first; this branch then squashes onto the result.
+
+What the implementation taught beyond the plan:
+
+- **The notification arrives right behind the mutating reply, not during it.** `request!` returns on the reply line, so the notification was still unread. Added a 10 ms drain after each reply for listChanged servers (`DRAIN-GRACE-MS`); a notification that arrives later than that is picked up at the next read, as the bean allowed.
+- **Re-catalog at call time, not only at ensure time.** With isaac-vadd the agent only asks the provider for a namespace nobody registered, so a dirty flag checked in `ensure-server!` alone would never fire once tools exist. The runtime re-catalogs immediately after the call that surfaced the notification (and still in `ensure-server!` for the reconnect path). Next turn's prompt carries the change with no agent change.
+- Fixture: `--grow` adds the `grow` tool (present in both scenarios so the no-flag server can emit the notification too); `--list-changed` advertises the capability. Existing scenarios keep the exact two-tool catalog.
+
+Verified: `bb spec` 32/0 (native), `bb jvm-spec client_spec` 8/0, `bb jvm-features` 24/0 (all five feature files, `catalog.feature` not @wip). Acceptance commands as listed.
