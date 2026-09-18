@@ -1,14 +1,13 @@
 ---
 # isaac-vo2q
 title: Chat registrations + renewal component (:isaac.google/registration berth, pointer subscriptions per space)
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - google
-    - unverified
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T22:27:22Z
+updated_at: 2026-09-18T22:29:53Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-0gtc
@@ -180,3 +179,10 @@ Acceptance:
 - `cd isaac-google && bb features features/login.feature features/health.feature` 5/0/19
 - `cd isaac-gchat && bb ci` 39 spec + 15 features, 0 fail
 - `cd isaac-google && bb ci` 41 spec + 10 features, 0 fail
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-google fed49353c3ccb67fad74670cd10134dfa6484d39
+main-sha: isaac-gchat bac8c0ef312dd70ea2062ee11dc265d3565b3ded
