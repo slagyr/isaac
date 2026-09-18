@@ -115,3 +115,9 @@ cd isaac-foundation && bb features features/cli/remote_routing.feature && bb ci
 cd isaac-cli-proxy && bb features features/remote.feature && bb ci
 ```
 zanebot after the train: `isaac remote use ws://127.0.0.1:<port>/cli --token-env ISAAC_SERVER_TOKEN` (token in the zane user's env), then `/usr/bin/time -p isaac sessions list` recorded against today's cold number; `isaac --local --version` still cold. Version bumps; pins are a train step.
+
+## Worker checkpoint (2026-09-18, scrapper@isaac-work-2)
+
+Done: Foundation branch `bean/isaac-gar0` @ `bb00300` adds raw pointer reading, `--local`, remote routing before config resolution, failure/module diagnostics, routing feature steps, and activates the authorized scenarios. Focused scenario `features/cli/remote_routing.feature:26` is green (1 example/3 assertions); CLI args specs are green (8/8).
+
+Current state: remaining Foundation routing scenarios have not been rerun after the pointer/home fixture fix; proxy management/failure implementation is untouched. Next: run `bb features features/cli/remote_routing.feature`, fix any remaining red, then implement `isaac remote use|off|status` at `isaac-cli-proxy-gar0/src/isaac/cli_proxy/cli.clj:18` and drive `features/remote.feature:305` onward.
