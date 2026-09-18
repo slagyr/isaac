@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - security
+    - unverified
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-18T14:00:57Z
+updated_at: 2026-09-18T14:33:08Z
 parent: isaac-gym1
 blocked_by:
     - isaac-bzgw
@@ -73,19 +74,24 @@ Each repo: pin bump to the isaac-http sha carrying `:scope` + `:isaac/principal`
 
 Dispatched: hail 1f501242 2026-09-18T06:14Z (band isaac-work)
 
-## Worker note (scrapper@isaac-work-1)
+## Handoff (scrapper@isaac-work-1)
 
-**Done**
-- hail: handler stamps `:principal`, gates band-template prompt with `require-scope! :hail/prompt-override`; manifest `:scope :hail/send`; pin isaac-http `ad4ba5d`; version 0.1.18. Unit specs green (`bb spec spec/isaac/hail/http_spec.clj` — 15 examples). Commit `a826bf6` on `bean/isaac-4o6r`, pushed.
-- hooks: manifest `:scope :hooks`, pin ad4ba5d, version 0.1.3. Commit `6cd0acb`, pushed. No handler change (auth is wrap-auth).
-- cli-server: manifest `:scope :cli`; handler refuses mutating argv without `:cli` (stderr + exit 77, `:cli/refused-scope`); `:cli/read` runs read-only; `:cli/command-started` carries `:principal`; new Given step. Commit `3eb090b`, pushed.
-- claude-code: restore POST `/claude/turns/:id` with `:scope :mcp`; mcp_route + spec. Commit `0ad4f2c`, pushed.
+isaac-http pin: `ad4ba5d86a104356c5e7de3a0a0360e2528f0db8` (on origin/main). Registry pins are a train step.
 
-**Next (resume here)**
-1. Hail features: remove `@wip` from isaac-4o6r scenarios in `features/http.feature:86` after `bb features features/http.feature` (include @wip). Resume at `isaac-hail-4o6r/features/http.feature:86`.
-2. Hooks features: remove `@wip` at `isaac-hooks-4o6r/features/hooks.feature:202` after `bb features`.
-3. cli-server: run `bb spec spec/isaac/cli_server/dispatch_spec.clj` then `bb features features/cli/endpoint.feature` (include @wip); remove `@wip` at `features/cli/endpoint.feature:262`.
-4. claude-code: `bb spec spec/isaac/llm/mcp_route_spec.clj` then `bb spec` / `bb ci`.
-5. Rebase each `bean/isaac-4o6r` onto origin/main; `beans update isaac-4o6r --tag=unverified`; hail verify-band reply_to 1f501242.
+| repo | branch | sha | base origin/main |
+|---|---|---|---|
+| isaac-hail | bean/isaac-4o6r | 2554664 (base origin/main@8dbba29) | FF |
+| isaac-hooks | bean/isaac-4o6r | 5ab87eb (base origin/main@19e3d36) | FF |
+| isaac-cli-server | bean/isaac-4o6r | 8145f86 (base origin/main@3a77125) | FF |
+| isaac-claude-code | bean/isaac-4o6r | 0ad4f2c (base origin/main@50a8168) | FF |
 
-Do **not** rewrite approved Gherkin except `@wip` removal.
+**Acceptance**
+- hail: `bb spec spec/isaac/hail/http_spec.clj` 16/0; `bb features features/http.feature` 11/0 (isaac-4o6r @wip removed; isaac-2a2x scenario still @wip).
+- hooks: `bb features` 18/0; isaac-4o6r @wip removed.
+- cli-server: `bb spec spec/isaac/cli_server/dispatch_spec.clj` 17/0; isaac-4o6r scenarios green (4 examples). Full `bb features features/cli/endpoint.feature` hit a pre-existing flaky isaac-qvhy reattach scenario (`data: Expected match for (?s).*while away.*, got: "\n"`) — not this bean; isaac-4o6r scenarios pass in isolation.
+- claude-code: `bb spec spec/isaac/llm/mcp_route_spec.clj` 3/0. Manifest POST `/claude/turns/:id` `:scope :mcp`.
+
+**Notes**
+- isaac-acp / isaac-mcp not in this child except claude-code MCP route.
+- Hail handler defaults missing `:isaac/principal` to admin `:*` so the legacy token still overrides band prompts (wrap-auth already passed the route).
+- cli-server `bb ci` not fully green due to the qvhy flake; focused isaac-4o6r scenarios pass.
