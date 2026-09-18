@@ -1,13 +1,13 @@
 ---
 # isaac-lsz2
-title: 'Module repos pin sibling bean-branch shas that verify squashes away: isaac-cli-server CI red (foundation 3963266), isaac-server agent pin unreachable'
+title: 'Fleet-wide dangling pins: 11 module repos pin foundation at a squashed bean-branch sha (ad0a97b, bean/isaac-1fwl) — 5 repos'' CI red; repin everything to main'
 status: in-progress
 type: bug
-priority: high
+priority: critical
 tags:
     - ci
 created_at: 2026-09-18T04:46:20Z
-updated_at: 2026-09-18T17:55:58Z
+updated_at: 2026-09-18T23:54:17Z
 ---
 
 ## Problem
@@ -51,3 +51,20 @@ CI green on both repos' main; the sweep above re-run shows no unreachable pins.
 ## Structural fix
 
 The root cause (in-flight cross-repo pins that verify squashes away) is **isaac-j4jr**: verify repins before merging, `bb lint-pins` in every `bb ci`, `:dev-local` while in flight. This bean stays the symptom fix; the rule in "Fix 3" above is superseded by that bean.
+
+
+## Re-scoped to the fleet (planner, 2026-09-18 23:50Z) — CRITICAL
+
+The 1fwl worker's foundation branch head `ad0a97b7f039814dc92916299baf3c07a5b86f3a` was pinned by nearly every module repo during the 09-18 pin-bump wave; verify squashed isaac-1fwl to `cc53d69` and the branch `bean/isaac-1fwl` survives only by accident. It is on NO main. Current CI:
+
+| repo | CI | pin problem |
+|---|---|---|
+| isaac-google, isaac-gmail, isaac-mcp, isaac-claude-code | **red** — Commit not found | foundation `ad0a97b` |
+| isaac-gchat | **red** — Commit not found | isaac-google at a bean-branch sha (find it in deps.edn; pin google main) + foundation `ad0a97b` |
+| isaac-http (checkout isaac-server) | **red** | foundation `3963266` + agent `b6284e4` (the legs above) |
+| isaac-hail, isaac-acp, isaac-cron, isaac-discord, isaac-hooks | green/other | foundation `ad0a97b` — green only via runner cache; goes red the day the branch is deleted |
+| isaac-agent | — | foundation `1c8e45b` via leftover `bean/isaac-t1om` (leg 2 above) |
+
+**Do**: in every repo above, repin foundation (and foundation-spec / test-support / marigold.*) to foundation main `0b120cc` or newer, gchat's google pin to google main, server's agent pin to agent main, agent's foundation pin to main. One commit per repo, `bb ci` green (or the pre-existing real reds noted — discord has 3 genuine test failures and hooks 1 that are NOT pin problems; leave those to their own beans unless the repin fixes them). Do NOT delete `bean/isaac-1fwl` or `bean/isaac-t1om` until every repo is repinned and green.
+
+Order: foundation-dependent repos first (they only need the foundation repin), then gchat (needs google repinned first), then server. Land each via verify as it goes green — do not hold the fleet for the slowest one.
