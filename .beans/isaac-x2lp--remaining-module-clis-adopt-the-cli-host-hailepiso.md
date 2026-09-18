@@ -52,3 +52,20 @@ Do **not** migrate agent or acp here. Do **not** land foundation. Pin bump is is
 
 ## Promoted (planner, 2026-09-18)
 isaac-1fwl (foundation leg) landed on foundation main cc53d69 — the blocker this bean named is satisfied; specs-only acceptance stands. Bump the foundation pin to main (not a bean-branch sha — see isaac-lsz2/isaac-j4jr).
+
+
+## Checkpoint (scrapper@isaac-work-2)
+
+Foundation pin target: `1afd934fff001cd9b75c4121546d961d96e6e02a` (origin/main).
+
+| repo | branch | sha | status |
+|---|---|---|---|
+| isaac-hail | bean/isaac-x2lp | 25db2ef (base origin/main@8dbba29) | hail stdin via host/in, :hosted true, lint-cli-host, version 0.1.18 |
+| isaac-cli-proxy | bean/isaac-x2lp | f372f6d (base origin/main@c31162f) | remote :local-only, tty/stdin via host, lint-cli-host, version 0.1.5 |
+| isaac-episodes | bean/isaac-x2lp | (unstarted, worktree at a58929a) | next: pin + load-config!/runtime/install! → ensure-runtime! |
+| isaac-claude-code | bean/isaac-x2lp | (unstarted, worktree at 50a8168) | mcp-bridge stdin + ISAAC_SERVER_TOKEN via host |
+| isaac-worksite | bean/isaac-x2lp | (unstarted, worktree at 99ff219) | lock owner id + embedded vs server lock spec |
+| isaac-foreman | bean/isaac-x2lp | (unstarted, worktree at a2057ae) | lint-cli-host only |
+| isaac-server | bean/isaac-x2lp | (unstarted, worktree at cacb263, behind origin/main) | drop duplicate cli-api/run :server |
+
+Resume: isaac-episodes-x2lp. Do not land foundation. Pin bump only.
