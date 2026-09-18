@@ -106,3 +106,5 @@ Verify-fail repair. Restoring the planner table makes refused-create red: `:goog
 ## Exceptions
 
 - `features/comm/gchat/registrations.feature`, scenario "a refused create is logged with Google's reason and retried on the next tick", the `the log has entries matching:` table (line 72 on `bean/isaac-vo2q` @ d8b0df0): the planner table put the `:google/registered` expiry under the `reason` column. The bean pins that event as logging `:key :expires-at` (not `:reason`), so the worker's table is the correct reading: an `expires-at` column added, the `:google/registered` row's `reason` cell emptied and `2026-09-25T12:00:00Z` moved to `expires-at`. Authorized by the planner 2026-09-18; no other feature edits beyond `@wip` removal.
+
+Verify hail: 60f87183 2026-09-18T22:14:35Z (band isaac-verify, re-verify after Exceptions)
