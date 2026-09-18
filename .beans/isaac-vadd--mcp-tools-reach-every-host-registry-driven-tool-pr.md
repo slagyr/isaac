@@ -1,14 +1,14 @@
 ---
 # isaac-vadd
 title: 'MCP tools reach every host: registry-driven tool-provider berth (server, prompt, acp)'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - mcp
     - agent
 created_at: 2026-09-18T01:36:32Z
-updated_at: 2026-09-18T01:36:32Z
+updated_at: 2026-09-18T01:41:56Z
 parent: isaac-uhvt
 ---
 
@@ -33,7 +33,7 @@ Net: on zanebot an `mcp.<id>.command` entry validates and does nothing. No proce
 - isaac-eqkb embeds `prompt`/`acp` in the server process (isaac-dqy9); the embedded host skips `:install!`, so per-command starts would stop firing exactly where they matter.
 - isaac-3q4m `:isaac/component` is daemon-only; the standalone `prompt` (and `--local`) would still be blind.
 
-## Design (proposed — confirm before promoting to todo)
+## Design (approved 2026-09-17, Micah)
 
 **A tool-provider berth, resolved lazily by the registry.** The registry already has the one seam that runs in every host at turn time: `activate-missing-tool!` (registry.clj:54), called from `tool-definitions` (3-arity) and `execute`. Extend it for *dynamic* namespaces.
 
@@ -53,7 +53,7 @@ Net: on zanebot an `mcp.<id>.command` entry validates and does nothing. No proce
 
 No host code changes. Does not touch isaac-1fwl's `prompt`/`acp` boot surfaces — land after 1fwl's agent pin to avoid churn, not blocked by it.
 
-## Proposed scenarios (isaac-mcp `features/hosts.feature`, NOT yet written — approve first)
+## Scenarios (approved 2026-09-17, Micah) — committed `@wip` in isaac-mcp `94df537` `features/hosts.feature`
 
 Reuse: `default Grover setup`, `config:`, `the crew "main" allows tools:`, `the following sessions exist:`, `the following model responses are queued:`, `isaac is run with {args}`, `the exit code is 0`, `session "…" has transcript matching:`, `stdin is:`, `the ACP commands are registered`. Fixture: `test-resources/marigold/lens_mcp.bb`. New steps: none.
 
@@ -61,10 +61,13 @@ Reuse: `default Grover setup`, `config:`, `the crew "main" allows tools:`, `the 
 2. **acp session invokes an MCP tool** — same config/allow/queue; stdin = initialize + session/new + session/prompt; `When isaac is run with "acp --session lens-acp"`; exit 0; transcript matching as above.
 3. **existing lifecycle + turn scenarios pass with the helper no longer hand-starting the runtime** (no new scenario; the diff to `mcp_steps.clj` is the assertion).
 
-## Acceptance (fill selectors once scenarios are committed `@wip`)
+## Acceptance
+
+Definition of done: `@wip` removed from `features/hosts.feature` and all of these green.
 
 ```
-cd isaac-mcp && bb features features/hosts.feature
+cd isaac-mcp && bb features features/hosts.feature:21
+cd isaac-mcp && bb features features/hosts.feature:30
 cd isaac-mcp && bb features features/lifecycle.feature features/turn.feature   # green with mcp_steps.clj no longer calling start!
 cd isaac-agent && bb spec   # provider lookup: exact token, glob token, nil provider
 cd isaac-mcp && bb ci
@@ -75,3 +78,5 @@ cd isaac-mcp && bb ci
 - Hot reload of `:mcp` (on-config-change!) — later bean.
 - HTTP/SSE transport, OAuth, MCP resources/prompts, ACP client `mcpServers` (isaac-zt4h).
 - Adding MCP to isaac-http `optional-registry-syms` (server-only; superseded by the provider seam).
+
+Worker note: the acp scenario needs isaac-acp's steps (`stdin is:`, `isaac is run with` for acp) on the `:features` alias — add isaac-acp + its spec-support as `:features` extra-deps, pinned to the same train as the agent pin.
