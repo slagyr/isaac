@@ -1,13 +1,13 @@
 ---
 # isaac-x2lp
 title: Remaining module CLIs adopt the CLI host (hail/episodes/claude-code/worksite/cli-proxy/foreman/server)
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T04:57:13Z
+updated_at: 2026-09-18T06:02:44Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
