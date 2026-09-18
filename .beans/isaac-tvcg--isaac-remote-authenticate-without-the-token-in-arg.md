@@ -1,15 +1,14 @@
 ---
 # isaac-tvcg
 title: 'isaac remote: authenticate without the token in argv (--token-file / --token-env / ISAAC_REMOTE_TOKEN / pointer file); deprecate --token'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
     - security
-    - unverified
 created_at: 2026-09-17T22:51:02Z
-updated_at: 2026-09-18T01:35:46Z
+updated_at: 2026-09-18T01:42:35Z
 blocking:
     - isaac-gar0
 ---
@@ -95,3 +94,9 @@ Verification:
 - `bb spec` — 24 examples, 0 failures, 61 assertions.
 - `bb ci` — specs/features/slow features all green; slow lane 4 examples, 0 failures, 10 assertions.
 - `git diff --check` clean.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-cli-proxy 41058d7dee57f728a0919af529719e6948cb75e4
