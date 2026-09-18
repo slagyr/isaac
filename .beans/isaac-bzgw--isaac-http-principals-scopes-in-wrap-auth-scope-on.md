@@ -66,13 +66,14 @@ Log events this bean defines: `:http/request` (info; `:principal :uri :status`),
 | the client sends GET {path} with header {header} (+ `… N times`) | reuse |
 | the response status is {n} / the response header … matches … | reuse |
 | the log has entries matching: / the log has no entries matching: | reuse |
-| the config file {path} does not contain {text} / the isaac config path {path} is/matches … | reuse (foundation config steps; `matches` variant may need adding as an alias of the `is` step with a regex) |
+| the config file {path} does not contain {text} | reuse (foundation) |
+| **the isaac config path {path} matches {regex}** | **NEW — Then-side matcher; the existing `the isaac config path … is …` is a Given that SETS a value** |
 | **principal {name} is configured with secret {secret} and scopes {scopes}** (+ **… expiring {date}**) | **NEW — computes sha256 of the secret and writes `server.auth.principals.<name>` {:hash :scopes (:expires)} into the root config; runnable before or after server start** |
 | **principal {name} is removed from config** | **NEW** |
 | **a fixture route {method} {path} requires scope {scope}** / **… declares no scope** / **… requires scope {scope} and its handler requires {scope2}** | **NEW — registers a 200-handler route through the :isaac.http/route berth path (with/without :scope; the third variant's handler calls `isaac.http.auth/require-scope!`)** |
 | **the log has exactly {n} entries matching:** | **NEW — count variant of the existing matcher** |
 
-Four new step families.
+Five new step families.
 
 ## Acceptance
 ```
