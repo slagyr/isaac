@@ -121,3 +121,5 @@ Planner-authorized feature edits (plan, 2026-09-18), in reply to verify fail 1:
 
 - `isaac-google features/push_door.feature` scenario "a Google token opens only the door" (:59): the step `Given a fixture route GET /fixture requires scope :fixture/read` may read `Given a fixture route GET "/fixture" requires scope "fixture/read"`. Reason: the planner wrote the line from isaac-bzgw's step ledger before that step landed; bzgw's step as landed takes quoted string arguments (`{method} {path:string} requires scope {scope:string}`). Same assertion, same fixture, only the argument quoting. No other wording change is authorized.
 - `@wip` removal on the file is permitted as usual.
+
+Verify hail: e83a0782 2026-09-18T19:09Z (band isaac-verify) — attempt 2 with ## Exceptions
