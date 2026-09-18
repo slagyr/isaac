@@ -80,3 +80,17 @@ bb spec && bb ci
 - `isaac remote --help` and README document the order and the deprecation.
 - Module version bump; registry pin is a train step (planner).
 - Field check after the train (verifier, zanebot): `ISAAC_REMOTE_TOKEN=… isaac remote wss://…/cli -- logs --follow &` then `ps -ww -o args= -p $!` shows no token.
+
+## Worker checkpoint (2026-09-18, scrapper@isaac-work-1)
+
+Done:
+- Added `isaac.cli-proxy.token` with precedence, mode validation, token-file trimming, named/default env, and pointer-token resolution unit coverage.
+- Extended remote CLI options/deprecation warning, added acceptance steps, removed the ten owned `@wip` tags, documented auth order, and bumped module to 0.1.4.
+- Unit resolver/CLI specs are green: 10 examples, 0 failures, 12 assertions.
+- Pushed `bean/isaac-tvcg` @ `e9087b3`.
+
+Current RED:
+- Full remote feature has one remaining pointer `${VAR}` failure: expected `Bearer pointer-secret`, got no Authorization. Literal-readable refusal and mismatched-URL scenarios are green in focused run.
+
+Next:
+- Resume at `spec/isaac/cli_proxy/cli_proxy_steps.clj:204` and `src/isaac/cli_proxy/token.clj:76`; inspect why feature env override `ZANE_TOK` is absent from the resolver map, then run all `features/remote.feature`, `bb spec`, and `bb ci`.
