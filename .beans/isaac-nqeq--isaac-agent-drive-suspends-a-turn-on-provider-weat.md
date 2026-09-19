@@ -5,9 +5,10 @@ status: in-progress
 type: feature
 priority: high
 tags:
+    - unverified
     - turn
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-18T16:27:28Z
+updated_at: 2026-09-19T00:31:05Z
 parent: isaac-ugpq
 ---
 
@@ -58,22 +59,22 @@ cd isaac-agent && bb features features/bridge/weather_suspend.feature features/b
 Version bump; pin is a train step. Field check after the train (with isaac-q2v5 landed, or with hail's defer still present — both are safe since the turn no longer returns `:unavailable?` to hail from the drive): on zanebot during a 429 window, `server.log` shows `:turn/suspended … :retry-at` and later `:turn/resumed`, NO `:hail/delivery-deferred`, and the bean's work continues in the same transcript.
 
 
-## Checkpoint (scrapper@isaac-work-2)
+## Handoff (scrapper@isaac-work-2)
 
-branch: bean/isaac-nqeq @ d0ac527 (base origin/main@d455915). Unit specs green; features not yet run green.
+branch: bean/isaac-nqeq @ 683fd3c (base origin/main@679aee8).
+
+Acceptance green:
+- `bb features features/bridge/weather_suspend.feature features/bridge/suspend.feature features/session/resume_repair.feature features/llm/provider_walls.feature` — 24 examples, 0 failures
+- `bb spec` — 1645 examples, 0 failures
+- version already 0.1.72
+
+`bb ci` failed once on a pre-existing flake (`session_steps_spec` wait-gate drain) that is green on focused re-run and on `bb spec`. Not a product failure.
 
 **Done**
-- `isaac.drive.weather` stamps `:suspended` markers (retry-at, suspend-count, reason).
-- Drive weather path (`turn.clj` execute-llm-turn!) stamps instead of returning `:unavailable?`.
-- Bridge cleanup keeps the marker when `:stopReason` is `"suspended"`.
-- Boot resume defers markers whose `:retry-at` is in the future (`:resume/weather-deferred`).
-- New steps in `session_steps.clj`: send-at, seed suspended marker, resume sweep, exec-count, llm-request tool result.
-- 503 classified as wall without inventing retry-after.
-- `@wip` stripped from `features/bridge/weather_suspend.feature`; version 0.1.72.
-
-**Red / next**
-Feature acceptance not green yet. Resume:
-1. `cd /Users/zane/agents/isaac/work-2/isaac-agent-nqeq && bb features features/bridge/weather_suspend.feature`
-2. Fix first failure — likely `turn-result-is` vs `"suspended"`, marker dotted keys, sweep not re-driving via `from-queue?`, or 429 retry-after seconds vs ms.
-3. Then remaining scenarios (attention notice, cancel, config-reload trigger).
-4. `bb features features/bridge/suspend.feature features/session/resume_repair.feature features/llm/provider_walls.feature && bb spec && bb ci`
+- Drive stamps a durable weather marker (`:suspended`, `:reason`, `:suspended-on`, `:suspended-at`, `:retry-at`, `:suspend-count`) instead of ending the turn.
+- Stamp result keeps `:unavailable?` (and `:retry-after-ms` when the provider gave one) so `provider_walls.feature` / `prompt --json` still classify walls.
+- `release-turn-marker!` keeps weather-parked markers (`:retry-at` present); shutdown suspend still stamps `:boundary`.
+- Resume sweep re-drives after `:retry-at`; boot resume defers future `:retry-at` (`:resume/weather-deferred`) and only re-drives weather markers that have `:retry-at` (legacy hail `:suspended` without retry-at still requeues).
+- Cancel of a weather-parked turn deletes the marker.
+- Config-reload step sweeps immediately (`:trigger :config-reload`).
+- 429 classified as wall; usage-limit messages use configured 30 min retry-after.
