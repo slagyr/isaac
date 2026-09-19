@@ -78,3 +78,5 @@ bb bean-gate verify isaac-rmq6 # exit 2, "no feature-baseline: use the verify pa
 ## Exceptions
 
 (none)
+
+Dispatched: hail 1542773b 2026-09-19T20:43:42Z (band isaac-work)
