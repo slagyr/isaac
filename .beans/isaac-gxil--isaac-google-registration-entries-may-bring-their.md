@@ -1,14 +1,13 @@
 ---
 # isaac-gxil
 title: 'isaac-google: registration entries may bring their own :remote view and :delete! (for registrations Google cannot list)'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - google
-    - unverified
 created_at: 2026-09-19T19:18:33Z
-updated_at: 2026-09-19T19:18:33Z
+updated_at: 2026-09-19T19:20:44Z
 parent: isaac-bv1l
 blocking:
     - isaac-12iz
@@ -25,3 +24,9 @@ Unit (spec/isaac/google/registration_spec.clj, done): an entry with :remote/:del
 
 ## Handoff / resume
 Planner finished locally (2026-09-19). branch: bean/isaac-12iz @ ac7a5b3 (base origin/main@4ece452) in isaac-google — fast-forward from main. Branch is named for 12iz; verify lands it as this bean. isaac-gmail's bean/isaac-12iz pins google at ac7a5b3 and is repinned by the planner to the landed main sha before 12iz is handed to verify.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-google f9ae6fc608792dfdf6fe7d9cbd82edb414c0f038
