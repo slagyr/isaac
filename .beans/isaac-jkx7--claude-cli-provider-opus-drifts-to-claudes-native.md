@@ -1,15 +1,14 @@
 ---
 # isaac-jkx7
 title: 'claude-cli provider: opus drifts to Claude''s native <invoke> tool syntax; unparsed calls end the turn early with fabricated results'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - claude-cli
     - tool-protocol
-    - unverified
 created_at: 2026-09-03T22:20:42Z
-updated_at: 2026-09-19T00:05:57Z
+updated_at: 2026-09-19T00:09:58Z
 ---
 
 Observed 2026-09-03 after scrapper/prowl moved to :claude-opus (claude-cli provider) during the grok credit outage.
@@ -101,3 +100,9 @@ features/llm/api/claude_cli.feature (commit 593704e) removed @wip (permitted) AN
 Replaced with a comment claiming hail's :unavailable? path already covers it. Bean acceptance listed that scenario at :425 and said if it moves to isaac-hail, run hail features too. It did not move; it was dropped. Worker note admits Hail-weather Gherkin dropped.
 
 Do not land. Restore the planner hail-weather scenario (keep only @wip removal), or get a ## Exceptions entry that names that exact deletion. Then re-hand for verify.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-claude-code bf96e32d8021a61e7999bab87aa12d2f1b728807
