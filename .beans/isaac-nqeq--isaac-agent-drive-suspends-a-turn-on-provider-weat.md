@@ -1,14 +1,13 @@
 ---
 # isaac-nqeq
 title: 'isaac-agent: drive suspends a turn on provider weather; resume sweep re-drives it after retry-at; boot resume honours retry-at'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - turn
-    - unverified
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-19T00:49:07Z
+updated_at: 2026-09-19T00:53:53Z
 parent: isaac-ugpq
 ---
 
@@ -122,3 +121,9 @@ contains "api:access".
 - Isolated: turn_exhaustion:68 + cli-prompt:22 + weather_suspend + siblings 26/0/95
 
 Do not land. Do not pin.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-agent da1990c2bef32532fcccca7da9b8e7b6293b24c8
