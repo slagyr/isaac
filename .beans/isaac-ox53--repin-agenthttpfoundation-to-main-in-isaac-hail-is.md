@@ -7,9 +7,8 @@ priority: high
 tags:
     - ci
     - pins
-    - unverified
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T19:30:21Z
+updated_at: 2026-09-19T19:34:55Z
 blocked_by:
     - isaac-x2lp
 ---
@@ -94,3 +93,38 @@ claude-code bean/isaac-ox53 @ d4a04da (base origin/main@96c985d). Hail and cli-p
 Agent fd89226 weather-stamps login failures (`:unavailable? true :reason :auth`) and drops `:error`. Feature steps now treat that stamp as a loud error. No feature-file edits.
 
 ISAAC_GIT=1 bb lint-cli-host && bb spec && bb features: lint ok; spec 80/0 (3 pending @real); features 50/0/166. claude_cli.feature:108 green.
+
+
+
+## Verify fail (attempt 2, 2026-09-19): isaac-cli-proxy pin-introduced features-slow red — first remote-command scenario (green on origin/main@3cb4198)
+
+HEAD:
+
+- isaac-hail bean/isaac-ox53 @ 113111d (base origin/main@c5f9df1)
+- isaac-claude-code bean/isaac-ox53 @ d4a04da (base origin/main@96c985d)
+- isaac-cli-proxy bean/isaac-ox53 @ 0afdd29 (base origin/main@3cb4198)
+
+Working trees: hail has untracked wt/; others clean. No feature-file tamper. Pins on origin/main (agent fd89226, foundation df64bf1, http 493416d, cli-server 007da61).
+
+GREEN means FULL suite. Pre-existing must reproduce on origin/main. Do not land.
+
+### isaac-claude-code PASS this attempt (attempt-1 fail fixed)
+
+ISAAC_GIT=1 bb lint-cli-host && bb ci @ d4a04da: lint ok; spec 80/0 (3 pending @real); features **50/0/166**. claude_cli.feature:108 green via weather-stamp loud-error? in claude_cli_steps.clj. No feature-file edits.
+
+### isaac-hail — 6 feature fails PRE-EXISTING (do not fail this bean for hail)
+
+ISAAC_GIT=1 bb lint-cli-host ok; spec 170/0. Features 163/6 fail/2 pending (same hail deferral/delivery family). Reproduced on origin/main@c5f9df1: 163/6/2 pending. Not pin-introduced.
+
+### isaac-cli-proxy FAIL — pin-introduced features-slow red
+
+lint-cli-host ok. spec 26/0. features 29/0. features-slow **4 examples, 2 failures**:
+
+1. "a remote command runs on the server and streams back" — **NEW**. Isolated on origin/main@3cb4198 (pre-ox53 pins): that scenario is **green** (features-slow 4 examples, **1** failure — only token-reject). Pin of http 493416d + cli-server 007da61 introduced this red.
+2. "the server rejects a remote command without a valid token" — reproduced on origin/main@3cb4198 (and on 1f96845 during x2lp). Pre-existing; bean Do asked for this to go green as written, still red, but the **new** first-scenario fail is the hard gate.
+
+Bean Do: "Fix what the newer pins surface in the repo's own specs/features." The first @slow scenario is pin-surfaced and unmet.
+
+Do not land any ox53 branch. Make features-slow first remote-command scenario green under the new http/cli-server pins (spawned server classpath must honor http.auth / tdlz), then re-hand. Token-reject remaining on main is still in-scope of the original Do if planner keeps that bar.
+
+HEAD (beans): see commit. Working tree: clean except hail wt/.
