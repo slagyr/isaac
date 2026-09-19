@@ -1,14 +1,14 @@
 ---
 # isaac-4sqh
 title: 'isaac-http: generic OIDC/JWT verification (JWKS, iss/aud/exp) with data-shaped :isaac.http/identity trust rules — modules contribute policy, http owns the crypto'
-status: todo
+status: in-progress
 type: feature
 priority: critical
 tags:
     - http
     - security
 created_at: 2026-09-19T02:38:06Z
-updated_at: 2026-09-19T02:38:06Z
+updated_at: 2026-09-19T02:41:53Z
 parent: isaac-gym1
 ---
 
