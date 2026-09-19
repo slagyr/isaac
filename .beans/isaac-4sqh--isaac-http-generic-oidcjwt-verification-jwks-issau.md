@@ -5,10 +5,11 @@ status: in-progress
 type: feature
 priority: critical
 tags:
-    - http
     - security
+    - unverified
+    - http
 created_at: 2026-09-19T02:38:06Z
-updated_at: 2026-09-19T02:41:53Z
+updated_at: 2026-09-19T18:33:54Z
 parent: isaac-gym1
 ---
 
@@ -39,7 +40,20 @@ Version bump; rides the http train. Consumers: isaac-google (isaac-x37l), GitHub
 
 ## Handoff / resume
 
-branch: bean/isaac-4sqh @ (push pending) (base origin/main@d082206)
+branch: bean/isaac-4sqh @ b697890 (base origin/main@d082206) — fast-forward from main.
+
+**Finished by the planner locally (2026-09-19, Micah's call after the worker held the bean overnight).** What the worker's checkpoint had wrong, and what changed:
+
+- The reflective key construction (`Class/forName` + RSAPublicKeySpec/ECPublicKeySpec) does not exist under babashka — and the server runs as `bb isaac` — so in production every real Google/GitHub token would have failed closed. Keys are now built from the JWK parts as a DER SubjectPublicKeyInfo and handed to KeyFactory via X509EncodedKeySpec (bb has that one). RS256 and ES256, proven under bb and JVM.
+- A JWT with no `exp` claim now refuses `:expired` (was accepted forever).
+- Fixture is bb-native (`spec/isaac/http/oidc_fixture.clj` reads n/e out of `.getEncoded` with a small DER reader), so `features/server/oidc.feature` runs in `bb ci`. The `@jvm` tag and `~jvm` filter are gone.
+- Identity registry + fixture reset per scenario (a registered trust rule used to leak into every later scenario and flip `auth-on?`).
+- JWKS-outage attention re-arms after the next verified token (was one-shot for the process lifetime).
+- The "JVM cannot compile" blocker was `spec-support/deps.edn` pinning foundation-spec at d4a7bf1 (pre loader split); pinned to 0b120cc like bb.edn. Local JVM runs also work with `-M:dev-local:test:...`.
+
+Acceptance run: `bb ci` → 183 spec examples, 102 feature examples, 0 failures; `clojure -M:test:spec spec/isaac/http/oidc_spec.clj` 17/17; `clojure -M:test:features features/server/oidc.feature` 9/9.
+
+Note for isaac-x37l: the `:isaac.http/identity` berth is now a MAP of trust rules (symbol contributions are still accepted per entry via `register-identity-entry!`); isaac-google's manifest currently contributes a vector `[isaac.google.identity/verify]` and must move to `{:google-pubsub {:issuer ... :jwks ... :audience ... :claims ... :principal ...}}`.
 
 **Done:** `isaac.http.oidc/verify` (RS256/ES256, JWKS cache, kid refresh, fail-closed). Data-shaped `:isaac.http/identity` map berth + `register-identity-entry!`. JWT-first in `wrap-auth` before bearer-hash; issuer-mismatch falls through (`:unknown`). JWKS-unavailable attention once. `auth list` OIDC rows. Version 0.1.19. `features/server/oidc.feature` (@jvm) + steps. JVM unit specs green (47 examples). Native `bb features features/server/oidc.feature` skips @jvm (0 examples).
 
