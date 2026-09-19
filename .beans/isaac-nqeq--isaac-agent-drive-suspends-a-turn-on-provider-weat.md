@@ -5,10 +5,9 @@ status: in-progress
 type: feature
 priority: high
 tags:
-    - unverified
     - turn
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-19T00:31:05Z
+updated_at: 2026-09-19T00:39:08Z
 parent: isaac-ugpq
 ---
 
@@ -78,3 +77,30 @@ Acceptance green:
 - Cancel of a weather-parked turn deletes the marker.
 - Config-reload step sweeps immediately (`:trigger :config-reload`).
 - 429 classified as wall; usage-limit messages use configured 30 min retry-after.
+
+
+
+## Verify fail (attempt 1, 2026-09-19): full bb features red — turn_exhaustion.feature:68 and cli-prompt.feature:22 (green on origin/main)
+
+HEAD isaac-agent: 683fd3c (bean/isaac-nqeq). Working tree: clean. Base origin/main@679aee8; origin/main has since moved to c3a56a8 (isaac-lsz2 pin only).
+
+verify.md §7 / hail-bean-verify: GREEN means the repo FULL suite, not the bean's file:line selectors. pre-existing must reproduce on origin/main.
+
+- bb spec: 1645/0/3395 (12.68s) — pass
+- features/bridge/weather_suspend.feature: @wip removed only (no ## Exceptions needed)
+- ISAAC_GIT=1 bb features weather_suspend + named siblings: 12/0/39
+- ISAAC_GIT=1 bb features (full): 813 examples, 2 failures, 1914 assertions, 1 pending (179s)
+
+Failures (reproduce isolated on the branch; GREEN on origin/main@c3a56a8):
+
+1. llm/turn_exhaustion.feature:68 — a provider wall ends with :provider-unavailable, not :context-exhausted
+   Then the memory comm has events matching: turn-end / :provider-unavailable
+   Drive now stamps weather-suspend (:ended-by :suspended) instead of ending :provider-unavailable.
+
+2. bridge/cli-prompt.feature:22 — prompt exits nonzero on provider 403 auth rejection
+   And the stderr contains "api:access"
+   Auth weather-suspend swallows the provider message on the prompt CLI path.
+
+Isolated re-run on bean/isaac-nqeq: both red. Same two selectors on origin/main: 2/0/4.
+
+Do not land. Drive suspend must keep the existing ended-by / prompt-stderr contracts (provider_walls / prompt --json / turn_exhaustion) or those scenarios need a planner Exceptions/rewrite. Then re-hand for verify.
