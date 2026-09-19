@@ -1,15 +1,14 @@
 ---
 # isaac-fun8
 title: 'config set writes schema-invalid values: value-validator errors are dropped as reference errors'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - foundation
     - config
-    - unverified
 created_at: 2026-09-19T00:08:20Z
-updated_at: 2026-09-19T00:57:43Z
+updated_at: 2026-09-19T01:02:27Z
 ---
 
 ## Bug
@@ -115,3 +114,9 @@ squash) to foundation origin/main `df64bf15c739165c496cbf81e3d922ad3aa3346f`.
 
 ISAAC_GIT=1 bb ci: 1647 spec / 0 fail; 820 features / 0 fail / 1 pending
 (pre-existing compaction_mid_turn).
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-foundation df64bf15c739165c496cbf81e3d922ad3aa3346f
+main-sha: isaac-agent 76320fab5d2c2ca614baa10a4a37d5fdec336e0c
