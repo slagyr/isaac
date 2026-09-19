@@ -1,15 +1,14 @@
 ---
 # isaac-siua
 title: 'Stateful Responses chaining resends every historical tool result: chained cycles must carry only the outputs since the last response id'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - responses
-    - unverified
     - llm
 created_at: 2026-09-19T18:08:14Z
-updated_at: 2026-09-19T18:21:46Z
+updated_at: 2026-09-19T18:27:03Z
 ---
 
 ## Bug (observed live on zanebot, 2026-09-19 18:06Z — see isaac-1umd)
@@ -84,3 +83,8 @@ Acceptance:
 - `bb ci` 1652 specs / 825 features, 0 failures (1 pending unrelated compaction)
 
 @wip removed from both new scenarios. Verify lands the branch — do not merge/pin.
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-agent fd8922637fa2ec7a2d29d46d8c8c8ec3a495d2c3
