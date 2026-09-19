@@ -8,7 +8,7 @@ tags:
     - google
     - unverified
 created_at: 2026-09-19T21:21:25Z
-updated_at: 2026-09-19T21:21:25Z
+updated_at: 2026-09-19T21:25:36Z
 parent: isaac-bv1l
 ---
 
@@ -24,3 +24,10 @@ Fix: read `(:door-up? opts)` explicitly; `create-subscription!` merges `:respons
 
 ## Handoff / resume
 Planner fixed locally. branch: bean/google-tick-fix @ 5daea33 (base origin/main@828673d) in isaac-google — fast-forward from main. Deployed to yopp ahead of landing (pinned to the branch sha) so the rollout can continue; the pin is moved to main once verify lands it.
+
+
+
+Two more found on the same live tick, same branch (@ 1f54e30):
+3. `subscriptions.list` returns 400 without Google's required event-type filter, so the timer's remote view was always empty → create every tick → 'Subscription associated with the resource already exists'. Now filters on message.created (every Chat subscription we make carries it). Spec added.
+4. `isaac google status` read only the Workspace Events listing, so the Gmail watch showed `unknown`; it now merges entries' own :remote views. yopp shows both registrations with real expiries.
+bb ci 49 spec / 19 feature green. Yopp pinned to 1f54e30 (restart 21:24Z); repin to main after landing.
