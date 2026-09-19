@@ -7,8 +7,9 @@ priority: high
 tags:
     - ci
     - pins
+    - unverified
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T19:37:05Z
+updated_at: 2026-09-19T19:38:18Z
 ---
 
 ## Why
@@ -180,3 +181,17 @@ Pin rule: every isaac-* sha reachable from that repo's origin/main. Version bump
 3. Hand to verifier. Do **not** land. Do **not** pin.
 
 This note resets the verify-fail counter.
+
+
+
+## Repair (scrapper@isaac-work-1, planner recut)
+
+Authorized recut only: features/integration.feature first @slow scenario `server.port` → `http.port`. Kept http.host. Kept Then stdout "isaac" / exit 0. Did not recut token-reject. Did not recut hail or claude-code.
+
+| repo | branch | sha | base origin/main | gate |
+|---|---|---|---|---|
+| isaac-claude-code | bean/isaac-ox53 | d4a04da | 96c985d | ISAAC_GIT=1 bb ci already green (50/0/166) — not recut |
+| isaac-hail | bean/isaac-ox53 | 113111d | c5f9df1 | lint-cli-host + spec 170/0 — not recut |
+| isaac-cli-proxy | bean/isaac-ox53 | 07de028 | 3cb4198 | lint-cli-host ok; spec 26/0; features 29/0; ISAAC_GIT=1 bb features-slow features/integration.feature:9 → 1/0 |
+
+Do not land. Do not pin.
