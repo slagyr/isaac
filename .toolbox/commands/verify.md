@@ -108,7 +108,14 @@ On green verification, update `.verify-baseline.edn` with the latest readings. T
 
 If no baseline file exists, **do not skip silently** — seed it with the current run's measurements (writing to `.verify-baseline.edn`) and add a note to the report that the baseline was seeded. Future runs catch regressions. A missing baseline is opt-in only the first time; once seeded, the check is permanent.
 
-### 6. Acceptance criteria met
+### 6. Sibling pins reachable from origin/main
+A bean may only pin a sibling `isaac-*` repo at a sha that is an ancestor of
+that repo's `origin/main` (`git merge-base --is-ancestor <sha> origin/main`).
+Never a bean-branch sha — landing squash-merges and deletes it. Fail the
+handoff if any `deps.edn` / `bb.edn` `:git/sha` for an isaac sibling fails
+this check.
+
+### 7. Acceptance criteria met
 - Read the `## Acceptance Criteria` section of the bean.
 - For each criterion, verify it is satisfied:
   - If it references a command, run it and check the output.
@@ -116,7 +123,7 @@ If no baseline file exists, **do not skip silently** — seed it with the curren
   - If it references code changes, read the relevant files.
 - If the project uses gherclj and the criteria include "@wip removed", grep the feature files to confirm.
 
-### 7. No regressions
+### 8. No regressions
 - If the test suite showed failures unrelated to this bean, note them but don't fail the bean for pre-existing issues.
 
 ## What NOT to do

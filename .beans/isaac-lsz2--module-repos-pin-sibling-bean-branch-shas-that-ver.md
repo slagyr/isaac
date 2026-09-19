@@ -6,8 +6,9 @@ type: bug
 priority: critical
 tags:
     - ci
+    - unverified
 created_at: 2026-09-18T04:46:20Z
-updated_at: 2026-09-18T23:54:17Z
+updated_at: 2026-09-19T00:26:08Z
 ---
 
 ## Problem
@@ -93,3 +94,32 @@ Verify pins with a COLD gitlibs (`rm -rf /tmp/gl && GITLIBS=/tmp/gl clojure -Sfo
 - **Agent main (`679aee8`) is already clean**: pins foundation `cc53d69` (main), no `config-cache` reference. The dead pin is only in the RELEASED agent `0e804c0` (0.1.71, deployed) via foundation `1c8e45b` (branch-only). So the agent leg = release agent main (0.1.72) and bump downstream pins; no step port needed.
 - isaac-google `a78124b`, isaac-gchat `702a3b0`, isaac-gmail `9ba7a2e`: http → `ad4ba5d` (last http commit with a live foundation pin, pre-tdlz), agent → main `679aee8`, foundation → main, google → main; gmail dropped two steps that isaac-google main now provides (`no outbound HTTP request to … was made`, `the google auth store has access … and refresh …`). Cold-resolve + `bb ci` green locally on all three. They move to http main once the http leg lands.
 - Remaining for the worker: the isaac-http leg (`bean/isaac-lsz2` @ c787b7d, 5 feature reds), then release agent 0.1.72 and repin hail/acp/cron/discord/hooks/mcp/claude-code/cli-server/cli-proxy/episodes/worksite/foreman to agent+foundation main, verified cold.
+
+## Worker progress (scrapper@isaac-work-1, 2026-09-19)
+
+Do not land. Do not pin. Verify lands each module branch independently.
+
+### Done this session
+
+- isaac-agent `bean/isaac-lsz2` @ `cc95e9e` (base origin/main@`679aee8`) — foundation → `0b120cc`. Pushed. (prior turn)
+- isaac-http/server `bean/isaac-lsz2` @ `097ee33` (base origin/main@`234304e`) — foundation → `0b120cc`, agent → origin/main `679aee8`; comm berth + `*module-index*` bind. `bb spec` 156 green. Pushed. (prior turn)
+- isaac-cli-server `bean/isaac-lsz2` @ `87e5a6f` (base origin/main@`4a98732`) — foundation → `e4da6e0` (reachable). Pushed. (prior turn)
+- isaac-hail `bean/isaac-lsz2` @ `b020ad1` (base origin/main@`3632bd9`) — foundation `ad0a97b`→`0b120cc`. `bb spec` 168/0. Pushed.
+- isaac-cron `bean/isaac-lsz2` @ `f4bbd52` (base origin/main@`01e165e`) — same. `bb spec` 23/0. Pushed.
+- isaac-mcp `bean/isaac-lsz2` @ `44c408d` (base origin/main@`8583ebc`) — same. `bb spec` 32 examples, 1 pre-existing failure: `isaac.mcp.client` "returns a timeout error when catalog query is stare" NPE. Main CI already red (isaac-0szr). Pin-only commit. Pushed.
+- isaac-hooks `bean/isaac-lsz2` @ `7aca17b` (base origin/main@`55e228d`) — same. `bb spec` 30/0. Pushed.
+- isaac-discord `bean/isaac-lsz2` @ `3e735bd` (base origin/main@`21269d4`) — same. `bb spec` 52/0. Pushed. (bean notes genuine feature reds; leave to their own beans)
+- isaac-claude-code `bean/isaac-lsz2` @ `4507786` (base origin/main@`bf96e32`) — foundation `ad0a97b`/`0b9ecdf`/`43cf46e` → `0b120cc`. `bb spec` 78/0 (3 pending @real smokes). Pushed.
+- isaac-gchat `bean/isaac-lsz2` @ `1cb667b` (base origin/main@`826a768`) — foundation → `0b120cc`. google pin already origin/main `3f35d2c`. `bb spec` 39/0. Pushed.
+- isaac-gmail `bean/isaac-lsz2` @ `8d88c05` (base origin/main@`bc42e7a`) — foundation → `0b120cc`. google pin already `3f35d2c`. `bb spec` 17/0. Pushed.
+- isaac-google origin/main `a78124b` already pins foundation `b644562` (current origin/main, reachable) + agent `679aee8`. No further commit.
+- isaac-acp origin/main already pins foundation `1afd934` (ancestor of origin/main). No further commit.
+- AGENTS.md pin rule + verify.md checklist step "Sibling pins reachable from origin/main".
+
+### Pin target
+
+foundation main `0b120ccf68d1ca43b7f66547344796195957ab6e` (ancestor of current foundation origin/main `b644562`).
+
+### Do NOT delete
+
+`bean/isaac-1fwl` / `bean/isaac-t1om` until every listed branch is landed.

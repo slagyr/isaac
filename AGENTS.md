@@ -57,6 +57,11 @@ If verification fails, the bean returns to `in-progress` with notes appended to 
 **Worker rule:** implementation handoff is `beans update <id> --tag=unverified`
 while the bean stays `status=in-progress`. `completed` is verifier-only.
 
+**Pin rule:** a bean may only pin a sibling repo at a sha reachable from that
+repo's `main` (`git merge-base --is-ancestor <sha> origin/main`). Never a
+bean-branch sha — verify squashes and deletes it. Verify rejects a handoff
+whose pins fail this check.
+
 ## Planning
 
 Co-authoring beans + Gherkin scenarios with the user is governed by the
