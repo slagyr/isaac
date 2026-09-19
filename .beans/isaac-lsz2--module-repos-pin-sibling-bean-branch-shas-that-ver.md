@@ -6,9 +6,8 @@ type: bug
 priority: critical
 tags:
     - ci
-    - unverified
 created_at: 2026-09-18T04:46:20Z
-updated_at: 2026-09-19T00:26:08Z
+updated_at: 2026-09-19T00:42:39Z
 ---
 
 ## Problem
@@ -123,3 +122,63 @@ foundation main `0b120ccf68d1ca43b7f66547344796195957ab6e` (ancestor of current 
 ### Do NOT delete
 
 `bean/isaac-1fwl` / `bean/isaac-t1om` until every listed branch is landed.
+
+
+
+## Verify fail (attempt 1, 2026-09-19): isaac-http bb ci features red (4) + unexcepted feature edits; gchat/gmail squash conflict vs later main pins
+
+HEAD (beans): 125cc1db. Working tree: clean.
+
+Do not land remaining branches. Do not complete.
+
+### Already on origin/main (pin-only squash; branches deleted)
+
+- isaac-agent `c3a56a8b6518fbe9d1351c9faa8f1c090d0206b2`
+- isaac-cron `de59aa3a29605b3fe6b0dd9c6bc8d58ec1bbe8ec`
+- isaac-hail `c44c65490de1898e8d0a3141199001589dcfd224`
+- isaac-hooks `0602e9e616625d78fdaa74efd8b08009e2957dc1`
+- isaac-discord `6e7e411c0b1f1df20306a970330d1c947ac2b6ab`
+- isaac-claude-code `7ff4c350ac1fca7d3440a274082e804136f94e78`
+- isaac-mcp `a3977362b82573fdbd6cdfa8e7103e014df87805`
+- isaac-cli-server `007da61d029b73b347a003cff47ecae3d87eb49a` (`ISAAC_GIT=1 bb ci` 17 spec / 28 feature green)
+
+google/acp: no lsz2 branch; pins already reachable on main.
+
+### isaac-http FAIL — `bean/isaac-lsz2` @ `097ee33` (base origin/main `234304e`)
+
+`ISAAC_GIT=1 bb ci`: 156 spec / 0 fail; **86 features / 4 fail**. GREEN means full suite. Not landed.
+
+1. `features/http/config.feature` Scenario ":http bind/auth config is valid" — table is only `{:http {:host "0.0.0.0" :port 6674 :auth {:token "marigold"}}}`; agent main requires `defaults.crew`. Expected `[]`, got that error. File **not** in the branch diff — worker did not add the key here.
+2. Comm extension "Multiple comm instances of the same :type coexist" — expected event `:comm/activated`, got `:server/hello`.
+3. Module activation "Comm slot starts when configured at boot" — expected `:lifecycle/started`, got `:server/hello`.
+4. Module activation "Module activation failure surfaces a structured error" — expected module `isaac.http.test-comm`, got `nil`.
+
+These are the ex-isaac-ane7 / agent-main family the bean already named. Pin + berth/`*module-index*` bind did not make them green.
+
+### Feature-file tampering (verify.md §1) — no `## Exceptions`
+
+Branch vs origin/main edits **not** `@wip` removal:
+
+- `features/module/activation.feature` — added `:defaults {:crew "main"}` + `:crew {"main" {}}` to three scenario tables
+- `features/module/comm_extension.feature` — added `:defaults {:crew "main"}`
+
+Bean has **no** `## Exceptions` section. Recut assertions/tables only with a planner Exceptions entry, or keep the scenarios and fix the boot/activation path against agent `679aee8`.
+
+### gchat / gmail — squash CONFLICT (left in place)
+
+`git merge --squash bean/isaac-lsz2` conflicts on `bb.edn` / `deps.edn`. Skill: conflict = FAIL, `git reset --hard origin/main`, leave the branch.
+
+Main already has **newer** reachable pins than the leftover branches (do not land — would regress):
+
+| repo | origin/main | leftover `bean/isaac-lsz2` |
+|---|---|---|
+| isaac-gchat | `702a3b0` agent `679aee8` foundation `b644562` google `a78124b` | `1cb667b` agent `0e804c0` foundation `0b120cc` google `3f35d2c` |
+| isaac-gmail | `9ba7a2e` (same newer pins) | `8d88c05` (same older pins) |
+
+Worker: drop or delete those two branches after confirming main is sufficient. Do not rebase the obsolete pin commit onto main.
+
+### Required to re-hand
+
+1. `cd isaac-http && ISAAC_GIT=1 bb ci` green on `bean/isaac-lsz2` (specs + **all** features).
+2. Planner `## Exceptions` for any non-@wip feature edits, or revert those edits and fix production/boot.
+3. Do not retouch the eight already-landed repos. Do not land gchat/gmail leftover branches.
