@@ -7,8 +7,9 @@ priority: high
 tags:
     - process
     - beans
+    - unverified
 created_at: 2026-09-19T20:42:56Z
-updated_at: 2026-09-19T20:44:49Z
+updated_at: 2026-09-19T20:55:34Z
 parent: isaac-rmq6
 ---
 
@@ -80,3 +81,20 @@ bb bean-gate verify isaac-rmq6 # exit 2, "no feature-baseline: use the verify pa
 (none)
 
 Dispatched: hail 1542773b 2026-09-19T20:43:42Z (band isaac-work)
+
+
+
+## Implementation notes (scrapper@isaac-work-1)
+
+branch: bean/isaac-cy85 @ ff464071 (base origin/main@6b9c4adf)
+
+- `bb.edn` at repo root: bean-gate, spec (speclj 3.13.0), ci (= spec), hooks:install
+- `src/isaac/bean_gate.clj` — baseline + verify (git CLI, throwaway fixtures in specs)
+- `spec/isaac/bean_gate_spec.clj` — required cases (21 examples)
+
+Acceptance:
+- `cd isaac && bb ci` → 21/0
+- `bb bean-gate --help` exit 0
+- `bb bean-gate verify isaac-rmq6` exit 2, "no feature-baseline: use the verify path"
+
+This bean has no feature-baseline; old unverified path.
