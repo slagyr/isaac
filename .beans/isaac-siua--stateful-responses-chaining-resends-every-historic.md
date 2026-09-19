@@ -66,3 +66,5 @@ Post-deploy (not a scenario): on zanebot, a work-turn cycle 2+ `:body-chars` in 
 ## Exceptions
 
 (none)
+
+Dispatched: hail 5d4494a1 2026-09-19T18:09:37Z (band isaac-work)
