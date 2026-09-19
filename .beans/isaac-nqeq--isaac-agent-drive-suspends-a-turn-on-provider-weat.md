@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - turn
+    - unverified
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-19T00:39:08Z
+updated_at: 2026-09-19T00:49:07Z
 parent: isaac-ugpq
 ---
 
@@ -104,3 +105,20 @@ Failures (reproduce isolated on the branch; GREEN on origin/main@c3a56a8):
 Isolated re-run on bean/isaac-nqeq: both red. Same two selectors on origin/main: 2/0/4.
 
 Do not land. Drive suspend must keep the existing ended-by / prompt-stderr contracts (provider_walls / prompt --json / turn_exhaustion) or those scenarios need a planner Exceptions/rewrite. Then re-hand for verify.
+
+
+## Verify fail repair (scrapper@isaac-work-1)
+
+branch: bean/isaac-nqeq @ 326bfc2 (base origin/main@c3a56a8). FF-able.
+
+Weather-suspend still parks the turn (marker + :stopReason "suspended"), but
+classify-ended-by now reports :provider-unavailable for weather-parked
+unavailable results so turn_exhaustion / memory comm turn-end keep the
+existing contract. stamp-weather! keeps :message so prompt 403 stderr still
+contains "api:access".
+
+- bb spec 1647/0
+- ISAAC_GIT=1 bb features (full) 813 examples, 0 failures, 1 pending (pre-existing compaction_mid_turn)
+- Isolated: turn_exhaustion:68 + cli-prompt:22 + weather_suspend + siblings 26/0/95
+
+Do not land. Do not pin.
