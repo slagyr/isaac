@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - llm
     - responses
+    - unverified
+    - llm
 created_at: 2026-09-19T18:08:14Z
-updated_at: 2026-09-19T18:10:36Z
+updated_at: 2026-09-19T18:21:46Z
 ---
 
 ## Bug (observed live on zanebot, 2026-09-19 18:06Z — see isaac-1umd)
@@ -68,3 +69,18 @@ Post-deploy (not a scenario): on zanebot, a work-turn cycle 2+ `:body-chars` in 
 (none)
 
 Dispatched: hail 5d4494a1 2026-09-19T18:09:37Z (band isaac-work)
+
+
+
+## Implementation notes (scrapper@isaac-work-1)
+
+Shape 2: `->responses-request` chained input takes messages after the last assistant and keeps only tool / function_call_output items.
+
+branch: bean/isaac-siua @ 5eb1bdc (base origin/main@e582637)
+
+Acceptance:
+- `bb spec spec/isaac/llm/responses_spec.clj spec/isaac/llm/tool_loop_spec.clj` green (40 + 23)
+- `bb features features/llm/api/responses/stateful.feature` 6 examples, 0 failures
+- `bb ci` 1652 specs / 825 features, 0 failures (1 pending unrelated compaction)
+
+@wip removed from both new scenarios. Verify lands the branch — do not merge/pin.
