@@ -1,6 +1,6 @@
 ---
 # isaac-x37l
-title: isaac-google push door accepts an UNSIGNED OIDC token — aud+email only, no signature/iss/exp check; anyone can inject Chat/Gmail events (gate for exposing the door)
+title: 'isaac-google push door: verify Google''s OIDC token via isaac-http''s generic verifier (today it accepts an UNSIGNED token — aud+email only); gate for exposing the door'
 status: todo
 type: bug
 priority: critical
@@ -8,8 +8,10 @@ tags:
     - security
     - google
 created_at: 2026-09-19T02:28:39Z
-updated_at: 2026-09-19T02:28:39Z
+updated_at: 2026-09-19T02:38:06Z
 parent: isaac-bv1l
+blocked_by:
+    - isaac-4sqh
 ---
 
 ## Problem (found 2026-09-18 reading isaac-google `src/isaac/google/identity.clj`)
@@ -34,3 +36,8 @@ The Pub/Sub push identity source accepts a bearer as Google when `aud` = `:googl
 cd isaac-google && bb features features/push_door.feature && bb ci
 ```
 Field: on yopp with Funnel on, a hand-crafted unsigned JWT with the right aud/email → 401; a real Pub/Sub push → 204 and `:google/push-received`.
+
+
+## Re-scoped (2026-09-18, Micah): use the generic verifier
+
+The crypto moves to isaac-http (**isaac-4sqh**): JWKS fetch/cache, signature, iss/aud/exp. This bean becomes: replace `identity.clj`'s hand-rolled check with a DATA contribution to `:isaac.http/identity` — issuer `https://accounts.google.com`, JWKS `https://www.googleapis.com/oauth2/v3/certs`, audience `:google :push :endpoint`, claims `{:email <:google :push :service-account> :email_verified true}`, principal `{:name :google-pubsub :scopes #{:google/push}}` — and delete `*skip-signature?*`. Scenarios 1–5 above stay but the JWKS stub/signing steps come from isaac-http's spec-support. Blocked by isaac-4sqh.
