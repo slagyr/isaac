@@ -84,3 +84,5 @@ Do not land foundation. Pin bump only.
 **Next:** isaac-claude-code-x2lp. Then worksite, rebase cli-proxy, foreman, server. Per-repo \`bb lint-cli-host && bb ci\` before handoff.
 
 Dispatched: hail 6a7fbfb8 2026-09-19T17:57:23Z (session isaac-work-2, continuation of 697120f8 — turn ended at cycle budget without hand-off; planner watch now covers this bean)
+
+Planner note (2026-09-19): the isaac-server/isaac-http leg ("drop duplicate :server") is already landed by isaac-66we (isaac-http main d082206): the HTTP module no longer registers `:server` and the `alter-var-root` takeover is gone. Verify only; do not redo it.
