@@ -1,11 +1,11 @@
 ---
 # isaac-1umd
 title: 'Post-deploy: confirm stateful Responses chaining drops grok cycle-2+ body size (isaac-7l5m)'
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-07-13T18:27:26Z
-updated_at: 2026-07-13T18:27:26Z
+updated_at: 2026-09-19T18:09:21Z
 ---
 
 ## Goal
@@ -41,3 +41,14 @@ la8h->exg7).
 - No production code expected here; this is an environment/observation check.
 - Depends on isaac-7l5m merging first and the `:isaac.agent` registry pin
   advancing.
+
+## Observation (planner, 2026-09-19 18:06Z, zanebot)
+
+`models/grok-4-6.edn` gained `:stateful true` at 18:03Z (hot-reloaded; scrapper/verify/plan crews all use it). Diagnostic two-cycle turn on `isaac-work-3` (exec `date -u`), from `cli.log`:
+
+| cycle | body-chars | body-keys |
+|---|---|---|
+| 1 | 958,425 | input instructions model reasoning store stream tools |
+| 2 | 844,856 | input model **previous_response_id** reasoning store stream tools |
+
+Chaining is active (xAI accepted `previous_response_id`, 200), but cycle 2 is 88% of cycle 1, not KB-scale. Cause: `isaac.llm.api.responses/->responses-request` builds the chained `:input` by filtering **every** tool-role / function_call_output message in the whole transcript (253 tool results, 871,655 chars on work-3), not only the outputs produced since the last response id. Filed as isaac-siua. Acceptance item 2 therefore fails for an isaac-agent reason, not a provider one; this observation bean is done.
