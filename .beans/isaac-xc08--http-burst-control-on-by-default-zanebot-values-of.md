@@ -1,15 +1,14 @@
 ---
 # isaac-xc08
 title: HTTP burst control on by default (zanebot values), off with :http :burst :enabled false; knobs override individually; hot-reload
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - http
     - security
-    - unverified
 created_at: 2026-09-19T01:25:54Z
-updated_at: 2026-09-19T01:51:32Z
+updated_at: 2026-09-19T01:56:30Z
 ---
 
 Micah (2026-09-18): "HTTP throttling burst control should be on by default, with a way to turn it off." The earlier conversation left no bean; this is it.
@@ -69,3 +68,9 @@ Acceptance:
 - version 0.1.17
 
 Do not land. Do not pin.
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-http 6915e6e7437b8eaa65f489933db49d2d8d416496
+main-sha: isaac-server 6915e6e7437b8eaa65f489933db49d2d8d416496
