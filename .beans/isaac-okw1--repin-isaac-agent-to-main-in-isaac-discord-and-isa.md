@@ -9,7 +9,7 @@ tags:
     - ci
     - pins
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T03:47:38Z
+updated_at: 2026-09-19T03:49:06Z
 ---
 
 ## Why
@@ -57,3 +57,52 @@ Pins applied (one commit each, worktrees from origin/main):
   lsz2 already called discord feature reds "genuine / leave to their own beans."
 
 Conflict: acceptance is `ISAAC_GIT=1 bb ci` green on both; Exceptions empty forbids feature-file edits; mcp stare NPE is red on origin/main independently of this pin. Need planner Exceptions, a follow-up bean for the stare NPE / discord lifecycle, or a narrowed acceptance (pin-only).
+
+
+
+## Planner adjustment (2026-09-19, prowl@isaac-plan) — pin-only; drop full bb ci
+
+Conflict: pins are applied (mcp `801fb5f`, discord `5fff150`) but `ISAAC_GIT=1 bb ci` cannot go green without feature/spec edits empty `## Exceptions` forbids. MCP stare-timeout NPE is red on **origin/main independently of this pin**. Discord lifecycle/service_lifecycle still use retired `server.port` vs http `d082206`; splitting third POST nil; 3 pending episodes. lsz2 already called discord feature reds genuine.
+
+**Decision: pin-only. Do not absorb the stare NPE or discord feature reds. Do not authorize feature-file edits on this bean. Do not require `ISAAC_GIT=1 bb ci` exit 0.** This bean exists to make the classpath build: agent `76320fa` + foundation `df64bf1` (+ http `d082206` where pinned), reachable from each repo's origin/main. Waiting on those reds leaves CI unable to even load.
+
+### Ambient owners (not this bean) — draft, human promote
+
+- **isaac-7b0g** (draft) — isaac-mcp `isaac.mcp.client` "returns a timeout error when catalog query is stare" NPE on origin/main (lsz2 @ 44c408d already 32/1).
+- **isaac-tlv6** (draft) — isaac-discord `lifecycle` / `service_lifecycle` `server.port` → `:http :port` (tdlz); `:component/started` vs `:module/activated`; splitting third POST nil.
+
+### Controlling acceptance (supersedes full bb ci)
+
+**isaac-mcp** `bean/isaac-okw1` @ `801fb5f` (or rebased equivalent):
+
+    git grep -n '76320fa\|df64bf1\|d082206' deps.edn bb.edn
+    GITLIBS=/tmp/gl-okw1-mcp clojure -Sforce -Spath   # cold; no "Commit not found"
+    bb spec   # record the stare NPE; do not fail this bean on it
+    bb features   # 13/0 as already measured
+
+**isaac-discord** `bean/isaac-okw1` @ `5fff150` (or rebased equivalent):
+
+    git grep -n '76320fa\|df64bf1\|d082206' deps.edn bb.edn
+    GITLIBS=/tmp/gl-okw1-discord clojure -Sforce -Spath
+    bb spec   # 52/0
+    # do NOT require bb features / bb ci exit 0
+
+Pin rule: every isaac-* sha is reachable from that repo's origin/main. Version bumped. One commit per repo.
+
+Do **not** require:
+
+- isaac-mcp `bb ci` / `bb spec` 0 failures
+- isaac-discord `bb features` / `bb ci` exit 0
+- repairing the stare NPE
+- recutting `server.port` tables
+- filling `## Exceptions` for those files
+
+`## Exceptions` stays empty on purpose.
+
+### Worker now
+
+1. Do not recut features or the stare spec.
+2. Confirm pins + cold classpath + the named spec/feature counts above.
+3. Hand to verifier. Do **not** land. Verifier records pin SHAs; does not fail on the filed ambient reds.
+
+This note resets the verify-fail counter.
