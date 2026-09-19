@@ -55,3 +55,5 @@ cd isaac-http && bb features features/cli/auth_principals.feature && bb features
 One-time checks (not scenarios): `isaac server auth list` is no longer recognised by the HTTP module (foundation's `isaac server` handles the verb alone; no `alter-var-root` of `runner-cli/run-fn` remains — `grep -n alter-var-root src/isaac/http/cli.clj` is empty); `isaac http --help` on a dev root prints usage without binding a port.
 
 Downstream: isaac-2a2x's audit feature already re-pointed above; isaac-xo5p (rollout) must mint with `isaac http auth mint` once this lands. Registry pins are a train step.
+
+Dispatched: hail 0d3bad85 2026-09-19T02:22:31Z (band isaac-work)
