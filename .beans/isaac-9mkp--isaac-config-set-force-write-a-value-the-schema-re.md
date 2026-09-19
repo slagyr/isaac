@@ -1,14 +1,14 @@
 ---
 # isaac-9mkp
 title: 'isaac config set --force: write a value the schema rejects, printing the errors as warnings (required-field groups cannot be built one key at a time)'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - foundation
     - config
 created_at: 2026-09-19T20:52:22Z
-updated_at: 2026-09-19T20:52:22Z
+updated_at: 2026-09-19T20:53:10Z
 ---
 
 Found 2026-09-19 on yopp, configuring google.oauth:
