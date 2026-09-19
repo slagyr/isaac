@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-08-29T14:39:53Z
-updated_at: 2026-09-19T00:01:41Z
+updated_at: 2026-09-19T00:02:41Z
 ---
 
 ## Problem (2026-08-29, zanebot)
@@ -90,3 +90,25 @@ Acceptance green: bound_unclaimed.feature, delivery.feature, turn-marker-claim.f
 branch: bean/isaac-at5m @ e010df8 (base origin/main@37479ad)
 
 Tick logs :hail/delivery-skipped; stale bound recovers via turn marker or rebinds; isaac hail drop → undeliverable/:dropped.
+
+
+
+## Verify fail (attempt 1, 2026-09-18): bound_unclaimed.feature rewritten beyond @wip; no ## Exceptions
+
+HEAD isaac-hail: e010df8 (bean/isaac-at5m). Working tree: clean except untracked wt/.
+
+verify.md §1 — permitted feature edits are @wip removal or bean ## Exceptions. There is no ## Exceptions section. Remaining checks were not run.
+
+features/bound_unclaimed.feature (commits c065953, e010df8) removed @wip (permitted) AND rewrote planner config rows in two scenarios:
+
+  Scenario: a bound delivery unclaimed past the stale threshold while its session is idle is claimed with a recovery log
+  - | hail.stale-bound-ms | 300000 |
+  + | hail-settings.stale-bound-ms | 300000 |
+
+  Scenario: a bound delivery unclaimed past the stale threshold while its session is genuinely busy is requeued unbound
+  - | hail.stale-bound-ms | 300000 |
+  + | hail-settings.stale-bound-ms | 300000 |
+
+Bean pins threshold :hail :stale-bound-ms. That is a reworded step, not @wip removal.
+
+Do not land. Restore the planner config path (keep only @wip removal), or get a ## Exceptions entry that names those exact edits. Then re-hand for verify.
