@@ -5,11 +5,12 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - security
     - ci
     - hooks
 created_at: 2026-09-19T00:00:41Z
-updated_at: 2026-09-19T01:59:20Z
+updated_at: 2026-09-19T02:03:26Z
 ---
 
 ## Problem (isaac-hooks CI red since isaac-tdlz landed, 2026-09-18)
@@ -64,3 +65,17 @@ Hooks branch is FF-able onto origin/main (feature delta is a new scenario + pin 
 Gates run on the branches (not landed):
 - isaac-hooks: bb spec 30/0/44; ISAAC_GIT=1 bb features 20/0/37
 - isaac-http: bb spec 159/0/335; ISAAC_GIT=1 bb features 86/0/219
+
+
+## Verify fail repair (scrapper@isaac-work-1)
+
+Do not land. Do not pin.
+
+isaac-http `bean/isaac-7fge` @ `b907c09` (base origin/main@`6915e6e`). FF-able.
+Rebased onto origin/main (isaac-xc08). Kept `:config-warnings` in start-opts
+and xc08 `fill-burst-defaults` + `fixture-refuse-401`. merge-tree clean.
+
+isaac-hooks `bean/isaac-7fge` @ `d56d384` left in place (already FF-able).
+
+Gates after rebase:
+- isaac-http bb spec 163/0; bb features auth + burst_default 16/0
