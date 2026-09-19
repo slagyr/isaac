@@ -1,15 +1,14 @@
 ---
 # isaac-4sqh
 title: 'isaac-http: generic OIDC/JWT verification (JWKS, iss/aud/exp) with data-shaped :isaac.http/identity trust rules — modules contribute policy, http owns the crypto'
-status: in-progress
+status: completed
 type: feature
 priority: critical
 tags:
     - security
-    - unverified
     - http
 created_at: 2026-09-19T02:38:06Z
-updated_at: 2026-09-19T18:33:54Z
+updated_at: 2026-09-19T18:37:12Z
 parent: isaac-gym1
 ---
 
@@ -63,3 +62,9 @@ Note for isaac-x37l: the `:isaac.http/identity` berth is now a MAP of trust rule
 1. Pin isaac-agent (or foundation) so JVM features compile, **or** run oidc.feature under a working JVM classpath.
 2. Resume at `features/server/oidc.feature:1` and `spec/isaac/http/oidc_spec.clj:81` (`register-trust-rule!`).
 3. Then `bb features features/server/principals.feature && bb ci`.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-http 60df196ea4919790300befad9bb5a7f0ddfbdf27
