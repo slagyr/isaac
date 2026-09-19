@@ -7,8 +7,9 @@ priority: high
 tags:
     - http
     - security
+    - unverified
 created_at: 2026-09-19T01:25:54Z
-updated_at: 2026-09-19T01:33:09Z
+updated_at: 2026-09-19T01:51:32Z
 ---
 
 Micah (2026-09-18): "HTTP throttling burst control should be on by default, with a way to turn it off." The earlier conversation left no bean; this is it.
@@ -49,3 +50,22 @@ One new step (a fixture-route variant). Note `the directory … has exactly 0 fi
 cd isaac-server && bb features features/server/burst_default.feature features/server/burst.feature && bb ci
 ```
 burst.feature's "config schema lists the burst knobs" gains `enabled`. Version bump; rides the http train. Field: zanebot's explicit `:burst` block can then be deleted (one-time) and `config get http.burst` still shows it on; yopp gets burst control on its next http upgrade with no config change.
+
+
+## Handoff (scrapper@isaac-work-1)
+
+branch: bean/isaac-xc08 @ efc713c (base origin/main@8edc65c). FF-able.
+
+Burst control is ON by default (`burst/defaults` + schema `:default` / `[:default …]` coercions).
+Off only with `:http :burst :enabled false`. wrap-burst counts 401/403 on the
+response after the handler (self-authenticating routes included). wrap-auth no
+longer records hits. Explicit knobs override one at a time; hot-reload
+`enabled false` releases a throttled client.
+
+Acceptance:
+- bb features features/server/burst_default.feature features/server/burst.feature — 13/0/42
+- bb spec — 161/0
+- @wip removed
+- version 0.1.17
+
+Do not land. Do not pin.
