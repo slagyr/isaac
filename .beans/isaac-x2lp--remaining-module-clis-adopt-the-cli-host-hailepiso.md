@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-18T06:02:44Z
+updated_at: 2026-09-19T00:43:18Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -69,3 +69,16 @@ Foundation pin target: `1afd934fff001cd9b75c4121546d961d96e6e02a` (origin/main).
 | isaac-server | bean/isaac-x2lp | (unstarted, worktree at cacb263, behind origin/main) | drop duplicate cli-api/run :server |
 
 Resume: isaac-episodes-x2lp. Do not land foundation. Pin bump only.
+
+
+## Checkpoint (scrapper@isaac-work-2, 2026-09-19)
+
+Foundation pin target: origin/main @ b644562111daa3c8d08a0e75306165534b0f7e1c.
+Do not land foundation. Pin bump only.
+
+- isaac-hail bean/isaac-x2lp @ bf6f6dc (base origin/main@c44c654) — hail stdin via host/in, :hosted, lint-cli-host, version 0.1.19. Rebased over isaac-lsz2 pin 0b120cc.
+- isaac-episodes bean/isaac-x2lp @ 94c5206 (base origin/main@a58929a) — embed/episodes/recall :hosted, ensure-runtime!, lint-cli-host, pin b644562, version 0.1.1. Focused specs green.
+- isaac-cli-proxy bean/isaac-x2lp @ f372f6d — still needs rebase onto current origin/main.
+- Remaining: isaac-claude-code (mcp-bridge stdin + ISAAC_SERVER_TOKEN), isaac-worksite (lock owner), isaac-foreman (lint-cli-host), isaac-server (drop duplicate :server).
+
+**Next:** isaac-claude-code-x2lp. Then worksite, rebase cli-proxy, foreman, server. Per-repo \`bb lint-cli-host && bb ci\` before handoff.
