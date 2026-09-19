@@ -1,7 +1,7 @@
 ---
 # isaac-rmq6
 title: 'Bean Gate: worker lands and completes; CI snitches; no verify crew'
-status: draft
+status: todo
 type: epic
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - beans
     - ci
 created_at: 2026-09-19T19:34:44Z
-updated_at: 2026-09-19T19:34:44Z
+updated_at: 2026-09-19T20:43:26Z
 ---
 
 Repo: **isaac** (beans tracker). Do **not** change the `beans` CLI. Do **not** edit agent-lib `plan.md` / `work.md` / `hail-bean-work` (Zanebot other projects toolbox those URLs).
@@ -41,6 +41,19 @@ Verify is a second full session (and bounce loops are worse). Keep the adversari
 
 Generic beans CLI. Changing agent-lib. Deleting the verify band on day one. Foundation locks / worksite (separate). Orchestration process-test rewrite.
 
+## Design (settled with Micah, 2026-09-19)
+
+Refines decision 3. Full mechanics live in isaac-cy85.
+
+- **Blob baseline.** `bb bean-gate baseline` appends `feature-baseline: <repo> <main-sha>` and `feature-blob: <repo> <path> <blob> [<lines>]`. The blob is the frozen "before" text; the gate diffs it against the file at the checked commit. It also lets CI fetch shallow.
+- **Contract lines are append-only.** `feature-*` lines and the lines under `## Acceptance…` / `## Exceptions` may be appended, never edited or removed, from the first baseline onward. A planner-authorized feature edit is made on main and re-baselined (new lines append), so feature-text exceptions no longer need prose.
+- **Two feature checks.** Every baselined block (header, Background, each scenario), `@wip` stripped on both sides, appears verbatim in the checked file; other beans' added scenarios are fine. The worker's own diff (bean branch vs merge-base, or the `main-sha` squash commit) changes `.feature` files only by removing `@wip`.
+- **Planner scenarios go to module main** before baselining; module CI excludes `@wip`.
+
 ## Children
 
-Split when this leaves draft: (1) `bb bean-gate` + fixtures, (2) planner overlay + hail-plan one-liner, (3) `hail-bean-work-gate` + hail band, (4) isaac snitch CI, (5) cut over / drain verify.
+1. isaac-cy85 — `bb bean-gate` + fixtures (todo)
+2. isaac-jp4v — planner overlay + dual-run (draft, blocked by cy85)
+3. isaac-przv — `hail-bean-work-gate` + isaac-work band (draft, blocked by cy85)
+4. isaac-4b21 — snitch CI (draft, blocked by cy85)
+5. isaac-e20m — cut over / drain verify (draft, blocked by jp4v, przv, 4b21)
