@@ -71,3 +71,16 @@ Order: foundation-dependent repos first (they only need the foundation repin), t
 
 
 **Ordering (verified 2026-09-18 23:58Z by attempting the hooks repin):** the isaac-agent leg goes FIRST. Every downstream repo loads isaac-agent's spec steps, and `spec/isaac/config/agent_steps.clj` requires `isaac.startup.config-cache`, which exists only on `bean/isaac-t1om`; against foundation main every module feature run dies with `FileNotFoundException … isaac/startup/config_cache`. Port those steps to the main namespace, land agent, THEN repin the fleet to foundation main + that agent sha. Related: isaac-7fge (hooks auth dropped) lands after its hooks repin.
+
+
+## isaac-http leg — planner progress (2026-09-19 00:20Z), branch `bean/isaac-lsz2` in isaac-http @ c787b7d
+
+**This is the leg that unblocks isaac-google / isaac-gchat / isaac-gmail**: they pin isaac-http main (db2b639+), and isaac-http main pins foundation `93ffe98` — the tdlz worker's foundation branch, squashed and deleted, on NO ref. Their reds are transitive. Order: land this leg, then bump the three Google repos' isaac-http pin (and their own foundation pin to main) — trivial once http is green.
+
+Done on the branch: foundation `93ffe98`→main `e4da6e0` (deps.edn + bb.edn), agent `b6284e4`→main `0e804c0`; `auth_cli_spec` seeds `{:defaults {:crew :main}}` + a crew file because the composed schema (agent main) now requires `defaults.crew` and `set-config` refuses to write into an invalid root. `bb spec` 155/0.
+
+Remaining (`bb features` 86 examples, 5 failures):
+1. `features/http/config.feature` ":http bind/auth config is valid" — config table lacks `defaults.crew`; add it (same cause as the spec).
+2–5. `Comm extension: Multiple comm instances of the same :type coexist`; `Module activation: Comm slot starts when configured at boot`, `Declared module is activated during server boot even without a slot`, `Module activation failure surfaces a structured error` — the `:module/activated` / `:comm/activated` log rows are absent at boot against agent main (the matcher sees `:server/hello` first). Find whether activation moved (agent 0.1.67→0.1.71 berth/lifecycle changes, isaac-oc3f/3q4m line) and recut the assertions or fix the boot path. These are the ex-isaac-ane7 family.
+
+Agent leg (config-cache steps) still first for every OTHER downstream repo; http's own features run with the pinned agent-spec and got past loading, so http can land independently.
