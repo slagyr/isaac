@@ -84,3 +84,12 @@ Remaining (`bb features` 86 examples, 5 failures):
 2–5. `Comm extension: Multiple comm instances of the same :type coexist`; `Module activation: Comm slot starts when configured at boot`, `Declared module is activated during server boot even without a slot`, `Module activation failure surfaces a structured error` — the `:module/activated` / `:comm/activated` log rows are absent at boot against agent main (the matcher sees `:server/hello` first). Find whether activation moved (agent 0.1.67→0.1.71 berth/lifecycle changes, isaac-oc3f/3q4m line) and recut the assertions or fix the boot path. These are the ex-isaac-ane7 family.
 
 Agent leg (config-cache steps) still first for every OTHER downstream repo; http's own features run with the pinned agent-spec and got past loading, so http can land independently.
+
+
+## Correction (planner, 2026-09-19 00:55Z) — cold-cache check, and the Google repos are green
+
+Verify pins with a COLD gitlibs (`rm -rf /tmp/gl && GITLIBS=/tmp/gl clojure -Sforce -Spath`) — a warm local cache hides every dangling pin; CI has none.
+
+- **Agent main (`679aee8`) is already clean**: pins foundation `cc53d69` (main), no `config-cache` reference. The dead pin is only in the RELEASED agent `0e804c0` (0.1.71, deployed) via foundation `1c8e45b` (branch-only). So the agent leg = release agent main (0.1.72) and bump downstream pins; no step port needed.
+- isaac-google `a78124b`, isaac-gchat `702a3b0`, isaac-gmail `9ba7a2e`: http → `ad4ba5d` (last http commit with a live foundation pin, pre-tdlz), agent → main `679aee8`, foundation → main, google → main; gmail dropped two steps that isaac-google main now provides (`no outbound HTTP request to … was made`, `the google auth store has access … and refresh …`). Cold-resolve + `bb ci` green locally on all three. They move to http main once the http leg lands.
+- Remaining for the worker: the isaac-http leg (`bean/isaac-lsz2` @ c787b7d, 5 feature reds), then release agent 0.1.72 and repin hail/acp/cron/discord/hooks/mcp/claude-code/cli-server/cli-proxy/episodes/worksite/foreman to agent+foundation main, verified cold.
