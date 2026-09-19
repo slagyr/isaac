@@ -1,14 +1,14 @@
 ---
 # isaac-12iz
 title: 'isaac-gmail: :isaac.google/registration contribution has the wrong shape — the INBOX watch never registers with isaac-google''s timer'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - google
     - gmail
 created_at: 2026-09-19T19:05:58Z
-updated_at: 2026-09-19T19:05:58Z
+updated_at: 2026-09-19T19:18:43Z
 parent: isaac-bv1l
 ---
 
@@ -26,3 +26,8 @@ Do: contribute `{:gmail-watch {:create! isaac.comm.gmail.watch/create! :renew! i
 
 ## Acceptance
     cd isaac-gmail && bb ci; then install on yopp and `isaac config validate` clean of gmail errors.
+
+
+
+## Handoff / resume (planner, 2026-09-19)
+Split: the isaac-google half is **isaac-gxil** (:remote/:delete! hooks; branch bean/isaac-12iz in isaac-google @ ac7a5b3). This bean is the isaac-gmail half: branch bean/isaac-12iz in isaac-gmail @ 82164c1 (base origin/main@21e7241). Done: watch.clj is a real entry (watch!/expiry/keys*/remote/stop!), manifest contributes the six-key entry, features/comm/gmail/watch.feature (first tick watches + seeds cursor; outside window left alone; inside window renewed; mailbox removed → users.stop; refusal logged with Gmail's reason then retried) 5/5, unit spec 8/8, bb ci 23 spec + 10 feature examples green. Waits on gxil landing only because deps/bb pin google at the branch sha; the planner repins, reruns bb ci, tags unverified.
