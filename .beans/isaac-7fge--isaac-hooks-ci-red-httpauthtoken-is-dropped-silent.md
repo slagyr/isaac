@@ -7,10 +7,9 @@ priority: high
 tags:
     - security
     - ci
-    - unverified
     - hooks
 created_at: 2026-09-19T00:00:41Z
-updated_at: 2026-09-19T01:55:50Z
+updated_at: 2026-09-19T01:59:20Z
 ---
 
 ## Problem (isaac-hooks CI red since isaac-tdlz landed, 2026-09-18)
@@ -44,3 +43,24 @@ Hooks: pin foundation `df64bf1`, agent `76320fa`, http `8edc65c` (reachable main
 HTTP: `valid-start?` refuses start on `http.auth*` unknown-key warnings (`:auth/config-dropped`). `start!` forwards `:config-warnings`. Feature harness passes loader warnings into start. `bb spec` 159/0; `bb features features/server/auth.feature` 10/0.
 
 Sweep: remaining `server.auth.token` usages are only in retired-schema scenarios (http/config.feature) or non-main checkouts. Live module features already use `http.auth.token`. isaac-60lm (nested unknown keys as warnings) is still draft; this bean's HTTP leg is the auth-specific hard error.
+
+
+
+## Verify fail (attempt 1, 2026-09-19): isaac-http squash conflict vs origin/main (isaac-xc08) on spec/isaac/http/server_steps.clj
+
+HEAD isaac-hooks: d56d384 (bean/isaac-7fge, base origin/main@0602e9e). Working tree: clean.
+HEAD isaac-http: 2dab4fb (bean/isaac-7fge, base origin/main@8edc65c). Working tree: clean. origin/main has since moved to 6915e6e (isaac-xc08).
+
+verify.md §7a: a squash conflict is a FAIL, not something to resolve here.
+
+git merge-tree origin/main vs bean/isaac-7fge reports "changed in both" on spec/isaac/http/server_steps.clj:
+- bean adds :config-warnings (:warnings load-result) into start-opts (line ~536)
+- xc08 (origin/main) rewrote the same start-server helper (fill-burst-defaults, fixture-refuse-401)
+
+Do not land either repo. Rebase isaac-http bean/isaac-7fge onto origin/main@6915e6e, keep both the warnings forward and the xc08 burst/fixture edits, then re-hand.
+
+Hooks branch is FF-able onto origin/main (feature delta is a new scenario + pin bumps only). HTTP is the blocker.
+
+Gates run on the branches (not landed):
+- isaac-hooks: bb spec 30/0/44; ISAAC_GIT=1 bb features 20/0/37
+- isaac-http: bb spec 159/0/335; ISAAC_GIT=1 bb features 86/0/219
