@@ -5,11 +5,10 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - config
     - foundation
-    - unverified
+    - config
 created_at: 2026-09-19T00:08:20Z
-updated_at: 2026-09-19T00:43:50Z
+updated_at: 2026-09-19T00:52:48Z
 ---
 
 ## Bug
@@ -79,3 +78,25 @@ branch: bean/isaac-fun8
 `reference-error?` now matches `:reference?` tags **and** check-contribution messages that start with `"references undefined "` (agent `check-crew-model-aliases` does not stamp `:reference?`). Value-validator errors still block under `skip-ref-validation?`. Confirmations + set-member help as specified.
 
 Green: foundation `bb spec` 1054/0; agent `bb features features/config/set_unset.feature` 14/0 and `features/tagging/crew_tags.feature` 16/0. Foundation `bb ci` feature failures in `cli/modules_pins.feature` are pre-existing (missing `/Users/zane/agents/isaac/verify/isaac-foundation/fixture-agent` on this machine), not this bean. Agent `bb ci` not run (full suite; focused acceptance green). `@wip` removed.
+
+
+## Verify fail (attempt 1, 2026-09-19): agent pins foundation bean-branch sha 193c409 (not ancestor of origin/main after squash)
+
+HEAD (beans): see commit. Working tree: clean.
+
+Foundation **landed** (do not retouch):
+- main-sha: isaac-foundation `df64bf15c739165c496cbf81e3d922ad3aa3346f`
+- squash of `bean/isaac-fun8` @ `193c409`; trees equal (empty `git diff` vs branch tip)
+- `bb ci` on the branch: 1054 spec / 0 fail; 197 features / 0 fail / 2 pending (pre-existing berth_registration)
+
+**Do not delete** `isaac-foundation` `bean/isaac-fun8` until agent pins `df64bf1` (or another ancestor of foundation origin/main). `193c409` is **not** an ancestor of origin/main after squash.
+
+isaac-agent `bean/isaac-fun8` @ `392a1fb` still pins foundation `193c40932811c1c71b8e44586defc77e0c8b7425` in `deps.edn` + `bb.edn` (all isaac-foundation / marigold / test-support shas). verify.md §6: a bean may only pin a sibling at a sha that is an ancestor of that repo's origin/main. Not landed. Branch left in place.
+
+Agent gate on the branch (against 193c409, same tree as df64bf1): `ISAAC_GIT=1 bb ci` 1635 spec / 0 fail; 808 features / 0 fail / 1 pending. Focused `set_unset.feature` 14/0, `crew_tags.feature` 16/0. `@wip` removed. Feature file only **adds** the 7 planned scenarios (no reword of existing).
+
+### Required to re-hand
+
+1. On `isaac-agent` `bean/isaac-fun8`, retarget every isaac-foundation `:git/sha` from `193c40932811c1c71b8e44586defc77e0c8b7425` to `df64bf15c739165c496cbf81e3d922ad3aa3346f`.
+2. `cd isaac-agent && ISAAC_GIT=1 bb ci` green.
+3. Do not retouch foundation main. Do not land agent until the pin is an ancestor of foundation origin/main.
