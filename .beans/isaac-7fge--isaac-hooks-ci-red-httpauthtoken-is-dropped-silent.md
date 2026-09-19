@@ -5,11 +5,12 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - hooks
     - security
     - ci
+    - unverified
+    - hooks
 created_at: 2026-09-19T00:00:41Z
-updated_at: 2026-09-19T01:43:06Z
+updated_at: 2026-09-19T01:55:50Z
 ---
 
 ## Problem (isaac-hooks CI red since isaac-tdlz landed, 2026-09-18)
@@ -30,3 +31,16 @@ cd isaac-hooks && ISAAC_GIT=1 bb features && bb ci   # hooks.feature:72 green; n
 cd isaac-server && bb features features/server/auth.feature && bb ci
 ```
 Pins: hooks also carries the dangling foundation pin (isaac-lsz2) — land after or with the lsz2 hooks repin; do not pin foundation main here until the agent leg of lsz2 (config-cache steps) is on agent main.
+
+## Handoff
+
+branch: bean/isaac-7fge
+
+- isaac-hooks @ d56d384c2824f23f4087f698ec219fd4fb5903c0 (base origin/main@0602e9e616625d78fdaa74efd8b08009e2957dc1)
+- isaac-http @ 2dab4fbea316a36cae27864b1caa6de1f294dc3a (base origin/main@8edc65cc2b4f001c482390ac52e34094161ab350)
+
+Hooks: pin foundation `df64bf1`, agent `76320fa`, http `8edc65c` (reachable mains; lsz2 agent config-cache is on agent main). Guard scenario "wrong bearer token returns 401 even for unknown paths". `ISAAC_GIT=1 bb features` 20/0.
+
+HTTP: `valid-start?` refuses start on `http.auth*` unknown-key warnings (`:auth/config-dropped`). `start!` forwards `:config-warnings`. Feature harness passes loader warnings into start. `bb spec` 159/0; `bb features features/server/auth.feature` 10/0.
+
+Sweep: remaining `server.auth.token` usages are only in retired-schema scenarios (http/config.feature) or non-main checkouts. Live module features already use `http.auth.token`. isaac-60lm (nested unknown keys as warnings) is still draft; this bean's HTTP leg is the auth-specific hard error.
