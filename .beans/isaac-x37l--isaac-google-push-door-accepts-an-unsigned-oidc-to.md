@@ -6,10 +6,9 @@ type: bug
 priority: critical
 tags:
     - google
-    - unverified
     - security
 created_at: 2026-09-19T02:28:39Z
-updated_at: 2026-09-19T18:51:54Z
+updated_at: 2026-09-19T18:52:36Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-4sqh
@@ -51,3 +50,19 @@ Split: the isaac-http half is **isaac-401c** (config refs in trust rules; branch
 
 
 isaac-401c landed (isaac-http main 493416d). Repinned; cold-cache classpath ok; bb ci 42 spec + 19 feature examples green. branch: bean/isaac-x37l @ c3ca39d (base origin/main@ca9fac6) in isaac-google — fast-forward from main. Version 0.1.3. Handed to verify.
+
+
+
+## Verify fail (attempt 1, 2026-09-19): push_door.feature rewritten beyond @wip; no ## Exceptions
+
+HEAD isaac-google: c3ca39d (bean/isaac-x37l). Working tree: clean. Base origin/main@ca9fac6.
+
+verify.md §1 — permitted feature edits are @wip removal or bean ## Exceptions. There is no ## Exceptions section. Remaining checks were not run.
+
+features/push_door.feature (commit 6bd0ad4) rewrote planner/planted wording AND added scenarios:
+
+1. Feature blurb rewritten (isaac-1jep wording → isaac-4sqh/x37l description of JWKS/iss/aud).
+2. Existing "wrong audience / wrong email / unsigned" scenario gained extra Then log-matching rows (:audience, :claims, :signature) — reworded/strengthened assertions, not @wip removal.
+3. Five new scenarios appended (foreign-key signature, expired/wrong-iss, JWKS unreachable, kid refresh, burst counting). The bean listed those as @wip for the worker to write, but they were never planted as @wip on origin/main — they are new feature content without ## Exceptions.
+
+Do not land. Restore the planted 1jep wording for the existing scenarios (keep only @wip removal if any), or get a ## Exceptions entry that names the blurb rewrite, the extra Then rows, and the five new scenarios. Then re-hand for verify.
