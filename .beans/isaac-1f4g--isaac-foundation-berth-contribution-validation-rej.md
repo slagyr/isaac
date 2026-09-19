@@ -1,14 +1,13 @@
 ---
 # isaac-1f4g
 title: 'isaac-foundation: berth contribution validation rejects a :seq-of-strings contribution (apron conform on a non-map berth schema)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - foundation
-    - unverified
 created_at: 2026-09-19T19:05:40Z
-updated_at: 2026-09-19T19:05:40Z
+updated_at: 2026-09-19T19:07:31Z
 ---
 
 Found 2026-09-19 installing isaac.google on yopp: `isaac config validate` reports
@@ -23,3 +22,9 @@ Fix: conform the contribution inside a one-field map `{:contribution <schema>}` 
 
 ## Handoff / resume
 Planner fixed locally. branch: bean/berth-seq-validate @ 4c15b99 (base origin/main@df64bf1) — fast-forward from main. bb ci: 1057 spec examples green; features 197 with the only 2 failures being a stale local gitlibs fixture cache (cleared, modules_pins.feature 3/3 after). No version bump — foundation releases separately (yopp runs the main checkout and picks it up on pull).
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-foundation ba7fa5b453a4935043721b69a47cb3aac729fd80
