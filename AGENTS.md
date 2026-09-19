@@ -62,6 +62,13 @@ repo's `main` (`git merge-base --is-ancestor <sha> origin/main`). Never a
 bean-branch sha — verify squashes and deletes it. Verify rejects a handoff
 whose pins fail this check.
 
+**Cross-repo beans:** while the bean is in flight, the downstream repo runs
+against the sibling checkout via `:dev-local` (`:override-deps` / `:local/root`),
+not a sha pin at the upstream bean branch. The sha pin changes only at
+handoff; verify rewrites it to the squashed main sha before landing the
+downstream repo (verify.md §6a). `bb lint-pins` in `bb ci` fails fast if a
+published pin cannot be fetched.
+
 ## Planning
 
 Co-authoring beans + Gherkin scenarios with the user is governed by the

@@ -115,6 +115,27 @@ Never a bean-branch sha — landing squash-merges and deletes it. Fail the
 handoff if any `deps.edn` / `bb.edn` `:git/sha` for an isaac sibling fails
 this check.
 
+### 6a. Multi-repo beans: repin downstream BEFORE squash-merge
+A bean spanning two (or more) repos must not land a downstream pin at the
+upstream **bean-branch** sha. Verify squash-merges and deletes that branch, so
+the pin would dangle.
+
+Landing order (hail-bean-verify §7a squash is the helper — do not add a
+second squash script):
+
+1. Squash-merge the **upstream** repo first. Record `main-sha`.
+2. On each **downstream** `bean/<id>` branch, rewrite pins that still name the
+   pre-squash sha: `grep -l <old-sha> deps.edn bb.edn` → replace with the
+   squashed `main-sha` → commit on the bean branch (`Isaac-Bean` /
+   `Isaac-Session` trailers).
+3. Re-run that repo's `bb ci` on the rewritten branch. Red → fail the bean;
+   do not squash.
+4. Only then squash-merge the downstream branch.
+
+In-flight development uses `:dev-local` (sibling checkout), not a sha pin at
+the bean branch. The sha pin changes only at handoff, and after this step it
+is always a main sha.
+
 ### 7. Acceptance criteria met
 - Read the `## Acceptance Criteria` section of the bean.
 - For each criterion, verify it is satisfied:

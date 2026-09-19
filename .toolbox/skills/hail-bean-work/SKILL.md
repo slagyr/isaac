@@ -66,6 +66,18 @@ Follow `isaac/.toolbox/commands/work.md`:
 - Hand off: `beans update <id> --tag=unverified` (stay `in-progress`)
 - Push beans + code
 
+### Cross-repo beans (`:dev-local`, not bean-branch sha pins)
+
+A bean that spans two repos must **not** pin the downstream `deps.edn` /
+`bb.edn` at the upstream `bean/<id>` sha. Verify squash-merges that branch
+and deletes it, so the pin would dangle.
+
+While the bean is in flight, run the downstream suite against the sibling
+checkout (`:dev-local` / `:local/root`). Change the sha pin only at handoff,
+and only to a sha already on the upstream repo's `main`. Verify rewrites any
+remaining pre-squash pin to the landed main sha before it squash-merges the
+downstream branch (verify.md §6a).
+
 ## Process-test / no-op beans
 
 When the bean body says **process test**, **no-op**, or **orchestration smoke**
