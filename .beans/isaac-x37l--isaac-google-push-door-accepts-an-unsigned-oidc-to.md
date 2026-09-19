@@ -1,15 +1,14 @@
 ---
 # isaac-x37l
 title: 'isaac-google push door: verify Google''s OIDC token via isaac-http''s generic verifier (today it accepts an UNSIGNED token — aud+email only); gate for exposing the door'
-status: in-progress
+status: completed
 type: bug
 priority: critical
 tags:
     - google
     - security
-    - unverified
 created_at: 2026-09-19T02:28:39Z
-updated_at: 2026-09-19T18:53:51Z
+updated_at: 2026-09-19T18:55:34Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-4sqh
@@ -79,3 +78,9 @@ features/push_door.feature (commit 6bd0ad4 vs planted isaac-1jep on origin/main)
 3. Five new scenarios appended that the bean listed under "## Scenarios (@wip, worker writes)" but that were never planted as @wip on origin/main: foreign-key signature refused; expired token and wrong iss refused; JWKS unreachable fails closed; unknown kid triggers one JWKS refresh then accepts; forged pushes count toward burst control.
 
 These are the isaac-x37l acceptance scenarios, not drive-by feature rewrites. Verify §1 is satisfied by this Exceptions entry rather than restoring the planted 1jep-only wording.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-google 4ece4521cb022641bd6c17ef5d52fbf8836a70ac
