@@ -1,16 +1,15 @@
 ---
 # isaac-7fge
 title: 'isaac-hooks CI red: http.auth.token is dropped silently in the hooks feature harness (no :http schema composed) — auth is OFF in the run; unknown path 404 instead of 401 (tdlz fallout, 60lm)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
+    - hooks
     - security
     - ci
-    - hooks
 created_at: 2026-09-19T00:00:41Z
-updated_at: 2026-09-19T02:03:26Z
+updated_at: 2026-09-19T02:06:54Z
 ---
 
 ## Problem (isaac-hooks CI red since isaac-tdlz landed, 2026-09-18)
@@ -79,3 +78,10 @@ isaac-hooks `bean/isaac-7fge` @ `d56d384` left in place (already FF-able).
 
 Gates after rebase:
 - isaac-http bb spec 163/0; bb features auth + burst_default 16/0
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-http 111fff1216b9dbda458ea086e6f3ced5db906ca2
+main-sha: isaac-server 111fff1216b9dbda458ea086e6f3ced5db906ca2
+main-sha: isaac-hooks 9b51248334b0ef51813c41ea87295b659249df19
