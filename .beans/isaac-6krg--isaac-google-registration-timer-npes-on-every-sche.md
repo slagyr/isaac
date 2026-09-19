@@ -1,14 +1,13 @@
 ---
 # isaac-6krg
 title: 'isaac-google: registration timer NPEs on every scheduled tick (door-up? shadowed) and stores the create Operation instead of the subscription'
-status: in-progress
+status: completed
 type: bug
 priority: critical
 tags:
     - google
-    - unverified
 created_at: 2026-09-19T21:21:25Z
-updated_at: 2026-09-19T21:25:36Z
+updated_at: 2026-09-19T23:05:00Z
 parent: isaac-bv1l
 ---
 
@@ -31,3 +30,9 @@ Two more found on the same live tick, same branch (@ 1f54e30):
 3. `subscriptions.list` returns 400 without Google's required event-type filter, so the timer's remote view was always empty → create every tick → 'Subscription associated with the resource already exists'. Now filters on message.created (every Chat subscription we make carries it). Spec added.
 4. `isaac google status` read only the Workspace Events listing, so the Gmail watch showed `unknown`; it now merges entries' own :remote views. yopp shows both registrations with real expiries.
 bb ci 49 spec / 19 feature green. Yopp pinned to 1f54e30 (restart 21:24Z); repin to main after landing.
+
+
+
+## Landed on main (2026-09-19)
+main-sha: isaac-google d5dc7b55a17a7c64414580056fc31dd4368a6da5
+Verified by the planner at Micah's instruction (zanebot's verify sessions were out of provider tokens): independent bb ci on the squash commit 49 spec / 19 feature examples green; live yopp tick clean on the same tree.
