@@ -1,13 +1,11 @@
 ---
 # isaac-2nkg
 title: Format EDN written by config mutations
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-03T15:45:13Z
-updated_at: 2026-09-19T00:11:58Z
+updated_at: 2026-09-19T00:14:05Z
 ---
 
 Make every EDN write performed by `isaac config set` and `isaac config unset` use `isaac.util.edn/pretty`, rather than `pr-str`. This is a clean cutover: newly changed EDN files should have Foundation’s human-readable layout and one trailing newline.
@@ -27,3 +25,9 @@ Dispatched: hail c9284332 2026-09-19T00:07:21Z (band isaac-work)
 branch: bean/isaac-2nkg @ f10b37d (base origin/main@0b120cc)
 
 `isaac.config.mutate/update-edn-file` writes `(str (edn-pretty/pretty data) "\n")`. Companion Markdown unchanged. mutate_spec covers set and unset pretty+newline. `bb spec spec/isaac/config/mutate_spec.clj` 22/0; CLI config suite 76/0.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-foundation b644562111daa3c8d08a0e75306165534b0f7e1c
