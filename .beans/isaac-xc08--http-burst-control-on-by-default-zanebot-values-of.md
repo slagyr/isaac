@@ -17,16 +17,16 @@ Micah (2026-09-18): "HTTP throttling burst control should be on by default, with
 isaac-udnm shipped burst control opt-in: `:http :burst` absent ⇒ `wrap-burst` is a pass-through (http.clj `wrap-burst`, manifest "Absent group = off"). zanebot has it configured explicitly (`{:threshold 30 :window-ms 60000 :cooldown-ms 600000 :throttle? true}`); yopp and any fresh install have none. A public server should never run without it.
 
 ## Decision
-- **Default ON** with zanebot's values: `{:enabled true :threshold 30 :window-ms 60000 :cooldown-ms 600000 :throttle? true :notify? true}`.
+- **Default ON**: `{:enabled true :threshold 10 :window-ms 60000 :cooldown-ms 600000 :throttle? true :notify? true}`. (Micah 2026-09-18: 30 is too loose; only REFUSED requests — 401/403 — count, so a legitimate client never gets near 10 in a minute while a scanner is cut off after its first ten probes.) zanebot's explicit 30 is overridden by deleting its block or setting 10.
 - **Off = `:http :burst {:enabled false}`** (new boolean knob; schema default true). Explicit knobs override one at a time; the rest keep defaults. Hot-reloadable like the rest of `:http` (isaac-s9e3 seam).
 - Defaults live in the HTTP module's schema (`:default` on each knob) so `config get http.burst` shows the effective values and `config validate` accepts an absent group. `wrap-burst` reads the resolved config; the only "off" is `:enabled false`.
 - Loopback is still never throttled (udnm rule unchanged).
 
-## Scenarios (committed @wip — isaac-http `features/server/burst_default.feature` @ d0c6f65)
+## Scenarios (committed @wip — isaac-http `features/server/burst_default.feature` @ 4acef9e)
 
 | line | scenario |
 |------|----------|
-| :21 | with no burst config at all, thirty unauthenticated requests trip a burst and the client is throttled |
+| :21 | with no burst config at all, ten unauthenticated requests trip a burst and the client is throttled |
 | :32 | burst control can be turned off explicitly (`http.burst.enabled false`) |
 | :45 | an explicit knob overrides its default and the others keep theirs |
 | :58 | turning burst control off on hot reload releases a throttled client |
