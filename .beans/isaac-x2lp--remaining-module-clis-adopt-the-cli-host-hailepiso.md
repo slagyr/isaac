@@ -6,9 +6,8 @@ type: feature
 priority: high
 tags:
     - cli
-    - unverified
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-19T18:28:01Z
+updated_at: 2026-09-19T18:36:35Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -88,3 +87,39 @@ Do not land foundation. Pin bump only. isaac-server/http :server already landed 
 | isaac-server/http | — | d082206 on main | — | satisfied by isaac-66we; do not redo |
 
 Handoff: `in-progress` + `unverified`. Verify hail b658b114 (band isaac-verify, reply_to 6a7fbfb8). Discord ➡️ after hail.
+
+
+## Verify fail (attempt 1, 2026-09-19): isaac-cli-proxy bb ci features red — config_cache FileNotFound after foundation pin (not pre-existing)
+
+HEAD (beans): ed6dbd6c. Working tree: clean. Do not land any x2lp branches.
+
+### isaac-cli-proxy FAIL — `bean/isaac-x2lp` @ `5d7fd3e` (base origin/main `1f96845`)
+
+`bb lint-cli-host` ok. `bb spec` 26/0. **`bb features` FileNotFoundException `isaac.startup.config-cache`** — agent pin `104b3c4` still requires that ns; foundation pin `df64bf1` deleted it.
+
+This is **not** pre-existing: `ISAAC_GIT=1 bb features` on origin/main@`1f96845` is **29/0**. The branch introduced the mismatch by bumping foundation without advancing agent past isaac-kk0o (`b46ef7a`, dropped the require).
+
+GREEN means full `bb ci`. Do not land.
+
+### hail — features red is PRE-EXISTING (do not fail this bean for hail)
+
+`bean/isaac-x2lp` @ `fca0798`: lint ok, spec 170/0. Features same `config_cache` error. Reproduced on origin/main@`c44c654` (agent still `2acb8fa`). Same stale-agent/new-foundation family as okw1; pin agent to `76320fa` or later when repairing.
+
+### Other legs (not landed)
+
+| repo | branch SHA | lint | bb ci |
+|---|---|---|---|
+| isaac-episodes | cb4d910 | ok | 211 spec / 83 features / 0 fail |
+| isaac-claude-code | 4da98b5 | ok | 80 spec / 50 features / 0 fail (3 pending @real) |
+| isaac-worksite | f01a492 | ok | 16 spec / 8 features / 0 fail |
+| isaac-foreman | f9713d1 | ok | 28 spec / 7 features / 0 fail |
+| isaac-http/server | d082206 on main | — | satisfied by isaac-66we; not redone |
+
+All six FF-able, merge-tree clean, no feature-file diffs. Foundation `df64bf1` is ancestor of origin/main. Agent pins on the green repos still require config-cache in agent_steps but those suites did not load it.
+
+### Required to re-hand
+
+1. On isaac-cli-proxy `bean/isaac-x2lp`, pin isaac-agent (+ agent-spec) to a SHA that dropped `isaac.startup.config-cache` (agent main `fd89226` / `76320fa` or newer). Keep foundation `df64bf1`.
+2. `cd isaac-cli-proxy && ISAAC_GIT=1 bb lint-cli-host && bb ci` green (features must load).
+3. Prefer the same agent bump on hail so features can load; hail origin/main is already red so that is not this fail's gate.
+4. Do not land any x2lp branch until cli-proxy `bb ci` is green. Do not retouch foundation. Do not redo http/server.
