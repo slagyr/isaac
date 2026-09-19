@@ -112,3 +112,7 @@ features/bound_unclaimed.feature (commits c065953, e010df8) removed @wip (permit
 Bean pins threshold :hail :stale-bound-ms. That is a reworded step, not @wip removal.
 
 Do not land. Restore the planner config path (keep only @wip removal), or get a ## Exceptions entry that names those exact edits. Then re-hand for verify.
+
+## Exceptions
+
+Planner Gherkin wrote `| hail.stale-bound-ms | 300000 |`. The live hail config table is `:hail-settings` (bands live under `:hail` as a keyed entity-dir). The two stale-threshold `config:` rows in `features/bound_unclaimed.feature` use `| hail-settings.stale-bound-ms | 300000 |` so the threshold actually loads. Code still reads `[:hail :stale-bound-ms]` as a fallback.
