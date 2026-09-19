@@ -1,15 +1,16 @@
 ---
 # isaac-v64q
-title: Mid-stream 429 on the Responses path is reported as :llm-error, not weather — hail burns attempts on healthy beans (4/5 tonight)
+title: Mid-stream 429/401 on the Responses path must classify as provider weather (:unavailable?) so the turn SUSPENDS (isaac-nqeq) instead of ending in :llm-error
 status: todo
 type: bug
-priority: critical
+priority: high
 tags:
     - hail
     - provider
     - durability
 created_at: 2026-09-18T06:18:36Z
-updated_at: 2026-09-18T06:18:36Z
+updated_at: 2026-09-19T01:42:35Z
+parent: isaac-ugpq
 ---
 
 ## Observed (zanebot, 2026-09-18 05:50–06:20Z)
@@ -51,3 +52,8 @@ Any bean that dead-letters during this burst is NOT poison: `isaac hail requeue 
 
 
 Related: isaac-ugpq (turn-level suspend/resume) depends on this classification — a mid-stream 429 must surface as :unavailable? for the drive to suspend on it.
+
+
+## Re-scoped (2026-09-18, Micah): hail retries are gone; this is now about suspend
+
+With isaac-ugpq/nqeq the drive suspends a turn on weather and hail no longer retries — so "burns hail attempts" is moot. What remains: a 429 (or 401/403/5xx) that lands MID-STREAM is returned by `responses.clj:187` as `{:error :llm-error "stream ended without response.completed"}` with the HTTP status dropped, so `provider-wall/classify` never sees a wall and the drive ENDS the turn in error instead of suspending it. nqeq's scenarios only cover pre-stream walls. Fix stays as written (keep `:status`/`retry-after` on a truncated stream; normalize through the same wall seam); acceptance scenario changes to: a 429 arriving mid-stream on the Responses path yields a SUSPENDED turn (`:turn/suspended :reason :wall`), same assertions as weather_suspend.feature :29. Drop the hail scenario (4) and the hail acceptance line. Child of isaac-ugpq.
