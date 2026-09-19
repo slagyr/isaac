@@ -1,14 +1,14 @@
 ---
 # isaac-addw
 title: 'config validate falsely rejects crews on a module-contributed session policy (episodes): the check reads the runtime registry, not the module index'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - config
     - agent
 created_at: 2026-09-19T02:11:47Z
-updated_at: 2026-09-19T02:11:47Z
+updated_at: 2026-09-19T02:14:14Z
 ---
 
 ## Problem (yopp + zanebot, 2026-09-18)
