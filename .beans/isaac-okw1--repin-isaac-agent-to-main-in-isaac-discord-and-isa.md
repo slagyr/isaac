@@ -9,7 +9,7 @@ tags:
     - ci
     - pins
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T03:49:06Z
+updated_at: 2026-09-19T03:51:43Z
 ---
 
 ## Why
@@ -106,3 +106,22 @@ Do **not** require:
 3. Hand to verifier. Do **not** land. Verifier records pin SHAs; does not fail on the filed ambient reds.
 
 This note resets the verify-fail counter.
+
+## Handoff (pin-only confirm, scrapper@isaac-work-1)
+
+Confirmed planner pin-only acceptance. Did not recut features or the stare spec. Did not land.
+
+**isaac-mcp** `bean/isaac-okw1 @ 801fb5f` (base origin/main@121acf6)
+- pins: agent `76320fa`, foundation `df64bf1`, http `d082206` in deps.edn + bb.edn
+- SHAs reachable from each repo origin/main (agent/foundation/http)
+- cold classpath: `GITLIBS=/tmp/gl-okw1-mcp clojure -Sforce -Spath` — no "Commit not found"
+- `bb spec` 32 examples, **1 failure** — stare NPE (`isaac.mcp.client lens fixture returns a timeout error when catalog query is stare`); recorded, not absorbed
+- `bb features` 13/0
+
+**isaac-discord** `bean/isaac-okw1 @ 5fff150` (base origin/main@6e7e411)
+- same pins in deps.edn + bb.edn
+- cold classpath: `GITLIBS=/tmp/gl-okw1-discord clojure -Sforce -Spath` — no "Commit not found"
+- `bb spec` 52/0
+- `bb features` / `bb ci` not required
+
+Ambient reds remain for isaac-7b0g / isaac-tlv6. Verifier: do not fail on those.
