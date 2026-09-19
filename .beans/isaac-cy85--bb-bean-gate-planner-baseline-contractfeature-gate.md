@@ -1,14 +1,14 @@
 ---
 # isaac-cy85
 title: 'bb bean-gate: planner baseline + contract/feature gate (Bean Gate child 1)'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-19T20:42:56Z
-updated_at: 2026-09-19T20:42:56Z
+updated_at: 2026-09-19T20:44:49Z
 parent: isaac-rmq6
 ---
 
