@@ -8,7 +8,7 @@ tags:
     - google
     - comm
 created_at: 2026-09-18T04:12:15Z
-updated_at: 2026-09-18T04:12:15Z
+updated_at: 2026-09-19T20:31:07Z
 ---
 
 Isaac receives Google Chat messages and Gmail as soon as Google has them, and can speak back on both — the way Discord and iMessage already work. Push-first: Google publishes to one Pub/Sub topic, a push subscription POSTs to an Isaac door, Isaac authenticates, persists, gates deterministically, and only then starts a turn.
@@ -63,3 +63,7 @@ Routing vocabulary is the one Discord channels and hooks already use: crew, sess
 `slagyr/isaac-google`, `slagyr/isaac-gchat`, `slagyr/isaac-gmail` — public, MIT, scaffolded from isaac-mcp (bb ci, pre-push hook, CI workflows, module skeleton + spec green). `slagyr-assistant` invited with write (pending acceptance).
 
 Source strategy doc dated 2026-09-12, amended 2026-09-16; Micah's architecture session 2026-09-18.
+
+
+
+Rollout runbook (2026-09-19): isaac-google/doc/rollout.md — gcloud script for the GCP half, console-only pieces, login, outbound, door. yopp: steps 1–2 done, non-secret config set; owner login pending.
