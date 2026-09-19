@@ -4,8 +4,10 @@ title: 'Hail: bound deliveries sit unclaimed in deliveries/ forever; no operator
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-08-29T14:39:53Z
-updated_at: 2026-09-18T06:02:54Z
+updated_at: 2026-09-19T00:01:41Z
 ---
 
 ## Problem (2026-08-29, zanebot)
@@ -80,3 +82,11 @@ Version bump; pin is a train step. Field check after the train: `grep delivery-s
 4. Green `bb features features/bound_unclaimed.feature` then remove `@wip`.
 5. Acceptance: `bb features features/bound_unclaimed.feature features/delivery.feature features/turn-marker-claim.feature && bb ci`.
 6. Rebase onto origin/main; unverified; hail verify-band reply_to 2a3be661.
+
+
+## Handoff (scrapper@isaac-work-1)
+
+Acceptance green: bound_unclaimed.feature, delivery.feature, turn-marker-claim.feature, bb ci.
+branch: bean/isaac-at5m @ e010df8 (base origin/main@37479ad)
+
+Tick logs :hail/delivery-skipped; stale bound recovers via turn marker or rebinds; isaac hail drop → undeliverable/:dropped.
