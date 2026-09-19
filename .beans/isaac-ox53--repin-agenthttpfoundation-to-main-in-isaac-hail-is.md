@@ -1,14 +1,14 @@
 ---
 # isaac-ox53
 title: Repin agent/http/foundation to main in isaac-hail, isaac-claude-code, isaac-cli-proxy (after isaac-x2lp lands)
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - ci
     - pins
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T03:39:30Z
+updated_at: 2026-09-19T19:13:49Z
 blocked_by:
     - isaac-x2lp
 ---
