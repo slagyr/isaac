@@ -1,14 +1,14 @@
 ---
 # isaac-j4jr
 title: 'Dangling pins, structural fix: verify repins downstream before squash; bb lint-pins (fetch-reachability) in every bb ci; dev-local for in-flight cross-repo beans'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - ci
     - process
 created_at: 2026-09-18T04:53:38Z
-updated_at: 2026-09-18T04:53:38Z
+updated_at: 2026-09-19T01:36:56Z
 blocked_by:
     - isaac-lsz2
 ---
