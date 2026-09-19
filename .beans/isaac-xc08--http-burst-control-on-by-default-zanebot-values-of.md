@@ -21,8 +21,9 @@ isaac-udnm shipped burst control opt-in: `:http :burst` absent ⇒ `wrap-burst` 
 - **Off = `:http :burst {:enabled false}`** (new boolean knob; schema default true). Explicit knobs override one at a time; the rest keep defaults. Hot-reloadable like the rest of `:http` (isaac-s9e3 seam).
 - Defaults live in the HTTP module's schema (`:default` on each knob) so `config get http.burst` shows the effective values and `config validate` accepts an absent group. `wrap-burst` reads the resolved config; the only "off" is `:enabled false`.
 - Loopback is still never throttled (udnm rule unchanged).
+- **Count by response status, not by wrap-auth's branch (Micah, 2026-09-18).** `wrap-burst` observes the response: any 401/403 from ANY source (wrap-auth, or a route that verifies its own credential — the Google push door's OIDC check, isaac-1jep) counts toward the client's burst. `record-unauthenticated!` moves out of `wrap-auth`; nothing a route does needs to know burst control exists. Authenticated 2xx traffic never counts — a leaked-token flood is a principals/audit problem (isaac-gym1), not a burst one.
 
-## Scenarios (committed @wip — isaac-http `features/server/burst_default.feature` @ 4acef9e)
+## Scenarios (committed @wip — isaac-http `features/server/burst_default.feature` @ 8edc65c)
 
 | line | scenario |
 |------|----------|
@@ -31,14 +32,17 @@ isaac-udnm shipped burst control opt-in: `:http :burst` absent ⇒ `wrap-burst` 
 | :45 | an explicit knob overrides its default and the others keep theirs |
 | :58 | turning burst control off on hot reload releases a throttled client |
 | :72 | the effective burst config is visible with its defaults filled in (`config get http.burst`) |
+| :88 | a route that refuses on its own counts toward the burst (response-status counting) |
 
 ## Step ledger
 
 | step | status |
 |------|--------|
-| an Isaac root at … / config: / the Isaac server is started / config is updated: / the client sends GET … with header … N times / the response status is … / the log has (no) entries matching: / the directory … has exactly N file(s) / isaac is run with … / the stdout EDN contains: | reuse — **no new steps** (all from burst.feature / auth.feature / foundation cli_steps) |
+| an Isaac root at … / config: / the Isaac server is started / config is updated: / the client sends GET|POST … with header … N times / the response status is … / the log has (no) entries matching: / the directory … has exactly N file(s) / isaac is run with … / the stdout EDN contains: | reuse (burst.feature / auth.feature / foundation cli_steps; `the client sends POST … N times` — confirm the existing sender accepts POST, else add the verb) |
+| principal … is configured with secret … and scopes … | reuse (isaac-bzgw) |
+| **a fixture route {method} {path} declares no scope and refuses every request with 401** | **NEW — sibling of bzgw's `a fixture route … declares no scope`; the handler itself returns 401** |
 
-Note `the directory … has exactly 0 files` / `1 file` — burst.feature uses both singular and plural; match whichever the step accepts.
+One new step (a fixture-route variant). Note `the directory … has exactly 0 files` / `1 file` — burst.feature uses both singular and plural; match whichever the step accepts.
 
 ## Acceptance
 ```
