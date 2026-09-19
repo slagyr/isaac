@@ -1,15 +1,14 @@
 ---
 # isaac-12iz
 title: 'isaac-gmail: :isaac.google/registration contribution has the wrong shape — the INBOX watch never registers with isaac-google''s timer'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
     - google
     - gmail
 created_at: 2026-09-19T19:05:58Z
-updated_at: 2026-09-19T19:21:59Z
+updated_at: 2026-09-19T19:24:09Z
 parent: isaac-bv1l
 ---
 
@@ -36,3 +35,9 @@ Split: the isaac-google half is **isaac-gxil** (:remote/:delete! hooks; branch b
 
 
 isaac-gxil landed (isaac-google main f9ae6fc). Repinned; cold-cache classpath ok; bb ci 23 spec + 10 feature examples green. branch: bean/isaac-12iz @ 0267f9f (base origin/main@21e7241) in isaac-gmail — fast-forward from main. Version 0.1.3. Handed to verify.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-gmail 476e4d22b8dbeb3b0d1817f3482c55cac04614bb
