@@ -103,3 +103,9 @@ This bean has no feature-baseline; old unverified path.
 ## Landed on main (2026-09-19)
 
 main-sha: isaac 53ea1cf63c9d6fbc156f1aea425e49658f6ac325
+
+## Replaced on main (2026-09-19, Micah)
+
+The worker-landed gate crashed on gate lines inside code fences (this bean's own example block). Replaced with the split implementation (`isaac.bean-gate.*`, 32 specs, fenced lines ignored). `bb ci` green; `bb bean-gate verify isaac-cy85` and `isaac-rmq6` exit 2.
+
+main-sha: isaac 7b3cab5a1cc40689d3dc1bed1e69c0e5f96f653b
