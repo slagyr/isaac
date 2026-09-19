@@ -82,3 +82,5 @@ Do not land foundation. Pin bump only.
 - Remaining: isaac-claude-code (mcp-bridge stdin + ISAAC_SERVER_TOKEN), isaac-worksite (lock owner), isaac-foreman (lint-cli-host), isaac-server (drop duplicate :server).
 
 **Next:** isaac-claude-code-x2lp. Then worksite, rebase cli-proxy, foreman, server. Per-repo \`bb lint-cli-host && bb ci\` before handoff.
+
+Dispatched: hail 6a7fbfb8 2026-09-19T17:57:23Z (session isaac-work-2, continuation of 697120f8 — turn ended at cycle budget without hand-off; planner watch now covers this bean)
