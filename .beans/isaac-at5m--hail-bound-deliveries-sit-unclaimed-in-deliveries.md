@@ -1,13 +1,11 @@
 ---
 # isaac-at5m
 title: 'Hail: bound deliveries sit unclaimed in deliveries/ forever; no operator drop'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-08-29T14:39:53Z
-updated_at: 2026-09-19T00:02:41Z
+updated_at: 2026-09-19T00:11:17Z
 ---
 
 ## Problem (2026-08-29, zanebot)
@@ -116,3 +114,9 @@ Do not land. Restore the planner config path (keep only @wip removal), or get a 
 ## Exceptions
 
 Planner Gherkin wrote `| hail.stale-bound-ms | 300000 |`. The live hail config table is `:hail-settings` (bands live under `:hail` as a keyed entity-dir). The two stale-threshold `config:` rows in `features/bound_unclaimed.feature` use `| hail-settings.stale-bound-ms | 300000 |` so the threshold actually loads. Code still reads `[:hail :stale-bound-ms]` as a fallback.
+
+
+
+## Landed on main (2026-09-18)
+
+main-sha: isaac-hail 3632bd9eac29dee24b29eca4eb4f0d7614d0fee7
