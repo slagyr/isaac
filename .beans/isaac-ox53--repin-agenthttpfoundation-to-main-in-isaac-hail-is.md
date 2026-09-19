@@ -1,15 +1,14 @@
 ---
 # isaac-ox53
 title: Repin agent/http/foundation to main in isaac-hail, isaac-claude-code, isaac-cli-proxy (after isaac-x2lp lands)
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - ci
     - pins
-    - unverified
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T19:38:18Z
+updated_at: 2026-09-19T19:41:15Z
 ---
 
 ## Why
@@ -195,3 +194,11 @@ Authorized recut only: features/integration.feature first @slow scenario `server
 | isaac-cli-proxy | bean/isaac-ox53 | 07de028 | 3cb4198 | lint-cli-host ok; spec 26/0; features 29/0; ISAAC_GIT=1 bb features-slow features/integration.feature:9 → 1/0 |
 
 Do not land. Do not pin.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-hail d0f893267e8c325a7a591ee49991f28d412a898b
+main-sha: isaac-claude-code 4d5d4f3db142c364d2f8bb7a58acda307f2fac8e
+main-sha: isaac-cli-proxy 5b2418ace8c8c1892f35a9210f3923d3167290b7
