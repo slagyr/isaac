@@ -36,3 +36,16 @@ Child of isaac-gym1 (per-principal scoped auth). Decision (Micah, 2026-09-18): O
 cd isaac-server && bb features features/server/oidc.feature features/server/principals.feature && bb ci
 ```
 Version bump; rides the http train. Consumers: isaac-google (isaac-x37l), GitHub Actions CI (sibling bean).
+
+## Handoff / resume
+
+branch: bean/isaac-4sqh @ (push pending) (base origin/main@d082206)
+
+**Done:** `isaac.http.oidc/verify` (RS256/ES256, JWKS cache, kid refresh, fail-closed). Data-shaped `:isaac.http/identity` map berth + `register-identity-entry!`. JWT-first in `wrap-auth` before bearer-hash; issuer-mismatch falls through (`:unknown`). JWKS-unavailable attention once. `auth list` OIDC rows. Version 0.1.19. `features/server/oidc.feature` (@jvm) + steps. JVM unit specs green (47 examples). Native `bb features features/server/oidc.feature` skips @jvm (0 examples).
+
+**Red / blocked:** `clojure -M:test:features` cannot compile (`isaac.module.loader/invoke-add-deps!` missing — agent pin 679aee8 vs foundation 0b120cc). Native bb cannot run RSA fixture (`RSAPublicKey` not in SCI). Acceptance `bb features features/server/oidc.feature` therefore cannot prove the 9 scenarios on this host.
+
+**Next:**
+1. Pin isaac-agent (or foundation) so JVM features compile, **or** run oidc.feature under a working JVM classpath.
+2. Resume at `features/server/oidc.feature:1` and `spec/isaac/http/oidc_spec.clj:81` (`register-trust-rule!`).
+3. Then `bb features features/server/principals.feature && bb ci`.
