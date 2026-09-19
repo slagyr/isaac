@@ -32,7 +32,7 @@
                                       :git/sha "32300a2eb7f15d60d7aea2448d29491e2e4cfde7"}
                               :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
  :isaac.google               {:coord {:git/url "https://github.com/slagyr/isaac-google.git"
-                                      :git/sha "f9ae6fc608792dfdf6fe7d9cbd82edb414c0f038"}
+                                      :git/sha "d5dc7b55a17a7c64414580056fc31dd4368a6da5"}
                               :desc  "Shared Google Workspace plumbing — OAuth for the Google user, the Pub/Sub push door and durable inbox, registrations and renewal, health."}
  :isaac.comm.gchat           {:coord {:git/url "https://github.com/slagyr/isaac-gchat.git"
                                       :git/sha "a769d6bfd699fd1d7065a593585fe4a323fcb3e8"}
