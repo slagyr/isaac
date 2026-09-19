@@ -182,3 +182,10 @@ Worker: drop or delete those two branches after confirming main is sufficient. D
 1. `cd isaac-http && ISAAC_GIT=1 bb ci` green on `bean/isaac-lsz2` (specs + **all** features).
 2. Planner `## Exceptions` for any non-@wip feature edits, or revert those edits and fix production/boot.
 3. Do not retouch the eight already-landed repos. Do not land gchat/gmail leftover branches.
+
+
+## Planner note (2026-09-19 01:20Z) — coordination with the worker
+
+- **Google repos are DONE and green on main — do not redo them**: isaac-google `a78124b`, isaac-gchat `702a3b0`, isaac-gmail `9ba7a2e` pin http `ad4ba5d` (pre-tdlz, last http with a live foundation pin), agent main `679aee8`, foundation main, google main; two gmail steps removed that google main now provides. The "gchat/gmail squash conflict" in verify attempt 1 is against these — rebase onto their mains and keep them; move their http pin to http main once the http leg lands.
+- isaac-http `bean/isaac-lsz2` @ `097ee33` is the worker's (716d8ec + agent pin); the planner's earlier partial (`c787b7d`: same repins + `auth_cli_spec` seeding `{:defaults {:crew :main}}` + a crew file — the composed schema on agent main requires defaults.crew and set-config refuses an invalid root) is superseded; re-apply the spec seeding if the auth CLI specs are red on your branch. `features/http/config.feature` ":http bind/auth config is valid" needs `defaults.crew` in its config table for the same reason.
+- The planner briefly deleted the remote `bean/isaac-lsz2` in isaac-http by mistake at ~01:10Z and restored it from reflog within minutes; if your local push was rejected in that window, `git pull --rebase` and push again.
