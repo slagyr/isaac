@@ -1,14 +1,14 @@
 ---
 # isaac-fun8
 title: 'config set writes schema-invalid values: value-validator errors are dropped as reference errors'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - config
     - foundation
 created_at: 2026-09-19T00:08:20Z
-updated_at: 2026-09-19T00:10:00Z
+updated_at: 2026-09-19T00:12:43Z
 ---
 
 ## Bug
