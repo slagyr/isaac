@@ -7,9 +7,8 @@ priority: high
 tags:
     - ci
     - pins
-    - unverified
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T19:19:11Z
+updated_at: 2026-09-19T19:23:19Z
 blocked_by:
     - isaac-x2lp
 ---
@@ -64,3 +63,23 @@ x2lp has landed. Worktrees from origin/main after that land. Pin rule: every isa
 Do not land. Verify lands.
 
 Acceptance remaining: hail and claude-code full `bb ci` still have pre-existing / pin-surfaced feature reds listed above. cli-proxy `bb ci` includes features-slow which is red on main too.
+
+
+
+## Verify fail (attempt 1, 2026-09-19): isaac-claude-code pin-introduced feature red — claude_cli.feature:108 (green on origin/main)
+
+HEAD:
+- isaac-hail bean/isaac-ox53 @ 113111d (base origin/main@c5f9df1)
+- isaac-claude-code bean/isaac-ox53 @ 434d340 (base origin/main@96c985d)
+- isaac-cli-proxy bean/isaac-ox53 @ 0afdd29 (base origin/main@3cb4198)
+Working trees: clean. No feature-file tamper (no feature diffs). Pins are on origin/main (http 493416d, agent fd89226).
+
+GREEN means FULL suite. Pre-existing must reproduce on origin/main.
+
+isaac-hail ISAAC_GIT=1 bb features: 163 examples, 6 failures (hail deferral/delivery). Same 6 failures on origin/main@c5f9df1 — pre-existing, not this bean. bb spec 170/0. lint-cli-host ok.
+
+isaac-cli-proxy ISAAC_GIT=1 bb features: 29/0/93. bb spec 26/0. lint-cli-host ok.
+
+isaac-claude-code ISAAC_GIT=1 bb features: 50 examples, 1 failure — llm/api/claude_cli.feature:108 "login failure is a loud error and classifies as auth-unavailable" (Then an error is reported indicating the claude binary failed; :error nil). Isolated on origin/main@96c985d (agent 2a6dd0f): 50/0/166. Pin of agent fd89226 introduced the red. Bean Do says "Fix what the newer pins surface in the repo's own specs/features." Not fixed.
+
+Do not land. Make claude_cli.feature:108 green under the new agent pin (classify login-failure as error/auth-unavailable again, or get planner Exceptions). Then re-hand for verify.
