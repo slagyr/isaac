@@ -1,14 +1,14 @@
 ---
 # isaac-siua
 title: 'Stateful Responses chaining resends every historical tool result: chained cycles must carry only the outputs since the last response id'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - llm
     - responses
 created_at: 2026-09-19T18:08:14Z
-updated_at: 2026-09-19T18:09:22Z
+updated_at: 2026-09-19T18:10:36Z
 ---
 
 ## Bug (observed live on zanebot, 2026-09-19 18:06Z — see isaac-1umd)
