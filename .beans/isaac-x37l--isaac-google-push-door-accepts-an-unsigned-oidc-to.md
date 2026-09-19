@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: critical
 tags:
-    - security
     - google
+    - unverified
+    - security
 created_at: 2026-09-19T02:28:39Z
-updated_at: 2026-09-19T18:47:46Z
+updated_at: 2026-09-19T18:51:54Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-4sqh
@@ -46,3 +47,7 @@ The crypto moves to isaac-http (**isaac-4sqh**): JWKS fetch/cache, signature, is
 
 ## Handoff / resume (planner, 2026-09-19)
 Split: the isaac-http half is **isaac-401c** (config refs in trust rules; branch bean/isaac-x37l in isaac-http @ 39efb60). This bean is the isaac-google half: branch bean/isaac-x37l in isaac-google @ 6bd0ad4 (base origin/main@ca9fac6). Done: manifest trust rule replaces identity.clj (deleted, with *skip-signature?*), push_door.feature has scenarios 1–5 plus burst counting (10/10), bb ci 42 spec + 19 feature examples green. Blocked on 401c landing only because deps/bb pin http at the branch sha; once 401c lands the planner repins to the main sha, reruns bb ci, and tags unverified.
+
+
+
+isaac-401c landed (isaac-http main 493416d). Repinned; cold-cache classpath ok; bb ci 42 spec + 19 feature examples green. branch: bean/isaac-x37l @ c3ca39d (base origin/main@ca9fac6) in isaac-google — fast-forward from main. Version 0.1.3. Handed to verify.
