@@ -87,4 +87,4 @@ Do not land foundation. Pin bump only. isaac-server/http :server already landed 
 | isaac-foreman | bean/isaac-x2lp | f9713d1 | 235f57c | lint-cli-host only, pin df64bf1, version 0.1.1 |
 | isaac-server/http | — | d082206 on main | — | satisfied by isaac-66we; do not redo |
 
-Handoff: `beans update isaac-x2lp --tag=unverified`; hail isaac-verify reply_to incoming hail.
+Handoff: `in-progress` + `unverified`. Verify hail b658b114 (band isaac-verify, reply_to 6a7fbfb8). Discord ➡️ after hail.
