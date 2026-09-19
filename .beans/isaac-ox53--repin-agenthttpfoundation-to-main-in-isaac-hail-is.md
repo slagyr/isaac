@@ -7,8 +7,9 @@ priority: high
 tags:
     - ci
     - pins
+    - unverified
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T19:13:49Z
+updated_at: 2026-09-19T19:19:11Z
 blocked_by:
     - isaac-x2lp
 ---
@@ -47,3 +48,19 @@ CI Tests green on `main` for all three after landing (link the runs in the bean)
 (none)
 
 Dispatched: hail d04fd5b2 2026-09-19T19:13:36Z (band isaac-work)
+
+
+
+## Implementation notes (scrapper@isaac-work-1)
+
+x2lp has landed. Worktrees from origin/main after that land. Pin rule: every isaac-* sha reachable from that repo's origin/main.
+
+| repo | branch | sha | base origin/main | pins | suite |
+|---|---|---|---|---|---|
+| isaac-hail | bean/isaac-ox53 | 113111d | c5f9df1 | agent fd89226 (already), foundation df64bf1 (already), http 493416d (was ad4ba5d). Version 0.1.20. | lint-cli-host ok; spec 170/0. Features load. 6 hail-delivery/deferral failures + 2 pending — same family as x2lp hail (pre-existing on origin/main, not pin-introduced). |
+| isaac-claude-code | bean/isaac-ox53 | 434d340 | 96c985d | agent fd89226 (was 2a6dd0f), foundation df64bf1 (already), http 493416d (was ad4ba5d). Version 0.1.14. Dropped duplicate Then "the exec tool is executed N times" that collided with agent session_steps after the agent bump. | lint-cli-host ok; spec 80/0 (3 pending @real). Features: 50 examples, 1 failure remaining — "login failure is a loud error and classifies as auth-unavailable" (claude_cli.feature:108) llm-result has no :error after the agent bump. |
+| isaac-cli-proxy | bean/isaac-ox53 | 0afdd29 | 3cb4198 | agent fd89226 (already), foundation df64bf1 (already), http 493416d (was 11e4301), cli-server 007da61 (was ae0743a). Version 0.1.6. | lint-cli-host ok; spec 26/0; features 29/0. features-slow still red: token-reject + first remote-command scenario. cli-server main still pins http ad4ba5d so the spawned server classpath can lag 493416d. Token-reject was already red on origin/main@1f96845 (x2lp verify). |
+
+Do not land. Verify lands.
+
+Acceptance remaining: hail and claude-code full `bb ci` still have pre-existing / pin-surfaced feature reds listed above. cli-proxy `bb ci` includes features-slow which is red on main too.
