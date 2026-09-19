@@ -31,3 +31,23 @@ Specs (isaac-foundation `spec/isaac/foundation/pin_lint_spec.clj`): (a) a pin wh
 cd isaac-foundation && bb spec spec/isaac/foundation/pin_lint_spec.clj && bb lint-pins && bb ci
 ```
 Then: `bb lint-pins` wired into `bb ci` of isaac-agent, isaac-server, isaac-cli-server, isaac-cli-proxy, isaac-acp, isaac-hail, isaac-hooks, isaac-mcp, isaac-discord, isaac-imessage, isaac-claude-code, isaac-episodes, isaac-foreman, isaac-worksite, isaac-cron (one commit each; green means every current pin is reachable — isaac-lsz2 must land first for cli-server/isaac-server). verify.md + squash helper + AGENTS.md updated. One-time check (not a permanent scenario): re-run the reachability sweep from isaac-lsz2 → empty.
+
+## Worker progress (scrapper@isaac-work-2, 2026-09-19) — wrap-up / resume
+
+### Done
+
+- isaac-foundation `bean/isaac-j4jr` @ `d666371` (base origin/main@`df64bf1`). Pushed.
+  - `spec/isaac/foundation/pin_lint_spec.clj` 4/0 (reachable / unreachable names file+dep+sha / ISAAC_LINT_PINS=0 / non-isaac ignored).
+  - `spec-support/src/isaac/foundation/pin_lint.clj` — `*fetch-sha*` seam; `git fetch --depth 1` default.
+  - `bb lint-pins` task + wired into foundation `bb ci`.
+  - `ISAAC_GIT=1 bb spec` 1058/0. `bb lint-pins` ok.
+  - Full `bb features` 197/2 pending 2 — both `modules_pins.feature` failures are pre-existing (gitlibs fixture-agent path under verify/isaac-foundation; feature file not in this branch's diff).
+- isaac (beans/docs) `bd45b5d3`: verify.md §6a (repin downstream before squash; hail-bean-verify §7a is the squash helper — no second script), AGENTS.md cross-repo `:dev-local`, hail-bean-work skill same.
+
+### Next (resume here)
+
+Wire `bb lint-pins` into `bb ci` of each listed module — worktree `bean/isaac-j4jr` from each sibling; never edit shared main checkouts. One commit each. Do not pin at `d666371` until foundation lands (use `:dev-local` for in-flight). After foundation lands, pin test-support at the squash sha.
+
+Repos: isaac-agent, isaac-server, isaac-cli-server, isaac-cli-proxy, isaac-acp, isaac-hail, isaac-hooks, isaac-mcp, isaac-discord, isaac-imessage, isaac-claude-code, isaac-episodes, isaac-foreman, isaac-worksite, isaac-cron.
+
+Command to resume: `beans show isaac-j4jr` then worktrees from each sibling on `bean/isaac-j4jr`.
