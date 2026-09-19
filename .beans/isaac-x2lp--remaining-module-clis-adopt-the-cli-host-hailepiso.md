@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - cli
+    - unverified
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-19T00:43:18Z
+updated_at: 2026-09-19T18:28:01Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -73,16 +74,17 @@ Resume: isaac-episodes-x2lp. Do not land foundation. Pin bump only.
 
 ## Checkpoint (scrapper@isaac-work-2, 2026-09-19)
 
-Foundation pin target: origin/main @ b644562111daa3c8d08a0e75306165534b0f7e1c.
-Do not land foundation. Pin bump only.
+Foundation pin target: origin/main @ df64bf15c739165c496cbf81e3d922ad3aa3346f.
+Do not land foundation. Pin bump only. isaac-server/http :server already landed by isaac-66we — do not redo.
 
-- isaac-hail bean/isaac-x2lp @ bf6f6dc (base origin/main@c44c654) — hail stdin via host/in, :hosted, lint-cli-host, version 0.1.19. Rebased over isaac-lsz2 pin 0b120cc.
-- isaac-episodes bean/isaac-x2lp @ 94c5206 (base origin/main@a58929a) — embed/episodes/recall :hosted, ensure-runtime!, lint-cli-host, pin b644562, version 0.1.1. Focused specs green.
-- isaac-cli-proxy bean/isaac-x2lp @ f372f6d — still needs rebase onto current origin/main.
-- Remaining: isaac-claude-code (mcp-bridge stdin + ISAAC_SERVER_TOKEN), isaac-worksite (lock owner), isaac-foreman (lint-cli-host), isaac-server (drop duplicate :server).
+| repo | branch | sha | base origin/main | status |
+|---|---|---|---|---|
+| isaac-hail | bean/isaac-x2lp | fca0798 | c44c654 | hail stdin via host/in, :hosted, lint-cli-host, pin df64bf1, version 0.1.19 |
+| isaac-episodes | bean/isaac-x2lp | cb4d910 | ba1a22f | embed/episodes/recall :hosted, ensure-runtime!, lint-cli-host, pin df64bf1, version 0.1.1 |
+| isaac-claude-code | bean/isaac-x2lp | 4da98b5 | 50ee5f8 | mcp-bridge stdin via host/in, nonce via host/env, :hosted, lint-cli-host, pin df64bf1, version 0.1.13 |
+| isaac-worksite | bean/isaac-x2lp | f01a492 | 99ff219 | lock owner pid+host identity; embedded vs turn distinct; :hosted; lint-cli-host; pin df64bf1; version 0.1.1 |
+| isaac-cli-proxy | bean/isaac-x2lp | 5d7fd3e | 1f96845 | remote :local-only, host tty/stdin, lint-cli-host, pin df64bf1, version 0.1.5 |
+| isaac-foreman | bean/isaac-x2lp | f9713d1 | 235f57c | lint-cli-host only, pin df64bf1, version 0.1.1 |
+| isaac-server/http | — | d082206 on main | — | satisfied by isaac-66we; do not redo |
 
-**Next:** isaac-claude-code-x2lp. Then worksite, rebase cli-proxy, foreman, server. Per-repo \`bb lint-cli-host && bb ci\` before handoff.
-
-Dispatched: hail 6a7fbfb8 2026-09-19T17:57:23Z (session isaac-work-2, continuation of 697120f8 — turn ended at cycle budget without hand-off; planner watch now covers this bean)
-
-Planner note (2026-09-19): the isaac-server/isaac-http leg ("drop duplicate :server") is already landed by isaac-66we (isaac-http main d082206): the HTTP module no longer registers `:server` and the `alter-var-root` takeover is gone. Verify only; do not redo it.
+Handoff: `beans update isaac-x2lp --tag=unverified`; hail isaac-verify reply_to incoming hail.
