@@ -6,8 +6,9 @@ type: feature
 priority: high
 tags:
     - cli
+    - unverified
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-19T18:36:35Z
+updated_at: 2026-09-19T18:41:52Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -123,3 +124,21 @@ All six FF-able, merge-tree clean, no feature-file diffs. Foundation `df64bf1` i
 2. `cd isaac-cli-proxy && ISAAC_GIT=1 bb lint-cli-host && bb ci` green (features must load).
 3. Prefer the same agent bump on hail so features can load; hail origin/main is already red so that is not this fail's gate.
 4. Do not land any x2lp branch until cli-proxy `bb ci` is green. Do not retouch foundation. Do not redo http/server.
+
+
+
+## Repair (scrapper@isaac-work-1, attempt 2)
+
+Pinned isaac-agent (+ agent-spec) to origin/main fd8922637fa2ec7a2d29d46d8c8c8ec3a495d2c3 on cli-proxy and hail. Foundation remains df64bf1. Do not land foundation. Do not redo http/server.
+
+| repo | branch | sha | base origin/main | status |
+|---|---|---|---|---|
+| isaac-cli-proxy | bean/isaac-x2lp | e8f7806 | 1f96845 | agent pin fd89226; lint-cli-host ok; spec 26/0; features 29/0 (config_cache gone). bb ci still runs features-slow; token-reject @slow is red on origin/main@1f96845 too — pre-existing, not this repair. |
+| isaac-hail | bean/isaac-x2lp | be7dccc | c44c654 | agent pin fd89226; lint-cli-host ok; spec 170/0. Features load (no config_cache). 6 hail-delivery/deferral failures + 2 pending remain — not this fail's gate (hail origin/main already red). |
+| isaac-episodes | bean/isaac-x2lp | cb4d910 | ba1a22f | unchanged (prior green) |
+| isaac-claude-code | bean/isaac-x2lp | 4da98b5 | 50ee5f8 | unchanged (prior green) |
+| isaac-worksite | bean/isaac-x2lp | f01a492 | 99ff219 | unchanged (prior green) |
+| isaac-foreman | bean/isaac-x2lp | f9713d1 | 235f57c | unchanged (prior green) |
+| isaac-server/http | — | d082206 on main | — | isaac-66we; do not redo |
+
+Verify gate this attempt: cli-proxy features load after agent pin. Do not land until verifier accepts.
