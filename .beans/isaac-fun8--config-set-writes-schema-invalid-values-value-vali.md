@@ -65,3 +65,5 @@ cd isaac-agent && bb features features/config/set_unset.feature && bb features f
 ```
 
 Not in scope: pretty-printing the written EDN (isaac-2nkg, dispatched separately, same files — rebase carefully).
+
+Dispatched: hail b743fe64 2026-09-19T00:10:22Z (band isaac-work)
