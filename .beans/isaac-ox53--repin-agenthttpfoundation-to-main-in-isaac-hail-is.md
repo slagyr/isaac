@@ -7,8 +7,9 @@ priority: high
 tags:
     - ci
     - pins
+    - unverified
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T19:23:19Z
+updated_at: 2026-09-19T19:30:21Z
 blocked_by:
     - isaac-x2lp
 ---
@@ -83,3 +84,13 @@ isaac-cli-proxy ISAAC_GIT=1 bb features: 29/0/93. bb spec 26/0. lint-cli-host ok
 isaac-claude-code ISAAC_GIT=1 bb features: 50 examples, 1 failure — llm/api/claude_cli.feature:108 "login failure is a loud error and classifies as auth-unavailable" (Then an error is reported indicating the claude binary failed; :error nil). Isolated on origin/main@96c985d (agent 2a6dd0f): 50/0/166. Pin of agent fd89226 introduced the red. Bean Do says "Fix what the newer pins surface in the repo's own specs/features." Not fixed.
 
 Do not land. Make claude_cli.feature:108 green under the new agent pin (classify login-failure as error/auth-unavailable again, or get planner Exceptions). Then re-hand for verify.
+
+
+
+## Repair (scrapper@isaac-work-1, attempt 2)
+
+claude-code bean/isaac-ox53 @ d4a04da (base origin/main@96c985d). Hail and cli-proxy branches left in place.
+
+Agent fd89226 weather-stamps login failures (`:unavailable? true :reason :auth`) and drops `:error`. Feature steps now treat that stamp as a loud error. No feature-file edits.
+
+ISAAC_GIT=1 bb lint-cli-host && bb spec && bb features: lint ok; spec 80/0 (3 pending @real); features 50/0/166. claude_cli.feature:108 green.
