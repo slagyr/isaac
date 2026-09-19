@@ -1,14 +1,14 @@
 ---
 # isaac-okw1
 title: 'Repin isaac-agent to main in isaac-discord and isaac-mcp (CI red: stale agent pin requires deleted config-cache; unreachable foundation via agent)'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - ci
     - pins
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T03:39:30Z
+updated_at: 2026-09-19T03:40:47Z
 ---
 
 ## Why
