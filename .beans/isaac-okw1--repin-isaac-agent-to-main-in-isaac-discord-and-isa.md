@@ -41,3 +41,5 @@ CI Tests green on `main` for both repos after landing (link the runs in the bean
 ## Exceptions
 
 (none)
+
+Dispatched: hail 987a7071 2026-09-19T03:39:45Z (band isaac-work)
