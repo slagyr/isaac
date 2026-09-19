@@ -1,14 +1,13 @@
 ---
 # isaac-x2lp
 title: Remaining module CLIs adopt the CLI host (hail/episodes/claude-code/worksite/cli-proxy/foreman/server)
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
-    - unverified
 created_at: 2026-09-18T01:38:40Z
-updated_at: 2026-09-19T18:41:52Z
+updated_at: 2026-09-19T18:54:25Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-1fwl
@@ -142,3 +141,15 @@ Pinned isaac-agent (+ agent-spec) to origin/main fd8922637fa2ec7a2d29d46d8c8c8ec
 | isaac-server/http | — | d082206 on main | — | isaac-66we; do not redo |
 
 Verify gate this attempt: cli-proxy features load after agent pin. Do not land until verifier accepts.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-cli-proxy 3cb4198a7760ccecd3731e9ca9063184dd81ad24
+main-sha: isaac-hail c5f9df13727230007df5bcb04b23820b3b2942f1
+main-sha: isaac-episodes 654dba1fdef3487d04b79d5ea6f73cdc86003971
+main-sha: isaac-claude-code 96c985d0bfb1854a660d7eebf90a431583e9b32a
+main-sha: isaac-worksite 1a70fe472c8450ffdf5f0a860878961d9503ca0f
+main-sha: isaac-foreman e5458ea5e5fdc7e89744d6c87f5f67734548f370
+main-sha: isaac-http/server d082206fa2a2e0099a892af863cb39016b7f3acd (already on main via isaac-66we; not re-landed)
