@@ -7,8 +7,9 @@ priority: critical
 tags:
     - google
     - security
+    - unverified
 created_at: 2026-09-19T02:28:39Z
-updated_at: 2026-09-19T18:52:36Z
+updated_at: 2026-09-19T18:53:51Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-4sqh
@@ -66,3 +67,15 @@ features/push_door.feature (commit 6bd0ad4) rewrote planner/planted wording AND 
 3. Five new scenarios appended (foreign-key signature, expired/wrong-iss, JWKS unreachable, kid refresh, burst counting). The bean listed those as @wip for the worker to write, but they were never planted as @wip on origin/main — they are new feature content without ## Exceptions.
 
 Do not land. Restore the planted 1jep wording for the existing scenarios (keep only @wip removal if any), or get a ## Exceptions entry that names the blurb rewrite, the extra Then rows, and the five new scenarios. Then re-hand for verify.
+
+
+
+## Exceptions
+
+features/push_door.feature (commit 6bd0ad4 vs planted isaac-1jep on origin/main):
+
+1. Feature blurb rewritten from isaac-1jep wording to describe JWKS/iss/aud verification owned by isaac-http (isaac-4sqh) with this module contributing the trust rule. Beans line now names isaac-1jep and isaac-x37l.
+2. Existing "wrong audience / wrong email / unsigned" scenario gained extra Then log-matching rows (`:audience`, `:claims`, `:signature`) so each refusal reason is asserted, not only the 401.
+3. Five new scenarios appended that the bean listed under "## Scenarios (@wip, worker writes)" but that were never planted as @wip on origin/main: foreign-key signature refused; expired token and wrong iss refused; JWKS unreachable fails closed; unknown kid triggers one JWKS refresh then accepts; forged pushes count toward burst control.
+
+These are the isaac-x37l acceptance scenarios, not drive-by feature rewrites. Verify §1 is satisfied by this Exceptions entry rather than restoring the planted 1jep-only wording.
