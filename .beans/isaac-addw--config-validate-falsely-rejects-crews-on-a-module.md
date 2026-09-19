@@ -1,15 +1,14 @@
 ---
 # isaac-addw
 title: 'config validate falsely rejects crews on a module-contributed session policy (episodes): the check reads the runtime registry, not the module index'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - config
     - agent
-    - unverified
 created_at: 2026-09-19T02:11:47Z
-updated_at: 2026-09-19T02:39:16Z
+updated_at: 2026-09-19T02:47:27Z
 ---
 
 ## Problem (yopp + zanebot, 2026-09-18)
@@ -39,3 +38,8 @@ Field: `isaac config validate` on yopp and zanebot → 0 errors (the `tools.dire
 branch: bean/isaac-addw @ b1c02b0 (base origin/main@76320fa)
 
 `known-policy-names` unions runtime factories with `:isaac.agent/session-policy` keys from the module index. `check-session-policy` reads that set. Fixture module `isaac.session.lantern`. Specs + `bb features features/config` + `bb ci` green. Do not land/pin.
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-agent e58263755f1bc43aa590b01366cbb1456ffaab69
