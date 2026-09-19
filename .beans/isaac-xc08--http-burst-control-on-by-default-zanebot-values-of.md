@@ -1,0 +1,47 @@
+---
+# isaac-xc08
+title: HTTP burst control on by default (zanebot values), off with :http :burst :enabled false; knobs override individually; hot-reload
+status: todo
+type: feature
+priority: high
+tags:
+    - http
+    - security
+created_at: 2026-09-19T01:25:54Z
+updated_at: 2026-09-19T01:25:54Z
+---
+
+Micah (2026-09-18): "HTTP throttling burst control should be on by default, with a way to turn it off." The earlier conversation left no bean; this is it.
+
+## Today
+isaac-udnm shipped burst control opt-in: `:http :burst` absent ⇒ `wrap-burst` is a pass-through (http.clj `wrap-burst`, manifest "Absent group = off"). zanebot has it configured explicitly (`{:threshold 30 :window-ms 60000 :cooldown-ms 600000 :throttle? true}`); yopp and any fresh install have none. A public server should never run without it.
+
+## Decision
+- **Default ON** with zanebot's values: `{:enabled true :threshold 30 :window-ms 60000 :cooldown-ms 600000 :throttle? true :notify? true}`.
+- **Off = `:http :burst {:enabled false}`** (new boolean knob; schema default true). Explicit knobs override one at a time; the rest keep defaults. Hot-reloadable like the rest of `:http` (isaac-s9e3 seam).
+- Defaults live in the HTTP module's schema (`:default` on each knob) so `config get http.burst` shows the effective values and `config validate` accepts an absent group. `wrap-burst` reads the resolved config; the only "off" is `:enabled false`.
+- Loopback is still never throttled (udnm rule unchanged).
+
+## Scenarios (committed @wip — isaac-http `features/server/burst_default.feature` @ d0c6f65)
+
+| line | scenario |
+|------|----------|
+| :21 | with no burst config at all, thirty unauthenticated requests trip a burst and the client is throttled |
+| :32 | burst control can be turned off explicitly (`http.burst.enabled false`) |
+| :45 | an explicit knob overrides its default and the others keep theirs |
+| :58 | turning burst control off on hot reload releases a throttled client |
+| :72 | the effective burst config is visible with its defaults filled in (`config get http.burst`) |
+
+## Step ledger
+
+| step | status |
+|------|--------|
+| an Isaac root at … / config: / the Isaac server is started / config is updated: / the client sends GET … with header … N times / the response status is … / the log has (no) entries matching: / the directory … has exactly N file(s) / isaac is run with … / the stdout EDN contains: | reuse — **no new steps** (all from burst.feature / auth.feature / foundation cli_steps) |
+
+Note `the directory … has exactly 0 files` / `1 file` — burst.feature uses both singular and plural; match whichever the step accepts.
+
+## Acceptance
+```
+cd isaac-server && bb features features/server/burst_default.feature features/server/burst.feature && bb ci
+```
+burst.feature's "config schema lists the burst knobs" gains `enabled`. Version bump; rides the http train. Field: zanebot's explicit `:burst` block can then be deleted (one-time) and `config get http.burst` still shows it on; yopp gets burst control on its next http upgrade with no config change.
