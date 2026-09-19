@@ -1,14 +1,14 @@
 ---
 # isaac-66we
 title: 'isaac http auth: the HTTP module owns an ''isaac http'' command; auth mint|rotate|revoke|list move off ''isaac server'''
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - http
     - security
 created_at: 2026-09-19T02:20:39Z
-updated_at: 2026-09-19T02:22:16Z
+updated_at: 2026-09-19T02:23:00Z
 parent: isaac-gym1
 ---
 
