@@ -1,0 +1,21 @@
+{:paths ["src" "spec"]
+
+ :deps {babashka/fs      {:mvn/version "0.5.22"}
+        babashka/process {:mvn/version "0.5.22"}
+        speclj/speclj    {:mvn/version "3.13.0"}}
+
+ :tasks
+ {spec {:doc "Run speclj specs"
+        :requires ([speclj.run.standard]
+                   [speclj.cli])
+        :task (apply speclj.cli/run (concat ["-c" "-D" "spec"] *command-line-args*))}
+
+  ci {:doc "Run specs (pre-push hook)"
+      :task (run 'spec)}
+
+  bean-gate {:doc "Planner baseline and contract/feature gate"
+             :requires ([isaac.bean-gate :as gate])
+             :task (apply gate/-main *command-line-args*)}
+
+  hooks:install {:doc "Configure git to use repo-tracked hooks"
+                 :task (shell "git" "config" "core.hooksPath" ".githooks")}}}
