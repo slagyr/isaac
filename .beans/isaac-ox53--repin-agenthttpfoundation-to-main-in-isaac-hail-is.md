@@ -45,3 +45,5 @@ CI Tests green on `main` for all three after landing (link the runs in the bean)
 ## Exceptions
 
 (none)
+
+Dispatched: hail d04fd5b2 2026-09-19T19:13:36Z (band isaac-work)
