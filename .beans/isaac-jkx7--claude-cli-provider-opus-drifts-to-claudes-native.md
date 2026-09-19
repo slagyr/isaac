@@ -9,7 +9,7 @@ tags:
     - tool-protocol
     - unverified
 created_at: 2026-09-03T22:20:42Z
-updated_at: 2026-09-19T00:01:11Z
+updated_at: 2026-09-19T00:05:57Z
 ---
 
 Observed 2026-09-03 after scrapper/prowl moved to :claude-opus (claude-cli provider) during the grok credit outage.
@@ -80,11 +80,11 @@ If the hail scenario moves to isaac-hail: `cd isaac-hail && bb features` too. Ve
 
 ## Handoff (scrapper@isaac-work-3)
 
-branch: bean/isaac-jkx7 @ 593704e (base origin/main@2b365ff)
+branch: bean/isaac-jkx7 @ a17b219 (base origin/main@2b365ff)
 
-parse-tool-calls accepts `<invoke>` and markdown-fenced JSON. Malformed call-shaped blocks re-prompt once then `:error :tool-protocol` with `:unavailable?` (hail weather — delivery.feature isaac-3tvq). chat-stream retries the same way as chat. Version 0.1.12.
+parse-tool-calls accepts `<invoke>` and markdown-fenced JSON. Malformed call-shaped blocks re-prompt once then `:error :tool-protocol` with `:unavailable?`. chat-stream retries the same way as chat. Version 0.1.12.
 
-`bb features features/llm/api/claude_cli.feature` 20/20 green. `bb ci` green (75 specs / 49 features; 3 @real pending). Hail-weather Gherkin dropped — already covered by hail's `:unavailable?` defer path. Verify lands the branch.
+Planner hail-weather scenario restored (no `@wip`): bind delivery, run turn, assert deferred with attempts 0 + `:hail/deferred`. `bb features features/llm/api/claude_cli.feature` 21/21 green. Verify lands the branch.
 
 
 
