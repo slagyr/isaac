@@ -8,9 +8,7 @@ tags:
     - ci
     - pins
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T19:34:55Z
-blocked_by:
-    - isaac-x2lp
+updated_at: 2026-09-19T19:37:05Z
 ---
 
 ## Why
@@ -128,3 +126,57 @@ Bean Do: "Fix what the newer pins surface in the repo's own specs/features." The
 Do not land any ox53 branch. Make features-slow first remote-command scenario green under the new http/cli-server pins (spawned server classpath must honor http.auth / tdlz), then re-hand. Token-reject remaining on main is still in-scope of the original Do if planner keeps that bar.
 
 HEAD (beans): see commit. Working tree: clean except hail wt/.
+
+
+
+## Exceptions
+
+### integration.feature first @slow scenario (authorized, 2026-09-19, prowl@isaac-plan)
+
+On `features/integration.feature` scenario "a remote command runs on the server and streams back", recut the config table `server.port` → `http.port` (tdlz). Keep `http.host`. Keep Then: stdout contains `"isaac"`, exit 0.
+
+Do **not** rewrite "the server rejects a remote command without a valid token" (pre-existing on origin/main; owner **isaac-pp3q** draft). Do **not** restore `@wip`. No other feature-file edits.
+
+## Planner adjustment (2026-09-19, prowl@isaac-plan) — pin-only + first-slow recut; drop hail/cli-proxy full bb ci
+
+Conflict: attempt-1 (claude_cli.feature:108) is FIXED at isaac-claude-code `d4a04da` (`ISAAC_GIT=1 bb ci` 50/0/166). Attempt-2: isaac-cli-proxy `features-slow` 4/2. First scenario "a remote command runs on the server and streams back" is **pin-introduced** (green on origin/main@3cb4198). Cause: that scenario still sets `server.port`; http `493416d` (tdlz) retires it. Token-reject is **pre-existing** on origin/main@3cb4198 and 1f96845. Hail 6 feature fails reproduced on origin/main@c5f9df1 — not this bean.
+
+**Decision: keep the pin bump. Authorize the one `server.port` → `http.port` recut. Do not absorb token-reject or hail delivery reds. Do not require hail or cli-proxy full `bb ci`.** Claude-code full `bb ci` stays in scope (already green). Do not land until the first @slow scenario is green under the new pins.
+
+### Ambient owner (not this bean) — draft, human promote
+
+- **isaac-pp3q** (draft) — cli-proxy @slow token-reject: spawned cli-server must honor tdlz `http.auth`.
+
+### Controlling acceptance (supersedes full `bb ci` on hail and cli-proxy)
+
+**isaac-claude-code** `bean/isaac-ox53` @ `d4a04da`:
+
+    ISAAC_GIT=1 bb ci
+
+lint ok; spec 80/0 (3 pending @real); features 50/0/166.
+
+**isaac-hail** `bean/isaac-ox53` @ `113111d`:
+
+    ISAAC_GIT=1 bb lint-cli-host
+    bb spec
+
+170/0. Do **not** require `bb features` / `bb ci` exit 0 (6 hail deferral/delivery fails + 2 pending on origin/main@c5f9df1).
+
+**isaac-cli-proxy** `bean/isaac-ox53` @ `0afdd29` (after the authorized recut):
+
+    ISAAC_GIT=1 bb lint-cli-host
+    bb spec
+    bb features
+    ISAAC_GIT=1 bb features-slow features/integration.feature:9
+
+26/0 specs; 29/0 features; first @slow scenario 0 failures. Do **not** require the token-reject scenario or full `bb ci` (includes remaining @slow).
+
+Pin rule: every isaac-* sha reachable from that repo's origin/main. Version bumped.
+
+### Worker now
+
+1. Recut `server.port` → `http.port` on the first @slow scenario only (authorized above).
+2. Confirm that isolated scenario is green under current pins. Do not recut token-reject. Do not recut hail features. Do not recut claude-code.
+3. Hand to verifier. Do **not** land. Do **not** pin.
+
+This note resets the verify-fail counter.
