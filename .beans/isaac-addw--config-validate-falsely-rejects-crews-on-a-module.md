@@ -7,8 +7,9 @@ priority: high
 tags:
     - config
     - agent
+    - unverified
 created_at: 2026-09-19T02:11:47Z
-updated_at: 2026-09-19T02:14:14Z
+updated_at: 2026-09-19T02:39:16Z
 ---
 
 ## Problem (yopp + zanebot, 2026-09-18)
@@ -32,3 +33,9 @@ Derive known policy names the way comm kinds are validated (manifest-side, `[:re
 cd isaac-agent && bb features features/config && bb spec spec/isaac/config && bb ci
 ```
 Field: `isaac config validate` on yopp and zanebot → 0 errors (the `tools.directories` warning is separate).
+
+## Handoff
+
+branch: bean/isaac-addw @ b1c02b0 (base origin/main@76320fa)
+
+`known-policy-names` unions runtime factories with `:isaac.agent/session-policy` keys from the module index. `check-session-policy` reads that set. Fixture module `isaac.session.lantern`. Specs + `bb features features/config` + `bb ci` green. Do not land/pin.
