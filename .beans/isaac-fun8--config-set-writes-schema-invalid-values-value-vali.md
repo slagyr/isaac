@@ -7,8 +7,9 @@ priority: high
 tags:
     - config
     - foundation
+    - unverified
 created_at: 2026-09-19T00:08:20Z
-updated_at: 2026-09-19T00:12:43Z
+updated_at: 2026-09-19T00:43:50Z
 ---
 
 ## Bug
@@ -67,3 +68,14 @@ cd isaac-agent && bb features features/config/set_unset.feature && bb features f
 Not in scope: pretty-printing the written EDN (isaac-2nkg, dispatched separately, same files — rebase carefully).
 
 Dispatched: hail b743fe64 2026-09-19T00:10:22Z (band isaac-work)
+
+## Handoff
+
+branch: bean/isaac-fun8
+
+- isaac-foundation @ 193c40932811c1c71b8e44586defc77e0c8b7425 (base origin/main@b644562111daa3c8d08a0e75306165534b0f7e1c)
+- isaac-agent @ 392a1fb48f83b0b66defbfa886ac64afe98625de (base origin/main@c3a56a8b6518fbe9d1351c9faa8f1c090d0206b2)
+
+`reference-error?` now matches `:reference?` tags **and** check-contribution messages that start with `"references undefined "` (agent `check-crew-model-aliases` does not stamp `:reference?`). Value-validator errors still block under `skip-ref-validation?`. Confirmations + set-member help as specified.
+
+Green: foundation `bb spec` 1054/0; agent `bb features features/config/set_unset.feature` 14/0 and `features/tagging/crew_tags.feature` 16/0. Foundation `bb ci` feature failures in `cli/modules_pins.feature` are pre-existing (missing `/Users/zane/agents/isaac/verify/isaac-foundation/fixture-agent` on this machine), not this bean. Agent `bb ci` not run (full suite; focused acceptance green). `@wip` removed.
