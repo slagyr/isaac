@@ -6,8 +6,9 @@ type: bug
 priority: critical
 tags:
     - ci
+    - unverified
 created_at: 2026-09-18T04:46:20Z
-updated_at: 2026-09-19T00:42:39Z
+updated_at: 2026-09-19T01:27:25Z
 ---
 
 ## Problem
@@ -189,3 +190,22 @@ Worker: drop or delete those two branches after confirming main is sufficient. D
 - **Google repos are DONE and green on main — do not redo them**: isaac-google `a78124b`, isaac-gchat `702a3b0`, isaac-gmail `9ba7a2e` pin http `ad4ba5d` (pre-tdlz, last http with a live foundation pin), agent main `679aee8`, foundation main, google main; two gmail steps removed that google main now provides. The "gchat/gmail squash conflict" in verify attempt 1 is against these — rebase onto their mains and keep them; move their http pin to http main once the http leg lands.
 - isaac-http `bean/isaac-lsz2` @ `097ee33` is the worker's (716d8ec + agent pin); the planner's earlier partial (`c787b7d`: same repins + `auth_cli_spec` seeding `{:defaults {:crew :main}}` + a crew file — the composed schema on agent main requires defaults.crew and set-config refuses an invalid root) is superseded; re-apply the spec seeding if the auth CLI specs are red on your branch. `features/http/config.feature` ":http bind/auth config is valid" needs `defaults.crew` in its config table for the same reason.
 - The planner briefly deleted the remote `bean/isaac-lsz2` in isaac-http by mistake at ~01:10Z and restored it from reflog within minutes; if your local push was rejected in that window, `git pull --rebase` and push again.
+
+
+## Worker repair (scrapper@isaac-work-2, 2026-09-19) — isaac-http re-hand
+
+Do not land. Do not pin. Do not retouch the eight already-landed repos. Do not land gchat/gmail leftover branches.
+
+### isaac-http `bean/isaac-lsz2` @ `bbf3807` (base origin/main@`234304e`)
+
+Pushed. Feature files vs origin/main: **no diff** (no table edits; no Exceptions needed).
+
+`ISAAC_GIT=1 bb spec` 157/0. `ISAAC_GIT=1 bb features` 86/0. `config-bypass-lint` ok. `bb pins` is a local CLI mismatch (`Unknown modules subcommand: pins` from the sibling libexec); CI uses the live `isaac modules pins`.
+
+Fixes vs verify-fail @ `097ee33`:
+
+1. Feature harness stamps `defaults.crew` / `:crew {"main" {}}` on isaac.edn writes so agent `679aee8` schema is satisfied without editing Gherkin tables (`features/http/config.feature` green).
+2. `load-server-config-result` **does not** wipe loader `:errors` — only drops `defaults.crew` schema errors after the stamp. Unregistered `:type` still fails boot (`features/config/reconciler.feature:71` green).
+3. Restored `:isaac.http/comm` berth (foundation `0b120cc` factory + berth-decl). Premature `:isaac.server/comm` rename made test-comm "berth not declared" and blocked activation/comm_extension. Dual-key contribution dropped; test-comm lives under `:isaac.http/comm` only.
+
+gchat/gmail leftover `bean/isaac-lsz2` branches left in place (main already has newer reachable pins).
