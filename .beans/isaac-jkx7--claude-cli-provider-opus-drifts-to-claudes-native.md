@@ -9,7 +9,7 @@ tags:
     - tool-protocol
     - unverified
 created_at: 2026-09-03T22:20:42Z
-updated_at: 2026-09-18T23:59:12Z
+updated_at: 2026-09-19T00:01:11Z
 ---
 
 Observed 2026-09-03 after scrapper/prowl moved to :claude-opus (claude-cli provider) during the grok credit outage.
@@ -85,3 +85,19 @@ branch: bean/isaac-jkx7 @ 593704e (base origin/main@2b365ff)
 parse-tool-calls accepts `<invoke>` and markdown-fenced JSON. Malformed call-shaped blocks re-prompt once then `:error :tool-protocol` with `:unavailable?` (hail weather — delivery.feature isaac-3tvq). chat-stream retries the same way as chat. Version 0.1.12.
 
 `bb features features/llm/api/claude_cli.feature` 20/20 green. `bb ci` green (75 specs / 49 features; 3 @real pending). Hail-weather Gherkin dropped — already covered by hail's `:unavailable?` defer path. Verify lands the branch.
+
+
+
+## Verify fail (attempt 1, 2026-09-18): claude_cli.feature drops hail-weather scenario; no ## Exceptions
+
+HEAD isaac-claude-code: 593704e (bean/isaac-jkx7). Working tree: clean.
+
+verify.md §1 — permitted feature edits are @wip removal or bean ## Exceptions. There is no ## Exceptions section. Remaining checks were not run.
+
+features/llm/api/claude_cli.feature (commit 593704e) removed @wip (permitted) AND deleted the planner scenario:
+
+  Scenario: a tool-protocol error is weather to hail — no delivery attempt is burned (isaac-jkx7)
+
+Replaced with a comment claiming hail's :unavailable? path already covers it. Bean acceptance listed that scenario at :425 and said if it moves to isaac-hail, run hail features too. It did not move; it was dropped. Worker note admits Hail-weather Gherkin dropped.
+
+Do not land. Restore the planner hail-weather scenario (keep only @wip removal), or get a ## Exceptions entry that names that exact deletion. Then re-hand for verify.
