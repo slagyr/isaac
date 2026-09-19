@@ -1,21 +1,16 @@
 {:paths ["src" "spec"]
 
- :deps {babashka/fs      {:mvn/version "0.5.22"}
-        babashka/process {:mvn/version "0.5.22"}
-        speclj/speclj    {:mvn/version "3.13.0"}}
+ :deps  {speclj/speclj {:mvn/version "3.13.0"}}
 
  :tasks
- {spec {:doc "Run speclj specs"
-        :requires ([speclj.run.standard]
-                   [speclj.cli])
-        :task (apply speclj.cli/run (concat ["-c" "-D" "spec"] *command-line-args*))}
+ {bean-gate     {:doc  "Bean Gate: `bean-gate baseline <id> <repo>:<path>[:<line>…]…` (planner) | `bean-gate verify <id>` (worker, CI)"
+                 :task (apply (requiring-resolve 'isaac.bean-gate.main/-main) *command-line-args*)}
 
-  ci {:doc "Run specs (pre-push hook)"
-      :task (run 'spec)}
+  spec          {:doc  "Run speclj specs (default target: spec/)"
+                 :task (apply (requiring-resolve 'speclj.main/-main) "-c" (or (seq *command-line-args*) ["spec"]))}
 
-  bean-gate {:doc "Planner baseline and contract/feature gate"
-             :requires ([isaac.bean-gate :as gate])
-             :task (apply gate/-main *command-line-args*)}
+  ci            {:doc  "Everything the pre-push hook and CI gate on"
+                 :task (run 'spec)}
 
-  hooks:install {:doc "Configure git to use repo-tracked hooks"
+  hooks:install {:doc  "Configure git to use repo-tracked hooks"
                  :task (shell "git" "config" "core.hooksPath" ".githooks")}}}
