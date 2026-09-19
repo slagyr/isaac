@@ -1,15 +1,14 @@
 ---
 # isaac-66we
 title: 'isaac http auth: the HTTP module owns an ''isaac http'' command; auth mint|rotate|revoke|list move off ''isaac server'''
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - security
-    - unverified
     - http
 created_at: 2026-09-19T02:20:39Z
-updated_at: 2026-09-19T02:30:06Z
+updated_at: 2026-09-19T02:33:10Z
 parent: isaac-gym1
 ---
 
@@ -67,3 +66,9 @@ branch: bean/isaac-66we @ 0cbed75 (base origin/main@111fff1)
 isaac-http: `isaac http auth mint|rotate|revoke|list`. Manifest `:isaac/cli` is `:http` + `:mcp-bridge` (no `:server`). Dropped `wrap-runner-auth-list!` / `alter-var-root` of `runner-cli/run-fn`. Version 0.1.18. @wip removed from auth_principals + auth_audit last-used scenario.
 
 Gates: `ISAAC_GIT=1 bb spec` 163/0; `ISAAC_GIT=1 bb features` 93/0; focused auth_principals + auth_audit 21/0.
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-http d082206fa2a2e0099a892af863cb39016b7f3acd
+main-sha: isaac-server d082206fa2a2e0099a892af863cb39016b7f3acd
