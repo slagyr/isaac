@@ -17,3 +17,5 @@ Make every EDN write performed by `isaac config set` and `isaac config unset` us
 - Mutations that target companion Markdown retain their existing Markdown behavior; only EDN serialization changes.
 - Existing config mutation validation, atomic staging, and file-selection behavior remain unchanged.
 - Focused mutation specs cover both set and unset output; the Foundation config CLI suite passes.
+
+Dispatched: hail c9284332 2026-09-19T00:07:21Z (band isaac-work)
