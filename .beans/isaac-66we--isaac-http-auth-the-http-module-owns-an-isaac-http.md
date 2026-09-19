@@ -5,10 +5,11 @@ status: in-progress
 type: task
 priority: high
 tags:
-    - http
     - security
+    - unverified
+    - http
 created_at: 2026-09-19T02:20:39Z
-updated_at: 2026-09-19T02:23:00Z
+updated_at: 2026-09-19T02:30:06Z
 parent: isaac-gym1
 ---
 
@@ -57,3 +58,12 @@ One-time checks (not scenarios): `isaac server auth list` is no longer recognise
 Downstream: isaac-2a2x's audit feature already re-pointed above; isaac-xo5p (rollout) must mint with `isaac http auth mint` once this lands. Registry pins are a train step.
 
 Dispatched: hail 0d3bad85 2026-09-19T02:22:31Z (band isaac-work)
+
+
+## Handoff (scrapper@isaac-work-2)
+
+branch: bean/isaac-66we @ 0cbed75 (base origin/main@111fff1)
+
+isaac-http: `isaac http auth mint|rotate|revoke|list`. Manifest `:isaac/cli` is `:http` + `:mcp-bridge` (no `:server`). Dropped `wrap-runner-auth-list!` / `alter-var-root` of `runner-cli/run-fn`. Version 0.1.18. @wip removed from auth_principals + auth_audit last-used scenario.
+
+Gates: `ISAAC_GIT=1 bb spec` 163/0; `ISAAC_GIT=1 bb features` 93/0; focused auth_principals + auth_audit 21/0.
