@@ -1,14 +1,13 @@
 ---
 # isaac-lsz2
 title: 'Fleet-wide dangling pins: 11 module repos pin foundation at a squashed bean-branch sha (ad0a97b, bean/isaac-1fwl) — 5 repos'' CI red; repin everything to main'
-status: in-progress
+status: completed
 type: bug
 priority: critical
 tags:
     - ci
-    - unverified
 created_at: 2026-09-18T04:46:20Z
-updated_at: 2026-09-19T01:27:25Z
+updated_at: 2026-09-19T01:33:31Z
 ---
 
 ## Problem
@@ -209,3 +208,17 @@ Fixes vs verify-fail @ `097ee33`:
 3. Restored `:isaac.http/comm` berth (foundation `0b120cc` factory + berth-decl). Premature `:isaac.server/comm` rename made test-comm "berth not declared" and blocked activation/comm_extension. Dual-key contribution dropped; test-comm lives under `:isaac.http/comm` only.
 
 gchat/gmail leftover `bean/isaac-lsz2` branches left in place (main already has newer reachable pins).
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-agent c3a56a8b6518fbe9d1351c9faa8f1c090d0206b2
+main-sha: isaac-cron de59aa3a29605b3fe6b0dd9c6bc8d58ec1bbe8ec
+main-sha: isaac-hail c44c65490de1898e8d0a3141199001589dcfd224
+main-sha: isaac-hooks 0602e9e616625d78fdaa74efd8b08009e2957dc1
+main-sha: isaac-discord 6e7e411c0b1f1df20306a970330d1c947ac2b6ab
+main-sha: isaac-claude-code 7ff4c350ac1fca7d3440a274082e804136f94e78
+main-sha: isaac-mcp a3977362b82573fdbd6cdfa8e7103e014df87805
+main-sha: isaac-cli-server 007da61d029b73b347a003cff47ecae3d87eb49a
+main-sha: isaac-http d41cb7dd46f133efd1976bd3106e3e3b5b96a373
+main-sha: isaac-server d41cb7dd46f133efd1976bd3106e3e3b5b96a373
