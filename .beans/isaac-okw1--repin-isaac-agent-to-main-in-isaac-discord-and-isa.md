@@ -1,15 +1,14 @@
 ---
 # isaac-okw1
 title: 'Repin isaac-agent to main in isaac-discord and isaac-mcp (CI red: stale agent pin requires deleted config-cache; unreachable foundation via agent)'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
-    - unverified
     - ci
     - pins
 created_at: 2026-09-19T03:38:55Z
-updated_at: 2026-09-19T03:51:43Z
+updated_at: 2026-09-19T03:55:01Z
 ---
 
 ## Why
@@ -125,3 +124,9 @@ Confirmed planner pin-only acceptance. Did not recut features or the stare spec.
 - `bb features` / `bb ci` not required
 
 Ambient reds remain for isaac-7b0g / isaac-tlv6. Verifier: do not fail on those.
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-mcp 75f51189a5d9f3dbda741e1789e0b44da1e9e8f9
+main-sha: isaac-discord d92b94ed66f89ee1c9d003d328e5b8eeb8510fa0
