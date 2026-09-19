@@ -1,15 +1,14 @@
 ---
 # isaac-cy85
 title: 'bb bean-gate: planner baseline + contract/feature gate (Bean Gate child 1)'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - process
     - beans
-    - unverified
 created_at: 2026-09-19T20:42:56Z
-updated_at: 2026-09-19T20:55:34Z
+updated_at: 2026-09-19T20:57:41Z
 parent: isaac-rmq6
 ---
 
@@ -98,3 +97,9 @@ Acceptance:
 - `bb bean-gate verify isaac-rmq6` exit 2, "no feature-baseline: use the verify path"
 
 This bean has no feature-baseline; old unverified path.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac 53ea1cf63c9d6fbc156f1aea425e49658f6ac325
