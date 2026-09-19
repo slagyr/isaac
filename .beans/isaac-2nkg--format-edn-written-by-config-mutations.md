@@ -1,11 +1,11 @@
 ---
 # isaac-2nkg
 title: Format EDN written by config mutations
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-03T15:45:13Z
-updated_at: 2026-09-03T15:45:13Z
+updated_at: 2026-09-19T00:09:32Z
 ---
 
 Make every EDN write performed by `isaac config set` and `isaac config unset` use `isaac.util.edn/pretty`, rather than `pr-str`. This is a clean cutover: newly changed EDN files should have Foundation’s human-readable layout and one trailing newline.
