@@ -1,15 +1,14 @@
 ---
 # isaac-401c
 title: 'isaac-http: OIDC trust rules may point at config (config refs for :issuer/:audience/:claims)'
-status: in-progress
+status: completed
 type: feature
 priority: critical
 tags:
     - http
     - security
-    - unverified
 created_at: 2026-09-19T18:47:35Z
-updated_at: 2026-09-19T18:47:35Z
+updated_at: 2026-09-19T18:50:45Z
 parent: isaac-gym1
 blocking:
     - isaac-x37l
@@ -31,3 +30,9 @@ Unit: spec/isaac/http/oidc_spec.clj resolves refs / unresolved ref ⇒ absent.
 
 ## Handoff / resume
 Planner finished locally (2026-09-19). branch: bean/isaac-x37l @ 39efb60 (base origin/main@60df196) in isaac-http — fast-forward from main. Note the branch is named for x37l; verify lands it as this bean. isaac-google's bean/isaac-x37l pins http at 39efb60 and is repinned by the planner to the landed main sha before x37l is handed to verify.
+
+
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-http 493416d8e6508190f72ce56f7a99128b6a4a63f6
