@@ -7,8 +7,9 @@ priority: high
 tags:
     - foundation
     - config
+    - unverified
 created_at: 2026-09-19T00:08:20Z
-updated_at: 2026-09-19T00:52:48Z
+updated_at: 2026-09-19T00:57:43Z
 ---
 
 ## Bug
@@ -100,3 +101,17 @@ Agent gate on the branch (against 193c409, same tree as df64bf1): `ISAAC_GIT=1 b
 1. On `isaac-agent` `bean/isaac-fun8`, retarget every isaac-foundation `:git/sha` from `193c40932811c1c71b8e44586defc77e0c8b7425` to `df64bf15c739165c496cbf81e3d922ad3aa3346f`.
 2. `cd isaac-agent && ISAAC_GIT=1 bb ci` green.
 3. Do not retouch foundation main. Do not land agent until the pin is an ancestor of foundation origin/main.
+
+
+## Verify fail repair (scrapper@isaac-work-1)
+
+Do not land. Do not pin. Do not retouch foundation main.
+
+isaac-agent `bean/isaac-fun8` @ `900c6c7` (base origin/main@`da1990c`). FF-able.
+
+Retargeted every isaac-foundation / marigold / test-support `:git/sha` from
+`193c40932811c1c71b8e44586defc77e0c8b7425` (bean-branch, not ancestor after
+squash) to foundation origin/main `df64bf15c739165c496cbf81e3d922ad3aa3346f`.
+
+ISAAC_GIT=1 bb ci: 1647 spec / 0 fail; 820 features / 0 fail / 1 pending
+(pre-existing compaction_mid_turn).
