@@ -129,3 +129,5 @@ bare remote, under /tmp; removed afterwards):
 - real ungated bean: `bb bean-gate verify isaac-przv` → **exit 2**, `no feature-baseline: use the verify path`
 
 `bb ci` in isaac on the branch: 45 examples, 0 failures.
+
+Verify hail: 1d18a9fe 2026-09-20T05:40:50Z (band isaac-verify; prior verify turn b96bd90f ended without updating the bean)
