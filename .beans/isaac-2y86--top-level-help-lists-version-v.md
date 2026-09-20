@@ -1,13 +1,13 @@
 ---
 # isaac-2y86
 title: Top-level --help lists --version / -V
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - process
 created_at: 2026-09-20T18:41:50Z
-updated_at: 2026-09-20T18:41:50Z
+updated_at: 2026-09-20T20:18:51Z
 ---
 
 Dogfood for isaac-e20m (Bean Gate cutover). One scenario: top-level `--help` lists `--version` / `-V`. Reuses existing CLI steps. New steps: none.
