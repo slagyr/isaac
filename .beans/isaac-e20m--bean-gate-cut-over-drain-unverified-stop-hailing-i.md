@@ -8,7 +8,7 @@ tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T18:43:00Z
+updated_at: 2026-09-20T20:17:59Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -133,3 +133,5 @@ Dispatched to isaac-work. Gated close: worker implements, `bb bean-gate verify i
 When isaac-2y86 reaches `completed` with a green Bean Gate CI run that actually cloned the module and called `bb bean-gate verify`, record here: bean id, `main-sha`, worker session, CI run URL — then land `bean/isaac-e20m`. Do **not** land the AGENTS.md cutover ahead of that proof.
 
 Do not invent a second dogfood. Do not complete isaac-e20m on the empty snitch path.
+
+Dispatched: hail 6848d4c8 2026-09-20T20:17:50Z (band isaac-work)

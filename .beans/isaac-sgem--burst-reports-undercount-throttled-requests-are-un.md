@@ -8,7 +8,7 @@ tags:
     - security
     - http
 created_at: 2026-09-20T18:53:00Z
-updated_at: 2026-09-20T18:53:00Z
+updated_at: 2026-09-20T20:17:59Z
 ---
 
 Repo: **isaac-http**. Micah, 2026-09-20, reading a real burst report from zanebot:
@@ -72,3 +72,5 @@ feature-baseline: isaac-http 5f7f24e8708dab9f2370138f9702a68d591ce16b
 feature-blob: isaac-http features/server/burst.feature 4c7c82045989a66cdb1cdc8e3706b359ad4cafc2
 
 Dispatched: hail 0c35e0b0 2026-09-20T18:58Z (band isaac-work)
+
+Dispatched: hail b377e10d 2026-09-20T20:17:51Z (band isaac-work)

@@ -8,7 +8,7 @@ tags:
     - tools
     - performance
 created_at: 2026-09-20T18:41:53Z
-updated_at: 2026-09-20T18:41:53Z
+updated_at: 2026-09-20T20:17:59Z
 ---
 
 Repo: **isaac-agent**. Found 2026-09-20 on zanebot: a boot-resumed heartbeat turn called `fs__glob` with `{:pattern "**/heartbeat-state.json" :path "/Users/zane"}` and ground for **three minutes** at 100% of a core before finding the file at `~/.openclaw/workspace/memory/heartbeat-state.json`. Because boot runs resumed turns synchronously (isaac-yxch), the whole server — HTTP listener, hail delivery, every component — waited on that one glob.
@@ -55,3 +55,5 @@ feature-baseline: isaac-agent 24aca81ef34848ee8ca5ac9fa8d84e5c5d230e55
 feature-blob: isaac-agent features/tool/glob.feature 3da4f4a81ead8c72c38942ba5c8106a11d53bebc
 
 Dispatched: hail f7071963 2026-09-20T18:44Z (band isaac-work)
+
+Dispatched: hail 62739f9f 2026-09-20T20:17:50Z (band isaac-work)

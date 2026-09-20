@@ -8,7 +8,7 @@ tags:
     - agent
     - ops
 created_at: 2026-09-20T18:41:53Z
-updated_at: 2026-09-20T18:41:53Z
+updated_at: 2026-09-20T20:17:59Z
 ---
 
 Repo: **isaac-agent** (with isaac-foundation if the component boundary moves). Found 2026-09-20 on zanebot.
@@ -46,3 +46,5 @@ Resume is recovery work, not boot work. A turn can take minutes legitimately —
 isaac-01vv (the glob that triggered it). Operationally, the stale markers on zanebot were moved aside by hand as `turn.edn.stalled-20260920`; a planner could not clear them because `isaac turns list` does not show resume markers — worth considering a `isaac turns drop --marker` or similar so this is recoverable without touching files.
 
 Dispatched: hail f780219f 2026-09-20T18:44Z (band isaac-work)
+
+Dispatched: hail a86d8b36 2026-09-20T20:17:51Z (band isaac-work)
