@@ -1,11 +1,11 @@
 ---
 # isaac-ncrz
 title: 'Ollama streaming drops tool calls: only the final chunk is kept, and the tool call is never in it'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-20T20:51:52Z
-updated_at: 2026-09-20T20:51:52Z
+updated_at: 2026-09-20T23:27:45Z
 ---
 
 Qwen can call tools. Isaac throws the call away.
@@ -53,3 +53,26 @@ A streamed text response still accumulates its content.
 This is the same mistake as isaac-srz1's two bugs: a consumer reading a
 provider shape the contract has moved past. Blocks putting any ollama-hosted
 model on bean work (isaac-2y86 is queued for exactly that).
+
+## Fixed and landed (planner, 2026-09-20)
+
+`chat-stream` now folds every chunk as it arrives — content and thinking
+concatenated, tool calls appended, the closing chunk's model, stop reason and
+token counts merged — and normalizes the whole thing instead of the last chunk
+alone. The SSE adapters already accumulated; ollama was the only one trusting
+the reader's return value.
+
+Proved end to end on zanebot with qwen3-coder-next: `isaac prompt --crew qwen`
+asked for a line count, `fs__read` fired, and the model answered 87.
+
+**The spec was guarding the bug.** The existing `chat-stream` example fed two
+chunks ("Hi", then "!") and asserted the content was "!" — true only if you
+discard everything but the last chunk. It failed the moment the code became
+correct. Replaced with one that asserts the folded content and the counts,
+plus two new examples: a tool call arriving before the closing chunk, and
+several spread across chunks.
+
+main-sha: isaac-agent 1dbd68dc5f3fb68a4e3c196b5aa29c84c232dd72 (0.1.74)
+1669 specs / 0, 836 features / 0. Deployed to zanebot.
+
+See also isaac-srz1: the same mistake in isaac-episodes, twice.
