@@ -1,14 +1,14 @@
 ---
 # isaac-8s6s
 title: 'isaac-google: a people index — users/<id> ↔ email ↔ display name — shared by Chat and Gmail'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
     - comm
 created_at: 2026-09-20T00:16:34Z
-updated_at: 2026-09-20T00:28:14Z
+updated_at: 2026-09-20T04:51:24Z
 parent: isaac-bv1l
 ---
 
