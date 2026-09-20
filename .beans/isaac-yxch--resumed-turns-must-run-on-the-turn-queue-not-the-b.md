@@ -1,15 +1,14 @@
 ---
 # isaac-yxch
 title: Resumed turns must run on the turn queue, not the boot thread
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - agent
     - ops
-    - unverified
 created_at: 2026-09-20T18:41:53Z
-updated_at: 2026-09-20T20:46:54Z
+updated_at: 2026-09-20T20:53:38Z
 ---
 
 Repo: **isaac-agent** (with isaac-foundation if the component boundary moves). Found 2026-09-20 on zanebot.
@@ -92,3 +91,20 @@ asserts the transcript carries no reply until the queue ticks.
 Operational bonus for the Related note: resumed turns now appear in
 `isaac turns list` as held records and can be evicted with `isaac turns drop
 <id>`, so stalled resume work is recoverable without touching marker files.
+
+
+## Verified (2026-09-20, perceptor@isaac-verify-2)
+
+Verified against the bean acceptance in **isaac-agent** (branch bean/isaac-yxch @ 5404302, based on origin/main@e948ce3).
+
+- Diff scope vs origin/main: 5 files only - features/session/resume_queue.feature (new, 4 scenarios, no @wip), features/session/resume_repair.feature (+2 queue-tick steps), spec/isaac/bridge/resume_spec.clj (+3 examples), src/isaac/bridge/core.clj, src/isaac/bridge/resume.clj. No deps.edn/bb.edn pin change; no isaac-foundation change (component boundary did not move, as the bean allowed).
+- bb ci on the branch: **1670 spec examples / 0 failures / 3454 assertions**, **840 feature examples / 0 failures / 2000 assertions / 1 pending**. The one pending is pre-existing and untouched (features/session/compaction_mid_turn.feature:12 "rubberband mid-turn still carries the originating hail").
+- Targeted: bb features features/session/resume_queue.feature -> 4 examples, 0 failures, 12 assertions.
+- Boot-thread claim confirmed structurally: grep for run-turn! / drive.turn in src/isaac/bridge/resume.clj -> none. resume.clj now only enqueues (isaac.turn.queue/enqueue!) and clears markers; src/isaac/agent/component.clj:38 still calls the scan, which returns without driving a turn. The acceptance's "http/listening before the slow resumed turn ends" therefore cannot be violated - no resumed turn can be in flight during start-all!.
+- Scan-time behaviour preserved: staleness drop happens before enqueue (scenario 4), counts unchanged in :resume/scan-complete, enqueue failure -> :warn :resume/enqueue-failed + counted :dropped (spec).
+- Pin rule: isaac-foundation 294321de is an ancestor of isaac-foundation origin/main.
+- Squash commit tree equals the branch tip tree (verified) - the green gate ran on the landed tree.
+
+## Landed on main (2026-09-20)
+
+main-sha: isaac-agent fb6d06199ddd8e0a45a127095bf769fdb50aa2bc
