@@ -1,14 +1,14 @@
 ---
 # isaac-e20m
 title: 'Bean Gate: cut over — drain unverified, stop hailing isaac-verify'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T18:04:18Z
+updated_at: 2026-09-20T18:34:32Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
