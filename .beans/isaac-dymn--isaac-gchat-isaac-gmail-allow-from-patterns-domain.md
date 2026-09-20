@@ -9,7 +9,7 @@ tags:
     - comm
     - security
 created_at: 2026-09-19T21:13:13Z
-updated_at: 2026-09-20T00:25:51Z
+updated_at: 2026-09-20T07:02:56Z
 parent: isaac-bv1l
 ---
 
@@ -23,12 +23,6 @@ Scenarios (worker writes; inbound features of each module): pattern admits a dom
 
 
 
-Bumped 2026-09-19 (Micah): DMs are a space too and are not subscribed unless listed, so today a DM to yopp@ is never heard. Discovery (spaces.list, DMs included) is what makes DMs just work.
-
-
-
-Micah 2026-09-19: the default is 'a space is a conversation and a conversation is a session' — every space Yopp is a member of (DMs included) routes to a canonical session without any config; entries only override. Canonical session NAME should be readable: the space displayName for named spaces (gchat/yopp-test), the other member's displayName for a DM (gchat/dm/micah-martin), with the space id carried as a session tag (space:AAQA7rg5Uyc) so a rename never orphans the session. spaces.get / spaces.members give the names.
-
-
-
-Tenants (isaac-1zkz): discovery runs per tenant with that tenant's token; canonical session names carry the tenant when more than one exists (gchat/tonotop/yopp-test).
+Scope note (planner 2026-09-20): the DM / discovery / canonical-session-name
+paragraphs that had accreted here moved to isaac-xy2i, which is that bean. This
+one is allow-from matching only.
