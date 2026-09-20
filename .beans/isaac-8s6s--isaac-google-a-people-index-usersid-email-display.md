@@ -8,7 +8,7 @@ tags:
     - google
     - comm
 created_at: 2026-09-20T00:16:34Z
-updated_at: 2026-09-20T00:25:51Z
+updated_at: 2026-09-20T00:28:14Z
 parent: isaac-bv1l
 ---
 
@@ -30,3 +30,7 @@ Micah 2026-09-19: we need to know who spoke, by a key that does not change. Chat
 
 
 Tenants (isaac-1zkz): entries record the tenant per sighting; People API lookups use that tenant's token. Scope note for Micah: directory.readonly is an OAuth scope on Isaac's own token (permission to ask the Workspace directory for a user's email), used by module code deterministically — never by a turn.
+
+
+
+**Re-scoped 2026-09-19 (Micah): no index.** Google is the source of truth; resolve on demand. `people/resolve` → People API `people.get("people/<id>", personFields=names,emailAddresses)` with the tenant's token under directory.readonly; an in-memory memo with a short TTL (say 1h) so a busy thread does not re-ask per message; nothing persisted. Gmail needs no lookup (From: carries email + name). The gate resolves the sender at decision time (fail soft: no scope/lookup failure ⇒ id/domain matching only, warn once). Rendering unchanged: "Micah Martin <micah@tonotop.com>: …". Scenarios 1 and 4 (caching/joins across modules) drop; 2, 3, 5 stay; add: a lookup failure does not block a message the id/domain list already admits.
