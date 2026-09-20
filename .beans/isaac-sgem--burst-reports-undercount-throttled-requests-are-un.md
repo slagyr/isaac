@@ -1,14 +1,14 @@
 ---
 # isaac-sgem
 title: 'Burst reports undercount: throttled requests are uncounted, unlogged, and do not refresh the cooldown'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - security
     - http
 created_at: 2026-09-20T18:53:00Z
-updated_at: 2026-09-20T20:50:26Z
+updated_at: 2026-09-20T20:58:32Z
 ---
 
 Repo: **isaac-http**. Micah, 2026-09-20, reading a real burst report from zanebot:
@@ -182,3 +182,31 @@ Worker now: rebase `bean/isaac-sgem` onto origin/main `0a04362` (keep implementa
 10/0/37 on burst.feature. Then gated close. Do not hail verify. Do not recut the remaining `the only file in` on the detect-post scenario.
 
 `bb ci` pins abort (sibling on bean/isaac-3kol) is not this bean — run `bb spec` + named features.
+
+## Landed on main (2026-09-20)
+
+main-sha: isaac-http 873aa2567ab4d2cd71b3ae9d9780b57ddcc31c1d
+
+Rebased `bean/isaac-sgem` onto the re-baselined `origin/main` 0a04362 (planner's
+newest-file step swap). Implementation unchanged; after the rebase the branch's
+only `.feature` diff against main is the removal of the three `@wip` tags —
+confirmed with `git diff origin/main -- features/server/burst.feature`.
+
+Green in `isaac-http-sgem` (worktree of the work-1 isaac-http clone):
+
+    bb spec                                   190 examples, 0 failures, 398 assertions
+    bb features features/server/burst.feature  10 examples, 0 failures,  37 assertions
+    bb features features/server/burst_default.feature
+                                                6 examples, 0 failures,  14 assertions
+
+`bb ci` was not run: its `pins` task shells the shared `../isaac-foundation`
+sibling, still parked on `bean/isaac-3kol` for another session — the same
+environment note the previous attempt recorded, not this bean's to absorb. Per
+the planner's direction, `bb spec` plus the named features stand in.
+
+    bb bean-gate verify isaac-sgem --dir isaac-http=../isaac-http-sgem
+    isaac-sgem bean-gate: PASS (isaac-http @ HEAD 05329c6)    # branch
+    isaac-sgem bean-gate: PASS (isaac-http @ HEAD 873aa25)    # squash, pre-push
+
+Squash-merged to `main` as 873aa25 and pushed; `bean/isaac-sgem` deleted local
+and remote. Gated close — no verify hail.
