@@ -7,8 +7,9 @@ priority: high
 tags:
     - process
     - beans
+    - unverified
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T05:14:01Z
+updated_at: 2026-09-20T05:22:43Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -61,3 +62,70 @@ The worker cannot reach the live config. Record in the bean exactly what the pla
 Process bean: no product code, no scenarios.
 
 Dispatched: hail c9bee05a 2026-09-20T04:58:37Z (band isaac-work)
+
+
+## Rollout on zanebot (planner step — NOT done by this bean)
+
+The worker cannot reach the live config. A planner (or the human) must run, on
+zanebot:
+
+1. Install the skill for the band loader:
+
+       mkdir -p ~/.isaac/prompts/skills/hail-bean-work-gate
+       cp <isaac-clone>/.toolbox/skills/hail-bean-work-gate/SKILL.md \
+          ~/.isaac/prompts/skills/hail-bean-work-gate/SKILL.md
+
+2. Edit `~/.isaac/config/hail/isaac-work.md` so its prompt loads
+   `hail-bean-work-gate` instead of `hail-bean-work` (one word in the
+   `Load and follow the "…" skill.` line). Config hot-reloads — no service
+   restart.
+3. Leave `~/.isaac/config/hail/isaac-verify.md` and every `orchestration-*`
+   band untouched: the orchestration project and in-flight ungated beans still
+   use `hail-bean-work` / `isaac-verify`.
+
+Nothing else on zanebot changes. `~/.isaac/prompts/skills/hail-bean-work/SKILL.md`
+stays installed.
+
+## Handoff (2026-09-20)
+
+branch: bean/isaac-przv @ 0f65b62e (base origin/main@7c80ca43)
+
+`bb bean-gate verify isaac-przv` → **exit 2** (this bean has no
+`feature-baseline:`), so per its own exit-2 rule this bean takes the old path:
+`unverified` + hail `isaac-verify`.
+
+Delivered:
+
+- `.toolbox/skills/hail-bean-work-gate/SKILL.md` — bootstrap/claim/checkpoint/
+  workspace material carried over from `hail-bean-work`; new close: gate →
+  exit 0 land (rebase, `bb ci`, squash-merge with trailers, downstream repin +
+  re-`bb ci` before its squash, gate re-run on the squash commit,
+  `## Landed on main` + `main-sha:` per repo, delete branch,
+  `--status=completed`), exit 1 revert-or-hail-plan (never `## Exceptions`,
+  never re-baseline), exit 2 old path. Carries the verify.md landing rules:
+  conflict = stop-and-hail, a pin must be an ancestor of the sibling's
+  `origin/main`, no `main-sha:` line → not completed. Self-contained:
+  notifications, limbo/HOLD rules, trailers.
+- `.toolbox/commands/work-bean-gate.md` — short path (`/work-bean-gate`),
+  targeted-vs-queue rules, gate exit table, landing steps, traps.
+- `.toolbox/toolbox.json` — both registered as local entries (relative `url`,
+  sha256), like the existing `hail-bean-work`.
+- `AGENTS.md` — Skills + Commands lists updated; `## Bean Workflow` now has two
+  flows (gated: worker lands and completes; ungated: `unverified` → verifier);
+  the dual-run paragraph rewritten as the verifier's role during the drain.
+
+Untouched, as the bean requires: `.toolbox/skills/hail-bean-work/`,
+`.toolbox/commands/{work,verify,plan,plan-with-features,todo}.md`, agent-lib.
+
+Evidence — every command quoted in the skill was run, all three exits, on a
+scratch harness (a throwaway isaac copy plus an `isaac-mod` module repo with a
+bare remote, under /tmp; removed afterwards):
+
+- planner `bb bean-gate baseline scratch-gate isaac-mod:features/marigold.feature --dir isaac-mod=…` → exit 0, appended `feature-baseline:` / `feature-blob:`
+- worker branch with `@wip` removed → `bb bean-gate verify scratch-gate --dir …` → **exit 0**, `PASS (isaac-mod @ HEAD d665111)`
+- weakened a `Then` step → **exit 1**, two FAIL lines (changed baselined block + worker diff beyond `@wip` removal)
+- the quoted revert recipe (`git checkout <feature-baseline sha> -- <path>`, re-remove `@wip`) → back to **exit 0**
+- landing steps as written (`git fetch` / `rebase`, `merge --squash`, commit with trailers, `git rev-parse HEAD`) → gate re-run on the squash commit exit 0, `PASS (isaac-mod @ HEAD 9072bb7)`; after appending `main-sha:` to the bean → `PASS (isaac-mod @ main-sha 9072bb7)`, confirming the skill's claim that a recorded `main-sha` is the commit checked
+- real ungated bean: `bb bean-gate verify isaac-przv` → **exit 2**, `no feature-baseline: use the verify path`
+
+`bb ci` in isaac on the branch: 45 examples, 0 failures.
