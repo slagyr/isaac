@@ -7,8 +7,9 @@ priority: high
 tags:
     - foundation
     - config
+    - unverified
 created_at: 2026-09-19T20:52:22Z
-updated_at: 2026-09-19T20:53:10Z
+updated_at: 2026-09-20T01:35:23Z
 ---
 
 Found 2026-09-19 on yopp, configuring google.oauth:
@@ -42,3 +43,48 @@ mutate.clj already has a `skip-ref-validation?` switch (reference errors only: m
     cd isaac-agent && bb features features/config/set_unset.feature && bb ci
 
 Version bump on foundation (CLI) — rides the foundation train.
+
+## Handoff (2026-09-19)
+
+Implemented by **scrapper**@isaac-work-2.
+
+- isaac-foundation: `branch: bean/isaac-9mkp @ 04304e0 (base origin/main@ba7fa5b)`
+- isaac-agent: `branch: bean/isaac-9mkp @ 4489d47 (base origin/main@fd89226)`
+
+### What was built
+
+- `isaac.config.mutate/set-config` and `unset-config` take `:force?`. With it,
+  new validation errors no longer block the write; they are carried into
+  `:warnings` and the mutation applies.
+- `--force` never bypasses coercion errors (`can't coerce "x" to int`) — those
+  still return `:invalid`, exit 1. Unknown keys were already refused earlier by
+  `nav/path->spec`, before mutate is reached.
+- CLI: `inspect/mutate-option-spec` adds `--force` to `config set` and
+  `config unset` (also whitelisted in `common/structured-flag?` so it may
+  trail positional args). On a forced write the CLI prints
+  `wrote <path> to <file> with N validation error(s) outstanding — run: isaac config validate`
+  and exits 0.
+- The refusal without `--force` now ends with
+  `(use --force to write anyway, or set the whole map: echo '{…}' | isaac config set <parent> -)`;
+  the hint is suppressed when `--force` was already supplied.
+- Help text for `set`/`unset` documents the flag and the stdin-map form.
+
+### Verification
+
+- `isaac-foundation`: `bb ci` green (1060 examples / 0 failures; 197 feature
+  examples / 0 failures, 2 pre-existing pending).
+- `isaac-agent`: `bb features features/config/set_unset.feature` green (21/0),
+  `bb ci` green (831 examples / 0 failures, 1 pre-existing pending) — run with
+  the foundation deps temporarily overridden to the local `bean/isaac-9mkp`
+  worktree; **bb.edn/deps.edn were restored and are NOT part of the commit.**
+
+### Notes for verify
+
+- Foundation manifest bumped `0.1.27` → `0.1.28`.
+- The agent branch's foundation pin is still `df89226`-era (`df64bf15`); the new
+  scenarios only pass once the foundation lands and the pin is bumped — it
+  rides the foundation train. **Land foundation first.**
+- Environmental repair along the way: `~/.gitlibs/_repos/file/REL/fixture-agent`
+  was a stale cache whose origin pointed at a deleted verify checkout, which
+  failed two `cli/modules_pins.feature` scenarios in every foundation checkout.
+  Removed it; it re-clones cleanly.
