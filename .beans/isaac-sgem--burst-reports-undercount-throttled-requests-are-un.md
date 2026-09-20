@@ -1,14 +1,14 @@
 ---
 # isaac-sgem
 title: 'Burst reports undercount: throttled requests are uncounted, unlogged, and do not refresh the cooldown'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - security
     - http
 created_at: 2026-09-20T18:53:00Z
-updated_at: 2026-09-20T20:17:59Z
+updated_at: 2026-09-20T20:37:19Z
 ---
 
 Repo: **isaac-http**. Micah, 2026-09-20, reading a real burst report from zanebot:
