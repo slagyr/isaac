@@ -1,14 +1,14 @@
 ---
 # isaac-4b21
 title: 'Bean Gate: snitch CI — gate every completed baselined bean on main'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T04:35:22Z
+updated_at: 2026-09-20T04:40:13Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
