@@ -8,7 +8,7 @@ tags:
     - google
     - comm
 created_at: 2026-09-19T23:53:42Z
-updated_at: 2026-09-19T23:53:42Z
+updated_at: 2026-09-20T00:06:00Z
 parent: isaac-bv1l
 ---
 
@@ -19,3 +19,7 @@ Do:
 2. On a mention or DM, the turn input is the thread since Isaac's last reply in it (or the last N=20 space messages when the thread is new), then the mentioning message. Framed explicitly — a '[Chat context; not requests]' block for the history and the mention marked as the request — per the isaac-8l2u lesson: history in the user role reads as instructions unless framed.
 3. Session per space unchanged; DMs default :all as today.
 Scenarios: two unmentioned messages then a mention → one turn whose input carries all three, history framed, mention last; a DM carries the DM history; the log is bounded.
+
+
+
+Micah 2026-09-19: reuse the agent's isaac.session.frequencies exactly as isaac-discord does (comm/discord.clj channel->frequencies: accepted keys #{:session :session-tags :crew :reach :prefer :create}; defaults :create :if-missing :reach :one :prefer :recent). No gchat-local resolver.
