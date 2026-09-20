@@ -1,14 +1,14 @@
 ---
 # isaac-yxch
 title: Resumed turns must run on the turn queue, not the boot thread
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - agent
     - ops
 created_at: 2026-09-20T18:41:53Z
-updated_at: 2026-09-20T20:17:59Z
+updated_at: 2026-09-20T20:36:22Z
 ---
 
 Repo: **isaac-agent** (with isaac-foundation if the component boundary moves). Found 2026-09-20 on zanebot.
