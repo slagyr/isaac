@@ -9,7 +9,7 @@ tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T04:38:24Z
+updated_at: 2026-09-20T04:38:41Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -74,3 +74,6 @@ Commands checked as written against this tree:
 - `bb ci` → 32 examples, 0 failures, 50 assertions.
 
 Process bean: no product code, no scenarios, TDD suspended.
+
+
+Rebased: branch bean/isaac-jp4v @ 84794443 (base origin/main@430ddb75).
