@@ -1,14 +1,14 @@
 ---
 # isaac-bsqm
 title: 'Hail delivery stalled fleet-wide after the 2026-09-19 upgrade: bound deliveries are never attempted'
-status: todo
+status: completed
 type: bug
 priority: critical
 tags:
     - hail
     - ops
 created_at: 2026-09-20T00:24:25Z
-updated_at: 2026-09-20T00:24:25Z
+updated_at: 2026-09-20T01:19:03Z
 ---
 
 Repo: **isaac-hail** (possibly isaac-foundation's scheduler). Found 2026-09-19 ~23:00Z on zanebot, right after the fleet upgrade (foundation 1a47992 → ba7fa5b, hail 4dc44ef → d0f8932, agent fc30085 → fd89226, plus 7 other modules).
@@ -106,3 +106,19 @@ So on zanebot `:hail/route` and `:hail/deliver` are registered by the same compo
 
 1. Blunt: repin `isaac.hail` to 4dc44ef on zanebot and restart. The repro argues this will not help, but it is one command and the host is idle anyway.
 2. Fix forward: ship scheduler observability (`isaac scheduler list` printing id, next-fire-at, active-run, consecutive-errors, disabled?) and a one-line log when a task registers. That answers "is it registered and when did it last fire" in one command instead of an evening of inference — and it is the gap this whole hunt exposed.
+
+## Root cause and fix (2026-09-20 01:20Z)
+
+`isaac.hail.delivery-worker/tick!` ends in a `(->> … (keep …))` whose terminal `vec` was dropped in d0f8932. The result is a **lazy sequence that nobody realizes**: the scheduler's handler is `(fn [_] (tick! {}))` and throws the return value away, so the worker walked the queue and launched nothing — no bind, no skip log, no error, forever.
+
+Every existing example in `delivery_worker_spec` calls `(first (sut/tick! …))`, and `first` forces the seq. That is why 32 green examples coexisted with a worker that delivered nothing in production.
+
+Proved by running one tick in a separate JVM on zanebot with the real root, real config and `launch-delivery!` stubbed: `TICK OK`, zero launches, while the same records report `runnable true` when the helpers are called directly.
+
+**Fix:** restore the terminal `vec`, plus an example that ignores the return value (`isaac-hail` 21cef0e, on main). It fails without the fix and passes with it. `bb spec` 172/0; `bb features` 163 with the 6 pre-existing deferral failures from isaac-ox53, unchanged.
+
+**Deployed:** registry bumped, `isaac modules upgrade isaac.hail` on zanebot (d0f8932 → 21cef0e), service restarted 01:15Z. All four stuck deliveries drained immediately: `hail/bound` for each, the isaac-9mkp work hail is running on Claude Opus 5 (a live `claude` process), and the two planner probes bound to isaac-plan and suspended on grok's 403 (prowl is still `:grok-4-6` by design).
+
+Also fixed in passing: `hail/delivery-skipped` now actually reaches the log, so a bound delivery whose session is missing says so.
+
+main-sha: isaac-hail 21cef0e57a5ac11f447322475fb588b89afff9b1
