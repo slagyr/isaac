@@ -291,6 +291,38 @@
 
 ;; endregion
 
+;; region ci-scan
+
+(def ^:private bean-file-re #"^\.beans/([^/]+?)--[^/]*\.md$")
+
+(defn- changed-bean
+  "{:id :text} for a bean file changed in the push, read at rev; nil when the
+   entry is a deletion, an archived file, or not a bean file at all."
+  [root rev [status path]]
+  (when-not (= "D" status)
+    (when-let [[_ id] (re-matches bean-file-re path)]
+      (when-let [text (git/show-file root rev path)]
+        {:id id :text text}))))
+
+(defn ci-scan
+  "The beans a push must re-gate: every bean whose file changed between before
+   and after that is now completed and carries a feature-baseline. Returns
+   {:beans [id…] :skipped [{:id … :reason :not-completed|:not-gated}…]}, or
+   {:error msg} when the range does not diff."
+  [{:keys [root before after]}]
+  (if-let [changes (git/diff-name-status root before after ".beans")]
+    (let [beans (vals (into (sorted-map) (map (juxt :id identity)) (keep #(changed-bean root after %) changes)))]
+      (reduce (fn [acc {:keys [id text]}]
+                (cond
+                  (not (bean/completed? text)) (update acc :skipped conj {:id id :reason :not-completed})
+                  (not (bean/gated? text)) (update acc :skipped conj {:id id :reason :not-gated})
+                  :else (update acc :beans conj id)))
+              {:beans [] :skipped []}
+              beans))
+    {:error (str "cannot diff " before ".." after " in " root)}))
+
+;; endregion
+
 (defn verify
   "Checks bean id. Returns {:status :pass|:fail|:ungated|:error :failures :notes :checked}."
   [{:keys [root id] :as opts}]

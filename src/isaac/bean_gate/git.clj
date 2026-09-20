@@ -44,6 +44,17 @@
   (let [{:keys [exit out]} (run dir "rev-parse" "--verify" "--quiet" (str rev ":" path))]
     (when (zero? exit) (str/trim out))))
 
+(defn diff-name-status
+  "[[status path]…] for the diff between revs a and b, limited to pathspec.
+   nil when the diff fails (an unreachable rev, say)."
+  [dir a b pathspec]
+  (let [{:keys [exit out]} (run dir "diff" "--name-status" "--no-renames" a b "--" pathspec)]
+    (when (zero? exit)
+      (for [line (remove str/blank? (str/split-lines out))
+            :let [[status path] (str/split (str/trimr line) #"\t" 2)]
+            :when path]
+        [status path]))))
+
 (defn fetch!
   "Fetches origin. Returns nil on success, the error text otherwise."
   [dir]

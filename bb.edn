@@ -3,7 +3,7 @@
  :deps  {speclj/speclj {:mvn/version "3.13.0"}}
 
  :tasks
- {bean-gate     {:doc  "Bean Gate: `bean-gate baseline <id> <repo>:<path>[:<line>…]…` (planner) | `bean-gate verify <id>` (worker, CI)"
+ {bean-gate     {:doc  "Bean Gate: `bean-gate baseline <id> <repo>:<path>[:<line>…]…` (planner) | `bean-gate verify <id>` (worker, CI) | `bean-gate ci-scan <before> <after>` (CI)"
                  :task (apply (requiring-resolve 'isaac.bean-gate.main/-main) *command-line-args*)}
 
   spec          {:doc  "Run speclj specs (default target: spec/)"

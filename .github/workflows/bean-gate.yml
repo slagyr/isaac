@@ -1,0 +1,147 @@
+name: Bean Gate
+
+# The snitch: under the Bean Gate the worker lands its own bean and marks it
+# completed, so nothing re-checks the contract afterwards. Every push to main
+# that touches .beans/ re-gates the beans it completed, on main, where nobody
+# can quietly skip it.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.beans/**'
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    env:
+      NO_COLOR: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          # The gate walks each bean file's history to prove its contract lines
+          # are append-only, so it needs the whole history.
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Clojure and Babashka
+        uses: DeLaGuardo/setup-clojure@13.2
+        with:
+          bb: latest
+          cli: latest
+
+      - name: Cache Clojure dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.deps.clj
+            .cpcache
+          key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn', '**/bb.edn') }}
+          restore-keys: |
+            ${{ runner.os }}-clojure-
+
+      - name: Resolve the pushed range
+        id: range
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          COMMITS: ${{ toJSON(github.event.commits) }}
+        run: |
+          set -euo pipefail
+          resolvable () { git rev-parse --verify --quiet "$1^{commit}" >/dev/null 2>&1; }
+          before="$BEFORE"
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ] || ! resolvable "$before"; then
+            echo "push 'before' ($before) is unusable (force-push or new branch); using the push's own commit list"
+            first=$(printf '%s' "$COMMITS" | jq -r 'if type == "array" and length > 0 then .[0].id else empty end')
+            if [ -n "$first" ] && resolvable "${first}^"; then
+              before=$(git rev-parse "${first}^")
+            elif resolvable "${AFTER}^"; then
+              before=$(git rev-parse "${AFTER}^")
+            else
+              before=$(git hash-object -t tree /dev/null)
+            fi
+          fi
+          echo "range ${before}..${AFTER}"
+          echo "before=${before}" >> "$GITHUB_OUTPUT"
+          echo "after=${AFTER}" >> "$GITHUB_OUTPUT"
+
+      - name: Scan the push for completed, baselined beans
+        env:
+          BEFORE: ${{ steps.range.outputs.before }}
+          AFTER: ${{ steps.range.outputs.after }}
+        run: |
+          set -euo pipefail
+          bb bean-gate ci-scan "$BEFORE" "$AFTER" --edn | tee /tmp/bean-gate-scan.edn
+          bb bean-gate ci-scan "$BEFORE" "$AFTER" > /tmp/bean-gate-ids.txt
+          {
+            echo "## Bean Gate"
+            echo ""
+            echo "Range \`${BEFORE}..${AFTER}\`"
+            echo ""
+            echo '```'
+            cat /tmp/bean-gate-scan.edn
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Re-gate each bean
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -uo pipefail
+          ids=$(cat /tmp/bean-gate-ids.txt)
+          if [ -z "$ids" ]; then
+            echo "no completed, baselined bean in this push"
+            echo "_No completed, baselined bean in this push._" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Clone every repo the beans baseline, beside this checkout, where
+          # bean-gate looks for it. blob:none keeps the clone small while
+          # leaving every commit reachable, which the baseline sha and the
+          # main-sha diffs both need. All slagyr/isaac-* repos are public.
+          for id in $ids; do
+            for repo in $(awk '/^feature-baseline:/ {print $2}' .beans/${id}--*.md | sort -u); do
+              case "$repo" in
+                *[!A-Za-z0-9._-]*) echo "skipping non-repo baseline token: $repo"; continue ;;
+              esac
+              [ -d "../$repo" ] && continue
+              echo "cloning $repo"
+              git clone --filter=blob:none --quiet "https://github.com/${OWNER}/${repo}.git" "../${repo}"
+            done
+          done
+
+          status=0
+          for id in $ids; do
+            out=$(bb bean-gate verify "$id" 2>&1)
+            code=$?
+            printf '%s\n' "$out"
+            case "$code" in
+              0) verdict='✅ PASS' ;;
+              2) verdict='⚠️ UNEXPECTED (exit 2 — ci-scan already filtered ungated beans)'; status=1 ;;
+              *) verdict='❌ FAIL'; status=1 ;;
+            esac
+            {
+              echo ""
+              echo "### ${id} — ${verdict}"
+              echo ""
+              echo '```'
+              printf '%s\n' "$out"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Bean Gate failed — see the job summary for each bean's verdict"
+          fi
+          exit $status

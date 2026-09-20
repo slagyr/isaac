@@ -81,14 +81,38 @@
 
 (defn bean-path [{:keys [root]} id] (str (fs/path root ".beans" (str id "--relay-logbook.md"))))
 
+(def landed-sha "0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c")
+
+(defn bean-markdown
+  "Bean markdown with an Acceptance section. :status defaults to todo; :gated?
+   adds a feature-baseline line; :note appends a trailing line."
+  [id {:keys [status gated? note]}]
+  (str "---\n# " id "\ntitle: Relay reaches the logbook\nstatus: " (or status "todo") "\n---\n\n"
+       "Relayed messages land in the logbook.\n\n"
+       "## Acceptance\n\n```\nbb features " feature "\n```\n\n## Exceptions\n\n(none)\n"
+       (when gated? (str "\nfeature-baseline: " repo " " landed-sha "\n"))
+       (when note (str "\n" note "\n"))))
+
 (defn bean!
   "Writes and commits a bean with an Acceptance section."
   [{:keys [root] :as w} id]
-  (write! root (str ".beans/" id "--relay-logbook.md")
-          (str "---\n# " id "\ntitle: Relay reaches the logbook\nstatus: todo\n---\n\n"
-               "Relayed messages land in the logbook.\n\n"
-               "## Acceptance\n\n```\nbb features " feature "\n```\n\n## Exceptions\n\n(none)\n"))
+  (write! root (str ".beans/" id "--relay-logbook.md") (bean-markdown id nil))
   (commit! root (str "plan: " id)))
+
+(defn write-bean!
+  "Writes (without committing) a bean with the given :status / :gated? / :note."
+  [{:keys [root]} id opts]
+  (write! root (str ".beans/" id "--relay-logbook.md") (bean-markdown id opts)))
+
+(defn bean-at!
+  "Writes and commits a bean with the given :status / :gated? / :note; returns the sha."
+  [{:keys [root] :as w} id opts]
+  (write-bean! w id opts)
+  (commit! root (str id ": " (or (:status opts) "todo"))))
+
+(defn delete-bean! [{:keys [root] :as w} id]
+  (fs/delete (bean-path w id))
+  (commit! root (str id ": deleted")))
 
 (defn bean-text [w id] (slurp (bean-path w id)))
 

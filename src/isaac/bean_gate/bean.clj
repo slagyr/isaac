@@ -74,6 +74,21 @@
 
 ;; endregion
 
+;; region Front matter
+
+(defn status
+  "The status in the bean's YAML front matter, or nil."
+  [text]
+  (let [lines (str/split-lines text)]
+    (when (= "---" (some-> (first lines) str/trim))
+      (->> (rest lines)
+           (take-while #(not= "---" (str/trim %)))
+           (some #(some-> (re-matches #"(?i)status:\s*['\"]?([^'\"]+?)['\"]?\s*" %) second))))))
+
+(defn completed? [text] (= "completed" (status text)))
+
+;; endregion
+
 ;; region Contract lines
 
 (defn- body-lines

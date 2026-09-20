@@ -7,6 +7,7 @@
   "Usage:
   bb bean-gate baseline <bean-id> <repo>:<path>[:<line>…] … [--dir <repo>=<path>]
   bb bean-gate verify <bean-id> [--dir <repo>=<path>] [--ref <repo>=<ref>]
+  bb bean-gate ci-scan <before-sha> <after-sha> [--edn]
 
 baseline  (planner) Run from the isaac clone after the bean's @wip scenarios are on
           the module's main. Fetches origin, then appends to the bean body:
@@ -27,6 +28,12 @@ verify    (worker, CI) Checks the bean against its baseline:
           against its merge-base with origin/main.
           Exit 0 pass, 1 fail, 2 not gated (no feature-baseline) or usage error.
 
+ci-scan   (CI) Prints the bean ids a push must re-gate, one per line: every bean
+          whose .beans/ file changed between the two shas, is now completed, and
+          carries a feature-baseline. Exit 0 always — an empty list is normal,
+          and an unusable range is a note on stderr, not a failure. --edn prints
+          {:beans […] :skipped [{:id … :reason :not-completed|:not-gated}…]}.
+
 Module checkouts default to ../<repo> beside the isaac clone; --dir overrides.")
 
 (defn- parse-args
@@ -36,6 +43,7 @@ Module checkouts default to ../<repo> beside the isaac clone; --dir overrides.")
     (cond
       (nil? a) acc
       (#{"-h" "--help"} a) (recur more (assoc acc :help true))
+      (= "--edn" a) (recur more (assoc acc :edn true))
       (#{"--dir" "--ref"} a)
       (let [[repo v] (some-> (first more) (str/split #"=" 2))
             k        (if (= "--dir" a) :dirs :refs)]
@@ -77,6 +85,16 @@ Module checkouts default to ../<repo> beside the isaac clone; --dir overrides.")
                        (print-lines (map #(str "  FAIL " %) failures))
                        1))))))
 
+(defn- ci-scan! [root {:keys [positional edn]}]
+  (let [[_ before after] positional]
+    (if (or (nil? before) (nil? after))
+      (do (println usage) 2)
+      (let [{:keys [beans skipped error]} (core/ci-scan {:root root :before before :after after})]
+        (when error (binding [*out* *err*] (println (str "bean-gate ci-scan: " error))))
+        (when edn (prn {:beans (vec beans) :skipped (vec skipped)}))
+        (when-not edn (print-lines beans))
+        0))))
+
 (defn run
   "Runs the command; returns the exit code. opts :root overrides the isaac clone
    (default: the git toplevel of the working directory)."
@@ -92,6 +110,7 @@ Module checkouts default to ../<repo> beside the isaac clone; --dir overrides.")
           (nil? root) (do (println "bean-gate: run from inside the isaac clone") 2)
           (= "baseline" cmd) (baseline! root parsed)
           (= "verify" cmd) (verify! root parsed)
+          (= "ci-scan" cmd) (ci-scan! root parsed)
           :else (do (println (str "bean-gate: unknown subcommand " cmd)) (println usage) 2))))))
 
 (defn -main [& args]
