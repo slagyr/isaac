@@ -5,11 +5,12 @@ status: in-progress
 type: feature
 priority: high
 tags:
-    - google
     - comm
     - config
+    - unverified
+    - google
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T20:14:47Z
+updated_at: 2026-09-20T20:42:13Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
@@ -382,3 +383,91 @@ So the reason to descope is gone. If the planner still wants scenario 3 split in
 2. `isaac-gchat`: add the comm-level `:google <tenant>` key to its comm schema; resolve the tenant at send/subscribe time and call `isaac.google.token/token` with it (the 1-arity now exists); registration for that comm's spaces goes to that tenant's topic. One scenario, per the bean.
 3. `isaac-gmail`: the same shape, one scenario.
 4. Cross-repo landing order (verify.md §6a): isaac-google squashes to main first, then each downstream repo's `isaac-google` pin is rewritten to that squash sha and that repo's `bb ci` re-run before its own squash. One `main-sha:` line per repo.
+
+## Handoff to verify — attempt 2, 2026-09-20 (scrapper@isaac-work-1)
+
+Resumed from the verify fail (hail 15a254d6). The isaac-google half was not
+touched except to add one seam the comms needed; the missing half — the bean's
+scenario 3, a comm bound to an organization — is implemented in **isaac-gchat**
+and **isaac-gmail**, one scenario each, as the bean's scenario plan asks.
+
+`bb bean-gate verify isaac-1zkz` → *no feature-baseline: use the verify path*,
+so this stays the unverified/verify handoff, not a self-landing.
+
+### Branches (all pushed)
+
+| repo | branch @ head | base | suites |
+|------|---------------|------|--------|
+| isaac-google | bean/isaac-1zkz @ 71fd373 | origin/main@6c8a29f | bb spec 138/0 · bb features 27/0 · lint ok |
+| isaac-gchat | bean/isaac-1zkz @ 17bfa22 | origin/main@5bcaa35 | bb spec 84/0 · bb features 27/0 · lint ok |
+| isaac-gmail | bean/isaac-1zkz @ 86900ac | origin/main@71adcee | bb spec 48/0 · bb features 13/0 · lint ok |
+
+`bb ci` is green in all three.
+
+### What a comm naming an organization means, in code
+
+`isaac.google.tenants` gained the question itself, so both comm modules answer
+it the same way: `comms` (every configured comm of one kind, by `:type` or by
+the conventional name), `of-comm` (the organization a slice names with
+`:google`, else the only one configured, else `:default`) and `comms-for`.
+Specs in `spec/isaac/google/tenants_spec.clj` (+5 examples). Nothing else in
+isaac-google changed — the 27 scenarios the last verify pass read are the same
+scenarios, still green.
+
+**isaac-gchat** (`:comms {:gchat-acme {:type :gchat :google :acme …}}`)
+
+- `resources/isaac-manifest.edn` — the comm's `:extra-schema` gained `:google`
+  (`:type :keyword`), so the bean's Shape section can now be written at all.
+- `src/isaac/comm/gchat.clj` — `access-token` takes the comm's slice and asks
+  `isaac.google.token/token` for *that organization's* token; `send!` and
+  `on-reply` pass it. The 0-arity stays for the agent tools, which run with
+  `*tenant*` already bound.
+- `src/isaac/comm/gchat/tenant.clj` (new) — the Chat half: which spaces belong
+  to an organization, and the live-config lookup for a running comm.
+- `src/isaac/comm/gchat/registration.clj` — a reconcile pass runs once per
+  organization with `tenants/*tenant*` bound, so `space-keys` answers with that
+  organization's comms' spaces only and `create!` subscribes them to that
+  organization's `:topic` in its own project.
+- `features/comm/gchat/tenants.feature` — 2 scenarios: a comm bound to acme
+  posts with `Bearer at-acme` while the tonotop comm posts with `at-tonotop`;
+  one timer tick subscribes `spaces/ACME` to acme's topic with acme's token and
+  `spaces/ENG` to tonotop's with tonotop's.
+- The feature steps no longer stub `gchat/access-token` with a constant: they
+  stub `isaac.google.token/token` per organization, so *which* organization the
+  comm asked for is what the assertion reads.
+
+**isaac-gmail** (`:comms {:gmail-acme {:type :gmail :google :acme …}}`)
+
+- `resources/isaac-manifest.edn` — same `:google` key on the Gmail comm.
+- `src/isaac/comm/gmail.clj` — every send runs as the comm's organization
+  (`tenants/*tenant*` bound around the send), so the token, and anything else
+  that asks, answer for it.
+- `src/isaac/comm/gmail/tenant.clj` (new) — the Gmail half: which mailboxes
+  belong to an organization.
+- `src/isaac/comm/gmail/watch.clj` — `keys*` is that organization's mailboxes
+  and the watch names that organization's topic.
+- `features/comm/gmail/tenants.feature` — 2 scenarios, the same shape as Chat's:
+  a comm bound to acme sends with `Bearer at-acme`; each mailbox is watched
+  against its own organization's topic.
+
+### Pins — read before landing
+
+While the bean is in flight both comm repos pin isaac-google at
+`{:local/root "../isaac-google-1zkz"}` in `deps.edn` **and** `bb.edn` (a
+bean-branch sha pin would dangle once the branch is squashed and deleted).
+Landing order, per verify.md §6a:
+
+1. isaac-google: rebase on main, `bb ci`, squash-merge → that sha is its
+   `main-sha:`.
+2. isaac-gchat and isaac-gmail: rewrite both `:local/root` pins to that sha
+   (`:git/url "https://github.com/slagyr/isaac-google.git" :git/sha "<main-sha>"`),
+   re-run `bb ci`, then squash-merge each.
+3. One `main-sha:` line per repo — three lines.
+
+### Not done, deliberately
+
+Inbound routing still reads the conventional `:comms :gchat` / `:comms :gmail`
+slice: a push already arrives with `*tenant*` bound by the door, so the token is
+the right organization's, but *which comm* handles a message for a second
+organization's space is a routing question the bean does not ask. Worth a
+follow-up bean if a second organization's inbound traffic is wanted.
