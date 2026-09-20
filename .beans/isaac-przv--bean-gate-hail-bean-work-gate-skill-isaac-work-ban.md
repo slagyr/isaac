@@ -1,14 +1,14 @@
 ---
 # isaac-przv
 title: 'Bean Gate: hail-bean-work-gate skill + isaac-work band cutover'
-status: draft
+status: todo
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T04:36:48Z
+updated_at: 2026-09-20T04:58:30Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
