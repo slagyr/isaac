@@ -85,3 +85,24 @@ Live inspection of zanebot, all read-only:
 **Leading hypothesis: stale `:active-run` on `:hail/deliver`.** `compute-tick-transition` will not begin a run while `:active-run` is set; if a run's finish transition never lands, the task goes silent forever with no log line and no thread. The first tick after boot had an overdue delivery to launch, which fits the timing exactly. The scheduler has no way to show this, which is the real gap.
 
 **Queue hygiene found on the way:** `ed0d19f9` was a `ci-failure` delivery from **2026-09-04**, attempts 4, bound to session `:cheery-rowan`, sitting in `deliveries/` for 15 days. Dropped it and `15e636f1` (isaac-6krg, since completed) to test whether a poison record at the head of the scan blocks the tick.
+
+## Round 4 (planner, 2026-09-20 00:50Z) — restart with a clean queue changes nothing
+
+Dropped the two obsolete deliveries, restarted the service (boot 00:41:45Z, all 8 components started including `hail-runtime`), then sent a fresh band hail `ee647adf`.
+
+| | |
+|---|---|
+| router half | **works** — `ee647adf` went pending → `hail/routed` → `deliveries/` within 8s |
+| delivery half | **silent** — zero `hail/*` lines since boot; three deliveries queued and due |
+| warnings/errors since boot | none (an earlier "nothing since boot" claim used an off-by-one `awk` timestamp filter and was worthless; rechecked with a string match) |
+| component start | `component/started hail-runtime` present in this boot; `components/start-all!` rethrows on failure, so `delivery-worker/start!` did run and `schedule!` did not throw |
+| scheduler errors/timeouts | none — `:scheduler/handler-error` and `:scheduler/timeout` both log unconditionally and neither appears |
+
+So on zanebot `:hail/route` and `:hail/deliver` are registered by the same component start, one fires every second and the other has never fired. Restarting does not clear it, a clean queue does not clear it, and the same code fires correctly in the repro.
+
+**Repro spec pushed:** `bean/isaac-bsqm` in isaac-hail (7380927) — real component, real scheduler, asserts `scheduler/list-tasks` contains both ids and the tick runs.
+
+**Two ways forward**
+
+1. Blunt: repin `isaac.hail` to 4dc44ef on zanebot and restart. The repro argues this will not help, but it is one command and the host is idle anyway.
+2. Fix forward: ship scheduler observability (`isaac scheduler list` printing id, next-fire-at, active-run, consecutive-errors, disabled?) and a one-line log when a task registers. That answers "is it registered and when did it last fire" in one command instead of an evening of inference — and it is the gap this whole hunt exposed.
