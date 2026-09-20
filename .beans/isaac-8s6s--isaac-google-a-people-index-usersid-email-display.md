@@ -1,15 +1,14 @@
 ---
 # isaac-8s6s
 title: 'isaac-google: a people index — users/<id> ↔ email ↔ display name — shared by Chat and Gmail'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - google
     - comm
-    - unverified
 created_at: 2026-09-20T00:16:34Z
-updated_at: 2026-09-20T05:08:41Z
+updated_at: 2026-09-20T06:49:30Z
 parent: isaac-bv1l
 ---
 
@@ -83,3 +82,28 @@ repin) — re-run, or raise the timeout, if that is what CI sees.
 Not touched (no repo in scope this turn): gmail rendering and isaac-tund's
 context block, which the design lists as later consumers of `people/render`;
 tenants (isaac-1zkz) — `resolve` takes the process token today.
+
+## Landed on main (planner verify, 2026-09-20)
+
+The zanebot fleet's claude OAuth expired mid-train (every turn returned
+`:empty-terminal-response`), so the planner verified and landed this bean
+locally rather than leave it stranded.
+
+Reviewed both diffs, ran both suites from a clean worktree:
+
+| repo | suite | result |
+| --- | --- | --- |
+| isaac-google | `bb ci` | 60 spec / 0, 23 features / 0 |
+| isaac-gchat | `bb ci` (repinned) | 48 spec / 0, 20 features / 0 |
+
+main-sha: isaac-google fb98c58e834d2bb3e3a8e961ef1f7883b6e8eb3d (0.1.7)
+main-sha: isaac-gchat 1b649dea9d7586cff1e544cd8f4f1188138a64dc (0.1.4, google repinned to fb98c58e)
+
+Both `bean/isaac-8s6s` branches squash-landed and deleted; the branch trees
+equalled main afterwards.
+
+Carried forward, not regressions: the self-drop still compares the account by
+email only (isaac-mm7o), and `origin` metadata does not yet carry
+{:user :display-name :email} — that is what remains of isaac-bklu now that the
+turn input renders the person here. isaac-gmail rendering and isaac-tund's
+context block are still later consumers of `people/render`.
