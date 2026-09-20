@@ -8,8 +8,9 @@ tags:
     - google
     - comm
     - config
+    - unverified
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T19:53:18Z
+updated_at: 2026-09-20T20:10:30Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
@@ -257,3 +258,71 @@ organization's rule from live config at request time and needs no component.
 
 Orchestration bug to fix: one bean must not be dispatched to a session that is
 already running a turn on it.
+
+## Handoff to verify — 2026-09-20 (scrapper@2026-06-29-1749-iaqu)
+
+Branch **bean/isaac-1zkz @ 596fae8** in `isaac-google` (base `origin/main@6c8a29f`),
+pushed. `bb bean-gate verify isaac-1zkz` → *no feature-baseline: use the verify
+path*, so this is the unverified/verify handoff, not a self-landing.
+
+**Suites, at 596fae8:** `bb spec` 133 examples, 0 failures · `bb features` 27
+scenarios, 0 failures · `bb config-bypass-lint` ok. `bb lint`'s counts are
+identical with and without this branch's changes (pre-existing speclj macro
+noise; `bb ci` does not run it).
+
+### What a tenant is, in code
+
+`isaac.google.tenants` is the seam: a flat `:google {:project …}` reads as the
+single tenant `:default`, a map of tenant id → tenant reads as itself, and
+`*tenant*` is the organization the current thread is acting as. Nothing on a
+single-organization host changes — that is scenario 1, and it is asserted by
+the whole existing suite passing unchanged, not only by the new scenario.
+
+- **config** — `google-schema` carries both `:schema` (one organization's
+  fields, flat, closed) and `:key-spec`/`:value-spec` (any other key is a
+  tenant id), so `isaac config set google.acme.project …` walks. The manifest's
+  inline copy is asserted equal to `config/google-schema` so it cannot drift.
+- **tokens** — one provider key per tenant (`google`, then `google/<tenant>`),
+  refreshed with that tenant's own OAuth client.
+- **the door** — `isaac.google.door/trust-rules` builds one data-shaped OIDC
+  rule per organization, each pointed at its own `[:google <id> :push …]` refs,
+  granting `:google-pubsub/<tenant>` with nothing but `:google/push`.
+  `component/register-door!` registers them at component start and is
+  deliberately *not* on the scheduler path — a host with background services
+  off still answers pushes.
+- **the push** — `http/handler` decides the tenant from two independent claims
+  (the project in the envelope's `subscription`, and the principal the token
+  proved), stamps `:tenant` on the persisted event, and answers **403
+  `:google/tenant-mismatch`** when they disagree, keeping nothing. The worker
+  binds `*tenant*` around the handler call.
+- **the timer** — `registration/tick!` surveys then reconciles **once per
+  tenant** with `*tenant*` bound, each on its own `renew-within-hours`, with
+  one health evaluation over all tenants' keys.
+- **the CLI** — `isaac google login --tenant <t>`; `isaac google status` groups
+  by tenant when there is more than one and is byte-identical when there is one.
+
+### Scenarios
+
+`features/tenants.feature` (4 scenarios, all green) covers the bean's 1, 2 and
+4: a flat host's push is the `:default` tenant's; two organizations share the
+door and each is accepted only under its own service account; a push crossing
+one organization's SA with another's subscription is refused 403 and nothing is
+kept; each organization signs in for itself and `status` lists both.
+
+One new step, `Given the Google runtime component is started`, exists because
+**feature runs never start `:isaac/component`s** (`isaac.component.runtime`:
+"Only isaac.runner invokes start-all!"), so a scenario that needs a tenanted
+door has to say so. Worth knowing for any module whose boot work lives in a
+component.
+
+### Not done — the bean's scenario 3 (a comm bound to a tenant)
+
+"a comm bound to tenant :acme sends with acme's token and subscribes acme's
+spaces to acme's topic" is **not** implemented. isaac-google now provides
+everything the comm side needs (`*tenant*`, `token/token <id>`, per-tenant
+registration ticks whose `:key`/`:remote` hooks run with `*tenant*` bound), but
+the `:comms {… :google :acme}` key itself belongs to **isaac-gchat** (and the
+Gmail comm), not to this repo: there is no isaac-gmail checkout in this
+workspace at all, and isaac-gchat has two other beans in flight in its
+checkouts (isaac-vo2q, isaac-0gtc). Recommend a follow-up bean per comm module
+rather than editing a repo mid-flight from here — planner's call.
