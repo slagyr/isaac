@@ -1,16 +1,15 @@
 ---
 # isaac-1zkz
 title: 'isaac-google: tenants — one Isaac host serves several Google organizations, each a complete {oauth, account, project, topic, push SA, token}'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - comm
     - config
-    - unverified
     - google
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T20:42:13Z
+updated_at: 2026-09-20T20:52:12Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
@@ -471,3 +470,53 @@ slice: a push already arrives with `*tenant*` bound by the door, so the token is
 the right organization's, but *which comm* handles a message for a second
 organization's space is a routing question the bean does not ask. Worth a
 follow-up bean if a second organization's inbound traffic is wanted.
+
+## Verified + landed on main (attempt 2, 2026-09-20)
+
+**perceptor**@isaac-verify — PASS. The half that failed attempt 1 (bean scenario 3: a comm bound to an organization) now exists in both comm modules, one scenario each, exactly as the bean's scenario plan asks.
+
+### Suites — green in all three repos
+
+| repo | branch @ head | base | `bb ci` |
+|------|---------------|------|---------|
+| isaac-google | bean/isaac-1zkz @ 71fd373 | origin/main@6c8a29f | spec 138/0/213 · features 27/0/110 · config-bypass-lint ok · CI_EXIT=0 |
+| isaac-gchat | bean/isaac-1zkz @ 17bfa22 → 55b43ba (repin) | origin/main@5bcaa35 | spec 84/0/157 · features 27/0/61 · lint ok · CI_EXIT=0 |
+| isaac-gmail | bean/isaac-1zkz @ 86900ac → a8edf6b (repin) | origin/main@71adcee | spec 48/0/76 · features 13/0/38 · lint ok · CI_EXIT=0 |
+
+Each `bb ci` was run twice in gchat/gmail: once on the worker's `:local/root` pin, and again after the verify repin to isaac-google's main squash sha (§6a step 3) — green both times.
+
+### Acceptance, scenario by scenario
+
+1. **flat config reads as `:default`; existing scenarios pass unchanged** — isaac-google's 27 feature scenarios (incl. push_door, login, registration) are unmodified and green; `git diff origin/main...bean` touches no existing `.feature` file in any of the three repos, only adds new ones.
+2. **two organizations through the one door** — `features/tenants.feature` (105 lines, 4 scenarios): each push accepted only under its own SA and persisted with its `:tenant`; crossed SA/subscription refused 403 `:google/tenant-mismatch` with nothing kept.
+3. **a comm bound to `:acme` sends with acme's token and subscribes acme's spaces to acme's topic** — now covered twice over:
+   - `isaac-gchat features/comm/gchat/tenants.feature` — comm `gchat-acme` posts to `spaces/ACME` with `Bearer at-acme` while `gchat` posts to `spaces/ENG` with `Bearer at-tonotop`; one registration tick subscribes `spaces/ACME` → `projects/acme-prod/topics/isaac` with acme's token and `spaces/ENG` → `projects/marigold/topics/isaac` with tonotop's.
+   - `isaac-gmail features/comm/gmail/tenants.feature` — same shape for send and for `users/me/watch` topicName per mailbox.
+   - The gchat steps no longer stub `gchat/access-token` with a constant; they stub `isaac.google.token/token` per organization, so *which* organization the comm asked for is what the assertion reads. That is a strengthening, not a weakening.
+   - Both manifests gained the comm-level `:google` key (`:type :keyword`), so `:comms {:gchat-acme {:type :gchat :google :acme}}` from the bean's Shape section is now writable.
+4. **login per tenant, separate tokens, status lists both** — covered in `tenants.feature` and `spec/isaac/google/{token,cli}` specs.
+
+### Other checks
+
+- No `@wip` in any of the three `features/` trees.
+- Feature-file tampering: none — the diffs add `features/tenants.feature`, `features/comm/gchat/tenants.feature`, `features/comm/gmail/tenants.feature` and touch no existing feature file.
+- Stray output: all added `println`s are in `src/isaac/google/cli.clj` (CLI stdout — verify.md §3's stated exception). None in gchat/gmail.
+- Smell pass A (diff scope): no `Thread/sleep`, `currentTimeMillis`, `Date.`/`Instant/now` added in specs or feature-steps.
+- `bb bean-gate verify isaac-1zkz` → *no feature-baseline: use the verify path* (ungated; verify path correct).
+- Sibling pins (§6): after the repin, both downstream repos pin isaac-google at `68e29aa`, an ancestor of isaac-google `origin/main`. No dangling bean-branch shas.
+
+### Landing (verify.md §6a order)
+
+1. isaac-google squashed to main first → `68e29aa`; tree identical to branch tip `71fd373` (`git diff` empty).
+2. gchat and gmail `deps.edn` + `bb.edn` repinned from `{:local/root "../isaac-google-1zkz"}` to `{:git/url … :git/sha "68e29aa…"}`, committed on each bean branch, `bb ci` re-run green, then squashed.
+3. Squash trees verified identical to their branch tips.
+
+### Noted, not blocking
+
+The worker's "not done, deliberately": inbound routing still reads the conventional `:comms :gchat` / `:comms :gmail` slice — a push arrives with `*tenant*` already bound by the door, so the token is right, but *which comm* handles a second organization's inbound space is a routing question this bean does not ask. Worth a follow-up bean if a second organization's inbound traffic is wanted.
+
+## Landed on main (2026-09-20)
+
+main-sha: isaac-google 68e29aabb1d11067daa09938e8f1f2166c190c7d
+main-sha: isaac-gchat c4f18042c77f15960c06e9db2a4cb9d53b8673ca
+main-sha: isaac-gmail 1a26c67e14eb586653bff517e14fb8952ae267a3
