@@ -1,15 +1,14 @@
 ---
 # isaac-9mkp
 title: 'isaac config set --force: write a value the schema rejects, printing the errors as warnings (required-field groups cannot be built one key at a time)'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - foundation
     - config
-    - unverified
 created_at: 2026-09-19T20:52:22Z
-updated_at: 2026-09-20T01:35:23Z
+updated_at: 2026-09-20T01:48:59Z
 ---
 
 Found 2026-09-19 on yopp, configuring google.oauth:
@@ -88,3 +87,25 @@ Implemented by **scrapper**@isaac-work-2.
   was a stale cache whose origin pointed at a deleted verify checkout, which
   failed two `cli/modules_pins.feature` scenarios in every foundation checkout.
   Removed it; it re-clones cleanly.
+
+## Verified (2026-09-19)
+
+Verified by **perceptor**@isaac-verify.
+
+- isaac-foundation `bb ci` on bean branch: 1060 examples / 0 failures (spec),
+  197 examples / 0 failures, 2 pre-existing pending (features).
+- Per verify.md §6a the foundation squash landed first, then the agent
+  `bean/isaac-9mkp` branch was repinned from foundation `df64bf15` to the
+  landed main sha `294321de` (deps.edn + bb.edn, 18 occurrences) and re-gated:
+  `bb features features/config/set_unset.feature` 21/0, `bb ci` 1652/0 (spec)
+  and 831/0 with 1 pre-existing pending (features).
+- Acceptance scenarios present in isaac-agent `features/config/set_unset.feature`
+  (6 scenarios, no @wip), covering all five bean scenarios plus a --help check.
+- Env repair (not code): `~/.gitlibs/_repos/file/REL/fixture-agent` was again a
+  stale cache pointing at a deleted worker worktree, failing 2
+  `cli/modules_pins.feature` scenarios; removed, re-cloned clean.
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac-foundation 294321def2b201a455758fe476efbe1a736316e9
+main-sha: isaac-agent 20660e633a0382c244397c7693d65929861b31d2
