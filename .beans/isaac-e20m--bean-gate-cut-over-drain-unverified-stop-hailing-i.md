@@ -8,7 +8,7 @@ tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T20:26:32Z
+updated_at: 2026-09-20T20:30:17Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -215,3 +215,33 @@ The second one is why the gate output for this bean is recorded below as exit 0
     bb bean-gate verify isaac-e20m                                  → exit 1 (parked-branch artifact, isaac-9yms)
     bb bean-gate verify isaac-e20m --ref isaac-foundation=origin/main → exit 0
         isaac-e20m bean-gate: PASS (isaac-foundation @ origin/main 3535286)
+
+
+## Third finding + CI repair (2026-09-20)
+
+Completing this bean pushed `.beans/`, which re-triggered the snitch — and it
+went **red with no diagnosis at all**: run
+https://github.com/slagyr/isaac/actions/runs/35535560919, step "Re-gate each
+bean", `Process completed with exit code 1`, zero output, empty job summary.
+
+Two defects behind that one red, both fixed on main in `5aabd1fe`
+(`.github/workflows/bean-gate.yml`):
+
+1. **The verdict logic was dead code under `-e`.** The job shell is
+   `/usr/bin/bash -e`; the step sets `-uo pipefail` but never `+e`. An
+   unguarded `out=$(bb bean-gate verify "$id" 2>&1)` therefore aborts the step
+   the instant the gate is non-zero — `code=$?`, the `✅/❌/⚠️` case, the
+   `printf` and the `$GITHUB_STEP_SUMMARY` block never run. The snitch could
+   only ever *report* a pass; every failure surfaced as a bare exit code.
+   Fixed with `set +e` before the verdict loop.
+2. **The clone loop used a stricter baseline parser than the gate.** It matched
+   `/^feature-baseline:/` at column 0, while `isaac.bean-gate.bean` also honours
+   an indented line (isaac-dopm). For this bean the two disagreed: the gate saw
+   a baseline and tried to verify `isaac-foundation`, the workflow saw none and
+   cloned nothing, so the gate ran against a module that was not on disk. Fixed
+   with `/^[[:space:]]*feature-baseline:/` so the workflow clones whatever the
+   gate will look for. The real fix is isaac-dopm — one parser, used by both.
+
+Worth stating plainly, since this bean exists to collect it: **the snitch's
+failure path had never run either.** The first real FAIL it ever saw, it
+swallowed. The dogfood found this in the first push after the cutover.
