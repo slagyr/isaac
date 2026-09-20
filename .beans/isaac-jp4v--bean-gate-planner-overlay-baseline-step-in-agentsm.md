@@ -1,14 +1,14 @@
 ---
 # isaac-jp4v
 title: 'Bean Gate: planner overlay — baseline step in AGENTS.md Planning + dual-run'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T04:35:22Z
+updated_at: 2026-09-20T04:35:48Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
