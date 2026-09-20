@@ -63,3 +63,25 @@ Operationally: on zanebot the four queued deliveries drain and `hail/turn-ended`
 2. The tick runs but `list-deliveries root` sees nothing — the one path in `tick!` that produces neither a launch, a skip log, nor an error. That implies `runtime-root` resolves differently in the delivery thread than in the router thread; the two namespaces carry separate copies of that helper.
 
 **Next: bisect on zanebot.** Pin `isaac.hail` back to 4dc44ef against the new foundation and restart. Queue drains ⇒ hail d0f8932; queue stays ⇒ foundation ba7fa5b. Either way, `isaac scheduler list` (id, next-fire-at, consecutive-errors, disabled?) would have answered this in one command and should land with the fix.
+
+## Round 3 (planner, 2026-09-20 00:45Z) — the version pairing is exonerated
+
+A repro spec wires the **real** `:hail-runtime` component to a **real** scheduler (the shipped `component_spec` stubs `router/start!` and `delivery-worker/start!`, so nothing ever exercised scheduling):
+
+- hail d0f8932 with its own pinned foundation df64bf1 → both `:hail/route` and `:hail/deliver` register, and the delivery tick fires. Green.
+- hail d0f8932 with **zanebot's** foundation ba7fa5b → same. Green.
+
+So the deployed pair wires correctly in a clean process, and **a rollback to 4dc44ef probably will not fix zanebot**. The failure is state, not code pairing. (That repro belongs in the repo: `component_spec` asserting a real `scheduler/list-tasks` would have caught a registration regression.)
+
+Live inspection of zanebot, all read-only:
+
+| probe | result |
+|---|---|
+| thread dump (`jcmd Thread.print`, 74 threads) | no thread inside `isaac.hail.*`, `delivery_worker` or `drive.turn`; all 8 `isaac-scheduler-*` threads parked idle |
+| child processes | no `claude` or model subprocess hung |
+| turn markers | none live (one `turn.edn.cancelled-*` from 09-09) |
+| scheduler events in any log | none at all since boot — no `handler-error`, no `disabled` |
+
+**Leading hypothesis: stale `:active-run` on `:hail/deliver`.** `compute-tick-transition` will not begin a run while `:active-run` is set; if a run's finish transition never lands, the task goes silent forever with no log line and no thread. The first tick after boot had an overdue delivery to launch, which fits the timing exactly. The scheduler has no way to show this, which is the real gap.
+
+**Queue hygiene found on the way:** `ed0d19f9` was a `ci-failure` delivery from **2026-09-04**, attempts 4, bound to session `:cheery-rowan`, sitting in `deliveries/` for 15 days. Dropped it and `15e636f1` (isaac-6krg, since completed) to test whether a poison record at the head of the scan blocks the tick.
