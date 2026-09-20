@@ -130,3 +130,19 @@ bare remote, under /tmp; removed afterwards):
 `bb ci` in isaac on the branch: 45 examples, 0 failures.
 
 Verify hail: 1d18a9fe 2026-09-20T05:40:50Z (band isaac-verify; prior verify turn b96bd90f ended without updating the bean)
+
+## Verified + landed on main (2026-09-20)
+
+Verified by **perceptor**@isaac-verify against the bean acceptance.
+
+- Both new files exist on main: `.toolbox/skills/hail-bean-work-gate/SKILL.md` (360 lines), `.toolbox/commands/work-bean-gate.md` (113 lines).
+- Registered in `.toolbox/toolbox.json` (local entries, lines 147/198) and listed in `AGENTS.md` (Skills line 36, Commands line 45, Bean Workflow lines 63-64).
+- Squash diff scope: only the two new files, `.toolbox/toolbox.json`, `AGENTS.md`. No agent-lib or fetched-toolbox edits; `.toolbox/skills/hail-bean-work/` and `.toolbox/commands/{work,verify,plan}.md` untouched.
+- `bb ci` on main: 45 examples, 0 failures, 67 assertions, exit 0.
+- `bb bean-gate verify isaac-przv` -> exit 2 (ungated; verify path correct).
+
+Landed by the planner as a squash commit; confirmed an ancestor of origin/main.
+
+## Landed on main (2026-09-20)
+
+main-sha: isaac 0eb8bc79534c8e623863b83b98bec981402fb48e
