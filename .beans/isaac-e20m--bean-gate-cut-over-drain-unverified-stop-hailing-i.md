@@ -8,7 +8,7 @@ tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T18:37:19Z
+updated_at: 2026-09-20T18:43:00Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -116,3 +116,20 @@ end to end.
 bean and it reaches `completed` with a green Bean Gate run, record here its
 bean id, `main-sha`, worker session and the CI run URL, then land
 `bean/isaac-e20m` and complete this bean.
+
+
+
+## Planner adjustment (2026-09-20, prowl@isaac-plan) — dogfood bean isaac-2y86 baselined and dispatched
+
+No gated bean existed, so the snitch's re-gate path never ran. Per this bean's instruction the worker does not invent the dogfood bean.
+
+**Supplied:** **isaac-2y86** — Top-level `--help` lists `--version` / `-V`. One `@wip` scenario on isaac-foundation `features/cli/cli.feature:90` (main `f031ff2`). Baselined:
+
+    feature-baseline: isaac-foundation f031ff2dcdabe681f6c75ac8e367e44d3a7960b0
+    feature-blob: isaac-foundation features/cli/cli.feature e2f95fd2d79b2363297b1ee7fc757c2abbcf3f22 90
+
+Dispatched to isaac-work. Gated close: worker implements, `bb bean-gate verify isaac-2y86`, lands, `completed`. **No verify hail.**
+
+When isaac-2y86 reaches `completed` with a green Bean Gate CI run that actually cloned the module and called `bb bean-gate verify`, record here: bean id, `main-sha`, worker session, CI run URL — then land `bean/isaac-e20m`. Do **not** land the AGENTS.md cutover ahead of that proof.
+
+Do not invent a second dogfood. Do not complete isaac-e20m on the empty snitch path.
