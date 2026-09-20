@@ -5,7 +5,8 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-09-20T23:33:49Z
-updated_at: 2026-09-20T23:37:36Z
+updated_at: 2026-09-20T23:37:43Z
+parent: isaac-3q4m
 ---
 
 The config watcher never starts unless `:hot-reload` is set explicitly, but the
