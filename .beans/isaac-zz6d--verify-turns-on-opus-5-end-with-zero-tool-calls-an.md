@@ -8,7 +8,7 @@ tags:
     - hail
     - ops
 created_at: 2026-09-20T06:30:48Z
-updated_at: 2026-09-20T06:30:48Z
+updated_at: 2026-09-20T19:35:35Z
 ---
 
 Found 2026-09-20 05:20–06:35Z on zanebot while driving the Bean Gate train (isaac-rmq6).
@@ -48,3 +48,26 @@ The ungated path is the only path for beans with no `feature-baseline`, which is
 Scenarios (worker writes, isaac-agent or isaac-hail as the seam decides): a hail-driven turn that ends with no tool calls and no output beyond a lead-in is not reported as `:delivered`; the drive nudges once before giving up, and the give-up is visible. Plus whatever the root cause turns out to need.
 
 Workaround while this is open: move perceptor back to a model that acts, or let the planner verify and land (what happened to isaac-przv, main-sha 0eb8bc79).
+
+
+## Evidence 2026-09-20: not limited to the verify band, and not fixed by claude-code 0.1.16
+
+`:empty-terminal-response` recurred on a **work** session after the fence-fallback fix
+(claude-code 0.1.16, 7dcdaac) was deployed, so the driver/fence mismatch was not the whole story:
+
+```
+{:ts "2026-09-20T18:05:46.360263Z", :event :chat/response-failed,
+ :error :empty-terminal-response, :provider "claude",
+ :message "empty-terminal-response: model returned no content after continuation retry",
+ :session "isaac-work-1"}
+{:ts "2026-09-20T18:07:42.183947Z", ... same, :session "isaac-work-1"}
+```
+
+Separately, a work-1 turn at 19:33:21Z ended `:ended-by :suspended` carrying
+`:error :llm-error` with `:tool-calls-count 0` and `:assistant-content-chars 0`
+(after `:executed-tools-count 190` earlier in the turn). The zero-content/zero-tool-call
+shape is the same one this bean is about; whether the `:suspended` path reports it
+honestly is worth checking alongside the `:delivered` path.
+
+Both observations are from the planner's watch loop, not a verify turn — so the acceptance
+scenarios should not assume the verify band is the only place this shows up.
