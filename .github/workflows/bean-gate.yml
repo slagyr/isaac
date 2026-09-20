@@ -112,7 +112,7 @@ jobs:
           # leaving every commit reachable, which the baseline sha and the
           # main-sha diffs both need. All slagyr/isaac-* repos are public.
           for id in $ids; do
-            for repo in $(awk '/^feature-baseline:/ {print $2}' .beans/${id}--*.md | sort -u); do
+            for repo in $(awk '/^[[:space:]]*feature-baseline:/ {print $2}' .beans/${id}--*.md | sort -u); do
               case "$repo" in
                 *[!A-Za-z0-9._-]*) echo "skipping non-repo baseline token: $repo"; continue ;;
               esac
@@ -122,6 +122,10 @@ jobs:
             done
           done
 
+          # The job shell runs with -e: an unguarded `out=$(bb bean-gate …)`
+          # aborts the step on the first non-zero gate, so a FAIL would be
+          # reported as a bare "exit code 1" with no verdict and no summary.
+          set +e
           status=0
           for id in $ids; do
             out=$(bb bean-gate verify "$id" 2>&1)
