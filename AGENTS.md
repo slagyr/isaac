@@ -32,7 +32,8 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [c3kit](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit/SKILL.md)
 - [c3kit-schema](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit-schema/SKILL.md)
 - [planning](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/planning/SKILL.md) — co-authoring beans + Gherkin with the user; the craft layer (Isaac specifics in `## Planning` below)
-- [hail-bean-work](.toolbox/skills/hail-bean-work/SKILL.md) — hail-driven worker bootstrap; repo discovery; `list_skills` fallback; process-test beans
+- [hail-bean-work](.toolbox/skills/hail-bean-work/SKILL.md) — hail-driven worker bootstrap; repo discovery; `list_skills` fallback; process-test beans (ungated beans / other projects)
+- [hail-bean-work-gate](.toolbox/skills/hail-bean-work-gate/SKILL.md) — gated worker bootstrap: implement, `bb bean-gate verify`, land on main, `completed` (the `isaac-work` band loads this one)
 
 ### Commands
 
@@ -41,21 +42,41 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [work](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/work.md)
 - [plan-with-features](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/plan-with-features.md)
 - [verify](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/verify.md)
+- [work-bean-gate](.toolbox/commands/work-bean-gate.md) — the gated close: gate, land, complete (short path; mechanics in the `hail-bean-work-gate` skill)
 
 ## Bean Workflow
 
-This project uses verification. Workers leave beans `in-progress` and
-add `tag=unverified` when implementation is finished. Workers do **not**
-mark beans `completed`. A separate reviewer runs `/verify` to check
-acceptance criteria, then either marks the bean `completed` or returns
-it to normal work, removing the tag in either case.
+Two flows, decided by one thing: whether the bean carries a `feature-baseline:`
+line (see [Baseline the bean](#baseline-the-bean-bean-gate)).
 
-**Status flow:** `todo` → `in-progress` → `in-progress + tag=unverified` → `completed`
+**Gated beans (`feature-baseline:` present) — the worker lands its own bean.**
+The worker implements on `bean/<id>`, runs `bb bean-gate verify <id>` from the
+isaac clone, and on **exit 0** lands it: rebase, squash-merge to `main`, repin
+and re-`bb ci` any downstream sibling, append `## Landed on main` with one
+`main-sha: <repo> <sha>` line per repo, delete the bean branch, then
+`beans update <id> --status=completed`. No `unverified` tag and no hail to
+`isaac-verify`. On **exit 1** the contract moved: the worker reverts the
+`.feature` to its baselined text or hails the plan band — a worker never adds
+`## Exceptions` and never re-baselines. On **exit 2** the bean is not gated and
+takes the flow below. CI re-runs the gate on every completed baselined bean that
+reaches main, so the contract is still checked by something other than the
+worker. Mechanics: [hail-bean-work-gate](.toolbox/skills/hail-bean-work-gate/SKILL.md)
+and [work-bean-gate](.toolbox/commands/work-bean-gate.md).
 
-If verification fails, the bean returns to `in-progress` with notes appended to the body.
+**Status flow (gated):** `todo` → `in-progress` → `completed` (worker)
 
-**Worker rule:** implementation handoff is `beans update <id> --tag=unverified`
-while the bean stays `status=in-progress`. `completed` is verifier-only.
+**Ungated beans (no `feature-baseline:`) — verification by a reviewer.** Workers
+leave the bean `in-progress` and add `tag=unverified` when implementation is
+finished; they do **not** mark it `completed`. A separate reviewer runs
+`/verify`, then either marks the bean `completed` or returns it to normal work,
+removing the tag in either case. If verification fails, the bean returns to
+`in-progress` with notes appended to the body.
+
+**Status flow (ungated):** `todo` → `in-progress` → `in-progress + tag=unverified` → `completed`
+
+**Worker rule (ungated only):** handoff is `beans update <id> --tag=unverified`
+while the bean stays `status=in-progress`. `completed` is verifier-only. A bean
+without a `main-sha:` line is not `completed` on either flow.
 
 **Pin rule:** a bean may only pin a sibling repo at a sha reachable from that
 repo's `main` (`git merge-base --is-ancestor <sha> origin/main`). Never a
@@ -69,15 +90,16 @@ handoff; verify rewrites it to the squashed main sha before landing the
 downstream repo (verify.md §6a). `bb lint-pins` in `bb ci` fails fast if a
 published pin cannot be fetched.
 
-**Bean gate — dual run (temporary):** while both paths run, the worker still
-hands off `unverified` and hails `isaac-verify`, and the verifier **also** runs
-`bb bean-gate verify <id>` from the isaac clone before passing, recording one
-line in the bean — `bean-gate: pass`, or `bean-gate: FAIL — <first failure>`.
-Exit 2 (no `feature-baseline`) means the bean predates the gate: record
-`bean-gate: not gated` and verify as usual. A gate failure on an otherwise-good
-bean is a **fail**, returned to the worker. This dual run is temporary:
-`isaac-przv` moves landing to the worker and `isaac-e20m` retires the verify
-hail.
+**Bean gate — verifier's role during the drain:** beans that predate the gate
+are still in flight, so `isaac-verify` keeps running for them. A verifier
+**also** runs `bb bean-gate verify <id>` from the isaac clone before passing,
+recording one line in the bean — `bean-gate: pass`, `bean-gate: FAIL — <first
+failure>`, or `bean-gate: not gated` on exit 2 (the expected result for a bean
+that reached verify at all). A gate failure on an otherwise-good bean is a
+**fail**, returned to the worker. A *gated* bean should never arrive at verify:
+its worker lands it. If one does, verify it as usual and note the anomaly — the
+worker took the wrong close. `isaac-e20m` retires the verify hail once the
+ungated beans have drained.
 
 ## Planning
 

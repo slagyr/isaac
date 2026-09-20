@@ -143,6 +143,14 @@
       "files": [
         "SKILL.md"
       ]
+    },
+    "hail-bean-work-gate": {
+      "url": ".toolbox/skills/hail-bean-work-gate/SKILL.md",
+      "fetched_at": "2026-09-20T00:00:00Z",
+      "sha256": "bc0f811b956fc6ea1ddf4fa8bd646d94ece370d10f9e0024d431557e72b31b9d",
+      "files": [
+        "SKILL.md"
+      ]
     }
   },
   "commands": {
@@ -185,6 +193,14 @@
       "sha256": "cda5238fc794b1716a2c928cf246916a0b93314a98759ce248d2cc06f55046be",
       "files": [
         "verify.md"
+      ]
+    },
+    "work-bean-gate": {
+      "url": ".toolbox/commands/work-bean-gate.md",
+      "fetched_at": "2026-09-20T00:00:00Z",
+      "sha256": "82fcacf9ed2404739adda8e27d9466b6042d6817fc76cc1046830f11f859bdfa",
+      "files": [
+        "work-bean-gate.md"
       ]
     }
   },
