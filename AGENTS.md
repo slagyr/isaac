@@ -69,6 +69,16 @@ handoff; verify rewrites it to the squashed main sha before landing the
 downstream repo (verify.md §6a). `bb lint-pins` in `bb ci` fails fast if a
 published pin cannot be fetched.
 
+**Bean gate — dual run (temporary):** while both paths run, the worker still
+hands off `unverified` and hails `isaac-verify`, and the verifier **also** runs
+`bb bean-gate verify <id>` from the isaac clone before passing, recording one
+line in the bean — `bean-gate: pass`, or `bean-gate: FAIL — <first failure>`.
+Exit 2 (no `feature-baseline`) means the bean predates the gate: record
+`bean-gate: not gated` and verify as usual. A gate failure on an otherwise-good
+bean is a **fail**, returned to the worker. This dual run is temporary:
+`isaac-przv` moves landing to the worker and `isaac-e20m` retires the verify
+hail.
+
 ## Planning
 
 Co-authoring beans + Gherkin scenarios with the user is governed by the
@@ -90,8 +100,41 @@ Isaac-specific extensions it defers to the project are below.
 Beans live in **this** repo (`isaac/.beans/`); it is the planning/coordination
 repo. Feature files live in the **module** repos they test
 (`isaac-agent/features/…`, `isaac-hail/features/…`, `isaac-foundation/features/…`,
-etc.). A planning session commits the bean here and the `@wip` feature file in
-the relevant module repo.
+etc.). A planning session commits the bean here and the `@wip` feature file on
+the **`main`** branch of the relevant module repo — never on a `bean/<id>`
+branch (see [Baseline the bean](#baseline-the-bean-bean-gate) below).
+
+### Baseline the bean (bean gate)
+
+After the scenarios are settled, the planner records what the bean is allowed to
+change. In the planner's own order of work:
+
+1. **Commit the scenarios `@wip` to the module's `main`.** Not to a
+   `bean/<id>` branch. Module CI excludes `@wip`, so main stays green and the
+   worker's branch starts from a tree that already holds the contract.
+2. **Baseline, from the isaac clone:**
+
+   ```sh
+   bb bean-gate baseline <bean-id> <repo>:<path>[:<line>…] … [--dir <repo>=<path>]
+   ```
+
+   Without line numbers, every `@wip` scenario in the file belongs to the bean.
+   With them, name each scenario by the line of its `Scenario:` keyword (the
+   keyword line, not the tag line above it). `--dir <repo>=<path>` points at a
+   checkout that is not `../<repo>`. Baseline fetches `origin` and **appends**
+   `feature-baseline:` / `feature-blob:` lines to the bean body — it does not
+   commit.
+3. **Commit the bean** with the appended `feature-baseline:` / `feature-blob:`
+   lines. The baseline commit must come from the **planner**: the gate fails a
+   baseline introduced by a commit carrying an `Isaac-Session: isaac-work…` or
+   `Isaac-Session: isaac-verify…` trailer.
+4. **A feature edit after baselining is made on module `main`** and then
+   re-baselined (baseline appends new lines; the newest lines are in force).
+   Never rewrite or delete an existing `feature-*` line — the gate walks the
+   bean's git history and treats those lines, plus everything under
+   `## Acceptance…` and `## Exceptions`, as **append-only**.
+
+`bb bean-gate --help` documents both subcommands and the exit codes.
 
 ### Fixture theme — Marigold
 
