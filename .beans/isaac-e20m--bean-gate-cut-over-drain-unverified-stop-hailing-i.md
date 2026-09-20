@@ -1,14 +1,14 @@
 ---
 # isaac-e20m
 title: 'Bean Gate: cut over — drain unverified, stop hailing isaac-verify'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T20:17:59Z
+updated_at: 2026-09-20T20:26:32Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -135,3 +135,83 @@ When isaac-2y86 reaches `completed` with a green Bean Gate CI run that actually 
 Do not invent a second dogfood. Do not complete isaac-e20m on the empty snitch path.
 
 Dispatched: hail 6848d4c8 2026-09-20T20:17:50Z (band isaac-work)
+
+
+## Dogfood proof (2026-09-20, scrapper@isaac-work-3)
+
+The precondition this bean was held on is met. The snitch's **re-gate** path ran
+for real — cloned the module and called `bb bean-gate verify` — not the empty
+"no completed, baselined bean in this push" exit.
+
+- **bean id:** isaac-2y86 — "Top-level `--help` lists `--version` / `-V`"
+- **main-sha:** isaac-foundation `3535286bbb20f51d1f12d0f382dda71f7ad6360b`
+  (squash of `bean/isaac-2y86` @ `da30c7c`, base `origin/main@f031ff2`;
+  branch deleted local + remote)
+- **worker session:** `scrapper@isaac-work-3` (gated close per
+  `hail-bean-work-gate`: implement → `bb bean-gate verify` → land → `completed`,
+  no verify hail)
+- **CI run URL:** https://github.com/slagyr/isaac/actions/runs/35535352530
+  (Bean Gate, conclusion `success`, head `23a80d93` — the beans push that
+  completed isaac-2y86)
+
+CI evidence from that run:
+
+    Scan the push for completed, baselined beans:  {:beans ["isaac-2y86"], :skipped []}
+    Re-gate each bean:  isaac-2y86 bean-gate: PASS (isaac-foundation @ main-sha 3535286)
+
+Local gate, same bean, both before and after the squash:
+
+    isaac-2y86 bean-gate: PASS (isaac-foundation @ HEAD da30c7c)    exit 0
+    isaac-2y86 bean-gate: PASS (isaac-foundation @ HEAD 3535286)    exit 0
+
+So `bb bean-gate verify` has now been observed returning **exit 0 in anger**, on
+a planner-baselined bean, by both the worker and the CI snitch — the three gaps
+recorded above (dual run never produced a gated bean; exit 0 never seen; snitch
+re-gate never executed) are closed.
+
+## Landed on main (2026-09-20)
+
+main-sha: isaac c04bf708f432fa8f711ecc51a9025160abe9478d
+
+Doc-only cutover: `AGENTS.md` `## Bean Workflow` now states the gated flow as the
+**default** and the `unverified` + `isaac-verify` flow as the exception for a
+bean with no `feature-baseline:`; the isaac-jp4v dual-run paragraph is replaced
+by the planner-watch rule (a gated bean needs no verify hail — the watch waits
+for `completed` + `main-sha:`; a gated bean tagged `unverified` is a wrong close,
+treated as a stall, not verify's queue).
+
+Branch `bean/isaac-e20m` @ `f74a6a1d` (rebased onto `origin/main`, originally
+`5b70abbc` from isaac-work-1), squashed to main as `c04bf708`; diff vs main is
+`AGENTS.md` only. `bb ci` in isaac on the rebased branch: 45 examples, 0
+failures, 67 assertions. `bb bean-gate verify isaac-e20m --ref isaac-foundation=origin/main`
+→ exit 0 (see the follow-up section below for why the bare invocation is not the
+verdict, and why this process bean is gated at all). It is landed and completed
+by the worker on this bean's own explicit instruction.
+
+
+## What the dogfood turned up (follow-up beans filed)
+
+Running the gate for real — on isaac-2y86 and then on this bean — surfaced two
+defects the dual run could never have found, because the dual run never gated
+anything. Both are filed under isaac-rmq6, neither blocks this cutover:
+
+- **isaac-dopm** — a `feature-baseline:` / `feature-blob:` line **quoted in
+  prose** is read as the bean's own contract. This bean cites isaac-2y86's
+  baseline inside the planner-adjustment narrative, indented as a code block,
+  and `bb bean-gate verify isaac-e20m` therefore gated *this* bean on *that*
+  bean's scenario instead of exiting 2. The parser should only honour contract
+  lines at column 0, outside indented and fenced blocks.
+- **isaac-9yms** — `verify` checks whatever ref the sibling checkout is parked
+  on and the FAIL lines do not say which. `../isaac-foundation` was on
+  `bean/isaac-3kol`, which produced two confident, entirely spurious failures
+  (a baselined block "missing" that is on main, and a foreign `init.feature`
+  diff from the other bean). `--ref isaac-foundation=origin/main` on the same
+  command → `PASS`, exit 0. A worker who trusts the FAIL reverts a feature that
+  was never wrong.
+
+The second one is why the gate output for this bean is recorded below as exit 0
+`--ref isaac-foundation=origin/main` rather than the bare invocation.
+
+    bb bean-gate verify isaac-e20m                                  → exit 1 (parked-branch artifact, isaac-9yms)
+    bb bean-gate verify isaac-e20m --ref isaac-foundation=origin/main → exit 0
+        isaac-e20m bean-gate: PASS (isaac-foundation @ origin/main 3535286)
