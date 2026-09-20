@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: critical
 created_at: 2026-09-20T19:06:50Z
-updated_at: 2026-09-20T19:06:50Z
+updated_at: 2026-09-20T19:15:20Z
 ---
 
 `isaac sessions list` on zanebot, 2026-09-20 19:05Z:
@@ -61,3 +61,62 @@ such a session is not retried into it.
 Immediate workaround on zanebot: archive `isaac-work-2` and `isaac-work-3`
 transcripts (`current.ednl` aside, as `isaac-work-2-archive-20260903` already
 shows) so the band has three sessions that can answer.
+
+## Mechanism (read the code and the records, 2026-09-20 19:20Z)
+
+My first note guessed at "the walk from the compaction marker". Wrong guess;
+here is what it actually is.
+
+`isaac.session.compaction/context-gauge` does not measure the conversation. It
+computes:
+
+    last-input-tokens + last-output-tokens
+      + stamped :tokens of entries appended after :tally-after-id
+      + pending input
+
+That is "what the provider said the last request cost, plus what has arrived
+since" — a running tally, not a sum of the transcript. It is the right idea
+(the provider's own count beats an estimate) and it has one sharp edge: it
+trusts the last request's *reported* usage.
+
+The session records on zanebot:
+
+| session | last-input-tokens | last-output-tokens | tally marker | gauge |
+| --- | --- | --- | --- | --- |
+| isaac-work-1 | 200000 | (set) | present in transcript | 124,478 |
+| isaac-work-2 | **0** | **0** | present, at the tail | **0** |
+| isaac-work-3 | **0** | **0** | present, at the tail | **0** |
+
+And a failed oversized request reports exactly those zeros — from the CLI
+payload that killed these sessions:
+
+    "usage":{"input_tokens":0,"output_tokens":0,...},"duration_api_ms":0,
+    "terminal_reason":"prompt_too_long","api_error_status":400
+
+So the loop closes on itself:
+
+1. the session grows past the window;
+2. the next request is refused as too long, and the refusal carries usage zeros
+   because no inference happened;
+3. Isaac stamps last-input 0 / last-output 0 and advances the tally marker to
+   the tail;
+4. the gauge now reads ~0 — "this session is 0% full" — so compaction never
+   fires;
+5. the next hail builds the same oversized request. Forever.
+
+**The failure erases the evidence of its own cause.** Nothing is
+miscounted in the transcript; the entries carry 590,360 and 505,289 tokens and
+are correct. The gauge is a faithful record of a request that never ran, being
+used as a proxy for how much conversation exists.
+
+Work, sharpened:
+
+- A response that carries an error, or zero input tokens, must not overwrite
+  the tally. Keep the previous reading, or fall back to summing the transcript,
+  but never let a failed request reset the gauge to zero.
+- `should-compact?` should have a floor that does not depend on the last
+  response at all — transcript bytes or stamped-token sum — so a session can
+  always be rescued by the thing designed to rescue it.
+- `prompt_too_long` (`api_error_status: 400`, `terminal_reason`) is a
+  poisoned-session signal: name it, take the session out of band rotation, and
+  do not spend four more attempts on it (see isaac-nceb).
