@@ -44,3 +44,5 @@ Resume is recovery work, not boot work. A turn can take minutes legitimately —
 ## Related
 
 isaac-01vv (the glob that triggered it). Operationally, the stale markers on zanebot were moved aside by hand as `turn.edn.stalled-20260920`; a planner could not clear them because `isaac turns list` does not show resume markers — worth considering a `isaac turns drop --marker` or similar so this is recoverable without touching files.
+
+Dispatched: hail f780219f 2026-09-20T18:44Z (band isaac-work)

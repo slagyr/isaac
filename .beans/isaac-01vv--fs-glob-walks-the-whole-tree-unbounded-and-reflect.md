@@ -53,3 +53,5 @@ One-time check, not a scenario: on a tree the size of a home directory the call 
 
 feature-baseline: isaac-agent 24aca81ef34848ee8ca5ac9fa8d84e5c5d230e55
 feature-blob: isaac-agent features/tool/glob.feature 3da4f4a81ead8c72c38942ba5c8106a11d53bebc
+
+Dispatched: hail f7071963 2026-09-20T18:44Z (band isaac-work)
