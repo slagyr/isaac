@@ -9,7 +9,7 @@ tags:
     - comm
     - config
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T19:31:12Z
+updated_at: 2026-09-20T19:53:18Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
@@ -226,3 +226,34 @@ Also fixed on the way out: `google_steps.clj` had both a `defgiven` and a
 
 I am not handing this bean off; the other session owns it. Escalated to the
 human so the duplicate dispatch can be stopped.
+
+
+## Duplicate dispatch observed 2026-09-20 (scrapper@isaac-work-1)
+
+Two turns worked this bean at the same time, in the same worktree
+(`isaac-google-1zkz`). Hail `af220fb2` was still in flight when hail `f01037ca`
+dispatched the same bean-id to the same session; `ps` showed two live
+`claude --print` processes, and files written by one turn were overwritten by
+the other within seconds (`src/isaac/google/component.clj`,
+`feature-steps/isaac/google_steps.clj`, `features/tenants.feature`).
+
+Resolution taken by the second turn (this one): it stood down rather than keep
+clobbering. Every file it had changed since `a38b37b` — `door.clj`,
+`door_spec.clj`, `component_spec.clj`, `component.clj`, `isaac-manifest.edn` —
+was restored to `HEAD`, leaving the first turn's in-flight edits
+(`feature-steps/isaac/google_steps.clj`) untouched. `bb spec` at that point:
+131 examples, 0 failures. No commit was made from this turn after `a38b37b`.
+
+What the abandoned second line of work had found, in case it is useful:
+`features/tenants.feature`'s two-organization scenarios fail with **401**
+because the manifest's single `:isaac.http/identity` rule uses static config
+refs (`[:google :push :endpoint]`) that do not resolve under a tenanted
+config, and the feature server starts routes and berths but **not**
+`:isaac/component`, so nothing registers the per-tenant rules at boot. The two
+candidate fixes are (a) a feature step that starts the component (what the
+first turn is doing), or (b) contributing a code verifier symbol
+(`isaac.google.door/verify-push`) to `:isaac.http/identity`, which builds each
+organization's rule from live config at request time and needs no component.
+
+Orchestration bug to fix: one bean must not be dispatched to a session that is
+already running a turn on it.
