@@ -7,7 +7,9 @@ priority: high
 tags:
     - process
 created_at: 2026-09-20T18:41:50Z
-updated_at: 2026-09-20T20:22:42Z
+updated_at: 2026-09-20T20:51:56Z
+blocked_by:
+    - isaac-ncrz
 ---
 
 Dogfood for isaac-e20m (Bean Gate cutover). One scenario: top-level `--help` lists `--version` / `-V`. Reuses existing CLI steps. New steps: none.
