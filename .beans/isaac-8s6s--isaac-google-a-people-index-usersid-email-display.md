@@ -8,7 +8,7 @@ tags:
     - google
     - comm
 created_at: 2026-09-20T00:16:34Z
-updated_at: 2026-09-20T00:16:34Z
+updated_at: 2026-09-20T00:25:51Z
 parent: isaac-bv1l
 ---
 
@@ -26,3 +26,7 @@ Micah 2026-09-19: we need to know who spoke, by a key that does not change. Chat
 3. no directory scope ⇒ the entry has no email, the allow-list falls back to users/<id>/domain:, and a warn names the missing scope once
 4. a Gmail From: fills name+email; a later Chat lookup joins it to the id
 5. the turn input reads "Micah Martin <micah@tonotop.com>: …"
+
+
+
+Tenants (isaac-1zkz): entries record the tenant per sighting; People API lookups use that tenant's token. Scope note for Micah: directory.readonly is an OAuth scope on Isaac's own token (permission to ask the Workspace directory for a user's email), used by module code deterministically — never by a turn.
