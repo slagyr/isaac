@@ -1,15 +1,14 @@
 ---
 # isaac-przv
 title: 'Bean Gate: hail-bean-work-gate skill + isaac-work band cutover'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - process
     - beans
-    - unverified
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T05:22:43Z
+updated_at: 2026-09-20T18:03:45Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
