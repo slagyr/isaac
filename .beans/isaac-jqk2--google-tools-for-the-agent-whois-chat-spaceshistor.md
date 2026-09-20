@@ -9,8 +9,10 @@ tags:
     - comm
     - tools
 created_at: 2026-09-20T00:28:14Z
-updated_at: 2026-09-20T00:30:42Z
+updated_at: 2026-09-20T04:38:20Z
 parent: isaac-bv1l
+blocked_by:
+    - isaac-8s6s
 ---
 
 Micah 2026-09-19: rather than caches, ask Google — and give the agent tools to do the same. Today the yopp crew reaches Gmail/Drive by shelling out to the gws CLI via exec with its own OAuth grant and a keyring env dance. Isaac tools use Isaac's token (per tenant, isaac-1zkz), Isaac's scopes, and the per-crew tool allow-list, deterministically.

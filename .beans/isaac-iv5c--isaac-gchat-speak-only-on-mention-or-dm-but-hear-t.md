@@ -8,8 +8,10 @@ tags:
     - google
     - comm
 created_at: 2026-09-19T23:53:42Z
-updated_at: 2026-09-20T00:06:00Z
+updated_at: 2026-09-20T04:38:20Z
 parent: isaac-bv1l
+blocked_by:
+    - isaac-bklu
 ---
 
 Micah, 2026-09-19: Yopp should not answer every message in a space (default :mentions stands; :all was a test setting), but when mentioned he should know what was said. Today a mention turn's input is just "<sender> <text>" of the mentioning message.

@@ -9,8 +9,10 @@ tags:
     - comm
     - config
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T00:25:51Z
+updated_at: 2026-09-20T04:38:20Z
 parent: isaac-bv1l
+blocked_by:
+    - isaac-8s6s
 ---
 
 Decided 2026-09-19 (Micah). Today `google` config is one org; a second org's pushes are refused (:claims — the trust rule pins one push SA), which is safe but not supported. Everything Google is per org: the project, topic, push service account, OAuth client AND the Google user Isaac is (yopp@tonotop.com cannot read another org's spaces). So a tenant is a complete set, not a namespace over one login.

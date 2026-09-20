@@ -8,7 +8,7 @@ tags:
     - episodes
     - agent
 created_at: 2026-09-20T00:06:00Z
-updated_at: 2026-09-20T00:16:35Z
+updated_at: 2026-09-20T04:38:10Z
 blocked_by:
     - isaac-8s6s
 ---
@@ -17,4 +17,4 @@ Micah 2026-09-19: episode sessions on yopp are named by episode timestamp (20260
 
 
 
-Depends on isaac-8s6s (people index): render through people/render — display name + email when known; do not ship a display-name-only version.
+**Re-scoped 2026-09-19 (Micah):** the AGENT owns session naming. Episode ids stay timestamps; the backing session is named by the agent's naming strategy before any policy's open-session! is called, and a policy takes the identifier it is given. Today isaac-episodes/lifecycle.clj falls back to the episode id when no :session-id is supplied — that fallback goes, and the agent's api/open-session! (and every path that opens through a policy: comms, CLI, hail) mints a name when the caller has none. Work is mostly in isaac-agent; episodes loses its fallback.
