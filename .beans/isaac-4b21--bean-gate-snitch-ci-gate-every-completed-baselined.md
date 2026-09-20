@@ -1,15 +1,14 @@
 ---
 # isaac-4b21
 title: 'Bean Gate: snitch CI — gate every completed baselined bean on main'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - process
     - beans
-    - unverified
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T04:47:31Z
+updated_at: 2026-09-20T05:10:47Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -160,3 +159,31 @@ instead of the clone; on the runner the clone puts it at `../isaac-foundation`,
 which is where `bean-gate` looks by default. Note also that when a bean
 baselines `isaac` itself, `../isaac` on the runner *is* the workspace checkout,
 so nothing is cloned and the gate reads the pushed sha directly.)
+
+## Verified (2026-09-19)
+
+perceptor@isaac-verify. Branch `bean/isaac-4b21` @ `3810e11f` (base `origin/main@36bec47a`); diff = 9 files, +355/−5. `.github/workflows/ci-tests.yml` and `.toolbox/` untouched (frozen files respected).
+
+Evidence:
+
+- `bb ci` on the branch → **45 examples, 0 failures, 67 assertions**, exit 0.
+- `bb ci` re-run on the squash commit `19f77f20` (main had moved to `cf1a343e`) → **45 examples, 0 failures, 67 assertions**, exit 0.
+- Workflow parses: `bb -e "(require '[clj-yaml.core :as y]) (prn (keys (y/parse-string (slurp \".github/workflows/bean-gate.yml\"))))"` → `(:name true :permissions :jobs)` (`on:` reads as YAML-1.1 `true`, as in every other workflow here).
+- ci-scan on real history — isaac-jp4v's completion push: `bb bean-gate ci-scan 36bec47a^ 36bec47a --edn` → `{:beans [], :skipped [{:id "isaac-jp4v", :reason :not-gated}]}`, exit 0. Correct: no bean on main carries a `feature-baseline` yet.
+- ci-scan on a baselined completed bean, reproduced independently of the worker's narrative (fresh clone of this repo at `bean/isaac-4b21`, one `feature-baseline: isaac-foundation 294321de…` line appended to the completed `isaac-cy85` bean and committed):
+  - `bb bean-gate ci-scan <before> <after> --edn` → `{:beans ["isaac-cy85"], :skipped []}`
+  - `bb bean-gate ci-scan <before> <after>` → `isaac-cy85`
+  - `bb bean-gate verify isaac-cy85 --dir isaac-foundation=…` → `isaac-cy85 bean-gate: PASS (isaac-foundation @ HEAD 294321d)`, exit 0.
+- Change 3 confirmed: `Bean Gate` added to the `workflows:` list in `ci-failure-hail.yml`, matching the new workflow's `name:`. The known 401 gap (repo secret `ISAAC_SERVER_AUTH_TOKEN` vs zanebot's token, isaac-xo5p) is recorded in the handoff, not worked around.
+- `../<repo>` resolution on the runner: from the workspace `…/work/isaac/isaac`, `../isaac` resolves back to the workspace checkout, so a bean that baselines `isaac` itself re-gates the pushed sha without a clone — the `[ -d "../$repo" ] && continue` guard is correct for that case.
+
+bean-gate: not gated  (`bb bean-gate verify isaac-4b21` → `isaac-4b21: no feature-baseline: use the verify path`, exit 2 — this bean predates baselining in this repo.)
+
+Notes (non-blocking, no follow-up required):
+
+- `bb ci` emits one line of stray stderr — `bean-gate ci-scan: cannot diff deadbeef…` — from the spec that exercises the unusable-range path. It is the CLI's intentional stderr note (verify.md §3 CLI exception), not a stray `println` in production code; binding `*err*` in that spec would silence it.
+- Bean arrived `status=in-progress` + `tag=unverified` rather than the usual `completed` + `unverified`; verified anyway and set to `completed` here.
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac 19f77f20389e5fec9bfc932f974b7b07cc81a341
