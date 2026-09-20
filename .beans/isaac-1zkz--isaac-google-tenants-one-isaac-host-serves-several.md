@@ -1,7 +1,7 @@
 ---
 # isaac-1zkz
 title: 'isaac-google: tenants — one Isaac host serves several Google organizations, each a complete {oauth, account, project, topic, push SA, token}'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - comm
     - config
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T07:33:06Z
+updated_at: 2026-09-20T18:47:40Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
