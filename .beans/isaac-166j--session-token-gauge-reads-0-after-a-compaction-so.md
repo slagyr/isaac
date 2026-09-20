@@ -5,7 +5,9 @@ status: todo
 type: bug
 priority: critical
 created_at: 2026-09-20T19:06:50Z
-updated_at: 2026-09-20T19:15:20Z
+updated_at: 2026-09-20T19:52:55Z
+blocking:
+    - isaac-ebup
 ---
 
 `isaac sessions list` on zanebot, 2026-09-20 19:05Z:
@@ -120,3 +122,19 @@ Work, sharpened:
 - `prompt_too_long` (`api_error_status: 400`, `terminal_reason`) is a
   poisoned-session signal: name it, take the session out of band rotation, and
   do not spend four more attempts on it (see isaac-nceb).
+
+## Deployed, and what it did and did not fix (2026-09-20 19:50Z)
+
+Agent 0.1.73 (`d0eed3d`) is live on zanebot. The gauge now reads true —
+isaac-work-2 went from `0 / 0%` to `590,360 / 295%` — and a probe hail proved
+the decision half works: compaction **started** for the first time, where
+before it was never attempted.
+
+It could not finish. The session's largest entry is a single 511,568-token
+assistant message, so the chunk plan came back `:oversized-single`, compaction
+failed, and the turn ended `:context-exhausted` — though the hail **deferred**
+rather than dead-lettering, which is the weather path behaving.
+
+So this bean's fix stands and is necessary, but it is not sufficient: see
+isaac-ebup for the entry that cannot be chunked, which is what actually killed
+isaac-work-2 and isaac-work-3.
