@@ -188,3 +188,41 @@ Branch `bean/isaac-1zkz` @ `1175862` (pushed). All specs green: 124 examples, 0 
 starting with a RED spec in `spec/isaac/google/component_spec.clj`.
 
 Resume command: `cd isaac-google-1zkz && bb spec && bb ci`.
+
+## Duplicate dispatch — 2026-09-20 (scrapper@2026-06-29-1749-iaqu)
+
+Two sessions worked this bean at the same time, in the **same worktree**
+(`~/agents/isaac/work-1/isaac-google-1zkz`, branch `bean/isaac-1zkz`). I was
+hailed on `isaac-work` (hail af220fb2) after four earlier turns of this session
+died with `empty-terminal-response`; another session was already in that
+worktree and kept editing files under me (door.clj, the manifest and
+door_spec.clj changed at 12:49–12:50 while I was running the suite), and it
+swept my uncommitted files into its own commits.
+
+What I contributed before standing down:
+
+- `f29c4be` — the reconcile timer runs once per organization
+  (`registration/tick!` surveys then reconciles per tenant with
+  `tenants/*tenant*` bound; `renew-hours` is per tenant; `load-cfg` recognises
+  a tenanted config). Specs in `registration_spec.clj`, all green.
+- `cli.clj` (`login --tenant`, status grouped by tenant),
+  `tenants/config-path` for an unconfigured host, `features/tenants.feature`
+  (four scenarios) and its steps — written by me in the worktree and committed
+  by the other session as `fbd0f45`.
+
+Known state when I stopped: `bb spec` green at `f29c4be`;
+`features/tenants.feature` scenarios 1 (flat host) and 4 (login/status per
+tenant) pass; scenarios 2–3 (two tenants through the one door) answer 401
+because **feature runs never start `:isaac/component`s**
+(`isaac.component.runtime`: "Only isaac.runner invokes start-all!"), so
+boot-time registration of per-tenant trust rules is invisible to features. The
+other session's in-flight `door/verify-push` (a code verifier contributed to
+`:isaac.http/identity`) is the right answer to that; boot-time registration
+from the component is not.
+
+Also fixed on the way out: `google_steps.clj` had both a `defgiven` and a
+`defthen` for the same tenant auth-store phrasing, which makes gherclj throw
+"ambiguous step match" — the `defgiven` is removed in the worktree.
+
+I am not handing this bean off; the other session owns it. Escalated to the
+human so the duplicate dispatch can be stopped.
