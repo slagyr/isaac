@@ -1,14 +1,14 @@
 ---
 # isaac-7rce
 title: 'isaac-episodes: sessions the policy opens honour a requested name and otherwise get the agent''s adjective-noun names'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - episodes
     - agent
 created_at: 2026-09-20T00:06:00Z
-updated_at: 2026-09-20T04:38:10Z
+updated_at: 2026-09-20T04:52:09Z
 blocked_by:
     - isaac-8s6s
 ---
