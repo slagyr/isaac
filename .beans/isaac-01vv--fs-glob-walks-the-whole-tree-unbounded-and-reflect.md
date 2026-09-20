@@ -1,14 +1,14 @@
 ---
 # isaac-01vv
 title: 'fs__glob walks the whole tree unbounded and reflects per path: prune, budget, and type-hint it'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - tools
     - performance
 created_at: 2026-09-20T18:41:53Z
-updated_at: 2026-09-20T20:17:59Z
+updated_at: 2026-09-20T20:21:50Z
 ---
 
 Repo: **isaac-agent**. Found 2026-09-20 on zanebot: a boot-resumed heartbeat turn called `fs__glob` with `{:pattern "**/heartbeat-state.json" :path "/Users/zane"}` and ground for **three minutes** at 100% of a core before finding the file at `~/.openclaw/workspace/memory/heartbeat-state.json`. Because boot runs resumed turns synchronously (isaac-yxch), the whole server — HTTP listener, hail delivery, every component — waited on that one glob.
