@@ -1,7 +1,7 @@
 ---
 # isaac-jqk2
 title: 'Google tools for the agent: whois, chat spaces/history/send, gmail search/read/send — Isaac''s token and scopes, no gws shell'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - comm
     - tools
 created_at: 2026-09-20T00:28:14Z
-updated_at: 2026-09-20T00:28:14Z
+updated_at: 2026-09-20T00:30:42Z
 parent: isaac-bv1l
 ---
 
@@ -23,3 +23,7 @@ Contributed through :isaac.agent/tools by the module that owns each API:
 Keep deterministic regardless of tools: the inbound gate (who may start a turn) and a minimal context injection on mention (isaac-tund: the thread since Isaac's last reply) — a model should not have to remember to fetch context. Tools cover everything beyond that; gchat__history lets it reach further back on demand.
 
 Open for Micah: which tools are on by default for the yopp crew (whois/history/search/read likely yes; send probably yes for gchat, gmail send as today's gws usage suggests yes); whether gws stays installed on yopp once these exist.
+
+
+
+**Decided 2026-09-19 (Micah): all tools on for the yopp crew** — whois, gchat spaces/history/send, gmail search/read/send/labels. Sends included. Keep the per-crew allow-list as the mechanism (a cautious crew can drop the sends); default set for yopp = all. gws on yopp: revisit once these ship (tonotop root doc records that gws also covers Drive/Calendar, which these tools do not).
