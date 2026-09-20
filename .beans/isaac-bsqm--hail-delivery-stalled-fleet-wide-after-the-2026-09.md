@@ -48,3 +48,18 @@ Repo: **isaac-hail** (possibly isaac-foundation's scheduler). Found 2026-09-19 ~
 Scenarios (worker writes, isaac-hail features): a bound delivery whose session is idle is claimed on the next tick; a delivery skipped for each silent reason logs that reason once; the worker recovers deliveries that were bound before a restart. Plus whatever the root cause demands.
 
 Operationally: on zanebot the four queued deliveries drain and `hail/turn-ended` appears again.
+
+## Round 2 (planner, 2026-09-20 00:30Z)
+
+**Blocked turns / stuck sessions ruled out.** `store/turn-markers` has no marker for any queued delivery, `isaac turns list` is empty, and the on-disk session entries (`sessions/<crew>/<id>/session.edn`) carry no in-flight or held state — in-flight lives in a server-memory atom that three restarts cleared. The grok 403 wall did cause the original 23:07Z deferral, but the queue has been frozen since the upgrade restart, not since grok.
+
+**The router tick runs; the delivery tick does not.** `queue/send!` only writes to `hail/pending` — it does not route. Probe 461b75b2 was routed and bound to `:isaac-plan`/`:prowl` after the upgrade, so `:hail/route` fires on the shared scheduler. Meanwhile `15e636f1` sits with `:next-attempt-at 2026-09-19T23:11:51Z`, 79 minutes overdue, `:attempts 0`, bound to `:isaac-verify`.
+
+**Every non-silent path is absent.** d0f8932's tick logs `:hail/delivery-skipped` with a reason (`:session-in-flight`, `:crew-at-capacity`, `:session-missing`) whenever it declines a bound delivery, and `launch-delivery!` logs on success. Neither appears. No `:scheduler/handler-error` in any log file, so the handler is not throwing. `scheduler/tick!` iterates every task each cycle, so a 1s task cannot starve another 1s task.
+
+**Two candidates remain**
+
+1. `:hail/deliver` was never registered even though `hail-runtime` logged `component/started` (`HailRuntime.start` calls `router/start!` then `delivery-worker/start!`).
+2. The tick runs but `list-deliveries root` sees nothing — the one path in `tick!` that produces neither a launch, a skip log, nor an error. That implies `runtime-root` resolves differently in the delivery thread than in the router thread; the two namespaces carry separate copies of that helper.
+
+**Next: bisect on zanebot.** Pin `isaac.hail` back to 4dc44ef against the new foundation and restart. Queue drains ⇒ hail d0f8932; queue stays ⇒ foundation ba7fa5b. Either way, `isaac scheduler list` (id, next-fire-at, consecutive-errors, disabled?) would have answered this in one command and should land with the fix.
