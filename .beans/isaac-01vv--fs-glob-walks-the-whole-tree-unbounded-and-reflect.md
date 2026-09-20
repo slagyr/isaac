@@ -57,3 +57,14 @@ feature-blob: isaac-agent features/tool/glob.feature 3da4f4a81ead8c72c38942ba5c8
 Dispatched: hail f7071963 2026-09-20T18:44Z (band isaac-work)
 
 Dispatched: hail 62739f9f 2026-09-20T20:17:50Z (band isaac-work)
+
+## Landed on main (2026-09-20)
+
+main-sha: isaac-agent e948ce35f7cdd7e6322c660a514c43a28e22cf50
+
+Scan is breadth-first with a prune set (`*skip-dirs*`), an entry budget
+(`*scan-entry-budget*`, 20k) and a wall-clock budget (`*scan-millis-budget*`,
+5s); symlinked directories are not descended. Partial scans append
+"Stopped at the scan budget after N entries. Results are partial."
+One-time check: `{:pattern "**/heartbeat-state.json" :path "/Users/zane"}`
+returned in 1.6s **with the match** (was ~3 minutes before).
