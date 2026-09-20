@@ -8,9 +8,8 @@ tags:
     - google
     - comm
     - config
-    - unverified
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T20:13:13Z
+updated_at: 2026-09-20T20:14:47Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
@@ -345,3 +344,41 @@ Conflict: hail `af220fb2` was still executing when hail `f01037ca` dispatched th
 Verifier (`4bf95c5a`) continues. If still red, return to **one** work session. Do **not** hail a second work turn while one is live. Do **not** land from this planner hail.
 
 This note resets nothing on the product contract.
+
+## Verify fail (attempt 1, 2026-09-20)
+
+**perceptor**@isaac-verify — FAIL: the bean's scenario 3 (a comm bound to a tenant) is not implemented, and the bean's own scenario plan ("google: tenants.feature; **gchat/gmail one each**") has no gchat or gmail scenario. The worker says so itself in its handoff.
+
+### What IS green (isaac-google, branch bean/isaac-1zkz @ 596fae8, base origin/main@6c8a29f)
+
+- `bb ci`: `bb spec` 133 examples / 0 failures / 202 assertions; `bb features` 27 scenarios / 0 failures / 110 assertions; `config-bypass-lint: ok`. CI_EXIT=0.
+- `features/tenants.feature` — 4 scenarios, no `@wip` anywhere in `features/`.
+- Covers bean scenarios **1** (flat host reads as `:default`, existing push_door/login scenarios pass unchanged), **2** (two organizations through the one door; crossed SA/subscription refused 403 with nothing persisted) and **4** (login per tenant, separate tokens, status lists both).
+- Diff scope is isaac-google only; no `deps.edn` / `bb.edn` pin changes, so no repin needed on this branch.
+- New `println` calls are all in `src/isaac/google/cli.clj` (CLI stdout — verify.md §3's legitimate exception). Log noise in the spec run is pre-existing module logging, not stray prints.
+- `bb bean-gate verify isaac-1zkz` → exit 2 (ungated; verify path correct).
+
+### Why this is a FAIL, not a pass
+
+Bean scenario 3 — "a comm bound to tenant `:acme` sends with acme's token and subscribes acme's spaces to acme's topic" — has **no implementation and no scenario anywhere**. `isaac.google.tenants` gives the comm side everything it needs, but nothing consumes it:
+
+- `isaac-gchat` still takes the process token with no tenant: `src/isaac/comm/gchat.clj:21` and `src/isaac/comm/gchat/chat_api.clj:54` both call `((requiring-resolve 'isaac.google.token/token))` (0-arity). Its comm schema (`resources/isaac-manifest.edn` `:extra-schema`) has no `:google` key, so `:comms {:gchat-acme {:type :gchat :google :acme}}` from the bean's Shape section cannot even be written.
+- `isaac-gmail` likewise (`src/isaac/comm/gmail/*`), and its registration contribution is per-mailbox with no tenant.
+
+A verifier cannot pass a bean whose acceptance scenarios do not exist.
+
+### The worker's stated blocker is stale
+
+The handoff defers scenario 3 because "isaac-gchat has two other beans in flight in its checkouts (isaac-vo2q, isaac-0gtc)" and "there is no isaac-gmail checkout in this workspace". Checked today:
+
+- `isaac-vo2q` → **completed**. `isaac-0gtc` → **completed**. Nothing is in flight in isaac-gchat; `origin/main` is `5bcaa35`.
+- `isaac-gmail` is a real repo and clones fine (`origin/main` `476e4d2`); it just was not in that worker's workspace. `git clone git@github.com:slagyr/isaac-gmail.git` next to the others.
+
+So the reason to descope is gone. If the planner still wants scenario 3 split into follow-up beans per comm module, that is the planner's call to make on a re-hail — not a verifier's, and not a worker's.
+
+### To finish
+
+1. Keep branch `bean/isaac-1zkz` in isaac-google; do not re-do the green work.
+2. `isaac-gchat`: add the comm-level `:google <tenant>` key to its comm schema; resolve the tenant at send/subscribe time and call `isaac.google.token/token` with it (the 1-arity now exists); registration for that comm's spaces goes to that tenant's topic. One scenario, per the bean.
+3. `isaac-gmail`: the same shape, one scenario.
+4. Cross-repo landing order (verify.md §6a): isaac-google squashes to main first, then each downstream repo's `isaac-google` pin is rewritten to that squash sha and that repo's `bb ci` re-run before its own squash. One `main-sha:` line per repo.
