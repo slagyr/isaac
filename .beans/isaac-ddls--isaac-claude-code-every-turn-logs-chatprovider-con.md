@@ -1,15 +1,14 @@
 ---
 # isaac-ddls
 title: 'isaac-claude-code: every turn logs :chat/provider-contract-violated {:reasoning {:summary "is required"}} — noise at :error; fails the episodes seal on yopp'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - claude-code
     - agent
-    - unverified
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-20T05:18:47Z
+updated_at: 2026-09-20T06:53:43Z
 ---
 
 Seen on yopp all day 2026-09-19 (agent fd89226, claude-code f058b2c): each turn emits :chat/provider-contract-violated :errors {:reasoning {:summary "is required"}} + :chat/stream-error :error :provider-contract, yet the turn completes and replies. The episodes seal for crew yopp fails with :provider-error, consecutive 8+, so no scene is ever sealed on yopp. Some event the claude CLI streams (a reasoning/thinking block) is missing :summary under the agent's provider contract. Find which event, make the contract accept a summary-less reasoning block (or synthesize one), and stop logging a completed turn at :error. Scenario: a claude-cli stream with a reasoning block without summary produces a clean turn and no contract error; the episodes seal succeeds on such a session.
@@ -104,3 +103,34 @@ server log). If the planner wants that mute anyway, it should be its own bean.
 The bean carried no planner-approved feature file and no `feature-baseline`
 line, so `bb bean-gate verify isaac-ddls` exits 2 (not gated); both feature
 edits are additive and named above.
+
+## Landed on main (planner verify, 2026-09-20)
+
+Verified and landed by the planner: the zanebot fleet's claude OAuth expired
+mid-train, so every worker and verify turn was returning
+`:empty-terminal-response`.
+
+Reviewed both diffs, ran both suites from clean worktrees:
+
+| repo | suite | result |
+| --- | --- | --- |
+| isaac-agent | `bb spec` / `bb features` | 1654 / 0, 832 / 0 (1 pre-existing pending) |
+| isaac-claude-code | `bb spec` / `bb features` | 83 / 0 (3 pre-existing pending), 51 / 0 |
+
+Fixed at both ends, as the worker proposed: the contract stops requiring
+`:reasoning :summary` (a non-string summary is still rejected), and claude-cli
+stops building a reasoning block out of whitespace-only thinking. The
+`dispatch/contract-error` log was deliberately NOT muted — the same gate
+catches real adapter bugs.
+
+main-sha: isaac-agent 3bebe674afb8d1cceb31b4af692c40486e6a3685
+main-sha: isaac-claude-code d61350eaa5ad81b2bf78232e8d1c841f05fb678b (version bump 41eb6dc5, 0.1.15)
+
+Both `bean/isaac-ddls` branches squash-landed and deleted; trees equalled main.
+
+Two notes for the planner: the agent scenario asserts the absence of a
+`:chat/provider-contract-violated` log entry — read as a behavioural invariant
+(a clean turn logs no violation) rather than a removal check. And
+isaac-claude-code still pins isaac-agent at fd892263, so its suite ran against
+the OLD contract; the fix is complete on either pin, but the repin belongs to
+the next pin cadence (isaac-j4jr).
