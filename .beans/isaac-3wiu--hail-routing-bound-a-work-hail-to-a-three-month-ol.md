@@ -3,9 +3,9 @@
 title: Hail routing bound a work hail to a three-month-old ad-hoc session
 status: todo
 type: bug
-priority: normal
+priority: high
 created_at: 2026-09-20T07:34:20Z
-updated_at: 2026-09-20T07:34:20Z
+updated_at: 2026-09-20T19:38:07Z
 ---
 
 2026-09-20 05:19Z the retries of hail `d4a7cd6f` (isaac-ddls, band `isaac-work`)
@@ -26,3 +26,32 @@ the band's sessions only.
 
 Found while watching the Google/Chat bean train (isaac-nceb is the outage that
 exposed it).
+
+## Second sighting, with the trigger (2026-09-20 19:34Z)
+
+Restarting the server reproduced it deliberately, and the trace is complete:
+
+| time | event | session |
+| --- | --- | --- |
+| 18:41:40 | `hail/bound` | isaac-work-1 |
+| 19:33:21 | `hail/turn-ended` (restart killed the turn) | isaac-work-1 |
+| 19:33:21 | `hail/delivery-suspended` | isaac-work-1 |
+| 19:34:29 | **`hail/delivery-recovered`** | **2026-06-29-1749-iaqu** |
+| 19:34:29 | `hail/bound` | 2026-06-29-1749-iaqu |
+
+So it is not the retry path, as the first sighting suggested — it is **delivery
+recovery after a restart**. The hail was `{:band "isaac-work" :crew :scrapper}`;
+recovery re-bound it by crew, and `2026-06-29-1749-iaqu` is a scrapper session,
+so it qualified. It is an ad-hoc session from June with an `:episodes` policy,
+134K of unrelated history, and no place in the band.
+
+It then did the work: read its own `session.edn`, and announced on Discord
+"isaac-1zkz 🔁 **scrapper**@2026-06-29-1749-iaqu resumed (google-tenants)" —
+a structural refactor bean being worked in a three-month-old session that the
+planner watch does not look at and `:max-in-flight` does not count.
+
+Work: recovery must re-bind within the band's own sessions (the set the router
+used originally), not merely within the crew. If no band session is free, the
+delivery waits — that is what pending is for. Scenario: a delivery suspended by
+a restart is recovered into a band session, and a session that is not in the
+band is never a candidate however well its crew matches.
