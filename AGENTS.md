@@ -47,7 +47,11 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 ## Bean Workflow
 
 Two flows, decided by one thing: whether the bean carries a `feature-baseline:`
-line (see [Baseline the bean](#baseline-the-bean-bean-gate)).
+line (see [Baseline the bean](#baseline-the-bean-bean-gate)). The gated flow is
+the **default**: a planned, scenario-backed bean is baselined by the planner and
+its worker lands and completes it. The `unverified` + `isaac-verify` flow is the
+**exception** — what happens to a bean that carries no `feature-baseline:`
+(beans that predate the gate, and work with no feature scenarios behind it).
 
 **Gated beans (`feature-baseline:` present) — the worker lands its own bean.**
 The worker implements on `bean/<id>`, runs `bb bean-gate verify <id>` from the
@@ -65,9 +69,9 @@ and [work-bean-gate](.toolbox/commands/work-bean-gate.md).
 
 **Status flow (gated):** `todo` → `in-progress` → `completed` (worker)
 
-**Ungated beans (no `feature-baseline:`) — verification by a reviewer.** Workers
-leave the bean `in-progress` and add `tag=unverified` when implementation is
-finished; they do **not** mark it `completed`. A separate reviewer runs
+**Ungated beans (no `feature-baseline:`) — the exception; verification by a
+reviewer.** Workers leave the bean `in-progress` and add `tag=unverified` when
+implementation is finished; they do **not** mark it `completed`. A reviewer runs
 `/verify`, then either marks the bean `completed` or returns it to normal work,
 removing the tag in either case. If verification fails, the bean returns to
 `in-progress` with notes appended to the body.
@@ -90,16 +94,15 @@ handoff; verify rewrites it to the squashed main sha before landing the
 downstream repo (verify.md §6a). `bb lint-pins` in `bb ci` fails fast if a
 published pin cannot be fetched.
 
-**Bean gate — verifier's role during the drain:** beans that predate the gate
-are still in flight, so `isaac-verify` keeps running for them. A verifier
-**also** runs `bb bean-gate verify <id>` from the isaac clone before passing,
-recording one line in the bean — `bean-gate: pass`, `bean-gate: FAIL — <first
-failure>`, or `bean-gate: not gated` on exit 2 (the expected result for a bean
-that reached verify at all). A gate failure on an otherwise-good bean is a
-**fail**, returned to the worker. A *gated* bean should never arrive at verify:
-its worker lands it. If one does, verify it as usual and note the anomaly — the
-worker took the wrong close. `isaac-e20m` retires the verify hail once the
-ungated beans have drained.
+**Planner watch — a gated bean needs no verify hail.** The watch dispatches the
+work hail and then waits for `status=completed` with a `main-sha:` line: there
+is no `unverified` step to look for and nothing to hand to `isaac-verify`. The
+stall rule is unchanged — a worker that goes quiet (no bean note, no branch
+push, no completion) is chased the same way it always was. A *gated* bean that
+turns up tagged `unverified` is a worker that took the wrong close: treat it as
+a stall and send it back, not as verify's queue. Only an ungated bean is
+handed to `isaac-verify`, and the watch then waits for the verifier to complete
+it.
 
 ## Planning
 
