@@ -1,15 +1,14 @@
 ---
 # isaac-7rce
 title: 'isaac-episodes: sessions the policy opens honour a requested name and otherwise get the agent''s adjective-noun names'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - episodes
     - agent
-    - unverified
 created_at: 2026-09-20T00:06:00Z
-updated_at: 2026-09-20T05:20:37Z
+updated_at: 2026-09-20T07:02:00Z
 blocked_by:
     - isaac-8s6s
 ---
@@ -74,9 +73,30 @@ between agent main and the episodes pin (recall/index and provider-attention
 scenarios), present with and without this bean's changes. Not touched here; the
 override was reverted and is not committed.
 
-Observation for the planner: `blocked_by: isaac-8s6s` on this bean looks stale.
+Planner: the stale `blocked_by: isaac-8s6s` the worker spotted was mine — the note swap in dd2f1ad7 left the blocker behind. Cleared.
 Commit dd2f1ad7 ("swap crossed re-scope notes (bklu/7rce), record blockers")
 moved the people-index note (which carried the dependency) to isaac-bklu and
 added the blocker there; this bean kept the copy. Session naming has no
 dependency on the google people index. Left in place — clearing it is a
 planner edit.
+
+## Landed on main (planner verify, 2026-09-20)
+
+Verified and landed by the planner while the zanebot fleet's claude OAuth was
+expired. Rebased the agent branch onto isaac-ddls first.
+
+| repo | suite | result |
+| --- | --- | --- |
+| isaac-agent | `bb spec` / `bb features` | 1656 / 0, 833 / 0 (1 pre-existing pending) |
+| isaac-episodes | `bb spec` / `bb features` | 216 / 0, 85 / 0 |
+
+main-sha: isaac-agent 4f177932e280b15e4f9a557a14d0238da129756d
+main-sha: isaac-episodes c5f86320e7e1cca5d553dc7932d2487da6afcfa8 (0.1.3)
+
+Branches squash-landed and deleted.
+
+Landed with isaac-episodes still pinning isaac-agent at 2ed58f77. I tried the
+repin to agent main and backed it out: it fails 1 spec + 23 feature scenarios —
+and the SAME 23 fail on episodes main without this bean, so the drift predates
+7rce. Filed separately; the worst of it is that sealing yields 0 scenes against
+agent main, which is the shape of the symptom Micah sees on yopp.
