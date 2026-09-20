@@ -1,15 +1,14 @@
 ---
 # isaac-jp4v
 title: 'Bean Gate: planner overlay — baseline step in AGENTS.md Planning + dual-run'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
-    - unverified
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T04:38:41Z
+updated_at: 2026-09-20T04:44:55Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -77,3 +76,41 @@ Process bean: no product code, no scenarios, TDD suspended.
 
 
 Rebased: branch bean/isaac-jp4v @ 84794443 (base origin/main@430ddb75).
+
+## Verified (2026-09-19)
+
+perceptor@isaac-verify. Doc-only bean; TDD suspended per process-bean rules.
+
+- Scope: `git diff --name-only origin/main...bean/isaac-jp4v` → **AGENTS.md** only
+  (45 insertions, 2 deletions). Nothing under `.toolbox/`, no workflow file, no
+  beans-CLI change.
+- Change 1 present: `### Baseline the bean (bean gate)` sits immediately after
+  `### Repo layout` inside `## Planning`, with the planner's 4-step order.
+  `### Repo layout` now says the `@wip` feature file is committed on the module
+  repo's **main** and links `#baseline-the-bean-bean-gate` (anchor matches the
+  heading).
+- Change 2 present: **Bean gate — dual run (temporary)** paragraph inside
+  `## Bean Workflow`, naming isaac-przv / isaac-e20m as the terminators.
+- Commands run as written against this tree:
+  - `bb bean-gate --help` → exit 0.
+  - `bb bean-gate verify isaac-jp4v` → `isaac-jp4v: no feature-baseline: use the
+    verify path`, exit **2** — exactly the documented message/code.
+- Wording cross-checked against the shipped CLI: usage string
+  (`<repo>:<path>[:<line>…]`, `--dir <repo>=<path>`, default `../<repo>`),
+  baseline fetches origin + appends + does not commit (`core/baseline` spits
+  `:append true`, main prints "Commit the bean to record the baseline."),
+  exit codes 0 pass / 1 fail / 2 not-gated-or-usage (`main/verify!`),
+  worker-authored baseline rejected (`core/worker-trailer`
+  `^Isaac-Session:\s*isaac-(work|verify)\S*`), append-only set = `feature-*` +
+  `## Acceptance…` + `## Exceptions` (`bean.clj:91`), scenario named by its
+  `Scenario:` keyword line (`baseline-spec-errors` → "no Scenario keyword on
+  that line"). "Module CI excludes @wip" confirmed: `-t ~wip` in isaac-foundation
+  and isaac-agent `bb.edn`.
+- Gate GREEN on the branch and again on the squash commit: `bb ci` →
+  **32 examples, 0 failures, 50 assertions**, exit 0.
+- No pins touched; no `Thread/sleep`; no test weakening (no spec files in diff).
+- bean-gate: not gated (exit 2 — bean predates its own baseline).
+
+## Landed on main (2026-09-19)
+
+main-sha: isaac 721f26c4f2eefe257251862ddcb01418b074b7c5
