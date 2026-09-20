@@ -42,3 +42,5 @@ Not a document review. The bean is done when a bean with a `feature-baseline` ha
 If no gated bean is in flight when this one reaches that step, say so and hail the plan band — the planner supplies a small scenario-backed bean for the dogfood rather than the worker inventing one.
 
 Also record what the first real run got wrong, if anything. That list is the whole point of running the dual path first.
+
+Dispatched: hail aacf8ca7 2026-09-20T18:04:26Z (band isaac-work)
