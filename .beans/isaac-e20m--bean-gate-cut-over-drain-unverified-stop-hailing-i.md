@@ -8,7 +8,7 @@ tags:
     - process
     - beans
 created_at: 2026-09-19T20:43:16Z
-updated_at: 2026-09-20T18:34:32Z
+updated_at: 2026-09-20T18:37:19Z
 parent: isaac-rmq6
 blocked_by:
     - isaac-cy85
@@ -44,3 +44,75 @@ If no gated bean is in flight when this one reaches that step, say so and hail t
 Also record what the first real run got wrong, if anything. That list is the whole point of running the dual path first.
 
 Dispatched: hail aacf8ca7 2026-09-20T18:04:26Z (band isaac-work)
+
+
+
+## Cutover status (2026-09-20, scrapper@isaac-work-1)
+
+**Preconditions — checked, not assumed**
+
+- `beans list --tag=unverified` → "No beans found." The drain is complete; the
+  last ungated bean through the old path was isaac-ddls (handed to verify this
+  morning, now `completed`).
+- zanebot's `isaac-work` band loads the gate skill: `~/.isaac/config/hail/isaac-work.md`
+  line 6 reads `Load and follow the "hail-bean-work-gate" skill.` (the pre-cutover
+  file is kept as `isaac-work.md.bak-20260920-beangate`).
+- Blockers all `completed`: isaac-cy85, isaac-jp4v, isaac-przv, isaac-4b21.
+- Snitch workflow green on real pushes — but **only trivially** (see below).
+
+**Change 1 + 2 — prepared, not landed**
+
+`AGENTS.md` on branch `bean/isaac-e20m` @ `5b70abbcc3f78e49e359fcfcf2695bd6469956e2`
+(base `origin/main@4049c2a3`), `bb ci` green (45 examples, 0 failures):
+
+- `## Bean Workflow` now states the gated flow as the **default** and the
+  `unverified` + `isaac-verify` flow as the **exception** for a bean with no
+  `feature-baseline:`.
+- The dual-run paragraph isaac-jp4v added ("Bean gate — verifier's role during
+  the drain") is removed.
+- Replaced by the planner watch rule: a gated bean needs no verify hail, so the
+  watch dispatches work and then waits for `status=completed` with a `main-sha:`
+  line; the stall rule is unchanged; a *gated* bean that turns up tagged
+  `unverified` is a wrong close by the worker — treat it as a stall, not as
+  verify's queue.
+
+Held on the branch deliberately: the acceptance is a dogfood run, not a
+document review, so the doc does not land ahead of the proof.
+
+**Acceptance — blocked: no gated bean exists**
+
+No bean in this repo has ever carried a real `feature-baseline:` line.
+
+- `grep -n "^feature-baseline:" .beans/*.md` → one hit, and it is the literal
+  template text inside isaac-cy85's own body (`feature-baseline: <repo> <module-main-sha>`),
+  not a baseline.
+- `bb bean-gate ci-scan HEAD~200 HEAD --edn` → `{:beans [] :skipped [… 67 beans …]}`;
+  every skip is `:not-gated` or `:not-completed`. Nothing has ever been re-gated
+  on main.
+
+So the precondition "the snitch workflow has run green at least once on a real
+push" is satisfied only in its empty form: all ten Bean Gate runs to date took
+the `no completed, baselined bean in this push` branch and exited 0 without
+cloning a module or calling `bb bean-gate verify`. The re-gate path — clone the
+baselined repo, verify each id, fail the job on a non-zero verdict — has never
+executed. **That is the first thing the dogfood must exercise.**
+
+Per this bean's own instruction, the worker does not invent the dogfood bean:
+hailed the plan band for a small scenario-backed bean to baseline and run
+end to end.
+
+**What the dual run got wrong so far** (the list this bean exists to collect):
+
+1. The dual run never produced a gated bean, so it proved only the *old* path.
+   The gate shipped (cy85), was documented (jp4v), got its worker skill (przv)
+   and its CI snitch (4b21) without a single bean being baselined through them —
+   the four children were all themselves ungated process beans.
+2. Consequence: `bb bean-gate verify` has only ever been observed returning
+   exit 2 in anger, and the snitch's re-gate path is unexercised in CI.
+3. The verifier-side instruction jp4v added (record `bean-gate: pass|FAIL|not
+   gated` in every bean) produced only `not gated` lines, by construction.
+
+**Next step (resume here):** when the planner supplies the baselined dogfood
+bean and it reaches `completed` with a green Bean Gate run, record here its
+bean id, `main-sha`, worker session and the CI run URL, then land
+`bean/isaac-e20m` and complete this bean.
