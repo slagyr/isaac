@@ -59,3 +59,5 @@ The worker cannot reach the live config. Record in the bean exactly what the pla
 - A reader following the skill alone can take a gated bean from claim to `completed` without consulting the verify command.
 
 Process bean: no product code, no scenarios.
+
+Dispatched: hail c9bee05a 2026-09-20T04:58:37Z (band isaac-work)
