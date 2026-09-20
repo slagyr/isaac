@@ -47,3 +47,5 @@ State plainly that this is temporary: isaac-przv moves landing to the worker and
 - Wording matches the shipped CLI (`baseline` appends and does not commit; `verify` exits 0/1/2).
 
 Process bean: no product code, no scenarios. TDD rules are suspended (see the hail-bean-work skill's process-test section).
+
+Dispatched: hail 0cfedd0e 2026-09-20T04:35:30Z (band isaac-work)

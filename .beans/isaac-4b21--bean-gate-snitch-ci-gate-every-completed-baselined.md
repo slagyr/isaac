@@ -55,3 +55,5 @@ bb bean-gate ci-scan <sha-before-a-known-completed-bean> <sha-after>   # prints 
 ```
 
 Plus: the workflow file parses (`bb -e "(require '[clj-yaml.core :as y]) (y/parse-string (slurp \".github/workflows/bean-gate.yml\"))"` or equivalent), and a dry narrative in the bean showing the exact commands the job would run for one real completed bean.
+
+Dispatched: hail de9c8021 2026-09-20T04:35:35Z (band isaac-work)
