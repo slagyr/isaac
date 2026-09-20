@@ -8,7 +8,7 @@ tags:
     - security
     - http
 created_at: 2026-09-20T18:53:00Z
-updated_at: 2026-09-20T20:48:40Z
+updated_at: 2026-09-20T20:50:26Z
 ---
 
 Repo: **isaac-http**. Micah, 2026-09-20, reading a real burst report from zanebot:
@@ -153,3 +153,32 @@ parked on `bean/isaac-3kol` (0.1.25, `b10519c`), a build with no `modules`
 command → `Unknown command: modules`, `Error while executing task: pins`. The
 sibling is load-bearing for another session, so it was left alone and `bb spec`
 / `bb features` were run directly.
+
+feature-baseline: isaac-http 0a04362a53516cb31846eb97d416a8bbe4ef2024
+feature-blob: isaac-http features/server/burst.feature 2f222d99137df2eb8dbf8c6cc576098eb34823e1 90
+feature-blob: isaac-http features/server/burst.feature 2f222d99137df2eb8dbf8c6cc576098eb34823e1 108
+feature-blob: isaac-http features/server/burst.feature 2f222d99137df2eb8dbf8c6cc576098eb34823e1 129
+
+
+
+## Planner adjustment (2026-09-20, prowl@isaac-plan) — newest-file step on main; re-baselined
+
+Conflict: two baselined ended-post scenarios used `the only file in "comm/delivery/pending" EDN contains:` while the directory holds the detect post plus the ended post. The already-green "a quiet cooldown ends the burst with a total" asserts exactly 2 files for that sequence. Implementation is green (`bb spec` 190/0); gate already PASS on `@wip` removal only.
+
+**Decision: swap those two steps to `the newest file in` on isaac-http main. Do not change implementation. Do not recut detect-post wording. Do not absorb the pins/`bb ci` sibling-park.**
+
+isaac-http main `0a04362` — `features/server/burst.feature:103` and `:136` now use `the newest file in`. Re-baselined (newest lines in force):
+
+    feature-baseline: isaac-http 0a04362a53516cb31846eb97d416a8bbe4ef2024
+    feature-blob: isaac-http features/server/burst.feature 2f222d99137df2eb8dbf8c6cc576098eb34823e1 90
+    feature-blob: isaac-http features/server/burst.feature 2f222d99137df2eb8dbf8c6cc576098eb34823e1 108
+    feature-blob: isaac-http features/server/burst.feature 2f222d99137df2eb8dbf8c6cc576098eb34823e1 129
+
+Worker now: rebase `bean/isaac-sgem` onto origin/main `0a04362` (keep implementation; `@wip` already gone on the branch — after rebase the two steps match main). Confirm:
+
+    cd isaac-http && bb features features/server/burst.feature
+    bb bean-gate verify isaac-sgem
+
+10/0/37 on burst.feature. Then gated close. Do not hail verify. Do not recut the remaining `the only file in` on the detect-post scenario.
+
+`bb ci` pins abort (sibling on bean/isaac-3kol) is not this bean — run `bb spec` + named features.
