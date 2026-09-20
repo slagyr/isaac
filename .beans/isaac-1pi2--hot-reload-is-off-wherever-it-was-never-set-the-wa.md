@@ -1,11 +1,11 @@
 ---
 # isaac-1pi2
-title: 'Hot-reload is off wherever it was never set: the watcher gate ignores its own default'
+title: Foundation should own config watching and reload, not isaac-http (and the current gate ignores its own default)
 status: todo
 type: bug
 priority: high
 created_at: 2026-09-20T23:33:49Z
-updated_at: 2026-09-20T23:33:49Z
+updated_at: 2026-09-20T23:37:36Z
 ---
 
 The config watcher never starts unless `:hot-reload` is set explicitly, but the
@@ -62,3 +62,40 @@ http upgrade.
 A config with no `:hot-reload` key starts the watcher (the documented default)
 and logs that it did. A config with `:hot-reload false` does not, and logs why.
 A crew file created after boot is visible to the next turn without a restart.
+
+## Re-scoped 2026-09-20 (Micah): foundation owns this, not http
+
+Foundation owns config (`isaac/config/` — loader, paths, schema, validation),
+owns the daemon (`isaac/runner.clj`, `isaac/component/{runtime,supervisor,
+registry}.clj`, `main.clj`, `launcher.clj`), and owns `reconfigurable.clj`, the
+protocol by which a component takes new config. The one piece it does not own
+is noticing that a file changed.
+
+That lives in isaac-http:
+
+| piece | today |
+| --- | --- |
+| the fswatcher | `isaac-http/src/isaac/config/change_source_bb.clj` |
+| watch / poll / reload | `isaac-http/src/isaac/config/runtime.clj` |
+| reload + reconcile | `isaac-http/src/isaac/config/install.clj` |
+| the default | `isaac-http/src/isaac/config/server_config.clj` |
+| the gate that starts it | `isaac-http/src/isaac/http/component/runtime.clj` |
+
+So foundation defines the config and what being reconfigured means, and **http**
+decides whether anyone is ever reconfigured. A host that runs Isaac without the
+http module gets no config watching at all — which is what isaac-3q4m already
+calls out: "a UDP/SMTP/ping server module must not depend on HTTP to get a
+lifecycle".
+
+Second tell: isaac-agent carries a byte-identical copy of
+`change_source_bb.clj` that nothing references. Two modules ship a config
+watcher and neither of them owns config.
+
+**Work:** move watching and reload into foundation's runner — the process
+starts the watcher because it is the process, not because a particular module
+loaded. http becomes a consumer of `reconfigurable` like anything else. Delete
+the agent's orphan copy. Keep the change-source protocol so tests can swap in
+the in-memory source.
+
+Once the owner is right the original bug below cannot recur: there is no module
+gate left to disagree with the default.
