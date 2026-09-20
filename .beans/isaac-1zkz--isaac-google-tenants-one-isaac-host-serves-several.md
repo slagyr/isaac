@@ -9,7 +9,7 @@ tags:
     - comm
     - config
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T18:59:47Z
+updated_at: 2026-09-20T19:22:20Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
@@ -110,3 +110,43 @@ Last green commit: `7597e2e` (pushed).
    scenario 1's real assertion.
 
 Command to resume: `cd isaac-google-1zkz && bb spec && bb ci`.
+
+
+## Progress — 2026-09-20 (scrapper@isaac-work-1, update 2)
+
+Branch `bean/isaac-1zkz` @ `0a64f6e` (pushed). All specs green: 97 examples, 0 failures.
+
+**Done**
+1. `src/isaac/google/tenants.clj` + spec — the tenants seam (`tenants`, `ids`, `tenant-config`,
+   `config-path`, `resolve-id`, `auth-provider`, `tenant-for-subscription`, `subscription-of`,
+   `*tenant*`, `DEFAULT`). Flat `:google` reads as `:default`.
+2. `src/isaac/google/config.clj` — `tenant-fields` / `tenant-schema` / `google-schema`; the google
+   table is `:schema` (flat, closed) **and** `:key-spec`/`:value-spec` (tenanted, open) in one spec.
+   Verified empirically against foundation `b644562`: `lexicon/conform`, `validation/annotation-errors*`
+   and `nav/advance-spec` all honour both halves.
+3. `src/isaac/google/token.clj` + spec — one token per tenant. `resolve-tokens` arities
+   `([]) ([config]) ([config id])`; `token ([]) ([id])`; auth-store provider `google` / `google/<tenant>`;
+   login message names the tenant.
+4. `resources/isaac-manifest.edn` — inline `:isaac.config/schema` regenerated *from* `config.clj`
+   (manifest is pure EDN, no var refs). `module_spec` now asserts the inline copy `=` `config/google-schema`,
+   so the duplicate cannot drift.
+
+**Next — not started**
+5. Door tenant: `push/unwrap` must keep the envelope's `subscription` (it drops it today —
+   `src/isaac/google/push.clj:24`); `http/handler` maps it via `tenants/subscription-of` ->
+   `tenant-for-subscription`, cross-checks against `(get-in request [:isaac/principal :name])`
+   (`:google-pubsub/<tenant>`), persists `:tenant` on the inbox event, refuses a mismatch.
+6. One rule per tenant: the manifest's single `:isaac.http/identity {:google-pubsub ...}` uses static
+   config refs `[:google :push :endpoint]`, so it cannot express N tenants. Register a rule per tenant
+   at component start via `isaac.http.auth/register-identity-entry!` (principal `:google-pubsub/<tenant>`,
+   scope `:google/push`); keep the manifest rule as the `:default` case so a flat host is unchanged.
+7. `worker/tick!` binds `tenants/*tenant*` from the event's `:tenant` around the handler call.
+8. Per tenant: registration timer, `people/resolve`, `tools/whois`, `cli` `login [--tenant t]` and
+   `status` grouped by tenant.
+9. Scenarios: new `features/tenants.feature` (the bean's four); `push_door.feature` and `login.feature`
+   must pass unchanged.
+
+**Resume at** `src/isaac/google/push.clj:24` (`unwrap` — add `:subscription`), starting with a RED spec
+in `spec/isaac/google/push_spec.clj`.
+
+Resume command: `cd isaac-google-1zkz && bb spec && bb ci`.
