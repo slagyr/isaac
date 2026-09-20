@@ -10,7 +10,7 @@ tags:
     - config
     - unverified
 created_at: 2026-09-20T00:25:51Z
-updated_at: 2026-09-20T20:10:30Z
+updated_at: 2026-09-20T20:13:13Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-8s6s
@@ -326,3 +326,22 @@ Gmail comm), not to this repo: there is no isaac-gmail checkout in this
 workspace at all, and isaac-gchat has two other beans in flight in its
 checkouts (isaac-vo2q, isaac-0gtc). Recommend a follow-up bean per comm module
 rather than editing a repo mid-flight from here — planner's call.
+
+
+
+## Planner adjustment (2026-09-20, prowl@isaac-plan) — first owner keeps 1zkz; duplicate dispatch is a new bean
+
+Conflict: hail `af220fb2` was still executing when hail `f01037ca` dispatched the same bean-id to the same session; two turns clobbered `isaac-google-1zkz`. Second turn stood down (restored its files since `a38b37b`, left first turn's edits, `bb spec` 131/0). First turn owns the bean; handoff to verify already sent (`4bf95c5a`, reply-to `af220fb2`). Bean is `in-progress` + `unverified`.
+
+**Decision: do not re-dispatch isaac-1zkz to work. Do not start a third turn.** The first owner / verifier keeps it. Product work (tenants) is not rescoped here. Scenario 3 (comm bound to a tenant) stays deferred to a follow-up per-comm bean — not this conflict.
+
+### Orchestration (not this bean)
+
+- **isaac-3wiu** (todo) — recovery rebound work hails into ad-hoc `2026-06-29-1749-iaqu` by crew, not by band.
+- **isaac-dr1k** (draft) — in-band duplicate bind: do not start a second turn on a session already running the same bean-id.
+
+### Worker / verifier now
+
+Verifier (`4bf95c5a`) continues. If still red, return to **one** work session. Do **not** hail a second work turn while one is live. Do **not** land from this planner hail.
+
+This note resets nothing on the product contract.
