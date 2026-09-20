@@ -8,7 +8,7 @@ tags:
     - security
     - http
 created_at: 2026-09-20T18:53:00Z
-updated_at: 2026-09-20T20:37:19Z
+updated_at: 2026-09-20T20:48:40Z
 ---
 
 Repo: **isaac-http**. Micah, 2026-09-20, reading a real burst report from zanebot:
@@ -74,3 +74,82 @@ feature-blob: isaac-http features/server/burst.feature 4c7c82045989a66cdb1cdc8e3
 Dispatched: hail 0c35e0b0 2026-09-20T18:58Z (band isaac-work)
 
 Dispatched: hail b377e10d 2026-09-20T20:17:51Z (band isaac-work)
+
+## Conflict: two baselined scenarios use "the only file in" where two posts exist (2026-09-20)
+
+Implementation is done and green; the **scenarios contradict a scenario that is
+already on main**. Handed back to the planner — the fix is one word in each of
+two baselined scenarios, which a worker may not make.
+
+### What was built (branch `bean/isaac-sgem`, isaac-http, base `5f7f24e`)
+
+- `burst/record-throttled!` — counts a 429'd request in its own `:throttled`
+  counter and refreshes `:last-ms`; never feeds detection, so the threshold
+  keeps its meaning. Called from `wrap-burst` before `throttled-response!`.
+- `:server/burst-ended` now carries `:total` (refused), `:throttled` and
+  `:duration-ms` measured **first hit → last hit** (`burst-span-ms`), not
+  first hit → sweep.
+- Ended attention post: `Unauthenticated burst from <client> ended: 30 refused,
+  20 throttled over 30000ms`.
+- Every throttled request logs `:server/burst-throttled-request` at debug with
+  `:client`, `:uri`, `:status 429` (the once-per-burst `:server/burst-throttled`
+  info line is unchanged, so the existing throttle scenario still holds).
+- Detect post wording left alone on purpose: scenario "thirty unauthenticated
+  requests from one client raise one attention post" asserts `"30 requests"`,
+  and it is baselined.
+
+`bb spec` 190/0. `bb features` 107 examples, **2 failures** — both described
+below. `bb bean-gate verify isaac-sgem` → `PASS (isaac-http @ HEAD 8d88c26)`,
+exit 0: the only feature edit was removing the three `@wip` tags.
+
+### The contradiction
+
+```
+1) Unauthenticated burst control the ended post counts throttled requests, not just the ones that reached auth
+   Expected: 1
+        got: 2 (using =)
+2) Unauthenticated burst control the ended post reports the burst's own span, not the wait for the sweep
+   Expected: 1
+        got: 2 (using =)
+```
+
+Both new scenarios end with
+
+    And the only file in "comm/delivery/pending" EDN contains:
+
+`isaac.foundation.fs-steps/only-file-in-edn-contains` asserts
+`(should= 1 (count children))` before reading. But at that point the directory
+holds **two** posts — the detect post from crossing the threshold and the ended
+post from the sweep — and that is required behaviour: the already-green
+scenario "a quiet cooldown ends the burst with a total" asserts
+
+    And the directory "comm/delivery/pending" has exactly 2 files
+
+for exactly this sequence. No implementation can make both true. The 2 is the
+step's file count, not a count of posts per burst — "a burst that keeps going
+posts nothing more" is still green (1 detect post for 90 requests).
+
+### The one-word fix (verified, then reverted)
+
+isaac-http already defines `the newest file in "<dir>" EDN contains:`
+(`spec/isaac/http/server_steps.clj:1308`, `newest-file-in-edn-contains`, sorts
+by `:created-at`). Swapping `the only file in` → `the newest file in` in those
+two scenarios only — `features/server/burst.feature:102` and `:133` — makes the
+file green:
+
+    bb features features/server/burst.feature → 10 examples, 0 failures, 37 assertions
+
+That edit was made to prove the implementation, then reverted; the branch holds
+the baselined text with `@wip` removed and nothing else.
+
+Asked of the planner: make that step swap on isaac-http `main`, re-baseline, and
+hand the bean back. Nothing else about the bean changes.
+
+### Environment note (not caused by this bean)
+
+`bb ci` aborts before the suites at the `pins` task: it shells
+`../isaac-foundation/libexec/isaac modules pins`, and that shared sibling is
+parked on `bean/isaac-3kol` (0.1.25, `b10519c`), a build with no `modules`
+command → `Unknown command: modules`, `Error while executing task: pins`. The
+sibling is load-bearing for another session, so it was left alone and `bb spec`
+/ `bb features` were run directly.
