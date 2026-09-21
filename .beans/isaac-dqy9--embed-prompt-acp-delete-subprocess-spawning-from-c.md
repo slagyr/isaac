@@ -1,13 +1,13 @@
 ---
 # isaac-dqy9
 title: Embed prompt + acp; delete subprocess spawning from cli-server (end cap)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-21T01:48:30Z
+updated_at: 2026-09-21T01:58:20Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
