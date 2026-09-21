@@ -1,14 +1,14 @@
 ---
 # isaac-9af8
 title: 'Provider-broken attention posts the provider''s whole stream: 2.8 MB to Discord'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - ops
     - comm
 created_at: 2026-09-21T04:46:42Z
-updated_at: 2026-09-21T04:47:28Z
+updated_at: 2026-09-21T21:47:53Z
 ---
 
 `provider-content` (isaac-agent `src/isaac/attention.clj:46`) appends the
