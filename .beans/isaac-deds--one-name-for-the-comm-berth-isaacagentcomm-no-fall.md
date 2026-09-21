@@ -1,14 +1,14 @@
 ---
 # isaac-deds
 title: 'One name for the comm berth: :isaac.agent/comm, no fallbacks, wrong name is an error'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - comm
     - config
 created_at: 2026-09-21T04:25:21Z
-updated_at: 2026-09-21T04:25:21Z
+updated_at: 2026-09-21T05:01:49Z
 ---
 
 The comm berth has three names in circulation. Every reader accepts a different
