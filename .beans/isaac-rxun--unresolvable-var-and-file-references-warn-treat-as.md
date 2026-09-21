@@ -4,10 +4,8 @@ title: 'Unresolvable ${VAR} and ${file:…} references: warn, treat as unset, ne
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-21T16:28:51Z
-updated_at: 2026-09-21T17:31:00Z
+updated_at: 2026-09-21T18:08:28Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
@@ -314,3 +312,96 @@ first, then rewrite the agent's `bb.edn` **and** `deps.edn` pins off
 entries in `bb.edn`, 13 in `deps.edn`: `isaac-foundation`, `-spec`,
 `-test-support`, `marigold.bridge`, `marigold.longwave`), re-run the agent
 gates, then squash isaac-agent.
+
+## Verify fail (attempt 1, 2026-09-21): the agent's `unresolved-ref` lookup pulls the ambient config snapshot in-flight and reds isaac-agent's full feature suite
+
+Verified by **perceptor**@isaac-verify.
+
+**The foundation half is good and is now on main.** The agent half is red and was reverted off main. Read the landing state below before doing anything.
+
+### Landing state — read this first
+
+| repo | state |
+|---|---|
+| **isaac-foundation** | **LANDED.** `bean/isaac-rxun` @ `d66310d` squash-merged to main as **`22694fc711a2d399606e2d78d26b843fdb9c5363`**. The branch is deleted. Do not re-land it; branch fresh off main for any foundation follow-up. |
+| **isaac-agent** | **NOT landed.** I squashed it, discovered the red on the squash commit, and reverted it off main (`00503cd`). `bean/isaac-rxun` @ `cc44840` is left in place for you — it is your `5d4a655` plus my repin of the 18 foundation coordinates to `22694fc`. Keep the repin. |
+
+### What is green
+
+isaac-foundation `bean/isaac-rxun` @ `d66310d`, `bb ci` exit 0: config-bypass-lint ok, lint-cli-host ok, **1130 spec / 0 failures / 2044 assertions**, **198 features / 0 failures / 524 assertions / 2 pending** (the two berth-registration pendings pre-date this bean). Squash tree byte-identical to the gated tree.
+
+I did not take the specs at face value. Two mutations, each restored afterwards:
+
+- `attach-reference-reasons` → `vec` in the loader pipeline: `load_result_spec` reds **45 / 1 failure** (line 338, the required-field reason). Load-bearing.
+- `unresolved-reference-paths` → `#{}`: `mutate_spec` reds **32 / 1 failure** ("writes a required field and warns instead of refusing"). Load-bearing.
+
+Every added `it` executes — no swallowed examples: `parse_spec` 16 forms/16 examples, `mutate_spec` 32/32, `cli/common_spec` 12/12, `load_result_spec` 45/45, all confirmed with `bb spec -f documentation`.
+
+And end to end through the real CLI, on a throwaway root with `:api-key "${RXUN_TOTALLY_MISSING}"`:
+
+    {:level :warn, :event :config/unresolved-reference,
+     :path "providers.zane.api-key", :ref "RXUN_TOTALLY_MISSING"}
+    warning: :providers.zane.api-key - RXUN_TOTALLY_MISSING is not set (not set in this shell; the server's environment may differ)
+    OK - config is valid
+
+Design points 1, 2, 4 and 5 hold, and `config validate` never refuses.
+
+### BLOCKING — `missing-auth-error` reads ambient config from in-flight code
+
+`isaac-agent/src/isaac/llm/api/openai/shared.clj` calls the **one-arity** `loader/unresolved-ref`, which calls `loader/snapshot`, which calls `loader/config-atom`:
+
+    (defn- config-atom []
+      (or (nexus/get :config)
+          (let [cfg* (atom nil)]
+            (nexus/register! [:config] cfg*)     ;; side effect
+            cfg*)))
+
+So a read from deep inside provider auth **registers a nil-valued `:config` atom into the ambient nexus** when none is registered yet. A later entry point that expects to own that slot finds it already taken and reads nil config — the module index comes back empty, and a manifest-supplied comm kind disappears from `config schema` output.
+
+That is exactly what happens. `features/config/schema_cli_options.feature` fails on the scenarios that read comm kinds and fields contributed by the `modules/isaac.comm.telly` `:local/root` module:
+
+    1) comm slot :type lists user-configurable comm kinds from manifests   (:33)
+       Expected truthy: (re-find (re-pattern "options:.*telly") output) got: nil
+    2) config schema comms.value renders every manifest-supplied field inline  (:66)
+
+It is order-dependent, so the failing set moves between runs — which is why it never showed up in a targeted run. Isolated, the file passes (7/0, twice). Only the full suite exposes it.
+
+**Bisect — four full `bb features` runs, isaac-agent:**
+
+| tree | result |
+|---|---|
+| `origin/main` 984f59a (old foundation pin) | **839 / 0 / 1997** green |
+| `origin/main` 984f59a + foundation repinned to the landed `22694fc` | **839 / 0 / 1997** green |
+| squash commit `ff0b594` (main + your agent change + repin) | **RED** — 1 failure, then 2 on re-run |
+| squash commit `ff0b594` with *only* the `unresolved-ref` lookup disabled (`reference (when false …)`) | **839 / 0 / 1997** green |
+
+So it is neither the foundation change nor a pre-existing red: it is this one lookup. The foundation library is innocent — pinning main to `22694fc` with no agent change is green.
+
+It also breaks foundation's own documented contract, which the worker can read directly above the function being called:
+
+> Reads ambient config; call **ONLY at entry points and wake boundaries** (process start, request/turn entry, a worker waking from sleep) — **in-flight code must receive config as a value**, not pull a fresh snapshot.
+
+`missing-auth-error` is in-flight code. It already receives a `config` argument — but that is the provider's slice, which has no `:unresolved-refs`, which is presumably why the ambient read was reached for. **That is the real design question to solve**, not something to paper over:
+
+- Thread the root config (or just the unresolved-ref index) down to the point of use, so the two-arity `(loader/unresolved-ref config path)` can be used and nothing ambient is touched; or
+- have config stamp the reason onto the provider slice itself when it drops the field, so the slice carries its own explanation; or
+- if an ambient read really is the only option, make it non-mutating — `config-atom`'s `nexus/register!` is the actual hazard, and a read-only accessor that returns nil instead of registering would be a foundation-side fix with its own scenario.
+
+Whichever you pick, the bar is: **isaac-agent `bb ci` green on the squash commit, run twice**, because this failure is order-dependent and a single green run does not prove it gone.
+
+### Minor, fix while you are there
+
+`parse/substitute-env-recursive` drops an explicit `nil` out of a **sequence**, though its own docstring promises "An explicit nil is kept: an unresolvable reference is the only thing this drops."
+
+    (parse/substitute-env-recursive {:args ["a" nil "b"]})
+    ;; branch: {:args ["a" "b"]}     main: {:args ["a" nil "b"]}
+
+The guard `(when-not (and (some? v) (nil? substituted)) substituted)` cannot work: `keep-indexed` discards every nil return regardless, so the `some? v` branch is dead code. The map branch is correct and spec'd ("keeps an explicit nil"); the sequence branch has no such example. Either make the sequence branch match the promise, or change the promise — but do not leave a guard that reads as if it works.
+
+### Observation, not blocking
+
+The live config now carries a non-schema top-level `:unresolved-refs` key. It produces no unknown-key warning (the unknown-key pass runs on raw data, confirmed), and it does not appear in `config get` (which reads with substitution off), so nothing operator-facing leaks today. Worth keeping in mind if anything ever enumerates top-level config keys.
+
+### Other checks, all clean
+
+No feature file touched by either branch (the `composition.feature` recut is the planner's `## Exceptions`, already on isaac-agent main as `sk-ant-test`). No stray `println`. §4 pass A clean in both repos; pass B `grep -rn "Thread/sleep" spec/` → 0 in isaac-agent, 3 pre-existing in isaac-foundation, none in this diff. §6 pins: the repin I committed names `22694fc`, which is isaac-foundation main.
