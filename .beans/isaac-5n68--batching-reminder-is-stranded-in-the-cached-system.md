@@ -118,7 +118,10 @@ rule). Providers aren't in the chain unless someone needs them.
 
 ## Open (Micah)
 
-- **Final name.** `:extra-system-prompt` is the working name.
+- **Final name.** `:extra-system-prompt` is the working name. zanebot's
+  `models/glm-5-3.edn` **already carries `:extra-system-prompt`** (added
+  2026-09-21 ahead of the code, warned as an unknown key until this lands). If
+  the name changes, rename that key in the same deploy.
 - **Always-on install prompt** moved to its own bean: isaac-oys6.
 
 ## Also worth trying, independently
