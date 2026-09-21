@@ -1,6 +1,6 @@
 ---
 # isaac-5n68
-title: Model-family defaults (prompt text, sampling) that users can override per model; GLM gets an emphatic batching line
+title: Per-model extra system prompt on the model entry, placed after the crew soul
 status: todo
 type: task
 priority: normal
@@ -10,82 +10,80 @@ updated_at: 2026-09-21T04:58:11Z
 
 ## Why
 
-GLM-5.3 batched 0 of 418 tool responses across two real beans (cgxa, nq4c).
-It already has `parallel_tool_calls: true` (isaac-rr7u) and Isaac's one generic
-batching hint in the system prompt.
+GLM-5.3 batched 0 of 418 tool responses across two real beans (cgxa, nq4c),
+even with `parallel_tool_calls: true` (isaac-rr7u) and Isaac's generic batching
+hint. The harnesses we read (Codex, OpenCode, Grok Build) all handle this with
+per-model system prompt text. Isaac has no way to give one model different
+system prompt text from another.
 
-Every harness we read solves this with **per-model-family system prompt
-text**, not with per-turn reminders:
+## Decision (Micah, 2026-09-21)
 
-- **Codex:** per-model prompt files. `gpt_5_2_prompt.md` carries "Parallelize
-  tool calls whenever possible…". The other model prompts do not.
-- **OpenCode:** `session/system.ts` picks a whole prompt by matching the model
-  id (anthropic, gpt, gemini, kimi, default). Each words batching differently.
-  Kimi's is the most emphatic ("HIGHLY RECOMMENDED"). It also sets sampling
-  per model in code (`provider/transform.ts`: temperature 1.0 for glm-4.6/4.7).
-- **Grok Build:** no batching line in its main prompt, because Grok batches
-  unprompted.
-
-Isaac has one hint for every model and no per-model prompt text. Requiring
-users to write prompt text for each model they configure is a burden, so Isaac
-should ship sensible defaults per model family and let the user override them.
+- **All model configuration lives in one place: the model entry.** Not in
+  rules. Rules would put model settings in two places.
+- **Isaac stays ignorant of specific models.** No built-in table of model
+  families and their quirks. Keeping that current is a losing battle. The user
+  writes the text for the models they run.
 
 ## Design
 
-1. **Built-in family defaults, as data.** Ship them in isaac-agent resources
-   (edn, not code): each entry has a match on the model id and the fields it
-   supplies. For example:
+1. **New optional field on the model entry.** Working name
+   `:extra-system-prompt` (final name to be settled; see below):
 
    ```clojure
-   {:glm    {:match #"(?i)glm"
-             :prompt "You can call many tools in one response. When calls are
-                      independent (reads, greps, globs, separate files), issue
-                      them ALL in the same response. One call per response is
-                      the slow path; wait only when one call's output feeds
-                      the next."}
-    :claude {:match #"(?i)claude"}    ;; batches unprompted: nothing extra
-    ...}
+   ;; models/glm-5-3.edn
+   {:model               "accounts/fireworks/models/glm-5p3"
+    :provider            :fireworks
+    :context-window      524288
+    :extra-system-prompt "You can call many tools in one response. When calls are
+                          independent (reads, greps, globs, separate files),
+                          issue them ALL in the same response. One call per
+                          response is the slow path; wait only when one call's
+                          output feeds the next."}
    ```
 
-   Fields for now: `:prompt` (appended to the system prompt for that model
-   only). Sampling (`:temperature`) is a candidate field. See the note below
-   before adding it.
+2. **Placement: directly after the crew soul** in `build-system-text`
+   (`isaac-agent/src/isaac/llm/prompt/builder.clj:309`). It goes before
+   AGENTS.md, rules and the skill menu. It is static per model, so it stays
+   inside the cached prefix.
 
-2. **The model entry overrides, field by field.** A user's
-   `models/<id>.edn` may set the same fields. They win over the family default,
-   merged per field. An explicit `nil` turns a family default off. With no
-   family match and no user fields, the request is exactly what it is today.
+3. **It follows the model actually used for the turn.** `--with-model` and
+   crew switches change the effective model, so the text must come from the
+   effective model, not the crew's default.
 
-3. **Where the text lands.** It goes in the system prompt, next to the existing
-   generic hint, in the cached prefix, which is where every other harness puts
-   it. This tests **wording** per model, not placement. If GLM is still at zero
-   after this, the per-turn route is next (see isaac-p5kt).
+4. **Every path that builds a system prompt gets it.** `build-system-text`
+   has more than one caller. `messages.clj:83` calls it on its own and must
+   pass the new argument. The Claude CLI adapter (isaac-claude-code
+   `build-system-prompt`) reads the system text off the request, so it picks
+   the field up without changes. Confirm that with a spec rather than assume
+   it.
 
-## Temperature note
+5. **Absent means unchanged.** No field means a byte-identical system prompt
+   to today.
 
-Isaac sends no `temperature` today. The live GLM request body keys were
-`(:messages :model :parallel_tool_calls :reasoning_effort :stream
-:stream_options :tools)`. The server default applies, and on OpenAI-compatible
-APIs that is usually 1.0 already. So "set GLM to 1.0" may change nothing.
-Check Fireworks' default before counting it as a lever.
+## Naming candidates
+
+- `:extra-system-prompt`: says it adds rather than replaces. Recommended.
+- `:system-prompt`: short, but reads as though it replaces the whole prompt.
+- `:instructions`: avoid. It clashes with the Responses API wire field of the
+  same name, which confuses anyone reading request bodies.
+- `:guidance`: avoid. Isaac already uses "guidance" for per-turn framing.
 
 ## Done when
 
-- family defaults load from resources; the model-id match is spec'd,
-  including no match
-- the user model entry overrides per field, and explicit `nil` disables (specs)
-- a model with no family match and no user fields sends byte-identical
-  requests to today (spec)
-- the `:prompt` text reaches the system prompt for that model only (spec)
-- the model schema documents the new fields; `isaac config validate` accepts
-  them; editing them on a running server takes effect with no restart
+- the field is in the model schema, documented as additive;
+  `isaac config validate` accepts it
+- no field means a byte-identical system prompt (spec)
+- the text appears directly after the soul, for that model only (spec)
+- `--with-model` uses the override model's text (spec)
+- every `build-system-text` caller passes it, including `messages.clj:83`
+  (spec); the Claude CLI path carries it (spec)
+- editing it on a running server takes effect with no restart
 - `bb verify` and `bb jvm-spec` are both green
-- deployed to zanebot. **Measured on a real GLM bean**, from
-  `:tool-calls-count` in server.log: the batching rate with the sample size
-  stated. If it stays at zero, report that. It means wording was not the
-  lever.
+- deployed; the GLM text above added to zanebot's `models/glm-5-3.edn`;
+  **measured on a real GLM bean** from `:tool-calls-count` in server.log, with
+  the batching rate and sample size stated. If it stays at zero, report that.
 
-## Also worth trying, independently
+## Out of scope
 
-A/B `reasoning_effort` on the glm-5-3 model entry. It is config-only, it
-hot-reloads, and the gauge can now measure it (isaac-f5tn).
+Built-in per-model defaults, per the decision above. How to help users know
+which models need text is an open question, not this bean.

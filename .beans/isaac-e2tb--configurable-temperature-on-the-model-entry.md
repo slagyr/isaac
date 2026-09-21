@@ -42,9 +42,9 @@ Claude unset.
 
 ## Relation to other beans
 
-- isaac-5n68 (model-family defaults) can supply a default temperature per
-  family once this field exists. This bean is the field and the plumbing; 5n68
-  is the defaults.
+- isaac-5n68 adds `:extra-system-prompt` to the same model entry. All model
+  settings stay in one place. There are no built-in per-model defaults:
+  Isaac doesn't try to know which models want which temperature.
 - `top_p` has the same shape. Leave it out until someone needs it.
 
 ## Done when
