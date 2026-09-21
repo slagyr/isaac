@@ -1,11 +1,15 @@
 ---
 # isaac-9azm
 title: Hail's responsibility ends when a turn starts; the drive must not know about hail
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-21T16:39:07Z
-updated_at: 2026-09-21T16:46:29Z
+updated_at: 2026-09-21T17:14:05Z
+blocked_by:
+    - isaac-xpkf
+    - isaac-f3hq
+    - isaac-6doh
 ---
 
 Hail is a mailman. Its job is to get the message into a turn. Once a turn
@@ -249,3 +253,130 @@ isaac-3wiu stays the narrow recovery patch until 3 lands.
 
 Escalated to human by **prowl**@isaac-plan. Blocking: two forks (turn-error retry a/b; continuations a/b/c) plus ~12 green scenarios that must be recut on module main after those land.
 Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
+
+
+
+## Ruling (Micah, 2026-09-21) — both forks settled; bean split; scenarios recut
+
+Fork 1 (transient turn-error retry): **(a), and more — a turn that errors is
+weather.** Resuming a turn when the weather clears is the drive's
+responsibility; hail does not worry about it at all. The drive's weather path
+is completed in **isaac-f3hq** (the sweep is scheduled; silence —
+`:empty-terminal-response` after the nudge — parks as weather with reason
+`:silence`; an `:auth` park posts attention at once). Stated assumption:
+exceptions and generic API errors still end the turn `:error`, visible in
+the session with the existing turn-failed attention; widen if the field says
+so.
+
+Fork 2 (cycle-limit continuations): **(b) — the drive owns continuations;
+hail does not do them.** The in-turn wrap-up was already the drive's
+(`apply-wrap-up-exhaustion`); the re-drive budget moves to `:cycle
+{:continuations n}` (default 2, crew overridden by the charge's cycle map,
+so a band's `:cycle` still rides through) in **isaac-xpkf**.
+
+Decoupling the drive from hail (resume/bridge marker) is **isaac-6doh**.
+
+**This bean is now hail-only and blocked by isaac-xpkf, isaac-f3hq and
+isaac-6doh.** Do not dispatch until all three carry `main-sha:` lines.
+
+### What this bean does (isaac-hail only)
+
+1. **Receipt at bind.** In `launch-delivery!`: after the bridge records the
+   marker, write the delivered receipt (`finish-delivered!`), delete the
+   deliveries/ file, log `:hail/bound` then `:hail/delivered`, and start the
+   turn without holding a future, without a `finally`, and without reading
+   the result. Whether hail enqueues the charge on the turn queue or fires
+   the bridge's async path is the worker's call; hail must not clear the
+   marker or the in-flight flag itself — the drive owns both once the turn
+   starts.
+2. **Only "no turn started" fails.** An unresolved charge
+   (`charge/unresolved?` — unknown crew, no model) or a throw while
+   preparing the turn (band prompt render, charge build) takes `reschedule!`
+   → backoff → `dead-letter!` at 5 attempts, with `:error` / `:ex-class` /
+   `:ex-message` on the record as today. New step: `a delivery whose turn
+   cannot start throws with message {message:string}` (replaces the
+   run-turn! stub).
+3. **Delete** the turn-end `cond` (branches `:unavailable?`,
+   `suspended-response?`, cancelled, `:error`-after-turn, `:cycle-limit`,
+   `:else` finish-delivered!), `defer-delivery!`, `continue-delivery!`,
+   `continuations-exhausted!`, `wrap-up-delivery!`, `continuation-budget`,
+   `finish-cancelled!`, `resume-grace?` / `:resume/requeued-at`, the
+   `attention/maybe-notify-auth!` call, the `:hail/turn-ended`,
+   `:hail/delivery-deferred`, `:hail/delivery-suspended`,
+   `:hail/turn-continued`, `:hail/continuations-exhausted` log events, and
+   the `:hail-delivery` key on the charge. Hail no longer reads a band's
+   `:continuations`.
+4. **Stray guard keys off the receipt.** `referenced-delivery-ids` read
+   `:delivery-id` from turn markers; markers no longer carry it
+   (isaac-6doh). A deliveries/ file whose id already has a delivered receipt
+   is the stray: removed, logged, attention as today.
+5. **Repin isaac-agent** to the main sha that carries xpkf + f3hq + 6doh
+   (pin rule: reachable from origin/main). Add `isaac.turn.queue-steps` to
+   the feature step globs in `bb.edn` (the recut scenarios tick the turn
+   queue). Update the hail specs that assert the marker payload
+   (`spec/isaac/hail/delivery_worker_spec.clj`, `hail_get_spec.clj`,
+   `cli_spec.clj`).
+6. isaac-3wiu (the narrow recovery patch) is superseded when this lands.
+
+## Exceptions
+
+Planner recuts on isaac-hail `main` (prowl, 2026-09-21), all `@wip`, per the
+ruling above. The worker only removes `@wip`.
+
+`features/delivery.feature`:
+- Feature description rewritten to the mailman model.
+- Recut: "a bound delivery dispatches a turn and moves to delivered" → "…is
+  delivered at bind, before the turn ends"; "a dispatch failure increments
+  attempts and backs off" and "a delivery that exhausts max attempts
+  dead-letters to failed" → "a delivery whose turn cannot start …" (unknown
+  crew); "a turn that dies on empty responses fails the delivery" → "a turn
+  that goes silent is delivered; the drive parks it as weather"; "a failed
+  delivery turn logs the attempt and backoff" → "a delivery whose turn cannot
+  start logs …"; the two isaac-cehc thrown-turn scenarios → "a throw before
+  the turn starts …"; the isaac-3tvq / 6zk5 / 5a4n deferral scenarios → "… is
+  the turn's weather — delivered at bind, parked by the drive" (the 5a4n one
+  finishes through the drive's sweep); "a suspended hail turn leaves its
+  marker for resume" → "… leaves a plain marker for the drive to resume"; "a
+  band's cycle.limit overrides the crew's" asserts the receipt instead of
+  `:continuation 1`; "a successful turn without outbound hail-send still
+  delivers" drops the `:hail/turn-ended` row; "cancelling a live hail turn
+  archives to hail/cancelled" → "… is the drive's cancel — the receipt
+  stands".
+- Deleted: "auth deferrals post throttled attention to the comm outbox" and
+  "wall deferrals stay silent when attention is configured" (attention on a
+  parked turn is the drive's — isaac-f3hq); "a turn that hits the cycle limit
+  wraps up and is re-queued as a continuation", "the band's continuation
+  budget exhausts to dead-letter with attention", "the default continuation
+  budget is 2" (moved to `isaac-agent/features/turn/continuations.feature` —
+  isaac-xpkf).
+
+`features/turn-resume.feature`: rewritten — hail markers resume in their own
+session through the turn queue; the receipt written at bind stands. Deleted
+"a hard-crash orphan is re-queued with attempts incremented" (a started turn
+has no attempts; hail joins the comm/cron/cli crash policy — trade-off
+recorded in isaac-6doh).
+
+`features/turn-marker-claim.feature`: rewritten — the marker carries source +
+started-at only; receipt at bind; the stray guard keys off the receipt.
+Deleted "a failure-rescheduled delivery survives tick while its turn is still
+in flight" (nothing is rescheduled after a turn starts).
+
+## Acceptance (recut, 2026-09-21)
+
+```
+cd isaac-hail
+bb features features/delivery.feature
+bb features features/turn-resume.feature
+bb features features/turn-marker-claim.feature
+bb ci
+grep -rn "turn-ended\|defer-delivery\|continue-delivery\|wrap-up-delivery\|hail-delivery\|resume-grace" src/   # one-time check: gone
+```
+
+The original acceptance list above stands; "grep for hail in isaac-agent
+src/ is clean" is verified by isaac-6doh and "sweep-weather! is wired" by
+isaac-f3hq.
+
+feature-baseline: isaac-hail cc67116c4599f25602a7c01bfce395949b8256e8
+feature-blob: isaac-hail features/delivery.feature a3109529a73da71975f05ba86246d7d53611c1d0
+feature-blob: isaac-hail features/turn-resume.feature 1bde3e062c91a16ee7c434599f0bf6ca495f2967
+feature-blob: isaac-hail features/turn-marker-claim.feature 00604a10bcc1d538037598178e7a0d092aff3a91
