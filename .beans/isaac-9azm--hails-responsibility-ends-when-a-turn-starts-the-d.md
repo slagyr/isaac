@@ -129,3 +129,8 @@ delivery retry.** Decide before implementing.
   no session outside the hail's band is ever a candidate
 - "hails never die" still holds: a provider outage parks and self-delivers on
   recovery, and nothing counts against the dead-letter budget
+
+---
+
+Dispatched: hail 7f6bf962 2026-09-21T16:41:10Z (band isaac-work, routed
+:candidates 3, bound isaac-work-1 at 16:41:12Z)
