@@ -106,7 +106,7 @@ the verdict, the warning, silence on the bean's own branch, silence under
 
 ## Landed on main (2026-09-21)
 
-main-sha: isaac 168462535536e7832fe1fb6780ac690ee45d3690
+main-sha: isaac 7849bd370a1a59ea65e1bffb8f0403cd6d8467c2
 
 Squashed from `bean/isaac-9yms` (rebased onto isaac-dopm's landing first;
 branch deleted local + remote). `bb ci` on main after the squash: 57 examples,
