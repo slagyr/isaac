@@ -5,7 +5,9 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-21T16:22:55Z
-updated_at: 2026-09-21T16:22:55Z
+updated_at: 2026-09-21T16:23:24Z
+blocked_by:
+    - isaac-jl9p
 ---
 
 ## Why (Micah, 2026-09-21)

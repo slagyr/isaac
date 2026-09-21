@@ -5,11 +5,10 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-09-21T04:58:11Z
-updated_at: 2026-09-21T16:23:13Z
+updated_at: 2026-09-21T16:23:24Z
 blocked_by:
     - isaac-jl9p
     - isaac-ruom
-    - isaac-7fab
 ---
 
 ## Why
