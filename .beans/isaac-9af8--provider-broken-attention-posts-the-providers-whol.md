@@ -7,8 +7,9 @@ priority: high
 tags:
     - ops
     - comm
+    - unverified
 created_at: 2026-09-21T04:46:42Z
-updated_at: 2026-09-21T22:11:08Z
+updated_at: 2026-09-21T22:23:39Z
 ---
 
 `provider-content` (isaac-agent `src/isaac/attention.clj:46`) appends the
@@ -165,3 +166,31 @@ No Exceptions section on this bean. No feature file in the diff.
 `bb spec` 1696 examples, 0 failures. The cap work holds: `provider-message-cap` is 400, leaders stay in front, a short message is unchanged, a giant message says how many characters were dropped, and `:attention/provider-message-clipped` keeps the full text. No `Thread/sleep` in `spec/`.
 
 Revised acceptance, first bullet, is not met. A provider-broken attention still does not name why it broke. `maybe-notify-broken!` forwards only `:message`. `provider-content` clips the head of that string. On the 04:31 incident the head is the Claude `system/init` handshake, so the alert is still the tool list, and `:error` / `:status` (logged beside it in `dispatch.clj`) never reach the post. Opening the log is still required. The revised work named three ways to carry the diagnosis: the structured error and status, a tail clip, or stripping the handshake before clipping. A shorter head is not one of them.
+
+## Work log — round 2 (2026-09-21, work-2 local)
+
+Landed as isaac-agent f83af55, suites green (1698 specs / 0, 846
+features / 0).
+
+Round-1 verify failure addressed point by point:
+
+- **The diagnosis reaches the post.** `maybe-notify-broken!` now
+  forwards `:error` and `:status` from the result, and `provider-content`
+  leads with them: "Provider claude is broken error llm-error status
+  nil model … session …". An operator reads why without opening the log.
+- **The clip is now a tail clip.** A streamed provider error's head is
+  the system/init handshake; the failure is at the end. The alert keeps
+  the tail (provider-message-cap) plus "… N characters dropped". Short
+  messages unchanged; the full text still goes to the log
+  (:attention/provider-message-clipped) when the cap fires.
+- **Handshake-stripping weighed and rejected** — the third option: it
+  means parsing a provider-specific envelope shape, brittle the moment a
+  provider reorders its init event. The structured fields plus the tail
+  carry the diagnosis without it.
+- **The bounded alert is pinned by a scenario**, as the revised
+  acceptance asked: features/llm/provider_attention.feature now has a
+  giant streamed http-error scenario asserting the outbox record contains
+  "error api-error", "status 400", the tail fragment, and the dropped
+  count — verified red on round 1's code (stash-checked) before landing.
+- The whole-stream-as-payload question: the full stream stays in the
+  log; the alert never carries it.
