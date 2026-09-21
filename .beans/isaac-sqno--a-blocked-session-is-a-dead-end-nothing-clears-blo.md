@@ -8,8 +8,8 @@ created_at: 2026-09-21T22:10:10Z
 updated_at: 2026-09-21T22:10:10Z
 ---
 
-Repo: **isaac-agent** (`src/isaac/drive/turn.clj`, `src/isaac/session/schema.clj`)
-and **isaac-foundation** (the `sessions` CLI).
+Repo: **isaac-foundation** (the `sessions` CLI) + **isaac-agent**
+(`src/isaac/session/schema.clj` — `consecutive-failures` is system-managed).
 
 ## What happens
 
@@ -18,65 +18,56 @@ writes a persistent marker on the session:
 
     :block {:reason :compaction-failed, :at "…"}
 
-`conversation-blocked?` (`turn.clj:1018`) then short-circuits **every** turn via
-`maybe-blocked-conversation!` — before compaction is attempted. So the retry
-that would clear the condition can never run. The turn ends
-`:ended-by :provider-unavailable` with a 5-minute retry that only re-reports the
-block.
+**Nothing in the codebase ever removes it.** It is written in one place, read in
+two (`turn.clj:1018`, `1048`), declared in `session/schema.clj:85`, and never
+cleared. The only exit is an operator who already knows to run
+`isaac sessions unset <id>.block`.
 
-**Nothing in the codebase ever removes `:block`.** It is written in one place,
-read in two, declared in `session/schema.clj:85`, and never cleared. The only
-exit is an operator who knows to run `isaac sessions unset <id>.block`.
-
-Worse, the counter that put it there cannot be reset:
+And that only half-works, because the counter that caused the block cannot be
+reset:
 
     $ isaac sessions set isaac-work-3.compaction.consecutive-failures 0
     system-managed field: compaction.consecutive-failures
 
-It resets only on a **successful** compaction (`turn.clj:864`). So a session that
-has just been unblocked still sits at the maximum: one more failure re-latches
-it immediately. There is no margin, and no way for an operator to restore any.
+It resets only on a **successful** compaction (`turn.clj:864`). So a session
+unblocked by hand is still sitting at the ceiling: the very next failure
+re-latches it. There is no margin and no way for an operator to restore any.
 
 ## What it cost (2026-09-21)
 
-A provider outage (the Tonotop OAuth token was being overridden by a
+A provider outage — the Tonotop OAuth token was being overridden by a
 process-wide `CLAUDE_CODE_OAUTH_TOKEN` in the launchd plist, so every call
-authenticated as an exhausted account) made compaction fail three times on three
-worker sessions. All three latched at 18:45. They stayed dead until a human
-cleared them by hand.
+authenticated as an exhausted account — made compaction fail three times on
+three worker sessions. All three latched at 18:45.
 
-Then it happened **again**: cleared at ~21:15, all three re-latched at
-21:20–21:21, because each was still sitting at 3 failures and the outage had not
-finished. And once more at 22:0x for `tono-work-1`. Three rounds of manual
-`sessions unset` for one incident.
+`sessions unset <id>.block` cleared them at ~21:15. All three re-latched at
+21:20–21:21, because each was still at 3 failures and the outage had not
+finished. `tono-work-1` latched a third time at ~22:0x. **Three rounds of manual
+intervention for one incident**, and each round reopened the session with zero
+margin.
 
-The visible symptom was not a block message. It was a hail retrying forever
-against a blocked session — 136 identical `delivery-skipped` lines for a single
-delivery (see isaac-udlg) — which reads as a stuck queue, not a blocked session.
+The visible symptom was never a block message. It was a hail retrying forever
+against a blocked session (isaac-udlg), which reads as a stuck queue.
 
 ## Change
 
-A lever, and ideally self-healing:
-
-1. **An operator lever.** `isaac sessions unblock <id>` that clears `:block`
-   **and** resets `consecutive-failures` to 0, so the session has a full budget
-   again rather than one attempt. `sessions unset <id>.block` half-does this
-   today and leaves the trap armed.
-2. **Self-healing.** A blocked session should retry compaction on a backoff
-   rather than short-circuit forever — the block should suppress *work*, not
-   suppress the recovery attempt. Clearing on the first success is enough.
-3. **Visibility.** `sessions list` should mark a blocked session. Today the only
-   way to find one is to grep `session.edn` files, and the pipeline just looks
-   quiet.
+`isaac sessions unblock <id>`: clear `:block` **and** reset
+`consecutive-failures` to 0, so the session resumes with a full budget rather
+than one attempt. This is the operator lever; `sessions unset <id>.block` is
+the half-measure it replaces.
 
 ## Acceptance
 
 - `isaac sessions unblock <id>` clears `:block` and zeroes
-  `consecutive-failures`; a session unblocked this way survives a single
-  subsequent compaction failure without re-latching.
-- A blocked session retries compaction on a backoff, and a successful compaction
-  clears `:block` with no operator action.
-- `isaac sessions list` shows blocked sessions distinctly.
-- Spec coverage: a session at the failure ceiling, unblocked, does not re-latch
-  on one failure; and a blocked session recovers on its own after a successful
-  compaction.
+  `consecutive-failures`.
+- A session unblocked this way survives a single subsequent compaction failure
+  without re-latching (it re-latches only after the full
+  `max-compaction-attempts` again).
+- Unblocking a session with no `:block` is a no-op that exits 0, not an error.
+- Spec coverage for the at-ceiling case: unblock, fail once, still runnable.
+
+## Related
+
+- isaac-udlg — the delivery-skipped spam that was this bug's only visible symptom.
+- isaac-s29x — self-healing recovery, split out of this bean.
+- isaac-htix — `sessions list` does not show a blocked session, split out of this bean.
