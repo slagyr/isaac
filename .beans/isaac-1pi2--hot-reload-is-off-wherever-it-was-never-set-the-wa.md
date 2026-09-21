@@ -1,11 +1,11 @@
 ---
 # isaac-1pi2
 title: Foundation should own config watching and reload, not isaac-http (and the current gate ignores its own default)
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-20T23:33:49Z
-updated_at: 2026-09-20T23:37:43Z
+updated_at: 2026-09-21T00:06:58Z
 parent: isaac-3q4m
 ---
 
@@ -100,3 +100,48 @@ the in-memory source.
 
 Once the owner is right the original bug below cannot recur: there is no module
 gate left to disagree with the default.
+
+## Done (planner, 2026-09-20)
+
+Config watching now belongs to foundation's runner, and it is on unless a host
+turns it off.
+
+**foundation** — `isaac.config.{change-source*,configurator,install,runtime}`
+moved here from isaac-http; they were always named `isaac.config.*`. New
+`isaac.config.watch` owns the decision and the reload loop, and
+`isaac.runner` starts and stops it: the process watches its own config because
+it is the process. `:hot-reload` defaults to **true**; the retired
+`[:server :hot-reload]` still works and warns. Every outcome is logged —
+`:config.watch/started`, or `:config.watch/disabled` with a reason, or
+`:config.watch/unavailable` when the fswatcher has no config directory to
+watch. The change source is injectable, for tests and embedders.
+
+**isaac-http** — deleted its copies and the gate. The server runtime component
+keeps installing config and reconciling it away on stop; it no longer decides
+whether anyone is ever reconciled.
+
+**isaac-agent** — deleted its byte-identical copy of the change source. This
+was not merely dead code: both copies claimed the same namespaces, the agent's
+won on the classpath, and a fix made in foundation's watcher silently did not
+run. Three hot-reload scenarios in http failed for exactly this reason until
+the copy was gone.
+
+Any config file the layer recognises triggers a reload — `isaac.edn`, every
+`<kind>/<id>.edn`, and the crew/berth/cron/hook markdown. The fswatcher is
+recursive over the config root, so a file created after boot is seen like any
+other; that was the original symptom (a new crew file invisible to the running
+server).
+
+| repo | version | sha | suites |
+| --- | --- | --- | --- |
+| isaac-foundation | — | `8903a585` | 1073 specs / 0 |
+| isaac-agent | 0.1.75 | `1d49e49d` | 1658 / 0, 841 / 0 |
+| isaac-http | 0.1.21 | `8d6ab8f1` | 189 / 0, 107 / 0 |
+
+Registry updated. Not yet deployed to zanebot — that host has no `:hot-reload`
+key, so it gains the watcher on the next upgrade and stops needing a restart
+for config changes.
+
+Follow-up worth its own bean: `isaac.config.watch` names the module registries
+(`hail.bands`, `hooks`, `cron.service`) by symbol to reconcile them. Foundation
+should not know those names — that belongs in a berth modules declare.
