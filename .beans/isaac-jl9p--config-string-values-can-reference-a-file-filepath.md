@@ -48,7 +48,7 @@ in use changes meaning.
    sent to an LLM provider. Staying inside the root also lets the watcher see
    the file.
 2. **A missing or unreadable file warns and resolves as unset**, the same as
-   an unset env var. The full rule is in the unresolved-references bean. It
+   an unset env var. The full rule is in isaac-rxun. It
    never passes the literal `${file:…}` through, and it never blocks writing
    config.
 3. **Frontmatter is stripped**, using the same `split-frontmatter` as souls and
