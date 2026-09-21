@@ -134,3 +134,79 @@ delivery retry.** Decide before implementing.
 
 Dispatched: hail 7f6bf962 2026-09-21T16:41:10Z (band isaac-work, routed
 :candidates 3, bound isaac-work-1 at 16:41:12Z)
+
+## Conflict — cannot be implemented as written (2026-09-21, scrapper@isaac-work-1)
+
+Investigated both repos from clean bases: `isaac-hail` `origin/main` `7e94025`,
+`isaac-agent` `origin/main` `a0a4180`. No production code written — three
+blockers, each a planner/human call, not a worker call.
+
+### 1. The bean deletes behaviour that ~12 baselined scenarios assert
+
+The bean carries no `## Exceptions` and no `feature-baseline:`. A worker may
+only strip `@wip` from a `.feature`. Every branch in the bean's table is
+currently pinned by green scenarios that must be re-cut or deleted **by the
+planner, on module main**, before any implementation can be green:
+
+| branch | scenarios pinning today's behaviour |
+| --- | --- |
+| 1 `:unavailable?` defer | `isaac-hail/features/delivery.feature:505, :537, :568, :603, :640` (isaac-3tvq / 6zk5 / 5a4n — landed today in `7e94025`) |
+| 2 `suspended-response?` | `delivery.feature:665` (isaac-2xj5) |
+| 3 cancelled | `delivery.feature:847` |
+| 4 turn-error retry | `delivery.feature:172, :198, :300, :394, :418, :443` (isaac-k4mf / jnkp / cehc) |
+| 5 `:cycle-limit` continuations | `delivery.feature:701, :741, :916` (isaac-ntt6 / tic5) |
+| 6 receipt at bind | `delivery.feature:27, :330, :360, :816` assert the delivered-at-turn-end ordering |
+| agent `requeue-hail!` | `isaac-agent/features/session/resume_repair.feature:49` "a legacy hail marker is requeued and removed from its original path" |
+
+Branch 1's five scenarios landed **today** as isaac-3tvq/6zk5/5a4n. This bean
+reverses that work. That is a planner-level contract decision, not a worker
+edit.
+
+### 2. The bean's own Open decision is unresolved
+
+"Today a turn that dies on a transient error is retried up to five times …
+**Decide before implementing.**" Acceptance 2 implies hail drops it; no
+acceptance item adds a drive-side replacement. Ruling needed:
+**(a)** no retry at all — a failed turn stays failed and shows in the session
+(cheapest, satisfies every acceptance line as written); or
+**(b)** turn-level retry moves into the drive — new isaac-agent work with its
+own scenarios, and `delivery.feature:172/:198/:394/:418/:443` move to the agent.
+
+### 3. Branch 5 hides a second decision of the same class
+
+The table says `:cycle-limit` "belongs to **drive/band** — delete", but hail's
+`continue-delivery!` / `wrap-up-delivery!` (`delivery_worker.clj:395-429`) is
+the **only** continuation implementation in the tree. In isaac-agent,
+`grep -rn "cycle-limit|continuation" src/` finds reporting only
+(`drive/turn.clj:484, :493-507`) — nothing re-drives a budget-exhausted turn.
+Deleting branch 5 with no replacement ends continuations outright, and the crew
+work protocol depends on them ("Running out of budget is a wrap-up … the
+delivery worker resumes on a fresh turn" — `work-bean-gate`). Ruling needed:
+**(a)** hail keeps continuations (contradicts the table); **(b)** a drive/band
+continuation budget is built first, as its own bean blocking this one;
+**(c)** continuations end, and the bands that rely on them are re-cut.
+
+### Scope note (for whoever re-plans it)
+
+Even with 2 and 3 settled this is two repos and three separable pieces, each
+with its own acceptance:
+
+1. **drive-side continuation budget** (if ruling 3b) — isaac-agent, blocking.
+2. **wire `sweep-weather!` + decouple the drive from hail** — isaac-agent:
+   `resume.clj` loses `marker->delivery` / `requeue-hail!` / the `(= :hail
+   source)` case / `archive-cancelled-hail!` (and `crash-orphan?` /
+   `resume-attempts` go dead with them); `bridge/core.clj:189` drops
+   `:delivery-id`; `:hail` joins `#{:comm :cron :cli}` on the
+   `enqueue-resume-turn!` path, which is what acceptance 5 ("resumes that turn
+   in its own session") actually means. `sweep-weather!` needs a production
+   scheduler task — the agent has exactly two today
+   (`comm/delivery/worker.clj:92`, `turn/worker.clj:118`) — and wiring it needs
+   a guard against double-driving, because boot resume already enqueues a
+   resume turn for a due suspended marker (`resume.clj:200-214`).
+3. **hail: receipt at bind + branch collapse** — only after 2, since the
+   `store/clear-turn-marker!` in the weather branch
+   (`delivery_worker.clj:555-560`) exists precisely because `sweep-weather!` is
+   unwired; removing one without the other loses the park or double-drives it.
+
+Bean left `in-progress`, nothing implemented, no branch pushed. Worktrees
+`../isaac-hail-9azm` and `../isaac-agent-9azm` removed.
