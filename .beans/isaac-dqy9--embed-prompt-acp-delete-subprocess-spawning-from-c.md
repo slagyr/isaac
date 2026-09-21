@@ -7,7 +7,7 @@ priority: normal
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-18T04:57:13Z
+updated_at: 2026-09-21T01:48:30Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -70,3 +70,5 @@ cd isaac-cli-proxy && bb features-slow features/integration.feature && bb ci
 cd isaac-cli-server && bb features && bb spec && bb ci
 ```
 zanebot soak after the train: a day of crew traffic with zero `:session/transcript-torn` / `:session/unreadable`. PROTOCOL.md final wording, both repos.
+
+Dispatched: hail d03cbc71 2026-09-21T01:48:02Z (band isaac-work, pinned session isaac-work-1 on model tono-opus / provider tono-claude — second Claude subscription trial, isaac-12fo)
