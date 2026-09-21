@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:14:05Z
+updated_at: 2026-09-21T17:15:56Z
 blocking:
     - isaac-9azm
 ---
@@ -86,3 +86,7 @@ bb ci
 feature-baseline: isaac-agent cabfdf29e81b87307a158b0fccd8056d0c03135d
 feature-blob: isaac-agent features/turn/continuations.feature 95fb8662eecf9afa8c12810ccf5a0bbb403dbba6
 feature-blob: isaac-agent features/config/cycle.feature 458700b7d5fc5086ae4c67692c2ab7fb4bf3f72a 26
+
+
+
+Dispatched: hail 24a7dc2a 2026-09-21T17:15:30Z (band isaac-work)

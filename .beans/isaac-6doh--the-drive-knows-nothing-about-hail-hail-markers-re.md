@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:14:06Z
+updated_at: 2026-09-21T17:15:56Z
 blocking:
     - isaac-9azm
 ---
@@ -73,3 +73,7 @@ grep -rn "hail" src/    # one-time check: no hail-shaped code remains
 
 feature-baseline: isaac-agent cabfdf29e81b87307a158b0fccd8056d0c03135d
 feature-blob: isaac-agent features/session/resume_repair.feature 19b913c0fd8d157a2f251c81adcc2f0341b9f3d6 50
+
+
+
+Dispatched: hail 209439d6 2026-09-21T17:15:30Z (band isaac-work)

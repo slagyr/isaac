@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:14:06Z
+updated_at: 2026-09-21T17:15:56Z
 blocking:
     - isaac-9azm
 ---
@@ -94,3 +94,7 @@ feature-baseline: isaac-agent cabfdf29e81b87307a158b0fccd8056d0c03135d
 feature-blob: isaac-agent features/bridge/weather_suspend.feature 63efea44b3c6ffecb0815774f8796bf2c1709e34 265,275,306,341
 feature-blob: isaac-agent features/session/error_handling.feature 556af59adae06327cb50e80a3d1530f722b84375 76,99
 feature-blob: isaac-agent features/llm/turn_exhaustion.feature 226278c152b1c46072b2b44568654e4ea0a8eebb 164
+
+
+
+Dispatched: hail 5d575816 2026-09-21T17:15:30Z (band isaac-work)
