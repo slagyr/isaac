@@ -1,11 +1,11 @@
 ---
 # isaac-6doh
 title: 'The drive knows nothing about hail: hail markers resume like any other source'
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:16:22Z
+updated_at: 2026-09-21T17:35:35Z
 blocking:
     - isaac-9azm
 ---
@@ -77,3 +77,56 @@ feature-blob: isaac-agent features/session/resume_repair.feature 19b913c0fd8d157
 
 
 Dispatched: hail 209439d6 2026-09-21T17:15:30Z (band isaac-work)
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac-agent 984f59ab9b1b138d0c64140e98572430205c1381
+
+### What went
+
+`bridge/resume.clj`: `marker->delivery`, `requeue-hail!`, `write-delivery!`,
+`deliveries-path`, `archive-cancelled-hail!`, `cancelled-dir`,
+`crash-orphan?`, `resume-attempts`, `normalize-id`, `write-edn` and the
+`clojure.pprint` require. `resume-marker!` no longer reads `:source` at all:
+a cancelled marker of any source is cleared, and every other live marker
+takes `enqueue-resume-turn!` (the old `#{:comm :cron :cli}` set is gone, so
+`:hail` and any future source resume the same way). `comm-stale?` now says
+in its docstring why only `:comm` ages out.
+
+`bridge/core.clj`: `turn-marker` is `{:source … :started-at …}` — no
+`:delivery-id`, no `:attempts`, no `:delivery`. `marker-source` lost its
+`:hail` case; an autonomous origin's kind is carried unread. The
+`:hail-delivery` charge key had exactly one reader (that marker) and now has
+none.
+
+`config/schema/root.clj`: `hail` and `hail-band` were unread in this repo
+(isaac-hail composes its band schema from its own manifest; isaac-server
+keeps its own copy) — deleted as dead readers.
+
+### Residual `grep -rn hail src/` (deliberate, not drive code)
+
+- `bridge/core.clj:76` `autonomous-origin?` `#{:hail :cron}` — a routing set
+  of dispatcher *kinds*, read identically for both; nothing hail-shaped is
+  read from the charge. Replacing it with a flag the dispatcher stamps needs
+  isaac-hail to set that flag, and this bean must not repin isaac-hail.
+  Natural companion to isaac-9azm.
+- `tool/builtin.clj` `hail__send` — the tool's wire name plus the
+  "hail module is not loaded" stub that delegates to `isaac.tool.hail`.
+- `config/schema/root.clj:77` `entity-collections #{:crew :hail :models
+  :providers}` — a hardcoded path-normalization set. Deriving it from the
+  tables that carry a `:value-spec` would also change `:comms`/`:cron`/
+  `:hooks` path handling, which no scenario covers. Left alone.
+- `attention.clj:68` — a docstring reference.
+
+### Specs recut
+
+`spec/isaac/bridge/resume_spec.clj`: the three hail-shaped examples became
+"enqueues a suspended hail marker like any other source, writing nothing
+under hail/", "resumes an hour-old hail marker: a work order never goes
+stale", "clears the legacy marker path after enqueueing its turn", and
+"drops a cancelled hail marker the same as any other source, archiving
+nothing". Two assert `hail/` is never created at all.
+
+Verified: `bb features` on resume_repair / resume_queue / turn_markers, then
+`bb ci` (1683 unit + 839 feature examples, 0 failures). isaac-hail was not
+repinned.
