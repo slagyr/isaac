@@ -98,3 +98,42 @@ feature-blob: isaac-agent features/llm/turn_exhaustion.feature 226278c152b1c4607
 
 
 Dispatched: hail 5d575816 2026-09-21T17:15:30Z (band isaac-work)
+
+## Checkpoint (2026-09-21, scrapper@2026-06-30-0021-icc9)
+
+Turn was reassigned to another bean before this one closed. State of
+`~/agents/isaac/work-1/isaac-agent-f3hq` (branch `bean/isaac-f3hq` @ 92cb392,
+clean, 7 ahead / 2 behind `origin/bean/isaac-f3hq` — the local branch is a
+rebase of the remote, so **push is a force-with-lease or a re-rebase**, not a
+fast-forward).
+
+Green: all three acceptance files pass on the branch.
+- `features/bridge/weather_suspend.feature` — 16 examples, 0 failures
+- `features/session/error_handling.feature` — 6 examples, 0 failures
+- `features/llm/turn_exhaustion.feature` — 9 examples, 0 failures
+- `grep -rn sweep-weather! src/` shows the production caller
+  (`src/isaac/turn/worker.clj:127`), so that acceptance bullet is met.
+
+**Not green: `bb ci` has 2 failures. Do not hand this off until they are
+resolved.**
+
+1. `features/session/tool_loop.feature:24` — "tool loop formats messages for
+   OpenAI-compatible providers". Expected row 1 `role: tool`, got `assistant`.
+   **This is a real regression from this branch**, not pre-existing: the same
+   file run alone on a detached `origin/main` worktree passes (2 examples, 0
+   failures), and fails alone on the bean branch (2 examples, 1 failure).
+   Bisect so far: reverting the `:silence` arm of `weather-reason` in
+   `src/isaac/drive/weather.clj` to `nil` does **not** fix it, so the silence
+   reclassification is not the cause. Next step is the src-vs-spec split —
+   `git checkout origin/main -- spec/` (keeping this branch's `src/`) and
+   re-run that one feature; the prime suspect is
+   `session_steps/with-feature-config!` + the `queue_steps` scheduler
+   lifecycle, which now install and restore a process-wide config snapshot and
+   register/deregister `[:scheduler]` in the nexus — global state that can
+   leak across scenarios.
+2. `features/config/schema_cli_options.feature:52` — passes when run alone
+   (7 examples, 0 failures), fails only in the full `bb ci`. Cross-scenario
+   pollution, same suspected cause as (1).
+
+The temporary `weather.clj` edit made during the bisect was reverted; the tree
+matches HEAD.
