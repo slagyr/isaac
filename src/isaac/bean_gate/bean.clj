@@ -46,6 +46,12 @@
 
 (defn- fence? [line] (str/starts-with? (str/triml line) "```"))
 
+(defn- top-level?
+  "A gate line only counts at column 0. Indenting one makes it a markdown code
+   block — prose quoting somebody else's contract, not this bean's (isaac-dopm)."
+  [line]
+  (not (re-find #"^\s" line)))
+
 (defn- with-fences
   "Pairs each line with whether it sits inside a ``` code fence."
   [lines]
@@ -57,9 +63,11 @@
                   lines)))
 
 (defn gate-lines
-  "Gate lines outside code fences (a fenced example is documentation, not a gate)."
+  "Gate lines at column 0, outside code fences. A fenced or indented example is
+   documentation, not a gate."
   [text]
-  (keep (fn [[l fenced?]] (when-not fenced? (parse-gate-line l))) (with-fences (str/split-lines text))))
+  (keep (fn [[l fenced?]] (when (and (not fenced?) (top-level? l)) (parse-gate-line l)))
+        (with-fences (str/split-lines text))))
 
 (defn in-force
   "The gate as recorded in text: the last baseline per repo, the last blob per
@@ -118,7 +126,7 @@
           (and (not fenced?) (str/starts-with? t "## "))
           (recur more (contract-heading t) acc)
 
-          (and (not fenced?) (#{:baseline :blob} (:kind (parse-gate-line t))))
+          (and (not fenced?) (top-level? line) (#{:baseline :blob} (:kind (parse-gate-line t))))
           (recur more section (conj acc [:gate (str/trim t)]))
 
           (and section (not (str/blank? t)))

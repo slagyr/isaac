@@ -111,8 +111,11 @@ jobs:
           # bean-gate looks for it. blob:none keeps the clone small while
           # leaving every commit reachable, which the baseline sha and the
           # main-sha diffs both need. All slagyr/isaac-* repos are public.
+          # Column 0 only, matching isaac.bean-gate.bean (isaac-dopm): an
+          # indented feature-baseline: is prose quoting another bean's
+          # contract, and the gate will not honour it either.
           for id in $ids; do
-            for repo in $(awk '/^[[:space:]]*feature-baseline:/ {print $2}' .beans/${id}--*.md | sort -u); do
+            for repo in $(awk '/^feature-baseline:/ {print $2}' .beans/${id}--*.md | sort -u); do
               case "$repo" in
                 *[!A-Za-z0-9._-]*) echo "skipping non-repo baseline token: $repo"; continue ;;
               esac

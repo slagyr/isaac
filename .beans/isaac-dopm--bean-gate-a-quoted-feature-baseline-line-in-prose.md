@@ -1,14 +1,14 @@
 ---
 # isaac-dopm
 title: 'Bean gate: a quoted feature-baseline line in prose accidentally gates the bean'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-20T20:26:13Z
-updated_at: 2026-09-20T20:26:13Z
+updated_at: 2026-09-21T17:24:41Z
 parent: isaac-rmq6
 ---
 
@@ -55,3 +55,28 @@ not freeze it either.
   that edits prose containing a quoted `feature-blob:` line is not a violation.
 - Spec coverage in `spec/isaac/bean_gate/` for both the indented and the fenced
   form.
+
+## Implementation (2026-09-21, planner)
+
+`isaac.bean-gate.bean` now honours a gate line only at **column 0**, outside
+code fences. Indenting a `feature-baseline:` / `feature-blob:` line makes it a
+markdown code block — prose quoting somebody else's contract — and the gate
+reads it as documentation.
+
+- `bean.clj` gains `top-level?`; `gate-lines` and the `:gate` branch of
+  `contract-lines` both apply it, so a quoted line neither gates the bean nor
+  gets frozen as append-only contract.
+- `.github/workflows/bean-gate.yml` clone loop goes back to `/^feature-baseline:/`
+  from the `/^[[:space:]]*…/` it was loosened to in `5aabd1fe`. That loosening
+  existed only to match the gate's own loose parser; with one parser the
+  workflow clones exactly what the gate will look for.
+- `spec/isaac/bean_gate/bean_spec.clj` (new, 7 examples) covers the indented
+  form, the fenced form, a quoted line not becoming contract, and a real
+  column-0 baseline surviving alongside a quoted one.
+
+Observed effect on the two beans that carried the defect:
+
+    bb bean-gate verify isaac-e20m   → exit 2  "no feature-baseline: use the verify path"   (was: gated on isaac-2y86's scenario)
+    bb bean-gate verify isaac-2y86   → exit 0  PASS (isaac-foundation @ main-sha 3535286)   (unchanged)
+
+`bb ci`: 52 examples, 0 failures, 78 assertions.
