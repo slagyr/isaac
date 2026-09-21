@@ -3,12 +3,12 @@
 title: 'isaac-gchat: discover spaces the account belongs to instead of listing every space in config'
 status: todo
 type: feature
-priority: normal
+priority: high
 tags:
     - google
     - comm
 created_at: 2026-09-19T21:13:13Z
-updated_at: 2026-09-20T07:02:56Z
+updated_at: 2026-09-21T03:55:47Z
 parent: isaac-bv1l
 ---
 
@@ -29,3 +29,29 @@ Micah 2026-09-19: the default is 'a space is a conversation and a conversation i
 
 
 Tenants (isaac-1zkz): discovery runs per tenant with that tenant's token; canonical session names carry the tenant when more than one exists (gchat/tonotop/yopp-test).
+
+## Session ids are slugified (planner, 2026-09-21)
+
+Found while Micah's DM went unheard and he asked where such sessions would
+land. `store/impl-common/slugify` lower-cases the identifier and replaces every
+run of non-[a-z0-9] with a hyphen, so today's canonical name arrives as
+`gchat-spaces-aaqa7rg5uyc` for space `spaces/AAQA7rg5Uyc`.
+
+Consequences for the naming above:
+
+- `gchat/yopp-test` becomes `gchat-yopp-test`, `gchat/dm/micah-martin` becomes
+  `gchat-dm-micah-martin`. Both read fine; write them in the form they will
+  take rather than assuming the slash survives.
+- The space id cannot live in the name: `AAQA7rg5Uyc` slugs to
+  `aaqa7rg5uyc` and no longer matches the space. It belongs on the tag
+  (`space:AAQA7rg5Uyc`), preserved verbatim, which is what makes a rename
+  safe.
+- A display name needs deliberate slugging anyway ("Micah Martin" ->
+  `micah-martin`), and two spaces with the same display name must not collide
+  into one session — fall back to the id, or suffix it.
+
+Acceptance to add: a discovered space named "Yopp Test" routes to
+`gchat-yopp-test` tagged `space:AAQA7rg5Uyc`; renaming the space keeps the
+session (the tag matches, the name may lag); a DM with Micah routes to
+`gchat-dm-micah-martin`; two spaces sharing a display name get distinct
+sessions.
