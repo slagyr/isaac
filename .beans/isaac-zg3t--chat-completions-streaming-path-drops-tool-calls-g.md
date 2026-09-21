@@ -8,7 +8,7 @@ tags:
     - llm
     - providers
 created_at: 2026-09-21T02:46:54Z
-updated_at: 2026-09-21T02:46:54Z
+updated_at: 2026-09-21T02:47:29Z
 ---
 
 The streaming path of `isaac.llm.api.chat-completions` cannot report a tool call.
@@ -81,3 +81,5 @@ disposition: drop, or surface as reckoning the way the claude driver does.
 - arguments split across chunks are reassembled, and two tool calls in one
   response stay separate (merged by `index`)
 - the `reasoning_content` disposition is recorded, with a scenario if surfaced
+
+Dispatched: hail e52b6c55 2026-09-21T02:47:24Z (band isaac-work)
