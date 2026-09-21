@@ -1,14 +1,14 @@
 ---
 # isaac-q1iu
 title: 'isaac-http: OIDC trust rules from config (http.auth.identity) — trusting an issuer is configuration, not a module change'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - http
     - security
 created_at: 2026-09-21T17:34:41Z
-updated_at: 2026-09-21T17:39:07Z
+updated_at: 2026-09-21T17:41:07Z
 parent: isaac-gym1
 ---
 
