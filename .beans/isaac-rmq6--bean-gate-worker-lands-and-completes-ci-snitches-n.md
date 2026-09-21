@@ -1,7 +1,7 @@
 ---
 # isaac-rmq6
 title: 'Bean Gate: worker lands and completes; CI snitches; no verify crew'
-status: todo
+status: completed
 type: epic
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - beans
     - ci
 created_at: 2026-09-19T19:34:44Z
-updated_at: 2026-09-19T20:43:26Z
+updated_at: 2026-09-21T17:41:33Z
 ---
 
 Repo: **isaac** (beans tracker). Do **not** change the `beans` CLI. Do **not** edit agent-lib `plan.md` / `work.md` / `hail-bean-work` (Zanebot other projects toolbox those URLs).
@@ -57,3 +57,60 @@ Refines decision 3. Full mechanics live in isaac-cy85.
 3. isaac-przv — `hail-bean-work-gate` + isaac-work band (draft, blocked by cy85)
 4. isaac-4b21 — snitch CI (draft, blocked by cy85)
 5. isaac-e20m — cut over / drain verify (draft, blocked by jp4v, przv, 4b21)
+
+## Closed (2026-09-21, planner)
+
+All seven children are `completed` and the rollout's five steps are done. The
+gate is the default path: the worker implements, runs `bb bean-gate verify`,
+lands its own bean and marks it `completed`; CI re-gates every completed,
+baselined bean that reaches main. No verify crew in the loop.
+
+| child | what it shipped | main-sha (isaac) |
+|-------|-----------------|------------------|
+| isaac-cy85 | `bb bean-gate` + fixtures | 53ea1cf |
+| isaac-jp4v | planner overlay + dual-run | 721f26c |
+| isaac-przv | `hail-bean-work-gate` + `isaac-work` band cutover | 0eb8bc7 |
+| isaac-4b21 | snitch CI (`.github/workflows/bean-gate.yml`) | 19f77f2 |
+| isaac-e20m | cutover — AGENTS.md default, drain unverified | c04bf70 |
+| isaac-dopm | gate lines count only at column 0 | d4ba96e |
+| isaac-9yms | every verdict names the tree it checked | 7849bd3 |
+
+`bb ci` in isaac at close: 57 examples, 0 failures, 85 assertions.
+
+### What the dogfood was worth
+
+The four process children all shipped without a single bean being baselined
+through them, so the dual run proved only the *old* path. Everything the gate
+actually got wrong surfaced in the first two real runs, after cutover:
+
+- the snitch swallowed its own first FAIL (dead verdict logic under `bash -e`)
+  and the clone loop parsed baselines differently from the gate — both fixed on
+  e20m (`5aabd1fe`);
+- a `feature-baseline:` quoted in prose silently gated the quoting bean
+  (isaac-dopm);
+- `verify` read whatever branch a shared sibling was parked on and never said
+  so, turning one parked worktree into five confident, entirely spurious
+  failures (isaac-9yms).
+
+The lesson for the next process epic: a gate that has never gated anything is
+not shipped, whatever its suites say. Baseline the dogfood bean first.
+
+### Band text (unversioned, fixed on zanebot)
+
+`przv` switched `~/.isaac/config/hail/isaac-work.md` line 6 to load
+`hail-bean-work-gate` but left the old unconditional "When handing off to
+verify, hail the verify-band…" paragraph below it, so the band contradicted the
+skill it loads. Now qualified: a gated bean needs no verify hail (gate exit 0 →
+land and complete yourself); the handoff applies only at exit 2. Backup at
+`isaac-work.md.bak-20260921-verifyline`; `isaac config validate` → OK and
+`isaac hail send --band isaac-work --dry-run` still renders.
+
+These `isaac-*` bands are **not** version-controlled: `orchestration/isaac-beans/
+install.sh` deploys only the `orchestration-*` bands and `_orchestration-template`.
+Worth its own bean if we want them tracked.
+
+### Left standing, as decided
+
+The `isaac-verify` band, the `perceptor` crew and the orchestration
+process-tests stay. `isaac-verify` is still the live path for ungated beans —
+which these two fixes both were.
