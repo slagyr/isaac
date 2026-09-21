@@ -1,15 +1,14 @@
 ---
 # isaac-zg3t
 title: chat-completions streaming path drops tool calls; GLM-5.3 agentic turns die as :empty-terminal-response
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
     - llm
     - providers
 created_at: 2026-09-21T02:46:54Z
-updated_at: 2026-09-21T03:03:15Z
+updated_at: 2026-09-21T03:13:11Z
 ---
 
 The streaming path of `isaac.llm.api.chat-completions` cannot report a tool call.
@@ -122,3 +121,29 @@ Also added: a schema-conformance example for a streamed tool-call response (`api
 - **Two new scenarios were added** to `features/llm/api/chat_completions/openai_dispatch.feature` (a non-baselined feature file). No existing scenario was reworded or removed. Acceptance criterion 1 ("executes the tool and the turn completes") cannot be shown at the spec level alone, and criterion 5 asks for a scenario when reasoning is surfaced.
 - The shared `../isaac-agent` checkout is parked on another session's `bean/isaac-209q`; all work was done in worktree `../isaac-agent-zg3t`. Nothing in the shared checkout was touched.
 - One flake seen once and not since, unrelated to this bean: spec "session feature steps parks a slow tool-loop send so a later cancel can still fire" (timing). Green on every subsequent run.
+
+## Verified + landed on main (2026-09-21, perceptor@isaac-verify)
+
+PASS. Worktree `isaac-agent-zg3t-verify` @ `7cfe69b` (base `origin/main` 4cd20fc), `rm -rf target/gherclj/generated/` then `bb ci`, exit 0:
+**1668 spec examples / 0 failures / 3459 assertions**; **843 feature examples / 0 failures / 2006 assertions / 1 pending** (mid-turn-compaction, pre-existing). Targeted re-run of `features/llm/api/chat_completions/openai_dispatch.feature`: 9 examples / 0 failures / 13 assertions — the 7 prior scenarios plus the 2 new ones, all executing, none `@wip`.
+
+Checks:
+- §1 tampering: the only feature file touched is `openai_dispatch.feature`, additive only (two scenarios appended at the tail). No existing scenario reworded, weakened or removed.
+- §3 output: no stray `println` in the diff; structured debug lines in the spec run come from `src/isaac/tool/registry.clj`, outside this bean.
+- §4 pass A: spec additions drive the real accumulator through `with-redefs` on `llm-http/post-sse!` / `http/post` — no `Thread/sleep`, no real network/fs/db, no hidden clock, every `it` asserts. Pass B: `grep -rn "Thread/sleep" spec/` → 0 matches tree-wide.
+- §6 pins: `deps.edn`/`bb.edn` untouched; foundation `8903a58` is an ancestor of isaac-foundation `origin/main`.
+
+Acceptance:
+- streamed `delta.tool_calls` fragments execute the tool and the turn completes — `openai_dispatch.feature` scenario asserts `body.stream true` and a transcript of `toolCall exec__run` → `toolResult` → assistant "Found crumbs!".
+- same shape streamed vs non-streamed — `chat-stream-with-completions-api` now calls the same private `extract-tool-calls`; the spec asserts equality of `:tool-calls` against the non-streaming path for the same logical response.
+- `stop-reason` is `:tool-use` — the hardcoded `[]` is gone; real calls are handed to `stop-reason`, asserted equal to the non-streaming path's.
+- arguments split across chunks reassembled; two calls kept separate — `merge-tool-call-fragment` folds by `:index` into a `sorted-map`; four specs cover split arguments, interleaved fragments, and two streamed calls.
+- `reasoning_content` disposition recorded — SURFACED as `{:reasoning-delta …}` with a comment at the call site, a spec on the chunk sequence, and a feature scenario asserting the comm sees `reckoning "Which jar?"` then `reply "Found crumbs!"`.
+
+Also confirmed the fixture gap the bean named: `grover.clj` now streams each scripted tool call as an opening fragment plus a split-arguments fragment and sets `finish_reason tool_calls` — the harness can now catch this class of bug.
+
+Squash-merged to `isaac-agent` main; the squash tree is identical to the verified branch tip (`git diff HEAD origin/bean/isaac-zg3t` empty) and the base was unchanged at 4cd20fc.
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac-agent 2973541906dee36d74882d32405a95dd4f0d27fb
