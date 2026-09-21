@@ -7,7 +7,7 @@ priority: normal
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-21T02:16:01Z
+updated_at: 2026-09-21T02:17:35Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -200,3 +200,51 @@ and `bb ci` re-run before isaac-cli-proxy squashes. Both files also now carry
 (isaac-acp `main`, the isaac-ow5u commit) — the server needs the acp command in
 its own registry now that acp is not a subprocess; the old `738fe6b6` coord in
 `integration_steps.clj` was bumped to the same sha.
+
+
+
+## Exceptions
+
+### integration.feature prompt scenario (authorized, 2026-09-21, prowl@isaac-plan)
+
+On `features/integration.feature` scenario "a remote prompt runs inside the server process and its turn is visible to the server (isaac-dqy9)", recut the When from `remote ${server.url}` to `remote ws://localhost:${server.port}/cli` (same shape as the three scenarios above it). Keep Then: stdout contains `"ping"`, exit 0, `:cli/command-started` hosted true, `:turn/ended` session `dqy9-e2e`. Remove `@wip`. Do **not** add `${server.url}` to foundation `interpolate-args` on this bean.
+
+### One-time grep (authorized)
+
+`grep -rn "babashka.process\|spawn-process\|launcher-command" isaac-cli-server/src` is empty. **Do not require `:hosted` empty.** `:cli/command-started :hosted true` stays — that is the observability contract. The registry marker (`:hosted` on `:isaac/cli` entries) is inert; cleanup is **isaac-mfcd** (draft), not this bean.
+
+## Planner adjustment (2026-09-21, prowl@isaac-plan) — keep log `:hosted`; recut prompt When; drop proxy full bb ci
+
+Conflict A/B/C. Subprocess cutover is done (cli-server `1d630a3` `bb ci` green; ACP e2e un-@wip and passing).
+
+**A — keep the log key.** Permanent scenarios beat the one-time grep. Recut the one-time acceptance: spawn machinery gone; `:hosted` on the log stays. Do not touch the ACP scenario assertions.
+
+**B — recut the prompt When (option 2).** No third repo. Foundation interpolation of `${server.url}` is out of scope. Worker removes `@wip` after the recut.
+
+**C — token-reject is isaac-pp3q.** Pre-existing on origin/main. Do not absorb. Do not require `cd isaac-cli-proxy && bb ci` / full `features-slow` exit 0.
+
+Deferred (not this close): turn-gate second-prompt spec; ACP grace-expiry spec; zanebot soak; registry `:hosted` cleanup.
+
+### Controlling acceptance
+
+**isaac-cli-server** `bean/isaac-dqy9` @ `1d630a3` (or rebased):
+
+    bb features && bb spec && bb ci
+    grep -rn "babashka.process\|spawn-process\|launcher-command" src   # empty
+
+**isaac-cli-proxy** `bean/isaac-dqy9` @ `2c94520` after the recut:
+
+    bb spec
+    bb features
+    ISAAC_GIT=1 bb features-slow features/integration.feature:56
+    ISAAC_GIT=1 bb features-slow features/integration.feature:<prompt-line>
+
+ACP + prompt scenarios 0 failures. Do **not** require token-reject or full `bb ci`.
+
+Landing: cli-server squash first; then cli-proxy rewrites `bb.edn`/`deps.edn` off `{:local/root "../isaac-cli-server-dqy9"}` to the landed sha; re-run named gates; then squash proxy.
+
+### Worker now
+
+1. Recut the prompt When as authorized. Drop `@wip` on that scenario.
+2. Do not recut ACP. Do not recut token-reject. Do not edit foundation.
+3. Confirm the two @slow selectors green. Hand gated close / verifier per band. Do **not** land until cli-server then proxy pin rewrite.
