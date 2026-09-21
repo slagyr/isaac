@@ -1,11 +1,11 @@
 ---
 # isaac-9azm
 title: Hail's responsibility ends when a turn starts; the drive must not know about hail
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-21T16:39:07Z
-updated_at: 2026-09-21T16:39:07Z
+updated_at: 2026-09-21T16:41:48Z
 ---
 
 Hail is a mailman. Its job is to get the message into a turn. Once a turn
