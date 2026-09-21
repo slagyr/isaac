@@ -1,15 +1,14 @@
 ---
 # isaac-deds
 title: 'One name for the comm berth: :isaac.agent/comm, no fallbacks, wrong name is an error'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
-    - unverified
     - comm
     - config
 created_at: 2026-09-21T04:25:21Z
-updated_at: 2026-09-21T14:15:50Z
+updated_at: 2026-09-21T14:57:50Z
 ---
 
 The comm berth has three names in circulation. Every reader accepts a different
@@ -151,3 +150,57 @@ until then, deployed manifests still declare `:isaac.http/comm`, which
 the deployed (old) readers still accept. Do not bump the deploy pins
 piecemeal: foundation/agent/http/comms must move together or comms go
 blind at boot.
+
+## Verified (2026-09-21, planner)
+
+All four acceptance criteria hold at current `origin/main` in every repo.
+Verification worktrees at `~/agents/isaac/verify-deds` (detached, `origin/main`).
+
+| repo | verified sha | specs | features | GitHub CI Tests |
+|------|--------------|-------|----------|-----------------|
+| isaac-foundation | e97c51d | 1098 / 0 | 198 / 2 env | success |
+| isaac-agent | 510d5b8 | 1682 / 0 | 843 / 0 (1 pending) | success |
+| isaac-http | 71a0413 | 189 / 0 | 107 / 0 | success |
+| isaac-discord | 8256b22 | 52 / 0 | 68 / 0; JVM 105 / 1 | failure (pre-deds) |
+| isaac-imessage | f1cba0a | 41 / 0 | 15 / 0 | success |
+| isaac-gmail | 30c5cf1 | 48 / 0 | 13 / 0 | success |
+| isaac-gchat | 8ce6fd7 | 84 / 0 | 27 / 0 | success |
+
+### Acceptance
+
+- **all four comms visible to factory, comm-kinds, checks, comm-send** — every
+  reader is a single exact lookup: `factory.clj:29`, `comm_kinds.clj:15`,
+  `checks.clj:20,53,81`, `comm_send.clj:16`, `http/app.clj:23`,
+  `http/module.clj:17`. All four comm manifests declare `:isaac.agent/comm` and
+  nothing else. Discord's duplicate key is gone.
+- **wrong key fails to load naming module + key** — `retired-berth-messages`
+  (`berths.clj:220`) feeds `unknown-berth-error`, raised from
+  `validate-contributions!` (`berths.clj:288`), which `discovery.clj:439` folds
+  into the load's `:errors` — a hard load error, not a warning.
+  `retired_berth_spec` 3/0 covers both retired keys and the error shape.
+- **comm-reserved-schema-errors runs for every comm** — `checks.clj:53` reads
+  one key; imessage is no longer blind.
+- **no `or` fallback on a berth key** — grep across all seven worktrees clean.
+
+### Failures examined, neither attributable to deds
+
+- **foundation features 2/198** — `cli/modules_pins.feature:32,55`. A stale
+  `~/.gitlibs` cache entry points at
+  `plan/isaac-foundation-berthfix/fixture-agent`, a worktree that no longer
+  exists. Local environment only; GitHub CI is green on e97c51d.
+- **discord JVM 1/105** — "connects Discord gateway when token is added via
+  config hot-reload". Byte-identical at d92b94e (2026-09-19, pre-deds) and at
+  8256b22: `105 examples, 1 failures, 240 assertions`, same scenario. Red since
+  55f73cd on 2026-09-18. Tracked as isaac-b809.
+
+### Open nit (not blocking)
+
+`isaac-agent/modules/isaac.comm.telly/resources/isaac-manifest.edn:6` still
+reads "the :isaac.agent/comm berth declared by isaac-http". isaac-agent declares
+it now. Comment only.
+
+### Deploy still pending
+
+The train in the work log is not shipped. zanebot runs agent 53a1f0e +
+foundation 9586b08; the rename is not live until foundation/agent/http/comms
+move together.
