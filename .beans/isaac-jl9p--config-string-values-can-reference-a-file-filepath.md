@@ -5,7 +5,9 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-21T15:38:42Z
-updated_at: 2026-09-21T15:38:42Z
+updated_at: 2026-09-21T16:41:58Z
+blocked_by:
+    - isaac-rxun
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
