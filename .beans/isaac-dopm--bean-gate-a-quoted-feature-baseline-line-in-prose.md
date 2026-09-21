@@ -1,14 +1,14 @@
 ---
 # isaac-dopm
 title: 'Bean gate: a quoted feature-baseline line in prose accidentally gates the bean'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - process
     - beans
 created_at: 2026-09-20T20:26:13Z
-updated_at: 2026-09-21T17:24:41Z
+updated_at: 2026-09-21T17:33:58Z
 parent: isaac-rmq6
 ---
 
@@ -80,3 +80,10 @@ Observed effect on the two beans that carried the defect:
     bb bean-gate verify isaac-2y86   → exit 0  PASS (isaac-foundation @ main-sha 3535286)   (unchanged)
 
 `bb ci`: 52 examples, 0 failures, 78 assertions.
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac d4ba96e41a171306eff15d48b42ab6f2d8adea77
+
+Squashed from `bean/isaac-dopm` (branch deleted local + remote). `bb ci` on
+main after the squash: 52 examples, 0 failures, 78 assertions.
