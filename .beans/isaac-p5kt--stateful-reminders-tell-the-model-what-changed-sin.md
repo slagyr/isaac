@@ -66,7 +66,7 @@ efficiency this way.
 
 ## Relation to isaac-5n68
 
-5n68 handles batching the way the industry does: per-model-family system
+5n68 handles batching the way the industry does: per-model system
 prompt text. If that fails for GLM, a behavioral nudge could ride this same
 mechanism later. That would be a deliberate exception to "state, not
 coaching", and it should be justified by data.
