@@ -1,14 +1,14 @@
 ---
 # isaac-9yms
 title: 'Bean gate: verify checks whatever branch the sibling checkout is parked on, and the FAIL does not say which'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - process
     - beans
 created_at: 2026-09-20T20:26:13Z
-updated_at: 2026-09-20T20:26:13Z
+updated_at: 2026-09-21T17:27:06Z
 parent: isaac-rmq6
 ---
 
@@ -61,3 +61,45 @@ bites humans and agents — the ones who act on it.
   reports that fact in a way a reader cannot miss.
 - Spec coverage in `spec/isaac/bean_gate/` for the parked-branch case.
 - `hail-bean-work-gate` gains the `--dir`/`--ref` note.
+
+## Implementation (2026-09-21, planner)
+
+Options 1, 2 and 3 all landed — the acceptance bullets require each of them.
+
+- **Every verdict names the tree.** `checked-commits` carries the branch, so the
+  `HEAD` mode reads `HEAD <sha> (branch <name>)`. `main.clj` now prints the
+  `checked` list on **FAIL** as well as PASS; it was PASS-only, which is exactly
+  backwards — the FAIL is where the reader acts on it. An explicit `--ref` names
+  itself and is left alone.
+- **A parked branch is called out.** `parked-branch-note` fires when no `--ref`
+  was given and `HEAD` is on a branch that is neither `main` nor this bean's own
+  `bean/<id>`, suggesting `--ref <repo>=origin/main`. A worker sitting on its
+  own bean branch — the normal case — gets nothing, so the warning stays worth
+  reading.
+- **`hail-bean-work-gate`** gains a blockquote under "Close: run the gate":
+  read the ref/branch on the verdict line before believing a FAIL.
+- `git/current-branch` returns nil when detached, so a detached checkout gets
+  the sha with no branch clause and no note.
+
+Reproduced on the real case the bean describes, against a sibling worktree
+parked on an unrelated bean branch:
+
+    # before
+    isaac-6doh bean-gate: FAIL (5)
+      FAIL isaac-agent …: baselined block "Feature: Resume repair and comm staleness" … was changed
+
+    # after
+    note: isaac-agent: HEAD is on branch bean/isaac-siua, not this bean's — pass
+          --ref isaac-agent=origin/main if that is not the tree you meant to check
+    isaac-6doh bean-gate: FAIL (5) — isaac-agent @ HEAD 7ffd522 (branch bean/isaac-siua)
+
+    # after, with the ref the reader meant
+    isaac-6doh bean-gate: FAIL (1) — isaac-agent @ origin/main cabfdf2
+      FAIL isaac-agent …: scenario "…(isaac-6doh)" still carries @wip
+
+The five confident failures collapse to the one true one (isaac-6doh is still in
+flight; its scenario has not had `@wip` removed yet).
+
+`spec/isaac/bean_gate/ref_spec.clj` (new, 5 examples) covers the parked branch in
+the verdict, the warning, silence on the bean's own branch, silence under
+`--ref`, and an explicit ref naming itself. `bb ci`: 50 examples, 0 failures.

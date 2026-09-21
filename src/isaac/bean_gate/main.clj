@@ -81,7 +81,11 @@ Module checkouts default to ../<repo> beside the isaac clone; --dir overrides.")
           :ungated (do (println (str id ": no feature-baseline: use the verify path")) 2)
           :error   (do (print-lines (map #(str "bean-gate: " %) failures)) 2)
           :pass    (do (println (str id " bean-gate: PASS (" (str/join "; " checked) ")")) 0)
-          :fail    (do (println (str id " bean-gate: FAIL (" (count failures) ")"))
+          ;; A FAIL names what was checked too (isaac-9yms): without it, a gate
+          ;; run against a checkout parked on another bean's branch reads as a
+          ;; contract violation, and the reader reverts a feature that is fine.
+          :fail    (do (println (str id " bean-gate: FAIL (" (count failures) ")"
+                                     (when (seq checked) (str " — " (str/join "; " checked)))))
                        (print-lines (map #(str "  FAIL " %) failures))
                        1))))))
 

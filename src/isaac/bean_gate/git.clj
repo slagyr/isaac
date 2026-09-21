@@ -32,6 +32,14 @@
 
 (defn ancestor? [dir a b] (ok? dir "merge-base" "--is-ancestor" a b))
 
+(defn current-branch
+  "The branch HEAD is on, or nil when detached (or not a checkout)."
+  [dir]
+  (let [{:keys [exit out]} (run dir "rev-parse" "--abbrev-ref" "HEAD")
+        branch (str/trim out)]
+    (when (and (zero? exit) (not (str/blank? branch)) (not= "HEAD" branch))
+      branch)))
+
 (defn show-file
   "Contents of path at rev, or nil when the path does not exist there."
   [dir rev path]

@@ -240,11 +240,26 @@
             :else          {:tip tip :mode (str "main-sha " (short tip))
                             :diffs (for [s shas] [(or (git/resolve-rev dir (str s "^")) (str s "^")) s])}))))
     (let [ref-sha (git/resolve-rev dir (or ref "HEAD"))
-          base    (when (and ref-sha origin-main) (git/resolve-rev dir (git/git dir "merge-base" origin-main ref-sha)))]
+          base    (when (and ref-sha origin-main) (git/resolve-rev dir (git/git dir "merge-base" origin-main ref-sha)))
+          ;; Only HEAD is ambiguous: an explicit --ref already names itself.
+          branch  (when-not ref (git/current-branch dir))]
       (cond
         (nil? ref-sha) {:error (str repo ": ref " (or ref "HEAD") " does not resolve in " dir)}
         (nil? base)    {:error (str repo ": no merge-base between " (or ref "HEAD") " and origin/main")}
-        :else          {:tip ref-sha :mode (str (or ref "HEAD") " " (short ref-sha)) :diffs [[base ref-sha]]}))))
+        :else          {:tip    ref-sha
+                        :branch branch
+                        :mode   (str (or ref "HEAD") " " (short ref-sha)
+                                     (when branch (str " (branch " branch ")")))
+                        :diffs  [[base ref-sha]]}))))
+
+(defn- parked-branch-note
+  "A shared sibling checkout is routinely left on another bean's branch. The gate
+   then reports confident failures that belong to that bean, and nothing in a
+   FAIL line says so (isaac-9yms)."
+  [repo id branch]
+  (when (and branch (not= "main" branch) (not= (str "bean/" id) branch))
+    (str repo ": HEAD is on branch " branch ", not this bean's — "
+         "pass --ref " repo "=origin/main if that is not the tree you meant to check")))
 
 (defn- sanity-failures
   "Check 1: the baseline sha is on origin/main and each recorded blob matches it."
@@ -272,15 +287,17 @@
               (concat (intact-failures repo path bb cb)
                       (live-failures repo path lines bb cb))))))
 
-(defn- repo-report [{:keys [root dirs refs]} {:keys [repo sha]} blobs main-shas]
+(defn- repo-report [{:keys [root id dirs refs]} {:keys [repo sha]} blobs main-shas]
   (let [dir (module-dir root dirs repo)]
     (if-not (checkout? dir)
       {:failures [(str repo ": no git checkout at " dir " (pass --dir " repo "=<path>)")]}
       (let [fetch-err   (git/fetch! dir)
-            notes       (when fetch-err [(str repo ": fetch failed, using local refs: " fetch-err)])
             origin-main (git/resolve-rev dir "origin/main")
             sanity      (sanity-failures repo dir sha origin-main blobs)
-            {:keys [tip diffs mode error]} (checked-commits repo dir main-shas (get refs repo) origin-main)]
+            {:keys [tip diffs mode branch error]} (checked-commits repo dir main-shas (get refs repo) origin-main)
+            notes       (vec (keep identity
+                                   [(when fetch-err (str repo ": fetch failed, using local refs: " fetch-err))
+                                    (parked-branch-note repo id branch)]))]
         (if error
           {:notes notes :failures (concat sanity [error])}
           {:mode     mode

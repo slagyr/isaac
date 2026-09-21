@@ -136,6 +136,15 @@ Add `--dir <repo>=<path>` if a module checkout is not at `../<repo>`, and
 `--ref <repo>=<ref>` to check a ref other than that checkout's `HEAD`
 (`bb bean-gate --help` lists both). The exit code decides the close:
 
+> **Check what the gate actually checked.** With no `--ref` the gate reads the
+> sibling checkout at whatever `HEAD` it is parked on, and a shared sibling is
+> routinely left on *another* bean's branch. The verdict line names the ref,
+> sha and branch per repo — read it on a FAIL before you believe the failure.
+> If it names a branch that is not yours, re-run with
+> `--ref <repo>=origin/main` (or point `--dir` at your own worktree) rather
+> than reverting a feature that was never wrong. The gate warns when `HEAD` is
+> on a branch other than `main` or this bean's own `bean/<id>`.
+
 | Exit | Meaning | Your close |
 |------|---------|------------|
 | 0 | gate PASS | **Land it yourself** (below), then `completed` |
