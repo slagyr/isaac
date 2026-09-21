@@ -8,7 +8,7 @@ tags:
     - ops
     - comm
 created_at: 2026-09-21T04:46:42Z
-updated_at: 2026-09-21T04:46:42Z
+updated_at: 2026-09-21T04:47:28Z
 ---
 
 `provider-content` (isaac-agent `src/isaac/attention.clj:46`) appends the
@@ -65,3 +65,51 @@ same mistake.
 
 isaac-9gcs — the dropped stream itself (`:status nil`) burning a hail attempt
 instead of deferring. This bean is only about what gets posted when it happens.
+
+
+## CORRECTION (2026-09-21): the premise above is wrong
+
+Attention content **is** capped. `attention.clj:22` `clip-content` truncates to
+`content-cap` (1000) and `enqueue-attention!` applies it to every call site,
+`provider-content` included (:96).
+
+The `… truncated 2844251 bytes` in the Discord message is **Isaac's own
+truncation notice** — `clip-content`'s format string, verbatim. Discord received
+roughly 1 KB. The safeguard worked; I misread it as its absence.
+
+## What is actually wrong
+
+The 1000 characters that survive are the **least** useful 1000. The provider's
+message begins with the claude CLI's `system/init` event, so an operator sees:
+
+    Provider claude is broken model claude-opus-5 session 2026-06-29-1749-iaqu
+    {"type":"system","subtype":"init","cwd":"/","session_id":"…",
+     "tools":["mcpisaaccommsend","mcpisaacexecrun", …
+     "slash_commands":["deep-research","design-sync", …
+    … truncated 2844251 bytes
+
+Provider, model and session lead correctly. Everything after is a tool and
+slash-command inventory. **Why** the provider broke is not in the window —
+the real signal (`:status nil`, a dropped stream) never reaches the alert.
+
+A head-of-string clip assumes the head is informative. For a streamed provider
+error it is the handshake, and the failure is at the tail.
+
+## Revised work
+
+Make the alert carry the diagnosis rather than the transcript head. Options to
+weigh: prefer the structured error (`:error`, `:status`) over the raw message;
+clip from the tail where the failure is; or strip a recognised init/handshake
+envelope before clipping.
+
+A 2.8 MB provider message is itself worth a look — whether the whole stream
+should be retained as the error payload, or only what follows the handshake.
+
+## Revised acceptance
+
+- a provider-broken attention names why it broke (the error keyword and status)
+  without an operator opening the log
+- a megabyte provider message still produces a bounded alert (unchanged — this
+  already works; a scenario should pin it so it stays true)
+- provider, model and session still lead and are never truncated away
+- a short provider message is unchanged
