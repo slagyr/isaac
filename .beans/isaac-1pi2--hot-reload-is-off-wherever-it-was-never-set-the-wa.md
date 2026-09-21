@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-20T23:33:49Z
-updated_at: 2026-09-21T00:06:58Z
+updated_at: 2026-09-21T00:51:39Z
 parent: isaac-3q4m
 ---
 
@@ -145,3 +145,7 @@ for config changes.
 Follow-up worth its own bean: `isaac.config.watch` names the module registries
 (`hail.bands`, `hooks`, `cron.service`) by symbol to reconcile them. Foundation
 should not know those names — that belongs in a berth modules declare.
+
+Follow-up filed as isaac-bbe0: the symbol list this bean carried over from
+http (hail bands, hooks, cron) should become a declaration modules make, so
+foundation stops naming them.
