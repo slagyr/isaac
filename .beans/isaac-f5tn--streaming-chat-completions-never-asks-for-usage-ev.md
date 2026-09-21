@@ -82,3 +82,15 @@ Before this change both turns would have recorded zero. Turn 2 also answers the
 open question about caching: **Fireworks is serving our prefixes from cache** —
 99% of the prompt on a repeat turn. Whether that is billed at a discount is a
 Fireworks pricing question; Isaac now reports the number either way.
+
+## Correction to the blast radius above
+
+Checked after landing. `grok` uses the same `chat-completions` adapter
+(`:api "chat-completions"` in the provider catalog), so it had the same missing
+request field — but xAI sends a usage block in a stream whether you ask or not,
+and grok sessions were recording tokens and cache-read all along
+(marvin, 09-17: `:cache-read-tokens 137472` of 147272 prompt tokens).
+
+So the bug was in the request for every chat-completions provider, but only a
+server that follows the spec strictly — Fireworks — actually withheld the
+numbers. That is the same shape as isaac-uxe1: lenient servers hid it.
