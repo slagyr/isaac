@@ -1,14 +1,14 @@
 ---
 # isaac-zg3t
 title: chat-completions streaming path drops tool calls; GLM-5.3 agentic turns die as :empty-terminal-response
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - llm
     - providers
 created_at: 2026-09-21T02:46:54Z
-updated_at: 2026-09-21T02:47:29Z
+updated_at: 2026-09-21T02:47:52Z
 ---
 
 The streaming path of `isaac.llm.api.chat-completions` cannot report a tool call.
