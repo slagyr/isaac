@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - comm
     - config
 created_at: 2026-09-21T04:25:21Z
-updated_at: 2026-09-21T05:01:49Z
+updated_at: 2026-09-21T14:15:50Z
 ---
 
 The comm berth has three names in circulation. Every reader accepts a different
@@ -72,3 +73,81 @@ accepted by whichever reader happens to match.
   with an error naming the module and the offending key
 - `comm-reserved-schema-errors` runs for every comm, imessage included
 - no `or` fallback on a berth key remains in either repo
+
+## Work log (2026-09-21, work-2 local, GLM-5.3)
+
+One coordinated train, all pushed, all suites green:
+
+| repo | sha | suites |
+|------|-----|--------|
+| isaac-foundation | 8fbeed3 | 1085 specs / 0; features 198 (2 pre-existing env failures: git-fixture path from another checkout) |
+| isaac-agent | 510d5b8 | 1682 specs / 0; 843 features / 0 |
+| isaac-http | 71a0413 | 189 specs / 0; 107 features / 0 |
+| isaac-discord | 8256b22 | 52 specs / 0 (native); 68 features / 0; JVM suite 105/1 — pre-existing red, see isaac-b809 |
+| isaac-imessage | f1cba0a | 41 specs / 0; 15 features / 0 |
+| isaac-gmail | 30c5cf1 | 48 specs / 0; 13 features / 0 |
+| isaac-gchat | 8ce6fd7 | 84 specs / 0; 27 features / 0 |
+
+- foundation: factory + comm-kinds read `:isaac.agent/comm` only;
+  retired-key load errors for `:isaac.http/comm` / `:isaac.server/comm`
+  via the existing retired-berth-messages mechanism; registered-in
+  docstring examples updated.
+- agent: declares the `:isaac.agent/comm` berth (register/deregister fns
+  moved from http's declaration); checks + comm-send single-key;
+  test-resources stand-in berth deleted (real manifest owns it now).
+- isaac-http: berth declaration dropped; `:comms` slot gathers
+  `:isaac.agent/comm`; module.clj/app.clj single-key (the `:isaac.server/comm`
+  fallbacks there were dead already).
+- comms ×4: manifests on `:isaac.agent/comm`; pins bumped (agent 510d5b8,
+  foundation 8fbeed3, http 71a0413 — the comms' test aliases pin http
+  directly; stale ones silently strip comm extra-schema fields).
+
+### Discovery: isaac-server is isaac-http
+
+`slagyr/isaac-server` redirects to `isaac-http` (the 3q4m rename
+completed); pre-rename fossil checkouts still exist in work dirs and
+carry `:isaac.server/comm` readers that no longer exist anywhere live.
+Sweep edited only the live repo. Consider deleting stale
+isaac-server checkouts from work dirs.
+
+### Collateral fixes forced by the pin jumps (all pre-existing on the comms' mains)
+
+- **isaac-g71i response seam**: discord's `result-content` and
+  imessage's `result->reply-text` never tried `[:response :content]`
+  (the normalized provider-response shape) — replies arrived empty.
+  Discord's splitting feature had been red since Sep 18 on this.
+- **55f73cd** (cap sends at two chunks): discord splitting.feature's
+  first scenario expected three POSTs; updated to the two-chunk
+  contract with a comment.
+- **Retired `:server` keys**: imessage's lifecycle setup wrote
+  `server.hot-reload`; now `hot-reload` (isaac-tdlz retirement).
+- imessage's http pin (11e43014, pre-bbe0) masked all of the above.
+
+### Acceptance mapping
+
+- all four comms visible to factory, comm-kinds, checks, comm-send —
+  single-key reads + green suites in every repo above.
+- wrong key fails to load naming module + key —
+  foundation retired_berth_spec (both retired keys), error shape
+  `module-index["<id>"][:isaac.http/comm]` → ":isaac.http/comm is
+  retired; use :isaac.agent/comm".
+- comm-reserved-schema-errors runs for every comm — checks.clj reads
+  one key; imessage covered by agent checks_spec fixtures (no longer
+  blind).
+- no `or` fallback on a berth key remains — grep across foundation,
+  agent, http, and the four comms is clean (isaac-server fossils aside).
+
+### Follow-ups filed
+
+- isaac-b809 — discord JVM hot-reload spec, red since okw1 (pre-deds).
+
+### Deploy note
+
+Train SHAs above need the deploy-train pin bump (isaac monolith pins /
+homebrew) the way uxe1's completion did ("deploy train: agent 4cd20fc").
+zanebot runs isaac.agent@53a1f0e + foundation@9586b08 + http pins older
+still — the comm berth rename is **not live** until that train ships;
+until then, deployed manifests still declare `:isaac.http/comm`, which
+the deployed (old) readers still accept. Do not bump the deploy pins
+piecemeal: foundation/agent/http/comms must move together or comms go
+blind at boot.
