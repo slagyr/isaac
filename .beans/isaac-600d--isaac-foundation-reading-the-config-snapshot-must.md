@@ -8,7 +8,7 @@ tags:
     - foundation
     - config
 created_at: 2026-09-21T18:17:32Z
-updated_at: 2026-09-21T18:17:32Z
+updated_at: 2026-09-21T18:19:50Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj`, the "Ambient
@@ -75,3 +75,7 @@ bb jvm-spec
   the read is harmless.
 - Ungated bean (spec-backed, no feature file): hand off `unverified` to
   isaac-verify.
+
+
+
+Dispatched: hail d1663229 2026-09-21T18:19:25Z (band isaac-work)
