@@ -1,13 +1,13 @@
 ---
 # isaac-nq4c
 title: A config key a declared schema does not recognise is pruned in silence; it should warn
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - config
 created_at: 2026-09-21T04:25:37Z
-updated_at: 2026-09-21T04:38:23Z
+updated_at: 2026-09-21T04:40:46Z
 ---
 
 Provider and comm config slices are pruned to their declared schema. A key the
