@@ -4,8 +4,10 @@ title: 'One way to configure Google: :google is always a map of organization id 
 status: in-progress
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-21T03:51:03Z
-updated_at: 2026-09-21T04:17:14Z
+updated_at: 2026-09-21T04:44:11Z
 parent: isaac-bv1l
 ---
 
@@ -67,3 +69,42 @@ with one organization needs no `:gchat/google` on its comms. Tokens resolve
 under `google/<id>`.
 
 Dispatched: hail bb40c0c2 2026-09-21T04:04:12Z (band isaac-work)
+
+## Implemented (2026-09-21, scrapper@2026-06-30-0021-icc9)
+
+One shape shipped across three repos, all suites green.
+
+**isaac-google** — branch `bean/isaac-okfj`, commit 63c081d.
+`tenants`: `DEFAULT`/`flat?` gone; `organizations?` is the single predicate
+(non-empty map, no organization field directly under `:google`, every value a
+map) and `tenants` returns `{}` for anything else. `auth-provider` is always
+`"google/<id>"`. Door registers one rule per organization, named
+`:google-pubsub/<id>`, and none for a flat config. Manifest schema is
+`:key-spec`/`:value-spec` only (closes isaac-pvfq). `cli`, `health`,
+`registration`, `token`, `worker` lost their DEFAULT branches; `google status`
+prints "No Google organization configured. Set google.<organization>.oauth.client-id."
+
+The push door now refuses when no organization is configured: `isaac-http`
+turns auth off entirely when nothing registered a rule, so a flat `:google`
+would otherwise have let an unauthenticated push through with 204. The handler
+answers 401 and logs `:google/no-organization` instead of persisting an event
+no organization answers for.
+
+**isaac-gchat** — branch `bean/isaac-okfj`. Feature/spec fixtures write
+`google.<id>.*`; `outbound.feature` names an organization (its Google user
+login belongs to one); step stub no longer falls back to `DEFAULT`.
+
+**isaac-gmail** — branch `bean/isaac-okfj`. Same: `watch.feature` and
+`gmail.feature` config, `watch_spec` fixture, step stub.
+
+Both downstream repos currently pin isaac-google as `:local/root "../isaac-google"`
+on their bean branches — **repin both `deps.edn` and `bb.edn` to the landed
+isaac-google main sha before landing them.** Land order: isaac-google, then
+gchat, then gmail.
+
+Suites: isaac-google 143 specs / 28 features; isaac-gchat 84 / 27;
+isaac-gmail 48 / 13 — 0 failures.
+
+Host migration (yopp) is still the human step in "Migrating a host" above:
+rewrite `:google` nested, move the `auth.json` entry from `"google"` to
+`"google/<id>"`, restart.
