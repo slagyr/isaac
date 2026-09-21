@@ -3,11 +3,12 @@
 title: Provider config carries an :env map, so two claude-code providers can hold two subscriptions
 status: todo
 type: feature
+priority: normal
 tags:
     - claude-code
     - config
 created_at: 2026-09-21T00:10:53Z
-updated_at: 2026-09-21T00:10:53Z
+updated_at: 2026-09-21T00:18:55Z
 ---
 
 Micah has several Claude Code subscriptions and wants Isaac to drive more than
@@ -79,3 +80,41 @@ must win over anything in `:env`.
   the machine.
 - `:max-in-flight` is crew-wide, so splitting subscriptions only buys throughput
   if the crews are split too. Otherwise both providers queue behind one limit.
+
+
+## Partial implementation 2026-09-20 (bean/isaac-12fo @ f2b6a15, local only)
+
+The spawn side is done and green: `subprocess-env` merges the provider's `:env`
+over the inherited environment, `ANTHROPIC_API_KEY` stays stripped after the
+merge, `ISAAC_MCP_NONCE` outranks config, and `:env` is declared in both the
+provider template and the schema in `src/isaac-manifest.edn`.
+
+**The feature is blocked one layer up, and this is the real work.** A provider's
+`:env` does not survive config resolution. With
+`config/providers/claude-a.edn` setting `env.CLAUDE_CONFIG_DIR`, the factory is
+reached as:
+
+    make name=claude-a keys=(:api :auth :command :drives-tool-loop? :env
+                             :stream-supports-tool-calls)  env= {}
+
+`:env` is present, but holds `{}` — the template default — never the user's map.
+So the value is lost between the provider EDN file and `make`. Ruled out along
+the way:
+
+- the table step is fine: `isaac-edn-file-exists` splits a dotted path and
+  `assoc-in`s it, so `env.CLAUDE_CONFIG_DIR` does build `{:env {:CLAUDE_CONFIG_DIR ...}}`
+- `resolve-provider*` (isaac-agent `llm/providers.clj:63`) merges the inherited
+  template under the user entry and drops only `:type`/`:from`, so the user's
+  `:env` should win
+- `augment-provider` (isaac-agent `drive/turn.clj:1223`) merges the whole
+  `api/config`, so it is not the filter
+- an EDN map literal in one table cell behaves the same as the dotted form
+
+The scenario "two claude-code providers spawn the CLI with their own
+environments" is committed `@wip` against that. Next step is to find where a
+provider's non-template keys are dropped between the EDN file and
+`make-provider` — likely provider config normalization in isaac-agent — which
+means this bean probably needs a sibling there, the way isaac-dgod and
+isaac-8cur split.
+
+Nothing deployed. Nothing dispatched.
