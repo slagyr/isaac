@@ -1,14 +1,13 @@
 ---
 # isaac-nq4c
 title: A config key a declared schema does not recognise is pruned in silence; it should warn
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - config
-    - unverified
 created_at: 2026-09-21T04:25:37Z
-updated_at: 2026-09-21T05:35:15Z
+updated_at: 2026-09-21T05:39:18Z
 ---
 
 Provider and comm config slices are pruned to their declared schema. A key the
@@ -168,3 +167,45 @@ Kept as the verifier asked: `slot-walk`, the `signal_slots_spec` integration pai
 **Suites on the branch:** `bb spec` **1090 / 0 failures / 1991 assertions** (1084 -> 1090: +1 unswallowed, +4 unit, +1 integration). `bb features` **198 / 0 failures / 524 assertions / 2 pending** (the two pre-existing berth-registration pendings). `bb lint` exit 0, no new warnings in the touched files. The two `cli/modules_pins.feature` failures were the stale gitlibs mirror again (by then pointing at the verifier's removed `isaac-foundation-nq4c-verify/fixture-agent`); `rm -rf ~/.gitlibs/_repos/file/REL/fixture-agent` and features are green — environmental, unchanged from attempt 1.
 
 Bean Gate: `bb bean-gate verify isaac-nq4c --dir isaac-foundation=../isaac-foundation-nq4c` -> `no feature-baseline: use the verify path`, exit 2. Closing on the unverified + verify-hail path again.
+
+## Verified + landed on main (attempt 2, 2026-09-21, perceptor@isaac-verify)
+
+PASS. Both attempt-1 blockers are cleared, with evidence beyond "the suite is green".
+
+Branch `isaac-foundation` `bean/isaac-nq4c` @ `756d1bd`. `origin/main` had moved to `8fbeed3` (isaac-deds) under the branch, so I rebased it in a detached worktree (`16d92af`, clean, no conflicts) and ran the suites there:
+
+- `bb ci` exit 0 — config-bypass-lint ok, lint-cli-host ok, **1098 spec examples / 0 failures / 2000 assertions**, **198 feature examples / 0 failures / 524 assertions / 2 pending** (the two berth-registration pendings pre-date this bean). The `cli/modules_pins.feature` reds are the stale gitlibs mirror again — cleared `~/.gitlibs/_repos/file/REL/fixture-agent` before the run; it reproduces on `origin/main`, so it is never this bean's.
+
+### Blocker 1 — the warning is now logged, and the logging is load-bearing
+
+`isaac.config.warnings/log-unknown-keys!` warn-logs every `unknown key` row as `:config/unknown-key` with `:slice`, `:key`, `:path`. It is called from the `:warnings` thread of `loader/load-config-result` **after** `berths/normalize-errors`, so one site covers every producer the bean names — berth slices (isaac-mm7o), the bare-`:map` contents walk (isaac-12fo `:env`), root-entity and config-table rows — and the logged path is the operator-facing key the CLI prints. `load-config` (loader.clj:349-350) delegates to `load-config-result`, so the boot path is covered; that was precisely the gap in attempt 1.
+
+I did not take the specs at face value. Deleting the `(warnings/log-unknown-keys!)` call from the pipeline and re-running `spec/isaac/config/signal_slots_spec.clj` turns it **red — 15 examples, 2 failures** ("logs a warning naming the slice and the undeclared key, and still loads", and the bare-`:map` example's log assertion). The assertions bite; restored the file afterwards.
+
+Observed in the real CI output, unprompted:
+
+    {:level :warn, :event :config/unknown-key, :path "hail-settings.beans-repos", :key "beans-repos", :slice "hail-settings"}
+
+Boot-still-succeeds is asserted in the same integration example: `(should= [] (:errors result))` and the declared `:token` still arrives as `"abc"`. Severity stays `warn`; nothing short-circuits.
+
+### Blocker 2 — the swallowed spec runs
+
+`bb spec -f documentation spec/isaac/config/warnings_spec.clj` → **12 examples, 0 failures, 14 assertions**, and "stays quiet for slots and values that are not maps" is printed by name (7 → 8 original + 4 new `log-unknown-keys!`). The non-map-slot branch now has a test.
+
+### Minor — dead helper removed
+
+`grep -rn "spec-known-fields" src/ spec/` is empty.
+
+### Other checks
+
+No feature file touched; `deps.edn`/`bb.edn` untouched (§6 vacuous, nothing to re-pin); no stray `println` in the diff; §4 pass A clean (the new specs use `with-redefs` on `log/log*` and a captured-log atom — no sleep, network, fs or clock), pass B `grep -rn "Thread/sleep" spec/` → 3 pre-existing matches, none in this diff.
+
+Acceptance, item by item: provider-shaped and comm/signal-shaped undeclared keys both log a warning naming the slice and the key (unit + integration); the bare-`:map` field's pruned contents log against the field, not just the top-level key; known keys at any depth are never warned about ("never warns on known fields at any depth"); boot succeeds in every case.
+
+Noted, not blocking — two follow-up observations this bean's own warning surfaced:
+1. A spec in the suite loads the **real** `~/.isaac` config (that is where `hail-settings.beans-repos` and `hail._isaac-template.prefer` came from). Pre-existing test hygiene, invisible until now.
+2. Those two keys are real config on this host and are being pruned. `prefer` is documented band config. Worth a bean to check whether the hail schema is missing them — exactly the class of silence this bean exists to end, found by it on its first run.
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac-foundation e97c51d54fdd6d9302256879ddda2cd87c68f245
