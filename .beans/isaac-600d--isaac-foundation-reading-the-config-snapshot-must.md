@@ -1,14 +1,14 @@
 ---
 # isaac-600d
 title: 'isaac-foundation: reading the config snapshot must not register a nil config — snapshot is read-only, only install registers'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - foundation
     - config
 created_at: 2026-09-21T18:17:32Z
-updated_at: 2026-09-21T18:19:50Z
+updated_at: 2026-09-21T18:19:53Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj`, the "Ambient
