@@ -1,11 +1,11 @@
 ---
 # isaac-rxun
 title: 'Unresolvable ${VAR} and ${file:…} references: warn, treat as unset, never send the literal'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-09-21T16:28:51Z
-updated_at: 2026-09-21T16:28:51Z
+updated_at: 2026-09-21T16:45:41Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
