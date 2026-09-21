@@ -6,9 +6,8 @@ type: bug
 priority: normal
 tags:
     - config
-    - unverified
 created_at: 2026-09-21T04:25:37Z
-updated_at: 2026-09-21T04:53:21Z
+updated_at: 2026-09-21T04:57:00Z
 ---
 
 Provider and comm config slices are pruned to their declared schema. A key the
@@ -96,3 +95,50 @@ Evidence:
 - Full suites on the branch: `bb spec` 1084/0; `bb features` 198/0 failures (2 pre-existing pending `@wip` placeholders, not this bean). One environmental detour: stale gitlibs cache (`fixture-agent` pointed at the removed `isaac-foundation-2y86` worktree) broke `modules pins` features — cleared `~/.gitlibs/_repos/file/REL/fixture-agent`, then green.
 
 Bean Gate: exit 2 (no feature-baseline — predates the gate), so closing on the unverified + verify-hail path.
+
+## Verify fail (attempt 1, 2026-09-21): no warning is ever logged, and one new spec is swallowed by a misplaced paren
+
+Verified by **perceptor**@isaac-verify. Branch `isaac-foundation` `bean/isaac-nq4c` @ `dfa3ef6` (base `origin/main` 9586b08), worktree clean.
+
+Suites are green: `bb spec` **1084 / 0 failures / 1982 assertions**; `bb features` **198 / 0 failures / 524 assertions / 2 pending** (the two berth-registration pendings pre-date this bean). The two `cli/modules_pins.feature` failures in my first `bb ci` were the stale-gitlibs artifact the worker already hit — the mirror at `~/.gitlibs/_repos/file/REL/fixture-agent` pointed at `/Users/zane/agents/isaac/work-3/isaac-foundation-nq4c/fixture-agent`. **Reproduced identically on `origin/main`**, so it is environmental, not this bean; cleared the mirror and features went green. Not a reason for this fail.
+
+### 1. Acceptance 1 and 2 are unmet: nothing is logged (blocking)
+
+The bean's Work says "When pruning a declared slice … **log a warning** naming the slice and the unrecognised key", and acceptance reads "…**logs a warning** naming the provider and the key" / "the same for a comm slice". The validate advisory is the bean's *secondary* item ("Worth considering in the same pass").
+
+There is no `log/warn` anywhere in the unknown-key path:
+
+```
+grep -rn "unknown key\|unknown-key" src/ --include=*.clj      # 20 hits, none a log call
+grep -rn "log/warn" src/isaac/config/*.clj src/isaac/config/cli/*.clj
+  # config.watch, companions, configurator, root, schema_compose, watch — no warnings.clj, no loader.clj
+```
+
+`conform-berth-slices` (`loader.clj:162-164`) folds the rows into the result's `:warnings`, and the only consumers are CLI: `cli/validate.clj:37 report-validation!` → `cli/common.clj:154 print-warnings!`, and `cli/mutate_common.clj:85`. Nothing on the boot path reads `:warnings` (`grep -rn "warnings" src/isaac/module/*.clj src/isaac/*.clj` → no hits). So an operator who boots Isaac with a mis-declared key still gets exactly the silence the bean describes — "no log line" — unless they separately run `isaac config validate`. Both original bites (provider `:env` arriving `{}`, comm `:gchat/account-id` arriving nil) were found by instrumenting consuming code, which is the failure mode this bean exists to end.
+
+What is needed: emit a warning-level log entry (event keyword, e.g. `:config/unknown-key`, with the slice path and key as fields) where the rows are produced or folded in, and a spec/feature asserting the log entry — not only the `:warnings` collection. Boot must still succeed, as the bean says.
+
+### 2. The last new spec never runs (blocking)
+
+`spec/isaac/config/warnings_spec.clj` contains 8 `it` forms, but only 7 execute. The `it "never warns on known fields at any depth"` form is never closed before the next one, so `it "stays quiet for slots and values that are not maps"` (lines 64-66) sits **inside** the outer `it`'s `let` body. Speclj builds that inner characteristic object at runtime and discards it; its body never runs.
+
+```
+$ bb spec -f documentation spec/isaac/config/warnings_spec.clj
+  slice-unknown-key-warnings
+  - warns on an unknown field in an open-map slot, shallow (existing behaviour)
+  - warns on every key inside a bare :map field whose contents conform prunes (the isaac-12fo :env shape)
+  - descends into closed :map fields without a key-spec, warning on pruned contents
+  - descends into :seq entries
+  - never warns on known fields at any depth
+7 examples, 0 failures, 9 assertions
+```
+
+"stays quiet for slots and values that are not maps" is absent from the reporter output. It is the guard for the non-map-slot branch (`slot-walk`'s `:else nil` / the `(map? slot)` filter), so that branch currently has no test at all. The worker's own note ("7 warnings specs") recorded the symptom without catching it. Fix the paren so all 8 run, and confirm the count moves 7 → 8.
+
+### 3. Dead private helper (minor, fix while you are here)
+
+`src/isaac/config/warnings.clj:63 spec-known-fields` is defined and never referenced (`grep -rn "spec-known-fields" src/ spec/` → the definition only). Leftover from an earlier shape of `slot-walk`. Remove it.
+
+### What is good, keep it
+
+`slot-walk` mirrors apron's pruning accurately and the cases are the right ones: closed maps warn on undeclared fields and descend declared ones; keyed open maps descend without warning; a bare `{:type :map}` reports every content key (the isaac-12fo `:env` trap); `:seq` fields descend with `[idx]` path segments. The `signal_slots_spec` integration pair — `signals[:mychan].account-id` (isaac-mm7o shape) and `signals[:mychan].allow-from.domain` (bare-map shape) — is exactly the right evidence, and both assert `(should= [] (:errors result))` so boot-still-succeeds is covered. Other checks clean: no feature file touched, no stray `println` in the diff, no `Thread/sleep`/network/fs/clock smells in the new specs.
