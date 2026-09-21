@@ -7,9 +7,8 @@ priority: high
 tags:
     - agent
     - sessions
-    - unverified
 created_at: 2026-09-21T18:31:37Z
-updated_at: 2026-09-21T18:55:51Z
+updated_at: 2026-09-21T21:52:00Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/store/impl_common.clj`,
@@ -75,3 +74,25 @@ Not exercised here: the memory store's `request-cancel!` stamps its
 in-memory marker and delegates the durable write to `request-cancel!*`
 — covered transitively. The sidecar store's boolean passthrough was
 inspected; no change.
+
+
+
+## Verification failed
+
+HEAD: isaac-agent 22c636cd57faad8adca6b5b923f7adf1d972d9ca (on origin/main)
+Working tree: clean
+Beans HEAD at review: 0fb5dfa0
+No Exceptions section on this bean.
+
+The production change is right, and the specs hold it. `request-cancel!*` resolves through `turn-marker-path-for`, returns true only when it stamps, and `run-cancel` prints `cancelled <id>` / exits 0, or exits 1 on a no-op. `bb spec` 1692 examples, 0 failures. Cancel scenarios (`cli.feature:345,354,368,381` and `cancel.feature:50`) 5 examples, 0 failures. Foundation pin `8fbeed3` is on origin/main. No `Thread/sleep` in `spec/`.
+
+The new feature scenario does not assert the stamp. `features/session/cli.feature:389` is generated as:
+
+    turn-marker-matches "engine-room" {:headers ["cancelled" "true"], :rows []}
+
+Gherkin takes the first row as headers, so `| cancelled | true |` is a header with no data rows. `turn-marker-matches` only checks rows, then that the marker is non-nil — which the Given already seeded. The scenario stays green if cancel reports success without writing `:cancelled true`. The two scenarios above it use the shape this step actually reads:
+
+    | key       | value |
+    | cancelled | true  |
+
+Use that shape. The impl-common examples already assert the crew path and the legacy path; this scenario has to assert the same field or it is not acceptance.
