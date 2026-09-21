@@ -5,10 +5,11 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-09-21T04:58:11Z
-updated_at: 2026-09-21T16:15:21Z
+updated_at: 2026-09-21T16:23:13Z
 blocked_by:
     - isaac-jl9p
     - isaac-ruom
+    - isaac-7fab
 ---
 
 ## Why
@@ -69,11 +70,12 @@ system prompt text from another.
    the `include-tool-batching-hint?` plumbing. The install-wide value comes from
    `:defaults :model :extra-system-prompt` (isaac-ruom's template rule), and a
    model entry overrides it.
-6. **Built-in fallback is empty** (recommended; Micah to confirm). Isaac ships
-   no opinion. Each install that wants the four rules writes them in config,
-   typically `"${file:prompts/tool-discipline.md}"` (isaac-jl9p). zanebot does
-   exactly that as part of the deploy, so its behavior doesn't change. An install
-   that configures nothing stops getting coding advice, which is intended.
+6. **The built-in default is today's four rules, scaffolded to disk**
+   (Micah, 2026-09-21). They ship as a resource, and isaac-7fab scaffolds them
+   into `config/prompts/tool-discipline.md`, with `:defaults :model
+   :extra-system-prompt "${file:prompts/tool-discipline.md}"` pointing at the
+   file. The value stays built in but is visible and easy to change. An
+   install that wants no coding advice edits or empties that file.
 7. **Compaction still leaves it out.** The summary call has no tools; keep
    today's exclusion (`session/compaction.clj:153`).
 8. **Large text lives in a file** via `"${file:…}"` (isaac-jl9p). Nothing
@@ -97,6 +99,7 @@ system prompt text from another.
 - `parallel-tool-calls-hint` and `include-tool-batching-hint?` are gone
 - the text appears directly after the soul, for that model only (spec)
 - `--with-model` uses the override model's text (spec)
+- chain: crew text beats model text beats `:defaults` (specs)
 - every `build-system-text` caller passes it, including `messages.clj:83`
   (spec); the Claude CLI path carries it (spec)
 - editing it on a running server takes effect with no restart
@@ -107,19 +110,17 @@ system prompt text from another.
   **measured on a real GLM bean** from `:tool-calls-count` in server.log, with
   the batching rate and sample size stated. If it stays at zero, report that.
 
+## Resolution chain (Micah, 2026-09-21)
+
+**crew > model > defaults**, first non-nil wins. Crews can override it
+(a crew doing non-coding work needs to), models can override it (GLM), and the
+bottom layer is `:defaults :model :extra-system-prompt` (isaac-ruom's template
+rule). Providers aren't in the chain unless someone needs them.
+
 ## Open (Micah)
 
 - **Final name.** `:extra-system-prompt` is the working name.
-- **Model-only, or cascade like effort?** Today's placement is model entry
-  plus `:defaults :model`. Should a crew also be able to override it, the way
-  crew > model > provider works for effort? A crew doing non-coding work is the
-  case for it.
-- **Built-in fallback empty?** See design point 6.
-- **An always-on install prompt.** Micah wants behavior an install can impose
-  "no matter what crew is operating." With override semantics a model's own
-  text *replaces* the `:defaults` text, so this field alone can't guarantee
-  that. Global rules (`~/.isaac/prompts/rules/*.md`) are always included today
-  and may already be the answer. Decide before building.
+- **Always-on install prompt** moved to its own bean: isaac-oys6.
 
 ## Also worth trying, independently
 

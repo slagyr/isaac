@@ -70,7 +70,7 @@ in use changes meaning.
 7. **Embedding works like env vars.** `"Preamble ${file:x.md}"` substitutes in
    place. The common case is a value that is only the reference.
 
-## Companions (recommended; Micah to confirm)
+## Companions: kept (Micah, 2026-09-21)
 
 Keep companions. They need no syntax, and the single-file `.md` entity form
 (frontmatter holds the config, body fills the companion field) depends on
@@ -96,7 +96,7 @@ yopp.
 - editing a referenced file on a running server reloads the referencing
   entity with no restart (spec, plus a live check on zanebot)
 - setting a companion field both inline and via companion is a validation
-  error (spec), if the recommendation above is accepted
+  error (spec)
 - `bb verify` and `bb jvm-spec` are both green
 
 ## Unlocks
