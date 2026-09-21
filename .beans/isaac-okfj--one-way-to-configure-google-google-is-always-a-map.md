@@ -1,13 +1,11 @@
 ---
 # isaac-okfj
 title: 'One way to configure Google: :google is always a map of organization id to config, with no default tenant'
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-21T03:51:03Z
-updated_at: 2026-09-21T04:44:11Z
+updated_at: 2026-09-21T04:50:20Z
 parent: isaac-bv1l
 ---
 
@@ -108,3 +106,37 @@ isaac-gmail 48 / 13 — 0 failures.
 Host migration (yopp) is still the human step in "Migrating a host" above:
 rewrite `:google` nested, move the `auth.json` entry from `"google"` to
 `"google/<id>"`, restart.
+
+## Verified + landed on main (2026-09-21, perceptor@isaac-verify)
+
+PASS across three repos. Worktrees off each `bean/isaac-okfj`, `rm -rf target/gherclj/generated/` then `bb ci`, all exit 0:
+
+- **isaac-google** @ `63c081d` (base `origin/main` 0abf5de): config-bypass-lint ok, **143 specs / 0 failures / 229 assertions**, **28 features / 0 failures / 114 assertions**.
+- **isaac-gchat** @ `99f6055` (the verify repin, on top of `e173405`): ok, **84 specs / 0 failures / 157 assertions**, **27 features / 0 failures / 61 assertions**.
+- **isaac-gmail** @ `2b5...` (the verify repin, on top of `32eca74`): ok, **48 specs / 0 failures / 76 assertions**, **13 features / 0 failures / 38 assertions**.
+
+Checks:
+- §1 tampering: every feature edit is the config-shape rewrite this bean decides (`google.*` → `google.<organization>.*`) plus the intentional inversion of the one flat-form scenario. Scenario counts per file are unchanged except `tenants.feature`, which gains one (4 → 5). No step reworded to weaken an assertion; `push_door.feature` gains `And the Google runtime component is started` because the manifest no longer ships a static `:isaac.http/identity` rule — the rules are registered at start, one per organization.
+- §3 output: no stray `println`; the new prints are in `src/isaac/google/cli.clj` (`isaac google status`), the CLI exception.
+- §4 pass A: no `Thread/sleep`, real network/fs/db, hidden clock or assertion-free `it` in the diff's spec/step changes. Pass B: `grep -rn "Thread/sleep" spec/ feature-steps/` → 0 matches in isaac-google.
+- §6 pins: isaac-google's own pins unchanged and all ancestors of their `origin/main` (foundation `b644562`, agent `679aee8`, http `493416d`).
+- §6a multi-repo: isaac-google squashed and landed FIRST; both downstream bean branches were still on `:local/root "../isaac-google"`, so I rewrote `deps.edn` and `bb.edn` to `:git/sha dfc7f5dd…`, committed on each bean branch, and **re-ran `bb ci` green on the repinned tree** before squashing. No downstream pin names a bean-branch sha.
+
+Acceptance:
+- One shape — `config.clj`'s `google-schema` is now `:key-spec`/`:value-spec` only, with no `:schema` of its own (`config_spec`: "declares no fields of its own under :google"), which closes isaac-pvfq: there is no declared field to mis-apply, so a nested config reports no unknown keys.
+- A flat `:google` names the shape it wants. Confirmed by evaluation, not just by reading: conforming `{:project "marigold" :oauth {…} :push {…}}` against `google-schema` yields `{:project #CoerceError{:message "must be a map of one Google organization's config — :google is a map of organization id to config, e.g. google.tonotop.oauth.client-id"} …}`.
+- No default organization — `DEFAULT` and `flat?` are gone; `organizations?` is the single predicate and `tenants` returns `{}` for anything else (`tenants_spec` covers flat, `{}`, non-map, and `{:google {:oauth …}}`).
+- `auth-provider` is `"google/<id>"` for every organization and `nil` for none; `token_spec` stores and resolves under `google/tonotop`, and a config naming no organization answers `:auth-failed` with a message containing `google.<organization>`.
+- The door registers one rule per organization, named `:google-pubsub/<id>`, and none for a flat config (`component_spec`).
+- The push door refuses when no organization is configured: 401 + `:google/no-organization`, nothing persisted (`http_spec`, and `tenants.feature` end-to-end with `isaac google status` printing "No Google organization configured").
+- A comm on a one-organization host still needs no `:gchat/google` / `:gmail/google` — `of-comm` falls back to the only configured organization (gchat `tenant_spec`, gmail `watch_spec`).
+
+Noted, not blocking: a flat config written with only map-valued keys (`:oauth`, `:push`) still conforms without a schema error; `tenants/organizations?` is what rejects it, by refusing any slice carrying an organization field directly under `:google`. The behaviour is right (no organizations, push refused, status says so); only the schema message is silent in that one sub-case.
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac-google dfc7f5dd28bef7384400447bae11e1efd02e53af
+main-sha: isaac-gchat e09bf38e6cf158b89c6eefa15aaa2f1379aca9d2
+main-sha: isaac-gmail 49d848553da336596d855c05d1bba6b781cb421f
+
+Host migration (yopp) remains the human step in "Migrating a host" above: rewrite `:google` nested, move the `~/.isaac/auth.json` entry from `"google"` to `"google/<id>"`, restart.
