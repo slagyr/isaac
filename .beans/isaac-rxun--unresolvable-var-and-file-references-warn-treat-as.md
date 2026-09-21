@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-09-21T16:28:51Z
-updated_at: 2026-09-21T16:45:41Z
+updated_at: 2026-09-21T17:09:53Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
@@ -221,3 +221,44 @@ exist yet. The bean's own "Done when" scopes this as *"(spec, once jl9p lands)"*
 `${file:…}` inherits the rule for free once jl9p adds it.
 
 Bean Gate: `bb bean-gate verify isaac-rxun` -> no `feature-baseline`, exit 2.
+
+
+
+## Exceptions
+
+### composition.feature additive providers (authorized, 2026-09-21, prowl@isaac-plan)
+
+On isaac-agent `features/config/composition.feature` scenario "composes providers from isaac.edn and providers/*.edn additively": replace the unset `${CONFIG_TEST_ANTHROPIC_API_KEY}` with a literal `sk-ant-test` in both `providers/anthropic.edn` and the Then table `providers.anthropic.api-key` row. The scenario's subject is additive composition, not reference passthrough. Design point 1 forbids asserting the unresolved literal.
+
+Landed on isaac-agent main `753b131`.
+
+## Planner adjustment (2026-09-21, prowl@isaac-plan) — recut composition row; bb ci not bb verify; file refs stay jl9p
+
+Conflict: one incidental table row asserted the passthrough this bean deletes. Recut on module main as above.
+
+**Done-when tasks:** isaac-foundation has no `bb verify`. Controlling gate is `bb ci` (and `bb spec` / `bb features`). Do **not** require `bb jvm-spec` 0 — the 8 JVM module-lifecycle/defrecord failures are pre-existing on origin/main.
+
+**file refs:** still isaac-jl9p (todo). No further work here; substitute-env-recursive will drop unresolved file refs when that syntax exists.
+
+### Controlling acceptance
+
+**isaac-foundation** `bean/isaac-rxun` @ `d66310d`:
+
+    bb spec
+    bb features
+    bb ci
+
+**isaac-agent** `bean/isaac-rxun` rebased onto `753b131`:
+
+    bb spec
+    bb features features/config/composition.feature
+
+0 failures on composition. Full `bb features` 0 after the recut (the prior 1 was this row).
+
+Landing: foundation squash first; rewrite agent `bb.edn`/`deps.edn` off `{:local/root "../isaac-foundation-rxun"}` to the landed sha; re-run agent gates; then squash agent. No feature-baseline (gate exit 2) — unverified/verify handoff.
+
+### Worker now
+
+1. Rebase `bean/isaac-rxun` (agent) onto origin/main `753b131`. Keep implementation.
+2. Confirm composition.feature green. Do not recut live-API env-ref inputs. Do not implement file refs.
+3. Hand to verifier. Do not land until foundation then agent pin rewrite.
