@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "1390334acf6bed646e4df314e6bc731407161504"}
+                                      :git/sha "a0a4180164370c0e0387e14ef75067f95a512112"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "c5f86320e7e1cca5d553dc7932d2487da6afcfa8"}
@@ -14,13 +14,13 @@
                                       :git/sha "007da61d029b73b347a003cff47ecae3d87eb49a"}
                               :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.http                 {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
-                                        :git/sha "32603e6999f95e0dfea6ca0cf36926c493991773"}
+                                        :git/sha "71a04136404c37fa09a681bc14ac79663a7e4e53"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
                                       :git/sha "c3560df78f8c163923c8965b2c2cfe76264a6c36"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
-                                      :git/sha "ba645182e2c9aa634cdffbd267a66c0039d803f3"}
+                                      :git/sha "19c958fdd88b21228d5688433b0715a8d4efd4f3"}
                               :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
                                       :git/sha "11cd88b6375dbb2c0a67ff30738ca32188213095"}
@@ -35,16 +35,16 @@
                                       :git/sha "68e29aabb1d11067daa09938e8f1f2166c190c7d"}
                               :desc  "Shared Google Workspace plumbing — OAuth for the Google user, the Pub/Sub push door and durable inbox, registrations and renewal, health."}
  :isaac.comm.gchat           {:coord {:git/url "https://github.com/slagyr/isaac-gchat.git"
-                                      :git/sha "c4f18042c77f15960c06e9db2a4cb9d53b8673ca"}
+                                      :git/sha "8ce6fd79dbb651765cc46dd23a9d55756e356ef4"}
                               :desc  "Google Chat comm — inbound gate, routing and dispatch for spaces and DMs; outbound replies and sends. Built on isaac-google."}
  :isaac.comm.gmail           {:coord {:git/url "https://github.com/slagyr/isaac-gmail.git"
-                                      :git/sha "1a26c67e14eb586653bff517e14fb8952ae267a3"}
+                                      :git/sha "30c5cf10b1912990aed388bea9acd87796413c16"}
                               :desc  "Gmail comm — watch on INBOX, history walk, thread-as-session routing; replies on thread. Built on isaac-google."}
  :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                                      :git/sha "d92b94ed66f89ee1c9d003d328e5b8eeb8510fa0"}
+                                      :git/sha "8256b22a8a4f1f8f004c855259ccd88a1dfd3b03"}
                               :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage        {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
-                                      :git/sha "0422f6d9f9afa91c70c6517fcd2d1d7b8bbc6d61"}
+                                      :git/sha "f1cba0a4cf680900fec1d2a0cf9facb84db03678"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
                                       :git/sha "a2057ae907a167c11c70c261fe13517923276a40"}
