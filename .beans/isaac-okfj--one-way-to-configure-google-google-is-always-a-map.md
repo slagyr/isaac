@@ -1,11 +1,11 @@
 ---
 # isaac-okfj
 title: 'One way to configure Google: :google is always a map of organization id to config, with no default tenant'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-09-21T03:51:03Z
-updated_at: 2026-09-21T04:04:17Z
+updated_at: 2026-09-21T04:17:14Z
 parent: isaac-bv1l
 ---
 
