@@ -7,8 +7,9 @@ priority: high
 tags:
     - agent
     - sessions
+    - unverified
 created_at: 2026-09-21T18:31:37Z
-updated_at: 2026-09-21T18:41:30Z
+updated_at: 2026-09-21T18:55:51Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/store/impl_common.clj`,
@@ -46,3 +47,31 @@ same look.)
   exits 1 with the existing message
 
 Noticed while recovering the isaac-3wiu misbind after the 18:24Z restart.
+
+## Work log (2026-09-21, work-2 local)
+
+Landed as isaac-agent 22c636c, suites green (1692 specs / 0, 845
+features / 0):
+
+- `request-cancel!*` resolves the marker through `turn-marker-path-for`
+  (crew-aware, legacy fallback) exactly like record/get/clear.
+  `clear-turn-marker!*` already swept all three paths — inspected, no
+  change needed.
+- `run-cancel` prints `cancelled <id>` and exits 0 on success; a no-op
+  write (marker missing at write time) exits 1 with the existing idle
+  message — never a silent 0.
+- Specs: impl-common `request-cancel!*` describe (crew-nested stamp +
+  session-id, no-marker nil + no writes, flat-layout legacy stamp);
+  cli_spec (live cancel reports and stamps, idle exits 1); cli.feature
+  scenario "sessions cancel stamps a live crew-nested session's marker
+  and reports it" — verified red on main before the fix (marker seeded
+  via the delivery-referencing step, stdout + exit code + durable
+  `cancelled true` asserted).
+- The read/write disagreement the bean called out is gone by
+  construction: both `get-turn-marker*` and `request-cancel!*` now
+  resolve through the same path fn.
+
+Not exercised here: the memory store's `request-cancel!` stamps its
+in-memory marker and delegates the durable write to `request-cancel!*`
+— covered transitively. The sidecar store's boolean passthrough was
+inspected; no change.
