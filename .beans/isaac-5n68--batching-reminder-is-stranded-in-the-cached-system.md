@@ -1,6 +1,6 @@
 ---
 # isaac-5n68
-title: Per-model turn reminders in model config; GLM gets a batching nudge beside its tool results
+title: Model-family defaults (prompt text, sampling) that users can override per model; GLM gets an emphatic batching line
 status: todo
 type: task
 priority: normal
@@ -10,80 +10,82 @@ updated_at: 2026-09-21T04:58:11Z
 
 ## Why
 
-GLM-5.3 batched 0 of 418 tool responses across two real beans (cgxa, nq4c),
-even with `parallel_tool_calls: true` on the wire (isaac-rr7u). Given the
-instruction one step from the decision, it batched 4 of 4 probes. Where the
-instruction sits matters, and today the only batching hint is in the cached
-system prefix, ~100K tokens back.
+GLM-5.3 batched 0 of 418 tool responses across two real beans (cgxa, nq4c).
+It already has `parallel_tool_calls: true` (isaac-rr7u) and Isaac's one generic
+batching hint in the system prompt.
 
-Claude and GPT batch without being reminded. So whether a model needs a
-reminder is a property of the **model**, not of the API adapter: GLM and grok
-share the chat-completions adapter, and grok batches.
+Every harness we read solves this with **per-model-family system prompt
+text**, not with per-turn reminders:
+
+- **Codex:** per-model prompt files. `gpt_5_2_prompt.md` carries "Parallelize
+  tool calls whenever possible…". The other model prompts do not.
+- **OpenCode:** `session/system.ts` picks a whole prompt by matching the model
+  id (anthropic, gpt, gemini, kimi, default). Each words batching differently.
+  Kimi's is the most emphatic ("HIGHLY RECOMMENDED"). It also sets sampling
+  per model in code (`provider/transform.ts`: temperature 1.0 for glm-4.6/4.7).
+- **Grok Build:** no batching line in its main prompt, because Grok batches
+  unprompted.
+
+Isaac has one hint for every model and no per-model prompt text. Requiring
+users to write prompt text for each model they configure is a burden, so Isaac
+should ship sensible defaults per model family and let the user override them.
 
 ## Design
 
-1. **Model config declares reminders.** New optional field on the model schema:
+1. **Built-in family defaults, as data.** Ship them in isaac-agent resources
+   (edn, not code): each entry has a match on the model id and the fields it
+   supplies. For example:
 
    ```clojure
-   ;; models/glm-5-3.edn
-   :reminders [{:text  "Issue all independent tool calls in this response together; wait only when one call's output feeds the next."
-                :after {:single-call-cycles 3}}]
+   {:glm    {:match #"(?i)glm"
+             :prompt "You can call many tools in one response. When calls are
+                      independent (reads, greps, globs, separate files), issue
+                      them ALL in the same response. One call per response is
+                      the slow path; wait only when one call's output feeds
+                      the next."}
+    :claude {:match #"(?i)claude"}    ;; batches unprompted: nothing extra
+    ...}
    ```
 
-   No `:reminders` means no reminder, which covers every model we have today.
-   It hot-reloads, so the text and threshold can be tuned without a deploy.
+   Fields for now: `:prompt` (appended to the system prompt for that model
+   only). Sampling (`:temperature`) is a candidate field. See the note below
+   before adding it.
 
-2. **The tool loop decides when.** It counts consecutive cycles whose response
-   carried exactly one tool call. When the count reaches the threshold, it puts
-   the reminder on the request for that follow-up and resets the count. A
-   model that ignores the reminder is nudged every N cycles, not every cycle. A
-   model that batches never sees it. The count is a tool-loop fact; the loop
-   learns nothing about beans or git.
+2. **The model entry overrides, field by field.** A user's
+   `models/<id>.edn` may set the same fields. They win over the family default,
+   merged per field. An explicit `nil` turns a family default off. With no
+   family match and no user fields, the request is exactly what it is today.
 
-3. **The drive wraps it; adapters only attach it.** The drive already holds
-   the nonce, so it wraps the text in the trusted block before handing it
-   over. The reminder sits right next to tool output, which is untrusted, so
-   it must read as the harness speaking.
+3. **Where the text lands.** It goes in the system prompt, next to the existing
+   generic hint, in the cached prefix, which is where every other harness puts
+   it. This tests **wording** per model, not placement. If GLM is still at zero
+   after this, the per-turn route is next (see isaac-p5kt).
 
-4. **Each adapter's existing `followup-messages` attaches it in its own wire
-   shape.** No new protocol method, which means no JVM `AbstractMethodError`
-   risk and no cross-repo change:
-   - chat-completions / responses: a trailing `{:role "user"}` message after
-     the tool results
-   - messages (Anthropic): an extra `{:type "text"}` block **inside** the
-     tool_result user message, since roles must alternate
-   - claude-cli, ollama, grover: ignore it. The CLI runs its own loop.
+## Temperature note
 
-5. **Append-only.** Nothing is stripped, so the prefix cache is never
-   disturbed and there is no breakpoint invariant to guard. Reminders stay
-   cheap by being rare (conditional), not by being deduplicated. This is how
-   Claude Code's own `<system-reminder>` nudges behave.
+Isaac sends no `temperature` today. The live GLM request body keys were
+`(:messages :model :parallel_tool_calls :reasoning_effort :stream
+:stream_options :tools)`. The server default applies, and on OpenAI-compatible
+APIs that is usually 1.0 already. So "set GLM to 1.0" may change nothing.
+Check Fireworks' default before counting it as a lever.
 
 ## Done when
 
-- `:reminders` is in the model schema and validated; editing it on a running
-  server takes effect with no restart
-- a model with no `:reminders` sends byte-identical requests to today (spec)
-- the reminder fires only after N consecutive single-call cycles (N from
-  config), then resets; a batched response also resets the count (specs)
-- the reminder is wrapped in the nonce trusted block (spec)
-- per-adapter attachment shapes as listed above (specs for chat-completions,
-  responses and messages)
+- family defaults load from resources; the model-id match is spec'd,
+  including no match
+- the user model entry overrides per field, and explicit `nil` disables (specs)
+- a model with no family match and no user fields sends byte-identical
+  requests to today (spec)
+- the `:prompt` text reaches the system prompt for that model only (spec)
+- the model schema documents the new fields; `isaac config validate` accepts
+  them; editing them on a running server takes effect with no restart
 - `bb verify` and `bb jvm-spec` are both green
-- deployed; `:reminders` added to zanebot's `models/glm-5-3.edn`
-- **measured on a real GLM bean**, from `:tool-calls-count` in server.log:
-  a non-zero batching rate, with the sample size stated. If it stays at
-  zero, report that: it disproves the placement theory, which is still worth
-  knowing
-
-## Not in scope
-
-Converting `api/Api` to `extend` with a defaults map (the pattern that lets
-new protocol methods have defaults) is worth doing, but this bean does not
-need it. File it separately if wanted.
+- deployed to zanebot. **Measured on a real GLM bean**, from
+  `:tool-calls-count` in server.log: the batching rate with the sample size
+  stated. If it stays at zero, report that. It means wording was not the
+  lever.
 
 ## Also worth trying, independently
 
 A/B `reasoning_effort` on the glm-5-3 model entry. It is config-only, it
-hot-reloads, and the session gauge can now measure the difference
-(isaac-f5tn).
+hot-reloads, and the gauge can now measure it (isaac-f5tn).
