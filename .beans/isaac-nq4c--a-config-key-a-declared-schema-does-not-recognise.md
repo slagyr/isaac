@@ -3,10 +3,11 @@
 title: A config key a declared schema does not recognise is pruned in silence; it should warn
 status: todo
 type: bug
+priority: normal
 tags:
     - config
 created_at: 2026-09-21T04:25:37Z
-updated_at: 2026-09-21T04:25:37Z
+updated_at: 2026-09-21T04:38:23Z
 ---
 
 Provider and comm config slices are pruned to their declared schema. A key the
@@ -63,3 +64,5 @@ advisories, so the operator sees them without reading the log.
 
 isaac-12fo (completed), isaac-mm7o, isaac-deds — all three are the same silence
 in different slices.
+
+Dispatched: hail 8c3e6979 2026-09-21T04:38:18Z (band isaac-work, pinned session isaac-work-3 on model glm-5-3 / provider fireworks)
