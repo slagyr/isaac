@@ -7,9 +7,8 @@ priority: high
 tags:
     - ops
     - comm
-    - unverified
 created_at: 2026-09-21T04:46:42Z
-updated_at: 2026-09-21T21:57:19Z
+updated_at: 2026-09-21T22:11:08Z
 ---
 
 `provider-content` (isaac-agent `src/isaac/attention.clj:46`) appends the
@@ -153,3 +152,16 @@ leading; short message untouched (no ellipsis, no dropped notice);
 full-message log entry; enqueue-level backstop clip + full-content log
 via a non-provider caller (turn-failed). The fc30085 spec's "truncated"
 wording expectation updated to "characters dropped".
+
+
+
+## Verification failed
+
+HEAD: isaac-agent d016cd37d0b01e1504b802c91f7a106ee93df187 (on origin/main)
+Working tree: clean
+Beans HEAD at review: 7971cbb8
+No Exceptions section on this bean. No feature file in the diff.
+
+`bb spec` 1696 examples, 0 failures. The cap work holds: `provider-message-cap` is 400, leaders stay in front, a short message is unchanged, a giant message says how many characters were dropped, and `:attention/provider-message-clipped` keeps the full text. No `Thread/sleep` in `spec/`.
+
+Revised acceptance, first bullet, is not met. A provider-broken attention still does not name why it broke. `maybe-notify-broken!` forwards only `:message`. `provider-content` clips the head of that string. On the 04:31 incident the head is the Claude `system/init` handshake, so the alert is still the tool list, and `:error` / `:status` (logged beside it in `dispatch.clj`) never reach the post. Opening the log is still required. The revised work named three ways to carry the diagnosis: the structured error and status, a tail clip, or stripping the handshake before clipping. A shorter head is not one of them.
