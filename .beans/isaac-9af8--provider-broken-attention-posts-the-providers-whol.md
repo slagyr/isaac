@@ -7,8 +7,9 @@ priority: high
 tags:
     - ops
     - comm
+    - unverified
 created_at: 2026-09-21T04:46:42Z
-updated_at: 2026-09-21T21:47:53Z
+updated_at: 2026-09-21T21:57:19Z
 ---
 
 `provider-content` (isaac-agent `src/isaac/attention.clj:46`) appends the
@@ -113,3 +114,42 @@ should be retained as the error payload, or only what follows the handshake.
   already works; a scenario should pin it so it stays true)
 - provider, model and session still lead and are never truncated away
 - a short provider message is unchanged
+
+## Work log (2026-09-21, work-2 local)
+
+Landed as isaac-agent d016cd3, suites green (1696 specs / 0, 845
+features / 0).
+
+## Premise correction (verified against zanebot)
+
+The deployed build at 04:31Z (isaac.agent 53a1f0e) **already carried the
+fc30085 enqueue clip** — its gitlib attention.clj has content-cap 1000.
+The quoted post ending "… truncated 2844251 bytes" is that clip's
+dropped-count notice: ~1KB was enqueued, not 2.8MB. The 44-second
+queue→delivered gap for delivery 0772 (04:31:24 queued, 04:32:08
+delivered) is the comm delivery worker's tick cadence, not upload time.
+So "2.8 MB to Discord" overstates what left the machine — but the
+acceptance gaps below were real on main.
+
+## What actually changed
+
+- `provider-content` bounds the raw provider message itself
+  (`provider-message-cap 400`, named constant): provider/model/session
+  always lead and are never squeezed; the message keeps a head plus
+  "… N characters dropped". Previously the first ~940 chars of a dump
+  rode along inside the 1000-char blob clip.
+- Wording: the clip counts characters and now says so ("bytes" was
+  wrong — `count` of a string).
+- The full untruncated text reaches the log:
+  `:attention/provider-message-clipped` (message-chars + full-message)
+  when the message cap fires; `:attention/content-clipped`
+  (content-chars + full-content) when the enqueue-level backstop fires.
+- The bean's open question answered: `enqueue-attention!` keeps capping
+  **all** attention content as the backstop — any future caller is
+  bounded, and now also logged.
+
+Specs (all red before the change): message-level bound with leaders
+leading; short message untouched (no ellipsis, no dropped notice);
+full-message log entry; enqueue-level backstop clip + full-content log
+via a non-provider caller (turn-failed). The fc30085 spec's "truncated"
+wording expectation updated to "characters dropped".
