@@ -5,8 +5,10 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-09-21T03:45:09Z
-updated_at: 2026-09-21T03:45:13Z
+updated_at: 2026-09-21T03:51:08Z
 parent: isaac-bv1l
+blocked_by:
+    - isaac-okfj
 ---
 
 On a single-organization host, `isaac config validate` reports every nested
@@ -58,3 +60,8 @@ same discrimination `isaac.google.tenants/flat?` already makes at runtime
 A flat `:google` config validates with no warnings and keeps every field. A
 tenant-map `:google` validates with no warnings and keeps every tenant's
 fields. A genuinely unknown key under either shape is still reported.
+
+Superseded in practice by isaac-okfj: with one config shape there is no
+value-spec to mis-apply, so these warnings disappear rather than being fixed
+in place. Keep this bean open only as the acceptance check — a nested config
+validates with no warnings.
