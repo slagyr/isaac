@@ -5,7 +5,9 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-09-20T07:34:20Z
-updated_at: 2026-09-20T19:38:07Z
+updated_at: 2026-09-21T16:39:18Z
+blocked_by:
+    - isaac-9azm
 ---
 
 2026-09-20 05:19Z the retries of hail `d4a7cd6f` (isaac-ddls, band `isaac-work`)
@@ -55,3 +57,26 @@ used originally), not merely within the crew. If no band session is free, the
 delivery waits — that is what pending is for. Scenario: a delivery suspended by
 a restart is recovered into a band session, and a session that is not in the
 band is never a candidate however well its crew matches.
+
+## Superseded by isaac-9azm (2026-09-21, Micah)
+
+Walking the delivery worker's six turn-end branches with Micah established the
+real boundary: **hail delivers a message into a turn and is then done; the drive
+owns everything after.** Under that rule there is no post-restart re-bind to get
+wrong — the queue record never goes into limbo, so nothing is reconstructed and
+no candidate set is recomputed.
+
+This bean stays open only as the narrow patch if isaac-9azm is deferred. In that
+case the fix is *not* the unpushed `be9d659`: that commit snapshots
+`:band-candidates` onto the delivery at bind time, duplicating state that is
+already derivable and going stale when a session joins or leaves the band. The
+band survives the restart intact — `bridge/core.clj:190` embeds the whole
+delivery in the turn marker and `marker->delivery` returns it whole, so
+`:frequencies {:band ...}` is present at recovery — and hail already has
+band-aware resolution in `matching-spawn-sessions` (`delivery_worker.clj:186`)
+via `delivery-band` + `router/matching-sessions`.
+
+The narrow fix, if wanted: make `alternate-session` (:285) and the
+`runnable-delivery` crew fallback (:243) resolve through the band when the
+delivery has one, falling back to `delivery-crew-sessions` only for band-less
+legacy deliveries. Discard `be9d659`.
