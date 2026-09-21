@@ -1,0 +1,4 @@
+;; Manifest for external consumers (tools.deps git deps).
+;; Isaac itself runs on bb.edn; this file exists so other projects can
+;; resolve this repo as a :git/sha dependency (e.g. the bean-gate).
+{:paths ["src"]}
