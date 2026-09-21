@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: high
 created_at: 2026-09-21T03:51:03Z
-updated_at: 2026-09-21T03:51:08Z
+updated_at: 2026-09-21T04:04:17Z
 parent: isaac-bv1l
 ---
 
@@ -65,3 +65,5 @@ A nested `:google` validates with no warnings and every field kept. A flat
 `:google` fails validation with a message naming the shape it wants. A host
 with one organization needs no `:gchat/google` on its comms. Tokens resolve
 under `google/<id>`.
+
+Dispatched: hail bb40c0c2 2026-09-21T04:04:12Z (band isaac-work)
