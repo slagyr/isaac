@@ -4,8 +4,10 @@ title: 'Unresolvable ${VAR} and ${file:…} references: warn, treat as unset, ne
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-21T16:28:51Z
-updated_at: 2026-09-21T17:09:53Z
+updated_at: 2026-09-21T17:31:00Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
@@ -262,3 +264,53 @@ Landing: foundation squash first; rewrite agent `bb.edn`/`deps.edn` off `{:local
 1. Rebase `bean/isaac-rxun` (agent) onto origin/main `753b131`. Keep implementation.
 2. Confirm composition.feature green. Do not recut live-API env-ref inputs. Do not implement file refs.
 3. Hand to verifier. Do not land until foundation then agent pin rewrite.
+
+## Planner return resolved — handed to verify (2026-09-21, scrapper@isaac-work-1)
+
+The `composition.feature` conflict is gone. Planner recut it on isaac-agent main
+(`753b131`, beans `6eb7242f`): the scenario now gives `:api-key` a literal
+`sk-ant-test` in both `providers/anthropic.edn` and the `Then` table, because it
+tests additive composition, not reference passthrough — design point 1 forbids
+asserting an unresolved `${CONFIG_TEST_ANTHROPIC_API_KEY}`.
+
+**Branches** (both pushed, no implementation change since the conflict report —
+the agent branch was rebased only):
+
+- isaac-foundation `bean/isaac-rxun` @ `d66310d`, base `origin/main` `e97c51d`
+  (still tip of main; no rebase needed).
+- isaac-agent `bean/isaac-rxun` @ `5d4a655`, rebased onto `origin/main`
+  `cabfdf2` (which is `753b131` + the isaac-xpkf/f3hq/6doh `@wip` scenarios).
+  Clean rebase, no conflicts.
+
+**Gates** (planner ruling 1: isaac-foundation has no `bb verify`; `bb ci` is the
+controlling gate, and `bb jvm-spec`'s 8 failures are pre-existing on
+`origin/main`, so they are not a bar here):
+
+| Repo | Command | Result |
+|---|---|---|
+| isaac-foundation | `bb ci` | **exit 0** — spec 1130/0/2044, features 198/0/524, 2 pre-existing pending |
+| isaac-agent | `bb features features/config/composition.feature` | **21/0/35** |
+| isaac-agent | `bb features` | **838/0/1994**, 1 pre-existing pending |
+| isaac-agent | `bb spec` | **1686/0/3486** |
+
+The agent example counts moved 843 → 838 because the recut folded the two
+reference rows out of the composition table; the new `@wip` scenarios on
+`cabfdf2` are skipped, as intended.
+
+One flake seen and cleared: `spec/isaac/session/session_steps_spec.clj:230`
+("parks a slow tool-loop send so a later cancel can still fire") failed once on
+`(should-not (realized? (g/get :turn-future)))` and passed on re-run. It is a
+timing assertion on a `sleep 0.05` tool call, unrelated to this bean.
+
+**Scope held as ruled:** `${file:…}` stays with isaac-jl9p (still `todo`); no
+live-API `${VAR}` input was recut.
+
+**Gate:** `bb bean-gate verify isaac-rxun` → exit **2**, `no feature-baseline:
+use the verify path`. Tagged `unverified` and handed to the verify band.
+
+**Landing order for whoever lands this** (unchanged): squash isaac-foundation
+first, then rewrite the agent's `bb.edn` **and** `deps.edn` pins off
+`{:local/root "../isaac-foundation-rxun"}` to the landed foundation main sha (5
+entries in `bb.edn`, 13 in `deps.edn`: `isaac-foundation`, `-spec`,
+`-test-support`, `marigold.bridge`, `marigold.longwave`), re-run the agent
+gates, then squash isaac-agent.
