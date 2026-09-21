@@ -6,8 +6,9 @@ type: bug
 priority: normal
 tags:
     - config
+    - unverified
 created_at: 2026-09-21T04:25:37Z
-updated_at: 2026-09-21T04:57:00Z
+updated_at: 2026-09-21T05:35:15Z
 ---
 
 Provider and comm config slices are pruned to their declared schema. A key the
@@ -142,3 +143,28 @@ $ bb spec -f documentation spec/isaac/config/warnings_spec.clj
 ### What is good, keep it
 
 `slot-walk` mirrors apron's pruning accurately and the cases are the right ones: closed maps warn on undeclared fields and descend declared ones; keyed open maps descend without warning; a bare `{:type :map}` reports every content key (the isaac-12fo `:env` trap); `:seq` fields descend with `[idx]` path segments. The `signal_slots_spec` integration pair — `signals[:mychan].account-id` (isaac-mm7o shape) and `signals[:mychan].allow-from.domain` (bare-map shape) — is exactly the right evidence, and both assert `(should= [] (:errors result))` so boot-still-succeeds is covered. Other checks clean: no feature file touched, no stray `println` in the diff, no `Thread/sleep`/network/fs/clock smells in the new specs.
+
+## Verify fail 1 answered (2026-09-21, scrapper@isaac-work-1)
+
+Branch `isaac-foundation` `bean/isaac-nq4c` @ **`756d1bd`** (one new commit on top of `dfa3ef6`, base `origin/main` 9586b08), pushed.
+
+**1 — the warning is now logged (blocking item cleared).** New `isaac.config.warnings/log-unknown-keys!` warn-logs every `unknown key` row as `:config/unknown-key` with `:slice`, `:key` and `:path` fields, e.g.
+
+    {:level :warn :event :config/unknown-key
+     :slice "signals[:mychan]" :key "account-id" :path "signals[:mychan].account-id"}
+
+It is called from `isaac.config.loader/load-config-result` on the final, `berths/normalize-errors`-normalized warning list (`loader.clj`, the `:warnings` thread of the return map) rather than inside `conform-berth-slices`, so **one** site covers every producer the bean names — berth slices (comms/signals, the isaac-mm7o shape), the bare-`:map` contents walk (the isaac-12fo `:env`/provider-template shape), root-entity and config-table rows — and the logged path is the same operator-facing key the CLI prints. Rows that are not unknown keys (dangling `.md`, conform errors) are not logged. Severity stays `warn` and nothing short-circuits: boot still succeeds, as the bean requires.
+
+Log evidence, not only `:warnings`:
+- `spec/isaac/config/warnings_spec.clj` — new `log-unknown-keys!` describe: 4 examples (per-row `:warn`/`:config/unknown-key` with slice+key+path; quiet for non-unknown-key rows; a bare top-level key logs `:slice nil`; returns its input so it can sit in the load pipeline).
+- `spec/isaac/config/signal_slots_spec.clj` — new integration example "logs a warning naming the slice and the undeclared key, and still loads (isaac-nq4c)": loads a real config through `marigold/load-config` and asserts the captured entry `:warn` / `:config/unknown-key` / slice `signals[:mychan]` / key `account-id`, **plus** `(should= [] (:errors result))` and the declared `:token` still arriving — boot-still-succeeds in the same example. The bare-`:map` example now asserts its log entry too (`slice "signals[:mychan].allow-from"`, key `"domain"`).
+
+**2 — the swallowed spec runs (blocking item cleared).** The misplaced paren in `warnings_spec.clj` is fixed: `it "never warns on known fields at any depth"` now closes before `it "stays quiet for slots and values that are not maps"`. `bb spec -f documentation spec/isaac/config/warnings_spec.clj` prints **12 examples** — the original 8 (7 -> 8, the non-map-slot guard included by name) plus the 4 new `log-unknown-keys!` ones.
+
+**3 — dead helper removed.** `spec-known-fields` is gone from `src/isaac/config/warnings.clj`; `grep -rn spec-known-fields src/ spec/` is empty.
+
+Kept as the verifier asked: `slot-walk`, the `signal_slots_spec` integration pair, no feature file touched.
+
+**Suites on the branch:** `bb spec` **1090 / 0 failures / 1991 assertions** (1084 -> 1090: +1 unswallowed, +4 unit, +1 integration). `bb features` **198 / 0 failures / 524 assertions / 2 pending** (the two pre-existing berth-registration pendings). `bb lint` exit 0, no new warnings in the touched files. The two `cli/modules_pins.feature` failures were the stale gitlibs mirror again (by then pointing at the verifier's removed `isaac-foundation-nq4c-verify/fixture-agent`); `rm -rf ~/.gitlibs/_repos/file/REL/fixture-agent` and features are green — environmental, unchanged from attempt 1.
+
+Bean Gate: `bb bean-gate verify isaac-nq4c --dir isaac-foundation=../isaac-foundation-nq4c` -> `no feature-baseline: use the verify path`, exit 2. Closing on the unverified + verify-hail path again.
