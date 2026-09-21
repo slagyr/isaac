@@ -6,8 +6,9 @@ type: bug
 priority: normal
 tags:
     - config
+    - unverified
 created_at: 2026-09-21T04:25:37Z
-updated_at: 2026-09-21T04:49:11Z
+updated_at: 2026-09-21T04:53:21Z
 ---
 
 Provider and comm config slices are pruned to their declared schema. A key the
@@ -78,3 +79,20 @@ Dispatched: hail 8c3e6979 2026-09-21T04:38:18Z (band isaac-work, pinned session 
 **Done (committed `8aeb66c`, pushed `bean/isaac-nq4c`):** `slice-unknown-key-warnings` is now recursive (`slot-walk` in `src/isaac/config/warnings.clj`), matching apron conform's pruning exactly — closed maps warn on undeclared fields and descend declared ones; keyed open maps descend (nothing pruned there); a **bare `{:type :map}`** (no `:schema`/`:value-spec`/`:key-spec`) reports **every** content key, because conform prunes all of them (the isaac-12fo `:env` trap); `:seq` fields descend per entry with `[idx]` path segments. `bb spec` full suite: 1082/0; `spec/isaac/config` 374/0 (7 warnings specs). One parse-error detour while writing the spec file — fixed, tests are the real TDD reds now green.
 
 **Next (the mm7o half — comms/providers berth-extended entity collections):** root-entity warnings (`root-entity-warnings`, warnings.clj) use `schema-compose/schema-for-kind` against the *root* schema — need to verify whether a comm's `:extra-schema` (berth-extended) is included there; if not, a comm slice carrying `:gchat/account-id` when the gchat comm never declared it is pruned in silence. Plan: failing spec first (a `:comms` slot with an undeclared key under a berth-extended schema), then wire the composed schema into the entity-warnings path. Resume at `src/isaac/config/warnings.clj:41` (`root-entity-warnings`) and `spec/isaac/config/warnings_spec.clj:1`. After that: confirm `isaac config validate` surfaces the slice warnings (loader already merges them into `:warnings`, printed by `report-validation!`) and boot-still-succeeds cases, then the gate.
+
+## Summary of changes (2026-09-21, scrapper@isaac-work-3, branch bean/isaac-nq4c, base 9586b08)
+
+Root cause: c3kit apron's `schema/process-schema-on-entity` silently `select-keys`s a closed map to its declared fields, and a **bare `{:type :map}`** (no `:schema`/`:value-spec`/`:key-spec`) prunes *every* key inside it. `isaac.config.berths/validate-node!` conforms each berth-extended slice through that, so an unrecognised key vanished with no error, no warning, and a clean `isaac config validate`.
+
+Fix, all in `isaac.config.warnings/slice-unknown-key-warnings` (src/isaac/config/warnings.clj):
+
+- Now recursive via `slot-walk`, mirroring apron's pruning exactly: closed maps warn on undeclared fields (`<path>.<slot>.<field>`, "unknown key") and descend declared ones; keyed open maps descend (nothing pruned there); **bare `:map` fields report every content key** — the isaac-12fo `:env` trap, the subtlest case; `:seq` fields descend per entry with `[idx]` path segments.
+- `conform-berth-slices` (loader) already fed these into `load-config-result`'s `:warnings`, and `isaac config validate` already prints them (`print-warnings!`, plus `--json`/`--edn` structured output) — so both bites (provider `:env` arriving `{}`, comm `:gchat/account-id` arriving nil) now surface as warnings with no boot impact. Severity stays a warning: forward-compatible config must not break a boot.
+
+Evidence:
+
+- `spec/isaac/config/warnings_spec.clj` — 7 unit specs incl. bare-map, closed-map descent, seq descent, known-key-never-warns, non-map quiet.
+- `spec/isaac/config/signal_slots_spec.clj` — integration: a declared module's slot carrying an undeclared `:extra-schema` key warns `signals[:mychan].account-id` (isaac-mm7o shape); a bare `:map` extension field's contents warn `signals[:mychan].allow-from.domain` (verified red on pre-change code, green after).
+- Full suites on the branch: `bb spec` 1084/0; `bb features` 198/0 failures (2 pre-existing pending `@wip` placeholders, not this bean). One environmental detour: stale gitlibs cache (`fixture-agent` pointed at the removed `isaac-foundation-2y86` worktree) broke `modules pins` features — cleared `~/.gitlibs/_repos/file/REL/fixture-agent`, then green.
+
+Bean Gate: exit 2 (no feature-baseline — predates the gate), so closing on the unverified + verify-hail path.
