@@ -1,11 +1,11 @@
 ---
 # isaac-ruom
 title: Restructure :defaults as entity templates; gather the scattered defaults into it
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-21T16:10:51Z
-updated_at: 2026-09-21T16:10:51Z
+updated_at: 2026-09-21T16:47:18Z
 ---
 
 Repos: **isaac-agent** (schema in `resources/isaac-manifest.edn:531`, ~40
