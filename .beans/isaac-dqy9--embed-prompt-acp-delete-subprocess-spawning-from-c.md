@@ -1,13 +1,13 @@
 ---
 # isaac-dqy9
 title: Embed prompt + acp; delete subprocess spawning from cli-server (end cap)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - cli
 created_at: 2026-09-17T15:55:25Z
-updated_at: 2026-09-21T02:17:35Z
+updated_at: 2026-09-21T02:26:04Z
 parent: isaac-eqkb
 blocked_by:
     - isaac-qvhy
@@ -248,3 +248,37 @@ Landing: cli-server squash first; then cli-proxy rewrites `bb.edn`/`deps.edn` of
 1. Recut the prompt When as authorized. Drop `@wip` on that scenario.
 2. Do not recut ACP. Do not recut token-reject. Do not edit foundation.
 3. Confirm the two @slow selectors green. Hand gated close / verifier per band. Do **not** land until cli-server then proxy pin rewrite.
+
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac-cli-server 7c7774b8d87fd7d1bf5960571f4f4013a428b26a
+main-sha: isaac-cli-proxy c017840ca2e69d1151dfdc2038dcf9d0c7387f39
+
+Planner adjustment 451bb934 applied in full.
+
+- **A** — kept `:cli/command-started … hosted true`; one-time grep recut to `babashka.process\|spawn-process\|launcher-command` only. Empty on landed `isaac-cli-server/src`. Registry marker untouched (isaac-mfcd).
+- **B** — prompt scenario When recut to `remote ws://localhost:${server.port}/cli -- prompt --crew main --session dqy9-e2e -m ping`, matching the three scenarios above it. Then-clause unchanged. `@wip` dropped. isaac-foundation not touched; no third repo.
+- **C** — token-reject left alone (isaac-pp3q). Proxy closed on the four named gates, not full `bb ci`. The other session's uncommitted `cli.clj` / `proxy.clj` / `proxy_spec.clj` work on the shared `isaac-cli-proxy` checkout was never touched — the proxy squash ran from a detached worktree so that checkout stayed untouched.
+
+### Controlling acceptance at landing
+
+isaac-cli-server `7c7774b` (squash of `1d630a3`):
+
+    bb features   18 examples, 0 failures, 80 assertions
+    bb spec       15 examples, 0 failures, 46 assertions
+    bb ci         green (config-bypass-lint ok)
+    grep -rn "babashka.process\|spawn-process\|launcher-command" src   # empty
+
+isaac-cli-proxy `c017840` (squash of `1bcb332`), run on the squash commit with the pin at the landed cli-server sha:
+
+    bb spec                                              24 examples, 0 failures, 61 assertions
+    bb features                                          29 examples, 0 failures, 93 assertions
+    ISAAC_GIT=1 bb features-slow features/integration.feature:55   1 example, 0 failures, 5 assertions  (ACP)
+    ISAAC_GIT=1 bb features-slow features/integration.feature:72   1 example, 0 failures, 4 assertions  (prompt)
+
+Scenario lines after the `@wip` drop: ACP `:55`, prompt `:72`.
+
+Pins rewritten off `{:local/root "../isaac-cli-server-dqy9"}` in **both** `bb.edn` and `deps.edn` to `:git/sha 7c7774b8…`; verified `git merge-base --is-ancestor` against isaac-cli-server `origin/main`. `isaac-acp` pinned at `c3560df78f8c163923c8965b2c2cfe76264a6c36` = isaac-acp `main`. The `:dev-local` alias entry at `deps.edn:24` still points at `../isaac-cli-server`, unchanged from main.
+
+Deferred per the adjustment, not part of this close: turn-gate second-prompt spec; ACP grace-expiry spec; zanebot soak; registry `:hosted` cleanup (isaac-mfcd).
