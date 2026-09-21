@@ -1,11 +1,11 @@
 ---
 # isaac-6doh
 title: 'The drive knows nothing about hail: hail markers resume like any other source'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:15:56Z
+updated_at: 2026-09-21T17:16:22Z
 blocking:
     - isaac-9azm
 ---
