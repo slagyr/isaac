@@ -1,13 +1,14 @@
 ---
 # isaac-uxe1
 title: chat-completions adapter puts Isaac's internal keys on the wire; strict providers reject the request
-status: todo
+status: completed
 type: bug
+priority: normal
 tags:
     - llm
     - providers
 created_at: 2026-09-21T02:31:44Z
-updated_at: 2026-09-21T02:31:44Z
+updated_at: 2026-09-21T02:40:32Z
 ---
 
 `isaac.llm.api.chat-completions` POSTs the request map to `/chat/completions`
@@ -57,3 +58,32 @@ rather than passing the caller's map through. Both paths — `chat-with-completi
 - streaming and non-streaming send the same field set, plus `stream`
 - a provider that rejects unknown fields completes a turn
 - the same audit is applied to the ollama adapter (or a sibling bean filed)
+
+
+## Summary of Changes (2026-09-21, main-sha 4cd20fc, agent 0.1.76)
+
+Both adapters now project the request onto a whitelist of fields their API
+accepts, instead of POSTing the caller's map.
+
+- `chat_completions.clj` — `wire-fields` / `wire-body`, applied to both the
+  streaming and non-streaming paths. Kebab keys map to wire names
+  (`:max-tokens` -> `max_tokens`). `:system` is dropped deliberately: the prompt
+  builder already emits it as a `{:role "system"}` entry in `:messages`
+  (`prompt/builder.clj:383`), so it was redundant.
+- `ollama.clj` — same shape against Ollama's native `/api/chat` top-level fields
+  (`model messages tools stream think format options keep_alive`).
+  `:max-tokens` is **not** included: it is not a top-level Ollama field (the
+  equivalent is `options.num_predict`), it was being sent as an unknown field and
+  ignored, so dropping it changes nothing on the wire. Wiring Isaac's budget into
+  `:options` stays with isaac-lrqo.
+
+Specs assert the exact field set reaching the wire, both red before the fix:
+`chat_completions_spec.clj` expects `#{:model :messages :max_tokens :reasoning_effort}`
+from a request carrying `:session-key`, `:provider`, `:root`, `:stateful`,
+`:system`; `ollama_spec.clj` expects `#{:model :messages :stream}` from the same.
+CI green: 1660 + 841, 0 failures.
+
+Note for the record: the privacy half of this mattered more than the Fireworks
+half. `:session-key` was leaving the machine on every chat-completions and
+Ollama request, to OpenAI and xAI included, for as long as the adapters have
+existed. Lenient servers ignoring unknown fields is what kept it invisible.
