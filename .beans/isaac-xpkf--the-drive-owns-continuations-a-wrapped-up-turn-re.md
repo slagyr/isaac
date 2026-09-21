@@ -1,11 +1,11 @@
 ---
 # isaac-xpkf
 title: 'The drive owns continuations: a wrapped-up turn re-drives itself within a cycle.continuations budget'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:15:56Z
+updated_at: 2026-09-21T17:16:04Z
 blocking:
     - isaac-9azm
 ---
