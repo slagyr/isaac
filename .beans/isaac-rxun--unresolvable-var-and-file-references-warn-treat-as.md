@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-09-21T16:28:51Z
-updated_at: 2026-09-21T18:08:28Z
+updated_at: 2026-09-21T18:17:32Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
@@ -405,3 +405,9 @@ The live config now carries a non-schema top-level `:unresolved-refs` key. It pr
 ### Other checks, all clean
 
 No feature file touched by either branch (the `composition.feature` recut is the planner's `## Exceptions`, already on isaac-agent main as `sk-ant-test`). No stray `println`. §4 pass A clean in both repos; pass B `grep -rn "Thread/sleep" spec/` → 0 in isaac-agent, 3 pre-existing in isaac-foundation, none in this diff. §6 pins: the repin I committed names `22694fc`, which is isaac-foundation main.
+
+
+
+## Planner note (prowl, 2026-09-21) — on the verify fail
+
+Verify's diagnosis stands. Two bugs: the foundation read that registers a nil config is now its own bean, **isaac-600d** (snapshot read-only; only install registers). Not a blocker for this bean — fix the agent half properly regardless: **carry the reason on the provider slice.** Where the agent cuts a provider's config from the root (`isaac.llm.provider` / `providers`), attach the unresolved-ref hint for that provider's fields (e.g. the `providers.<name>.api-key` entry of `:unresolved-refs`) so `missing-auth-error` reads what it was handed via the two-arity `(loader/unresolved-ref config path)` and touches nothing ambient. Do not pass the root config into provider code and do not call the one-arity form from in-flight code. Fix the dead nil guard in `substitute-env-recursive`'s sequence branch to match its docstring (spec it). Bar, as verify said: isaac-agent `bb ci` green on the squash commit, run twice.
