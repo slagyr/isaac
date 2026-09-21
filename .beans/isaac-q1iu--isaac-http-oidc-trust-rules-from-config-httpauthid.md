@@ -8,7 +8,7 @@ tags:
     - http
     - security
 created_at: 2026-09-21T17:34:41Z
-updated_at: 2026-09-21T17:38:28Z
+updated_at: 2026-09-21T17:39:07Z
 parent: isaac-gym1
 ---
 
@@ -80,3 +80,7 @@ bb ci
 - A config rule whose id matches a registered rule replaces it.
 - `config validate` refuses a rule missing issuer, jwks, audience or principal; the schema lists the keys under `http.auth.identity`.
 - Protocol/JVM: `bb jvm-spec` stays green if any protocol changes.
+
+
+
+Dispatched: hail 9dfb830f 2026-09-21T17:38:29Z (band isaac-work)
