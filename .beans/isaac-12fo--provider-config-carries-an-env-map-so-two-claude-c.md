@@ -1,14 +1,14 @@
 ---
 # isaac-12fo
 title: Provider config carries an :env map, so two claude-code providers can hold two subscriptions
-status: todo
+status: completed
 type: feature
 priority: normal
 tags:
     - claude-code
     - config
 created_at: 2026-09-21T00:10:53Z
-updated_at: 2026-09-21T00:18:55Z
+updated_at: 2026-09-21T01:11:32Z
 ---
 
 Micah has several Claude Code subscriptions and wants Isaac to drive more than
@@ -118,3 +118,38 @@ means this bean probably needs a sibling there, the way isaac-dgod and
 isaac-8cur split.
 
 Nothing deployed. Nothing dispatched.
+
+
+## Summary of Changes (2026-09-20, main-sha 34dbfa7, claude-code 0.1.18)
+
+`subprocess-env` merges the provider's `:env` over the inherited environment.
+`ANTHROPIC_API_KEY` stays stripped **after** the merge, so `:env` cannot smuggle
+back the key the provider deliberately removes to force subscription auth;
+`ISAAC_MCP_NONCE` outranks any configured value.
+
+**The blocker was the schema, not the code — worth remembering.** The
+`:providers` value-spec prunes each provider config to its declared schema,
+extended per-template through the `:isaac.agent/provider-template` berth's
+`:schema`. **A `:map` entry with no `:key-spec` has its contents pruned**, so
+`:env` reached the factory as `{}` however it was written. `:headers` in the
+core provider schema already had the right shape. Declaring
+`:key-spec {:type :keyword}` and `:value-spec {:type :string}` fixes it, and
+keyword keys accept both forms: the dotted `env.CLAUDE_CONFIG_DIR` that
+`isaac config set` produces, and a hand-written `{"CLAUDE_CONFIG_DIR" "..."}`
+map. The next map-valued config key anyone adds will hit this same trap.
+
+No isaac-agent change was needed; the sibling bean anticipated earlier is not
+required.
+
+Ruled out along the way (recorded so nobody repeats it): the table step builds
+the nested map correctly; `resolve-provider*` drops only `:type`/`:from`;
+`augment-provider` merges the whole config; `extra-args` from a newly named
+provider does reach the spawn; the inherited environment does reach the spawn.
+
+Scenario "two claude-code providers spawn the CLI with their own environments"
+covers two providers side by side, one written each way, asserting each gets its
+own `CLAUDE_CONFIG_DIR`, neither leaks into the other, and `ANTHROPIC_API_KEY`
+is absent even when a provider's `:env` sets it. CI green: 84 + 53, 0 failures.
+
+Remaining operational step (Micah): `/login` the second config dir on zanebot
+directly — the keychain is not reachable over SSH.
