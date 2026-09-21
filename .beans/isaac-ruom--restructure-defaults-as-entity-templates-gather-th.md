@@ -145,3 +145,40 @@ Host-specific notes stay out of this public repo.
 - `bb verify` and `bb jvm-spec` are both green
 - zanebot migrated and verified by the procedure above; other installs done
   the same way
+
+## Checkpoint (2026-09-21, scrapper@isaac-work-2)
+
+Branches: `bean/isaac-ruom` pushed on **isaac-foundation** (5626c11) and
+**isaac-agent** (f625fa7).
+
+Done:
+- foundation `schema-compose/resolve-entity-templates` expands
+  `:entity-template {:kind … :except […] :override {…}}` markers in the
+  `:defaults` schema against the composed entity schemas; a template never
+  carries `:required?` or `:present?`.
+- foundation `normalize-defaults` keeps an invalid `:defaults` as written
+  (no more silent `{}`) and no longer injects code compaction defaults.
+- agent manifest: `:defaults` is `{:frequencies :crew :model :provider :tools}`
+  by template; every retired flat key (`:effort`, `:compaction`,
+  `:provider-retry-after-ms`, root `:tools :allow/:deny/:directories/
+  :max-parallel/:defaults`) carries `[:retired? "use <new path>"]`.
+- provider schema gained `:effort`, `:retry-after-ms`, `:auth-retry-ms`.
+- new `isaac.config.defaults` accessor ns; every reader in isaac-agent goes
+  through it (no direct `[:defaults …]` reads remain in `src`).
+- compaction now merges key by key through the template chain
+  (`session/context.clj:151`).
+- `bb spec` green in both repos (agent 1684 examples, foundation 1105).
+
+Next:
+- `bb features` in isaac-agent: `features/session/mutation.feature` and
+  friends fail with "invalid configuration in /target/test-state" — the
+  feature fixtures still write the flat `:defaults` shape somewhere the
+  retired-key validation now rejects. Resume at
+  `spec/isaac/session/session_steps.clj:213` (`stamp-fixture-default-crew`)
+  and the feature `.feature` config tables.
+- Downstream repos still read `[:defaults :crew]`/`[:defaults :model]`:
+  isaac-episodes (lifecycle/cli/migrate/recall), isaac-hail (router.clj:261),
+  plus their specs. Not yet touched.
+- **isaac-agent `bb.edn` is temporarily pinned to `:local/root
+  "../isaac-foundation"`** so the branch pair runs together. It must go back
+  to a `:git/sha` naming the landed foundation main sha before landing.
