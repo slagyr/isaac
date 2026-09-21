@@ -199,8 +199,68 @@ Verification worktrees at `~/agents/isaac/verify-deds` (detached, `origin/main`)
 reads "the :isaac.agent/comm berth declared by isaac-http". isaac-agent declares
 it now. Comment only.
 
-### Deploy still pending
+### Deployed (2026-09-21, planner) — the rename is live on zanebot
 
-The train in the work log is not shipped. zanebot runs agent 53a1f0e +
-foundation 9586b08; the rename is not live until foundation/agent/http/comms
-move together.
+Shipped as one train. zanebot had already drifted past the note above
+(agent was 1390334, not 53a1f0e); foundation was still the 9586b08 keg.
+
+| piece | was | now |
+|-------|-----|-----|
+| foundation (brew HEAD keg) | 9586b08 | e97c51d |
+| isaac.agent | 1390334 | a0a4180 |
+| isaac.http | 32603e6 | 71a0413 |
+| isaac.cron | ba64518 | 19c958f |
+| isaac.comm.discord | d92b94e | 8256b22 |
+| isaac.comm.imessage | 0422f6d | f1cba0a |
+
+Registry (`isaac/modules.edn` 1df394d) and zanebot's
+`~/.isaac/config/isaac.edn` `:modules` moved together; keg via
+`brew upgrade --fetch-HEAD slagyr/tap/isaac`; service restarted with
+`launchctl kickstart -k gui/<uid>/com.slagyr.isaac`. Config backup left at
+`~/.isaac/config/isaac.edn.pre-deds`.
+
+Post-restart: `config validate` → OK; `modules list` → all `ok`;
+`lifecycle/started` for both `comms.discord` and `comms.imessage`; a live
+discord delivery succeeded (`comm.delivery/delivered id 7469`). No
+retired-berth or unknown-berth entries in the log. The only `:level :error`
+entries are provider-side (chatgpt 429s, one claude-binary failure),
+unrelated to the train.
+
+### The sweep missed isaac-cron (fixed in this train, isaac-cron 19c958f)
+
+`isaac-cron/resources/isaac-manifest.edn:36` still pointed its cron-job
+`:comm` validation at `:isaac.http/comm`. It escaped this bean's acceptance
+grep because the retired-key load error only fires on top-level
+**contribution** keys — a `[:registered-in? <berth>]` reference to a berth
+nobody declares just fails at validation time with "unknown berth". It was
+latent, not a boot failure: the ref is wrapped in `:nil-or?` and zanebot's
+only cron job (`:heartbeat`) sets no `:comm`. The first cron job given a
+`:comm` would have hit it.
+
+Collateral the pin jump forced on cron (all pre-existing on its main):
+
+- **isaac-g71i seam again** — cron's `turn-content` never tried
+  `[:response :content]`, so a targeted cron job resolved an empty body and
+  silently enqueued **no delivery**. Same bug discord and imessage were
+  fixed for; cron was missed then too.
+- `charge/build`'s `behavior-opts` no longer forwards `:config`, so
+  `resolve-behavior` reads the global snapshot — cron's grover spec now
+  installs it.
+- isaac-agent registers a `"changes to:"` gherkin step that also sweeps
+  weather-suspended turns; it collided with cron's identically-phrased
+  hot-reload step, which is now `"is rewritten to:"`.
+- the two isaac-7ngj failure scenarios encoded old agent behavior:
+  "context length exceeded" is now classified as overflow and
+  auto-compacted, and an empty terminal reply is retried once with a nudge.
+  Both now use inputs the agent still surfaces as failures.
+
+`bb ci` on cron: 23 specs / 0, 22 features / 0; GitHub CI Tests green.
+
+### Not deployed: gmail and gchat
+
+Neither is installed on zanebot, so this bean's "all four comms visible"
+acceptance is observable in-repo only — zanebot runs two comms (discord,
+imessage) plus acp, which contributes no comm berth. Their registry pins
+moved anyway (gmail 30c5cf1, gchat 8ce6fd7): leaving them pre-deds would
+hand anyone who installs them a module the new foundation refuses to load.
+Standing them up on zanebot is separate work (isaac-google + OAuth/Pub-Sub).
