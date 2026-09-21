@@ -1,14 +1,14 @@
 ---
 # isaac-9yms
 title: 'Bean gate: verify checks whatever branch the sibling checkout is parked on, and the FAIL does not say which'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - process
     - beans
 created_at: 2026-09-20T20:26:13Z
-updated_at: 2026-09-21T17:27:06Z
+updated_at: 2026-09-21T17:34:57Z
 parent: isaac-rmq6
 ---
 
@@ -103,3 +103,11 @@ flight; its scenario has not had `@wip` removed yet).
 `spec/isaac/bean_gate/ref_spec.clj` (new, 5 examples) covers the parked branch in
 the verdict, the warning, silence on the bean's own branch, silence under
 `--ref`, and an explicit ref naming itself. `bb ci`: 50 examples, 0 failures.
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac 168462535536e7832fe1fb6780ac690ee45d3690
+
+Squashed from `bean/isaac-9yms` (rebased onto isaac-dopm's landing first;
+branch deleted local + remote). `bb ci` on main after the squash: 57 examples,
+0 failures, 85 assertions — both Bean Gate fixes green together.
