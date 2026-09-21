@@ -113,7 +113,7 @@ PASS across three repos. Worktrees off each `bean/isaac-okfj`, `rm -rf target/gh
 
 - **isaac-google** @ `63c081d` (base `origin/main` 0abf5de): config-bypass-lint ok, **143 specs / 0 failures / 229 assertions**, **28 features / 0 failures / 114 assertions**.
 - **isaac-gchat** @ `99f6055` (the verify repin, on top of `e173405`): ok, **84 specs / 0 failures / 157 assertions**, **27 features / 0 failures / 61 assertions**.
-- **isaac-gmail** @ `2b5...` (the verify repin, on top of `32eca74`): ok, **48 specs / 0 failures / 76 assertions**, **13 features / 0 failures / 38 assertions**.
+- **isaac-gmail** @ `ffd56c6` (the verify repin, on top of `32eca74`): ok, **48 specs / 0 failures / 76 assertions**, **13 features / 0 failures / 38 assertions**.
 
 Checks:
 - §1 tampering: every feature edit is the config-shape rewrite this bean decides (`google.*` → `google.<organization>.*`) plus the intentional inversion of the one flat-form scenario. Scenario counts per file are unchanged except `tenants.feature`, which gains one (4 → 5). No step reworded to weaken an assertion; `push_door.feature` gains `And the Google runtime component is started` because the manifest no longer ships a static `:isaac.http/identity` rule — the rules are registered at start, one per organization.
