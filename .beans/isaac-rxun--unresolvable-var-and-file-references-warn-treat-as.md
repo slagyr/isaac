@@ -88,3 +88,136 @@ bean: files follow the same warn-and-treat-as-unset rule as env vars.
 - a provider with an unresolvable `:api-key` reports the missing variable by
   name rather than letting the provider return 401 (spec)
 - `bb verify` and `bb jvm-spec` are both green
+
+## Implemented, one blocking scenario conflict (2026-09-21, scrapper@isaac-work-1)
+
+Both branches are pushed and green apart from the single scenario in section
+**C** below, which contradicts the bean's Design point 1 and which a worker may
+not recut.
+
+- `isaac-foundation` `bean/isaac-rxun` @ **`d66310d`** (base `origin/main` `e97c51d`)
+- `isaac-agent` `bean/isaac-rxun` @ **`ef55977`** (base `origin/main` `a0a4180`)
+
+### A. What is built (isaac-foundation)
+
+**`isaac.config.parse`** — the substitution primitive now refuses to pass a
+literal through. `unresolved-references` names every `${...}` in a string with
+no value; `substitute-env` returns **nil** when any of them is unresolvable (a
+partly-resolvable string counts — a half-substituted literal still gets sent);
+`substitute-env-recursive` **drops** the field, recording `{:path [...] :ref
+"VAR"}` in the new dynamic `*unresolved-refs*`. An explicit nil is kept; an
+unresolvable reference is the only thing it drops. A dropped seq entry records
+its `[idx]`. `*reference-path*` lets an entity file report its full path.
+
+**`isaac.config.entities`** — `read-entity-entry` binds `*reference-path*` to
+`[kind id]`, so `crew/main.edn` reports `crew.main.<field>`, not a bare field.
+
+**`isaac.config.warnings`** — `reference-warnings` builds the rows
+(`{:key "foundries.helm.api-key" :value "RXUN_MISSING is not set"
+:unresolved-ref "RXUN_MISSING"}`), `unresolved-ref-index` reads them back
+**after** `berths/normalize-errors` so the paths match the keys validation
+errors use, `attach-reference-reasons` appends the reason to any error on such
+a field, and `log-unresolved-refs!` warn-logs `:config/unresolved-reference`
+with `:path` and `:ref`.
+
+**`isaac.config.loader`** — one collector (`unresolved*`) bound across the whole
+load, so every read site is covered by one seam. The result carries
+`[:config :unresolved-refs]` (only when non-empty), errors get the reason
+attached, and the warnings thread logs both unknown keys (isaac-nq4c) and
+unresolved references. New public `loader/unresolved-ref` (+ `config.api`
+re-export) is how the point of use names the variable.
+
+**`isaac.config.mutate`** — `set-config` / `unset-config` drop any *new* error
+whose key is an unresolved-reference path. **Writing never refuses**: the
+writer's shell is not the server's. Coercion errors still block. The warning
+still fires. Raw reads are untouched (`config set` reads with substitution off,
+so the literal survives the rewrite — spec'd).
+
+**`isaac.config.cli.common/print-warnings!`** — a row carrying
+`:unresolved-ref` prints the caveat *(not set in this shell; the server's
+environment may differ)*. One site, so `config set`, `config unset` and
+`config validate` all get it; server logs are unaffected.
+
+### B. What is built (isaac-agent)
+
+`isaac.llm.api.openai.shared/missing-auth-error` asks
+`loader/unresolved-ref "providers.<name>.api-key"`; when the field was emptied
+by an unresolvable reference the message is *"No API key for chatgpt. :api-key
+references ${OPENAI_ZANE_EMBEDDING_API_KEY}, which is not set in this
+environment."* instead of the generic "Set CHATGPT_API_KEY" advice — which is
+the wrong variable. Falls back to today's wording otherwise.
+
+While in flight the agent's `bb.edn`/`deps.edn` foundation pins are
+`{:local/root "../isaac-foundation-rxun"}`. **At landing they must be rewritten
+to isaac-foundation's landed main sha and the agent suite re-run before the
+agent squashes** (foundation lands first).
+
+### C. CONFLICT — one baselined scenario asserts the literal passthrough
+
+`isaac-agent/features/config/composition.feature:157`, in *"composes providers
+from isaac.edn and providers/*.edn additively"*:
+
+```
+    Then the loaded config has:
+      | key                        | value                  |
+      | providers.ollama.base-url   | http://localhost:11434 |
+      | providers.anthropic.api    | anthropic              |
+      | providers.anthropic.api-key | ${CONFIG_TEST_ANTHROPIC_API_KEY}   |
+```
+
+`CONFIG_TEST_ANTHROPIC_API_KEY` is not set, so the scenario asserts exactly the
+behaviour Design point 1 deletes. It now fails with
+`Expected: "${CONFIG_TEST_ANTHROPIC_API_KEY}" got: ""`. The scenario's subject
+is additive composition, not reference passthrough — the row is incidental — but
+it is a feature contract and recutting it is the planner's, not mine.
+
+Proposed minimal recut (planner's call): give the field a literal value in the
+`providers/anthropic.edn` block and in the table, exactly as I did for the
+analogous *spec* example `load_result_spec` "treats camelCase config keys as
+unknown after the hard cutover".
+
+**Nothing else in the tree conflicts.** I grepped every sibling checkout's
+`features/` for `${...}`:
+- `isaac-agent` `llm/api/messages/anthropic_auth_api_key.feature:41`,
+  `chat_completions/openai_auth.feature:20`, `chat_completions/grok_auth.feature:40`
+  — `@slow` live-API **inputs**, not assertions; the variable is set in a live run.
+- `isaac-server/features/server/auth.feature:76` — sets `ISAAC_AUTH_TOKEN`
+  first, so it resolves and still passes.
+- `isaac-foundation` `cli/config_resolution.feature`, `cli/edn_pretty.feature`,
+  `cli/remote_routing.feature` — raw-read / redaction paths; all green.
+
+### D. Suites
+
+isaac-foundation `bean/isaac-rxun` @ `d66310d`:
+- `bb spec` **1130 / 0 failures / 2044 assertions** (1098 -> 1130: +32)
+- `bb features` **198 / 0 failures / 524 assertions / 2 pending** (the two
+  pre-existing berth-registration pendings). The `cli/modules_pins.feature`
+  failures were the recurring stale gitlibs mirror
+  (`~/.gitlibs/_repos/file/REL/fixture-agent`); `rm -rf` it and they go green.
+- `bb lint` exit 0, no new warnings in the touched files.
+- `bb jvm-spec` **1129 / 8 failures** — all 8 **pre-existing**: reproduced
+  identically on a detached `origin/main` worktree (**1098 / 8**). They are the
+  JVM-only module-lifecycle / defrecord-protocol failures, untouched by this bean.
+- **There is no `bb verify` task in isaac-foundation** (`bb tasks` lists
+  `spec ci lint jvm-spec jvm-features features mutate scrap dry ...`). `bb ci`
+  is the equivalent gate; the bean's "Done when" names a task this repo does
+  not have.
+
+isaac-agent `bean/isaac-rxun` @ `ef55977`:
+- `bb spec` **1686 / 0 / 3486** (one run showed the known flake "session feature
+  steps parks a slow tool-loop send so a later cancel can still fire"; green on
+  re-run).
+- `bb features` **843 / 1 failure** — the failure is section C and nothing else.
+- `bb lint` 510 errors vs **507 on the same tree with main's version of the one
+  spec file I touched**: the repo's lint config does not know speclj, so every
+  `it`/`should-*` is an "Unresolved symbol" — 507 of them pre-existing. My 3 are
+  the same class, from 3 added assertions.
+
+### E. Not done, deliberately
+
+`${file:…}` references: **isaac-jl9p is still `todo`**, so the syntax does not
+exist yet. The bean's own "Done when" scopes this as *"(spec, once jl9p lands)"*.
+`substitute-env-recursive` drops whatever `substitute-env` cannot resolve, so
+`${file:…}` inherits the rule for free once jl9p adds it.
+
+Bean Gate: `bb bean-gate verify isaac-rxun` -> no `feature-baseline`, exit 2.
