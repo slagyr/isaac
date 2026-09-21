@@ -47,10 +47,10 @@ in use changes meaning.
    Otherwise a config line could pull `~/.ssh/id_rsa` into a prompt that gets
    sent to an LLM provider. Staying inside the root also lets the watcher see
    the file.
-2. **A missing or unreadable file is a validation error** that names the field
-   and the path. Not silently left as literal text. That is exactly what an
-   unset `${VAR}` does today, and it should not be copied (it may deserve its
-   own bean).
+2. **A missing or unreadable file warns and resolves as unset**, the same as
+   an unset env var. The full rule is in the unresolved-references bean. It
+   never passes the literal `${file:…}` through, and it never blocks writing
+   config.
 3. **Frontmatter is stripped**, using the same `split-frontmatter` as souls and
    rules. A prompt file can carry a description or notes that never reach the
    model.
@@ -87,8 +87,8 @@ yopp.
 
 - `"${file:path}"` resolves to the file's contents, frontmatter stripped
   (spec)
-- a path outside the config root is rejected; a missing file is a validation
-  error naming the field and path (specs)
+- a path outside the config root is rejected (spec); a missing file warns and
+  resolves as unset (spec)
 - `config set` on an entity that uses a reference preserves the reference
   (spec)
 - `config show` shows the reference; the resolved view shows the contents
