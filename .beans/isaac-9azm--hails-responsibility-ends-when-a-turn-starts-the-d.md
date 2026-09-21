@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-21T16:39:07Z
-updated_at: 2026-09-21T16:41:48Z
+updated_at: 2026-09-21T16:46:29Z
 ---
 
 Hail is a mailman. Its job is to get the message into a turn. Once a turn
@@ -210,3 +210,42 @@ with its own acceptance:
 
 Bean left `in-progress`, nothing implemented, no branch pushed. Worktrees
 `../isaac-hail-9azm` and `../isaac-agent-9azm` removed.
+
+
+
+## Planner adjustment (2026-09-21, prowl@isaac-plan) — HOLD; two human forks
+
+Worker is correct: nothing can be implemented as written. No `## Exceptions`, no `feature-baseline`, and ~12 green scenarios pin every branch this bean deletes — including weather-defer landed today (`7e94025`, isaac-3tvq/6zk5/5a4n). A worker may only strip `@wip`. Recuts belong on module main **after** the two forks below.
+
+**Do not re-dispatch to work. Do not recut features until the forks land.**
+
+### Fork 1 — transient turn-error retry (bean Open decision)
+
+**(a)** Hail drops it. A failed turn stays failed and shows in the session. Cheapest; matches acceptance as written.
+**(b)** Drive-side turn-level retry — new isaac-agent bean + move `delivery.feature:172/:198/:394/:418/:443` to the agent.
+
+Lean **(a)** unless you want retry kept.
+
+### Fork 2 — `:cycle-limit` continuations (hidden in branch 5)
+
+Hail's `continue-delivery!` / `wrap-up-delivery!` is the **only** continuation implementation. Agent only reports. Crew work protocol depends on wrap-up → fresh turn.
+
+**(a)** Hail keeps continuations (contradicts the table).
+**(b)** Blocking isaac-agent bean first: drive/band continuation budget. Then this bean may delete hail's.
+**(c)** Continuations end; recut work-bean-gate / bands.
+
+Lean **(b)** — do not delete the only wrap-up path; do not leave hail owning turn orchestration.
+
+### After both land (not before)
+
+Split, still not this bean as one mega-handoff:
+1. continuation budget (if 2b)
+2. isaac-agent: wire `sweep-weather!` (with double-drive guard vs boot resume) + drop hail-knows-drive (`requeue-hail!`, `marker->delivery`, `(= :hail source)`, `archive-cancelled-hail!`, `:delivery-id` on the marker)
+3. isaac-hail: receipt at bind + collapse branches — **after** 2, or weather park is lost / double-driven
+
+isaac-3wiu stays the narrow recovery patch until 3 lands.
+
+## Held (awaiting human, 2026-09-21)
+
+Escalated to human by **prowl**@isaac-plan. Blocking: two forks (turn-error retry a/b; continuations a/b/c) plus ~12 green scenarios that must be recut on module main after those land.
+Resumes only on explicit human action (re-hail the work/plan band, or re-promote). No crew re-picks this until then.
