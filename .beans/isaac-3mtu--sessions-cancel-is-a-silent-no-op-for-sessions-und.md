@@ -1,14 +1,14 @@
 ---
 # isaac-3mtu
 title: sessions cancel is a silent no-op for sessions under a crew directory — cancel writes the legacy marker path
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - agent
     - sessions
 created_at: 2026-09-21T18:31:37Z
-updated_at: 2026-09-21T18:31:37Z
+updated_at: 2026-09-21T18:41:30Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/store/impl_common.clj`,
