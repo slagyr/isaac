@@ -14,19 +14,19 @@
                                       :git/sha "007da61d029b73b347a003cff47ecae3d87eb49a"}
                               :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.http                 {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
-                                        :git/sha "8d6ab8f1bc8b1cc151fe40d7e45353bd8a708af2"}
+                                        :git/sha "32603e6999f95e0dfea6ca0cf36926c493991773"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
                                       :git/sha "c3560df78f8c163923c8965b2c2cfe76264a6c36"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
-                                      :git/sha "de59aa3a29605b3fe6b0dd9c6bc8d58ec1bbe8ec"}
+                                      :git/sha "ba645182e2c9aa634cdffbd267a66c0039d803f3"}
                               :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
-                                      :git/sha "21cef0e57a5ac11f447322475fb588b89afff9b1"}
+                                      :git/sha "11cd88b6375dbb2c0a67ff30738ca32188213095"}
                               :desc  "Cross-session hail messaging — tool and CLI."}
  :isaac.hooks                {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
-                                      :git/sha "9b51248334b0ef51813c41ea87295b659249df19"}
+                                      :git/sha "d2de76d9db02521d3be0e413213be6d816d047e9"}
                               :desc  "Event hooks and inbound webhook routing."}
  :isaac.tool.mcp             {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
                                       :git/sha "32300a2eb7f15d60d7aea2448d29491e2e4cfde7"}

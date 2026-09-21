@@ -1,11 +1,11 @@
 ---
 # isaac-bbe0
 title: Modules should declare what config reload reconciles; foundation should not name hooks, cron and hail
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-21T00:51:34Z
-updated_at: 2026-09-21T00:51:39Z
+updated_at: 2026-09-21T01:10:54Z
 parent: isaac-3q4m
 ---
 
@@ -65,3 +65,41 @@ any edit to foundation.
 
 Found while landing isaac-1pi2 (config watching moves to foundation). Micah,
 2026-09-20: "Foundation definitely shouldn't know those names."
+
+## Done (planner, 2026-09-20)
+
+Foundation and http both walk what modules declare; neither names a module.
+
+New berth **:isaac.config/component** (foundation): a module declares the
+config path it owns, the factory that builds its instance, and a name for
+lifecycle logs. `configurator/declared-registries` reads the module index,
+resolves each factory, and warns on one that points at nothing instead of
+dying. The symbol lists — one in foundation's `config.watch`, one in http's
+`-registries` — are gone, and with them the `requiring-resolve` and its silent
+catch-Throwable.
+
+hooks, cron and hail declare in their manifests and their `registry` defs are
+deleted; the manifest is the single declaration.
+
+**Order mattered, and I learned it the hard way.** Deleting the defs first
+broke 12 webhook scenarios with 404s: hooks' own test tree pulls in isaac-http,
+and an older http still resolved `isaac.hooks/registry` by name at boot, so the
+hooks lost their routes silently. http had to switch to declarations first,
+then the modules could drop the defs and repin. Anyone deploying these shas
+should take them together for the same reason.
+
+| repo | version | sha |
+| --- | --- | --- |
+| isaac-foundation | — | `9586b084` |
+| isaac-http | 0.1.22 | `32603e69` |
+| isaac-hooks | 0.1.4 | `d2de76d9` |
+| isaac-cron | 0.1.4 | `ba645182` |
+| isaac-hail | 0.1.21 | `11cd88b6` |
+
+Suites: foundation 1077/0; http 189/0 + 107/0; hooks 30/0 + 20/0; cron 23/0 +
+21/0; hail 172/0, features 163 with the same 6 failures untouched main has
+(hail deferral/delivery, verified on a clean worktree).
+
+Reconciling itself is unchanged, and still necessary — hooks own HTTP routes,
+cron owns scheduled jobs, hail bands own running instances, so they have to be
+told when their slice changes rather than re-reading config lazily.
