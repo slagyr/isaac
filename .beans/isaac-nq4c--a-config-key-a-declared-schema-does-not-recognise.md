@@ -7,7 +7,7 @@ priority: normal
 tags:
     - config
 created_at: 2026-09-21T04:25:37Z
-updated_at: 2026-09-21T04:42:41Z
+updated_at: 2026-09-21T04:49:11Z
 ---
 
 Provider and comm config slices are pruned to their declared schema. A key the
@@ -72,3 +72,9 @@ Dispatched: hail 8c3e6979 2026-09-21T04:38:18Z (band isaac-work, pinned session 
 **Done:** claimed; worktree `../isaac-foundation-nq4c` on `bean/isaac-nq4c` (base origin/main `9586b08`); root cause located. The pruning is c3kit apron `schema/process-schema-on-entity` (`(select-keys entity (keys schema))` when a closed map has no `:value-spec`) reached via `isaac.config.berths/validate-node!` → `isaac.schema.lexicon/conform!` (berths.clj:258-263). An existing warning machinery already covers *some* silent pruning: `isaac.config.warnings/slice-unknown-key-warnings` (open-map berth slots, shallow) and `nested-unknown-key-warnings` (static config tables, recursive). The gaps are exactly the bean's cases: (a) slice pass is shallow — a closed `:map` field with no `:key-spec` prunes its contents in silence (isaac-12fo `:env` case), (b) berth-extended entity collections like `:providers`/`:comms` whose *composed* schema isn't walked by any warning pass (isaac-mm7o case). Baseline suites green on the branch: `bb spec spec/isaac/config` 369/0.
 
 **Next:** TDD from `spec/isaac/config/warnings_spec.clj` — failing specs for a recursive `slice-unknown-key-warnings` (descend into closed `:map` fields, warn `path.slot.field`), then teach `slice-unknown-key-warnings`/loader to use it; cover known-key-no-warning and boot-still-succeeds; then the comms/provider composed-schema path. Resume at `src/isaac/config/warnings.clj:64` (`slice-unknown-key-warnings`) and `spec/isaac/config/warnings_spec.clj:1`.
+
+## Done/next checkpoint 2 (2026-09-21, scrapper@isaac-work-3)
+
+**Done (committed `8aeb66c`, pushed `bean/isaac-nq4c`):** `slice-unknown-key-warnings` is now recursive (`slot-walk` in `src/isaac/config/warnings.clj`), matching apron conform's pruning exactly — closed maps warn on undeclared fields and descend declared ones; keyed open maps descend (nothing pruned there); a **bare `{:type :map}`** (no `:schema`/`:value-spec`/`:key-spec`) reports **every** content key, because conform prunes all of them (the isaac-12fo `:env` trap); `:seq` fields descend per entry with `[idx]` path segments. `bb spec` full suite: 1082/0; `spec/isaac/config` 374/0 (7 warnings specs). One parse-error detour while writing the spec file — fixed, tests are the real TDD reds now green.
+
+**Next (the mm7o half — comms/providers berth-extended entity collections):** root-entity warnings (`root-entity-warnings`, warnings.clj) use `schema-compose/schema-for-kind` against the *root* schema — need to verify whether a comm's `:extra-schema` (berth-extended) is included there; if not, a comm slice carrying `:gchat/account-id` when the gchat comm never declared it is pruned in silence. Plan: failing spec first (a `:comms` slot with an undeclared key under a berth-extended schema), then wire the composed schema into the entity-warnings path. Resume at `src/isaac/config/warnings.clj:41` (`root-entity-warnings`) and `spec/isaac/config/warnings_spec.clj:1`. After that: confirm `isaac config validate` surfaces the slice warnings (loader already merges them into `:warnings`, printed by `report-validation!`) and boot-still-succeeds cases, then the gate.
