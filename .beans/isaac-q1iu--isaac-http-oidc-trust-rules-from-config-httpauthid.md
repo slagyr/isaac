@@ -1,14 +1,14 @@
 ---
 # isaac-q1iu
 title: 'isaac-http: OIDC trust rules from config (http.auth.identity) — trusting an issuer is configuration, not a module change'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - http
     - security
 created_at: 2026-09-21T17:34:41Z
-updated_at: 2026-09-21T17:41:07Z
+updated_at: 2026-09-21T18:17:25Z
 parent: isaac-gym1
 ---
 
@@ -84,3 +84,29 @@ bb ci
 
 
 Dispatched: hail 9dfb830f 2026-09-21T17:38:29Z (band isaac-work)
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac-http 63219b5de119d50fb839cf9b8ed2e9449e61cfb5
+
+`auth/identity-rules` now takes the live config and merges registered rules
+(keyed by `:id`, falling back to `:issuer`) with the rules declared under
+`http.auth.identity`; the config rule wins on an id collision. `http`
+consults the merged set for verification, for `auth list`, and for deciding
+whether auth is enforced. One behavior change beyond the rule merge: a
+presented bearer is now always adjudicated — a server with no auth configured
+refuses a credential it cannot place (401 `:unknown`) instead of serving the
+request as anonymous. That is what the hot-reload scenario asserts before the
+rule is added.
+
+Schema: `http.auth.identity` (issuer, jwks, audience, claims, principal
+{name, scopes, expires}); values stay `:any` so config refs still work.
+Config check `:http-identity` (`auth/validate-identity-rules`) refuses a rule
+missing issuer, jwks, audience or principal.
+
+`bb.edn`: the native/JVM feature budget went 180s -> 300s. The suite measured
+~165s on `main` before this bean and ~168s after (4 more scenarios), so the
+old budget tripped on growth alone under load.
+
+Gate: `bb bean-gate verify isaac-q1iu` PASS on the branch and again on the
+squash commit. `bb ci` green (193 specs, 111 features).
