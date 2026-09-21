@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:16:04Z
+updated_at: 2026-09-21T17:59:12Z
 blocking:
     - isaac-9azm
 ---
@@ -90,3 +90,78 @@ feature-blob: isaac-agent features/config/cycle.feature 458700b7d5fc5086ae4c6769
 
 
 Dispatched: hail 24a7dc2a 2026-09-21T17:15:30Z (band isaac-work)
+
+## Landed on main (2026-09-21)
+
+main-sha: isaac-agent 2481eb95d7cd9035a4b4cb173668b3b159b0df6f
+
+Squash of `bean/isaac-xpkf` @ `90a855a` (base `359bcea`). No downstream repin —
+isaac-9azm bumps the hail pin.
+
+### What was built
+
+**The budget** — `:cycle {:continuations n}` layers exactly like `:limit`:
+built-in default **2** (`isaac.drive.turn/default-continuations`), then
+`:defaults :cycle`, then crew, then the charge's `:cycle` overlay (hail band,
+cron). `resolve-cycle` fills and coerces it, so one call answers both knobs.
+Declared in `resources/isaac-manifest.edn` under `crew.value.cycle` and
+`defaults.cycle`, so `isaac config schema crew.value.cycle` lists it.
+
+**The re-drive** — a new Continuations region in `src/isaac/drive/turn.clj`:
+
+- `continuation-count` reads the count off the charge's `:origin`; the drive
+  keeps no state between turns.
+- `continuation-plan` is the whole decision: only a `:cycle-limit` /
+  `:wrapped-up` turn continues (`:stop` answers `:stopped`, so an attended comm
+  never continues), `:continue` while the count is under budget, `:exhausted`
+  once it reaches it.
+- `enqueue-continuation!` persists the note as a user message (the wrap-up note
+  is the transcript's last assistant message, isaac-x0cw, so the model reads its
+  own done/next straight above it) and parks a fresh turn on the durable turn
+  queue — the same waiting room a resumed turn uses (isaac-yxch). The record's
+  origin carries `:continuation n` plus the original source. Logs
+  `:turn/continued {:session :continuation :budget}`.
+- `continuations-exhausted!` logs `:turn/continuations-exhausted` at **error**,
+  posts attention (`attention/maybe-notify-continuations-exhausted!`, new), and
+  sends the comm a `{:kind :turn/continuations-exhausted :text …}` bulletin
+  naming the session.
+- `maybe-continue!` runs once per finished turn from `run-turn!`'s `finish!`,
+  wrapped so a queue or comm failure can never fail the turn it follows.
+
+The drive stays generic: no hail, band or bean knowledge anywhere in the path —
+it reads the policy answer, the cycle map and its own origin.
+
+**The comm across the queue** — the bulletin has to reach the comm that asked
+for the wrap-up, and the continuation has to be able to wrap up again, so the
+live channel travels with the parked turn: `isaac.turn.queue` keeps it in a
+process-local side table keyed by record id (`live-comm`, `forget-live-comm!`),
+never in the EDN, and `turn.worker/wake-charge` attaches it when waking. After a
+restart the attachment is gone and the continuation wakes comm-less — exactly
+like a resumed turn.
+
+### Tests
+
+- `features/turn/continuations.feature` — 4 scenarios, `@wip` removed, green.
+- `features/config/cycle.feature` — schema row, `@wip` removed, green.
+- `spec/isaac/drive/turn_spec.clj` — 4 new examples (budget layering and
+  coercion, origin count, the plan table incl. `:stop` and a zero budget, the
+  note's wording). Written first; each was red before the drive change.
+- Step fix (not a feature edit): `comm_steps/record-memory-turn!` stored a
+  *snapshot* of the memory comm's events, so nothing a later queue-driven turn
+  sent was visible to `the memory comm has events matching:`. It now stores the
+  atom, matching what `session_steps` already does.
+
+`bb ci` exit 0 on the rebased branch: **1691 specs / 0 failures**, **844
+features / 0 failures** (1 pending `@wip` belongs to another bean). Gate PASS on
+the branch (`90a855a`) and again on the squash (`2481eb9`).
+
+### Environment note (not this bean)
+
+Full-suite runs flaked twice with 2 and then 75 failures, all in
+`features/config/schema_cli_options.feature` and all shaped like
+`config-schema collision at :comms … :isaac.agent/comm vs :isaac.server/comm`.
+Cause: that feature's `Given an empty Isaac root at "/tmp/isaac"` is a
+**hard-coded absolute path shared by every checkout on this machine**, and 6–8
+other `bb features` processes were running concurrently in sibling worktrees.
+Run in isolation the file is 7/0 three times in a row, and two clean full runs
+(the ones recorded above) are 0 failures. Filed as a follow-up bean.
