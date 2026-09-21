@@ -1,11 +1,11 @@
 ---
 # isaac-f5tn
 title: 'Streaming chat-completions never asks for usage: every Fireworks/grok turn records zero tokens'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-21T04:06:56Z
-updated_at: 2026-09-21T04:06:56Z
+updated_at: 2026-09-21T04:15:31Z
 ---
 
 ## What happens
@@ -58,3 +58,27 @@ for free.
   from the closing chunk (usage-only chunk: `choices` empty)
 - `:cache-read-tokens` surfaces when the server reports `cached_tokens`
 - a live GLM turn on zanebot stamps a session gauge
+
+## Landed
+
+`main-sha: df1707834fadf94ecf256e67912f9fa8d7c2c079` — agent 0.1.78.
+
+`stream_options` added to `wire-fields`; the streaming path sends
+`{:include_usage true}`. Three specs pin it (the request asks for usage; a
+usage-only closing chunk with empty `:choices` is counted; `cached_tokens`
+surfaces as `:cache-read-tokens`). Full gate green: 1671 specs, 843 features,
+0 failures.
+
+Deployed to zanebot, service restarted, `isaac.agent 0.1.78 ok`.
+
+Live proof — two GLM-5.3 turns on session `f5tn-probe`:
+
+| turn | prompt-tokens | output-tokens | cache-read-tokens |
+|---|---|---|---|
+| 1 (cold) | 1850 | 3 | 0 |
+| **2 (same prefix)** | **1862** | **80** | **1849** |
+
+Before this change both turns would have recorded zero. Turn 2 also answers the
+open question about caching: **Fireworks is serving our prefixes from cache** —
+99% of the prompt on a repeat turn. Whether that is billed at a discount is a
+Fireworks pricing question; Isaac now reports the number either way.
