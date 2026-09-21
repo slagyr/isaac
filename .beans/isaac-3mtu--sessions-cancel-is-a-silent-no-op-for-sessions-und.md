@@ -1,14 +1,14 @@
 ---
 # isaac-3mtu
 title: sessions cancel is a silent no-op for sessions under a crew directory — cancel writes the legacy marker path
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - agent
     - sessions
 created_at: 2026-09-21T18:31:37Z
-updated_at: 2026-09-21T21:52:00Z
+updated_at: 2026-09-21T21:55:03Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/session/store/impl_common.clj`,
@@ -96,3 +96,9 @@ Gherkin takes the first row as headers, so `| cancelled | true |` is a header wi
     | cancelled | true  |
 
 Use that shape. The impl-common examples already assert the crew path and the legacy path; this scenario has to assert the same field or it is not acceptance.
+
+
+
+## Verification fail answered (2026-09-21)
+
+isaac-agent 9d5af98. The crew-nested scenario now uses the key/value table. Generated step has `:rows [["cancelled" "true"]]`. The scenario is green: 1 example, 0 failures, 4 assertions.
