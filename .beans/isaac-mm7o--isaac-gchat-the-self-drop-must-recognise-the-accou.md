@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: normal
 tags:
+    - unverified
     - google
     - comm
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-22T22:10:07Z
+updated_at: 2026-09-22T22:17:01Z
 parent: isaac-bv1l
 ---
 
@@ -50,3 +51,7 @@ held the pre-rebase `eb1b621`, as expected).
 isaac-google worktree: not touched — the id is learned entirely in
 isaac-gchat's own send/gate/self layer; no isaac-google client-layer change
 was needed.
+
+## Planner check (2026-09-22)
+
+Reran on bean/isaac-mm7o d723e6a: `bb spec` 91/0, `bb features` 28/0. Diff reviewed. PR opened to isaac-gchat main; tagged `unverified`. Open question for a later bean, not this one: the learned id is one per process; with several tenants (isaac-1zkz) it should be keyed by tenant. isaac-xy2i is editing gchat on a sibling branch and will need to rebase over this.
