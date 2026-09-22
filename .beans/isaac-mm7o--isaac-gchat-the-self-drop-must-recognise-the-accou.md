@@ -58,3 +58,56 @@ Reran on bean/isaac-mm7o d723e6a: `bb spec` 91/0, `bb features` 28/0. Diff revie
 ## Requirement added (2026-09-22, Micah): the learned id is per tenant
 
 The account users/<id> cache must be keyed by the Google organization (tenant, isaac-1zkz), not one id per process. Each comm speaks for one organization (`:gchat/google`), so `learn-from-send!` records the id under that tenant and the gate checks self against that tenant's id. `:gchat/account-id` stays a per-comm (per-tenant) config short-circuit. Scenario: two tenants, each learns its own id from its own send; tenant A's echo is dropped as :self by A's id and is not mistaken for B's. Same branch, same PR; planner re-verifies.
+
+## Handoff 2 (worker, 2026-09-22)
+
+Added tenant-scoping to the learned-id cache on top of Handoff 1's work, same
+worktree, same bean/isaac-mm7o branch, PR #1 untouched.
+
+`isaac.comm.gchat.self` (`src/isaac/comm/gchat/self.clj`): the cache is now a
+map keyed by tenant, not a single atom. `learn-from-send!` takes `[tenant
+response]`, `account-user` takes `[tenant]`, `resolve-account-user` takes
+`[tenant cfg]` (still prefers that comm's own `:gchat/account-id`, falls back
+to the learned id for that tenant only — never another tenant's).
+
+Callers now resolve the tenant via `isaac.comm.gchat.tenant/of-comm` (already
+used by `access-token` for the same purpose) before touching the cache:
+`src/isaac/comm/gchat.clj` (`post-chunks!` gained a `tenant` param, threaded
+from both `send!*` and `on-reply*`) and `src/isaac/comm/gchat/handler.clj`
+(`handle-event` computes `cfg`/`tenant` once, passes `:account-user
+(self/resolve-account-user tenant cfg)`).
+
+`spec/isaac/comm/gchat/self_spec.clj`: rewritten for the new arities plus new
+cases — two tenants keep separate ids, a nil-tenant (single-org host) still
+learns, `resolve-account-user` never answers with another tenant's id. 10
+examples (was 7).
+
+`feature-steps/isaac/gchat_steps.clj`: two small additions so the scenario
+could exercise the *learned* path (not just `:gchat/account-id`) at the
+feature level — the outbound `/messages` stub now returns a `:sender.name`
+derived from the bearer token (`users/self-<token>`), so each organization's
+stubbed sends learn a distinct id; and `g/after-scenario` now calls
+`isaac.comm.gchat.self/forget!` so the cache (a `defonce` atom, process-wide)
+doesn't leak a learned id across scenarios.
+
+New scenario in `features/comm/gchat/inbound.feature`: "two tenants each learn
+their own id; one's echo is never mistaken for the other's (isaac-mm7o)". Two
+comms (`gchat`/tonotop, `gchat-acme`/acme) each send and learn their own id;
+an inbound event carrying acme's id is delivered first while `gchat` speaks
+for tonotop (routes, not dropped as self — session count 1, `:gchat/message-routed`),
+then again after reconfiguring `gchat` to speak for acme (drops as self —
+session count stays 1, `:gchat/message-dropped :self`). I verified this
+scenario actually catches the regression: temporarily made the cache
+single-key (ignoring tenant) and the "routes, not self" assertion failed
+(`Expected: 1, got: 0`) as expected; reverted before finishing.
+
+Verified: `bb spec` → 94 examples, 0 failures, 168 assertions (was 91).
+`bb features` → 29 examples, 0 failures, 68 assertions (was 28). `bb ci` exit
+0, same counts, run twice for stability. `bb lint` clean on every touched
+production file; the touched spec file shows the same pre-existing
+`:refer :all` kondo artifact as every other `*_spec.clj` in this repo
+(confirmed against several other spec files) — not a regression.
+
+Squashed into the same one commit on `bean/isaac-mm7o` (amended, message
+extended to cover the tenant addition), now `4306062` (was `d723e6a`), pushed
+with `--force-with-lease`. PR #1 not touched.
