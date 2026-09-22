@@ -7,8 +7,9 @@ priority: normal
 tags:
     - google
     - comm
+    - unverified
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-22T22:19:28Z
+updated_at: 2026-09-22T22:33:29Z
 parent: isaac-bv1l
 ---
 
@@ -111,3 +112,7 @@ production file; the touched spec file shows the same pre-existing
 Squashed into the same one commit on `bean/isaac-mm7o` (amended, message
 extended to cover the tenant addition), now `4306062` (was `d723e6a`), pushed
 with `--force-with-lease`. PR #1 not touched.
+
+## Planner check 2 (2026-09-22)
+
+Reran on bean/isaac-mm7o 4306062 (per-tenant id cache + two-tenant scenario): `bb spec` 94/0, `bb features` 29/0. PR #1 updated; tagged `unverified`. Note for a repo-wide cleanup, not this bean: isaac-gchat feature fixtures already use tonotop.com / users/yopp on main (inbound, outbound, registrations, tenants features; chat_api_spec) — the new scenario follows that convention. The 09-19 placeholder scrub did not reach these fixtures or isaac-google config.clj/tenants.clj/people.clj docstrings.
