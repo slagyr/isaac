@@ -82,7 +82,7 @@ The tick cadence change (30 s → hourly) is owned by isaac-an14 (heartbeat), wh
 
 ## Handoff (worker, 2026-09-22)
 
-**isaac-gchat only.** `bean/isaac-gchat` branch `bean/isaac-ihuc`, one commit
+**isaac-gchat only.** Repo `isaac-gchat`, branch `bean/isaac-ihuc`, one commit
 `cd5ba85`, pushed. **isaac-google was not touched** — its pin does not move.
 
 ### Deleted (clean cutover, no deprecations)
