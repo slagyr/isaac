@@ -1,14 +1,14 @@
 ---
 # isaac-an14
 title: 'Google health as a heartbeat: silence per tenant, log once on transition, hourly synthetic push with a deadline'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - google
     - ops
 created_at: 2026-09-22T23:26:20Z
-updated_at: 2026-09-22T23:31:47Z
+updated_at: 2026-09-22T23:54:35Z
 ---
 
 ## Decision (Micah, 2026-09-22)
@@ -222,3 +222,9 @@ mutation-checked: dropping the key union fails it.
 Suites after the revision: `bb spec` **211 examples, 0 failures, 336
 assertions**; `bb features` **33 examples, 0 failures, 134 assertions**;
 `bb ci` green; `bb lint src` 0 errors.
+
+## Landed on main
+
+main-sha: isaac-google 4b43ab8
+
+Planner check 2026-09-22: reran on bean/isaac-an14 4b43ab8 — `bb spec` 211/0, `bb features` 33/0. Tick hourly (3600000), inbox worker unchanged, renew window 24 h; silence per organization over every last-event-at the state holds plus the heartbeat arrival (so `spaces/-` from isaac-ihuc does not blind it); heartbeat on by default, deadline 60 s; conditions and clears logged once on transition. Worker design note to weigh: an org whose heartbeats arrive is never reported silent for human quiet — `:heartbeat-missed` is the broken-pipeline signal. Fast-forwarded to main; branch deleted. Live-host proof owed: a heartbeat returns through Funnel + OIDC inside 60 s; the account holds pubsub.topics.publish on the topic (else hourly `:google/heartbeat-failed`). Fixture tenant id `:tonotop` follows the repo convention already on main — repo-wide placeholder cleanup remains a candidate bean. Not deployed.
