@@ -5,11 +5,10 @@ status: in-progress
 type: bug
 priority: normal
 tags:
-    - unverified
     - google
     - comm
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-22T22:17:01Z
+updated_at: 2026-09-22T22:19:28Z
 parent: isaac-bv1l
 ---
 
@@ -55,3 +54,7 @@ was needed.
 ## Planner check (2026-09-22)
 
 Reran on bean/isaac-mm7o d723e6a: `bb spec` 91/0, `bb features` 28/0. Diff reviewed. PR opened to isaac-gchat main; tagged `unverified`. Open question for a later bean, not this one: the learned id is one per process; with several tenants (isaac-1zkz) it should be keyed by tenant. isaac-xy2i is editing gchat on a sibling branch and will need to rebase over this.
+
+## Requirement added (2026-09-22, Micah): the learned id is per tenant
+
+The account users/<id> cache must be keyed by the Google organization (tenant, isaac-1zkz), not one id per process. Each comm speaks for one organization (`:gchat/google`), so `learn-from-send!` records the id under that tenant and the gate checks self against that tenant's id. `:gchat/account-id` stays a per-comm (per-tenant) config short-circuit. Scenario: two tenants, each learns its own id from its own send; tenant A's echo is dropped as :self by A's id and is not mistaken for B's. Same branch, same PR; planner re-verifies.
