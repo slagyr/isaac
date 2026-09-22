@@ -185,3 +185,40 @@ scenario).
   per transition per organization, and one heartbeat line per hour at debug.
 - Cadence in the wild: the scheduler firing `:google/registration` hourly, and
   that an hourly tick still renews inside a 24h window.
+
+### Revision — isaac-ihuc's `spaces/-` (same worker, same handoff)
+
+The branch was amended after the coordinator's note about isaac-ihuc; the one
+commit is now **`4b43ab8`** (supersedes `3a775d2` above).
+
+Per-tenant silence no longer depends on which keys are registered. A tenant's
+"last heard from" is the newest of:
+
+1. every `:last-event-at` entry in the health state for a key that tenant owns
+   — `tick!` hands health the **union** of the registered keys and every key
+   the state has heard from (attributable on a single-organization host; on a
+   multi-organization host only the registered keys can be attributed), and
+2. that tenant's `:last-heartbeat-at`.
+
+So after ihuc collapses Chat to one `spaces/-` registration per tenant, events
+recorded under concrete space ids still count — the previous
+registration-keys-only reading would have been blind, never firing. Including
+the heartbeat arrival is a deliberate consequence: an organization whose
+heartbeats keep arriving is never reported silent just because the humans are
+quiet (`:heartbeat-missed` is the signal for a broken pipeline), and a
+heartbeat still never becomes a `last-event`, so `isaac google status` shows
+only what people actually said.
+
+New coverage: health_spec "counts a space that spoke even when no registration
+is keyed on it", "counts a heartbeat that came back as having heard from the
+organization", "is silent when neither an event nor a heartbeat has arrived
+inside the threshold"; registration_spec "hands health every key the state has
+heard from, not only the registered one"; and health.feature **"a
+workspace-wide registration is judged by the spaces that actually spoke"**
+(registration key `spaces/-`, event under `spaces/AAA` a minute ago → no
+silent condition; seven hours later → one `:google/silent`). That scenario was
+mutation-checked: dropping the key union fails it.
+
+Suites after the revision: `bb spec` **211 examples, 0 failures, 336
+assertions**; `bb features` **33 examples, 0 failures, 134 assertions**;
+`bb ci` green; `bb lint src` 0 errors.
