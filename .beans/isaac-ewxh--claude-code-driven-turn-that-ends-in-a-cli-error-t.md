@@ -1,7 +1,7 @@
 ---
 # isaac-ewxh
 title: 'claude-code driven turn that ends in a CLI error tallies zero usage: 79 completed cycles lost; tally per cycle, keep sums on error'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - tokens
     - agent
 created_at: 2026-09-22T22:51:31Z
-updated_at: 2026-09-22T22:51:31Z
+updated_at: 2026-09-22T23:17:02Z
 ---
 
 ## Observed (zanebot, 2026-09-22, agent 0.1.81, isaac-claude-code 34dbfa7)

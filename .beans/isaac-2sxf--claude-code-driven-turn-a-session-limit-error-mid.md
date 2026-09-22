@@ -1,7 +1,7 @@
 ---
 # isaac-2sxf
 title: 'claude-code driven turn: a session-limit error mid-turn takes the fence fallback and ends :reply with the CLI init event as the answer — it is weather'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - provider
     - hail
 created_at: 2026-09-22T22:51:31Z
-updated_at: 2026-09-22T22:51:31Z
+updated_at: 2026-09-22T23:17:02Z
 ---
 
 ## Observed (zanebot, 2026-09-22 22:05Z, agent 0.1.81 hotfix, isaac-claude-code 34dbfa7)
