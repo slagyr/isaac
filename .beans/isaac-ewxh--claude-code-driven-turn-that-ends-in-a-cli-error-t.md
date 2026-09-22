@@ -1,7 +1,7 @@
 ---
 # isaac-ewxh
 title: 'claude-code driven turn that ends in a CLI error tallies zero usage: 79 completed cycles lost; tally per cycle, keep sums on error'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - tokens
     - agent
 created_at: 2026-09-22T22:51:31Z
-updated_at: 2026-09-22T23:17:02Z
+updated_at: 2026-09-22T23:45:28Z
 ---
 
 ## Observed (zanebot, 2026-09-22, agent 0.1.81, isaac-claude-code 34dbfa7)
@@ -141,3 +141,10 @@ message ids + num_turns per driven turn — same log line), isaac-166j.
   its own usage instead of zero — that is a separate bean, not this one.
 
 Both branches pushed; beans left `in-progress`, untagged.
+
+## Landed on main
+
+main-sha: isaac-agent 52f29f7
+main-sha: isaac-claude-code af15c42 (main tip 94a3bd6, repin commit included)
+
+Planner check 2026-09-22: agent `bb spec` 1715/0, `bb features` 848/0 (1 pending, pre-existing); claude-code suites green against the repinned agent. The isaac-8cur scenario in claude_driver.feature now expects the over-window stamp recorded (802832) and no implausible warning, per isaac-dgod. Follow-up not in scope: live per-cycle stamping in production is still blocked by isaac-8cur zeroing replayed cycles; with real :cycle-usages now on the response, a separate bean can stamp each cycle. Not deployed.

@@ -1,7 +1,7 @@
 ---
 # isaac-2sxf
 title: 'claude-code driven turn: a session-limit error mid-turn takes the fence fallback and ends :reply with the CLI init event as the answer — it is weather'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - provider
     - hail
 created_at: 2026-09-22T22:51:31Z
-updated_at: 2026-09-22T23:17:02Z
+updated_at: 2026-09-22T23:45:28Z
 ---
 
 ## Observed (zanebot, 2026-09-22 22:05Z, agent 0.1.81 hotfix, isaac-claude-code 34dbfa7)
@@ -100,3 +100,9 @@ whole stdout).
 
 **Cross-repo.** None — this bean is isaac-claude-code only. Branch pushed to
 `origin/bean/isaac-2sxf`. Not landed, not tagged.
+
+## Landed on main
+
+main-sha: isaac-claude-code 056eaf4 (main tip 94a3bd6)
+
+Planner check 2026-09-22: reran on the branch — claude-code `bb spec` 90/0 (3 @real pending), `bb features` 57/0, `bb ci` green with the agent pin moved to 52f29f7. Fast-forwarded to main; branches deleted. Not deployed: zanebot runs claude-code 34dbfa7.
