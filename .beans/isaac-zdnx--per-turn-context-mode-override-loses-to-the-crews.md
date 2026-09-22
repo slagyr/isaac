@@ -7,8 +7,9 @@ priority: normal
 tags:
     - agent
     - cli
+    - unverified
 created_at: 2026-09-22T21:04:40Z
-updated_at: 2026-09-22T21:15:36Z
+updated_at: 2026-09-22T21:27:18Z
 ---
 
 ## Observed (2026-09-22, zanebot, agent 0.1.81)
@@ -78,3 +79,7 @@ its own charge-building call site it was not located/touched in this pass and
 may need the same `:context-mode-override` wiring.
 
 Branch: `bean/isaac-zdnx`, commit `c08328f`, pushed to origin.
+
+## Planner check (2026-09-22)
+
+Reran on bean/isaac-zdnx c08328f: `bb spec` 1711/0, `bb features` 848/0 (1 pending, pre-existing). Diff reviewed: `:context-mode-override` threads through `charge/build` → `behavior-opts` → `resolve-behavior`, CLI passes it. PR opened to isaac-agent main; tagged `unverified`. The same drop exists in isaac-hail `delivery-charge` (crew + model only): filed as isaac-onzi, blocked by this bean landing and an agent pin bump. Note: until isaac-onzi lands, a band-level `:with-context-mode` does nothing; reset mode on scrapper/perceptor works because it is set on the crew, not the band.
