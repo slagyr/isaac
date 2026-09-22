@@ -1,14 +1,14 @@
 ---
 # isaac-pn98
 title: Replace the parallel-tool-calls hint with survey-derived batching text
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - agent
     - tokens
 created_at: 2026-09-22T19:56:34Z
-updated_at: 2026-09-22T19:56:34Z
+updated_at: 2026-09-22T20:24:45Z
 ---
 
 ## Problem
@@ -124,3 +124,11 @@ Config changes made on zanebot in this round (committed in `~/.isaac`
 fdd347c): `:context-mode :reset` on scrapper + perceptor; `models/grok-4-7.edn`
 (`grok-4.7`, 500k, same price as 4.6); bebop, keaton, main, marvin, prowl,
 ratchet, rocksteady, tempest moved `:grok-4-6` → `:grok-4-7`.
+
+## Landed on main
+
+main-sha: isaac-agent d2db8c7
+
+Squash-merged via PR slagyr/isaac-agent#2 (Micah, 2026-09-22); `bean/isaac-pn98`
+deleted. Registry stays on hotfix e0ced4d until the next agent train repins to
+main (main also carries xpkf, 6doh, 3mtu, 9af8, undeployed).
