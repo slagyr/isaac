@@ -1,14 +1,14 @@
 ---
 # isaac-cgxa
 title: isaac config set splits a namespaced-keyword path segment (gchat/allow-from) into two nested keys
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - foundation
     - config
 created_at: 2026-09-19T23:44:40Z
-updated_at: 2026-09-21T03:34:33Z
+updated_at: 2026-09-22T22:45:05Z
 ---
 
 Found 2026-09-19 on yopp: `isaac config set comms.gchat.gchat/allow-from …` and `… comms.gchat.gchat/spaces.spaces/AAQA….respond all` wrote `{:comms {:gchat {:gchat {:allow-from …, :spaces {:spaces {:AAQA… {:respond "all"}}}}}}}` — the / in a namespaced keyword is treated as a path separator — and `config validate` passed, so the stray map sat there silently while the real keys were untouched. Comm extra-schema keys are all namespaced (gchat/…, gmail/…, discord/…), so this affects every comm slot; the feature harness's config table step parses these paths correctly, the CLI does not.
@@ -71,3 +71,9 @@ Also fixed the Background's root step: it used `Given an empty Isaac state direc
 **Commit:** squashed to one commit on `bean/isaac-cgxa`, `6a89a51`, message starts `isaac-cgxa: `. Pushed with `git push --force-with-lease origin bean/isaac-cgxa` (remote held the two pre-rebase commits).
 
 Status left `in-progress`, no tags -- this is the ungated flow (no `feature-baseline:` on this bean), so the next step is `/verify`, not a worker completion.
+
+## Landed on main
+
+main-sha: isaac-foundation 6a89a51
+
+Planner check 2026-09-22: reran on bean/isaac-cgxa 6a89a51 — `bb spec` 1134/0, `features/cli/config_set_namespaced.feature` 4/0, whole `bb features` 202/2 where both failures are the pre-existing `modules_pins.feature` pair (isaac-j4jr, local gitlibs fixture path; CI on main is green). Fast-forwarded to main, branch deleted. The fourth scenario in the original scope (a set creating an unknown key inside a schema-d map is refused) is a policy change, split out — see the bean created alongside this landing.
