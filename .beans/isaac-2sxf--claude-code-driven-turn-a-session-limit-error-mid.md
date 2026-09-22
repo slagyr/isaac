@@ -50,3 +50,53 @@ hit after cycles ran.
 
 isaac-benp (auth sniffing over the whole stream), isaac-9gcs (dropped stream
 burns an attempt), isaac-f3hq (weather), isaac-9azm, isaac-ruom (the turn).
+
+## Handoff (worker, 2026-09-22)
+
+**Root cause.** `invoke!` (isaac-claude-code `src/isaac/llm/api/claude_cli.clj`)
+sent *every* is_error result event to `fence-fallback!`. A session-limit result
+is an is_error result, so the driver re-ran the CLI without MCP, the second run
+hit the same wall, and `parse-json-output` handed back the only thing on stdout
+— the `system`/`init` event JSON — as the turn's reply. Nothing in the driver
+ever looked at *what* the CLI said failed.
+
+**Fix.** The CLI's own error signal (stderr + the result event's error text,
+never the transcript — isaac-benp) is classified before any fallback:
+
+- `limit-failure-re` -> `{:error :rate-limited :reason :wall :unavailable? true}`
+- `cli-auth-failure-re` -> `{:error :auth-failed :reason :auth :unavailable? true}`
+  ("Failed to authenticate", "OAuth session expired", /login, invalid api key)
+
+`cli-weather` builds the classification, `invoke!` returns `(assoc result
+:weather …)` instead of taking the fallback, and `chat*` / `stream-once` answer
+with `weather-response`: the CLI's message (reset text included), no `:content`,
+no second invocation. `provider-wall/normalize` already recognises both shapes,
+so the drive suspends the turn on `:wall` / `:auth` and resumes it. MCP-init,
+cli-start-failed and generic cli-error keep the fence fallback unchanged.
+
+The fence (non-driven) path was deliberately left alone: it already classifies
+auth, and widening `auth-failure-re` would deepen isaac-benp (it sniffs the
+whole stdout).
+
+**Files.** isaac-claude-code, branch `bean/isaac-2sxf`, commit **056eaf4**
+- `src/isaac/llm/api/claude_cli.clj`
+- `spec/isaac/llm/claude_driver_spec.clj` (+4 specs)
+- `features/llm/api/claude_driver.feature` (+2 scenarios)
+
+**Scenarios added.**
+- `a session limit after the cycles have run is weather, not a fence fallback`
+  — turn result "suspended", marker `reason :wall`, CLI invoked exactly once,
+  no `:claude/driver-fallback`, no transcript entry containing "subtype".
+- `a session limit on the very first invocation is weather too` (0 cycles).
+- specs: limit after cycles, limit at cycle 0, expired OAuth, and a guard that
+  the same words *in the transcript* are still a normal reply (isaac-benp).
+
+**Test commands + counts** (in `isaac-claude-code-isaac-2sxf`):
+- `bb spec` -> 88 examples, 0 failures, 3 pending (the @real smokes)
+- `bb features` -> 55 examples, 0 failures
+- `bb ci` -> both green
+- red-first proof: reverting `src/` alone makes the 2 new scenarios fail
+  ("expected suspended, got empty-terminal-response") and the 3 new specs fail.
+
+**Cross-repo.** None — this bean is isaac-claude-code only. Branch pushed to
+`origin/bean/isaac-2sxf`. Not landed, not tagged.
