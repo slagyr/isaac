@@ -170,3 +170,63 @@ the store slugifies either way. gate/handler specs updated; no alias kept.
 ## Planner check (2026-09-22)
 
 Reran on bean/isaac-xy2i c0d916a: `bb spec` 109/0, `bb features` 34/0. Diff reviewed (canon.clj, spaces.clj, gate, handler, registration, tenant; 7 scenarios). PR opened to isaac-gchat main; tagged `unverified`. Worker flags to carry forward, not blockers: (1) sessions created before this bean are adopted by name and stay untagged — a follow-up could stamp the tag on adoption; (2) the space→display-name memo is per process, refreshed each tick; (3) discovered spaces, DMs included, now feed the google/silent health keys, so a quiet DM raises silent warnings — thresholds were sized for a few configured spaces. Merge order with isaac-mm7o (PR #1): second one rebases.
+
+## Handoff 2 (worker, 2026-09-22)
+
+Branch `bean/isaac-xy2i` squashed to **one** commit `692ce17` on top of
+`89846dc` (isaac-mm7o) and force-pushed. PR #2 untouched. isaac-google still
+untouched — no pin to move.
+
+### Rebase onto isaac-mm7o
+
+Four conflicts, all unions — both behaviours kept, nothing dropped.
+
+| file | conflict | resolution |
+|------|----------|------------|
+| `gate.clj` | mm7o added `account-user` to `decide`'s `let`; xy2i rewrote the same `let` (`space-of`, `space-info`, `direct?`, `entry`) | one `let` with all of them; mm7o's two-armed self-drop `cond` clause survived the merge untouched and still runs first |
+| `handler.clj` | both added requires; both rewrote `handle-event`'s `let` | kept `self` + `spaces`; dropped mm7o's `tenant` require — `decide-opts` already resolves the organization via `tenants/of-comm`, so `:account-user (self/resolve-account-user id slice)` now rides in `decide-opts` beside `:tenant` and `:space-info`, one tenant resolution instead of two |
+| `gchat_steps.clj` | adjacent requires | both |
+| `inbound.feature` | mm7o's two scenarios and xy2i's five landed at the same offset | both, in that order |
+
+`bb spec` and `bb features` were run green on the rebase before anything else
+changed.
+
+### Always prefix the organization
+
+`canon/canonical-name` never knew how many organizations a host had — the
+"only when more than one" rule lived in `handler/decide-opts`, and it is gone:
+`:tenant` is now whatever `tenants/of-comm` answers, always. Names are
+`gchat-tonotop-yopp-test` and `gchat-tonotop-dm-micah-martin`. The five xy2i
+inbound scenarios now configure `google.tonotop.topic` and expect the prefix;
+a new handler spec proves a **one**-organization host gets it too. A comm on a
+host with no `:google` block at all has no organization to name and keeps the
+bare form — that is the only case without a prefix, and it cannot happen in
+production, where a login belongs to an organization.
+
+### Throttle: `gchat/discover-every-ms`, default 300000
+
+The memo in `isaac.comm.gchat.spaces` is now per organization and stamped with
+the time of its listing: `{tenant {:at ms :spaces {resource space}}}`. Inside
+the interval both callers — `registration/space-keys` and the handler's
+`spaces/known` — are answered from it, so a throttled tick keeps its discovered
+keys instead of dropping them (which would have DELETEd every discovered
+subscription; the new scenario asserts no such DELETE). A refused listing
+stamps nothing, so it retries on the next tick. `tenant/discover-every-ms`
+takes the shortest interval any of an organization's comms asks for. Declared
+in the manifest next to `gchat/discover`. Clock is `isaac.tool.memory/now`, so
+the feature clock drives it.
+
+### Counts (isaac-gchat)
+
+| command | result |
+|---------|--------|
+| `bb spec` | 124 examples, 0 failures, 222 assertions |
+| `bb features` | 37 examples, 0 failures, 86 assertions |
+| `bb ci` | green |
+| `bb lint src feature-steps` | 0 errors, 0 warnings |
+
+Scenarios now 8 for this bean: the 7 from handoff 1 plus "discovery asks Chat
+once per interval, however often the timer ticks" (two ticks 30 s apart list
+once and keep their subscriptions; a tick past the interval lists again).
+Negative-checked by setting the interval to 1 ms — the count assertion fails.
+New step: `Then N outbound HTTP request(s) to "<url>" was/were made`.
