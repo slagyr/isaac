@@ -56,3 +56,25 @@ all providers). Keep the locate-then-read and read-once lines.
   `hotfix/isaac-pn98-agent-0.1.80` @ e0ced4d = a0a4180 + the same commit.
   Registry pin → e0ced4d. Do not delete that branch while the registry points
   at it.
+- Deployed 2026-09-22 20:04Z: `modules upgrade` a0a4180 → e0ced4d, launchd
+  kickstart, boot clean (resume requeued 6, dropped 0; Discord ready +3s;
+  8 components). The six requeued markers are main/tempest chatgpt sessions
+  parked on 429 — pre-existing weather, unrelated.
+
+## One-time check on zanebot (GLM): no change, batching already worked
+
+Prompt "Read AGENTS.md, ISAAC.md and README.md … one line per file", crew
+scrapper, model glm-5-3 (fireworks), cwd work-2/isaac, fresh session each time.
+
+| run | session | assistant msg 1 | assistant msg 2 |
+| --- | --- | --- | --- |
+| before (old hint, agent a0a4180) | pn98-before-2002 | 3 × fs__read in one message | reply, 0 calls |
+| after (new hint, agent e0ced4d) | pn98-after-2005 | 3 × fs__read in one message | reply, 0 calls |
+
+The after-run's `turn/model-response-summary` cites `isaac.agent/e0ced4d…`, so
+the new code served it. GLM batched under both hints; it was never the failing
+case. The 19-of-19 single-call turn on 2026-09-22 was claude-opus-5 through the
+claude-code loop driver, where the CLI drives the tool loop over MCP. The
+acceptance line above is met in letter but not in substance: the check that
+matters is the same prompt on the tono-claude lane. Not run (seat cost; Micah's
+call).
