@@ -1,14 +1,14 @@
 ---
 # isaac-mm7o
 title: 'isaac-gchat: the self-drop must recognise the account by users/<id>, not only by email'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - google
     - comm
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-19T23:48:52Z
+updated_at: 2026-09-22T22:10:07Z
 parent: isaac-bv1l
 ---
 

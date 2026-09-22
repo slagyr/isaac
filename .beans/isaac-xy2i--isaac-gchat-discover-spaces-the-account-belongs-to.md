@@ -1,14 +1,14 @@
 ---
 # isaac-xy2i
 title: 'isaac-gchat: discover spaces the account belongs to instead of listing every space in config'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
     - comm
 created_at: 2026-09-19T21:13:13Z
-updated_at: 2026-09-21T03:55:47Z
+updated_at: 2026-09-22T22:10:07Z
 parent: isaac-bv1l
 ---
 

@@ -1,14 +1,14 @@
 ---
 # isaac-mu1i
 title: 'Live smoke before a module ships: real scheduler, real Google (test project), no stubs'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - google
     - process
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-19T23:48:52Z
+updated_at: 2026-09-22T22:10:07Z
 parent: isaac-bv1l
 ---
 
