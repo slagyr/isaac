@@ -1,15 +1,14 @@
 ---
 # isaac-9af8
 title: 'Provider-broken attention posts the provider''s whole stream: 2.8 MB to Discord'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - ops
     - comm
-    - unverified
 created_at: 2026-09-21T04:46:42Z
-updated_at: 2026-09-21T22:23:39Z
+updated_at: 2026-09-22T21:46:27Z
 ---
 
 `provider-content` (isaac-agent `src/isaac/attention.clj:46`) appends the
@@ -194,3 +193,19 @@ Round-1 verify failure addressed point by point:
   count — verified red on round 1's code (stash-checked) before landing.
 - The whole-stream-as-payload question: the full stream stays in the
   log; the alert never carries it.
+
+
+## Verify pass (2026-09-22)
+
+HEAD checked: isaac-agent f83af55 (round 2, on origin/main), fresh detached worktree.
+No `## Exceptions` section on this bean; `features/llm/provider_attention.feature` history shows only an additive scenario in f83af55 — no existing scenario reworded/weakened.
+
+- `bb spec`: 1698 examples, 0 failures (matches worker-reported count)
+- `bb features`: 846 examples, 0 failures, 1 pending (pre-existing "Mid-turn compaction keeps the request in flight" — matches worker-reported count exactly)
+- Clean output: only the project's structured JSON log lines; no stray println
+- Round-1 verify-fail points confirmed addressed: `dispatch.clj` now forwards `:error`/`:status` into the attention result; `provider-content` leads the alert with them; `attention.clj`'s new `tail-clip` clips from the tail (not head) so a streamed provider error's diagnosis survives; `features/llm/provider_attention.feature`'s new scenario pins the bound end-to-end (error keyword, status, tail fragment, dropped-count all present; handshake text absent)
+- No smell-pattern hits (Thread/sleep, un-stubbed network/fs/db, no-assertion tests, hidden time reads, cross-test mutable state) in the diff's spec file (`attention_spec.clj`)
+
+
+
+main-sha: isaac-agent f83af55
