@@ -1,14 +1,14 @@
 ---
 # isaac-a5dx
 title: config set refuses creating a key the schema does not declare inside a schema'd map (policy split from isaac-cgxa)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - foundation
     - config
 created_at: 2026-09-22T22:45:06Z
-updated_at: 2026-09-22T23:31:47Z
+updated_at: 2026-09-22T23:56:56Z
 ---
 
 ## Problem
@@ -132,3 +132,9 @@ isaac-cgxa's `marigold.cgxa.bridge`/`marigold.cgxa.longwave` fixture):
 4. unset of an undeclared key under a schema'd map is refused the same way.
 
 Left `in-progress`, no tags, per instructions.
+
+## Landed on main
+
+main-sha: isaac-foundation 01d81b9
+
+Planner check 2026-09-22: reran on bean/isaac-a5dx 01d81b9 — `bb spec` 1143/0, config_set_undeclared_key.feature 4/0, config_set_namespaced.feature 4/0, whole `bb features` 206/2 (the pre-existing modules_pins pair, isaac-j4jr). Refusal lives in mutate/set-config + unset-config against the composed schema; entity tables unaffected; `--force` skips the check. Also fixed on the way: the CLI pre-gate that ignored `--force`. Fast-forwarded to main; branch deleted. Not deployed.
