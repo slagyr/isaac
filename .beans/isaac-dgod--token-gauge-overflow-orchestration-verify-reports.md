@@ -94,3 +94,39 @@ The claude-cli **replay burst** — N identical stamps and N full transcript rea
 per turn — is isaac-8cur. That bean owns the frequency; this one owns the value.
 Split because they live in different modules with different baselines
 (isaac-claude-code vs isaac-agent).
+
+## Decision (2026-09-22, Micah): a stamp above the window is over budget, not implausible
+
+Evidence, zanebot 2026-09-22 13:50–13:57Z, `isaac-work-2` on claude-code /
+claude-opus-5 (model entry `:context-window 200000`; the CLI itself runs the
+model at its native 1M window and is told nothing about 200k):
+
+- 19 stamps in one turn, 271,329 → 304,187 prompt tokens, growing 1–8k per
+  stamp. That is a per-request size, not a running sum — isaac-8cur (replay
+  burst) is landed and deployed, so the "claude-code reports a turn total"
+  premise above is stale for this provider.
+- Every one of the 19 was discarded by `normalized-provider-prompt-tokens`
+  (over the window ⇒ report nothing). The gauge fell back to the chars/4
+  estimate of transcript entries (~120–130k), under the 0.8 × 200k = 160k
+  trigger, so compaction never fired while the real request was ~290k.
+- Three workers cycling at ~290k each closed the seat's 5-hour window in
+  ~17 minutes.
+
+Rule: a provider stamp larger than the configured window means the working
+context is **over budget**. It is the loudest possible compaction trigger, not
+a value to throw away. Keep `:context-window` as the working budget (200k on
+zanebot stays); stop treating a stamp above it as impossible.
+
+### Acceptance (supersedes the clamp/discard backstop above)
+
+- A per-request stamp above `:context-window` is recorded as the gauge value
+  and `should-compact?` is true on the next check; compaction runs before the
+  next request. `:session/stamp-implausible` is not logged for this case.
+- A stamp that is a running sum (chatgpt stateful chain; any adapter that
+  still reports turn totals) is still rejected and still warns — the adapter
+  contract distinguishes per-request prompt size from turn usage, as decided
+  2026-09-20.
+- The chars/4 estimate is the fallback when an adapter reports no per-request
+  size, never the primary when one is available.
+- One-time on zanebot after deploy: a work turn whose first stamp exceeds 200k
+  compacts within that turn; the following stamps are below 160k.
