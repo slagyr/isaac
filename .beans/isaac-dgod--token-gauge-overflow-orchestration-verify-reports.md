@@ -4,8 +4,10 @@ title: 'Token gauge overflow: orchestration-verify reports 12.0M / 278K (4320%) 
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-03T00:00:08Z
-updated_at: 2026-09-22T20:30:14Z
+updated_at: 2026-09-22T20:54:07Z
 ---
 
 Observed 2026-09-02 on zanebot: `isaac sessions list` shows orchestration-verify (perceptor, gpt-5.4 chatgpt, 327 turns, 1 compaction) at Context 12,031,158 / 278,528 = 4320%. The session file is 1.0M on disk (~250K tokens plausible), so the gauge is not a real prompt size — last-input-tokens (or whatever feeds the PCT column) has gone cumulative or been fed a non-prompt number. Related: isaac-pqjn / isaac-x2up token accounting. Questions: (1) which provider response field seeded 12M — chatgpt usage totals across a stateful chain? (2) does compaction run against this gauge (it would plan chunks off a fictional size) or refuse? (3) is any other session drifting the same way (all other rows look sane today). Reproduce by inspecting orchestration-verify/current.ednl last-input-tokens entries on zanebot before touching the session.
@@ -297,3 +299,7 @@ example is the new compaction scenario.
 3. **Zanebot verification.** The bean's one-time check — a work turn whose first
    stamp exceeds 200k compacts within that turn, following stamps below 160k —
    is not something I can run; no ssh from here.
+
+## Planner check (2026-09-22)
+
+Reran on bean/isaac-dgod 98e1a96: `bb spec` 1710/0, `bb features` 847/0 (1 pending, pre-existing). Diff reviewed. PR opened from `bean/isaac-dgod` to isaac-agent main; tagged `unverified` for /verify. Open item from the worker: the Responses chain declares `:unknown` on chained requests — a live chatgpt capture could show a per-request figure and flip it in one line. One-time zanebot check (first stamp over 200k compacts within the turn) still pending deploy.
