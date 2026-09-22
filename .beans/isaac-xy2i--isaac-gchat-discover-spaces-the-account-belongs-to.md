@@ -7,8 +7,9 @@ priority: high
 tags:
     - google
     - comm
+    - unverified
 created_at: 2026-09-19T21:13:13Z
-updated_at: 2026-09-22T22:10:07Z
+updated_at: 2026-09-22T22:30:17Z
 parent: isaac-bv1l
 ---
 
@@ -165,3 +166,7 @@ the store slugifies either way. gate/handler specs updated; no alias kept.
 3. **Health.** Discovered spaces now flow into `health/evaluate`'s key set, so
    a quiet DM counts as a key with no events. Nothing failed, but the silence
    thresholds were written for a handful of configured spaces.
+
+## Planner check (2026-09-22)
+
+Reran on bean/isaac-xy2i c0d916a: `bb spec` 109/0, `bb features` 34/0. Diff reviewed (canon.clj, spaces.clj, gate, handler, registration, tenant; 7 scenarios). PR opened to isaac-gchat main; tagged `unverified`. Worker flags to carry forward, not blockers: (1) sessions created before this bean are adopted by name and stay untagged — a follow-up could stamp the tag on adoption; (2) the space→display-name memo is per process, refreshed each tick; (3) discovered spaces, DMs included, now feed the google/silent health keys, so a quiet DM raises silent warnings — thresholds were sized for a few configured spaces. Merge order with isaac-mm7o (PR #1): second one rebases.
