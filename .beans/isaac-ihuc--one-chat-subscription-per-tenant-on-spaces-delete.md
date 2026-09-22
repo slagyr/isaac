@@ -1,7 +1,7 @@
 ---
 # isaac-ihuc
 title: 'One Chat subscription per tenant on spaces/-: delete per-space registration, discovery and the 30 s tick; naming by memoized spaces.get; rename follows'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - gchat
     - comm
 created_at: 2026-09-22T23:26:20Z
-updated_at: 2026-09-22T23:31:47Z
+updated_at: 2026-09-22T23:49:58Z
 ---
 
 ## Decision (Micah, 2026-09-22)
@@ -217,3 +217,9 @@ Health's silence detection is now blind for Chat. `google/http.clj`
 `silent-hours` returns nil for a key that has never been seen — never raises
 `:google/silent` rather than raising it falsely. No suite fails on this; it is
 a real gap that belongs with the heartbeat, not here.
+
+## Landed on main
+
+main-sha: isaac-gchat cd5ba85
+
+Planner check 2026-09-22: reran on bean/isaac-ihuc cd5ba85 — `bb spec` 123/0, `bb features` 36/0, no `discover` survivors; registration = one `spaces/-` key per organization with message + membership event types. isaac-google untouched (no pin to move). Fast-forwarded to main; branch deleted. Carried to isaac-an14 (in flight): per-tenant silence must read every last-event-at the health state holds, not the registration keys, or it is blind after this change. Live-host proof still owed: `spaces/-` expiry and renewal, and a DM heard from its first message. Not deployed.
