@@ -28,9 +28,9 @@ guardrail: it scales with the model window, not with what a result is worth.
 
 ## Design
 
-- Drop the formula. A constant default of **32,000 chars** (Micah, 2026-09-22:
-  match the `tools.defaults.max-bytes` 32k / 400-line shell cap already set on
-  zanebot rather than derive from the window), configurable at
+- Drop the formula. A constant default of **32,768 chars** (Micah, 2026-09-22:
+  match the `tools.defaults {:max-bytes 32768 :max-lines 400}` shell cap already
+  set on zanebot rather than derive from the window), configurable at
   `tools.defaults.max-result-chars` with a per-tool override
   (`tools.<tool>.max-result-chars`), same shape as `tools.defaults.max-bytes`.
 - Keep head-and-tail truncation; the marker names the omitted count and where
