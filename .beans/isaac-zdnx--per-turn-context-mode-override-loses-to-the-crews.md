@@ -1,15 +1,14 @@
 ---
 # isaac-zdnx
 title: Per-turn context-mode override loses to the crew's :context-mode (--with-crew and --with-model do win)
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - agent
     - cli
-    - unverified
 created_at: 2026-09-22T21:04:40Z
-updated_at: 2026-09-22T21:27:18Z
+updated_at: 2026-09-22T21:46:51Z
 ---
 
 ## Observed (2026-09-22, zanebot, agent 0.1.81)
@@ -83,3 +82,21 @@ Branch: `bean/isaac-zdnx`, commit `c08328f`, pushed to origin.
 ## Planner check (2026-09-22)
 
 Reran on bean/isaac-zdnx c08328f: `bb spec` 1711/0, `bb features` 848/0 (1 pending, pre-existing). Diff reviewed: `:context-mode-override` threads through `charge/build` → `behavior-opts` → `resolve-behavior`, CLI passes it. PR opened to isaac-agent main; tagged `unverified`. The same drop exists in isaac-hail `delivery-charge` (crew + model only): filed as isaac-onzi, blocked by this bean landing and an agent pin bump. Note: until isaac-onzi lands, a band-level `:with-context-mode` does nothing; reset mode on scrapper/perceptor works because it is set on the crew, not the band.
+
+
+## Verify pass (2026-09-22)
+
+Branch checked: bean/isaac-zdnx c08328f, fresh detached worktree. No `## Exceptions` section on this bean.
+
+- `bb spec`: 1711 examples, 0 failures (matches worker-reported count)
+- `bb features`: 848 examples, 0 failures, 1 pending (pre-existing "Mid-turn compaction keeps the request in flight" — matches worker-reported count exactly)
+- Clean output: only the project's structured JSON log lines; no stray println
+- `features/bridge/cli-prompt.feature` diff is a clean additive scenario ("--with-context-mode overrides the crew's :context-mode :reset for the turn (isaac-zdnx)"); no existing scenario touched.
+- Diff matches the handoff: `charge.clj`'s `behavior-opts` now threads `:context-mode-override` into `resolve-behavior` opts alongside model/crew overrides; `prompt_cli.clj`'s `dispatch-prompt!` passes `:context-mode-override (:with-context-mode override)` into `charge/build`. No smell-pattern hits in the new spec example (`charge_spec.clj`).
+- Acceptance met: a crew with `:context-mode :reset` plus a per-turn `--with-context-mode full` now resolves `:full` (spec + feature scenario both pin this).
+- Landed: PR https://github.com/slagyr/isaac-agent/pull/4 squash-merged to main as `4b65ed1` ("isaac-zdnx: per-turn --with-context-mode now wins over the crew's :context-mode"), branch deleted.
+- Noted (not this bean's scope): the worker's handoff flags that hail's own `:with-context-mode` path and other `charge/build` callers (`isaac.drive.weather`, `isaac.turn.worker`) were not touched/verified — only the CLI's `dispatch-prompt!` call site was confirmed. The planner's check also notes isaac-hail's `delivery-charge` has the same drop, filed as isaac-onzi (blocked on this bean + an agent pin bump).
+
+
+
+main-sha: isaac-agent 4b65ed1
