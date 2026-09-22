@@ -182,3 +182,7 @@ Next:
 - **isaac-agent `bb.edn` is temporarily pinned to `:local/root
   "../isaac-foundation"`** so the branch pair runs together. It must go back
   to a `:git/sha` naming the landed foundation main sha before landing.
+
+## Re-hailed on the personal Claude lane (2026-09-22 21:40Z, planner)
+
+Hail 019b9d5f dead-lettered after five binds to the June session iaqu (rebinding bug). Re-hailed session-direct to isaac-work-2 (checkouts already on `bean/isaac-ruom`) with `with-model claude-opus-5` (provider :claude, personal seat) so the turn runs under reset mode + the new hint + over-budget stamps, to measure burn. Baseline isaac-work-2 tallies at 21:38:50Z: input 1,282,869,907 · cache-read 1,163,652,354 · cache-write 4,586,333 · output 7,658,787 · compaction-count 103 · last-input 15,028.
