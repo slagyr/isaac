@@ -1,15 +1,14 @@
 ---
 # isaac-mm7o
 title: 'isaac-gchat: the self-drop must recognise the account by users/<id>, not only by email'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - google
     - comm
-    - unverified
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-22T22:33:29Z
+updated_at: 2026-09-22T22:39:32Z
 parent: isaac-bv1l
 ---
 
@@ -116,3 +115,9 @@ with `--force-with-lease`. PR #1 not touched.
 ## Planner check 2 (2026-09-22)
 
 Reran on bean/isaac-mm7o 4306062 (per-tenant id cache + two-tenant scenario): `bb spec` 94/0, `bb features` 29/0. PR #1 updated; tagged `unverified`. Note for a repo-wide cleanup, not this bean: isaac-gchat feature fixtures already use tonotop.com / users/yopp on main (inbound, outbound, registrations, tenants features; chat_api_spec) — the new scenario follows that convention. The 09-19 placeholder scrub did not reach these fixtures or isaac-google config.clj/tenants.clj/people.clj docstrings.
+
+## Landed on main
+
+main-sha: isaac-gchat 89846dc
+
+Squash-merged 2026-09-22 (Micah: merge the open PRs); bean branch deleted.

@@ -1,15 +1,14 @@
 ---
 # isaac-mu1i
 title: 'Live smoke before a module ships: real scheduler, real Google (test project), no stubs'
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
-    - unverified
-    - google
     - process
+    - google
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-22T22:32:44Z
+updated_at: 2026-09-22T22:39:32Z
 parent: isaac-bv1l
 ---
 
@@ -60,3 +59,9 @@ Implemented `isaac google smoke` as a CLI subcommand (not a `bb` task): it ships
 ## Planner check (2026-09-22)
 
 Reran on bean/isaac-mu1i f3e28d8 (amended from 5b20dd9 to scrub two host-specific mentions to placeholders — `yopp` in doc/rollout.md and a `tonotop` example tenant in the doc and spec): `bb spec` 171/0, features 28/0. PR opened to isaac-google main; tagged `unverified`. Pre-existing on main and NOT this bean: src/isaac/google/config.clj (yopp@tonotop.com example), tenants.clj (:tonotop/tonotop-yopp example), people.clj (micah@tonotop.com) — the 09-19 scrub missed them; separate cleanup. Gap for a later bean: no in-process feature scenario for `isaac google smoke` because door/live-push make real network calls; an HTTP stub seam would close it.
+
+## Landed on main
+
+main-sha: isaac-google a7205c3
+
+Squash-merged 2026-09-22 (Micah: merge the open PRs); bean branch deleted.
