@@ -1,14 +1,14 @@
 ---
 # isaac-zdnx
 title: Per-turn context-mode override loses to the crew's :context-mode (--with-crew and --with-model do win)
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - agent
     - cli
 created_at: 2026-09-22T21:04:40Z
-updated_at: 2026-09-22T21:04:40Z
+updated_at: 2026-09-22T21:15:36Z
 ---
 
 ## Observed (2026-09-22, zanebot, agent 0.1.81)
