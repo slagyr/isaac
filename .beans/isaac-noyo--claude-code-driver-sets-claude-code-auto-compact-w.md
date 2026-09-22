@@ -1,14 +1,14 @@
 ---
 # isaac-noyo
 title: claude-code driver sets CLAUDE_CODE_AUTO_COMPACT_WINDOW from the model's context-window × compaction threshold so a driven turn compacts at Isaac's budget
-status: todo
+status: scrapped
 type: feature
 priority: high
 tags:
     - claude-code
     - tokens
 created_at: 2026-09-22T23:51:45Z
-updated_at: 2026-09-22T23:51:45Z
+updated_at: 2026-09-22T23:55:37Z
 ---
 
 ## Why
@@ -57,3 +57,7 @@ files (they carry OAuth tokens). Micah adds `:CLAUDE_CODE_AUTO_COMPACT_WINDOW
 
 isaac-1sdl (compaction deferred in driven loops), isaac-ewxh, isaac-dgod,
 isaac-3ueo (CLI overhead), the ruom burn note on isaac-ruom.
+
+## Scrapped (Micah, 2026-09-22)
+
+"I am fine with Claude CLI running its full context. There is no need to configure it otherwise." No CLAUDE_CODE_AUTO_COMPACT_WINDOW on any provider or model; the CLI compacts at its own window.
