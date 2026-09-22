@@ -191,3 +191,109 @@ Worker constraints (local Opus subagent on the planner's box, not zanebot):
   do NOT open the PR: the planner does. Hand off with `## Handoff` on this
   bean: what changed, test results (command + counts), open questions. Bean
   stays `in-progress`; the planner adds `unverified`.
+
+## Handoff (worker, 2026-09-22)
+
+Branch `bean/isaac-dgod` in isaac-agent, one commit `98e1a96` on top of main
+`d2db8c7` (force-pushed over the superseded `9a9bfed`, as briefed). No pins
+touched, isaac-claude-code untouched — the contract did not force it.
+
+### What changed
+
+- `src/isaac/drive/turn.clj` — `normalized-provider-prompt-tokens` (clamp/discard)
+  replaced by `prompt-scope` + `provider-prompt-tokens`: the declared scope
+  decides. `:request` → the figure is written as it stands, window or no window.
+  `:running-sum` → nothing written, `:session/stamp-implausible` warns.
+  `:unknown` → nothing written, silent. `provider-stateful?` moved above them.
+- `src/isaac/llm/api/protocol.clj` — `prompt-scopes` (`#{:request :running-sum
+  :unknown}`) and an optional `:prompt-scope` on the `usage` schema. Absent
+  means `:request`, so every stateless adapter (chat-completions, messages,
+  ollama, grover, claude-code in the sibling repo) is already correct with no
+  change. An undeclared scope on a **stateful** provider is inferred
+  `:running-sum` — that is the only way the warn fires now, and it means an
+  adapter that has not been taught the contract.
+- `src/isaac/llm/api/responses.clj` — `stateful-request?` / `chained-request?`
+  extracted from `->responses-request`; the result's usage declares
+  `:prompt-scope :unknown` on a chained `previous_response_id` request (the
+  chain is billed cumulatively, so the figure is a running sum) and `:request`
+  otherwise. It declares rather than infers, so the first request of a chain —
+  which does carry a real per-request figure — is not thrown away.
+- `src/isaac/llm/tool_loop.clj` — `response-usage` drops `:prompt-scope` before
+  the turn total. Found the hard way: `add-usage` is `merge-with +`, so the
+  second cycle of any stateful turn did `(+ :request :request)` and killed the
+  turn. Three feature scenarios caught it; see below.
+- `spec/isaac/drive/turn_spec.clj` — four new `process-response!` examples:
+  over-budget stamp written + `should-compact?` true + no warn; `:unknown`
+  leaves the tally; undeclared-on-stateful warns and leaves the tally; declared
+  `:request` on a stateful provider is trusted.
+- `spec/isaac/llm/responses_spec.clj` — two new `chat` examples: unchained
+  declares `:request` with the real figure, chained declares `:unknown`.
+- `spec/isaac/llm/tool_loop_spec.clj` — one new example pinning `:prompt-scope`
+  out of the turn total.
+- `features/llm/api/response_schema.feature` — **scenario updated** (see below).
+- `features/session/compaction_overflow.feature` — new scenario "a prompt above
+  the window compacts before the next request (isaac-dgod)": a 1400-token stamp
+  against a 1000 window is recorded, and the next send compacts before the
+  request. Would have failed before the change (the stamp was discarded and
+  `last-input-tokens` stayed 0).
+- `CHANGELOG.md` — one entry under `## Unreleased` naming isaac-dgod.
+
+### Scenario changed, and why
+
+`features/llm/api/response_schema.feature`, "a prompt size larger than the
+window leaves the gauge alone instead of clamping to the window (isaac-dgod)"
+pinned the behaviour this bean reverses: it asserted the 900000 stamp was
+discarded (`last-input-tokens` stayed 1000) and that
+`:session/stamp-implausible` fired. Renamed to "...is over budget, and the
+gauge takes it as it stands (isaac-dgod)" and flipped to assert
+`last-input-tokens 900000` and **no** `:session/stamp-implausible` entry. The
+narrative paragraph now carries the isaac-work-2 measurements. Nothing was
+deleted or weakened; the running-sum alarm it used to guard is now covered by
+the turn_spec example and by the responses adapter's `:unknown` declaration.
+
+### Test commands and results
+
+| command | result |
+|---|---|
+| `bb lint <each edited file>` | 0 errors (pre-existing warnings only: unused requires/vars in `turn.clj`, `:refer :all` kondo noise in `responses_spec.clj`) |
+| `bb spec` | **1710 examples, 0 failures, 3566 assertions** |
+| `bb features features/session/` | **847 examples, 0 failures, 2036 assertions, 1 pending** (the path argument does not narrow — `bb features` always runs the whole suite) |
+| `bb features features/llm/api/response_schema.feature` | same full run, 0 failures |
+| `bb ci` | config-bypass-lint ok, lint-cli-host ok, 1710 spec / 847 feature examples, 0 failures |
+
+The 1 pending is pre-existing (`compaction_mid_turn` rubberband hail, not yet
+implemented). Baseline on `d2db8c7` was 846 features / 0 failures; the extra
+example is the new compaction scenario.
+
+### Out of scope, noticed
+
+- **cache-write vs cache-read on the claude-code lane.** Nothing in this repo
+  reads them apart from `extract-tokens` → session totals, and the messages
+  adapter's `parse-usage` folds both into `:prompt-tokens`
+  (`input + cache_read + cache_write`). That fold is *correct* for a prompt size
+  — all three describe bytes in the request — so the 293,046 figure from
+  pn98-opus-personal-2013 (cache-read 153,042, cache-write 139,982) is a real
+  prompt, not double counting. What it says is that the lane re-writes nearly
+  the whole prefix each request instead of reading it back, which is a
+  prompt-construction or cache-breakpoint question in isaac-claude-code, not a
+  gauge question. Untouched here.
+- `bb features <path>` ignores the path and runs everything. Worth a note
+  somewhere; every "narrow the suite" instruction is silently a full run.
+
+### Open questions
+
+1. **Can the Responses chain be made to report per request?** I took the
+   "declare none" branch the bean allows, because nothing in the repo or in the
+   captured wire responses shows a per-request input figure on a chained
+   `response.completed`. If OpenAI does report one (or if `input_tokens` on a
+   chained response is in fact per request and the 12,031,158 was something
+   else), flipping `chained-request?` to `:request` is a one-line change. A
+   live capture from zanebot's chatgpt lane would settle it.
+2. **Should stateless adapters declare `:request` explicitly?** Today absent
+   means `:request`, which is what keeps isaac-claude-code and the four in-repo
+   adapters working untouched. The cost is that a future stateless adapter that
+   *does* report a turn total looks correct. The inference only covers stateful
+   providers.
+3. **Zanebot verification.** The bean's one-time check — a work turn whose first
+   stamp exceeds 200k compacts within that turn, following stamps below 160k —
+   is not something I can run; no ssh from here.
