@@ -4,8 +4,10 @@ title: Restructure :defaults as entity templates; gather the scattered defaults 
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-21T16:10:51Z
-updated_at: 2026-09-21T16:47:18Z
+updated_at: 2026-09-22T22:05:45Z
 ---
 
 Repos: **isaac-agent** (schema in `resources/isaac-manifest.edn:531`, ~40
@@ -186,3 +188,57 @@ Next:
 ## Re-hailed on the personal Claude lane (2026-09-22 21:40Z, planner)
 
 Hail 019b9d5f dead-lettered after five binds to the June session iaqu (rebinding bug). Re-hailed session-direct to isaac-work-2 (checkouts already on `bean/isaac-ruom`) with `with-model claude-opus-5` (provider :claude, personal seat) so the turn runs under reset mode + the new hint + over-budget stamps, to measure burn. Baseline isaac-work-2 tallies at 21:38:50Z: input 1,282,869,907 · cache-read 1,163,652,354 · cache-write 4,586,333 · output 7,658,787 · compaction-count 103 · last-input 15,028.
+
+## Ready for verify (2026-09-22, scrapper@isaac-work-2)
+
+Branches (rebased onto each repo's `origin/main`, pushed):
+
+- **isaac-foundation** `bean/isaac-ruom` @ `1ab89f8` (base `eaae014`)
+- **isaac-agent** `bean/isaac-ruom` @ `caf83bf` (base `1afd3dc`)
+
+Suites, after the rebase:
+
+- isaac-foundation `bb ci` — 1137 specs + 198 features, 0 failures.
+- isaac-agent `bb verify` — lints ok, 1712 specs + 847 features, 0 failures
+  (1 pending: mid-turn compaction, pre-existing).
+
+Rebase conflicts resolved (both mechanical, both re-verified):
+
+- `src/isaac/drive/turn.clj` — main's `:continuations` layering (isaac-xpkf)
+  kept, reading the cycle default through `defaults/cycle-knobs`.
+- `resources/isaac-manifest.edn` — main added `:continuations` under the flat
+  `:defaults :cycle`; that key is retired here and `:continuations` already
+  lives in the crew template's `:cycle`.
+- `features/config/composition.feature` — took main's literal `sk-ant-test`
+  expectation (isaac-rxun).
+- `spec/isaac/drive/turn_spec.clj` — main's continuation fixtures moved from
+  `{:defaults {:cycle …}}` to `{:defaults {:crew {:cycle …}}}`.
+
+### Landing order (both repos, upstream first)
+
+1. Squash-land **isaac-foundation** `bean/isaac-ruom` on main; note the sha.
+2. In **isaac-agent**, repin that sha in **both** `bb.edn` and `deps.edn`
+   (`bb.edn` currently carries a temporary `:local/root "../isaac-foundation"`
+   for the branch pair; `deps.edn` still names the pre-ruom
+   `8fbeed3d…`). Re-run `bb verify`, then squash-land isaac-agent.
+
+### Known-pre-existing, not from this bean
+
+- `bb jvm-spec` is red in both repos on `origin/main` as well:
+  isaac-agent 4 manifest-spec failures (fixture manifest shadows the shipped
+  one) → **isaac-3rxx**; isaac-foundation 8 module lifecycle/protocol failures
+  → **isaac-jf80**. The "bb jvm-spec green" bar in *Done when* cannot be met
+  from this bean.
+- `features/cli/modules_pins.feature` failed locally from a stale
+  `~/.gitlibs/_repos/file/REL/fixture-agent` cache pointing at a deleted
+  worktree; removing that cache dir makes it green. Environment, not code.
+- `features/bridge/suspend.feature` "stamped unclean" is timing-flaky under the
+  full run; green in isolation and on a re-run of the full suite.
+
+### Out of scope, filed
+
+Downstream repos (isaac-episodes, isaac-hail, isaac-cron, isaac-hooks,
+isaac-server) still read `[:defaults :crew]` / `[:defaults :model]` and write
+the retired fixture shape → **isaac-0r95** (blocked by this bean). It must land
+before any install's `isaac.edn` is migrated by hand; the `zanebot migrated`
+line in *Done when* depends on it.
