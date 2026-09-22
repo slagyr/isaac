@@ -1,11 +1,11 @@
 ---
 # isaac-dgod
 title: 'Token gauge overflow: orchestration-verify reports 12.0M / 278K (4320%) after one compaction'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-09-03T00:00:08Z
-updated_at: 2026-09-20T20:32:46Z
+updated_at: 2026-09-22T20:30:14Z
 ---
 
 Observed 2026-09-02 on zanebot: `isaac sessions list` shows orchestration-verify (perceptor, gpt-5.4 chatgpt, 327 turns, 1 compaction) at Context 12,031,158 / 278,528 = 4320%. The session file is 1.0M on disk (~250K tokens plausible), so the gauge is not a real prompt size — last-input-tokens (or whatever feeds the PCT column) has gone cumulative or been fed a non-prompt number. Related: isaac-pqjn / isaac-x2up token accounting. Questions: (1) which provider response field seeded 12M — chatgpt usage totals across a stateful chain? (2) does compaction run against this gauge (it would plan chunks off a fictional size) or refuse? (3) is any other session drifting the same way (all other rows look sane today). Reproduce by inspecting orchestration-verify/current.ednl last-input-tokens entries on zanebot before touching the session.
@@ -130,3 +130,64 @@ zanebot stays); stop treating a stamp above it as impossible.
   size, never the primary when one is available.
 - One-time on zanebot after deploy: a work turn whose first stamp exceeds 200k
   compacts within that turn; the following stamps are below 160k.
+
+## Evidence update and worker brief (2026-09-22 evening, planner; Micah: GO)
+
+Corrections to the text above, from measurements taken today:
+
+1. **claude-code stamps are per request now, not turn totals.** isaac-8cur
+   landed (claude-code 34dbfa7 deployed): the driver fires one cycle per
+   `tool_use` block and each cycle carries the usage of the assistant event that
+   held the block. That usage is per API request. The one wrinkle: when a
+   model message carries several `tool_use` blocks, those cycles share one
+   usage (identical prompt-tokens). Treat a repeated identical stamp inside a
+   turn as the same request, not a new one. The 19 stamps on isaac-work-2 this
+   morning had distinct values, so they were 19 requests.
+2. **The discard is what blinded the gauge.** Every real stamp (271k–304k)
+   was over the 200k window → dropped → gauge fell back to the chars/4 tally
+   (~125k) → never crossed 0.8 × 200k → no compaction while the real request
+   was ~290k. Three workers closed the org seat's 5h window in 17 min, twice
+   today.
+3. **Fresh-session floor on the claude-code lane is ~55k per request.**
+   pn98-opus-personal-2013 (3 file reads, fresh session, reset mode) spent
+   prompt 293,046 (cache-read 153,042, cache-write 139,982) over 4–5
+   requests. Cache-write ≈ cache-read within one turn is not a clean prefix
+   chain. Out of scope here but note anything you learn.
+4. **Zanebot's `:context-window` for claude-opus-5 stays 200000** as the
+   working budget; the CLI runs the model at 1M and is told nothing.
+
+Rules to implement (decided 2026-09-22):
+
+- A per-request stamp **above** `:context-window` is written to the gauge as
+  is and makes `should-compact?` true on the next check; compaction runs before
+  the next request. No `:session/stamp-implausible` for this case.
+- The adapter contract distinguishes **per-request prompt size** from **turn
+  usage**. Stateless adapters (chat-completions, messages, ollama, grover,
+  claude-code via the sibling repo) already report per-request; the Responses
+  API stateful `:response-id` chain (`responses.clj`, `provider-stateful?` in
+  turn.clj) reports a running sum and must either extract the per-request
+  figure or declare none.
+- An adapter that declares none leaves the stamp untouched and the gauge
+  renders **unknown**; no zero is written (isaac-166j). The chars/4 tally is
+  the fallback only when no per-request figure exists.
+- `:session/stamp-implausible` remains only for the running-sum case (an
+  adapter that still reports totals) and means "adapter bug".
+
+Worker constraints (local Opus subagent on the planner's box, not zanebot):
+
+- Worktree `isaac-agent-isaac-dgod` on `bean/isaac-dgod` from main d2db8c7.
+  Never touch the shared `isaac-agent` checkout. TDD: failing spec first.
+  `bb lint` after each edit, `bb spec`, then the features that cover
+  compaction/gauge (`bb features features/session/`) and anything the
+  changed namespaces are exercised by. `bb ci` before handoff.
+- Files in play: `src/isaac/drive/turn.clj` (`normalized-provider-prompt-tokens`,
+  `stamp-provider-prompt!`, `provider-stateful?`), `src/isaac/session/compaction.clj`
+  (`context-gauge`, `should-compact?`), `src/isaac/llm/api/protocol.clj` +
+  `responses.clj` (contract field), `spec/…` for each, CHANGELOG `## Unreleased`.
+- isaac-claude-code: change only if the contract forces it; if so, a worktree
+  there with `:dev-local` pointing at the agent worktree, and say so in the
+  handoff. Do not bump any pins.
+- One squash-style commit on the bean branch, pushed. Do NOT push to main and
+  do NOT open the PR: the planner does. Hand off with `## Handoff` on this
+  bean: what changed, test results (command + counts), open questions. Bean
+  stays `in-progress`; the planner adds `unverified`.
