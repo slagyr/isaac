@@ -303,3 +303,33 @@ example is the new compaction scenario.
 ## Planner check (2026-09-22)
 
 Reran on bean/isaac-dgod 98e1a96: `bb spec` 1710/0, `bb features` 847/0 (1 pending, pre-existing). Diff reviewed. PR opened from `bean/isaac-dgod` to isaac-agent main; tagged `unverified` for /verify. Open item from the worker: the Responses chain declares `:unknown` on chained requests — a live chatgpt capture could show a per-request figure and flip it in one line. One-time zanebot check (first stamp over 200k compacts within the turn) still pending deploy.
+
+## Deployed and tried on zanebot (2026-09-22 20:59–21:04Z, planner)
+
+PR slagyr/isaac-agent#3 squash-merged → main 1afd3dc. Deployed as
+`hotfix/isaac-dgod-agent-0.1.81` @ 831c5cf (= 0.1.80 hotfix e0ced4d + this
+commit; main's continuations stay undeployed while scrapper/perceptor run
+`:context-mode :reset`). Registry isaac 547cc7d2. Boot clean (6 requeued, 0
+dropped, Discord ready +2s).
+
+One-time check, session isaac-work-2 (826 KB transcript), temporary model
+`dgod-trial` = grok-4.7 with `:context-window 200000`, prompt "Reply with the
+single word pong." three times with `--with-crew main --with-context-mode full`:
+
+| turn | pre-request gauge | compaction | stamp after |
+| --- | --- | --- | --- |
+| 1 (scrapper, reset won — see note) | 127,665 | skipped (:context-reset) | 5,827 |
+| 2 (crew main, full) | 5,836 | none | **242,134** recorded as-is, no warn |
+| 3 (crew main, full) | **242,143** | started 21:01:20, completed 21:03:38 (count 102→103) | **15,028** |
+
+`:session/stamp-implausible` count since deploy: 0. Acceptance's one-time line
+is met: a stamp over 200k is recorded and compacts before the next request.
+
+Two observations, not blockers:
+- The chars/4 `tokens-before` estimate read 127,536 while the provider said
+  242,134 — the fallback undercounts a code/EDN-heavy transcript by ~1.9×.
+- `--with-context-mode full` alone did not override scrapper's `:context-mode
+  :reset` (behavior-resolved still said :reset); `--with-crew main` did. Filed
+  separately.
+
+Trial model entry removed after the run. Bean stays `unverified` for /verify.
