@@ -44,3 +44,7 @@ key, as today.
 
 `bb spec`, the new feature, `bb ci` green in isaac-foundation; agent's
 config-set scenarios (fun8) still green against the new foundation sha.
+
+## Decision (Micah, 2026-09-22)
+
+Refuse by default; `--force` writes the undeclared key and the load-time warning still fires. "A force lets you get away with it." Ready for a worker; scenarios above stand.
