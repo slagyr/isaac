@@ -1,7 +1,7 @@
 ---
 # isaac-ihuc
 title: 'One Chat subscription per tenant on spaces/-: delete per-space registration, discovery and the 30 s tick; naming by memoized spaces.get; rename follows'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - gchat
     - comm
 created_at: 2026-09-22T23:26:20Z
-updated_at: 2026-09-22T23:26:20Z
+updated_at: 2026-09-22T23:31:47Z
 ---
 
 ## Decision (Micah, 2026-09-22)
@@ -75,3 +75,7 @@ https://developers.google.com/workspace/events/guides/events-chat on
 
 isaac-xy2i (landed 692ce17, parts to remove), isaac-1zkz (tenants),
 heartbeat bean (sibling), isaac-mu1i (smoke check `registrations` must adapt).
+
+## Scope note (planner, 2026-09-22)
+
+The tick cadence change (30 s → hourly) is owned by isaac-an14 (heartbeat), which rides the same tick. This bean leaves `default-tick-ms` alone and only removes per-space keys/discovery in gchat.

@@ -1,14 +1,14 @@
 ---
 # isaac-an14
 title: 'Google health as a heartbeat: silence per tenant, log once on transition, hourly synthetic push with a deadline'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
     - ops
 created_at: 2026-09-22T23:26:20Z
-updated_at: 2026-09-22T23:26:20Z
+updated_at: 2026-09-22T23:31:47Z
 ---
 
 ## Decision (Micah, 2026-09-22)

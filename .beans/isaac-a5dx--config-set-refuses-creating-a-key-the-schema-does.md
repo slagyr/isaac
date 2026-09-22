@@ -1,14 +1,14 @@
 ---
 # isaac-a5dx
 title: config set refuses creating a key the schema does not declare inside a schema'd map (policy split from isaac-cgxa)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - foundation
     - config
 created_at: 2026-09-22T22:45:06Z
-updated_at: 2026-09-22T22:45:06Z
+updated_at: 2026-09-22T23:31:47Z
 ---
 
 ## Problem
