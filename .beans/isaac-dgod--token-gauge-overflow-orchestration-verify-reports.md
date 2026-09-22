@@ -1,13 +1,11 @@
 ---
 # isaac-dgod
 title: 'Token gauge overflow: orchestration-verify reports 12.0M / 278K (4320%) after one compaction'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-03T00:00:08Z
-updated_at: 2026-09-22T20:54:07Z
+updated_at: 2026-09-22T21:46:39Z
 ---
 
 Observed 2026-09-02 on zanebot: `isaac sessions list` shows orchestration-verify (perceptor, gpt-5.4 chatgpt, 327 turns, 1 compaction) at Context 12,031,158 / 278,528 = 4320%. The session file is 1.0M on disk (~250K tokens plausible), so the gauge is not a real prompt size — last-input-tokens (or whatever feeds the PCT column) has gone cumulative or been fed a non-prompt number. Related: isaac-pqjn / isaac-x2up token accounting. Questions: (1) which provider response field seeded 12M — chatgpt usage totals across a stateful chain? (2) does compaction run against this gauge (it would plan chunks off a fictional size) or refuse? (3) is any other session drifting the same way (all other rows look sane today). Reproduce by inspecting orchestration-verify/current.ednl last-input-tokens entries on zanebot before touching the session.
@@ -333,3 +331,21 @@ Two observations, not blockers:
   separately.
 
 Trial model entry removed after the run. Bean stays `unverified` for /verify.
+
+
+## Verify pass (2026-09-22)
+
+HEAD checked: isaac-agent 1afd3dc (on origin/main), fresh detached worktree.
+No `## Exceptions` section on this bean.
+
+- `bb spec`: 1710 examples, 0 failures (matches worker/planner-reported count)
+- `bb features`: 847 examples, 0 failures, 1 pending (pre-existing "Mid-turn compaction keeps the request in flight" — matches worker/planner-reported count exactly)
+- Clean output: only the project's structured JSON log lines; no stray println
+- `features/llm/api/response_schema.feature` scenario change (dae97fa -> 1afd3dc) reviewed: it flips the pinned behaviour from "clamp/discard a stamp above the window" to "record it and compact." This is the bean's own 2026-09-22 decision (Micah: GO), fully explained in the handoff's "Scenario changed, and why" section — not an undocumented weakening. Nothing deleted; the running-sum alarm it used to guard is now covered by `turn_spec.clj` and the responses adapter's `:unknown` declaration.
+- `features/session/compaction_overflow.feature` change is a clean additive scenario, no existing scenario touched.
+- Acceptance met: a per-request stamp above `:context-window` is recorded and triggers `should-compact?`; `:session/stamp-implausible` reserved for running-sum only; chained Responses requests declare `:unknown` (no fabricated number); the one-time zanebot check (first stamp over 200k compacts within the turn, following stamps below 160k) was already run and recorded in the bean by the planner on 2026-09-22 20:59-21:04Z with `:session/stamp-implausible` count 0 since deploy.
+- No smell-pattern hits in the diff's spec files (`turn_spec.clj`, `responses_spec.clj`, `tool_loop_spec.clj`); `System/currentTimeMillis` in `responses_spec.clj` is stubbed OAuth-token fixture setup, not production hidden-time-dependence.
+
+
+
+main-sha: isaac-agent 1afd3dc
