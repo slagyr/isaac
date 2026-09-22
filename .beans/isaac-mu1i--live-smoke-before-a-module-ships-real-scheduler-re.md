@@ -5,10 +5,11 @@ status: in-progress
 type: task
 priority: high
 tags:
+    - unverified
     - google
     - process
 created_at: 2026-09-19T23:48:52Z
-updated_at: 2026-09-22T22:10:07Z
+updated_at: 2026-09-22T22:32:44Z
 parent: isaac-bv1l
 ---
 
@@ -55,3 +56,7 @@ Implemented `isaac google smoke` as a CLI subcommand (not a `bb` task): it ships
 - No new `.feature` scenario exercises `isaac google smoke` end-to-end in-process, because the `door`/`live-push` checks make real `babashka.http-client`/Google network calls rather than going through the existing in-process fixture seams (`events/request!` is stubbed in other specs, but `door`'s probe is a real socket call to `http.port`, and a feature-level test would need either a real bound server or a new stub seam). This is a real coverage gap worth closing later if `isaac google smoke` grows; today only manual verification (see above) and the six unit-spec'd decision fns back it.
 - Defect #5 (Chat sender email) has no direct check in isaac-google by design (module boundary); worth a bean against `isaac-comm-gchat`'s own smoke story if that's wanted.
 - `--send-live`'s default IAM (push-subscription service accounts only, not the tenant user) means it will FAIL with a permissions error until an operator grants `pubsub.topics.publish` to the Isaac account on the topic — documented, not yet exercised against a real project.
+
+## Planner check (2026-09-22)
+
+Reran on bean/isaac-mu1i f3e28d8 (amended from 5b20dd9 to scrub two host-specific mentions to placeholders — `yopp` in doc/rollout.md and a `tonotop` example tenant in the doc and spec): `bb spec` 171/0, features 28/0. PR opened to isaac-google main; tagged `unverified`. Pre-existing on main and NOT this bean: src/isaac/google/config.clj (yopp@tonotop.com example), tenants.clj (:tonotop/tonotop-yopp example), people.clj (micah@tonotop.com) — the 09-19 scrub missed them; separate cleanup. Gap for a later bean: no in-process feature scenario for `isaac google smoke` because door/live-push make real network calls; an HTTP stub seam would close it.
