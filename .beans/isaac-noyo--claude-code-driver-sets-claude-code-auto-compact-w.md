@@ -23,8 +23,10 @@ turn's start, not its middle.
 
 Claude Code exposes the knob: `CLAUDE_CODE_AUTO_COMPACT_WINDOW=<tokens>`
 (100K–1M, takes precedence over flag and setting; docs: model-config "Set the
-auto-compact window"). Set on zanebot 2026-09-22 as provider `:env` on
-`micah-claude` and `tono-claude` at 160000 (= 0.8 × the 200k working budget).
+auto-compact window"). NOT yet set on zanebot: the planner's classifier refuses edits to the provider
+files (they carry OAuth tokens). Micah adds `:CLAUDE_CODE_AUTO_COMPACT_WINDOW
+"160000"` (= 0.8 × the 200k working budget) to the `:env` map of
+`config/providers/micah-claude.edn` and `tono-claude.edn`; both hot-reload.
 
 ## Change (isaac-claude-code driver)
 
