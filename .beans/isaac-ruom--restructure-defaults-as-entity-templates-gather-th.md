@@ -242,3 +242,9 @@ isaac-server) still read `[:defaults :crew]` / `[:defaults :model]` and write
 the retired fixture shape → **isaac-0r95** (blocked by this bean). It must land
 before any install's `isaac.edn` is migrated by hand; the `zanebot migrated`
 line in *Done when* depends on it.
+
+## Burn measurement outcome (2026-09-22, planner)
+
+Turn ran 21:40:36Z–22:06:10Z: 79 tool cycles, 81 assistant entries, work committed 22:05:45Z (b3a7f03d, "rebased, suites green, ready for verify"). At 22:05:57Z the CLI reported "You've hit your session limit · resets 4:40pm (America/Phoenix)": the seat behind provider :claude closed its 5-hour window 25 minutes into the turn. Isaac recorded 0 tokens for the whole turn (session tallies unchanged from the baseline above) because the final invocation errored and the driver dropped the 79 cycles' usage — filed as isaac-ewxh. The turn then ended :reply with the CLI init event as the delivered answer — filed as isaac-2sxf. Net: under reset mode the turn still exhausted a seat window in 25 minutes; the per-request sizes are unknown. Caveat: the reset time (4:40pm) matches the tono seat's (4:39pm) to the minute; whether the :claude provider's token is truly the personal seat is worth confirming on the host before reading this as a personal-seat number.
+
+Verification: the worker tagged this unverified. Landing is cross-repo per "Landing order" above (foundation first, then repin agent in bb.edn + deps.edn, re-verify, land agent); `bb jvm-spec` is red on both mains already (isaac-3rxx, isaac-jf80).
