@@ -1,15 +1,14 @@
 ---
 # isaac-xy2i
 title: 'isaac-gchat: discover spaces the account belongs to instead of listing every space in config'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - google
     - comm
-    - unverified
 created_at: 2026-09-19T21:13:13Z
-updated_at: 2026-09-22T22:30:17Z
+updated_at: 2026-09-22T22:47:53Z
 parent: isaac-bv1l
 ---
 
@@ -230,3 +229,9 @@ once per interval, however often the timer ticks" (two ticks 30 s apart list
 once and keep their subscriptions; a tick past the interval lists again).
 Negative-checked by setting the interval to 1 ms — the count assertion fails.
 New step: `Then N outbound HTTP request(s) to "<url>" was/were made`.
+
+## Landed on main
+
+main-sha: isaac-gchat 692ce17
+
+Planner check 2 (2026-09-22): reran on bean/isaac-xy2i 692ce17 (rebased over mm7o; tenant always prefixed; `gchat/discover-every-ms` default 300000 with the memo kept across throttled ticks so nothing is unsubscribed): `bb spec` 124/0, `bb features` 37/0. Fast-forwarded to main; PR #2 closed as superseded; branch deleted. Carry-forward (not this bean): silence health per tenant rather than per key, now that discovered DMs are keys; stamping the space tag on sessions adopted by name.
