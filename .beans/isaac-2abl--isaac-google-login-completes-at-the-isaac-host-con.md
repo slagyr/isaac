@@ -1,14 +1,14 @@
 ---
 # isaac-2abl
 title: 'isaac google login completes at the Isaac host: consent redirects to /google/oauth/callback, no code to copy'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - google
     - http
 created_at: 2026-09-23T14:10:59Z
-updated_at: 2026-09-23T14:10:59Z
+updated_at: 2026-09-23T14:15:09Z
 ---
 
 ## Why (Micah, 2026-09-23)
