@@ -35,7 +35,7 @@
                                       :git/sha "48625f2fea2f687f6fb984aef51310a2127f95d0"}
                               :desc  "Shared Google Workspace plumbing — OAuth for the Google user, the Pub/Sub push door and durable inbox, registrations and renewal, health."}
  :isaac.comm.gchat           {:coord {:git/url "https://github.com/slagyr/isaac-gchat.git"
-                                      :git/sha "5262798a7dff316e185dd2584c777def65a033fc"}
+                                      :git/sha "389b71fc8239f8ab41e83ededf176ee7cbcf1e35"}
                               :desc  "Google Chat comm — inbound gate, routing and dispatch for spaces and DMs; outbound replies and sends. Built on isaac-google."}
  :isaac.comm.gmail           {:coord {:git/url "https://github.com/slagyr/isaac-gmail.git"
                                       :git/sha "6945bbc081fc39c505eb514cff6e606adcba2d07"}

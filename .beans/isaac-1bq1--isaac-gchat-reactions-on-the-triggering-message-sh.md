@@ -1,14 +1,14 @@
 ---
 # isaac-1bq1
 title: "isaac-gchat: reactions on the triggering message show Yopp's progress — \U0001F440 working, ✅ answered, ⚠️ failed, ⏳ parked — one reply per message, no status posts"
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - gchat
     - comm
 created_at: 2026-09-23T18:24:53Z
-updated_at: 2026-09-23T18:25:55Z
+updated_at: 2026-09-23T18:47:08Z
 ---
 
 ## Decision (Micah, 2026-09-23)
@@ -129,3 +129,7 @@ unchanged); parked turn (⏳ shown; the next message's reply lands ✅ — see
 the resume-guard note above for why message 1's ⏳ isn't independently
 re-asserted after message 2); heard-only (no reaction calls); `gchat/reactions
 false` (no reaction calls, reply still posts once).
+
+## Landed on main
+
+main-sha: isaac-gchat 389b71fc8239f8ab41e83ededf176ee7cbcf1e35 (0.2.10). Planner reran bb spec (163/0) and bb features (51/0) on the branch, squash-pushed to main, deleted bean/isaac-1bq1, repinned the registry.
