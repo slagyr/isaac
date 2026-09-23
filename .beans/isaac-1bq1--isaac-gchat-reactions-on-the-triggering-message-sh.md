@@ -1,14 +1,14 @@
 ---
 # isaac-1bq1
 title: "isaac-gchat: reactions on the triggering message show Yopp's progress — \U0001F440 working, ✅ answered, ⚠️ failed, ⏳ parked — one reply per message, no status posts"
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - gchat
     - comm
 created_at: 2026-09-23T18:24:53Z
-updated_at: 2026-09-23T18:24:53Z
+updated_at: 2026-09-23T18:25:55Z
 ---
 
 ## Decision (Micah, 2026-09-23)
