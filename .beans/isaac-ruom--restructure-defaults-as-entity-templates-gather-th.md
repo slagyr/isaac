@@ -1,13 +1,11 @@
 ---
 # isaac-ruom
 title: Restructure :defaults as entity templates; gather the scattered defaults into it
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-21T16:10:51Z
-updated_at: 2026-09-22T22:05:45Z
+updated_at: 2026-09-23T21:14:28Z
 ---
 
 Repos: **isaac-agent** (schema in `resources/isaac-manifest.edn:531`, ~40
@@ -248,3 +246,40 @@ line in *Done when* depends on it.
 Turn ran 21:40:36Z–22:06:10Z: 79 tool cycles, 81 assistant entries, work committed 22:05:45Z (b3a7f03d, "rebased, suites green, ready for verify"). At 22:05:57Z the CLI reported "You've hit your session limit · resets 4:40pm (America/Phoenix)": the seat behind provider :claude closed its 5-hour window 25 minutes into the turn. Isaac recorded 0 tokens for the whole turn (session tallies unchanged from the baseline above) because the final invocation errored and the driver dropped the 79 cycles' usage — filed as isaac-ewxh. The turn then ended :reply with the CLI init event as the delivered answer — filed as isaac-2sxf. Net: under reset mode the turn still exhausted a seat window in 25 minutes; the per-request sizes are unknown. Caveat: the reset time (4:40pm) matches the tono seat's (4:39pm) to the minute; whether the :claude provider's token is truly the personal seat is worth confirming on the host before reading this as a personal-seat number.
 
 Verification: the worker tagged this unverified. Landing is cross-repo per "Landing order" above (foundation first, then repin agent in bb.edn + deps.edn, re-verify, land agent); `bb jvm-spec` is red on both mains already (isaac-3rxx, isaac-jf80).
+
+## Landed on main (2026-09-23, planner)
+
+main-sha: isaac-foundation 97da637e711acb30c8e8c2bb2643a82449a5beea
+main-sha: isaac-agent 28404cbb0fdee54c0f0fff898491da5f39afe057
+
+Landed in the bean's stated order, upstream first.
+
+**Rebase.** foundation main had moved 8 commits since the branch's base
+(`eaae014`) for isaac-49zp and isaac-h2ck, both of which rewrote config
+loading — so a conflict looked likely. It was not: zero file overlap. ruom
+touches `normalize.clj`, `schema_compose.clj`, `validation.clj` and
+`cli/registry.clj`; 49zp/h2ck touched `loader.clj`, `entities.clj`,
+`mutate.clj` and `paths.clj`. Both rebases were clean.
+
+**Pins.** isaac-agent repinned to the landed foundation sha in `bb.edn` and
+`deps.edn` (13 + 5 references). `bb.edn`'s temporary
+`:local/root "../isaac-foundation"` branch-pair wiring is reverted to
+`:git/sha` form; `deps.edn`'s `:dev-local` overrides are untouched, since
+those are the normal sibling-override pattern rather than branch-pair
+scaffolding.
+
+**Suites at landing.**
+
+| repo | specs | features |
+|------|-------|----------|
+| isaac-foundation | 1212 / 0 | 219 / 2 |
+| isaac-agent | 1717 / 0 | 848 / 0 (1 pending) |
+
+The 2 foundation feature failures are the pre-existing
+`features/cli/modules_pins.feature` stale-`~/.gitlibs` pair the bean already
+records as environmental. The agent pending is the known mid-turn compaction.
+`bb jvm-spec` was not run — the bean records it as red on both mains already
+(isaac-3rxx, isaac-jf80), so it is not a bar this bean can clear.
+
+Verified and landed by the planner at Micah's direction rather than through
+the `isaac-verify` band; the `unverified` tag is cleared with this note.
