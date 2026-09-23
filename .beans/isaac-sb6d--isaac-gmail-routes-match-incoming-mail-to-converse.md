@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T22:12:09Z
+updated_at: 2026-09-23T22:16:28Z
 ---
 
 Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
@@ -164,3 +164,16 @@ squashed into isaac-gmail `main`.
 **Deploy note (unchanged from Routes-are-the-whitelist section above):**
 `gmail.modify` scope joins the union — Yopp must re-login before this ships,
 whenever it lands.
+
+feature-baseline: isaac-gmail 3f55d061fc485b9059de1612a9b990dcbdf0d508
+feature-blob: isaac-gmail features/comm/gmail/routes.feature be629f353c555797920c607b54bc81eca4d8fb8e
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature 473aed7527f77e4221b843f9dcd3414c21154821
+
+## Exceptions
+
+Planner, 2026-09-23, after the worker's gate FAIL(3):
+- Scenario "no routes configured behaves as before, but still labels the default route" **removed** — it predates the routes-are-the-whitelist ruling; with zero routes nothing converses and every message is `isaac/unrouted` (the "matching no route" scenario covers it).
+- Hot-reload scenario: the first substack message (only team.edn configured) is now `isaac/unrouted` with no turn; after newsletters.edn appears it is `isaac/newsletters`; session count 0 throughout.
+- Ops-crew scenario gained `crew.ops.model grover` / `crew.ops.soul` fixture rows.
+- `gmail.feature` migrated to routes (Background `gmail-routes.team` names ada; the mallory scenario expects `isaac/unrouted` + `:gmail/unrouted` info log instead of a `:sender` drop; the isaac-dymn scenario configures a `*@tonotop.com` route and expects `isaac/domain` on the authenticated message). All six tagged `@wip` and added to this bean's baseline; the worker un-tags them as they pass.
+- Baseline re-cut on isaac-gmail 3f55d06.
