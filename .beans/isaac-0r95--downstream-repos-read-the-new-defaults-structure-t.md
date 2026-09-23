@@ -1,11 +1,11 @@
 ---
 # isaac-0r95
 title: Downstream repos read the new :defaults structure through the accessor
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-22T22:05:14Z
-updated_at: 2026-09-23T20:57:54Z
+updated_at: 2026-09-23T21:30:10Z
 blocked_by:
     - isaac-ruom
 ---
