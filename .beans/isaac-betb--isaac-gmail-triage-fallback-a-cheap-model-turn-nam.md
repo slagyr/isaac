@@ -1,11 +1,11 @@
 ---
 # isaac-betb
 title: 'isaac-gmail: triage fallback — a cheap model turn names the route for mail no rule claims'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:05Z
-updated_at: 2026-09-23T19:29:05Z
+updated_at: 2026-09-23T22:40:14Z
 blocked_by:
     - isaac-sb6d
 ---
