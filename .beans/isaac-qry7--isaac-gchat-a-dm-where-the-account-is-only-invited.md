@@ -28,3 +28,11 @@ Whether spaces:setup joins an already-invited DM is unknown — probe on yopp on
 ## Related
 
 isaac-f4ab, isaac-ihuc, the yopp rollout record (engineering/yopp/google-rollout.md, 2026-09-23).
+
+## Probe results (2026-09-23 03:2xZ, gchat 0.2.4, nine scopes incl. chat.spaces.create)
+
+- spaces:setup as Yopp with Micah as member → 200, returns the existing DM; membershipCount.joinedDirectHumanUserCount stays 1; spaces.get still 403. Setup does NOT join an invited DM.
+- members.create for the calling user → 403 insufficient scopes (would need https://www.googleapis.com/auth/chat.memberships, the write scope). Unproven whether it joins a DM; members.get / patch on the own membership → 404 (member name form or not visible while invited).
+- Likely cause of the invited state: yopp@ has never opened Google Chat, so its DM memberships are pending until the first Chat sign-in (same organization, so not a message-request policy).
+
+Next: (1) one-time — sign in to Chat as yopp@ once and open the DM; (2) for the future, add chat.memberships (write) to the scope union and try members.create (self) on an invited DM; if that joins, wire it into the inbound path; if not, log :gchat.dm/invited once and deliver via the attention comm. Reply 403s must surface as delivery failures either way.
