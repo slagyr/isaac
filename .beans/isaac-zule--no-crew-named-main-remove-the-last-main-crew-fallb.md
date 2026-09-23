@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-23T21:11:58Z
-updated_at: 2026-09-23T21:25:56Z
+updated_at: 2026-09-23T21:33:08Z
 ---
 
 Micah 2026-09-23: "There should be no fallback to any crew named `main`." isaac-bfwn (completed 2026-09-16) removed every production "main" crew identity from **isaac-agent** and made `:defaults :crew` required (`:present?` + `:crew-exists?`), so a config without a default crew fails validation and the charge's last resort is defaults.crew. The comm and surface modules were outside that bean and still carry the fallback; isaac-od6i covers isaac-episodes separately.
@@ -45,3 +45,34 @@ Repo scope: isaac-gchat, isaac-gmail, isaac-discord, isaac-acp, isaac-hooks. Pla
 - When ruom lands: isaac-0r95 moves every downstream reader (episodes, hail, cron, hooks, http, gchat, gmail, discord, acp) to the accessor / `:frequencies` path in the same train as ruom. Prefer passing nil where the drive resolves the crew anyway — that path needs no change when the key moves.
 
 Done when: no isaac-* repo has a "main" crew fallback in `src` (one-time sweep recorded here), and isaac-od6i is completed.
+
+
+## Handoff — discord/acp/hooks (Sonnet worker)
+
+• main-sha: isaac-discord bean/isaac-zule f9f746dc237941486ff36403116e6ff554435c26 (0.1.16) —
+  channel-crew-id drops the "main" literal (channel/discord/defaults.crew, else nil); added
+  `#'sut/channel-crew-id` unit specs incl. "is nil when nothing names a crew"; grep clean.
+  bb spec 54/0, jvm-spec 107/0 (1 pre-existing unrelated flake: "connects Discord gateway when
+  token is added via config hot-reload", reproduces on unmodified main too), bb features 68/0
+  (3 pre-existing pending, unrelated).
+
+• main-sha: isaac-acp bean/isaac-zule 38d2ceb4572d5be6ce3a4870d7906bf78fef392b (0.1.14) —
+  cli.clj:137,205 and server.clj:111 (`:or {crew-id "main"}` dropped),180,249,263 all drop the
+  "main" literal in favor of defaults.crew else nil; added server_spec tests "resolves crew-id
+  to nil, never main" for initialize and session/prompt. grep clean. bb spec 76/0, bb features
+  64/0. jvm-spec has 5 failures (cli_spec.clj:174,191,232; server_spec.clj "writes one
+  session/update notification per streamed text chunk" and "no-model error when default crew
+  implicit") — all 5 reproduce identically on the unmodified isaac-acp checkout (confirmed by
+  running jvm-spec there first), pre-existing and unrelated to this change.
+
+• main-sha: isaac-hooks bean/isaac-zule c4656ead03b1a0aec9123f1f825a178aad429812 (0.1.5) —
+  hooks.clj:179 (build-frequencies-from-hook no longer forces :crew "main" when a hook has no
+  crew/session — it now omits :crew entirely), 210 and 274 (ensure-hook-session!/handler) fall
+  back to `(get-in cfg [:defaults :crew])` instead of "main". Added specs: "omits :crew when
+  nothing names a crew" and "falls back to defaults.crew when the hook names no crew" (asserts
+  charge/build receives the configured defaults.crew, not "main"). grep clean. bb spec 32/0,
+  jvm-spec 32/0, bb features 20/0.
+
+All three branches pushed to origin, not merged. No "main" crew-identity fallback remains in
+any of the three repos' `src` (session-key strings like "discord-<id>" and fixture "main" crew
+names in specs/config excluded, per rule).
