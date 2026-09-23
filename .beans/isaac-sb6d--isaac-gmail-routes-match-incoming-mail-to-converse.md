@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T21:29:30Z
+updated_at: 2026-09-23T22:12:09Z
 ---
 
 Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
@@ -78,3 +78,89 @@ feature-blob: isaac-gmail features/comm/gmail/routes.feature 9a5902e236f2d99df6c
 `gmail/allow-from` goes away. A `:converse` or `:task` route must name `:from` (validation error otherwise); an `:ignore` route may omit it. A message no route claims is `isaac/unrouted` — labelled, no turn — which is the fail-closed drop the global list used to give. The authentication check moves with it: any `:from` with a wildcard domain (`*@tonotop.com`) requires `gate/authenticated?` (DMARC pass, or SPF+DKIM aligned) exactly as the old `*@domain` allow-from entries did; a spoofed sender is dropped with the existing `:unauthenticated` warn log, never routed. The baselined scenarios in `features/comm/gmail/routes.feature` carry no `gmail/allow-from`; build to them. Keep the manifest key declared-but-retired only if the schema has a retired marker; otherwise remove it and say so in the handoff.
 
 Deploy note for the planner (not the worker): `gmail.modify` joins the scope union — Yopp must re-login BEFORE this ships.
+
+
+## Worker findings — gate FAIL, held for planner review (2026-09-23)
+
+Implemented on `bean/isaac-sb6d` (isaac-gmail @ 913811d): `isaac.comm.gmail.routes`
+(pure `decide`), `isaac.comm.gmail.labels` (verdict labels, per-tenant id cache,
+idempotency skip), `api/messages-modify!` + `api/labels-create!`, manifest
+`:gmail-routes` table + `gmail.modify` scope + `:isaac.config/check` validation,
+`gmail/allow-from` retired via `:retired?` schema marker. 9 of the 12 baselined
+`routes.feature` scenarios have `@wip` removed and pass; `bb spec` (88 examples)
+and `bb lint src/` are green.
+
+`bb bean-gate verify isaac-sb6d --dir isaac-gmail=<worktree>` currently:
+
+```
+isaac-sb6d bean-gate: FAIL (3) — isaac-gmail @ HEAD 913811d (branch bean/isaac-sb6d)
+  FAIL isaac-gmail features/comm/gmail/routes.feature: scenario "Scenario: a route matching the delivery address starts a turn on that route's crew" still carries @wip
+  FAIL isaac-gmail features/comm/gmail/routes.feature: scenario "Scenario: a message matching no route is labelled unrouted and logged once, no turn" still carries @wip
+  FAIL isaac-gmail features/comm/gmail/routes.feature: scenario "Scenario: adding a route file while running is picked up on the next message, no restart" still carries @wip
+```
+
+Left `@wip` on those 3 deliberately — each is a genuine contract issue I can't
+resolve without editing the baseline, which is the planner's call:
+
+1. **"a route matching the delivery address..." (line 24).** Its route names
+   `:crew "ops"`, but nothing in the Background or scenario declares
+   `crew.ops.model` (or `config/crew/ops.edn`). isaac-agent's own
+   `features/bridge/crew.feature` establishes the pattern: testing a named
+   crew requires declaring it first (`config/crew/ketch.edn` with a model) —
+   without that, `bridge/core.clj`'s dispatch rejects the turn silently (no
+   exception, just an empty transcript; verified empirically). Separately,
+   even a *declared* crew (tested with `main`) never gets a `message.crew`
+   tag on individual transcript entries outside the `/crew` switch-command
+   flow — so the scenario's `message.crew | ops` assertion on the *user* row
+   may not be satisfiable by any direct-dispatch turn at all, only by a
+   crew that later `/crew`-switches. Needs a planner decision: add
+   `crew.ops.model`, and confirm whether route-driven turns are expected to
+   tag `message.crew`.
+
+2. **"a message matching no route is labelled unrouted..." (line ~110) vs.
+   "no routes configured behaves as before, but still labels the default
+   route"** (unwip'd, passing). Both scenarios configure **zero**
+   `gmail-routes` (no `Given config: gmail-routes.*` block, same Background)
+   and expect opposite outcomes: the first wants `isaac/unrouted` + no turn,
+   the second wants `isaac/default` + a full converse transcript. No
+   deterministic `decide` can satisfy both from identical input. I
+   implemented "empty table → converse on the default crew, label
+   isaac/default" (matching the bean's original acceptance bullet and the
+   second scenario's explicit title), which is why the first now fails.
+
+3. **"adding a route file while running..." (line ~252).** Its first push
+   has only `gmail-routes/team.edn` configured (`match.from *@tonotop.com`),
+   and the pushed message is from `digest@substack.com` — which the team
+   route does **not** match. Under "Routes are the whitelist" (a *non-empty*
+   table with no match → `:unrouted`, no turn) this can't converse, yet the
+   scenario expects a full "Noted." transcript. Same family of issue as #2,
+   third variant: here a route table is non-empty but simply doesn't match,
+   and the scenario still wants the default-converse fallback.
+
+**gmail.feature reverted, not edited.** I initially rewrote `gmail.feature`
+(not baselined by this bean) to stop using the retired `gmail/allow-from`, and
+the gate correctly flagged that: *"edits a feature file the bean did not
+baseline"*. Reverted to pristine (byte-identical to `465f793`). Direct,
+unavoidable consequence: 2 of its 6 scenarios now fail —
+`"sent mail, label-only changes, and unknown senders never start a turn"` and
+`"a *@domain allow-list entry admits the domain only when Gmail authenticates
+it (isaac-dymn)"` — both assert on `gmail/allow-from` filtering that no longer
+exists. This is the same tension as #2/#3 above, one level up: "Routes are the
+whitelist" mandates removing `allow-from`, but the gate forbids the worker
+from updating the one feature file that still exercises it. `gmail.feature`
+needs its own planner pass (rewritten onto `gmail-routes`, then re-baselined
+or left to a follow-up bean) — out of scope for me to touch under this
+bean's baseline.
+
+**Also rebased.** Picked up isaac-0r95 (465f793, landed on gmail main after my
+branch point) — `default-crew` now reads `isaac.config.defaults/crew-id`
+(`[:defaults :frequencies :crew]`) instead of the retired flat
+`[:defaults :crew]`; foundation/agent pins carried through unchanged.
+
+**Not landed** — gate exit is non-zero, so `bean/isaac-sb6d` stays on the
+remote (913811d), bean stays `in-progress`. No `main-sha:` line; nothing was
+squashed into isaac-gmail `main`.
+
+**Deploy note (unchanged from Routes-are-the-whitelist section above):**
+`gmail.modify` scope joins the union — Yopp must re-login before this ships,
+whenever it lands.
