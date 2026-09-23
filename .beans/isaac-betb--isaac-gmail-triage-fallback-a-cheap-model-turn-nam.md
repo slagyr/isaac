@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:05Z
-updated_at: 2026-09-23T23:47:32Z
+updated_at: 2026-09-23T23:48:49Z
 blocked_by:
     - isaac-sb6d
 ---
@@ -361,3 +361,8 @@ scenario 2 (matches the isaac-sb6d precedent) and change scenario 4's
 #index rows to 1/2 (accepting the session header at 0, matching every other
 #index scenario in isaac-agent's own suite), then re-baseline — both fixes
 are baseline edits, not implementation work.
+
+feature-baseline: isaac-gmail 7c494e28d55dfc4552184f01bf1a62560daba041
+feature-blob: isaac-gmail features/comm/gmail/triage.feature d7482ac2ecaa6a632e9f48f9878fbfe91038a165
+
+- Planner: apply-true scenario's user row `message.crew` blanked (the drive stamps crew on assistant rows only); reset scenario's `#index` shifted to 1/2 (a recreated session writes its header at 0). Same limitations sb6d met. Baseline re-cut.
