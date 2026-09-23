@@ -95,3 +95,77 @@ spread the workaround across every downstream repo instead of fixing the rule.
 Fixing this re-lands isaac-foundation, which means isaac-agent repins and the
 shas isaac-0r95's remaining repos target change. Sequence: land this, repin
 agent, then hand the new pair of shas to isaac-0r95.
+
+## Implemented (worker, 2026-09-23)
+
+The proposed narrowing was taken as written — confirmed against the three
+schemas before implementing, and it holds.
+
+`demands-a-field?` now asks "does this map spec declare a `:required? true`
+field?" rather than "does an inner field carry a `:present?` validation?".
+Why that marker and not a new one:
+
+- The new rule is a **strict subset** of ruom's. Every `:required? true`
+  field in the composed schema also carries `:present?`, so nothing that
+  used to be skipped now descends — the change can only remove errors,
+  never add them.
+- `:required? true` appears in exactly three places across every manifest
+  (all in isaac-agent): the `:defaults :frequencies` `:override` on `:crew`,
+  and `:provider` / `:model` on the `:models` `:value-spec`. The latter two
+  sit under a `:value-spec`, which `demands-a-field?` never inspects, so
+  `:defaults :frequencies :crew` is the only field that keeps the descent.
+  ruom's intent is preserved exactly and nothing else changes behaviour.
+- `schema-compose/template-field-spec` already strips `:required?` and
+  `:present?` from every field an `:entity-template` copies in ("a default
+  is a template … templates therefore never require a field"). So the only
+  `:required?` that survives into `:defaults` is the explicit `:override`
+  ruom wrote for `:crew` — the marker is already load-bearing in exactly
+  the place this rule needs it.
+
+No c3kit change was needed or made. The whole fix is six lines of
+`isaac/config/validation.clj` plus its docstring.
+
+Spec coverage added to `spec/isaac/config/validation_spec.clj`
+("absent nested maps", 6 examples): the absent `:present?`-only map, the
+absent `:required?`-bearing map, a written map still requiring its
+`:present?` fields, a parent that may omit an optional child but not a
+demanding one, and the isaac-http principal `:previous` shape. Three of
+the six were red before the fix.
+
+### Verification
+
+Downstream ran on their pushed `bean/isaac-0r95` branches with foundation
+swapped to `:local/root` in both `bb.edn` and `deps.edn`; the overrides
+were reverted afterwards, so those repos are untouched and still need
+isaac-0r95's repin.
+
+| repo | before | after |
+|------|--------|-------|
+| isaac-foundation | — | specs 1218 / 0; features 219 / 2 |
+| isaac-episodes | features 85 / **15** | features 85 / 0; specs 215 / 0 |
+| isaac-http | specs 193 / **6** | specs 193 / 0; features 111 / 0 |
+| isaac-hooks | features 20 / **2** | features 20 / 0; specs 30 / 0 |
+| isaac-agent | — | specs 1717 / 0; features 848 / 0 (1 pending) |
+
+Foundation's 2 feature failures are the pre-existing `modules_pins`
+stale-`~/.gitlibs` pair, unchanged from main. ruom's intent re-confirmed by
+`features/config/cli.feature` "validate requires defaults.frequencies.crew",
+green against the new foundation.
+
+Known-red `jvm-spec` unchanged, and none of it is ours: foundation 1218 / 8,
+all `module lifecycle` / `isaac.module.protocol` (isaac-jf80, isaac-3rxx);
+agent 1717 / 4, all `comm berth`.
+
+### Landed
+
+main-sha: isaac-foundation 9ab25271aedb97c2e2e8abbc6a58955cdff8f274
+main-sha: isaac-agent da9214aa72786fd830847c5542f5ea7781a44410
+
+isaac-agent is repinned to the foundation sha in `bb.edn` (5 sites) and
+`deps.edn` (13 sites). Note that agent main had also gained
+`1d9c49f Merge hotfix/isaac-dgod-agent-0.1.81 into main` while this was in
+flight — the repin sits on top of it, and `bb verify` was re-run against
+that exact tip. That merge also settles isaac-0r95's "open decision at
+step 4: the agent version line".
+
+These are the shas isaac-0r95's remaining three repos should target.
