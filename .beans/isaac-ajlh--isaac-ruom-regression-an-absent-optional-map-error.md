@@ -1,11 +1,11 @@
 ---
 # isaac-ajlh
 title: 'isaac-ruom regression: an absent optional map errors when its inner fields are :present?'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-23T21:51:54Z
-updated_at: 2026-09-23T21:51:54Z
+updated_at: 2026-09-23T22:01:03Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/validation.clj`).
