@@ -36,3 +36,11 @@ isaac-f4ab, isaac-ihuc, the yopp rollout record (engineering/yopp/google-rollout
 - Likely cause of the invited state: yopp@ has never opened Google Chat, so its DM memberships are pending until the first Chat sign-in (same organization, so not a message-request policy).
 
 Next: (1) one-time — sign in to Chat as yopp@ once and open the DM; (2) for the future, add chat.memberships (write) to the scope union and try members.create (self) on an invited DM; if that joins, wire it into the inbound path; if not, log :gchat.dm/invited once and deliver via the attention comm. Reply 403s must surface as delivery failures either way.
+
+## Definitive (2026-09-23 15:06Z, ten scopes incl. chat.memberships write)
+
+members.create for the account's own membership in the invited DM → 400 INVALID_ARGUMENT: "Can't create memberships in direct messages between human users or with an app." spaces:setup returns the existing DM without joining it. There is no Chat API path for the account to accept a chat request.
+
+Systemic answer (Micah, 2026-09-23): the Workspace admin setting Google Chat → Chat invitations → **On** ("automatically accept chat invitations from people in your organization") was turned on for tonotop.com. New internal DMs to Yopp are joined without anyone acting. Requests that predate the setting stay pending until accepted once in the account's Chat UI.
+
+Remaining scope for this bean: (1) detect the invited state (spaces.get 403 with joinedDirectHumanUserCount 1 from findDirectMessage) and log `:gchat.dm/invited` ONCE per space with the space uri and the operator action; (2) do not run the model against a DM the account cannot answer — or run it and deliver the reply via the attention comm, naming the DM; (3) a reply 403 surfaces as a delivery failure with space + reason, never a bare create-failed. The chat.memberships write scope added in gchat 0.2.5 is not needed for this and can be dropped in the next scope round.
