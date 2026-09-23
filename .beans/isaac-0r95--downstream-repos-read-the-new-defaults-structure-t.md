@@ -1,11 +1,11 @@
 ---
 # isaac-0r95
 title: Downstream repos read the new :defaults structure through the accessor
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-22T22:05:14Z
-updated_at: 2026-09-23T21:52:03Z
+updated_at: 2026-09-23T22:28:17Z
 blocked_by:
     - isaac-ruom
     - isaac-ajlh
@@ -220,3 +220,48 @@ depends on moved to `[:defaults :frequencies :crew]` there.
 `bb jvm-spec` not run (recorded red on foundation/agent mains: isaac-3rxx,
 isaac-jf80). `features/cli/modules_pins.feature` never surfaced. No install's
 `isaac.edn` touched — step 3 of the train is still Micah's.
+
+## Verified and closed (2026-09-23, planner)
+
+All seven repos checked independently rather than accepted on report: every
+`origin/main` tip matches the reported sha, every repo pins isaac-foundation
+`9ab2527` and isaac-agent `da9214a` in both `bb.edn` and `deps.edn`, **zero**
+pins remain at `97da637` / `28404cb` / `8fbeed3d` / `831c5cf`, and **zero**
+retired `[:defaults :crew]` / `[:defaults :model]` reads remain in any `src`.
+
+| repo | main-sha |
+|------|----------|
+| isaac-episodes | `1e04601` |
+| isaac-hail | `48faa9f` |
+| isaac-cron | `d329e68` |
+| isaac-hooks | `d9044bb` |
+| isaac-gchat | `a2f5700` |
+| isaac-gmail | `d6a99b7` |
+| isaac-http | `689d368` |
+
+Registry (`isaac/modules.edn`) repinned to all eight — the seven above plus
+isaac-agent. `bb ci`: 57 / 0.
+
+### Three worker judgements worth keeping
+
+- **Repinning the four already-landed repos was right**, though only the last
+  three were asked for. Leaving gchat/gmail/hail/cron on `97da637` / `28404cb`
+  would have split the train across two foundation versions going into the
+  registry repin and the agent pin bump, and left them declaring agent 0.1.80.
+  Exposure to the ajlh bug was *checked* before assuming their earlier green
+  was honest — their manifests carry no optional nested map with `:present?`
+  inner fields.
+- **isaac-hooks needed a second commit.** isaac-zule (Release 0.1.5) landed on
+  hooks' main between the suite run and the merge, adding two fresh
+  `[:defaults :crew]` reads. The squash did not conflict textually, so it would
+  have landed a red main; it was caught only by re-running `bb ci` *after* the
+  merge because main had moved. That is the discipline worth copying.
+- **Two earlier feature counts were wrong** (gmail 13, cron 22), inflated by
+  stale generated specs in `target/gherclj` from previous sessions. Corrected
+  to 7 and 21 from cleared-target runs. Reporting error, not coverage loss.
+
+### Train
+
+isaac-ruom → isaac-ajlh → **isaac-0r95 (done)** → registry repin (done) →
+migrate zanebot's `isaac.edn` `:defaults` → bump zanebot's agent pin.
+The last two are the planner's, on the live hosts.
