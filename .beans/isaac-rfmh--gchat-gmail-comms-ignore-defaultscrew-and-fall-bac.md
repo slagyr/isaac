@@ -1,11 +1,11 @@
 ---
 # isaac-rfmh
 title: gchat + gmail comms ignore defaults.crew and fall back to a hard-coded "main"
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-23T19:57:08Z
-updated_at: 2026-09-23T19:57:08Z
+updated_at: 2026-09-23T20:02:09Z
 ---
 
 Micah 2026-09-23: "Yopp is the default crew. How could main ever get used by this page? … not specifying a crew should default to Yopp."
@@ -30,3 +30,14 @@ Cause: `isaac.comm.gchat.gate/decide` picks `(or space-crew (:crew slice) "main"
 - [ ] Existing scenarios green in both repos; version bumps (gchat 0.2.12, gmail 0.1.8).
 
 Likely repo scope: isaac-gchat (`gate.clj`, `handler.clj`), isaac-gmail (`handler.clj`).
+
+## Landed on main
+
+- main-sha: isaac-gchat d265691facc8155afa4e95d9047948170dd2a5cf (0.2.12)
+- main-sha: isaac-gmail d732891f59b63f9ba892474b54d7057670be5ed7 (0.1.8)
+
+Planner implemented directly. gchat: bb spec 173/0, bb features 54/0. gmail: bb spec 51/0, bb features 13/0. Registry repinned for both.
+
+## Summary of Changes
+
+gchat gate/decide takes :default-crew in opts (handler passes defaults.crew from the full config); gmail handler/crew falls back to defaults.crew. Both normalise a keyword crew id to its name and keep "main" as the last resort.
