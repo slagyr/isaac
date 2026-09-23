@@ -206,3 +206,6 @@ files are genuinely absurd.
 `_` means both "default filename" and "value is the body". Both read as *the
 unnamed one*, so this is believed coherent — but it is an overload, and a
 distinct sentinel for the body is the alternative if it grates in practice.
+
+feature-baseline: isaac-foundation 8e7fc97f897bb4b26366fabbec09f59aeabb4da4
+feature-blob: isaac-foundation features/cli/config_file_layout.feature 25feccc0bdd54f175e79e25bcc9cb6f4ac363f3a

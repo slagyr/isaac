@@ -96,3 +96,6 @@ but not self-evident, so it belongs in the docs rather than being inferred.
 - Hail bands behave exactly as today once migrated to `:_base`, with
   `band_resolve.clj`'s copy removed.
 - Spec coverage for merge semantics, chains, cycles, and non-addressability.
+
+feature-baseline: isaac-foundation 8e7fc97f897bb4b26366fabbec09f59aeabb4da4
+feature-blob: isaac-foundation features/cli/config_templating.feature c3a13ae44803f5090eff0b902f18cbb438dfb66c
