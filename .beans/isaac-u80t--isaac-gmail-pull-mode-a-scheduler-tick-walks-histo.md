@@ -1,11 +1,11 @@
 ---
 # isaac-u80t
 title: 'isaac-gmail: pull mode — a scheduler tick walks history from the cursor where no Pub/Sub push exists'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T19:29:05Z
+updated_at: 2026-09-23T22:25:30Z
 ---
 
 Micah 2026-09-23: on hosts other than Yopp mail is pulled, not pushed (the Google Workspace CLI does the same over the same Gmail API + desktop OAuth). The triage must work for both. Push and pull differ only in the trigger: both walk history from the stored cursor and fetch the new ids.

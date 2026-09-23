@@ -1,11 +1,11 @@
 ---
 # isaac-3427
 title: 'isaac-gmail: task routes — mail becomes a hail on a band, with the message as payload'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T19:29:04Z
+updated_at: 2026-09-23T22:25:30Z
 blocked_by:
     - isaac-sb6d
 ---
