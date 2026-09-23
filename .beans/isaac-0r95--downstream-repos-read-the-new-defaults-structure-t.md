@@ -5,9 +5,10 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-22T22:05:14Z
-updated_at: 2026-09-23T21:30:10Z
+updated_at: 2026-09-23T21:52:03Z
 blocked_by:
     - isaac-ruom
+    - isaac-ajlh
 ---
 
 Repos: **isaac-episodes**, **isaac-hail**, **isaac-cron**, **isaac-hooks**, **isaac-server**.
