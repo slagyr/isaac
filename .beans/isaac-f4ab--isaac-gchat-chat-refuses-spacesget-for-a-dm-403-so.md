@@ -1,14 +1,14 @@
 ---
 # isaac-f4ab
 title: 'isaac-gchat: Chat refuses spaces.get for a DM (403) so the lookup never learns it is a DM and no turn starts — fall back to spaces.list'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - gchat
     - google
 created_at: 2026-09-23T02:19:53Z
-updated_at: 2026-09-23T02:19:53Z
+updated_at: 2026-09-23T02:22:14Z
 ---
 
 ## Observed (yopp, 2026-09-23 02:16Z, gchat 0.2.2, one spaces/- subscription)
@@ -27,3 +27,9 @@ lookup/ask!: when spaces.get fails, list the account's spaces (chat_api/list-spa
 ## Acceptance
 
 bb spec / bb features / bb ci green in isaac-gchat; one-time on yopp: a DM starts a turn.
+
+## Landed on main
+
+main-sha: isaac-gchat b29dfa2 (0.2.3)
+
+Planner-implemented 2026-09-23: lookup/ask! falls back to a paged spaces.list when spaces.get is refused; three lookup specs (fallback remembered, pages walked, no list when get answers). `bb spec` 126/0, `bb features` 36/0, `bb ci` green. Owed: an inbound.feature scenario where the stubbed Chat API refuses spaces.get for the DM and the listing names it — the step stubs today serve only spaces.get; the live DM on yopp is the check for now.
