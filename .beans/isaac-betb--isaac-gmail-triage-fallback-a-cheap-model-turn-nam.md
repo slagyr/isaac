@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:05Z
-updated_at: 2026-09-23T23:23:27Z
+updated_at: 2026-09-23T23:47:32Z
 blocked_by:
     - isaac-sb6d
 ---
@@ -264,3 +264,100 @@ because the change itself needs undoing.
 ## Collision resolved (planner, 2026-09-23)
 
 The second writer on bean/isaac-betb was the first worker's research fork, still running 40 minutes after its parent reported; it pushed 3d3d7c4 + af39489 (the second re-added @wip to two scenarios, which a worker may never do). Stopped it, deleted the branch (both commits listed above for the record — design widened triage past unrouted mail, contrary to the ruling), removed the worktree. Third worker starts from gmail main 6110824. Noted from the two attempts: dispatch the triage turn with :model-override, :context-mode-override :reset, :cycle {:limit 1}, and a per-call config copy giving the triage crew {:tools {:deny :all}} (an empty :allow is not deny-all); delete session gmail-triage before each call; read the verdict from the transcript's last assistant message.
+
+
+## Worker findings — implemented per the Collision-resolved ruling, gate FAIL(2) on the same two isaac-agent-level limits (2026-09-23)
+
+Fresh worktree from origin/main (isaac-gmail @ 6110824, the planner's re-cut
+baseline: pat@example.com senders, "triage runs ONLY for :unrouted mail").
+Implemented isaac.comm.gmail.triage (configured?/apply?/choices/default-verdict/decide!),
+a routes/find-route + routes/route-decision addition (route-decision also
+now backs decide's own match branch, DRY), and a handler.clj dispatch-decision!
+branch: triage runs only when the base decision is :unrouted and :blocked is
+empty and gmail/triage is configured; it always applies label
+isaac/triage/<verdict> and logs one :gmail/triage-verdict info line
+(id/from/subject/verdict/applied?); with :apply true it redispatches via
+routes/find-route + routes/route-decision through the same dispatch-decision!
+the normal pipeline uses, so the matched route's own label (e.g. isaac/team)
+lands too. decide! deletes+recreates session "gmail-triage" before every
+call (api/create-session! after store/delete-session!), dispatches with
+:model-override, :context-mode-override :reset, :cycle {:limit 1}, and a
+per-call config copy that replaces (not merges) the triage crew's :tools with
+{:deny :all}; the verdict is read from the transcript's last assistant
+message via isaac.session.transcript/content->text.
+
+New: src/isaac/comm/gmail/triage.clj, spec/isaac/comm/gmail/triage_spec.clj.
+Extended: routes.clj (+find-route, +route-decision), handler.clj, manifest
+(+top-level :gmail/triage schema table, matching :gmail-routes' pattern),
+version 0.2.2 → 0.2.3.
+
+**3 of 5 scenarios pass, @wip removed:** the basic verdict+label scenario,
+the outside-:choices default-fallback scenario, and the unconfigured
+passthrough scenario. bb spec 127/127, bb features 38/38 (with the 2 below
+left @wip), bb lint src/ clean (one pre-existing, unrelated warning in
+watch.clj).
+
+**2 scenarios left @wip — confirmed, independently, as the same two
+isaac-agent-level limitations the discarded fork's analysis (referenced in
+Collision resolved above) already found; not fixable from isaac-gmail:**
+
+1. **"apply true dispatches..."** — fails only on `message.crew "main"` on
+   the transcript's **user** row (label isaac/triage/team, label isaac/team,
+   and the assistant row's content/crew all pass). Traced into isaac-agent:
+   `isaac.drive.turn/execute-llm-turn!` (line ~1563) persists the turn's
+   input unconditionally as `(append-message! ctx session-key {:role "user"
+   :content input})` — a bare string, no :crew key, for any caller, ever.
+   `isaac.session.store.memory`'s `append-message!` only backfills :crew from
+   the session entry for `#{"assistant" "error" "toolResult"}` roles (line
+   ~315); a "user" message is excluded by construction. This is the exact
+   limitation isaac-sb6d's worker hit on its own ops-crew scenario, and the
+   planner resolved it there by blanking that cell in the baseline
+   (routes.feature's landed ops-crew scenario has an empty message.crew cell
+   on its user row). The same fix — drop message.crew from this scenario's
+   user row — would work here; no isaac-gmail-side change can make this
+   transcript entry carry :crew.
+
+2. **"the triage session resets between messages..."** — expects
+   `#index 0=message/user, 1=message/assistant` after the second push, with
+   no session header. Confirmed empirically (transcript printed via a
+   temporary debug trace): every session `store/delete-session!` +
+   `api/create-session!` recreates always writes a `{:type "session" ...}`
+   header entry at index 0 (isaac.session.store.memory/open-session!'s
+   `:else` branch, unconditional on every fresh creation). isaac-agent's own
+   session_steps.clj (`session-transcript-matching*`) keeps that header in
+   the compared transcript whenever a table uses `#index` — confirmed by
+   isaac-agent's own features/session/storage.feature, where every #index
+   scenario (`header-test`, `chain-test`, `id-test`, `ts-test`, …) asserts
+   the header at index 0 and real messages starting at index 1; this is
+   established, intentional behavior across the whole session store, not a
+   bug. Deleting and recreating "gmail-triage" is the only way to stop its
+   *stored* transcript from growing (`:context-mode :reset` only changes
+   what the model sees, never what's stored), and doing so unavoidably
+   re-triggers that header write — so #index 0 can never be the user message
+   for a session that was ever (re)created. No store operation exists to
+   clear a session's messages while keeping it un-recreated (no
+   `clear-transcript-keep-session` primitive on the SessionStore protocol).
+   Either the scenario needs `#index 1`/`#index 2` (accepting the header at
+   0, matching every other #index scenario in the ecosystem), or isaac-agent
+   needs that primitive.
+
+**Gate: FAIL(2)**, naming exactly these two scenarios:
+
+```
+isaac-betb bean-gate: FAIL (2) — isaac-gmail @ HEAD 428d4cd (branch bean/isaac-betb)
+  FAIL isaac-gmail features/comm/gmail/triage.feature: scenario "Scenario: apply true dispatches the message as if the verdict route had matched" still carries @wip
+  FAIL isaac-gmail features/comm/gmail/triage.feature: scenario "Scenario: the triage session resets between messages instead of accumulating transcript" still carries @wip
+```
+
+Per the task's explicit instruction I did not force a close (no revert, no
+re-baseline, no hail). **Not landed. Bean stays in-progress; no main-sha:
+line.**
+
+**Branch pushed:** bean/isaac-betb @ 428d4cd on isaac-gmail
+(https://github.com/slagyr/isaac-gmail, base main 6110824).
+
+**Recommendation for the planner:** blank the user-row message.crew cell on
+scenario 2 (matches the isaac-sb6d precedent) and change scenario 4's
+#index rows to 1/2 (accepting the session header at 0, matching every other
+#index scenario in isaac-agent's own suite), then re-baseline — both fixes
+are baseline edits, not implementation work.
