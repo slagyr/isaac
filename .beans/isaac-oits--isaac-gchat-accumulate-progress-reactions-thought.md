@@ -1,11 +1,11 @@
 ---
 # isaac-oits
 title: "isaac-gchat: accumulate progress reactions — \U0001F9E0 thought, \U0001F527 tool, \U0001F4AC aside stay on the triggering message"
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-23T19:11:28Z
-updated_at: 2026-09-23T19:33:29Z
+updated_at: 2026-09-23T19:39:37Z
 ---
 
 Follow-on to isaac-1bq1. Micah (2026-09-23): "let's go with the accumulate strategy."
@@ -165,3 +165,7 @@ sequence), gchat.clj issues, in order:
   feature-level `gchat/reactions` map override was never exercised before
   this bean) — flagging in case it's worth a note for other manifests using
   `:one-of` with `:boolean`/`:string` alternatives.
+
+## Landed on main
+
+main-sha: isaac-gchat ee6ccd7036759339ddab0e752d8dabcb2674fb3b (0.2.11). Planner reran bb spec (171/0) and bb features (54/0, JVM pass included), pushed to main, deleted bean/isaac-oits, repinned the registry.
