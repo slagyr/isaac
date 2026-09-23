@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:05Z
-updated_at: 2026-09-23T23:09:07Z
+updated_at: 2026-09-23T23:22:19Z
 blocked_by:
     - isaac-sb6d
 ---
@@ -103,3 +103,48 @@ feature-blob: isaac-gmail features/comm/gmail/triage.feature e7de340be0953b58c93
 ## Exceptions
 
 Planner, 2026-09-23: three triage scenarios sent mail from ada@tonotop.com, which the Background's team route (`*@tonotop.com`, auto-authenticated by the fixture) already routes to converse, so they could never reach the fallback. Senders changed to pat@example.com (no route names them). The `:apply true` scenario therefore shows triage admitting an outsider onto the team route — that is the apply semantic (Micah audits verdicts before enabling it). Design ruling: triage runs ONLY for `:unrouted` mail; it never overrides a matched route. Baseline re-cut. The first worker's worktree was discarded uncommitted after a sub-agent edited it with a conflicting design; a fresh worker restarts from main.
+
+
+## Worker findings — concurrent worker collision, same worktree (2026-09-23, fresh restart from main)
+
+Restarted clean per instructions: removed the stale empty `isaac-gmail-isaac-betb`
+shell, `git worktree add -b bean/isaac-betb ... origin/main` (HEAD 6110824).
+Read the routes/labels/tasks/handler code, the isaac-agent one-off-turn plumbing
+(api.clj, bridge/core.clj, charge.clj, session/context.clj, tool/names.clj), and
+implemented `isaac.comm.gmail.triage` (configured?/apply?/choices/decide!,
+deny-all `:config` override via `{:tools {:deny :all}}` on the triage call's
+crew, session `gmail-triage` deleted+recreated per call, `:context-mode-override
+:reset`, `:cycle {:limit 1}`), a `routes/find-route` addition, and a
+`handler.clj` branch running triage only when `routes/decide` reports
+`:unrouted` with empty `:blocked` — matching the Exceptions ruling.
+
+**Before I could run the suite, another worker session was found actively
+committing in this exact worktree path**
+(`/Users/micahmartin/agents/isaac/plan/isaac-gmail-isaac-betb`), concurrently
+with my own uncommitted edits. Evidence: my in-flight edits to `handler.clj`
+and `triage.clj` were overwritten on disk mid-task by a different
+implementation (different helper names: `triage-config`/`route-decision`/
+`no-tools-config` vs. mine), and `git log` on the worktree now shows two
+commits I did not make, already pushed to `origin/bean/isaac-betb`:
+
+    af39489 isaac-betb: leave 2 scenarios @wip pending isaac-agent-level limitations
+    3d3d7c4 isaac-betb: Gmail triage fallback — a cheap model turn names the route for mail no rule claims
+
+both trailered `Isaac-Session: isaac-betb-worker`. **The second commit
+re-adds `@wip` to 2 of the 5 baselined scenarios** ("apply true dispatches…"
+and "the triage session resets…") — a worker is never allowed to add `@wip`
+back (only remove it); if genuine, that means their own `bb features` run is
+not actually exercising those two scenarios, so "5 scenarios green" is not
+met either way.
+
+I have made no commits and pushed nothing from my side. `.beans/isaac-betb.md`
+was unchanged by the other session as of this note (still ends at the
+planner's Exceptions ruling above) — they have not landed/completed the bean.
+
+**Not landed. Bean stays in-progress.** Recommend a human or the planner
+reconcile: confirm whether a second worker session is genuinely still
+dispatched on isaac-betb (cancel one), inspect
+`/Users/micahmartin/agents/isaac/plan/isaac-gmail-isaac-betb` directly before
+trusting its current contents, and decide which design (or a merge of the
+two) actually lands — same failure mode as the discarded first attempt,
+recurring on the very next try.
