@@ -29,3 +29,65 @@ updated_at: 2026-09-23T15:51:29Z
 ## Acceptance
 
 bb spec / bb features / bb ci green in isaac-google; one-time on yopp: run the smoke with --send-live and confirm the log stays quiet afterwards.
+
+## Handoff (worker, 2026-09-23)
+
+Branch: `bean/isaac-pl8x` in isaac-google (worktree
+`isaac-google-isaac-pl8x`), pushed to `origin/bean/isaac-pl8x`, commit
+48625f2 (mentions both isaac-pl8x and isaac-8zl8 — same branch, same
+commit). Manifest bumped to 0.1.13.
+
+- `src/isaac/google/inbox.clj` — `unhandled-path`, `mark-unhandled!`,
+  `unhandled` (mirrors `pending`), `status` now also reports `:unhandled`.
+- `src/isaac/google/worker.clj` — `tick!`'s nil-handler branch now calls
+  `inbox/mark-unhandled!` after the warning, so the record leaves `pending/`
+  and the next tick never sees it again.
+- `src/isaac/google/smoke.clj` — `PROBE-TYPE` constant, `noop-handler`
+  (record arrival is already the door's job; the worker marks it done once
+  the handler returns nil). `decide-inbox` gained `:unhandled` — reported in
+  evidence, never gates pass/fail (an unhandled record is parked, not
+  backlog).
+- `resources/isaac-manifest.edn` — contributes
+  `{"isaac.google.smoke/probe" isaac.google.smoke/noop-handler}` under
+  `:isaac.google/handler` (module contributing to its own berth, same
+  pattern as `:isaac.google/scopes`).
+- `src/isaac/google/cli.clj` — `run-smoke` passes `inbox/unhandled` into
+  `decide-inbox`; `run-status` prints `inbox: N unhandled`.
+
+Scenarios (in `spec/isaac/google/worker_spec.clj`, context "a record whose
+type has no handler (isaac-pl8x)"):
+- "moves the record to unhandled/ with one warning" — accepts an
+  `unknown/type` record, ticks once, asserts it's gone from `pending/`,
+  present under `unhandled/`, and exactly one `:google/handler-missing` log
+  entry.
+- "stays silent on the next tick — the record is no longer in pending/" —
+  ticks twice, still exactly one warning.
+- smoke probe coverage is `spec/isaac/google/smoke_spec.clj` "google smoke —
+  probe handler (isaac-pl8x: --send-live leaves nothing behind)":
+  `noop-handler` returns nil (the worker's existing done-path handles the
+  rest — no new integration spec needed since the manifest contribution is
+  asserted directly in `module_spec.clj`).
+- `spec/isaac/google/inbox_spec.clj` and `module_spec.clj` also gained
+  scenarios for `mark-unhandled!`/`unhandled`/`status :unhandled` and the
+  manifest contribution respectively.
+
+Heartbeats: confirmed already covered — `http_spec.clj` "records the
+heartbeat and keeps nothing for the worker" already asserts
+`(inbox/pending "/test/isaac")` is empty after a heartbeat push; no change
+needed, nothing new to pin.
+
+Test commands and counts (from the isaac-google worktree):
+- `bb spec` → 260 examples, 0 failures, 439 assertions
+- `bb features` → 36 examples, 0 failures, 160 assertions
+- `bb ci` → config-bypass-lint ok, then both of the above, all green
+- `bb lint` on every touched `src/` file → 0 errors (whole-project `bb
+  lint` shows pre-existing "Unresolved symbol: describe/it/..." noise
+  across spec files unrelated to this change — same on untouched files
+  like `tools_spec.clj`; not something introduced here)
+
+Not done (out of scope / needs a live host, per bean acceptance): the
+one-time yopp check — run `isaac google smoke --send-live` and confirm the
+log stays quiet afterward. No real Google calls were made from the
+worktree.
+
+Left `in-progress`, no tags, per the dispatching instructions.
