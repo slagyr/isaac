@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T22:16:28Z
+updated_at: 2026-09-23T22:21:33Z
 ---
 
 Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
@@ -177,3 +177,51 @@ Planner, 2026-09-23, after the worker's gate FAIL(3):
 - Ops-crew scenario gained `crew.ops.model grover` / `crew.ops.soul` fixture rows.
 - `gmail.feature` migrated to routes (Background `gmail-routes.team` names ada; the mallory scenario expects `isaac/unrouted` + `:gmail/unrouted` info log instead of a `:sender` drop; the isaac-dymn scenario configures a `*@tonotop.com` route and expects `isaac/domain` on the authenticated message). All six tagged `@wip` and added to this bean's baseline; the worker un-tags them as they pass.
 - Baseline re-cut on isaac-gmail 3f55d06.
+
+
+## Worker findings — re-baseline (3f55d06) resolved 2 of 3 conflicts (2026-09-23)
+
+Rebased `bean/isaac-sb6d` onto isaac-gmail main 3f55d06 (took `routes.feature`
+and `gmail.feature` verbatim from main). Dropped the `isaac/default` fallback
+entirely — `routes/decide` now always falls through to `:unrouted` when
+nothing matches, whether the table is empty or just has no match; matches the
+re-cut baseline (the "no routes configured...default route" scenario is
+gone).
+
+**16 of 17 scenarios now pass, `@wip` removed:** all 6 of `gmail.feature`
+(migrated onto `gmail-routes`) and 10 of 11 `routes.feature`. `bb ci` is
+green (84 spec examples, 23 feature examples), `bb lint src/` clean.
+
+`bb bean-gate verify isaac-sb6d --dir isaac-gmail=<worktree>`:
+
+```
+isaac-sb6d bean-gate: FAIL (1) — isaac-gmail @ HEAD 84cc4d9 (branch bean/isaac-sb6d)
+  FAIL isaac-gmail features/comm/gmail/routes.feature: scenario "Scenario: a route matching the delivery address starts a turn on that route's crew" still carries @wip
+```
+
+**One scenario left, root-caused precisely — not fixable from isaac-gmail.**
+The `crew.ops.model`/`crew.ops.soul` fixture fix resolved the "turn silently
+rejected" half of this scenario (label, content, and the *assistant* row's
+`message.crew` all now pass). What's left: the scenario also asserts
+`message.crew "ops"` on the transcript's *user* row. Traced into isaac-agent:
+
+- `isaac.drive.turn/execute-llm-turn!` persists the input unconditionally as
+  `(append-message! ctx session-key {:role "user" :content input})` — no
+  `:crew` key, ever, for any caller (verified: this is the only call site
+  that appends the turn's user message; gmail's `api/dispatch!` request map
+  can't reach it).
+- `isaac.session.store.impl-common/append-message!` only backfills `:crew`
+  from the session entry when `(:role message)` is `"assistant"`, `"error"`,
+  or `"toolResult"` (line ~1046: `resolved-agent (or (:crew message) (when
+  (#{"assistant" "error" "toolResult"} (:role message)) (:crew entry)))`) —
+  a `"user"` message is excluded by construction.
+- isaac-agent's own `features/bridge/crew.feature` ("/crew persists across
+  turns") only ever asserts `message.crew` on *assistant* rows, consistent
+  with this being deliberate, not an oversight.
+
+So no isaac-gmail-side change can make a user-authored transcript entry carry
+`:crew` — that would need either an isaac-agent change (teach
+`append-message!`/`execute-llm-turn!` to tag the user message too) or the
+scenario dropping the `message.crew` cell on its `user` row. Left `@wip`;
+did not land. Branch `bean/isaac-sb6d` @ 84cc4d9 on isaac-gmail (force-pushed
+after the rebase — history changed under the re-baseline).
