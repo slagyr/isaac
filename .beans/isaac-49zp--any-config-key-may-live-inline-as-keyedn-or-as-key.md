@@ -1,11 +1,11 @@
 ---
 # isaac-49zp
 title: Any config key may live inline, as <key>.edn, or as <key>/<id>.edn — no kind-specific treatment
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T18:01:56Z
-updated_at: 2026-09-23T18:01:56Z
+updated_at: 2026-09-23T18:59:43Z
 ---
 
 Repo: **isaac-foundation** (`config/paths.clj`, `loader.clj`, `entities.clj`,
