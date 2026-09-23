@@ -117,3 +117,53 @@ agent main bumping to 0.1.82, or fold the hotfix line back into main first.
   (isaac.edn 160 → 114 lines). Config valid, all 11 modules resolve.
 - Backups: `~/isaac-config-backup-20260923-cfgtree.tgz`,
   `isaac.edn.bak-20260923-modsplit`, `isaac.edn.bak-20260923-tzslice`.
+
+## Train halted at a ruom regression in foundation validation (worker, 2026-09-23)
+
+Four repos landed; three are blocked by one upstream bug, not by anything in
+this bean.
+
+### Landed on main
+
+| repo | main-sha | specs | features |
+|------|----------|-------|----------|
+| isaac-gchat | `041f5bc3bf9b614621befd5734b10e20b7b5ab9e` | 173 / 0 | 54 / 0 |
+| isaac-gmail | `465f793cc92ec13713fa97fd5012099fae39c229` | 51 / 0 | 13 / 0 |
+| isaac-hail | `9ddf7f154dbce6fbf40363ffeff5ce5702b3f199` | 173 / 0 | 136 / 0 (2 pending, pre-existing) |
+| isaac-cron | `0f47e64122bfad29a6b9c920dec3e100315da6db` | 23 / 0 | 22 / 0 |
+
+### Blocked — work pushed to `bean/isaac-0r95`, not landed
+
+- **isaac-episodes** — specs 215 / 0, features 85 / **15**.
+- **isaac-http** (the live repo behind the bean's "isaac-server") — specs
+  193 / **6**, features not reached.
+- **isaac-hooks** — specs 30 / 0, features 20 / **2**.
+
+### The blocker
+
+isaac-ruom's foundation half added `demands-a-field?` to
+`src/isaac/config/validation.clj`: when a `:map` spec declares any field with
+`:present?`, validation now descends into the map **even when it is absent**,
+so it can say "the default crew is missing" for an omitted
+`:defaults :frequencies`. The rule is global, so every module schema with an
+*optional* nested map whose inner fields are `:present?` now errors whenever
+that map is left out.
+
+- isaac-episodes `resources/isaac-manifest.edn`: `:episodes :embedding`
+  (`:description "Optional embedding capability"`, inner `:api` and `:model`
+  both `:present?`) → `episodes.embedding.api/.model is required` on any
+  config without `:embedding`.
+- isaac-http `resources/isaac-manifest.edn`:
+  `:http :auth :principals <id> :previous` (inner `:hash` `:present?`) →
+  `http.auth.principals.<id>.previous.hash is required` for any principal
+  without a rotation overlap. That breaks `auth-cli mint!/rotate` and, in
+  isaac-hooks, makes the hot reload after `persist-principal!` get rejected,
+  so the isaac-4o6r scenarios 401.
+
+Bisected in isaac-http: green at foundation `7b2f053` (isaac-49zp), red at
+`97da637` (isaac-ruom). Nothing to do with the `:defaults` move — the same
+failures appear with the pre-migration fixtures.
+
+**Decision needed (Micah's):** narrow `demands-a-field?` in foundation (and
+re-land foundation + repin agent), or relax `:present?` on those optional
+nested maps in each module. Not taken by the worker.
