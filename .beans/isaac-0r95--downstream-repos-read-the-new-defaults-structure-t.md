@@ -63,3 +63,57 @@ by hand, these reads go nil.
 ## Also in scope (planner, 2026-09-23)
 
 isaac-gchat and isaac-gmail now read `[:defaults :crew]` directly (isaac-rfmh: gchat `handler/decide-opts` → `gate/decide` :default-crew; gmail `handler/crew`). When isaac-ruom lands those two must move to the accessor (`[:defaults :frequencies :crew]`) in the same train, or every Chat space and mailbox without its own crew silently falls back to main again. Add them to this bean's repo list.
+
+## Defaults migration train (planner, 2026-09-23)
+
+isaac-ruom landed today (isaac-foundation `97da637`, isaac-agent `28404cb`) and
+**retired the old flat `:defaults` keys as validation errors**. That makes the
+rest of this a train with a strict order, and the config edit is the LAST step,
+not the first.
+
+Current state: zanebot runs isaac-foundation `HEAD-97da637` with isaac-agent
+still pinned at `831c5cf`. Its `isaac.edn` still carries the retired shape:
+
+    :defaults {:crew :main :model :default :stream-idle-timeout-ms 300000}
+
+This validates **only because the agent half is not deployed** — the retirement
+lives in isaac-agent's manifest schema, not foundation's. Bumping the agent pin
+before the steps below makes zanebot's config invalid.
+
+### Order
+
+1. **isaac-0r95** — seven downstream repos move their `[:defaults :crew]` /
+   `[:defaults :model]` reads onto `isaac.config.defaults`, fixtures updated,
+   each repinned to the ruom shas. Dispatched to a subagent 2026-09-23.
+   isaac-gchat and isaac-gmail are the behavioural ones: their reads decide a
+   fallback crew, so going nil means every Chat space and mailbox without its
+   own crew silently falls back to `main`.
+2. **Repin + re-green** those repos' registry entries in `isaac/modules.edn`.
+3. **Migrate zanebot's `isaac.edn`** `:defaults` to the new shape. Placement of
+   `:stream-idle-timeout-ms` needs confirming against the ruom schema rather
+   than guessing.
+4. **Bump zanebot's isaac.agent pin** to a ruom-containing sha.
+
+### Open decision at step 4: the agent version line
+
+zanebot is pinned to `831c5cf`, which is **not on main** — it lives on
+`origin/hotfix/isaac-dgod-agent-0.1.81`. That branch carries two release commits
+absent from main (`e0ced4d` 0.1.80, `831c5cf` 0.1.81) whose *content* is on main
+as different commits. So:
+
+- hotfix line declares **0.1.81**
+- agent main tip `28404cb` declares **0.1.80**
+
+Deploying main tip as-is regresses the declared version, which `modules list`
+reports and module requirements check against. Options: cut a release commit on
+agent main bumping to 0.1.82, or fold the hotfix line back into main first.
+**Micah's call — not taken.**
+
+### Already done on zanebot (2026-09-23)
+
+- foundation upgraded `01d81b9` → `7b2f053` (isaac-49zp + isaac-h2ck) →
+  `97da637` (isaac-ruom foundation half). Zero errors, 11 modules ok.
+- `:modules` and `:tz` split into their own slice files under `config/`
+  (isaac.edn 160 → 114 lines). Config valid, all 11 modules resolve.
+- Backups: `~/isaac-config-backup-20260923-cfgtree.tgz`,
+  `isaac.edn.bak-20260923-modsplit`, `isaac.edn.bak-20260923-tzslice`.
