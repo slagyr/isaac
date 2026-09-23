@@ -1,11 +1,11 @@
 ---
 # isaac-sb6d
 title: 'isaac-gmail: routes — match incoming mail to converse/ignore, verdict labels, unrouted default'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T19:32:47Z
+updated_at: 2026-09-23T21:29:30Z
 ---
 
 Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
@@ -72,3 +72,9 @@ Extra acceptance:
 
 feature-baseline: isaac-gmail 63f87c6c160537f1761c8b6179b08308606e68f7
 feature-blob: isaac-gmail features/comm/gmail/routes.feature 9a5902e236f2d99df6ce83d6d3a623c71ca4da0b
+
+## Routes are the whitelist (Micah, 2026-09-23 — supersedes the gate paragraph above)
+
+`gmail/allow-from` goes away. A `:converse` or `:task` route must name `:from` (validation error otherwise); an `:ignore` route may omit it. A message no route claims is `isaac/unrouted` — labelled, no turn — which is the fail-closed drop the global list used to give. The authentication check moves with it: any `:from` with a wildcard domain (`*@tonotop.com`) requires `gate/authenticated?` (DMARC pass, or SPF+DKIM aligned) exactly as the old `*@domain` allow-from entries did; a spoofed sender is dropped with the existing `:unauthenticated` warn log, never routed. The baselined scenarios in `features/comm/gmail/routes.feature` carry no `gmail/allow-from`; build to them. Keep the manifest key declared-but-retired only if the schema has a retired marker; otherwise remove it and say so in the handoff.
+
+Deploy note for the planner (not the worker): `gmail.modify` joins the scope union — Yopp must re-login BEFORE this ships.
