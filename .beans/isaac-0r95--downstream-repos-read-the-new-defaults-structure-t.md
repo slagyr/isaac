@@ -168,3 +168,55 @@ failures appear with the pre-migration fixtures.
 **Decision needed (Micah's):** narrow `demands-a-field?` in foundation (and
 re-land foundation + repin agent), or relax `:present?` on those optional
 nested maps in each module. Not taken by the worker.
+
+## All seven landed (worker, 2026-09-23)
+
+isaac-ajlh unblocked the train: `demands-a-field?` now tests `:required? true`
+rather than a `:present?` validation on an inner field, so an absent optional
+map no longer errors. The three blocked repos went green unchanged against the
+fixed foundation.
+
+Every repo is pinned to **isaac-foundation `9ab2527`** and **isaac-agent
+`da9214a`** in both `bb.edn` and `deps.edn`. The four that had already landed
+against `97da637` / `28404cb` were repinned to the same pair in a follow-up
+commit, so the whole train deploys against one foundation/agent — and
+`da9214a` is a descendant of the 0.1.81 hotfix merge (`1d9c49f`), which
+settles the version-line question this bean recorded as open at step 4: agent
+main no longer regresses the declared version.
+
+| repo | main-sha | specs | features |
+|------|----------|-------|----------|
+| isaac-episodes | `1e046011e589c5dca894f8a6e3e07036f2c04da1` | 215 / 0 | 85 / 0 |
+| isaac-hail | `48faa9fb61586837989f4961d99d33d08d7cccd8` | 173 / 0 | 136 / 0 (2 pending, pre-existing) |
+| isaac-cron | `d329e684783d894b6ae2a52af07f9ffe548b9eb8` | 23 / 0 | 21 / 0 |
+| isaac-hooks | `d9044bb0eed4b4026fcfd2c24702ae335d6ea85e` | 32 / 0 | 20 / 0 |
+| isaac-gchat | `a2f57005e00b4555d441b6dba8a8b8197e538378` | 173 / 0 | 54 / 0 |
+| isaac-gmail | `d6a99b7165bc5f46851607c4543578b2d9860136` | 84 / 0 | 24 / 0 |
+| isaac-http | `689d36861e852112de7198fd6319afbe8a836705` | 193 / 0 | 111 / 0 |
+
+Feature counts are from runs with `target/gherclj` cleared. Earlier notes for
+gmail (13) and cron (22) were inflated by stale generated specs left in
+`target/` by previous sessions; the honest counts are above.
+
+### Two things that landed on module mains mid-flight
+
+- **isaac-hooks** — isaac-zule (Release 0.1.5) added two fresh
+  `[:defaults :crew]` reads to `src/isaac/hooks.clj` plus a retired-shape spec
+  fixture, after this bean's suite run and before its merge. Moved onto
+  `defaults/crew-id` in a second commit; `d9044bb` is that commit.
+- **isaac-gmail** — isaac-sb6d landed two commits (Gmail routes and verdict
+  labels) while the repin was in flight. Rebased onto it; that work reads no
+  retired path.
+
+### Verification sweep
+
+All seven: on `main`, clean tree, nothing unpushed, `bean/isaac-0r95*` deleted
+locally and on origin, zero retired `[:defaults :crew]` / `[:defaults :model]`
+/ root `[:tools …]` reads or fixtures, zero pins left at the pre-ajlh or
+pre-ruom shas. isaac-hooks also repinned isaac-http to the landed `689d368`
+(3 sites in `bb.edn`, 5 in `deps.edn`), since the feature-step stamping it
+depends on moved to `[:defaults :frequencies :crew]` there.
+
+`bb jvm-spec` not run (recorded red on foundation/agent mains: isaac-3rxx,
+isaac-jf80). `features/cli/modules_pins.feature` never surfaced. No install's
+`isaac.edn` touched — step 3 of the train is still Micah's.
