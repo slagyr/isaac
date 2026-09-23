@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T18:01:56Z
-updated_at: 2026-09-23T18:59:43Z
+updated_at: 2026-09-23T19:26:05Z
 ---
 
 Repo: **isaac-foundation** (`config/paths.clj`, `loader.clj`, `entities.clj`,
@@ -212,3 +212,54 @@ feature-blob: isaac-foundation features/cli/config_file_layout.feature 25feccc0b
 
 feature-baseline: isaac-foundation ba7e46085095c5cafc7a104ad8f7cb2d9ec6a4a7
 feature-blob: isaac-foundation features/cli/config_file_layout.feature 8eb1b69659563f1a796deb2e239b2f51c1921b74
+
+## Worker note — mechanism done, 5 scenarios blocked on the fixture (2026-09-23)
+
+Branch `bean/isaac-49zp` on isaac-foundation (rebased on `ba7e460`).
+`bb ci` green: **1175 specs / 0 failures**, **209 features / 2 failures** — both
+failures are the pre-existing `features/cli/modules_pins.feature` stale
+`~/.gitlibs` entries, unchanged from `origin/main`.
+
+The mechanism is implemented and proven end-to-end on the real filesystem
+(`config/tz.edn` and `config/modules.edn` load; `config set tz` routes to
+`config/tz.edn`; `isaac config validate` passes):
+
+- new `isaac.config.tree` — `config/` as a tree of keys; `<key>.edn` slices,
+  `<key>/` directories, `_` as a map's own values at every level, markdown
+  whose frontmatter field valued `_` takes the body
+- `paths/config-file?` tracks the whole tree (the four hardcoded kinds retired)
+- `loader` derives its directory set from the filesystem, not from `:entity-dir`
+- `entities` reads `<id>/` directories and any frontmatter `.md` as entities
+- `mutate/choose-set-location` gained the `:slice` form
+- specs: `spec/isaac/config/tree_spec.clj` (21), 6 loader-level examples in
+  `load_result_spec`, 4 write-routing examples in `mutate_spec`
+
+**3 of 8 baselined scenarios pass and have `@wip` removed.** The other 5 are
+left `@wip`, untouched otherwise, because they cannot pass as written:
+
+1. `a module-declared key may live in its own file`,
+   `` `_` inside a directory holds that map's own values ``,
+   `an entity may be a directory whose files are its fields`,
+   `editing a key's own file is picked up on reload` — all use
+   `:kind "parlor"`, whose fields (`loft`, `color`) come from the
+   `marigold.comm.parlor` fixture's `:extra-schema`. The scenarios never
+   declare that module, and the Background step `the chartroom fixture modules
+   are available` only binds the chartroom index. Loading fails with
+   `signals[:parlour].kind must be one of ["logbook" "longwave" "parlour"
+   "skybeam"]` and `:loft` is pruned as an unknown key.
+   Making that step supply the fixture modules was tried and **breaks**
+   `features/module/schema_composition.feature` "Without the module declared,
+   extended keys are unknown", which asserts exactly the opposite. The other
+   scenarios in that file declare the module in `isaac.edn`
+   (`:modules {:marigold.comm.parlor {:local/root
+   "spec/isaac/config/fixtures/modules/marigold.comm.parlor"}}`); these need
+   the same, or a signal kind the chartroom index already declares.
+
+2. `a markdown file named for the entity declares which key its body fills` —
+   the frontmatter sets `gauge: helm-mark-iii` but the scenario defines no
+   gauges, so `:gauge`'s `[:gauge-exists?]` validation fails with
+   `berths.captain.gauge references undefined gauge`. Dropping the `gauge`
+   line (locally, not committed) makes the scenario pass, so the `ledger: _`
+   mechanism itself is proven.
+
+Planner's call. Worker made no `.feature` edit other than removing `@wip`.
