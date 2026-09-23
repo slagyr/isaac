@@ -139,6 +139,19 @@ realistically never will be, and `_` already carries "this is special" in this
 tree — the hail config uses `_isaac-template.edn`, `_orchestration-template.edn`,
 `_tono-template.edn` for templates.
 
+**`_` means "this map's own values" at every level**, which reads differently
+depending on what the level holds and needs no special case:
+
+- `crew/_.edn` — `:crew` is a table of entities, so its own values are a **map
+  of names to crew configs**. Several crews in one file, while `crew/keaton.edn`
+  holds another; a name appearing in both is the usual duplicate-key error.
+- `crew/marvin/_.edn` — `marvin` is one entity, so its own values are marvin's
+  **fields** (`:model`, `:tools`, `:tags`).
+
+Note for isaac-h2ck (templating): `_` **exactly** is the map's own values;
+`_<name>` is a template. Same prefix, different meaning, distinguished by exact
+match — not self-evident, so it is written down rather than inferred.
+
 ### Markdown declares its own key, with `_` as the body sentinel
 
 Front matter is ordinary config for the entity. **Exactly one field takes the
