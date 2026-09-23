@@ -1,14 +1,14 @@
 ---
 # isaac-acou
 title: 'isaac-gchat: thread-aware replies inside the space session — every message carries its thread, and the comm''s guidance tells Yopp to build context from the thread it is answering'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - gchat
     - comm
 created_at: 2026-09-23T15:51:29Z
-updated_at: 2026-09-23T16:13:15Z
+updated_at: 2026-09-23T16:17:12Z
 ---
 
 ## Decision (Micah, 2026-09-23)

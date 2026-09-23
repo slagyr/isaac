@@ -1,14 +1,14 @@
 ---
 # isaac-qry7
 title: 'isaac-gchat: a DM where the account is only invited (message request pending) gets a 403 on reply — join it, and request chat.spaces.create for Yopp-initiated DMs'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - gchat
     - google
 created_at: 2026-09-23T03:02:50Z
-updated_at: 2026-09-23T15:51:29Z
+updated_at: 2026-09-23T16:17:12Z
 ---
 
 ## Observed (yopp, 2026-09-23 02:59Z, gchat 0.2.3)
