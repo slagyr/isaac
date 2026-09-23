@@ -1,11 +1,11 @@
 ---
 # isaac-h2ck
 title: Config templating is hail-only; :_base should let any config entry inherit
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T18:42:59Z
-updated_at: 2026-09-23T18:42:59Z
+updated_at: 2026-09-23T19:10:19Z
 ---
 
 Repo: **isaac-foundation** (config load) — retiring the hail-local copy in
