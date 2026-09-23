@@ -1,13 +1,13 @@
 ---
 # isaac-8zl8
 title: 'isaac google smoke: the default door URL reads http.port, which most hosts leave unset — probe the server''s effective port instead'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - google
 created_at: 2026-09-23T02:15:07Z
-updated_at: 2026-09-23T15:51:29Z
+updated_at: 2026-09-23T16:07:03Z
 ---
 
 ## Observed (yopp, 2026-09-23 02:15Z, isaac-google 0.1.10)
@@ -83,3 +83,9 @@ without `--url`. No real Google calls or live-host access from the
 worktree.
 
 Left `in-progress`, no tags, per the dispatching instructions.
+
+## Landed on main
+
+main-sha: isaac-google 48625f2 (0.1.13)
+
+Planner check 2026-09-23: bb spec 260/0, bb features 36/0. Fast-forwarded; registry repinned.
