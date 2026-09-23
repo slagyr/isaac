@@ -1,11 +1,11 @@
 ---
 # isaac-betb
 title: 'isaac-gmail: triage fallback — a cheap model turn names the route for mail no rule claims'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:05Z
-updated_at: 2026-09-23T23:48:49Z
+updated_at: 2026-09-23T23:51:21Z
 blocked_by:
     - isaac-sb6d
 ---
@@ -366,3 +366,56 @@ feature-baseline: isaac-gmail 7c494e28d55dfc4552184f01bf1a62560daba041
 feature-blob: isaac-gmail features/comm/gmail/triage.feature d7482ac2ecaa6a632e9f48f9878fbfe91038a165
 
 - Planner: apply-true scenario's user row `message.crew` blanked (the drive stamps crew on assistant rows only); reset scenario's `#index` shifted to 1/2 (a recreated session writes its header at 0). Same limitations sb6d met. Baseline re-cut.
+
+
+## Summary of Changes
+
+Every gated INBOX message that isaac.comm.gmail.routes/decide reports
+:unrouted (and the sender wasn't auth-blocked) now gets one shot at a cheap
+model triage turn before falling through to the plain :unrouted label. A
+message a route already matched is never touched by triage — this only ever
+fires on the :unrouted branch.
+
+isaac.comm.gmail.triage (new) exposes configured?/apply?/choices/default-verdict
+(all pure config reads off the new top-level gmail/triage config table) and
+decide!, which runs the actual turn: it deletes and recreates session
+"gmail-triage" before every call (so its persisted transcript never grows),
+dispatches via isaac.api/dispatch! with :model-override (gmail/triage.model),
+:context-mode-override :reset, :cycle {:limit 1}, a fixed system prompt built
+from the configured routes' :desc text, a message excerpt capped at 2000
+chars, and a per-call config copy that replaces (not merges) the triage
+crew's :tools with {:deny :all} so the turn never gets tools even when the
+crew normally does. The verdict is read off the transcript's last assistant
+message (isaac.session.transcript/content->text) and resolved against
+gmail/triage.choices, falling back to gmail/triage.default (default "ignore")
+for anything else.
+
+isaac.comm.gmail.handler's dispatch-decision! grew a triage branch: it always
+labels the verdict isaac/triage/<verdict> and logs one :gmail/triage-verdict
+info line (id/from/subject/verdict/applied?). With gmail/triage.apply true and
+the verdict naming a real configured route (isaac.comm.gmail.routes/find-route),
+it redispatches through that route's own decision (routes/route-decision,
+also now backing routes/decide's own match branch) via the same
+dispatch-decision! the normal pipeline uses — so the matched route's own
+label (e.g. isaac/team) and its own action (converse/task/ignore) land too.
+
+Manifest: new top-level :gmail/triage config table (:model/:crew/:choices/
+:default/:apply), declared the same way as :gmail-routes. Version 0.2.2 →
+0.2.3.
+
+New: src/isaac/comm/gmail/triage.clj, spec/isaac/comm/gmail/triage_spec.clj.
+Extended: routes.clj (+find-route, +route-decision), handler.clj,
+isaac-manifest.edn.
+
+All 5 triage.feature scenarios green, @wip removed (the last two were
+unblocked by the planner's re-baseline on gmail main 7c494e2: a blank
+message.crew cell on the apply-true scenario's user row, and #index rows
+1/2 — accepting the session header at 0 — on the reset scenario). Full
+suite: bb spec 127/127, bb features 40/40 (all previously-passing scenarios
+unchanged), bb lint src/ clean (one pre-existing, unrelated warning in
+watch.clj). bb bean-gate verify isaac-betb: PASS, re-confirmed on the
+squashed main commit before pushing.
+
+## Landed on main (2026-09-23)
+
+main-sha: isaac-gmail f400d99f8ecc9cf4d823b91dc137490e13935028
