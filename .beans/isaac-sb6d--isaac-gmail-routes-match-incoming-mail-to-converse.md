@@ -1,11 +1,11 @@
 ---
 # isaac-sb6d
 title: 'isaac-gmail: routes — match incoming mail to converse/ignore, verdict labels, unrouted default'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T22:22:15Z
+updated_at: 2026-09-23T22:24:44Z
 ---
 
 Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
@@ -231,3 +231,67 @@ feature-blob: isaac-gmail features/comm/gmail/routes.feature 911f06e0fa6517b992b
 feature-blob: isaac-gmail features/comm/gmail/gmail.feature 473aed7527f77e4221b843f9dcd3414c21154821
 
 - Ops-crew scenario: the user row's `message.crew` cell is blank (nil) — the drive stamps crew on assistant/tool rows only; the assistant row still asserts `ops`. Baseline re-cut again.
+
+
+## Summary of Changes
+
+Every gated INBOX message now runs through `isaac.comm.gmail.routes/decide`
+(pure: message + resolved config in, verdict out) before any turn starts.
+Gate signals (Precedence: bulk|list|junk, Auto-Submitted, List-Unsubscribe, a
+non-personal Gmail category label) win before any route and mark the message
+`:ignore`. Routes are declared in a new top-level `gmail-routes` config table
+(module-declared, one `.edn` file per route or inline, ordered by `:order`
+then name) and are the whitelist: a `:converse` route must name `:match
+:from`; a `*@domain` pattern is only honoured when
+`isaac.comm.gmail.gate/authenticated?` vouches for the sender's domain
+(dmarc=pass, or spf+dkim both pass and aligned) — a spoofed sender is dropped
+with a `:warn :gmail/message-dropped :reason :unauthenticated` log, never
+routed. A message no route claims — including every message when the table
+is empty — is `:unrouted`, logged once at `:info :gmail/unrouted` with
+`:from`/`:subject`; nothing converses. `gmail/allow-from` is retired (schema
+`:retired?` marker: setting it is now a config-validate error).
+
+`isaac.comm.gmail.labels` applies the verdict label (`isaac/<route>`,
+`isaac/ignored`, `isaac/unrouted`) via two new API calls,
+`api/messages-modify!` and `api/labels-create!`, before any turn starts — the
+label is both the audit trail and, via `already-routed?`, the idempotency
+check that lets two hosts (push + pull) share one inbox safely. Label ids
+are created once and cached per tenant. An `:ignore` verdict also removes
+Gmail's `UNREAD` label unless `gmail/ignore-marks-read` is `false` (default
+`true`).
+
+Manifest: `:gmail-routes` declared as a top-level schema table;
+`:isaac.config/check` contributes route validation (unknown `:action`,
+missing `:match :from` on a `:converse` route, both naming the route);
+`gmail/label-prefix`, `gmail/ignore-categories`, `gmail/ignore-marks-read`
+config keys added; Gmail scope changed from `gmail.readonly` to
+`gmail.modify` (superset, needed for `messages.modify`/`labels.create`).
+Version 0.1.9 → 0.2.0.
+
+`gmail.feature` migrated off `gmail/allow-from` onto `gmail-routes` (its
+Background now admits `ada@tonotop.com` via a route, matching the new
+whitelist model).
+
+New files: `src/isaac/comm/gmail/routes.clj`, `src/isaac/comm/gmail/labels.clj`,
+and specs for both, `api_spec.clj`, `message_spec.clj`. Rewrote `gate.clj`
+(dropped allow-from logic, kept `address`/`authenticated?`, added
+`not-inbox?`) and its spec. `handler.clj` rewired around
+`routes/decide` → label → dispatch, and picked up isaac-0r95's
+`defaults/crew-id` accessor during the rebase. 5 new gherclj steps in
+`gmail_steps.clj` (`already carries label`, `carries label`, `does not carry
+label`, `created label N times`, `config validate reports an unknown
+action`), plus `precedence` row parsing on the existing "returns message"
+step and a Gmail `messages.modify` stub branch.
+
+24 feature scenarios green (11 routes.feature + 6 gmail.feature migrated +
+2 tenants.feature + 5 watch.feature, all previously-existing scenarios
+untouched and passing), 88 spec examples green, `bb lint src/` clean.
+`triage.feature`/`pull.feature`/`tasks.feature` `@wip` scenarios (bean
+u80t/3427/betb) untouched.
+
+**Deploy note:** `gmail.modify` joins the scope union — Yopp must re-login
+before this ships.
+
+## Landed on main (2026-09-23)
+
+main-sha: isaac-gmail 3130621dadae0b98e0d43f2583c5e5e2de088c65
