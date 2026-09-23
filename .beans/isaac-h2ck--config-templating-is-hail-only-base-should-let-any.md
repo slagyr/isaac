@@ -159,3 +159,55 @@ behind, so the new pass is a no-op on `:hail`.
 
 feature-baseline: isaac-foundation 55976d33a46eca665a5b843f5ab8f3978ad7897e
 feature-blob: isaac-foundation features/cli/config_templating.feature 784291683ec896e8710130b864a6be3e12960ac9
+
+## Landed on main (2026-09-23)
+
+main-sha: isaac-foundation 7de29b977678f4ad7055525376bb223e596e5828
+
+Gate PASS on the squash commit. `bb ci`: spec 1173 examples / 0 failures,
+features 211 examples / 2 failures — the 2 are the pre-existing
+`modules_pins.feature` stale-`~/.gitlibs` failures, identical to `origin/main`
+before this bean.
+
+The mechanism lives in `isaac.config.templating`; the loader resolves `:_base`
+immediately before `conform-berth-slices`, so a `_<name>` template is gone
+before anything validates or instantiates a slot. Resolution is structural
+rather than schema-driven, so it works for a key no module declares. `_`
+exactly stays isaac-49zp's own-values sentinel and is never a template — the
+distinction is documented in `FOUNDATION.md` under Config → Templating rather
+than left to be inferred.
+
+Also landed: `config has validation errors matching:` now understands the
+documented `features/TABLES.md` `#"…"` matcher cell (full-string, DOTALL),
+which it had never implemented. Bare-substring cells are unchanged, so the
+other features using that step are unaffected.
+
+### Still open — the hail migration was deliberately left out of scope
+
+`isaac-hail/src/isaac/hail/band_resolve.clj` still owns its own copy
+(`template-band?`, `merge-bands`, and the `base` field), and hail bands still
+say `base:` rather than `:_base`. Retiring them means rewriting band files that
+live in the orchestration trees and on zanebot, which the implementing session
+was scoped out of.
+
+The two mechanisms coexist safely meanwhile: hail's `apply-to-load-result!`
+runs earlier in the load than the new pass and leaves behind no `:base` field
+and no `_`-prefixed bands, so `resolve-config` is a no-op on `:hail`. Once
+bands migrate to `:_base`, foundation needs no further change — `:hail` is an
+ordinary top-level table to the new code, and `band_resolve.clj`'s copy can be
+deleted outright.
+
+### Note for isaac-49zp — `:berths` already resolves its companion implicitly
+
+Raised by the planner and confirmed against this branch. `:berths` declares
+`:frontmatter? true` and `:companion {:field :ledger :mode :exclusive}`, and
+`companions/resolve-inline-or-md-companion` already fills `:ledger` from
+`berths/<id>.md` when the field is absent inline — no sentinel involved. The
+same function raises `"must be set in .edn OR .md"` when the field is present
+both inline and as a companion file.
+
+That is in tension with isaac-49zp's explicit `ledger: _` sentinel: under
+today's exclusive rule a frontmatter `ledger: _` reads as the inline form, so
+declaring it alongside the body would trip that error rather than select it.
+Whoever implements 49zp has to reconcile the explicit sentinel with the
+existing `:companion :exclusive` rule.
