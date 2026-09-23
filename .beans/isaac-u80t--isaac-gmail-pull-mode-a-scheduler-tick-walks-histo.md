@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T22:49:47Z
+updated_at: 2026-09-23T22:50:37Z
 ---
 
 Micah 2026-09-23: on hosts other than Yopp mail is pulled, not pushed (the Google Workspace CLI does the same over the same Gmail API + desktop OAuth). The triage must work for both. Push and pull differ only in the trigger: both walk history from the stored cursor and fetch the new ids.
@@ -100,3 +100,10 @@ Left `in-progress` (not `unverified` — this is the gated flow; a gated
 bean only gets `unverified` by mistake). Worktree branch `bean/isaac-u80t`
 is pushed to `isaac-gmail` origin with the full implementation for whoever
 picks this back up.
+
+feature-baseline: isaac-gmail 03c675bb2ba2b5bd35a72dd31dfdafe901225fd3
+feature-blob: isaac-gmail features/comm/gmail/pull.feature 03a3da0ab5a1737ea7b342e8d5aa40afaf303907
+
+## Exceptions
+
+Planner, 2026-09-23: pull.feature's Background gained the `gmail-routes.team` rows (`*@tonotop.com` → converse) so the two message-routing scenarios admit ada under routes-as-whitelist, matching gmail.feature. Baseline re-cut.
