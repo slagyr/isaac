@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T19:29:04Z
+updated_at: 2026-09-23T19:32:47Z
 ---
 
 Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
@@ -48,3 +48,24 @@ Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer o
 - [ ] Manifest: scope `gmail.modify`, config keys declared (`gmail/routes`, `gmail/label-prefix`, `gmail/ignore-categories`, `gmail/ignore-marks-read`); version bump; `bb spec`, `bb features`, `bb lint` green.
 
 Likely repo scope: isaac-gmail (`gate.clj`, new `routes.clj`, `labels.clj`, `api.clj`, `message.clj`, `handler.clj`, manifest, features). Read-only elsewhere.
+
+## Config layout — one file per route (supersedes the `gmail/routes` vector above)
+
+Micah wants to add a route by adding a file. The foundation loader already reads any top-level key as `config/<key>/` with one `.edn` per entry (isaac-49zp), but a namespaced key such as `gmail/routes` cannot be a directory name, so routes are a **module-declared top-level key** `:gmail-routes`, a map of route name → route, declared in the manifest schema like `:cron`/`:crew` tables. Routes are ordered by `:order` (ascending; ties by name) since a map carries no order.
+
+```
+~/.isaac/config/
+  gmail-routes/
+    _.edn            ; optional table defaults, e.g. {:crew "yopp"}
+    ops.edn          ; {:order 10 :match {:to "yopp+ops@*"} :action :converse :crew "ops" :desc "Ops asks and incidents"}
+    invoices.edn     ; {:order 20 :match {:subject "(?i)\\binvoice\\b"} :action :task :band "finance" :ack true :desc "Bills to file"}
+    newsletters.edn  ; {:order 30 :match {:from "*@substack.com"} :action :ignore}
+    team.edn         ; {:order 90 :match {:from "*@tonotop.com"} :action :converse :desc "Colleagues"}
+```
+
+Inline in `isaac.edn` as `{:gmail-routes {:ops {...}}}` is equivalent. `isaac config set gmail-routes.ops.crew ops` works through the normal tree, and adding/removing a file hot-reloads like any config key. Optional `:comm` on a route restricts it to one gmail comm when several tenants run. `:desc` is what the triage fallback (isaac-betb) shows the model. The `:task` action lands in isaac-3427; here only `:converse` and `:ignore` are implemented, and an unknown action is a validation error naming the file.
+
+Extra acceptance:
+- [ ] `config/gmail-routes/ops.edn` alone (no inline key) yields the route; two files order by `:order`, not filename.
+- [ ] Adding `newsletters.edn` while running is picked up on the next message (config reload), no restart.
+- [ ] `isaac config validate` reports an unknown `:action` with the route name.
