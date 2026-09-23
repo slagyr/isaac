@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:05Z
-updated_at: 2026-09-23T22:40:52Z
+updated_at: 2026-09-23T23:09:07Z
 blocked_by:
     - isaac-sb6d
 ---
@@ -96,3 +96,10 @@ than accepting whichever agent won the race.
 
 **Not landed.** Bean stays `in-progress`; no `main-sha:` line. Gate not run
 by me given the above.
+
+feature-baseline: isaac-gmail 61108240daeb139fb73425850426025a3a04f38a
+feature-blob: isaac-gmail features/comm/gmail/triage.feature e7de340be0953b58c93abec5ddfaa997c4a25eb7
+
+## Exceptions
+
+Planner, 2026-09-23: three triage scenarios sent mail from ada@tonotop.com, which the Background's team route (`*@tonotop.com`, auto-authenticated by the fixture) already routes to converse, so they could never reach the fallback. Senders changed to pat@example.com (no route names them). The `:apply true` scenario therefore shows triage admitting an outsider onto the team route — that is the apply semantic (Micah audits verdicts before enabling it). Design ruling: triage runs ONLY for `:unrouted` mail; it never overrides a matched route. Baseline re-cut. The first worker's worktree was discarded uncommitted after a sub-agent edited it with a conflicting design; a fresh worker restarts from main.
