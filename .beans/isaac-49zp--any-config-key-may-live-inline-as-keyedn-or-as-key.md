@@ -263,3 +263,6 @@ left `@wip`, untouched otherwise, because they cannot pass as written:
    mechanism itself is proven.
 
 Planner's call. Worker made no `.feature` edit other than removing `@wip`.
+
+feature-baseline: isaac-foundation 55976d33a46eca665a5b843f5ab8f3978ad7897e
+feature-blob: isaac-foundation features/cli/config_file_layout.feature 82ebf539b1e5abf16d1fb47919512f91f60437a8

@@ -156,3 +156,6 @@ orchestration trees and on zanebot, which this session is scoped out of, so the
 foundation half lands alone. The two mechanisms coexist safely meanwhile —
 hail's `apply-to-load-result!` runs first and leaves no `:base` or `_` bands
 behind, so the new pass is a no-op on `:hail`.
+
+feature-baseline: isaac-foundation 55976d33a46eca665a5b843f5ab8f3978ad7897e
+feature-blob: isaac-foundation features/cli/config_templating.feature 784291683ec896e8710130b864a6be3e12960ac9
