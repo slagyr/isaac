@@ -1,13 +1,13 @@
 ---
 # isaac-8zl8
 title: 'isaac google smoke: the default door URL reads http.port, which most hosts leave unset — probe the server''s effective port instead'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - google
 created_at: 2026-09-23T02:15:07Z
-updated_at: 2026-09-23T02:15:07Z
+updated_at: 2026-09-23T15:51:29Z
 ---
 
 ## Observed (yopp, 2026-09-23 02:15Z, isaac-google 0.1.10)

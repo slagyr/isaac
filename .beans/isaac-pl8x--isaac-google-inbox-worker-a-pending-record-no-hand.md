@@ -1,14 +1,14 @@
 ---
 # isaac-pl8x
 title: 'isaac-google inbox worker: a pending record no handler claims is re-read every 2 s and warns :google/handler-missing forever — park it once; the smoke probe gets a no-op handler'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - google
     - ops
 created_at: 2026-09-23T13:23:51Z
-updated_at: 2026-09-23T13:23:51Z
+updated_at: 2026-09-23T15:51:29Z
 ---
 
 ## Observed (yopp, 2026-09-23 03:00–03:22Z)

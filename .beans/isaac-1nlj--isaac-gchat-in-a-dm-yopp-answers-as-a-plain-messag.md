@@ -1,13 +1,13 @@
 ---
 # isaac-1nlj
 title: 'isaac-gchat: in a DM, Yopp answers as a plain message, not a thread reply — threads are for rooms'
-status: todo
+status: scrapped
 type: bug
 priority: normal
 tags:
     - gchat
 created_at: 2026-09-23T15:10:20Z
-updated_at: 2026-09-23T15:10:20Z
+updated_at: 2026-09-23T15:51:29Z
 ---
 
 ## Observed (yopp, 2026-09-23, gchat 0.2.5)
@@ -26,3 +26,7 @@ When the space is a DIRECT_MESSAGE (space-info :spaceType, per isaac-f4ab's look
 ## Acceptance
 
 bb spec / bb features / bb ci green in isaac-gchat; one-time on yopp: a DM answer appears as a normal message.
+
+## Scrapped (2026-09-23)
+
+Superseded by isaac-acou: with one session per thread, an in-thread reply is the right shape in a DM too.
