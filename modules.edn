@@ -17,7 +17,7 @@
                                         :git/sha "a9c4dcbb61c191dab2111be3a2b1ff0715d9810e"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                                      :git/sha "c3560df78f8c163923c8965b2c2cfe76264a6c36"}
+                                      :git/sha "38d2ceb4572d5be6ce3a4870d7906bf78fef392b"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
                                       :git/sha "19c958fdd88b21228d5688433b0715a8d4efd4f3"}
@@ -26,7 +26,7 @@
                                       :git/sha "7994a122a7cf0528e9cf85daa1a02649f3ac145a"}
                               :desc  "Cross-session hail messaging — tool and CLI."}
  :isaac.hooks                {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
-                                      :git/sha "d2de76d9db02521d3be0e413213be6d816d047e9"}
+                                      :git/sha "c4656ead03b1a0aec9123f1f825a178aad429812"}
                               :desc  "Event hooks and inbound webhook routing."}
  :isaac.tool.mcp             {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
                                       :git/sha "32300a2eb7f15d60d7aea2448d29491e2e4cfde7"}
@@ -41,7 +41,7 @@
                                       :git/sha "261f65b3c4b3910e74182fa5d171557f13a05a79"}
                               :desc  "Gmail comm — watch on INBOX, history walk, thread-as-session routing; replies on thread. Built on isaac-google."}
  :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                                      :git/sha "8256b22a8a4f1f8f004c855259ccd88a1dfd3b03"}
+                                      :git/sha "f9f746dc237941486ff36403116e6ff554435c26"}
                               :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage        {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                       :git/sha "f1cba0a4cf680900fec1d2a0cf9facb84db03678"}
