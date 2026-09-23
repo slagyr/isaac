@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T22:21:33Z
+updated_at: 2026-09-23T22:22:15Z
 ---
 
 Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
@@ -225,3 +225,9 @@ So no isaac-gmail-side change can make a user-authored transcript entry carry
 scenario dropping the `message.crew` cell on its `user` row. Left `@wip`;
 did not land. Branch `bean/isaac-sb6d` @ 84cc4d9 on isaac-gmail (force-pushed
 after the rebase — history changed under the re-baseline).
+
+feature-baseline: isaac-gmail dcca0cb012815d28612e5091cf5d58dfc4b941d4
+feature-blob: isaac-gmail features/comm/gmail/routes.feature 911f06e0fa6517b992b603da702bdee9357d2c21
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature 473aed7527f77e4221b843f9dcd3414c21154821
+
+- Ops-crew scenario: the user row's `message.crew` cell is blank (nil) — the drive stamps crew on assistant/tool rows only; the assistant row still asserts `ops`. Baseline re-cut again.
