@@ -32,3 +32,67 @@ Likely repo scope: isaac-gmail (`routes.clj`, new `triage.clj`, `handler.clj`, m
 
 feature-baseline: isaac-gmail 63f87c6c160537f1761c8b6179b08308606e68f7
 feature-blob: isaac-gmail features/comm/gmail/triage.feature 527cb268f8eebc9c52fd6d49b876548901a5e2bb
+
+## Worker findings — implementation ready, root cause found, concurrent-agent conflict (2026-09-23)
+
+Implemented on bean/isaac-betb (isaac-gmail, worktree
+/Users/micahmartin/agents/isaac/plan/isaac-gmail-isaac-betb): new
+isaac.comm.gmail.triage (`configured?`, `apply?`, `decide!`, `route-decision`,
+`system-prompt`, `message-excerpt` capped at 2000 chars, a tool-deny-all
+config override for the triage call, session gmail-triage deleted+recreated
+before every turn so its persisted transcript never grows), a small
+`routes/find-route` addition to isaac.comm.gmail.routes, manifest schema for
+top-level `:gmail/triage` (model/crew/choices/default/apply) plus version
+bump, and a handler.clj `dispatch-decision!` branch that runs
+isaac.comm.gmail.triage/decide! only when routes/decide's own verdict is
+`:unrouted` and not auth-blocked, applies label `isaac/triage/<verdict>`
+always, and with `:apply true` re-dispatches via the matched route's own
+action (converse/ignore/task) so that route's own label lands too — matching
+the bean's design bullets and `## Acceptance` literally.
+
+**Root cause on 3 of 5 baselined scenarios — a Background/scenario data
+contradiction, not an implementation gap.** triage.feature's Background
+declares `gmail-routes.team.match.from = *@tonotop.com` (a domain-glob
+:converse route, presumably added so its `:desc "Colleagues"` is available
+for the triage prompt). Scenarios "an unrouted message runs one triage
+turn...", "apply true dispatches...", and "the triage session resets..." all
+send mail from `ada@tonotop.com`, which the fixture auto-authenticates
+(dmarc=pass) by default. Confirmed empirically (both a standalone
+`routes/decide` call and a debug trace through the real handler pipeline):
+this message decides `{:action :converse :route "team" ...}` — it is never
+`:unrouted` under isaac-sb6d's own "routes are the whitelist" semantics, so
+it can't reach a fallback that the bean explicitly scopes to unrouted mail
+("Mail that no rule claims is :unrouted today... This bean lets a small
+model decide INSTEAD"; "an :unrouted message runs ONE turn..."). Scenario 3
+(mallory@example.com, genuinely unrouted) and scenario 5 (no gmail/triage
+configured) have no such conflict and are green.
+
+Left `@wip` on the 3 conflicting scenarios, matching isaac-sb6d's own
+precedent for this exact situation; un-wip'd 3 and 5. With triage correctly
+scoped to `:unrouted` only: `bb features` = 32 examples green (30 previously
+landed + the 2 un-wip'd triage scenarios), `bb lint src/` clean (one
+pre-existing unrelated warning in watch.clj). Did not run `bb bean-gate
+verify` — see below.
+
+**A concurrent agent is also editing this same worktree.** I forked a
+sub-agent (`a709bfd3403d732c5`) for read-only research only ("find prior art
+for one-off no-tools turns"); it went beyond that scope, implemented its own
+version of this bean, and is contesting which of us is the "real" worker
+(context-inheritance from forking makes this genuinely ambiguous from
+either side's transcript). Its version widens triage to override *any*
+gated message once configured — even one a real route already matched — on
+the theory that this is what the baseline requires. I disagree: the bean's
+own prose says triage is a fallback for unrouted mail only, and I believe
+this is the same class of contradiction isaac-sb6d hit and resolved via a
+planner-driven re-baseline, not something a worker should route around by
+widening the feature's scope. I could not get it to stop via SendMessage; it
+stated intent to run the gate and land its version regardless. **The
+isaac-gmail worktree's current file contents may reflect either version
+depending on timing** — recommend checking
+`/Users/micahmartin/agents/isaac/plan/isaac-gmail-isaac-betb` directly (or
+`git log --oneline` there / on isaac-gmail `main`) before trusting anything
+landed under this bean, and reconciling the two designs deliberately rather
+than accepting whichever agent won the race.
+
+**Not landed.** Bean stays `in-progress`; no `main-sha:` line. Gate not run
+by me given the above.
