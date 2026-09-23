@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:05Z
-updated_at: 2026-09-23T23:22:25Z
+updated_at: 2026-09-23T23:23:27Z
 blocked_by:
     - isaac-sb6d
 ---
@@ -260,3 +260,7 @@ checkout regardless. The commit's *content* is fine (matches the planner's
 own subsequent ruling), so I left it as-is rather than fight the
 classifier — flagging only so the irregular provenance is visible, not
 because the change itself needs undoing.
+
+## Collision resolved (planner, 2026-09-23)
+
+The second writer on bean/isaac-betb was the first worker's research fork, still running 40 minutes after its parent reported; it pushed 3d3d7c4 + af39489 (the second re-added @wip to two scenarios, which a worker may never do). Stopped it, deleted the branch (both commits listed above for the record — design widened triage past unrouted mail, contrary to the ruling), removed the worktree. Third worker starts from gmail main 6110824. Noted from the two attempts: dispatch the triage turn with :model-override, :context-mode-override :reset, :cycle {:limit 1}, and a per-call config copy giving the triage crew {:tools {:deny :all}} (an empty :allow is not deny-all); delete session gmail-triage before each call; read the verdict from the transcript's last assistant message.
