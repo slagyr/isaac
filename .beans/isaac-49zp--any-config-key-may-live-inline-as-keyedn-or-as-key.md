@@ -209,3 +209,6 @@ distinct sentinel for the body is the alternative if it grates in practice.
 
 feature-baseline: isaac-foundation 8e7fc97f897bb4b26366fabbec09f59aeabb4da4
 feature-blob: isaac-foundation features/cli/config_file_layout.feature 25feccc0bdd54f175e79e25bcc9cb6f4ac363f3a
+
+feature-baseline: isaac-foundation ba7e46085095c5cafc7a104ad8f7cb2d9ec6a4a7
+feature-blob: isaac-foundation features/cli/config_file_layout.feature 8eb1b69659563f1a796deb2e239b2f51c1921b74

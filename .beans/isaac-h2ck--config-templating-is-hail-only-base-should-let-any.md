@@ -99,3 +99,6 @@ but not self-evident, so it belongs in the docs rather than being inferred.
 
 feature-baseline: isaac-foundation 8e7fc97f897bb4b26366fabbec09f59aeabb4da4
 feature-blob: isaac-foundation features/cli/config_templating.feature c3a13ae44803f5090eff0b902f18cbb438dfb66c
+
+feature-baseline: isaac-foundation ba7e46085095c5cafc7a104ad8f7cb2d9ec6a4a7
+feature-blob: isaac-foundation features/cli/config_templating.feature 517659cebad16dcbea7f65edcbad95bdb43d9c02
