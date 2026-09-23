@@ -29,3 +29,6 @@ Bean 3 of the mail triage set (after routes isaac-sb6d). Some mail should trigge
 - [ ] Manifest, version bump, `bb spec`/`bb features`/`bb lint` green.
 
 Likely repo scope: isaac-gmail (`routes.clj`, `handler.clj`, manifest, features). Read-only in isaac-hail (`queue.clj`, `prepare.clj`).
+
+feature-baseline: isaac-gmail 63f87c6c160537f1761c8b6179b08308606e68f7
+feature-blob: isaac-gmail features/comm/gmail/tasks.feature b910643109113610be22844f24d1ae4e5e7793d2

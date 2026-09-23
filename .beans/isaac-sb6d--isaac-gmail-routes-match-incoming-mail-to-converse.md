@@ -69,3 +69,6 @@ Extra acceptance:
 - [ ] `config/gmail-routes/ops.edn` alone (no inline key) yields the route; two files order by `:order`, not filename.
 - [ ] Adding `newsletters.edn` while running is picked up on the next message (config reload), no restart.
 - [ ] `isaac config validate` reports an unknown `:action` with the route name.
+
+feature-baseline: isaac-gmail 63f87c6c160537f1761c8b6179b08308606e68f7
+feature-blob: isaac-gmail features/comm/gmail/routes.feature 9a5902e236f2d99df6ce83d6d3a623c71ca4da0b

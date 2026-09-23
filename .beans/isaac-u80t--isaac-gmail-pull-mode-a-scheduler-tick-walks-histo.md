@@ -30,3 +30,6 @@ Micah 2026-09-23: on hosts other than Yopp mail is pulled, not pushed (the Googl
 Likely repo scope: isaac-gmail (`module.clj`, `watch.clj`, `cursor.clj`, `handler.clj`, manifest). Read-only in isaac-google.
 
 Related: routes bean isaac-sb6d (label idempotency this mode relies on).
+
+feature-baseline: isaac-gmail 63f87c6c160537f1761c8b6179b08308606e68f7
+feature-blob: isaac-gmail features/comm/gmail/pull.feature 07cf78c443f1da10bc8221c038f65791802951ab
