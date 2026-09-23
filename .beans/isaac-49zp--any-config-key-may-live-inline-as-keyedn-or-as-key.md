@@ -266,3 +266,6 @@ Planner's call. Worker made no `.feature` edit other than removing `@wip`.
 
 feature-baseline: isaac-foundation 55976d33a46eca665a5b843f5ab8f3978ad7897e
 feature-blob: isaac-foundation features/cli/config_file_layout.feature 82ebf539b1e5abf16d1fb47919512f91f60437a8
+
+feature-baseline: isaac-foundation 7dfeed4d7eb542d34ee09fd875ea6321f132d73e
+feature-blob: isaac-foundation features/cli/config_file_layout.feature 93c45ba4c383cba9220f434926daac1e31817289
