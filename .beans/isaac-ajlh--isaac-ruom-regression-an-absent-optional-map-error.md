@@ -1,11 +1,11 @@
 ---
 # isaac-ajlh
 title: 'isaac-ruom regression: an absent optional map errors when its inner fields are :present?'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-23T21:51:54Z
-updated_at: 2026-09-23T22:01:03Z
+updated_at: 2026-09-23T22:15:58Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/validation.clj`).
@@ -169,3 +169,25 @@ that exact tip. That merge also settles isaac-0r95's "open decision at
 step 4: the agent version line".
 
 These are the shas isaac-0r95's remaining three repos should target.
+
+## Verified and closed (2026-09-23, planner)
+
+Checked independently rather than taken on report:
+
+- `demands-a-field?` at isaac-foundation `9ab2527` tests `:required?`, and its
+  docstring now states the distinction it got wrong before.
+- **The strict-subset claim holds.** `:required? true` appears in exactly three
+  places across every manifest in the tree, all in isaac-agent, and each also
+  carries `:present?` — so the narrowed rule can only remove errors, never add
+  them. Two of the three (`:models` `:provider` / `:model`) sit under a
+  `:value-spec`, which `demands-a-field?` never walks, leaving
+  `:defaults :frequencies :crew` as the only field that keeps the descent.
+  ruom's intent is preserved exactly.
+- isaac-agent `da9214a` carries the repin, and `1d9c49f` (the hotfix merge) is
+  an ancestor of it — so the agent line still declares 0.1.81 and step 4 of the
+  train no longer regresses the version.
+
+The worker ran the three downstream repos **before** the fix as well as after,
+reproducing 15 / 6 / 2 and then clearing them. That before-measurement is what
+this bean existed to force: isaac-ruom shipped because I verified it on
+foundation's and agent's own suites, where the regression is invisible.
