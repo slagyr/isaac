@@ -1,14 +1,14 @@
 ---
 # isaac-acou
 title: 'isaac-gchat: thread-aware replies inside the space session — every message carries its thread, and the comm''s guidance tells Yopp to build context from the thread it is answering'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - gchat
     - comm
 created_at: 2026-09-23T15:51:29Z
-updated_at: 2026-09-23T16:17:12Z
+updated_at: 2026-09-23T16:44:47Z
 ---
 
 ## Decision (Micah, 2026-09-23)
@@ -149,3 +149,9 @@ own origin_framing.feature).
 - `bb ci` → config-bypass-lint ok, both suites green as above.
 
 **Not done / judgment calls:** the bean's four bullets got 3 feature scenarios (some cover two bullets each) rather than 4 separate ones — reusing existing steps did the job without inventing scenario shapes the harness can't easily produce (e.g. DM `:respond :all` fires a turn per message, so "interleaved unread messages across two threads" isn't reachable via sequential event delivery in a DM; the two-thread DM scenario instead proves per-thread reply targeting across two sequential turns on one session).
+
+## Landed on main
+
+main-sha: isaac-gchat dac0e9b (0.2.8)
+
+Planner check 2026-09-23: bb spec 142/0, bb features 42/0. Fast-forwarded. Not yet deployed — rides with isaac-h5v8 in one yopp upgrade.
