@@ -1,14 +1,14 @@
 ---
 # isaac-2abl
 title: 'isaac google login completes at the Isaac host: consent redirects to /google/oauth/callback, no code to copy'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - google
     - http
 created_at: 2026-09-23T14:10:59Z
-updated_at: 2026-09-23T14:15:09Z
+updated_at: 2026-09-23T14:43:19Z
 ---
 
 ## Why (Micah, 2026-09-23)
@@ -140,3 +140,9 @@ public name than the push endpoint.
   the *new* consent screen would fail with `redirect_uri_mismatch`; `--code`
   is for hosts with no callback, as the bean says. Worth a follow-up bean if
   the mixed case ever bites.
+
+## Landed on main
+
+main-sha: isaac-google 036025c (0.1.11)
+
+Planner check 2026-09-23: `bb spec` 250/0, `bb features` 36/0 on 036025c. Fast-forwarded to main; registry repinned. Prerequisite found by the worker: the redirect URI can only be registered on a Web application OAuth client; yopp uses a Desktop client, so a new Web client (id + secret into google.tonotop.oauth) is needed before the flow works there. Edge left open: --code still exchanges against http://localhost:1/, so a code copied from the NEW consent screen on a host with a public base would mismatch — follow-up if it bites.
