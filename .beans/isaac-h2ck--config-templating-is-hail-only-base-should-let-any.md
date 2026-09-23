@@ -102,3 +102,57 @@ feature-blob: isaac-foundation features/cli/config_templating.feature c3a13ae448
 
 feature-baseline: isaac-foundation ba7e46085095c5cafc7a104ad8f7cb2d9ec6a4a7
 feature-blob: isaac-foundation features/cli/config_templating.feature 517659cebad16dcbea7f65edcbad95bdb43d9c02
+
+## Worker note (2026-09-23) — implementation green, contract needs two fixes
+
+Foundation half is implemented and pushed on `bean/isaac-h2ck`
+(`isaac-foundation` 1848009). `bb ci` there: spec 1173/0, features 206/2 —
+the 2 are the pre-existing `modules_pins.feature` stale-`~/.gitlibs` failures,
+unchanged from `origin/main`.
+
+`isaac.config.templating` owns the mechanism; `loader/load-config-result`
+resolves `:_base` immediately before `conform-berth-slices`, so templates are
+gone before anything validates or instantiates a slot.
+
+All 5 baselined scenarios pass once two things are corrected. Both were
+verified by running the corrected text against this branch (5 examples, 0
+failures). Neither is editable by a worker.
+
+**1. Scenarios 1–3 need the parlor module declared.** `:loft`, `:color` and
+`:mood` reach the `:signals` value-spec only through
+`marigold.comm.parlor`'s `:extra-schema`, and `:kind "parlor"` is only
+`registered-in?` when that module loads. Without it the load reports
+`signals[:parlour].kind must be one of ["logbook" "longwave" "parlour"
+"skybeam"]` and prunes `:loft`/`:color`/`:mood` as unknown keys — so
+"no validation errors" and `signals.parlour.loft = upper` both fail, for
+reasons that have nothing to do with templating. Every scenario in
+`features/module/schema_composition.feature` that uses parlor carries the
+line; these three dropped it. Each of scenarios 1, 2 and 3 needs it added to
+its `isaac.edn`:
+
+    :modules {:marigold.comm.parlor {:local/root "spec/isaac/config/fixtures/modules/marigold.comm.parlor"}}
+
+**2. Scenarios 4–5 expect an error key that cannot be produced.** `:signals`
+carries a `:factory` on its value-spec, so it is an open-map reconcile source
+and `berths/normalize-error-keys` brackets every per-entry error key under it:
+`signals.parlour` is rewritten to `signals[:parlour]` on the way out of the
+loader. That is the shape every other error in this table already uses
+(`signals[:bert].loft` in `schema_composition.feature`), so it is the natural
+shape rather than one bent to fit — producing a literal `signals.parlour`
+would mean exempting templating errors from the normalization every other
+error goes through. Both rows want:
+
+    | key               | value               |
+    | signals[:parlour] | #"(?s).*_missing.*" |
+
+The `#"…"` cells themselves are fine and were kept verbatim: the
+`config has validation errors matching:` step did not implement the documented
+`features/TABLES.md` matcher dialect, and this branch teaches it to (a step
+change, not a feature change).
+
+**Not done: the hail migration.** `band_resolve.clj`'s copy and hail's `base:`
+are untouched. Retiring them means rewriting band files that live in the
+orchestration trees and on zanebot, which this session is scoped out of, so the
+foundation half lands alone. The two mechanisms coexist safely meanwhile —
+hail's `apply-to-load-result!` runs first and leaves no `:base` or `_` bands
+behind, so the new pass is a no-op on `:hail`.
