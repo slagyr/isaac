@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-22T22:05:14Z
-updated_at: 2026-09-22T22:05:14Z
+updated_at: 2026-09-23T20:57:54Z
 blocked_by:
     - isaac-ruom
 ---
@@ -59,3 +59,7 @@ by hand, these reads go nil.
 - each repo repinned to the landed isaac-agent / isaac-foundation main shas,
   `bb ci` green
 - this lands **before** any install's `isaac.edn` is migrated by hand
+
+## Also in scope (planner, 2026-09-23)
+
+isaac-gchat and isaac-gmail now read `[:defaults :crew]` directly (isaac-rfmh: gchat `handler/decide-opts` → `gate/decide` :default-crew; gmail `handler/crew`). When isaac-ruom lands those two must move to the accessor (`[:defaults :frequencies :crew]`) in the same train, or every Chat space and mailbox without its own crew silently falls back to main again. Add them to this bean's repo list.
