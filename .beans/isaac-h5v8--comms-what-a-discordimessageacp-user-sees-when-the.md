@@ -1,13 +1,13 @@
 ---
 # isaac-h5v8
 title: Originator is told when its turn suspends on provider weather (reason + retry-at) and gets the normal reply on completion — hail, Discord, iMessage, cron, ACP
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - comm
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-23T16:17:12Z
+updated_at: 2026-09-23T16:47:38Z
 parent: isaac-ugpq
 blocked_by:
     - isaac-nqeq
@@ -113,3 +113,9 @@ examples), `bb config-bypass-lint` all green after rebasing onto origin/main
 resolved the `on-turn-end*`/`gchat.clj` overlap, verified full `bb ci` green
 again). Pushed `bean/isaac-h5v8` to origin. Bean left `in-progress`, no
 tags, per instructions.
+
+## Landed on main
+
+main-sha: isaac-gchat 5262798 (0.2.9, rebased over acou 0.2.8 by the planner)
+
+Planner check 2026-09-23: bb spec + bb features 0 failures after the rebase. Agent untouched: the drive already hands on-turn-end :ended-by :provider-unavailable + :reason + :retry-at. Carry-forward (worker flag): weather/resume-suspended! drives a resumed turn with the null comm and no origin, so a sweep-driven resume never reaches gchat; belongs under isaac-ugpq.
