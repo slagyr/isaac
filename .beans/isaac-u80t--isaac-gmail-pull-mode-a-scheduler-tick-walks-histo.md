@@ -1,11 +1,11 @@
 ---
 # isaac-u80t
 title: 'isaac-gmail: pull mode — a scheduler tick walks history from the cursor where no Pub/Sub push exists'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-23T19:29:04Z
-updated_at: 2026-09-23T22:50:37Z
+updated_at: 2026-09-23T22:53:58Z
 ---
 
 Micah 2026-09-23: on hosts other than Yopp mail is pulled, not pushed (the Google Workspace CLI does the same over the same Gmail API + desktop OAuth). The triage must work for both. Push and pull differ only in the trigger: both walk history from the stored cursor and fetch the new ids.
@@ -107,3 +107,41 @@ feature-blob: isaac-gmail features/comm/gmail/pull.feature 03a3da0ab5a1737ea7b34
 ## Exceptions
 
 Planner, 2026-09-23: pull.feature's Background gained the `gmail-routes.team` rows (`*@tonotop.com` → converse) so the two message-routing scenarios admit ada under routes-as-whitelist, matching gmail.feature. Baseline re-cut.
+
+
+## Summary of Changes
+
+`isaac.comm.gmail.pull` (new): gmail/mode `:push` (default) | `:pull`,
+gmail/pull-interval-ms (default 60000). In `:pull`, `tick!` walks history
+from the stored cursor through the exact push pipeline —
+`handler/process-message!` and `handler/resync!` (both made public for
+this) — so gating/routes/labels are identical between modes. First tick
+with no cursor seeds it from the newest history id and processes nothing.
+A failed tick (non-2xx-shaped history.list response) logs
+`:warn :gmail/pull-failed` and leaves the cursor for the next tick; it
+never throws. `start!`/`stop!` register/cancel `:gmail/pull` on the shared
+scheduler, idempotently, only in `:pull` mode.
+
+`watch.clj` excludes any comm in `gmail/mode :pull` from the
+registration-timer's watch list, so no watch/topic/door is used in pull
+mode. `module.clj` wires `pull/start!`/`stop!` through `Module`
+on-load/on-unload so real boot schedules the task. Manifest declares
+`gmail/mode` and `gmail/pull-interval-ms`, version 0.2.1 → 0.2.2 (0.2.1 was
+taken by isaac-3427, landed concurrently). New `spec/isaac/comm/gmail/pull_spec.clj`
+(15 examples).
+
+Was blocked earlier by `pull.feature`'s Background missing `gmail-routes.*`
+config (predated isaac-sb6d's route whitelist) — planner fixed the
+Background on gmail main (03c675b) and re-baselined; rebased onto that plus
+isaac-3427's task-routes landing (dd02543), resolved the manifest/feature-steps
+conflicts keeping both intents, all 5 pull.feature scenarios pass.
+
+`bb spec`: 115 examples, 0 failures. `bb features`: 35 examples, 0 failures
+(all 5 pull.feature scenarios green, `@wip` removed; gmail.feature,
+watch.feature, routes.feature, tasks.feature, triage.feature, tenants.feature
+unchanged). `bb lint src/`: clean (1 pre-existing warning, unrelated).
+`bb bean-gate verify isaac-u80t`: PASS.
+
+## Landed on main (2026-09-23)
+
+main-sha: isaac-gmail ba74c259177c2989b0d9433c921e30d9aba90dab
