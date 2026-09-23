@@ -1,11 +1,11 @@
 ---
 # isaac-49zp
 title: Any config key may live inline, as <key>.edn, or as <key>/<id>.edn — no kind-specific treatment
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-23T18:01:56Z
-updated_at: 2026-09-23T19:26:05Z
+updated_at: 2026-09-23T19:31:20Z
 ---
 
 Repo: **isaac-foundation** (`config/paths.clj`, `loader.clj`, `entities.clj`,
@@ -269,3 +269,50 @@ feature-blob: isaac-foundation features/cli/config_file_layout.feature 82ebf539b
 
 feature-baseline: isaac-foundation 7dfeed4d7eb542d34ee09fd875ea6321f132d73e
 feature-blob: isaac-foundation features/cli/config_file_layout.feature 93c45ba4c383cba9220f434926daac1e31817289
+
+## Landed on main (2026-09-23)
+
+main-sha: isaac-foundation 7b2f0534ccab90e34a49da1531691a66e7857d07
+
+Gate PASS; `bb ci` green (1205 specs / 0 failures, 219 features / 2 failures —
+both the pre-existing `modules_pins.feature` stale-`~/.gitlibs` ones, unchanged
+from `origin/main`). All 8 baselined scenarios pass with `@wip` removed; no
+other `.feature` edit.
+
+What shipped:
+
+- new `isaac.config.tree` — `config/` read as a tree of keys with no
+  kind-specific knowledge: `<key>.edn` slices, `<key>/` directories, `_` as a
+  map's own values at every level, markdown whose frontmatter field valued `_`
+  takes the body. Filenames are literal names (`isaac.agent.edn` → `:isaac.agent`).
+- `paths/config-file?` tracks any `.edn`/`.md` at any depth; the hardcoded
+  `(berths|crew|cron|hooks)` `markdown-file-pattern` and `entity-file-pattern`
+  are gone. Its single caller (`change_source_log.cljc`) is unchanged, so hot
+  reload covers every shape.
+- `loader` folds slices into root data **before** module discovery, so
+  `config/modules.edn` can decide which modules load; directory set now comes
+  from the filesystem, not from `:entity-dir`.
+- `entities` reads `<id>/` directories as entities whose files are their fields
+  and treats any frontmatter `.md` as an entity (no `:frontmatter?` gate).
+- `mutate/choose-set-location` gained the `:slice` form (existing home wins →
+  `:prefer-entity-files` → `isaac.edn`); `companion-md-specs`' hardcoded
+  `{:crew→:soul, :berths→:ledger}` retired in favour of the owning module's
+  descriptor.
+- A key that is both a file and a directory, or both inline and in its own
+  file, is refused at load naming the key and both paths.
+
+### Remaining work (follow-up)
+
+- `:entity-dir` is still **declared** in `src/isaac-manifest.edn` though nothing
+  reads it. Removing the declaration would fail
+  `features/cli/config_resolution.feature`'s frozen manifest, which sets it.
+  Modules can drop the field at leisure.
+- The implicit `:companion` path still exists alongside the explicit `_` body
+  sentinel. Foundation no longer hardcodes which kinds have prose fields, but
+  full retirement is blocked by `features/cli/init.feature`, which freezes
+  scaffolded `config/crew/skipper.md` and `config/cron/heartbeat.md` with no
+  sentinel in their frontmatter. Note also that
+  `companions/resolve-inline-or-md-companion` raises "must be set in .edn OR
+  .md" when a companion field appears both ways, so a frontmatter `<companion
+  field>: _` is handled by suppressing companion resolution when the sentinel
+  fires.
