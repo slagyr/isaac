@@ -108,3 +108,88 @@ documented. **Needs a call before implementation.**
 - Retiring the `:entity-dir` manifest field leaves crew/models/providers
   behaving exactly as before.
 - Spec coverage for each shape, the conflict error, and the write routing.
+
+## Design settled (Micah, 2026-09-23)
+
+### Filenames are literal names, never paths
+
+A config filename is one key (or one entity id). Dots in a filename are part of
+the name, never separators — even though `.` separates segments in config
+*paths* (`paths/split-path-segments`). `config/isaac.agent.edn` is the key
+`:isaac.agent`, not `:isaac` → `:agent`. Nesting is expressed by a file's
+**contents**, never by its name.
+
+This resolves the ambiguity module ids would otherwise create, and it works
+identically at the root and inside a directory, so `modules/isaac.agent.edn` is
+the id `isaac.agent` by the same rule.
+
+### A key is a file or a directory, never both
+
+`crew/marvin.edn` alongside `crew/marvin/` is refused at load, naming the key
+and both paths. Supporting both as extensions of each other is too flexible —
+it is one or the other, at every level. Same rule as `crew.edn` vs `crew/`.
+
+### `_` is the default name inside a directory
+
+`crew/marvin/_.edn` holds marvin's own values (`:model`, `:tools`, `:tags`);
+`crew/marvin/soul.md` holds `:soul`.
+
+`_` over `index`: `index` could legitimately be a config key one day, `_`
+realistically never will be, and `_` already carries "this is special" in this
+tree — the hail config uses `_isaac-template.edn`, `_orchestration-template.edn`,
+`_tono-template.edn` for templates.
+
+### Markdown declares its own key, with `_` as the body sentinel
+
+Front matter is ordinary config for the entity. **Exactly one field takes the
+value `_`, meaning "this field's value is the markdown body."**
+
+    ---
+    model: grover
+    tags: [role/worker]
+    soul: _
+    ---
+    You are Marvin, a paranoid android…
+
+So `_` reads the same everywhere: *the default, unnamed one* — as a filename,
+this map's own values; as a value, the content below.
+
+Consequences:
+
+- `markdown-file-pattern`'s hardcoded `(berths|crew|cron|hooks)` is retired.
+- `companion-md-specs`' hardcoded `{:crew → :soul, :berths → :ledger}`
+  (`mutate.clj`) is retired. Foundation stops knowing that crews have souls.
+- A `.md` can carry a whole entity — structure and prose — with no paired
+  `.edn`.
+- It matches existing practice: hail band files already use front matter for
+  structured fields plus a body (`isaac-work.md`: `base`, `crew`, then the
+  prompt). This only makes the body's destination explicit.
+
+### When front matter is required
+
+| path | key comes from | front matter |
+|------|----------------|--------------|
+| `crew/marvin/soul.md` | the filename — `soul` | not needed |
+| `crew/marvin.md` | cannot be the filename (that is the entity id) | declares the key |
+
+Front matter is required exactly when the filename names the **entity** rather
+than the **key**. That falls out of "filenames are literal names" rather than
+being a separate rule.
+
+### Rejected: multiple values in one markdown file
+
+A companion `.md` earns its place by being entirely prose — the whole file is
+the value, which is why it is pleasant to edit and diff. Dividing it needs a
+bespoke section syntax, hence a parser, an escaping story, and a format every
+author must learn, reintroducing structure into the one format chosen for having
+none. Two prose fields means two files, which costs only a filename. Every prose
+field in Isaac today (souls, ledgers, cron and hook bodies) is a single field.
+
+Revisit only if a kind appears with several short prose fields where separate
+files are genuinely absurd.
+
+### Open
+
+`_` means both "default filename" and "value is the body". Both read as *the
+unnamed one*, so this is believed coherent — but it is an overload, and a
+distinct sentinel for the body is the alternative if it grates in practice.
