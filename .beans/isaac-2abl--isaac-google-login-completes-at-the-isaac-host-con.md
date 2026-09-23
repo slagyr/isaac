@@ -146,3 +146,7 @@ public name than the push endpoint.
 main-sha: isaac-google 036025c (0.1.11)
 
 Planner check 2026-09-23: `bb spec` 250/0, `bb features` 36/0 on 036025c. Fast-forwarded to main; registry repinned. Prerequisite found by the worker: the redirect URI can only be registered on a Web application OAuth client; yopp uses a Desktop client, so a new Web client (id + secret into google.tonotop.oauth) is needed before the flow works there. Edge left open: --code still exchanges against http://localhost:1/, so a code copied from the NEW consent screen on a host with a public base would mismatch — follow-up if it bites.
+
+## Amended 2026-09-23 (Micah): both client types must work
+
+The callback flow is opt-in: only `google.<org>.oauth.redirect-base` selects it; nothing is derived from the push endpoint any more, because a Desktop OAuth client cannot carry a redirect URI and a host on one must keep the paste-a-code login. google 0.1.12 (0b6bcc5). To use the callback on yopp: create a Web-application client with redirect URI https://<host>/google/oauth/callback, put its id/secret under google.tonotop.oauth, set oauth.redirect-base to https://<host>.
