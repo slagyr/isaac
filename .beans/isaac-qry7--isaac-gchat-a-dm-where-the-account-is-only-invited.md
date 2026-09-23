@@ -1,14 +1,14 @@
 ---
 # isaac-qry7
 title: 'isaac-gchat: a DM where the account is only invited (message request pending) gets a 403 on reply — join it, and request chat.spaces.create for Yopp-initiated DMs'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - gchat
     - google
 created_at: 2026-09-23T03:02:50Z
-updated_at: 2026-09-23T16:17:12Z
+updated_at: 2026-09-23T16:36:26Z
 ---
 
 ## Observed (yopp, 2026-09-23 02:59Z, gchat 0.2.3)
@@ -64,3 +64,9 @@ Implemented the rescoped invited-DM detection + reply-failure reporting in isaac
 **Scenario counts**: 3 new feature scenarios (2 inbound + 1 outbound, all passing): invited DM → one `:gchat.dm/invited` warn, zero POSTs to the DM, reply lands in `comm/delivery/pending` with the prefix; a second message to the same invited DM → still exactly 1 `:gchat.dm/invited` log entry; a reply 403 in a joined (non-invited) room → `:gchat/delivery-failed` logged with all four fields. Plus unit specs in `lookup_spec.clj` (7 new), `handler_spec.clj` (2 new), `gchat_spec.clj` (4 new) covering the no-attention-comm drop path and the on-turn-end notice/clear, which have no feature-level scenario.
 
 Left `in-progress`, no tags — next is `/verify`.
+
+## Landed on main
+
+main-sha: isaac-gchat 64e18d4 (0.2.7)
+
+Planner check 2026-09-23: bb spec 136/0, bb features 39/0. Fast-forwarded. Not yet deployed — rides with isaac-acou and isaac-h5v8 in one yopp upgrade. Reconcile the self-contained :gchat/turn-notice atom with h5v8 when it lands.
