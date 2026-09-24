@@ -1,11 +1,11 @@
 ---
 # isaac-f3hq
 title: 'The drive owns weather end to end: the sweep is scheduled, silence is weather, auth parks post attention'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-21T17:07:03Z
-updated_at: 2026-09-21T17:32:02Z
+updated_at: 2026-09-24T23:33:50Z
 blocking:
     - isaac-9azm
 ---
