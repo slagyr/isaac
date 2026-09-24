@@ -1,13 +1,11 @@
 ---
 # isaac-p4oj
 title: 'config set / auth mint refuse valid writes: the staging validation never sees <root>/.env, so every ${VAR} reference resolves to unset'
-status: in-progress
+status: completed
 type: bug
 priority: critical
-tags:
-    - unverified
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-24T14:22:02Z
+updated_at: 2026-09-24T14:25:00Z
 ---
 
 Micah, 2026-09-24 on zanebot: `isaac http auth mint nightbird-cli --scopes cli` printed
@@ -62,3 +60,10 @@ The bug isn't just "staging can't see .env" — even with that fixed, the pre-ex
 - `features/cli/modules_pins.feature`: 2 failures, `Unable to fetch .../.gitlibs/_repos/file/REL/fixture-agent ... does not appear to be a git repository` — a stale **global** `~/.gitlibs` cache entry pointing at `isaac-foundation-isaac-89q1` (a different, now-gone bean worktree). Same failure with my changes stashed out. Did not touch the shared `~/.gitlibs` cache to avoid disturbing concurrent sibling sessions.
 - `bb jvm-spec`: 8 failures, all `AbstractMethodError`/`IllegalArgumentException` on `isaac.module.protocol` defrecord/extend-protocol lifecycle hooks (`on-load`/`on-unload`) — the known bb-vs-JVM protocol-method gap (isaac-jf80 territory). Same 8 failures with my changes stashed out.
 - 2 pending scenarios in `features/module/berth_registration_spec.clj` ("not yet implemented") — pre-existing, untouched.
+
+## Landed on main
+
+- main-sha: isaac-foundation b81e021c7624017782c3b00ebc467df7bec57bf7 — validate-plan passes the live dotenv snapshot through loader :dotenv; bb spec 1249/0, bb features 224/0 (2 pre-existing pending) after clearing the stale gitlibs fixture cache.
+- main-sha: isaac-http d128711c71e71177fe1261fbc633f51977ab8a54 (0.1.24) — auth mint/rotate print one readable line per validation error; foundation repinned to b81e021; bb ci green. Registry http pin moved.
+
+Deploy: zanebot brew keg rebuild for foundation (Micah), then `isaac modules upgrade isaac.http` + restart; then `isaac http auth mint …` works.

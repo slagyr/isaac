@@ -14,7 +14,7 @@
                                       :git/sha "007da61d029b73b347a003cff47ecae3d87eb49a"}
                               :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.http                 {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
-                                        :git/sha "689d36861e852112de7198fd6319afbe8a836705"}
+                                        :git/sha "d128711c71e71177fe1261fbc633f51977ab8a54"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
                                       :git/sha "38d2ceb4572d5be6ce3a4870d7906bf78fef392b"}
