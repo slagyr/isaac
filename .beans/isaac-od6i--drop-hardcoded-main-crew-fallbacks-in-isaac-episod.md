@@ -6,8 +6,9 @@ type: task
 priority: normal
 tags:
     - episodes
+    - unverified
 created_at: 2026-09-16T15:49:57Z
-updated_at: 2026-09-24T23:38:17Z
+updated_at: 2026-09-24T23:43:10Z
 blocking:
     - isaac-zule
 blocked_by:
@@ -38,3 +39,17 @@ bb ci
 ```
 
 One-time: `git grep -n '"main"' -- src` has no crew-identity fallback.
+
+## Implementation (2026-09-24, scrapper@isaac-work-3)
+
+Branch: isaac-episodes `bean/isaac-od6i` @ 7cd828d (pushed; not squashed to main — ungated bean, verify path).
+
+- New `isaac.episodes.crew/resolve-id`: entity crew (blank = unnamed), else
+  `config-defaults/crew-id` from cfg (live snapshot when cfg nil), else nil.
+  Spec: `spec/isaac/episodes/crew_spec.clj`.
+- Rewired lifecycle (7 sites), migrate, layout, policy/episodes (3), recall inject
+  to `resolve-id`; cli/recall-cli/recall-tools just drop the trailing `"main"`;
+  gist model resolution uses `(defaults/crew-id cfg)` instead of `"main"`.
+- `git grep -n '"main"' -- src` → no matches.
+- `bb spec` 223/0, `bb ci` EXIT 0 (spec 223/0, features 85/0).
+- Gate: `bb bean-gate verify isaac-od6i` → exit 2 (no feature-baseline).
