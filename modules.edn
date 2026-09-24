@@ -1,8 +1,8 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "da9214aa72786fd830847c5542f5ea7781a44410"}
+                                      :git/sha "8cfd44dad00d57d15ae5bd6f2fac048046d5b84b"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
-                                      :git/sha "1e046011e589c5dca894f8a6e3e07036f2c04da1"}
+                                      :git/sha "01b538a1ed8cdc557ab8bde4209dd772f98f7926"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
                                       :git/sha "591b5a0c6c9e7906a4772cd57e5221266d304e8b"}
@@ -17,7 +17,7 @@
                                         :git/sha "76936f85fa98faf39bdb765f786139e292871dbe"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                                      :git/sha "38d2ceb4572d5be6ce3a4870d7906bf78fef392b"}
+                                      :git/sha "6030a978463d1245342118c68b1d540032c1424b"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
                                       :git/sha "d329e684783d894b6ae2a52af07f9ffe548b9eb8"}

@@ -1,13 +1,11 @@
 ---
 # isaac-j95x
 title: ACP session/new on an episodes crew opens main's session named "session" — --crew marvin lands the user on crew main
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-24T20:41:09Z
-updated_at: 2026-09-24T21:27:35Z
+updated_at: 2026-09-24T21:33:35Z
 ---
 
 Micah, 2026-09-24: `toad acp "zane-isaac acp --crew marvin"` → "Why did I get main crew?" zanebot cli.log: argv `["acp" "--crew" "marvin"]`, then `:session/behavior-resolved :crew "main" :session "session"`; `~/.isaac/sessions/main/session` (created 2026-07-10) was updated by his turn.
@@ -61,3 +59,11 @@ Implemented all three layers; ungated flow, tagging `unverified` now.
 **Test counts (new/changed):** isaac-agent +9 spec examples (chronicle_spec.clj new, sidecar_spec.clj +2, impl_common_spec.clj +3, sidecar_impl_spec.clj +1, memory_spec.clj +1) and 2 protocol/production files documented; isaac-episodes +4 spec examples in episodes_spec.clj; isaac-acp +2 spec examples in server_spec.clj and 1 new feature scenario in episodes.feature.
 
 Version bumps: isaac-agent 0.1.81→0.1.82, isaac-episodes 0.1.4→0.1.5, isaac-acp 0.1.14→0.1.15.
+
+## Landed on main
+
+- main-sha: isaac-agent 8cfd44dad00d57d15ae5bd6f2fac048046d5b84b (0.1.82) — spec 1734/0, features 850/0.
+- main-sha: isaac-episodes 01b538a1ed8cdc557ab8bde4209dd772f98f7926 (0.1.5) — agent repinned to 8cfd44d; spec 218/0, features 85/0.
+- main-sha: isaac-acp 6030a978463d1245342118c68b1d540032c1424b (0.1.15) — spec 78/0, features 65/0 against its existing pins. NOT repinned: acp still pins pre-ruom foundation/agent and reads [:defaults :crew] at the old path, so the ruom-era agent cannot be pinned until the acp 0r95 follow-up lands (filed separately). Runtime uses the host's installed agent/episodes, so the fix is live once the three modules are upgraded.
+
+Registry repinned for all three. Deploy: zanebot upgrade agent + episodes + acp, restart, verify `zane-isaac acp --crew marvin` resolves crew marvin.
