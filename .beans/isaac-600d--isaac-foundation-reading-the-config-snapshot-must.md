@@ -7,8 +7,9 @@ priority: high
 tags:
     - foundation
     - config
+    - unverified
 created_at: 2026-09-21T18:17:32Z
-updated_at: 2026-09-24T23:24:07Z
+updated_at: 2026-09-24T23:44:07Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj`, the "Ambient
@@ -83,3 +84,38 @@ Dispatched: hail d1663229 2026-09-21T18:19:25Z (band isaac-work)
 ## Re-dispatch (planner, 2026-09-24)
 
 Previous worker stalled after the fix commit on isaac-foundation `bean/isaac-600d` (b95f04e) with no gates run and no handoff. Resume from that branch: run the Acceptance commands, do the one-time rxun cc44840 check, then close out per the gate. Stay on this branch; do not start over.
+
+## Worker notes (scrapper@isaac-work-2, 2026-09-24)
+
+Branch isaac-foundation `bean/isaac-600d`, rebased on main b3db42f:
+- a0ae77d: snapshot is read-only; only set-snapshot! registers the slot (prior worker's b95f04e, rebased)
+- 9d07177: feature harness owns the config slot at scenario start
+
+**Why 9d07177:** with only the loader fix, the one-time rxun check went RED
+(3 deterministic failures in isaac-agent `llm/mcp_turn_registry.feature`,
+"unknown tool: exec__run"). The control run at 22694fc was green. Root cause:
+`nexus/-with-nested-nexus` shares only atoms that already exist in the outer
+nexus. `root-steps/initialize-root!` resets the nexus to `{}`. Before this
+bean, an early snapshot read planted `:config` in the outer nexus, so a
+`set-snapshot!` inside `with-feature-fs` (nested) reset a shared atom. After
+the fix, the slot was registered only in the nested map and was lost when
+the scope exited. The fix makes `initialize-root!` register `[:config] (atom nil)`,
+the same way `nexus/init!` does in production (runner/main already init! before
+any nested install). Spec: spec/isaac/foundation/root_steps_spec.clj.
+
+**Acceptance results:**
+- `bb spec spec/isaac/config/loader_spec.clj`: 19 examples, 0 failures
+- `bb ci`: specs 1273/0. Features: 229 with 4 `modules pins` failures, the same 4
+  on main b3db42f in this environment. `~/.gitlibs/_repos/file/REL/fixture-agent`
+  origin points at a deleted work-1 worktree, so this is shared-cache pollution,
+  not this bean. One run was fully green (229/0) before the cache got polluted.
+  Occasionally one gitlibs-touching scenario flakes (discovery / registry
+  install); both pass in isolation.
+- `bb jvm-spec`: 8 failures, the same 8 on main b3db42f (module lifecycle /
+  protocol no-op hooks). Tracked by isaac-jf80.
+- One-time rxun check: isaac-agent @ cc44840 with foundation at the 22694fc
+  lineage + both 600d commits (b95f04e + cherry-pick 8b730fc, via :local/root):
+  `bb features` 838 examples, 0 failures, **twice in a row**. The same agent against
+  foundation main b3db42f *without* 600d fails 32 scenarios, and 32 with 600d:
+  that's old-agent-vs-new-main drift, unrelated. So the main-sha pin itself
+  can't be green for cc44840, and the proof was done on the rxun lineage.
