@@ -1,11 +1,11 @@
 ---
 # isaac-clly
 title: Let an external publisher drive the Google heartbeat (Cloud Scheduler), judged by arrival not by pairing
-status: todo
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-24T20:36:32Z
-updated_at: 2026-09-24T20:36:32Z
+updated_at: 2026-09-24T21:42:57Z
 ---
 
 Repo: **isaac-google** (`src/isaac/google/health.clj`, `heartbeat.clj`).
@@ -107,3 +107,55 @@ for the smoke probe and say so in its docstring, or delete it and let
 `--send-live` report that publishing is no longer Isaac's job. Dead credential
 plumbing is worth removing — it is the kind of thing that gets configured
 years later by someone who assumes it must be needed.
+
+## Landed 2026-09-24 as isaac-google `b1778cb` (module 0.1.15). NOT deployed.
+
+Suite verified by the planner: 264/0 specs, 44/0 features. isaac-foundation
+untouched.
+
+**One acceptance bullet deliberately not met**, and the planner agrees with the
+call: "Isaac-published heartbeats keep today's pairing behaviour unchanged".
+After deleting the publisher nothing publishes, so a pairing branch is dead
+code on every host — and keeping `enabled` (default **true**) beside it would
+reintroduce the inert watchdog *as the default*. There is now one kind of
+heartbeat: externally driven.
+
+The design went further than the bean asked, correctly: there is no mode flag
+and no on/off switch. Naming `expected-interval-ms` is the only thing that can
+say what late means, so the switch and the deadline are the same key and
+"watched but unable to fire" is unrepresentable rather than merely refused.
+
+## DEPLOY IS BLOCKED ON OPERATOR ACTION — and the order matters
+
+`health.heartbeat.enabled` is now a **retired key and a hard config error**.
+yopp currently has `google.tonotop.health.heartbeat.enabled false`, so
+upgrading the module without unsetting it first makes yopp **refuse to start**.
+
+The config edit can go neither first nor last:
+
+- on the **old** build, unsetting `enabled` re-enables the heartbeat and
+  demands the service-account credentials file the org policy will not issue
+- on the **new** build, `enabled` is a retired key and a hard error
+
+Order (full detail in `doc/rollout.md`):
+
+1. create and prove the Cloud Scheduler job while the old build still runs
+2. `isaac config set google.tonotop.health.heartbeat.expected-interval-ms <ms>`
+   on the old build — unknown key, warning only
+3. `isaac modules upgrade isaac.google`, then **before restarting**
+   `isaac config unset google.tonotop.health.heartbeat.enabled` and
+   `…pubsub.credentials-file`, and `isaac config validate` clean
+4. one restart
+5. delete the inert `isaac-pubsub` service account and any
+   `~/.isaac/google/pubsub-sa.json`
+6. watch for `:google/heartbeat-received` and no `:google/heartbeat-missed`
+
+## Open
+
+Cloud Scheduler same-project IAM is documented from Google's stated behaviour
+(the service agent receives `roles/cloudscheduler.serviceAgent` when the API is
+enabled), not verified against a live project. An explicit
+`roles/pubsub.publisher` grant to
+`service-<project-number>@gcp-sa-cloudscheduler.iam.gserviceaccount.com` is
+given as the fallback, so the runbook is safe either way — but the first real
+run on yopp is the confirmation.
