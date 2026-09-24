@@ -87,7 +87,7 @@ rather than deleted, and yopp then loaded clean. No other dot-entry exists under
 
 ## Landed on main (2026-09-24)
 
-main-sha: isaac-foundation 24800a85e0c4fe7ff6c1a8e2f4b2c5b60e24b2c1
+main-sha: isaac-foundation 24800a8dcc6e474900d1845dd3ae4d2565675b13
 
 `bb ci` green: **1236 specs / 0 failures**, **219 features / 2 failures** — both
 the pre-existing `features/cli/modules_pins.feature` stale-`~/.gitlibs` ones,
