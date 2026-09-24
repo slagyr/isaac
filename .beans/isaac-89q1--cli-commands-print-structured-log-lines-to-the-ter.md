@@ -1,13 +1,11 @@
 ---
 # isaac-89q1
 title: CLI commands never print log entries; config warnings are shown only by the config commands, as warnings
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-24T14:09:05Z
+updated_at: 2026-09-24T14:10:44Z
 ---
 
 Micah, 2026-09-24: "What is all this crap being printed out? These CLI commands can't be printing garbage like this." Every `isaac …` command on zanebot prints two `{:ts … :level :warn, :event :config/unknown-key …}` lines before its own output.
@@ -76,3 +74,7 @@ Confirmed red before the fix (stashed `main.clj`/`log/output.clj`, scenario 1 fa
 
 ### Stayed out of
 `config/mutate.clj`, `loader.clj`, `env.clj` (isaac-p4oj's files) — untouched. Rebased cleanly onto isaac-p4oj's sibling commit (isaac-63ei, `config get`/dot-entries) with no conflicts.
+
+## Landed on main
+
+main-sha: isaac-foundation fa8f46a1399690647fc45e74c4c8e7e9159e5684. Planner verified: bb spec 1243/0; bb features 222 examples, 0 failures after clearing the stale ~/.gitlibs fixture-agent cache (the two sibling-pins failures were that cache, pre-existing). Deploy = zanebot brew keg rebuild (Micah), together with isaac-p4oj.
