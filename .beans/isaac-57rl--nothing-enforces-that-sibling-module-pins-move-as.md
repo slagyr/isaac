@@ -1,11 +1,11 @@
 ---
 # isaac-57rl
 title: Nothing enforces that sibling module pins move as a set
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-09-24T21:27:45Z
-updated_at: 2026-09-24T21:27:45Z
+updated_at: 2026-09-24T22:51:29Z
 ---
 
 Repos: **isaac-foundation** (`bb pins`) and every module repo.
