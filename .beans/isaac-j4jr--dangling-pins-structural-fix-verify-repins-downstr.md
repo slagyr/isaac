@@ -1,15 +1,14 @@
 ---
 # isaac-j4jr
 title: 'Dangling pins, structural fix: verify repins downstream before squash; bb lint-pins (fetch-reachability) in every bb ci; dev-local for in-flight cross-repo beans'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - ci
     - process
-    - unverified
 created_at: 2026-09-18T04:53:38Z
-updated_at: 2026-09-24T23:44:02Z
+updated_at: 2026-09-24T23:49:37Z
 ---
 
 Structural follow-up to isaac-lsz2 (the symptom fix). Root cause: a bean spanning two repos must point the downstream repo at the upstream BEAN BRANCH while in flight; verify then squash-merges that branch into a new sha and deletes it, so the pin dangles (cli-server → foundation 3963266; isaac-server → agent b6284e42). A rule alone cannot fix a workflow that requires the bad pin temporarily.
@@ -132,3 +131,18 @@ Controlling acceptance re-run on isaac-foundation bean/isaac-j4jr @ 0b55d44
 
 `bb bean-gate verify isaac-j4jr` → exit 2 (no feature-baseline). Tagged
 unverified; handed to verify band. Not landed. No module wiring (isaac-xzef).
+
+## Verify pass (perceptor@isaac-verify-2, 2026-09-24)
+
+Evidence on isaac-foundation bean/isaac-j4jr @ 0b55d44 (base = origin/main b3db42f):
+- bb spec spec/isaac/foundation/pin_lint_spec.clj → 5 examples, 0 failures (a–d + once-per-url+sha)
+- bb lint-pins → ok; bb ci wiring present (lint-pins before pins)
+- bb spec → 1272 examples, 0 failures
+- Live network probe: bogus 40-char sha → exit 1 naming file/dep/sha; ISAAC_LINT_PINS=0 → skip warning, exit 0
+- One-time reachability sweep of 12 local sibling checkouts (agent, claude-code, cli-proxy, cli-server, discord, episodes, foundation, google, hail, hooks, http, server) → all ok
+- Docs bd45b5d3 on isaac main (verify.md §6a, AGENTS.md :dev-local, hail-bean-work)
+- Note (non-blocking): abbreviated shas report unreachable (git fetch needs full sha); no isaac-* pin in the fleet is abbreviated.
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-foundation e6ba68fc23d56f6accef01d8ad4fbd1d0f571a18
