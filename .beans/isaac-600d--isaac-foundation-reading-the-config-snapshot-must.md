@@ -8,7 +8,7 @@ tags:
     - foundation
     - config
 created_at: 2026-09-21T18:17:32Z
-updated_at: 2026-09-21T18:19:53Z
+updated_at: 2026-09-24T23:24:07Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj`, the "Ambient
