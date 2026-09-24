@@ -1,11 +1,11 @@
 ---
 # isaac-63ei
 title: Config loader reads dot-entries as config, and config get disagrees with config validate
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-24T13:32:28Z
-updated_at: 2026-09-24T13:32:28Z
+updated_at: 2026-09-24T13:55:50Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/tree.clj`, and whatever path
