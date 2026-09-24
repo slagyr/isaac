@@ -7,8 +7,9 @@ priority: high
 tags:
     - ci
     - process
+    - unverified
 created_at: 2026-09-18T04:53:38Z
-updated_at: 2026-09-24T23:38:02Z
+updated_at: 2026-09-24T23:44:02Z
 ---
 
 Structural follow-up to isaac-lsz2 (the symptom fix). Root cause: a bean spanning two repos must point the downstream repo at the upstream BEAN BRANCH while in flight; verify then squash-merges that branch into a new sha and deletes it, so the pin dangles (cli-server → foundation 3963266; isaac-server → agent b6284e42). A rule alone cannot fix a workflow that requires the bad pin temporarily.
@@ -119,3 +120,15 @@ isaac-foundation `bean/isaac-j4jr` @ `0b55d44` (or rebased / squash equivalent):
 1. Do not start module wiring on this bean.
 2. Hand foundation to verifier. Do **not** land. Do **not** pin modules at `0b55d44`.
 3. Completing this bean unblocks the draft (after human promotion).
+
+## Worker handoff (scrapper@isaac-work-3, 2026-09-24) — foundation to verify
+
+Controlling acceptance re-run on isaac-foundation bean/isaac-j4jr @ 0b55d44
+(base origin/main@b3db42f, clean worktree):
+
+- `bb spec spec/isaac/foundation/pin_lint_spec.clj` → 5 examples, 0 failures
+- `bb lint-pins` → `lint-pins: ok`
+- `bb spec` → 1272 examples, 0 failures
+
+`bb bean-gate verify isaac-j4jr` → exit 2 (no feature-baseline). Tagged
+unverified; handed to verify band. Not landed. No module wiring (isaac-xzef).
