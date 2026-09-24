@@ -196,3 +196,31 @@ silently cannot fire. What is gone is stopping a host that merely receives.
 4. watch for `:google/heartbeat-received` and no `:google/heartbeat-missed`
 
 Steps 2 and 3 can be done in either order and neither can break the host.
+
+## DEPLOYED AND PROVEN 2026-09-24 22:50Z — supersedes the "deploy is blocked" section above
+
+The operator created the Cloud Scheduler job (`us-west4`, `*/5 * * * *`,
+topic `projects/tonotop-yopp/topics/isaac`, `ce-type=isaac.google/heartbeat`,
+body `{"isaac-heartbeat":true,"tenant":"tonotop"}`).
+
+It fired at 22:45:00Z and yopp logged `:google/heartbeat-received` at
+**22:45:02Z — on the OLD build**, which knew nothing about Cloud Scheduler.
+That proved Scheduler → Pub/Sub → push door → OIDC verification before
+anything was upgraded, and it settles the one open question this bean left:
+**same-project Scheduler→Pub/Sub IAM needs no explicit grant.** The Cloud
+Scheduler service agent published successfully with nothing configured beyond
+enabling the API. Documented-from-Google's-word is now measured.
+
+yopp then went to isaac-google `5cdf807`:
+
+- `google.tonotop.health.heartbeat.expected-interval-ms` = 300000 (matching
+  the `*/5` schedule; + 60000 default grace = a 6-minute budget)
+- `health.heartbeat.enabled` unset
+- restarted clean, `runner/started`, 7 components
+- `:google/heartbeat-received` at 22:50:02Z on the new build
+- `isaac config validate` → OK, no heartbeat warnings, interval recognised
+
+The silence detector is back without a service-account key ever existing. The
+`isaac-pubsub` account and its topic binding were deleted by the operator.
+
+zanebot configures no Google tenant, so nothing is required of it.
