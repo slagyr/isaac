@@ -205,3 +205,32 @@ Immediate unblocks available to the operator, in preference order:
   change that follows is removing the Cloud scope from the user grant.
 - "yopp survives >24h" — still the proof, but now predictable: it will fail
   again around 2026-09-25T06:30Z unless option 1 or 2 is applied first.
+
+## Status 2026-09-24 22:5x — the fix is deployed; one observation remains
+
+Deployed to yopp: isaac-google `5cdf807`, which carries this bean's
+`invalid-grant-message` fix, isaac-286x's scope removal, and isaac-clly. The
+operator re-ran `isaac google login --tenant tonotop` after the scope was
+removed, so the live grant no longer carries `auth/pubsub`.
+
+**The remaining check is the whole proof.** The Workspace policy expires grants
+holding a Cloud Platform scope on a 16-hour clock; measured failure was 14h50m.
+With the scope gone the policy should no longer apply.
+
+- Prior failures: login 2026-09-23T15:05Z → `invalid_grant` 2026-09-24T05:55Z
+- Re-login after the scope removal: 2026-09-24, evening
+- **If nothing fails by roughly 2026-09-25T15:00Z, the fix is confirmed.**
+
+What to look for on yopp: `invalid_grant`, `gchat/fetch-failed`,
+`gchat.send/failed`, or a `comm.delivery/dead-lettered` on a Chat reply. The
+failure is silent in every other respect — `systemctl is-active` says active
+and `isaac config validate` says OK throughout, which is what made it hard.
+
+A refresh-token fingerprint probe is at `/tmp/tokfp.sh` on yopp; it prints a
+truncated sha256 only, never the token. An unchanged fingerprint alongside an
+`invalid_grant` means server-side revocation (policy), not a token Isaac
+mishandled.
+
+If it **does** fail again on the same clock, the scope was not the whole story
+and the next suspect is whatever else in the grant Google treats as Cloud —
+check the consent screen's granted scopes directly rather than the manifest.
