@@ -1,11 +1,11 @@
 ---
 # isaac-286x
 title: Move Pub/Sub off the human OAuth grant onto a service account
-status: todo
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-24T18:17:37Z
-updated_at: 2026-09-24T18:17:37Z
+updated_at: 2026-09-24T19:31:39Z
 ---
 
 Repo: **isaac-google**.
