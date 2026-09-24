@@ -74,3 +74,59 @@ assembling context, which is exactly the part nothing measures.
 because compaction is skipped for `:reset`. Whether a fresh session per bean
 would be cheaper is worth measuring once the accounting above exists — not
 before, or it is guesswork again.
+
+## Narrowed by measurement 2026-09-24 — see doc/token-burn-isaac-k00m.md
+
+**The 938k gauge is explained and is NOT a leak.** `run-compaction-check!`
+computes it over the full *stored* transcript and then skips compaction because
+the session is `:reset`. So it measures something the request never contains,
+and on a `:reset` session it will climb toward the window forever while actual
+requests stay small. That is still a defect — a log line that reads as "this
+session is 94% full" when it is not — but it is a reporting bug, not a leak.
+Both build paths trim correctly (`turn.clj:1565` and `:1150`).
+
+**Fixed per-request overhead measured directly: ~32k.** One minimal prompt in a
+fresh scrapper session on zanebot:
+
+    :usage {:prompt-tokens 32199, :output-tokens 9,
+            :cache-read-tokens 0, :cache-write-tokens 32193}
+
+So soul + boot files + rules + skill menu + tool schemas is 32k. Boot files are
+not the problem.
+
+**What remains is one sharp question.** With 32k fixed and a stored turn
+transcript of ~87–145k, the expected average request is ~104k and the expected
+turn total ~10.3M. Actual: ~358k average, 35.5M total. **A request carried
+~3.4× the context Isaac stored for it.**
+
+Two candidates, both testable by logging request size at send time:
+
+1. Tool results are capped when **stored** (`:max-lines`/`:max-bytes` from
+   `defaults/tool-caps`) while the model receives them in full. The stored
+   transcript would then systematically undercount the sent context, and the
+   gap would grow with the number of tool calls — which matches 95 tool
+   results.
+2. The claude-code provider adds per-request content Isaac never sees.
+
+## Design direction (planner, 2026-09-24)
+
+Where the accounting belongs, having looked at the seams:
+
+- **The provider reports, the drive aggregates.** Only the provider sees the
+  wire response, so `:usage` extraction is provider-level — that is why
+  chatgpt has it and claude-code does not. But nothing provider-specific should
+  decide *what* is recorded: the drive (`isaac.drive.turn`) should demand a
+  normalized usage map from every provider and be the single place that
+  totals it. A provider that cannot report usage should say so explicitly
+  rather than silently contributing nothing.
+- **Per-request, not just per-turn.** The per-turn `:usage` already exists in
+  the transcript and is the right place for the total. What is missing is the
+  per-request line — and it is the per-request number that would have answered
+  this in one step instead of a day.
+- **Record composition, not just size.** At minimum: system/soul, boot files,
+  skill text, tool schemas, transcript. A single "request was 358k" line still
+  would not have told us *why*; "transcript 326k of 358k" would have.
+- **Log, do not store.** The per-request breakdown belongs in the structured
+  log, not the transcript — the transcript is context that gets re-sent, and
+  writing accounting into it would make the thing it measures more expensive.
+  Per-turn totals stay in the transcript where they already are.
