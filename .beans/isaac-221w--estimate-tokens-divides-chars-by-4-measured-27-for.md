@@ -72,3 +72,62 @@ tools and transcript from their serialized size for exactly this reason.
 
 Found by isaac-5nx5, 2026-09-24. Full measurement table in
 `doc/token-burn-isaac-k00m.md`.
+
+## Reframed 2026-09-24: stop estimating what has already been measured
+
+The operator asked why Isaac estimates at all, given the transcript records
+token counts. The answer is that **it does not record them** — the stamps are
+the same chars/4 guess, computed by a second function:
+
+```clojure
+;; isaac/session/store/impl_common.clj:85
+(defn- ceil-chars->tokens [chars] (long (Math/ceil (/ (double chars) 4.0))))
+(defn- text-tokens [text] (when (string? text) (ceil-chars->tokens (count text))))
+```
+
+`stamp-message-tokens` only fills `:tokens` when it is absent, and nothing ever
+replaces it with a real figure. So Isaac has two estimators, both dividing by
+four, differing only in what content they walk — `message-tokens` includes
+tool-call arguments and tool results, `content-chars` does not. **That is the
+whole of the 1.67× the analysis tripped over.** Neither number was ever a
+measurement.
+
+Correcting the divisor alone would leave that intact: two guesses, better
+calibrated, still guesses, still capable of disagreeing.
+
+### The real shape of the fix
+
+An estimate is genuinely needed *before* a request — compaction has to decide
+whether to compact before it sends, and the provider's count only arrives with
+the reply. So the estimator cannot simply go. But it should shrink to the only
+thing it is needed for:
+
+- **What has been sent has been measured.** After isaac-5nx5, every request
+  reconciles its estimate against the provider's reported prompt tokens. Once a
+  message set has been sent, its real size is known. Store that and stop
+  re-guessing it.
+- **Only the delta needs estimating** — the pending input and whatever has been
+  appended since the last measured request. That is a small number, so being
+  wrong about it costs little.
+- **Calibrate the remaining estimate from observation**, per provider, rather
+  than from a constant. isaac-5nx5's `reconcile` already produces exactly the
+  data (`:estimated-tokens`, `:reported-prompt-tokens`, `:ratio`); a running
+  ratio per provider beats any divisor chosen by hand, and self-corrects when a
+  tokenizer changes underneath us.
+- **One estimator, not two.** Whatever survives should be the only place a
+  character count becomes a token count.
+
+### Revised acceptance
+
+- The per-entry `:tokens` stamp carries a measured figure once one exists, and
+  is distinguishable from an estimate — a consumer can tell which it is holding.
+- The context gauge prefers measured sizes and estimates only the unsent
+  remainder.
+- The surviving estimator is calibrated from `reconcile`'s observed ratios per
+  provider, not a hardcoded divisor, and defaults conservatively (over-count) on
+  no data — the failure mode of under-counting is an overflowed context.
+- `message-tokens` and `content-chars` no longer disagree: one implementation.
+- Tool schemas contribute their real size rather than zero.
+- Specs pin the behaviour against recorded fixtures, including a case where the
+  measured and estimated figures differ and the measured one wins.
+- Check whether compaction thresholds were tuned against the wrong divisor.
