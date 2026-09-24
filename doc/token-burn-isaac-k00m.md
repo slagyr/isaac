@@ -170,3 +170,72 @@ What actually fixed the 16-hour expiry was dropping `auth/pubsub` from
 in the code but is unused on every host. See isaac-clly for the path that
 brings the heartbeat back without a key (Cloud Scheduler publishes, no
 credential ever exported).
+
+---
+
+# Follow-up measurement, same day: the gauge is a red herring, and the gap is narrower than it looked
+
+## The 938k gauge is explained, and it is not the leak
+
+`run-compaction-check!` computes the gauge over the **full stored transcript**:
+
+```clojure
+gauge (compaction/context-gauge entry tx (:input opts))
+;; tx = (session-transcript session-key opts)  — the whole stored session
+```
+
+and then skips compaction when the session is `:reset`. So the number measures
+something the request never contains. It is a **misleading log line**, not a
+leak: on a `:reset` session the gauge will climb toward the window forever
+while the actual requests stay small.
+
+Both build paths do trim correctly — the main path (`turn.clj:1565`) and
+`rebuild-chat-request` (`turn.clj:1150`) both reduce the transcript to the last
+entry when `context-mode` is `:reset`.
+
+## Fixed per-request overhead, measured directly: 32k
+
+One minimal prompt in a **fresh** scrapper session on zanebot
+(`isaac prompt --with-crew scrapper --session probe-tokens -m "Reply with
+exactly: OK"`), 3 transcript entries:
+
+```clojure
+:usage {:prompt-tokens 32199, :output-tokens 9,
+        :total-tokens 32208, :cache-read-tokens 0, :cache-write-tokens 32193}
+```
+
+So soul + boot files + rules + skill menu + tool schemas = **~32k**, not the
+~285k my earlier subtraction implied. Boot files are not the problem, and the
+earlier estimate of the fixed part was simply wrong.
+
+## What that leaves — the real question, now sharply defined
+
+| quantity | tokens |
+|---|---|
+| fixed overhead (measured) | ~32,000 |
+| turn's stored transcript | ~87,000–145,000 |
+| expected average request (32k + half of transcript) | **~104,000** |
+| expected turn total (99 × 104k) | **~10.3M** |
+| **actual average request** | **~358,000** |
+| **actual turn total** | **35.5M** |
+
+**Roughly 3.4× more context was sent per request than Isaac stored.** That is
+the whole finding, and it is now a narrow one. Ruled out by measurement:
+
+- the context gauge (measures the stored transcript, not the request)
+- stale conversation history (`:reset` genuinely trims, both paths)
+- boot files (~9KB on disk; whole fixed preamble is 32k)
+- a local Claude Code SDK session store (`~/.tono-claude/sessions/` is empty)
+
+Still open, and worth instrumenting rather than guessing:
+
+1. Tool results may be capped when **stored** (`:max-lines` / `:max-bytes` from
+   `defaults/tool-caps`) while the model receives them in full — that would
+   make the stored transcript a systematic undercount of the sent context, and
+   the discrepancy would grow with the number of tool calls, which matches.
+2. The claude-code provider may add per-request content of its own that Isaac
+   never sees or records.
+
+Both are testable by logging the actual request size at send time, which is
+precisely what isaac-5nx5 asks for. The point is no longer "where did 35M go" —
+it is "why is a request 3.4× its transcript", and that is one measurement away.
