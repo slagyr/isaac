@@ -1,0 +1,76 @@
+---
+# isaac-5nx5
+title: Isaac cannot account for tokens on the claude-code provider, and a reset session reports a 938k gauge
+status: todo
+type: bug
+priority: high
+created_at: 2026-09-24T20:47:50Z
+updated_at: 2026-09-24T20:47:50Z
+---
+
+Repo: **isaac-agent** (`src/isaac/drive/turn.clj`, session/compaction).
+
+Full measurement and method: `doc/token-burn-isaac-k00m.md`.
+
+## Two problems, found measuring what one bean cost
+
+### 1. A request's composition is invisible
+
+Isaac records per-turn `:usage` in the session transcript, and logs
+`:total-tokens` per request for the **chatgpt** provider. For **claude-code**
+— the provider every worker crew actually runs on — there is no per-request
+accounting at all, and nothing anywhere records what a request was *made of*.
+
+Answering "what did isaac-k00m cost, and why?" took a transcript dig, and still
+ended with ~285k tokens per request unaccounted for. That is not a reporting
+nicety: it is the difference between "this harness is expensive" and "this
+harness has a leak", and today neither can be shown.
+
+### 2. A `:reset` session reports a gauge at 94% of the window
+
+```clojure
+:event :session/compaction-skipped
+:reason :context-reset
+:total-tokens 938870
+:context-window 1000000
+:session "isaac-work-1"
+```
+
+Compaction is skipped *because* the session is `:reset`, on the premise that
+reset trims at build time — and it does (`turn.clj:1150` reduces the transcript
+to the last user message). So the gauge measures something the request does not.
+
+Measured against that: the isaac-k00m turn made **99 requests averaging ~358k
+prompt tokens**. Neither ~72k (fully trimmed) nor ~938k (not trimmed). Several
+hundred thousand tokens per request come from somewhere between Isaac's trim
+and what the provider receives, and are paid 99 times — roughly 28M of the
+turn's 35.5M.
+
+Ruled out: stale transcript (reset does trim), boot files (~9KB), and a local
+SDK session store (`~/.tono-claude/sessions/` is empty). Still open: state held
+provider-side against the `:session-key` Isaac sends on every request.
+
+## Why it matters
+
+The turn's full-rate spend was ~722k tokens, of which **cache writes were 88%
+and output 12%** — the model barely wrote anything. Cost is dominated by
+assembling context, which is exactly the part nothing measures.
+
+## Acceptance
+
+- Per-request token accounting exists for the claude-code provider, at parity
+  with chatgpt, and is visible without reading a transcript by hand.
+- A request's composition is recorded well enough to attribute its tokens —
+  at minimum: system/soul, tool schemas, boot files, skill text, transcript.
+- The 938k gauge on a `:reset` session is explained: either the gauge is
+  corrected to measure what is sent, or the trim is shown not to reach the
+  provider and that is fixed. Whichever it is, a scenario pins it.
+- A scenario covers a long-lived `:reset` session: the request sent after a
+  reset carries the trimmed transcript and not the accumulated one.
+
+## Notes
+
+`isaac-work-1` has accumulated since at least 2026-09-21 and never compacts,
+because compaction is skipped for `:reset`. Whether a fresh session per bean
+would be cheaper is worth measuring once the accounting above exists — not
+before, or it is guesswork again.
