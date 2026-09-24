@@ -1,11 +1,11 @@
 ---
 # isaac-j95x
 title: ACP session/new on an episodes crew opens main's session named "session" — --crew marvin lands the user on crew main
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-24T20:41:09Z
-updated_at: 2026-09-24T20:41:09Z
+updated_at: 2026-09-24T20:48:40Z
 ---
 
 Micah, 2026-09-24: `toad acp "zane-isaac acp --crew marvin"` → "Why did I get main crew?" zanebot cli.log: argv `["acp" "--crew" "marvin"]`, then `:session/behavior-resolved :crew "main" :session "session"`; `~/.isaac/sessions/main/session` (created 2026-07-10) was updated by his turn.
