@@ -4,8 +4,10 @@ title: CLI commands never print log entries; config warnings are shown only by t
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-24T13:51:39Z
+updated_at: 2026-09-24T14:09:05Z
 ---
 
 Micah, 2026-09-24: "What is all this crap being printed out? These CLI commands can't be printing garbage like this." Every `isaac …` command on zanebot prints two `{:ts … :level :warn, :event :config/unknown-key …}` lines before its own output.
@@ -38,3 +40,39 @@ So the fix is not just sink ordering:
 - **Config warnings are a `config` feature.** `isaac config validate` (and `config get/set` for the key they touch) print unknown-key and unresolved-reference findings as plain warning lines (`warning: hail-settings.beans-repos is not a declared key`), not as EDN log maps. No other command mentions them.
 - The `log-unknown-keys!` warn added by isaac-nq4c ("visible at boot") stays for the **server** boot log only — that is where an operator reads logs. Remove it from the CLI load path or make the sink swallow it.
 - Scenario: any non-config command (e.g. `isaac crew list`) on a root with an unknown key prints only its result — stderr empty; `isaac config validate` on the same root prints the warning as a human line; `logs/cli.log` still records the structured event.
+
+
+## Handoff
+
+Branch `bean/isaac-89q1` @ `fa8f46a1399690647fc45e74c4c8e7e9159e5684` in isaac-foundation, pushed to origin. Not merged — status stays in-progress, tagged unverified for /verify.
+
+### Root cause confirmed
+`main/run`'s first `config-api/load-resolved` call (before `register-module-cli-commands!` or `configure-cli-logging!` ever runs) triggers the loader's `warnings/log-unknown-keys!`/`log-unresolved-refs!`, which `log/warn` straight to `isaac.logger`'s default `:output :stderr` — no CLI sink exists yet. `register-module-cli-commands!`'s own internal config read was already safe (wrapped in `log/*quiet?* true`); the leak is specifically that first top-level load.
+
+### What changed
+- `src/isaac/log/output.clj`: extracted `explicit-output-override!` (private) out of `apply-cli!` — the operator's `--log-file`/`ISAAC_LOG_FILE` (forces the file sink at that path) or a bare `--log-level` (now opts into `:stderr`, i.e. "see it live") — and added `provisional-cli-sink!`, which applies that same decision *before config is loaded*, defaulting to the `logs/cli.log` file sink when neither flag is given. A harness-set `:memory` output is always left alone (existing tests unaffected).
+- `src/isaac/main.clj`: calls `(log-output/provisional-cli-sink! resolved-root :log-file-path log-file :env-log-file (env-log-file) :log-level log-level)` as the first form inside the CLI's `nexus/-with-nested-nexus` scope, before the first `config-api/load-resolved`. `--log-file`/`--log-level` are already parsed from argv by this point (no config needed), so an explicit flag is honored immediately; otherwise config load's own warnings land safely in `logs/cli.log` instead of being lost or leaked.
+- `isaac config validate` (`config/cli/validate.clj`) already printed warnings as plain `warning: :key - value` lines via `common/print-warnings!`, never EDN — confirmed correct, unchanged, now covered by a scenario.
+- Did **not** touch `config/cli/get.clj`/`set.clj` to print warnings for the touched key — not required by this bean's concrete acceptance list (only validate + the quiet-by-default rule + --log-level opt-in), and no existing behavior regressed.
+- `config/warnings.clj`: unchanged — `log-unknown-keys!`/`log-unresolved-refs!` still warn (isaac-nq4c), now safely captured by the provisional sink instead of leaking.
+
+### New/changed feature steps (spec-support)
+- `spec-support/src/isaac/foundation/cli_steps.clj`: added `"the stderr is empty"` step (mirrors the existing `"the stdout is empty"`).
+- `spec-support/src/isaac/foundation/fs_steps.clj`: added `"the CLI log file contains an event {event:string}"` — reads `logs/cli.log` (root-relative, via the existing `read-log-file-entries` helper already used by `isaac-log-file-no-server-origin`) and asserts some entry's `:event` matches (colon on the string is optional).
+
+### Feature: `features/cli/quiet_default_logging.feature` (new, 3 scenarios)
+1. A non-config command (`modules list`) on a root with an unknown top-level key: exit 0, stderr empty, `logs/cli.log` contains `:config/unknown-key`.
+2. `isaac config validate` on the same root: stderr has the human `warning: :bogus-top-level-key - unknown key` line, no `:level`/`:event` (i.e. not an EDN map).
+3. `modules list --log-level warn` on the same root: exit 0, stderr contains `config/unknown-key` (explicit opt-in still works).
+
+Confirmed red before the fix (stashed `main.clj`/`log/output.clj`, scenario 1 failed with the exact raw EDN leak on stderr), green after.
+
+### Test counts
+- `bb spec`: 1243 examples, 0 failures (was 1218 on origin/main before my changes; +7 new unit specs in `spec/isaac/log/output_spec.clj` for `apply-cli!`'s new log-level branch and `provisional-cli-sink!`, +18 from the rebase onto isaac-63ei).
+- `bb features`: 222 examples, 2 failures, 2 pending — the 2 failures are `features/cli/modules_pins.feature` ("fixture-agent" gitlibs fetch), confirmed pre-existing on a clean origin/main checkout in this environment (stale `~/.gitlibs` cache referencing a sibling `work-2` worktree path), unrelated to this bean.
+- `bb jvm-spec`: 1225 examples, 8 failures — confirmed byte-for-byte the same 8 (module-lifecycle/protocol `AbstractMethodError` set) on a clean origin/main checkout; this is isaac-jf80's known pre-existing set.
+- `bb ci`: fails only because its `bb features` sub-step hits the same 2 pre-existing `modules_pins.feature` failures above.
+- `bb lint` on touched files: 0 errors, 2 pre-existing warnings (unrelated lines, confirmed via git diff not touched by this change).
+
+### Stayed out of
+`config/mutate.clj`, `loader.clj`, `env.clj` (isaac-p4oj's files) — untouched. Rebased cleanly onto isaac-p4oj's sibling commit (isaac-63ei, `config get`/dot-entries) with no conflicts.
