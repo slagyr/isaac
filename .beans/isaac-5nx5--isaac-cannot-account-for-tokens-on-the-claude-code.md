@@ -130,3 +130,42 @@ Where the accounting belongs, having looked at the seams:
   log, not the transcript — the transcript is context that gets re-sent, and
   writing accounting into it would make the thing it measures more expensive.
   Per-turn totals stay in the transcript where they already are.
+
+## Correction: the tool-cap hypothesis is dead
+
+The leading candidate above — "tool results are capped when stored but sent in
+full" — is **wrong**, checked in code rather than argued. `cap-output` runs
+inside `isaac.tool.registry` at execution time:
+
+```clojure
+(let [capped (cap-output caps (:result result))]
+  (assoc result :result capped))
+```
+
+The capped value is what `execute` returns, so the same truncated text becomes
+both the transcript entry and the message sent to the model. There is no
+divergence at that seam.
+
+So the 3.4× gap between what Isaac stores for a request and what the request
+apparently carries is **still unexplained**, with one candidate left standing:
+the claude-code provider contributes per-request content Isaac never sees or
+records. That cannot be settled by reading Isaac's code — it needs the
+request-size logging this bean asks for. Note also that two of Isaac's own
+measures of the same turn already disagree by 1.7× (stored bytes ≈ 87k tokens
+vs the transcript's own `:tokens` fields summing to 145,260), so the
+instrumentation should establish a single trustworthy number before anyone
+reasons from the existing ones.
+
+## Also wanted: a usage report back to whoever asked for the turn
+
+The requester should be able to see what a turn cost without reading logs. A
+hail-driven turn already reports its outcome (`:hail/turn-ended`); the token
+cost belongs in the same place, and a comm-driven turn should be able to
+surface it the same way. Concretely:
+
+- the per-turn total travels with the turn's completion, so a hail reply, a
+  comm response, or a CLI `isaac prompt` can include it
+- it is opt-in per caller, not chattered into every reply — a human asking a
+  question over iMessage does not want a token bill appended to the answer
+- `isaac prompt` showing it behind a flag is the cheapest useful version and
+  probably the place to start
