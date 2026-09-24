@@ -58,3 +58,6 @@ Worth considering separately: two comms watching one chat.db is a hazard the
 platform cannot see. A warning when two hosts subscribe to the same db is out
 of scope here (they cannot observe each other), but a note in the berth
 description that the watch is db-wide would have prevented this.
+
+feature-baseline: isaac-imessage 9cdf858b77b1ff5c3f9cc20576bfb9afb604e31c
+feature-blob: isaac-imessage features/comm/imessage/outbound_only.feature f84c8b5d0efba5cd06af972dbc74b62739a4dc9f
