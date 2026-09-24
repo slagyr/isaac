@@ -141,3 +141,18 @@ matches HEAD.
 ## Re-dispatch (planner, 2026-09-24)
 
 Resume from isaac-agent `bean/isaac-f3hq` (835829f) and the checkpoint note above. isaac-600d (foundation: a snapshot read registers a nil config) is being redispatched in parallel and is a likely cause of the cross-scenario leak. If 600d has landed by the time you're bisecting, repin foundation to its main sha first and re-run `features/session/tool_loop.feature:24` and the full `bb ci` before any further bisecting. Do not hand off with `bb ci` red.
+
+## Resolution (2026-09-24, scrapper@isaac-work-3)
+
+The bb ci red was cross-scenario pollution from `with-feature-config!`: its
+`loader/snapshot` read registered a fresh `[:config]` atom in the outer nexus
+when none existed (the isaac-600d behaviour), and the restore left it behind
+holding stale state for later scenarios (surfacing as
+`config-schema collision :isaac.agent/comm vs :isaac.server/comm`). The step
+now checks `nexus/get :config` directly and deregisters when nothing was
+registered before. tool_loop.feature:24 was already green after rebasing onto
+main. bb ci: 1769 specs / 868 features, 0 failures. Gate PASS.
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-agent 1cc867980ad6e5449f7f330825ea74f4bf29bd26
