@@ -1,11 +1,11 @@
 ---
 # isaac-01kv
 title: 'isaac-discord cannot repin: it reads the retired [:defaults :crew] in production source'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-24T21:29:59Z
-updated_at: 2026-09-24T21:29:59Z
+updated_at: 2026-09-24T21:54:18Z
 ---
 
 Repo: **isaac-discord**.
@@ -64,3 +64,38 @@ isaac-gchat and isaac-gmail are already past this; each needs only a one-line
 isaac-agent repin (`da9214a` → `b6eb475`) to pick up isaac-clba. Verified in a
 scratch run: gchat `bb ci` exit 0 (173/0, 54/0), gmail exit 0 (127/0, 40/0).
 That is a separate, trivial change — do it whenever, it is not blocked on this.
+
+## Landed 2026-09-24 as isaac-discord `6df59f7`
+
+`bb ci` exit 0 under `ISAAC_GIT=1` (so the pins are honoured rather than the
+sibling checkouts): 55/0 native, 108/0 jvm-spec, 68/0 features (3 pending).
+
+**One correction to this bean's premise.** The `discord_app_spec.clj:112`
+failure was *not* caused by the repin — it was already failing at the old pins
+(`105 examples, 1 failure`, measured). Foundation has required a default crew
+since isaac-bfwn, so that app-spec's `:defaults`-less on-disk config was
+already invalid. What the repin actually added was **34 feature failures**,
+which `bb ci` never reported because jvm-spec exits first. Both are fixed.
+
+Only one production read existed (`discord.clj:144`), confirmed by a sweep of
+every `get-in` / `:defaults` / `:crew` / `:model` in `src/`.
+
+## A collision worth recording: isaac-zule landed in the same function
+
+While this was in flight, `f9f746d` (isaac-zule, "no crew named main") changed
+the same `channel-crew-id` — removing the `"main"` literal so a channel with no
+crew resolves to nil and the drive applies `defaults.crew`. The bean branch was
+cut before it, so a naive rebase would have **reinstated the `"main"` literal**
+that commit deliberately removed. Resolved keeping isaac-zule's intent: no
+literal, only the read relocated to `isaac.config.defaults`.
+
+Rebasing then failed a spec **isaac-zule itself had added**, asserting
+`{:defaults {:crew "yopp"}}` resolves to `"yopp"` — the retired flat shape. It
+passed only because the code under test still read the retired key; the moment
+the read moved, it returned nil. Migrated to
+`{:defaults {:frequencies {:crew "yopp"}}}`.
+
+That is isaac-57rl's thesis in miniature: a retired key stays invisible while
+one stale reader keeps it alive, and the test that should catch it is written
+in the same stale shape. Worth remembering that the fixture and the code can
+be wrong *together* and still be green.
