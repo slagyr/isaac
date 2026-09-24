@@ -8,9 +8,7 @@ tags:
     - ci
     - process
 created_at: 2026-09-18T04:53:38Z
-updated_at: 2026-09-19T01:36:56Z
-blocked_by:
-    - isaac-lsz2
+updated_at: 2026-09-24T23:38:02Z
 ---
 
 Structural follow-up to isaac-lsz2 (the symptom fix). Root cause: a bean spanning two repos must point the downstream repo at the upstream BEAN BRANCH while in flight; verify then squash-merges that branch into a new sha and deletes it, so the pin dangles (cli-server → foundation 3963266; isaac-server → agent b6284e42). A rule alone cannot fix a workflow that requires the bad pin temporarily.
@@ -92,3 +90,32 @@ Split: (1) this bean = foundation half (ready at 0b55d44) → verify lands it;
 (2) follow-up bean: wire `bb lint-pins` into the 15 modules via bb.edn-only
 test-support bump to the landed foundation main sha (or a fleet foundation bump,
 planner's call).
+
+
+
+## Planner adjustment (2026-09-24, prowl@isaac-plan) — foundation-only; module wiring split
+
+Conflict: `bb bean-gate verify` exits 2 (not gated), so the worker cannot land foundation — verify does. The re-dispatch required 15 modules pinned to a squash sha that does not exist until that land. Decision 3 forbids in-flight bean-branch sha pins; `bb.edn` has no `:dev-local`. Modules pin foundation at four shas; a `deps.edn` bump is a fleet upgrade, not one-commit wiring.
+
+**Decision: this bean is the foundation half only. Do not wire modules here. Do not bump fleet foundation pins. Do not require `modules_pins.feature` 0** — those 4 failures are on origin/main (stale gitlibs fixture-agent), env-only.
+
+### Split (draft — human promote)
+
+- **isaac-j4jr** (this) — isaac-foundation `bean/isaac-j4jr` @ `0b55d44` → verifier lands.
+- **isaac-xzef** (draft) — after foundation `main-sha`, wire `bb lint-pins` into the 15 modules via **bb.edn-only** test-support bump to that landed sha. Do **not** bump `deps.edn` product foundation pins (fleet upgrade is separate).
+
+### Controlling acceptance (this bean)
+
+isaac-foundation `bean/isaac-j4jr` @ `0b55d44` (or rebased / squash equivalent):
+
+    bb spec spec/isaac/foundation/pin_lint_spec.clj
+    bb lint-pins
+    bb spec
+
+0 failures on pin_lint. `bb lint-pins` ok. Docs already on isaac main (`verify.md` §6a, AGENTS.md `:dev-local`). Do **not** require full `bb features` / `bb ci` features exit 0 for the 4 pre-existing `modules_pins.feature` reds.
+
+### Worker now
+
+1. Do not start module wiring on this bean.
+2. Hand foundation to verifier. Do **not** land. Do **not** pin modules at `0b55d44`.
+3. Completing this bean unblocks the draft (after human promotion).
