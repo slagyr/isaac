@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-24T14:10:44Z
+updated_at: 2026-09-24T16:29:00Z
 ---
 
 Micah, 2026-09-24: "What is all this crap being printed out? These CLI commands can't be printing garbage like this." Every `isaac …` command on zanebot prints two `{:ts … :level :warn, :event :config/unknown-key …}` lines before its own output.
@@ -78,3 +78,7 @@ Confirmed red before the fix (stashed `main.clj`/`log/output.clj`, scenario 1 fa
 ## Landed on main
 
 main-sha: isaac-foundation fa8f46a1399690647fc45e74c4c8e7e9159e5684. Planner verified: bb spec 1243/0; bb features 222 examples, 0 failures after clearing the stale ~/.gitlibs fixture-agent cache (the two sibling-pins failures were that cache, pre-existing). Deploy = zanebot brew keg rebuild (Micah), together with isaac-p4oj.
+
+## Follow-up (planner, 2026-09-24)
+
+Deployed foundation fae35d6 to zanebot (brew HEAD keg) and `isaac --version` STILL printed the unknown-key warn: the packaged launcher (`isaac.launcher/-main`, run by `libexec/isaac.bb`) does its own `config-api/load-resolved` to compose the classpath BEFORE `isaac.main` runs, and that load hit the default stderr sink. The feature harness calls `main/run` directly so it never saw it. Fixed on foundation main d90c2098: the launcher installs `log-output/provisional-cli-sink!` before its load, with --log-file/--log-level from argv; `spec/isaac/launcher_spec.clj` pins the order. bb spec 1251/0, features 224/0.
