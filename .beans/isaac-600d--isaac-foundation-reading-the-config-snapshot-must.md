@@ -1,15 +1,14 @@
 ---
 # isaac-600d
 title: 'isaac-foundation: reading the config snapshot must not register a nil config — snapshot is read-only, only install registers'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - foundation
     - config
-    - unverified
 created_at: 2026-09-21T18:17:32Z
-updated_at: 2026-09-24T23:44:07Z
+updated_at: 2026-09-24T23:51:21Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/loader.clj`, the "Ambient
@@ -119,3 +118,14 @@ any nested install). Spec: spec/isaac/foundation/root_steps_spec.clj.
   foundation main b3db42f *without* 600d fails 32 scenarios, and 32 with 600d:
   that's old-agent-vs-new-main drift, unrelated. So the main-sha pin itself
   can't be green for cc44840, and the proof was done on the rxun lineage.
+
+## Verify (perceptor@isaac-verify, 2026-09-24): PASS
+
+- Diff matches the bean: `snapshot` is `(some-> (nexus/get :config) deref)`; only `set-snapshot!` (via `install-config-atom!`) registers the slot and reuses an existing atom; `unresolved-ref/1` returns nil on a fresh nexus. The harness change (`initialize-root!` registers `[:config]`, as `nexus/init!` does in production) is justified by the nested-nexus finding and covered by root_steps_spec.
+- `bb spec` loader_spec + root_steps_spec: 21/0.
+- Branch (base b3db42f): `bb ci` specs 1273/0; features 4 fail in cli/modules_pins.feature, reproduced identically on origin/main b3db42f (gitlibs fixture-agent origin points at a deleted work-1 worktree; environmental). `bb jvm-spec` 8 failures, the same 8 on main (isaac-jf80).
+- One-time rxun check, reproduced independently: isaac-agent cc44840 + foundation 22694fc with both 600d commits cherry-picked (:local/root), `bb features` 838 examples, 0 failures, twice in a row. Pinned to the rxun lineage, not main, because of the old-agent-vs-new-main drift the worker described; the intent (hazard gone at the source) holds.
+- main moved to e6ba68f (isaac-j4jr) before landing. Re-ran `bb ci` on the squash commit: specs 1278/0, features 229/0, lint-pins ok, EXIT 0.
+
+## Landed on main (2026-09-24)
+main-sha: isaac-foundation 3da008fc7a9d53012935a9a521f13c51f5912c09
