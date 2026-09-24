@@ -1,11 +1,11 @@
 ---
 # isaac-v2x1
 title: 'isaac-imessage cannot repin onto current isaac-foundation/isaac-agent: 3 lifecycle specs fail'
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-09-24T18:28:43Z
-updated_at: 2026-09-24T18:28:43Z
+updated_at: 2026-09-24T21:29:59Z
 ---
 
 Repo: **isaac-imessage** (`spec/isaac/comm/imessage_lifecycle_feature_spec.clj`),

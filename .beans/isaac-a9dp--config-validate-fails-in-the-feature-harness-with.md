@@ -1,11 +1,11 @@
 ---
 # isaac-a9dp
 title: 'config validate fails in the feature harness with an isaac.google tenant: scopes berth conformer casts Character to Map$Entry'
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-09-24T19:31:39Z
-updated_at: 2026-09-24T19:31:39Z
+updated_at: 2026-09-24T21:27:45Z
 ---
 
 Repo: **isaac-foundation** (berth-slice conformer), surfaced from **isaac-google**.
