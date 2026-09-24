@@ -1,11 +1,11 @@
 ---
 # isaac-p4oj
 title: 'config set / auth mint refuse valid writes: the staging validation never sees <root>/.env, so every ${VAR} reference resolves to unset'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-24T13:37:58Z
+updated_at: 2026-09-24T13:51:39Z
 ---
 
 Micah, 2026-09-24 on zanebot: `isaac http auth mint nightbird-cli --scopes cli` printed
@@ -28,3 +28,7 @@ Micah, 2026-09-24 on zanebot: `isaac http auth mint nightbird-cli --scopes cli` 
 - [ ] foundation tagged/pinned; zanebot's brew keg rebuilt (Micah)
 
 Repo scope: isaac-foundation (`config/mutate.clj`, features), isaac-http (`cli.clj`).
+
+## Preferred implementation (Micah + planner, 2026-09-24)
+
+No `--force` path — fix the validator, then mint. Prefer NOT copying `.env` into the staging fs: the process already holds the locked dotenv snapshot (`env/lock-dotenv!` ran for the live load). Make the staging load reuse that snapshot — e.g. `loader/load-config-result` takes an `:env` (or `:dotenv`) option that `validate-plan` passes from the live root, and `lock-dotenv!` is skipped when it is supplied. Copying the file is the fallback if the loader cannot be threaded that way. Either way nothing leaves the process; the mem-fs dies with the call.

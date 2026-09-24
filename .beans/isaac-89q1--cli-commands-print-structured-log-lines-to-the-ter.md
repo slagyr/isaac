@@ -1,11 +1,11 @@
 ---
 # isaac-89q1
 title: CLI commands never print log entries; config warnings are shown only by the config commands, as warnings
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-24T13:48:22Z
+updated_at: 2026-09-24T13:51:39Z
 ---
 
 Micah, 2026-09-24: "What is all this crap being printed out? These CLI commands can't be printing garbage like this." Every `isaac …` command on zanebot prints two `{:ts … :level :warn, :event :config/unknown-key …}` lines before its own output.
