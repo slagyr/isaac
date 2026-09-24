@@ -92,3 +92,116 @@ Both hosts run isaac.google `48625f2`. zanebot configures no Google tenant, so
 this is yopp-only today. yopp's `auth.json` stores `expires` = the *access*
 token's 1-hour expiry; nothing on disk records the refresh token's intended
 lifetime, which is part of why this is hard to observe.
+
+## Planner findings 2026-09-24 — the leading suspect is disproved, and so is its replacement
+
+**Rotation-persistence (the bean's leading suspect) is not the bug.** Verified
+in isaac-agent `src/isaac/llm/auth/store.clj:33` — `save-tokens!` writes
+`:refresh (:refresh_token tokens)` from the refresh *response*. The `cond->` at
+`token.clj:69-70` only fills the stored token in when the response omits one. A
+rotated token does land on disk.
+
+**A single-flight guard was added, but it does not explain the symptom.**
+`resolve-tokens` had no lock, unlike the generic
+`auth-store/refresh-oauth-tokens!`. Two callers could spend the same refresh
+token and both write `auth.json`. That is worth fixing on its own and is fixed.
+But the harm it prevents — "the loser writes back a token Google already
+rotated away" — requires Google to rotate, and measurement says it does not:
+
+    16:56:13Z  refresh_fp=5169c127552b  access_expires=1790268108185 (16:41:48Z, stale)
+    16:56:40Z  refresh_fp=5169c127552b  access_expires=1790272600870 (refreshed)
+
+A real refresh occurred (the access expiry moved) and the refresh token was
+**unchanged**. One observation is not proof Google never rotates, but the race
+is benign for this client on the evidence available, so **the ~15h cause
+remains unidentified.**
+
+(The fingerprint is a truncated sha256, never the token. Probe kept at
+`/tmp/tokfp.sh` on yopp.)
+
+## Next hypothesis to test first: a Workspace session-control policy
+
+The consent screen is **Internal**, i.e. the app is owned by the `tonotop.com`
+Workspace. Google Workspace admins can set a session/reauthentication policy
+(Admin console → Security → Access and data control → Google session control)
+that expires OAuth grants on a fixed clock. A ~15h interval that survives a
+fresh login and then dies again on the same cycle matches an **admin policy**
+far better than it matches anything in this codebase — and would explain why
+nothing on disk records the refresh token's intended lifetime.
+
+This is an admin-console check, not a code change. It should be ruled in or out
+before more code is written against defect 1.
+
+## Status of the acceptance list
+
+- Rotated refresh token persists, with a spec — **done** (the spec passes
+  against unfixed source; it documents existing behaviour rather than fixing it)
+- Concurrent refresh cannot leave a stale token — **done in-process**; the
+  cross-process case (a separate `isaac` CLI writing the same auth.json) is
+  documented in the `refresh-lock` docstring, not fixed. An on-disk lock or
+  atomic replace belongs in isaac-agent's `isaac.llm.auth.store`.
+- `invalid-grant-message` asserts no undetected cause — **done**. Note the
+  7-day branch is effectively unreachable in production: Google's `invalid_grant`
+  body carries no `expires_in`, and the login-time observation at `cli.clj:189`
+  is not persisted. Making the hint fire for real means changing the auth.json
+  entry shape in isaac-agent — out of scope here.
+- yopp survives >24h without re-login — **open, and now the only real proof.**
+  Re-fingerprint after 2026-09-25T16:00Z.
+
+## ROOT CAUSE FOUND 2026-09-24 — the pubsub scope drags the grant under a Cloud reauth policy
+
+isaac-google's own manifest contributes a **Google Cloud Platform** scope to the
+*user* login:
+
+    :isaac.google/scopes ["openid"
+                          "https://www.googleapis.com/auth/directory.readonly"
+                          "https://www.googleapis.com/auth/pubsub"]
+
+The `tonotop` Workspace has **Google Cloud console and SDK session control**
+configured. That page states, verbatim:
+
+> Select how often users are challenged for credentials on apps requiring
+> Cloud Platform scope.
+> The reauthentication policy above also applies to **non-Google apps**
+> requiring Cloud Platform scope.
+
+`auth/pubsub` is a Cloud Platform scope, so yopp's grant is in policy, and the
+reauthentication frequency — default **16 hours** — expires it. Measured
+interval was **14h50m**. That matches, and it explains every property that made
+this confusing:
+
+- survives a fresh login, then dies again on the same clock — it is a *policy
+  timer*, not a token defect
+- the refresh token on disk is never altered (measured: byte-identical
+  fingerprint across a real refresh) — Google revokes it server-side
+- Internal publishing status is irrelevant, which is why the Testing-mode
+  message was not merely unhelpful but pointed 180° away
+
+This is not a defect in the refresh code. Nothing in isaac-google could have
+prevented it.
+
+## The fix is to stop requesting a Cloud scope on a human's grant
+
+Pub/Sub is infrastructure. Subscribing to a topic is not something that should
+ride on a person's OAuth consent, and doing so is what pulls the entire Google
+grant — Gmail, Chat, directory — under a Cloud Platform reauthentication clock.
+A service account is the right credential for Pub/Sub. Tracked separately.
+
+Immediate unblocks available to the operator, in preference order:
+
+1. **Mark the app Trusted** (Apps Access Control) — the session-control page
+   offers "Exempt Trusted apps". Scoped to this app; no org-wide weakening.
+2. Move Pub/Sub to a service account and drop `auth/pubsub` from the user
+   scopes — the real fix, and it removes the policy's grip entirely.
+3. Set "Never require reauthentication" — org-wide, weakens posture, not
+   recommended.
+
+## Revised status
+
+- Defect 2 (`invalid-grant-message`) — **fixed and landed**, `b793c99`.
+- The single-flight lock — landed in the same commit. Correct hygiene, but
+  **not** the cause; keep it, do not credit it.
+- Defect 1 — **cause identified as an external Workspace policy.** The code
+  change that follows is removing the Cloud scope from the user grant.
+- "yopp survives >24h" — still the proof, but now predictable: it will fail
+  again around 2026-09-25T06:30Z unless option 1 or 2 is applied first.
