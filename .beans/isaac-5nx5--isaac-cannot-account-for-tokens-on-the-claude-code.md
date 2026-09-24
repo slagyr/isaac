@@ -1,11 +1,13 @@
 ---
 # isaac-5nx5
 title: Isaac cannot account for tokens on the claude-code provider, and a reset session reports a 938k gauge
-status: todo
+status: completed
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-24T20:47:50Z
-updated_at: 2026-09-24T20:47:50Z
+updated_at: 2026-09-24T22:06:14Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/drive/turn.clj`, session/compaction).

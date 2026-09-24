@@ -239,3 +239,127 @@ Still open, and worth instrumenting rather than guessing:
 Both are testable by logging the actual request size at send time, which is
 precisely what isaac-5nx5 asks for. The point is no longer "where did 35M go" —
 it is "why is a request 3.4× its transcript", and that is one measurement away.
+
+---
+
+# Third measurement, 2026-09-24: the instrumentation exists, and chars/4 is the first lie
+
+isaac-5nx5 added per-request accounting (`:turn/request-sent` with the
+composition, `:turn/request-measured` with the provider's own figure beside
+it). These numbers come from running the **real `claude` binary** through the
+claude-cli adapter with that instrumentation wrapped around it, one
+`--print --tools ""` invocation per row.
+
+## Isaac's token estimate is optimistic by 1.5×–2.1×
+
+| body | chars | isaac estimate (chars/4) | provider reported | chars per real token |
+|---|---|---|---|---|
+| minimal control | ~57 | 22 | 852 | — (fixes the preamble) |
+| English prose | 25,199 | 6,329 | 10,055 | **2.73** |
+| English prose, doubled | 50,399 | 12,629 | 19,255 | **2.73** |
+| JSON tool-call lines | 34,769 | 10,147 | 19,154 | **1.90** |
+| real Clojure source | 30,000 | 7,718 | 12,053 | **2.68** |
+
+Two things fall out of this and both matter.
+
+**1. The provider adds a fixed preamble, not a proportional one.** Prose at
+25k and at 50k chars sit on the same line to three significant figures:
+`reported = 837 + chars/2.73`. Doubling the content doubles the reported
+tokens exactly. So the claude-code provider is **not** injecting content that
+grows with the request — the one candidate hypothesis left standing in the
+previous section is wrong as stated. What it adds is a constant ~840 tokens
+per `--print` invocation with `--tools ""` (its own system prompt). A driven
+turn's preamble is larger — MCP tool schemas and the agentic system prompt —
+and is the 32k measured earlier, not this 840.
+
+**2. Four characters per token is wrong for the content Isaac actually
+sends.** Every estimate in the codebase — the context gauge, the per-entry
+`:tokens` stamp, `estimate-prompt-tokens`, compaction planning — divides
+characters by four. Measured against the real provider, the true divisor is
+2.7 for prose and code and **1.9 for JSON-shaped transcript content**: tool
+calls, tool results, file reads. A worker turn's transcript is mostly that.
+
+## This resolves the 1.7× disagreement between Isaac's own two measures
+
+The isaac-k00m turn measured 347,927 stored bytes (≈87k tokens at chars/4)
+while its own `:tokens` stamps summed to 145,260 — a 1.67× disagreement that
+made both numbers untrustworthy. 1.67 sits inside the measured 1.5–2.1 band.
+At the real ratio for that content mix, 347,927 bytes is **130k–183k tokens**,
+not 87k. The stamps were closer to the truth than the byte count, and the byte
+count is the one the 3.4× was computed from.
+
+Re-derived with the corrected transcript size: 32k fixed + an average carried
+transcript of ~91k (0 → 183k over 99 requests) ≈ **123k expected per request**
+against **358k measured**. So the gap is real but it is **2.9×, not 3.4×**,
+and about a third of what looked like a leak was an estimator error.
+
+## What is still open, and what will close it
+
+The remaining ~235k per request is Claude Code's own context, not Isaac's. In
+driven mode Isaac issues **one** request per turn and Claude Code runs its own
+99-cycle loop inside it; Isaac's transcript is a record of that loop, not its
+context. Claude Code's per-cycle context additionally carries its agentic
+system prompt, the MCP tool schemas, its own thinking blocks, its todo state,
+and the `<system-reminder>` blocks it injects each cycle — none of which Isaac
+assembles or stores.
+
+That is now one turn away from being a number rather than a hypothesis:
+`:turn/request-measured` logs `:estimated-tokens`, `:reported-prompt-tokens`,
+`:unaccounted-tokens`, `:ratio` and `:provider-cycles` for every request. Run
+one worker turn on zanebot with the instrumentation deployed and the
+per-cycle figures say exactly how much of a cycle is Claude Code's and how
+much is Isaac's.
+
+## Worth filing separately
+
+Changing the chars/4 divisor is not this bean's business but it is now a
+measured defect, not a guess: the compaction gauge under-reads real sessions
+by 1.5×–2.1×, which is the same direction as every "compaction fired too
+late" symptom.
+
+---
+
+# Resolution: the 3.4× was two thirds estimator error and one third somebody else's loop
+
+isaac-5nx5's instrumentation, measured against the real `claude` binary.
+
+**The provider does not inject content that scales.** Prose at 25k and 50k
+chars land on `reported = 837 + chars/2.73` to three significant figures.
+Doubling the content doubles the reported tokens exactly. What Claude Code adds
+per `--print` invocation is a **constant ~840 tokens**, not a multiplier. The
+last standing hypothesis from the section above is dead as stated.
+
+**Isaac's estimator is calibrated wrong.** `estimate-tokens` divides characters
+by 4. Measured: **2.73** for prose, **2.68** for Clojure source, **1.90** for
+JSON-shaped content — and a worker transcript is mostly JSON. Isaac under-reads
+what it sends by 1.5×–2.1×. Filed as isaac-221w.
+
+**That resolves Isaac disagreeing with itself.** The 1.67× between stored bytes
+(≈87k at chars/4) and the transcript's own `:tokens` stamps (145,260) sits
+inside the measured band. At the real ratio that content is **130k–183k
+tokens, not 87k**. The stamps were closer to the truth; the byte count is the
+one the 3.4× was computed from.
+
+**So the gap is 2.9×, and the remainder is not Isaac's.** Re-derived: 32k fixed
++ ~91k average carried transcript (0 → 183k) ≈ **123k expected** against
+**358k measured**. About a third of the apparent leak was the estimator.
+
+The rest is the shape of the thing. **In driven mode Isaac issues one request
+per turn.** The 99 "requests" counted earlier were Claude Code's own cycles,
+running its agentic loop inside that single call — carrying its system prompt,
+MCP tool schemas, thinking blocks, todo state and per-cycle reminders. Isaac's
+transcript is a *record* of that loop, not its context. Nothing was re-sending
+context; a different agent was running its own loop and billing for it.
+
+**What that means for the original question.** "Why did one bean cost 35.5M
+tokens" has a boring answer: a cycle-based agent with a large preamble ran 99
+cycles, and cycle-based agents pay their preamble every cycle. The interesting
+answer is that Isaac could not see any of this, and two of the three numbers it
+did report were wrong — which is the actual finding, and why isaac-5nx5 was
+worth more than the diagnosis it was chasing.
+
+Still inferred, not measured: the ~235k per-cycle Claude Code preamble.
+`:turn/request-measured` logs `:provider-cycles`, `:provider-cycle-max` and
+`:provider-cycle-min` for exactly this, but a driven-mode turn needs the MCP
+listener and a live tool registry, so it is one deployed turn away from being a
+number rather than an estimate.
