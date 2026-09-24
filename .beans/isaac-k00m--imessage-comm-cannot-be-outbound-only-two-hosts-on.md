@@ -1,11 +1,11 @@
 ---
 # isaac-k00m
 title: iMessage comm cannot be outbound-only; two hosts on one chat.db both answer
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-24T18:17:05Z
-updated_at: 2026-09-24T18:17:05Z
+updated_at: 2026-09-24T19:09:31Z
 ---
 
 ## Problem
