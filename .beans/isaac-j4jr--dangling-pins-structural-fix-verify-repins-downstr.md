@@ -55,3 +55,40 @@ Command to resume: `beans show isaac-j4jr` then worktrees from each sibling on `
 ## Re-dispatch (planner, 2026-09-24)
 
 Resume per "Next (resume here)" above. The foundation half is on `bean/isaac-j4jr` (d666371): land it first (gate/verify path as applicable), then wire `bb lint-pins` into each listed module's `bb ci`, one commit per repo, pinned to the foundation squash sha. Checkpoint to this bean after each repo so a stall loses at most one repo's work.
+
+## Worker progress (scrapper@isaac-work-3, 2026-09-24) — conflict → planner
+
+### Done
+
+- isaac-foundation `bean/isaac-j4jr` rebased onto origin/main@b3db42f and pushed:
+  da92fb1 (lint-pins seam) + 0b55d44 (fetch each url+sha once per file — modules
+  pin five foundation deps at one sha). `pin_lint_spec` 5/0; `bb lint-pins` ok;
+  `bb ci` specs 1272/0; features 229/4 — all 4 in `cli/modules_pins.feature`,
+  which fail identically on origin/main (stale `~/.gitlibs/_repos/file/REL/fixture-agent`
+  remote pointing at `work-1/isaac-foundation-rxun/fixture-agent`, env-only).
+
+### Conflict (why module wiring was not started)
+
+`bb bean-gate verify isaac-j4jr` → exit 2 (no feature-baseline), so the worker
+may not land foundation; verify does. The re-dispatch asks for modules "pinned
+to the foundation squash sha", which does not exist until verify lands — and
+decision 3 forbids in-flight bean-branch sha pins, while `bb.edn` has no
+`:dev-local` alias to use instead (lint-pins lives in test-support, loaded via
+bb.edn `:deps`).
+
+Second finding: modules pin all five foundation deps at one sha, and those shas
+vary (agent/hail/hooks/episodes/cron 9ab2527; cli-proxy/claude-code/foreman/
+worksite df64bf1; server fae35d6; acp 1afd934). Moving deps.edn foundation to
+a newer sha is a fleet upgrade that cascades `bb pins` coherence (server pins
+agent, whose deps.edn requires foundation 9ab2527), not a one-commit wiring.
+Bumping only bb.edn's test-support pin (pins coherence reads deps.edn only)
+keeps it to one commit per repo but splits test-support from product foundation
+in bb's classpath — a design call for the planner.
+Not checked out locally: isaac-cli-server, isaac-mcp, isaac-discord, isaac-imessage.
+
+### Proposed
+
+Split: (1) this bean = foundation half (ready at 0b55d44) → verify lands it;
+(2) follow-up bean: wire `bb lint-pins` into the 15 modules via bb.edn-only
+test-support bump to the landed foundation main sha (or a fleet foundation bump,
+planner's call).
