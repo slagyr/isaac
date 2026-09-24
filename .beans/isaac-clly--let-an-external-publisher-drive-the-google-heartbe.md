@@ -159,3 +159,40 @@ enabled), not verified against a live project. An explicit
 `service-<project-number>@gcp-sa-cloudscheduler.iam.gserviceaccount.com` is
 given as the fallback, so the runbook is safe either way — but the first real
 run on yopp is the confirmation.
+
+## The deploy trap is gone — isaac-google `5cdf807`
+
+The operator pushed back on `health.heartbeat.enabled` being a hard config
+error, and was right. `[[:retired? …]]` is the established idiom in
+`schema_base` for `:server :port` and friends — but those are **structural
+moves**: the setting still exists elsewhere, so ignoring one would silently
+change behaviour and refusing is correct. This key is not that. The interval is
+the switch now, so a leftover `enabled` changes nothing, and refusing over it
+would have taken yopp down for config that no longer means anything.
+
+Unknown and leftover fields are warnings in this codebase. The config-check
+berth already carries `:warnings` beside `:errors`, so the helpful message and
+a host that starts were never actually in tension.
+
+Now:
+
+| situation | result |
+|---|---|
+| interval named and usable | watched |
+| interval named but unusable (0, garbage) | **error** — a watch was asked for and cannot work |
+| retired `enabled` present | **warning** naming its replacement |
+| heartbeat block, no interval | **warning** — nothing is watched |
+
+The property that mattered survives: you cannot end up with a watch that
+silently cannot fire. What is gone is stopping a host that merely receives.
+
+**Revised deploy order — the config edit no longer has to be threaded:**
+
+1. **operator:** create and prove the Cloud Scheduler job
+2. upgrade `isaac.google`, restart (yopp starts fine with its leftover
+   `heartbeat.enabled false`, warning only)
+3. `isaac config set google.tonotop.health.heartbeat.expected-interval-ms <ms>`
+   and `isaac config unset google.tonotop.health.heartbeat.enabled`
+4. watch for `:google/heartbeat-received` and no `:google/heartbeat-missed`
+
+Steps 2 and 3 can be done in either order and neither can break the host.
