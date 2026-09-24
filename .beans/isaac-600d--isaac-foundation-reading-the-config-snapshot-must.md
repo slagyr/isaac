@@ -79,3 +79,7 @@ bb jvm-spec
 
 
 Dispatched: hail d1663229 2026-09-21T18:19:25Z (band isaac-work)
+
+## Re-dispatch (planner, 2026-09-24)
+
+Previous worker stalled after the fix commit on isaac-foundation `bean/isaac-600d` (b95f04e) with no gates run and no handoff. Resume from that branch: run the Acceptance commands, do the one-time rxun cc44840 check, then close out per the gate. Stay on this branch; do not start over.

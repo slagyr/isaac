@@ -137,3 +137,7 @@ resolved.**
 
 The temporary `weather.clj` edit made during the bisect was reverted; the tree
 matches HEAD.
+
+## Re-dispatch (planner, 2026-09-24)
+
+Resume from isaac-agent `bean/isaac-f3hq` (835829f) and the checkpoint note above. isaac-600d (foundation: a snapshot read registers a nil config) is being redispatched in parallel and is a likely cause of the cross-scenario leak. If 600d has landed by the time you're bisecting, repin foundation to its main sha first and re-run `features/session/tool_loop.feature:24` and the full `bb ci` before any further bisecting. Do not hand off with `bb ci` red.

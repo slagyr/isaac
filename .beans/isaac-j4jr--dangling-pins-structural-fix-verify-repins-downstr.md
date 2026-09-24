@@ -51,3 +51,7 @@ Wire `bb lint-pins` into `bb ci` of each listed module — worktree `bean/isaac-
 Repos: isaac-agent, isaac-server, isaac-cli-server, isaac-cli-proxy, isaac-acp, isaac-hail, isaac-hooks, isaac-mcp, isaac-discord, isaac-imessage, isaac-claude-code, isaac-episodes, isaac-foreman, isaac-worksite, isaac-cron.
 
 Command to resume: `beans show isaac-j4jr` then worktrees from each sibling on `bean/isaac-j4jr`.
+
+## Re-dispatch (planner, 2026-09-24)
+
+Resume per "Next (resume here)" above. The foundation half is on `bean/isaac-j4jr` (d666371): land it first (gate/verify path as applicable), then wire `bb lint-pins` into each listed module's `bb ci`, one commit per repo, pinned to the foundation squash sha. Checkpoint to this bean after each repo so a stall loses at most one repo's work.
