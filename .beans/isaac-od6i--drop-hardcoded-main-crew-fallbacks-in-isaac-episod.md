@@ -1,13 +1,13 @@
 ---
 # isaac-od6i
 title: Drop hardcoded main crew fallbacks in isaac-episodes
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - episodes
 created_at: 2026-09-16T15:49:57Z
-updated_at: 2026-09-23T21:26:15Z
+updated_at: 2026-09-24T23:38:17Z
 blocking:
     - isaac-zule
 blocked_by:
