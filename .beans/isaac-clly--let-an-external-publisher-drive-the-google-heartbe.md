@@ -77,3 +77,33 @@ not a health check.
 
 yopp is the live case: `google.tonotop.health.heartbeat.enabled false` today,
 which should become the externally-driven mode once this lands.
+
+## No service account is needed for this (verified 2026-09-24)
+
+Google's own documentation on creating a Cloud Scheduler job states, for a
+Pub/Sub target:
+
+> Cloud Scheduler will publish messages to this topic as a Google APIs service
+> account.
+
+A user-managed service account is required only for **HTTP** targets. For a
+Pub/Sub target the identity is Google's own and there is nothing to create, no
+key to export, and nothing for `constraints/iam.disableServiceAccountKeyCreation`
+to refuse.
+
+So this path needs **no** `isaac-pubsub` service account. The one created on
+2026-09-24 is inert and can be deleted; its `roles/pubsub.publisher` binding
+goes with it.
+
+### Consequence for isaac-286x's machinery
+
+`isaac.google.service-account` — the JSON-key reader, the RS256 assertion, the
+token cache, and the `google.<org>.pubsub.credentials-file` config key — is
+then unused on every host, for every purpose except `isaac google smoke
+--send-live`, which is a manual probe someone runs and watches.
+
+That is a decision to make deliberately rather than let drift: either keep it
+for the smoke probe and say so in its docstring, or delete it and let
+`--send-live` report that publishing is no longer Isaac's job. Dead credential
+plumbing is worth removing — it is the kind of thing that gets configured
+years later by someone who assumes it must be needed.
