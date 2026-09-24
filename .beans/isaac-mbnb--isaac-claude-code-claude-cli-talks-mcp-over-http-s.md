@@ -1,13 +1,11 @@
 ---
 # isaac-mbnb
 title: 'isaac-claude-code: Claude CLI talks MCP over HTTP straight to the per-turn listener — no stdio bridge process'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-24T17:58:50Z
-updated_at: 2026-09-24T18:26:23Z
+updated_at: 2026-09-24T18:34:30Z
 ---
 
 Micah, 2026-09-24: "if we can drop the [bridge] and go directly to HTTP, that sounds much more efficient. Why wouldn't we do that?"
@@ -42,3 +40,9 @@ Repo scope: isaac-claude-code (`claude_cli.clj` write-mcp-config!, `mcp_listener
 - Counts at this commit: `bb spec` 90 examples / 0 failures / 3 pending (real-CLI smokes, expected, unrelated); `bb features` 60 examples / 0 failures; `bb ci`'s `config-bypass-lint` and `lint-cli-host` both ok.
 - Design note for review: `/claude/turns/:id` (the `isaac.http/route`, separate from the per-turn listener that `write-mcp-config!` actually points at) now goes through the same new `mcp-route/dispatch` — so it also answers `initialize` with an echoed `protocolVersion` and 202/empty-bodies notifications, where before it just forwarded everything to `isaac.mcp.turns/handle` (which has its own generic, non-echoing `initialize` handler). This seemed like the natural place to share the classification logic per the task's "implement in mcp_listener.clj/mcp_route.clj" phrasing, but it's a behavior change to a route I didn't otherwise touch — worth confirming nothing else depends on that route's old non-echoing `initialize` reply.
 - **Real-CLI smoke still needed before the registry pin moves** (bean's own acceptance item, explicitly planner-owned): on a host with `claude` logged in, run the module's smoke / `isaac prompt --model claude-cli` with a prompt needing the exec tool, confirm `tools/call` reaches the listener, the reply carries the output, and the CLI's `mcp_status` event shows the `isaac` server connected. I did not run this — no logged-in `claude` session was available/appropriate to use from this worker context, and the bean reserves it for the planner.
+
+## Landed on main
+
+main-sha: isaac-claude-code 591b5a0c6c9e7906a4772cd57e5221266d304e8b (0.2.0). Planner verified: bb spec 90/0 (3 pending real smokes), bb features 60/0. Registry repinned from 94a3bd6.
+
+Real-CLI smoke (planner, 2026-09-24, claude 2.1.281 on the planner box, personal seat): a driven turn with `{:drives-tool-loop? true}` wrote `{:mcpServers {:isaac {:type "http" :url "http://127.0.0.1:<port>" :headers {:Authorization "Bearer <nonce>"}}}}`, the CLI connected, called `mcp__isaac__exec` through the listener (tool-fn executed; driver-exit cycles 5, one `user` tool-result event) and replied with the exact nonce. The pre-existing non-driven `claude_cli_real_spec` roundtrip case fails on origin/main too — filed separately.

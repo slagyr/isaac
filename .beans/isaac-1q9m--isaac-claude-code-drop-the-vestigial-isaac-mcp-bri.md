@@ -1,13 +1,11 @@
 ---
 # isaac-1q9m
 title: 'isaac-claude-code: drop the vestigial `isaac mcp-bridge` CLI command'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-24T17:58:50Z
-updated_at: 2026-09-24T18:26:23Z
+updated_at: 2026-09-24T18:34:30Z
 ---
 
 Micah, 2026-09-24: "Why does Zane still have an MCP bridge command? … definitely drop the command."
@@ -30,3 +28,7 @@ Repo scope: isaac-claude-code.
 - Counts at this commit: `bb spec` 90 examples / 0 failures / 3 pending (real-CLI smokes, expected); `bb features` 58 examples / 0 failures. `bb ci`'s `config-bypass-lint` and `lint-cli-host` both ok.
 - Note for the planner: the acceptance text suggested an `isaac help`-style CLI-dispatch scenario, but this repo's feature harness (Grover fixture) doesn't load the module-registry/CLI-dispatch machinery that `isaac-foundation-spec`'s `cli_as_berth.feature` uses (that needs a real `:modules {...}` + subprocess `isaac run with X`, not wired into this repo's `bb.edn` `:features` alias). I substituted a direct manifest-content assertion (matching the pattern the old `mcp_bridge/main_spec.clj` test already used for `:hosted true`) rather than pulling in that heavier harness. Worth a look if you want the literal "isaac help lists no mcp-bridge" behavior proven end-to-end.
 - The feature file housing this scenario (`mcp_bridge.feature`) is renamed to `mcp_transport.feature` in the isaac-mbnb commit that follows — the "no CLI command" scenario rides along in that rename, still present and green.
+
+## Landed on main
+
+main-sha: isaac-claude-code a8bf978 (0.1.19), squashed with isaac-mbnb onto 591b5a0c6c9e7906a4772cd57e5221266d304e8b. Planner verified: bb spec 90/0, bb features 60/0.

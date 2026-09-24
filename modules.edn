@@ -5,7 +5,7 @@
                                       :git/sha "1e046011e589c5dca894f8a6e3e07036f2c04da1"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
-                                      :git/sha "94a3bd64a2dddea37847920c5e7e5f6bcbd79013"}
+                                      :git/sha "591b5a0c6c9e7906a4772cd57e5221266d304e8b"}
                               :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
                                       :git/sha "d1380ad0216a14c13323548c537f3e1e9bbed9d7"}
