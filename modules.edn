@@ -38,7 +38,7 @@
                                       :git/sha "a2f57005e00b4555d441b6dba8a8b8197e538378"}
                               :desc  "Google Chat comm — inbound gate, routing and dispatch for spaces and DMs; outbound replies and sends. Built on isaac-google."}
  :isaac.comm.gmail           {:coord {:git/url "https://github.com/slagyr/isaac-gmail.git"
-                                      :git/sha "d6a99b7165bc5f46851607c4543578b2d9860136"}
+                                      :git/sha "7d99525dd2ec87424421b18d0974bcfa423a4e5e"}
                               :desc  "Gmail comm — watch on INBOX, history walk, thread-as-session routing; replies on thread. Built on isaac-google."}
  :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
                                       :git/sha "f9f746dc237941486ff36403116e6ff554435c26"}

@@ -84,3 +84,13 @@ names in specs/config excluded, per rule).
 - main-sha: isaac-hooks c4656ead03b1a0aec9123f1f825a178aad429812 (0.1.5) — spec 32/0, features 20/0. A hook with neither crew nor session now emits frequencies without :crew; hail resolves the default.
 
 Registry repinned for all three. Remaining: isaac-od6i (episodes) blocks completion; zanebot upgrade of discord/acp/hooks is Micah's call.
+
+## Landing sweep (planner, 2026-09-24)
+
+Swept `src` on origin/main of every isaac-* repo for `"main"`:
+- **Regression, fixed:** isaac-betb (landed 2026-09-23, after zule's gmail fix) added `(or (:crew (triage-cfg cfg)) "main")` in isaac-gmail triage.clj. main-sha: isaac-gmail 7d99525dd2ec87424421b18d0974bcfa423a4e5e (0.2.4). Triage crew is now gmail/triage :crew, else `defaults/crew-id`. It can't pass nil because no-tools-config needs a concrete crew. Spec 129/0, features 40/0, CI green. Registry repinned (d6a99b7 → 7d99525; the repin also brings in completed 3427, u80t, betb and clba).
+- isaac-discord discord.clj:147 is a comment ("No \"main\" …"), so it doesn't count.
+- isaac-episodes: 17 sites remain in cli, layout, lifecycle and migrate. That is isaac-od6i, hailed to isaac-work 2026-09-24 (6e913eee).
+- Every other repo is clean: acp, agent, claude-code, cli-proxy, cli-server, cron, foreman, foundation, gchat, google, hail, hooks, http, imessage, mcp, server, worksite.
+
+Remaining: isaac-od6i completes → re-run the sweep → close zule. The zanebot upgrade (gchat, gmail, discord, acp, hooks) is Micah's call.
