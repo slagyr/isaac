@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: critical
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-24T14:25:00Z
+updated_at: 2026-09-24T14:29:08Z
 ---
 
 Micah, 2026-09-24 on zanebot: `isaac http auth mint nightbird-cli --scopes cli` printed
@@ -67,3 +67,5 @@ The bug isn't just "staging can't see .env" — even with that fixed, the pre-ex
 - main-sha: isaac-http d128711c71e71177fe1261fbc633f51977ab8a54 (0.1.24) — auth mint/rotate print one readable line per validation error; foundation repinned to b81e021; bb ci green. Registry http pin moved.
 
 Deploy: zanebot brew keg rebuild for foundation (Micah), then `isaac modules upgrade isaac.http` + restart; then `isaac http auth mint …` works.
+
+Follow-up: the isaac-89q1 sink change made `--log-file` lose to the harness :memory sink, breaking isaac-http's S3b log-lifecycle scenario after the repin (I pushed http main with that one red — my pipeline swallowed the exit code). Fixed on foundation main fae35d6 (log-file checked first again); http repinned at c08f69c879e059c095e54d2802d2f889807315bd, bb ci fully green; registry http → c08f69c879e059c095e54d2802d2f889807315bd.
