@@ -1,11 +1,11 @@
 ---
 # isaac-k00m
 title: iMessage comm cannot be outbound-only; two hosts on one chat.db both answer
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-24T18:17:05Z
-updated_at: 2026-09-24T19:09:31Z
+updated_at: 2026-09-24T19:20:59Z
 ---
 
 ## Problem
@@ -61,3 +61,42 @@ description that the watch is db-wide would have prevented this.
 
 feature-baseline: isaac-imessage 9cdf858b77b1ff5c3f9cc20576bfb9afb604e31c
 feature-blob: isaac-imessage features/comm/imessage/outbound_only.feature f84c8b5d0efba5cd06af972dbc74b62739a4dc9f
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-imessage 572eafaf174d58c17332de6a6021079f7dd706e5
+
+What shipped:
+
+- `:imessage/inbound? false` makes a comm send-only. `on-load` (and the
+  reconnect path) call `subscribe-unless-send-only!`, which skips
+  `watch.subscribe` and logs `:imsg.watch/send-only`. Absent or `true` keeps
+  the bidirectional behaviour.
+- `notification->work-item` returns nil on a send-only slice
+  (`:imessage.intake/send-only` at debug), so even a notification that arrives
+  some other way dispatches nothing.
+- Berth schema: `:imessage/inbound?` (`:boolean`) documented as the inbound
+  switch, with `:imessage/allow-from` named as the sender whitelist it is. The
+  `:imessage/db-path` description now states the watch is database-wide and
+  that all but one host sharing a db needs `:imessage/inbound? false` — the
+  note the Notes section asked for.
+- Suites: `bb ci` green (63 native, 72 JVM specs, 23 feature scenarios).
+  Both mutations of the new predicate (always-inbound, never-inbound) were
+  checked to fail the new scenarios before the real one was restored.
+
+Two test-quality fixes the work uncovered, both in this repo's specs:
+
+- `imessage_spec.clj` wrapped eight `it`s in a `let` inside `describe`; a let
+  yields only its last form, so seven of them had never run. Fixtures moved to
+  top level — the suite went 55 → 63 examples, all green.
+- The `the polled work items are:` step asserted nothing when handed a
+  header-only table (match-entries iterates rows). It now also asserts item
+  count == row count, so this bean's empty-table scenario is real.
+
+## Operator follow-up (not reachable from this repo)
+
+The third acceptance bullet is host config on **yopp**, not code: replace
+`:imessage/allow-from []` with `:imessage/inbound? false` and restore
+allow-from to the operator's handle. yopp's `~/.isaac/config` is not on this
+machine (zanebot's copy already carries the real allow-from), so it needs the
+operator's hand. The flag it needs now exists and hot-reloads.
