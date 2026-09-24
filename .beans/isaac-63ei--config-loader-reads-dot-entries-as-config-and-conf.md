@@ -1,11 +1,11 @@
 ---
 # isaac-63ei
 title: Config loader reads dot-entries as config, and config get disagrees with config validate
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-24T13:32:28Z
-updated_at: 2026-09-24T13:55:50Z
+updated_at: 2026-09-24T14:00:15Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/tree.clj`, and whatever path
@@ -185,3 +185,51 @@ downstream breaks and no repin is *required*: the change adds one public fn
 repo references any changed surface. A repin train is needed only to ship the
 fix to hosts — worth doing, since until then `isaac config get` remains broken
 on any host using an entity directory.
+
+## Verified and closed (2026-09-24, planner)
+
+main-sha: isaac-foundation 24800a8dcc6e474900d1845dd3ae4d2565675b13
+
+Confirmed independently: `paths/hidden-name?` is on main with the reasoning in
+its docstring, and `common_spec` carries the redaction guard.
+
+### The finding that outgrew the bean
+
+I filed this as "a hidden backup directory got read as config." The worker's
+second fixture showed defect 2 has **nothing to do with hidden names**: an
+ordinary visible entity directory — `config/crew/keaton/_.edn`, isaac-49zp's
+flagship form — reproduces the same crash. So `isaac config get` has been broken
+on **every** tree using an entity directory since 49zp landed, and yopp's stray
+backup was merely the first thing to expose it.
+
+Cause: the CLI resolves config once and threads it (isaac-v1la), and `config
+get` is the only subcommand that then re-reads its `:sources` off disk to find
+`${VAR}` tokens for redaction. Since 49zp a source can be a directory;
+`fs/exists?` says true and `fs/slurp` throws. `validate` never re-reads, so it
+certified a tree `get` could not read.
+
+Worth recording: the fix makes a directory source stand for the files inside it
+rather than skipping directories, because skipping would have found no tokens
+and **silently stopped redacting secrets** in those files. There is a spec
+pinning that.
+
+### Why the suite could not see it
+
+Two blind spots, both now closed: specs called subcommands with no threaded
+`:config`, so the redaction branch never ran; and mem-fs answers `exists?` false
+for a directory path where RealFs answers true and then throws — so even a
+threaded spec would have passed. `common_spec` now has a `like-real-fs` double.
+
+### Live exposure
+
+Neither host is affected: checked both, and neither zanebot nor yopp has any
+entity directory (yopp's hidden one was moved to `~/isaac-config-attic/`). The
+fix matters for anyone adopting the entity-directory form, which is the form
+49zp exists to enable.
+
+### Repin
+
+Not required for correctness — the change adds one public fn and otherwise
+touches private fns; no sibling module references the changed surface. Needed
+only to ship. Hosts pick it up from their foundation install (brew keg on
+zanebot, source checkout on yopp), so shipping needs no module repins at all.
