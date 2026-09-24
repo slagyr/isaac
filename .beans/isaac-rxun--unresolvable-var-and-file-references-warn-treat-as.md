@@ -4,8 +4,10 @@ title: 'Unresolvable ${VAR} and ${file:…} references: warn, treat as unset, ne
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-21T16:28:51Z
-updated_at: 2026-09-21T18:17:32Z
+updated_at: 2026-09-24T23:46:35Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
@@ -415,3 +417,68 @@ Verify's diagnosis stands. Two bugs: the foundation read that registers a nil co
 ## Re-dispatch (planner, 2026-09-24)
 
 Previous worker stalled with no handoff. Resume from the branches: isaac-foundation `bean/isaac-rxun` (d66bc05) and isaac-agent `bean/isaac-rxun`. Follow the 2026-09-21 planner note: carry the reason on the provider slice (two-arity `loader/unresolved-ref`, no ambient config read in provider code), fix the dead nil guard in the sequence branch of `substitute-env-recursive` and spec it. Bar: isaac-agent `bb ci` green twice on the squash commit. isaac-600d is being redispatched in parallel. It does not block this bean.
+
+
+## Note for whoever resumes (2026-09-21, scrapper@2026-06-29-1749-iaqu)
+
+I picked up the verify-fail, then this session was re-dispatched to another
+project mid-turn. Only the **MINOR** item is done; the BLOCKING one is not
+started. Recording what exists so it is not redone:
+
+- **isaac-foundation `bean/isaac-rxun` recreated off `main` 22694fc, pushed @
+  `d66bc05`** — `parse/substitute-env-recursive` now keeps an explicit `nil`
+  inside a sequence. `keep-indexed` discarded every `nil` return, so the
+  "explicit nil is kept" promise held only in the map branch; the seq branch
+  now marks a dropped entry with a private sentinel and removes just that.
+  Spec added beside the map one: "keeps an explicit nil inside a sequence,
+  where position is meaning". `bb ci` green — 1131 spec / 0, 198 features / 0
+  / 2 pre-existing pendings (the `cli/modules_pins.feature` reds are the stale
+  `~/.gitlibs/_repos/file/REL/fixture-agent` mirror; `rm -rf` it first).
+- **isaac-agent: untouched.** `bean/isaac-rxun` is still perceptor's `cc44840`
+  (my `5d4a655` + the repin of all 18 foundation coordinates to `22694fc`).
+  The ambient-snapshot blocker in `openai/shared.clj` `missing-auth-error` is
+  open. Reading for whoever takes it: the call sites that have the root config
+  in hand are `charge/ensure-provider` (`src/isaac/charge.clj:90`) and
+  `config.resolve/resolve-crew-context` (`src/isaac/config/resolve.clj:104`) —
+  both already build the enriched provider slice from the root `cfg`, so
+  option (a) is a matter of stamping the one `unresolved-ref` for
+  `providers.<name>.api-key` onto that slice there and letting
+  `missing-auth-error` read it off the value it is already given. That is
+  option (b) in perceptor's framing and needs no foundation change.
+
+## Verify-fail rework done — handed to verify (2026-09-24, scrapper@isaac-work-1)
+
+(The note above came from a stray `.beans/isaac-rxun*.md` file, created when a shell glob didn't expand. It is folded in here and the stray file is deleted.)
+
+**Branches (both pushed, rebased on current origin/main):**
+
+- isaac-foundation `bean/isaac-rxun` @ `2c6206b`, base origin/main `b3db42f`
+  - `3dc0b1f` the seq-branch explicit-nil fix (the previous worker's `d66bc05`, rebased)
+  - `2c6206b` **new:** `normalize-config` keeps `:unresolved-refs` (added to `extra-present-config-keys`). Without this, every path that normalizes before cutting a provider slice (`resolve-provider`, `resolve-crew-context`, `session/context`) dropped the reasons, so the slice could never carry them. Spec: normalize_spec "keeps the loader's :unresolved-refs" (red before the change).
+- isaac-agent `bean/isaac-rxun` @ `6c127e5`, base origin/main `05cef53`
+  - `config.resolve/resolve-provider` stamps the provider's own entries of the root `:unresolved-refs` (prefix `providers.<base-id>.`, where a simulated id `x:y` maps to base `x`) onto the slice it returns. It adds nothing when all of the provider's references resolved.
+  - `shared/api-key-missing-error` is the one message builder: two-arity `(loader/unresolved-ref config "providers.<base>.api-key")` on the slice it was handed. **No one-arity or ambient read remains in agent src** (`grep -rn unresolved-ref src`). Anthropic's `messages/missing-auth-error` delegates to it, so both API families name the variable.
+  - Specs: shared_spec runs the unresolved-ref examples with `loader/snapshot` redefined to **throw**, which proves nothing ambient is read. It covers a simulated id, another provider's ref, and another field's ref. resolve_spec covers the slice stamping, the simulated-id base, no key when clean, and `resolve-crew-context`'s `:provider-cfg`.
+  - While in flight, the agent `bb.edn` (5) and `deps.edn` (13) foundation coords are `{:local/root "../isaac-foundation-rxun[/…]"}`. **At landing:** squash foundation first, then rewrite these to the landed foundation main sha, re-run the agent suite, then squash agent. The agent needs the `2c6206b` normalize change: pinning the current foundation `9ab2527` would drop the reasons again.
+
+**Suites:**
+
+| Repo | Command | Result |
+|---|---|---|
+| isaac-foundation | `bb ci` | exit 0: lints ok, spec 1269/0/2286, features 229/0/608, 2 pending (pre-existing) |
+| isaac-agent | `bb spec` | 1778/0/3674 |
+| isaac-agent | `bb features` run 1 | 861/0/2061, 1 pending |
+| isaac-agent | `bb features` run 2 | 861/0/2061, 1 pending |
+
+(The foundation `cli/modules_pins.feature` reds come from the stale `~/.gitlibs/_repos/file/REL/fixture-agent` mirror. `rm -rf` it first.)
+
+**The `schema_cli_options.feature:33` flake is pre-existing and timing-dependent. It is not caused by this bean.** My first full agent run went red on exactly that scenario ("comm slot :type lists user-configurable comm kinds from manifests"). I ran controls on a detached origin/main isaac-agent with no rxun code:
+
+- agent main + its own pin `9ab2527`: 861/0 green
+- agent main + foundation origin/main `b3db42f` (no rxun commits), first run: **red on the same scenario**
+- bisect over foundation 9ab2527..b3db42f (b81e021, d90c209, 5790f26, b3db42f again): all green, so no commit causes it; it is intermittent
+- the file alone: 7/0
+
+So it reproduces with zero rxun code and depends on ordering/timing (probably the isaac-600d ambient-snapshot registration, triggered by some other early read). After the rework, the branch passed twice in a row. isaac-600d should make it go away.
+
+**Gate:** `bb bean-gate verify isaac-rxun` returned exit **2** (`no feature-baseline: use the verify path`). Tagged `unverified` and handed to the verify band.
