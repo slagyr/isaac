@@ -53,3 +53,20 @@ specs, outbound.feature).
 
 feature-baseline: isaac-gchat e6c78a153be8a57f670666eadf162b61271e36e3
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature 5b9541244161bcbbefd112f44a610170cb155f47 489
+
+## Conflict (scrapper@isaac-work-1, 2026-09-25)
+
+Implementation is done and pushed on `bean/isaac-baf1` in two repos (not landed):
+- **isaac-gchat** (bean/isaac-baf1): gchat__send retired (manifest + tools.clj), the mw27 guard, log and specs removed, guidance paragraph verbatim, version 0.2.12, `@wip` off the baf1 scenario. Feature steps now hold the Chat http+token seams across steps. `bb spec` green (180/0).
+- **isaac-agent** (bean/isaac-baf1): (1) `comm_send/impl-keyword` threw NPE for a comm slot with no `:type`, which aborted the whole turn (`build-turn` → `ensure-policy-tools!`). It now uses `isaac.comm.factory/impl-id` (`:type`, else the slot id), with a spec. (2) The `the delivery worker ticks` step replaced the comm registry with stubs only, so a live gchat comm was unreachable. It now layers the stubs over the live instances. `bb ci` green.
+
+With both fixes, the baselined scenario sends 2 posts to spaces/OS1/messages (count step passes). It still fails at outbound.feature:505:
+
+    And an outbound HTTP request to ".../spaces/OS1/messages" matches:
+    Expected: []  got: ["body.text: Expected \"Looking now.\", got: \"All green.\""]
+
+It can't pass as written:
+1. Both `matches:` tables leave out `#index`, so `outbound-http-request-to-url-matches` checks request **0** for both. One request can't have text "Looking now." and "All green." at once.
+2. The acceptance says "tool's delivery and the reply … in that order". comm__send is queue-first: the send is enqueued during the turn and delivered at `the delivery worker ticks`. By then on-reply has already posted "All green.", so the real order is reply, then send.
+
+Needs a planner decision: add `#index` rows (0 = All green., 1 = Looking now.) and restate the order as "both post", or say how the tool send should be delivered before the reply.
