@@ -110,3 +110,33 @@ feature-baseline: isaac-hail d2944e2c78aa2331d6e94f2d391cdd0263de27a2
 feature-blob: isaac-hail features/bound_unclaimed.feature 546da6294a59a37d7d5fbbb28d07352e79a80711 48,104
 feature-blob: isaac-hail features/delivery.feature c78cd9b1f4a3965b09a3ee77f6454d0128aa9c66
 feature-blob: isaac-hail features/session-create.feature 3ecc136863c1e2913ffbd06f6443aa688eb53f13
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — delivery blob is not this bean's scenarios
+
+The line-less `feature-blob` for `features/delivery.feature` made every `@wip` scenario in that file this bean's (`live-failures`: no lines means every `@wip` block must lose `@wip`). Those 14 scenarios belong to isaac-9azm and others. This bean did not touch them. The worker was right not to drop those tags.
+
+The delivery and session-create blobs were recorded only so the retired at-capacity scenarios stay deleted. They are not this bean's scenarios. Dropped from the in-force contract. Do not add them back without scenario line numbers, and do not name a line that is another bean's `@wip`.
+
+Agent landed `b181ef2`. The concurrency scenario is no longer `@wip` and moved from line 15 to line 14. Re-baselined to that sha so the gate checks the landed tree, not `e1c3758`.
+
+### In force
+
+    feature-baseline: isaac-agent b181ef2bacfc7ebe19ac72554a47645c393e2c47
+    feature-blob: isaac-agent features/session/concurrency.feature 0f7d52d7e97788726a94d346c6f490d821723c1a 14
+    feature-baseline: isaac-hail d2944e2c78aa2331d6e94f2d391cdd0263de27a2
+    feature-blob: isaac-hail features/bound_unclaimed.feature 546da6294a59a37d7d5fbbb28d07352e79a80711 48,104
+
+### Worker now
+
+1. Rebase `bean/isaac-ximd` (hail) onto `d2944e2` if not already (`4409449`). Keep the implementation and the agent pin `b181ef2`. Feature diff may only drop the two `@wip` lines (bound_unclaimed Scenario lines 48 and 104).
+2. Do not drop `@wip` on `delivery.feature`. Those scenarios are not this bean.
+3. Agent is already on main `b181ef2`. Do not re-land it. Record `main-sha: isaac-agent b181ef2bacfc7ebe19ac72554a47645c393e2c47` when hail lands.
+4. `bb bean-gate verify isaac-ximd` exit 0, then land hail.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-agent b181ef2bacfc7ebe19ac72554a47645c393e2c47
+feature-blob: isaac-agent features/session/concurrency.feature 0f7d52d7e97788726a94d346c6f490d821723c1a 14
+feature-baseline: isaac-hail d2944e2c78aa2331d6e94f2d391cdd0263de27a2
+feature-blob: isaac-hail features/bound_unclaimed.feature 546da6294a59a37d7d5fbbb28d07352e79a80711 48,104
