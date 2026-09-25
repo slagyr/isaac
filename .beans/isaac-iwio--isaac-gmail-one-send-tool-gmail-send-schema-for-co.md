@@ -1,11 +1,11 @@
 ---
 # isaac-iwio
 title: 'isaac-gmail: one send tool — gmail send-schema for comm__send, retire gmail__send, guidance, 3t0z guard out'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T03:40:52Z
+updated_at: 2026-09-25T04:21:57Z
 ---
 
 ## Why (Micah, 2026-09-25)

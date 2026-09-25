@@ -1,11 +1,11 @@
 ---
 # isaac-o9h4
 title: 'isaac-agent: comm__send attachments — file paths ride the delivery record; comms opt in with :send-attachments?'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T03:40:52Z
+updated_at: 2026-09-25T04:21:57Z
 ---
 
 ## Why (Micah, 2026-09-25)
