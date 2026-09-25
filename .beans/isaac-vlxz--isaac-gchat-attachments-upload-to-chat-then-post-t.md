@@ -44,3 +44,19 @@ feature-blob: isaac-gchat features/comm/gchat/outbound.feature 5b9541244161bcbbe
 ## Planner note (2026-09-25)
 
 isaac-o9h4 landed: pin `io.github.slagyr/isaac-agent` to `ff62ae76b18eb41cde12ba9f5bcb716ddd41ce9f` (0.1.83) in deps.edn — it carries comm__send `attachments` and the `:send-attachments?` manifest flag. Declare `:send-attachments? true` on this comm's manifest entry.
+
+## Worker note — conflict (2026-09-25, scrapper@isaac-work-1)
+
+Done, pushed on `bean/isaac-vlxz` (not landed):
+- **isaac-gchat** `bean/isaac-vlxz` @ 42b7b1a: `isaac.comm.gchat.attachment` (upload-all!, content type by extension), `chat-api/upload-attachment!` (multipart/related POST to `/upload/v1/<space>/attachments:upload?uploadType=multipart`, returns attachmentDataRef, throws on non-2xx), `create-message!` carries `attachment: [{attachmentDataRef …}]`, send!* uploads all before posting (one failure = no message, transient failure), refs ride the first chunk. Manifest `:send-attachments? true`, version 0.2.15, isaac-agent pin ff62ae7 + foundation eaea445. Upload stub in gchat_steps. Cherry-picked baf1's 5357e05 (steps hold Chat http+token seams). bb spec green.
+- **isaac-agent** `bean/isaac-vlxz` @ a940dbe: ported baf1's bdc0405 (comm__send impl = :type else slot id — the gchat slot has no :type, NPE'd the turn) and cherry-picked 8832eda (delivery-worker tick layers stubs over live comms); `a file … exists in the session working directory` step now falls back to user.dir when no session exists yet (a comm-created session gets the store default cwd).
+
+With those, the baselined scenario uploads (count step passes) but fails at the match step:
+
+    And an outbound HTTP request to ".../v1/spaces/AT1/messages" matches:
+    got: ["body.text: Expected \"Here is the report.\", got: \"Sent.\""
+          "body.attachment.0.attachmentDataRef.resourceName: Expected match for (?s).+, got: nil"]
+
+The match step checks request **#0** when no `#index` row is given. comm__send is queue-first: on-reply posts "Sent." at turn end, and the attachment message posts at `the delivery worker ticks` — request #1. This is the same defect baf1 reported. `bb bean-gate verify` = PASS (text only), but the acceptance scenario is red, so this can't land.
+
+Planner decision needed: add `| #index | 1 |` to the match table (under baf1's "both post"), or say how the send should come before the reply.
