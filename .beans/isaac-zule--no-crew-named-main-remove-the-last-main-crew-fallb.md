@@ -1,13 +1,11 @@
 ---
 # isaac-zule
 title: 'No crew named main: remove the last "main" crew fallbacks from gchat, gmail, discord, acp and hooks'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-23T21:11:58Z
-updated_at: 2026-09-25T00:16:08Z
+updated_at: 2026-09-25T00:23:36Z
 ---
 
 Micah 2026-09-23: "There should be no fallback to any crew named `main`." isaac-bfwn (completed 2026-09-16) removed every production "main" crew identity from **isaac-agent** and made `:defaults :crew` required (`:present?` + `:crew-exists?`), so a config without a default crew fails validation and the charge's last resort is defaults.crew. The comm and surface modules were outside that bean and still carry the fallback; isaac-od6i covers isaac-episodes separately.
@@ -105,3 +103,15 @@ Remaining: isaac-od6i completes → re-run the sweep → close zule. The zanebot
 - zanebot's `:defaults :frequencies :crew` is `:main`, and a crew named main exists there. That is operator config, not a code fallback, so it is outside this bean's rule.
 
 Acceptance: both "done when" conditions are met. Handed off `unverified`.
+
+## Landed on main (2026-09-24) — verified by perceptor@isaac-verify
+
+main-sha: isaac-gchat 5d130980dd773cfe405ec5d746212c2dca5e63ec
+main-sha: isaac-gmail 261f65b3c4b3910e74182fa5d171557f13a05a79
+main-sha: isaac-gmail 7d99525dd2ec87424421b18d0974bcfa423a4e5e
+main-sha: isaac-discord f9f746dc237941486ff36403116e6ff554435c26
+main-sha: isaac-acp 38d2ceb4572d5be6ce3a4870d7906bf78fef392b
+main-sha: isaac-hooks c4656ead03b1a0aec9123f1f825a178aad429812
+main-sha: isaac-episodes 9965aeb (isaac-od6i, completed)
+
+Evidence: every SHA is an ancestor of origin/main. Ran `git grep '"main"' origin/main -- src` across 20 isaac-* repos; the only hit is the comment at discord.clj:147. A `:main` keyword grep is also clean. `bb ci` on origin/main (fresh worktrees): gchat df22945 173/0 + 54/0; gmail 7d99525 129/0 + 40/0; discord 6df59f7 55/0 + jvm 108/0 + features 68/0 (3 pending); acp 6030a97 78/0 + 65/0; hooks d9044bb 32/0 + 20/0; episodes 9965aeb 223/0 + 85/0. All exit 0. The "nothing names a crew → nil / defaults.crew" specs exist in each of the five repos.
