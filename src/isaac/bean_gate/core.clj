@@ -85,10 +85,27 @@
 
 ;; region verify — contract
 
+(defn- gate-lines [text]
+  (set (filter #(= :gate (first %)) (bean/contract-lines text))))
+
+(defn- newest-baseline-window
+  "The gated versions from the newest COMMITTED version that introduced a gate
+   line onward (isaac-3rbl): a planner re-baseline re-cuts the contract, so earlier
+   edits no longer count. An uncommitted baseline line opens no window."
+  [gated]
+  (let [opens? (fn [[prev cur]]
+                 (and (:commit cur)
+                      (seq (set/difference (gate-lines (:text cur)) (gate-lines (:text prev))))))
+        starts (keep-indexed (fn [i pair] (when (opens? pair) (inc i)))
+                             (partition 2 1 gated))]
+    (if-let [start (last starts)]
+      (drop start gated)
+      gated)))
+
 (defn- contract-failures
-  "Contract lines are append-only from the first version that carries a baseline."
+  "Contract lines are append-only from the newest planner baseline onward."
   [versions]
-  (let [gated (drop-while #(not (bean/gated? (:text %))) versions)]
+  (let [gated (newest-baseline-window (drop-while #(not (bean/gated? (:text %))) versions))]
     (for [[prev cur] (partition 2 1 gated)
           :let [missing (set/difference (bean/contract-lines (:text prev)) (bean/contract-lines (:text cur)))]
           [_ line] (sort-by second missing)]

@@ -184,6 +184,33 @@
       (f/work-branch! w id f/unwip)
       (should= :pass (:status (verify w)))))
 
+  (it "passes when an edited contract line is followed by a planner re-baseline (isaac-3rbl)"
+    (let [w (gated-world)]
+      (f/edit-bean! w id #(str/replace % (str "bb features " f/feature) "bb spec"))
+      (f/commit! (:root w) "plan: reword acceptance")
+      (baseline! w)
+      (f/commit! (:root w) "plan: re-baseline")
+      (f/work-branch! w id f/unwip)
+      (should= :pass (:status (verify w)))))
+
+  (it "an uncommitted baseline line does not clear an edited contract line (isaac-3rbl)"
+    (let [w (gated-world)]
+      (f/edit-bean! w id #(str/replace % (str "bb features " f/feature) "bb spec"))
+      (let [sha (f/commit! (:root w) "plan: reword acceptance")]
+        (baseline! w)
+        (f/work-branch! w id f/unwip)
+        (should-contain (str "contract line removed or edited in " (subs sha 0 7) ": bb features " f/feature)
+                        (failures (verify w))))))
+
+  (it "a worker-session re-baseline after an edit still fails (isaac-3rbl)"
+    (let [w (gated-world)]
+      (f/edit-bean! w id #(str/replace % (str "bb features " f/feature) "bb spec"))
+      (f/commit! (:root w) "plan: reword acceptance")
+      (baseline! w)
+      (f/commit! (:root w) "rebaseline\n\nIsaac-Session: isaac-work-1")
+      (f/work-branch! w id f/unwip)
+      (should-contain "worker/verifier session commit" (failures (verify w)))))
+
   (it "treats a whole-feature @wip as the bean's"
     (let [w (f/world!)]
       (f/module-main! w {f/feature (str "@wip\n" (f/unwip f/relay-feature))} "plan")

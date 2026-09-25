@@ -101,6 +101,8 @@ Upstream repo first, then each downstream repo:
 - **Editing the contract to make the gate pass.** Reverting a feature file to
   its baselined text is allowed; rewording it, re-baselining it, or adding a
   `## Exceptions` entry is the planner's job and a gate failure from you.
+  (Planners: correct a contract by re-baselining — the append-only window
+  restarts at the newest planner baseline — never by editing a line in place.)
 - **Landing without rebasing.** A squash of a stale branch silently drops
   someone else's landed work out of the tree you tested.
 - **Multi-worker collisions.** If another worker claimed the bean while you
