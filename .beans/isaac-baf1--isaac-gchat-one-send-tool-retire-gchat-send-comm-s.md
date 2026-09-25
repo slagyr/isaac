@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:21:09Z
+updated_at: 2026-09-25T04:40:52Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -70,3 +70,28 @@ It can't pass as written:
 2. The acceptance says "tool's delivery and the reply … in that order". comm__send is queue-first: the send is enqueued during the turn and delivered at `the delivery worker ticks`. By then on-reply has already posted "All green.", so the real order is reply, then send.
 
 Needs a planner decision: add `#index` rows (0 = All green., 1 = Looking now.) and restate the order as "both post", or say how the tool send should be delivered before the reply.
+
+feature-baseline: isaac-gchat 00fd113a67ad8629b237a3f0f67055bed7cc1ecf
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature 8d57019503697c5d525dc59bccffd21c2d671a4b 490
+
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — both post; reply then queue-first tool send
+
+Conflict: the baselined scenario cannot pass. (1) Both `matches:` tables omit `#index`, so both check request 0. (2) `comm__send` is queue-first: the reply posts during the turn; the tool delivery posts at `the delivery worker ticks`. Actual order is reply, then send. Do **not** change the queue-first product.
+
+**Decision: re-baseline the order.** `#index` 0 = `All green.` (the reply). `#index` 1 = `Looking now.` (the tool delivery). Acceptance "in that order" is restated: both post; the reply is first because the send is queued.
+
+isaac-gchat main `00fd113`. New baseline (in force):
+
+    feature-baseline: isaac-gchat 00fd113a67ad8629b237a3f0f67055bed7cc1ecf
+    feature-blob: isaac-gchat features/comm/gchat/outbound.feature 8d57019503697c5d525dc59bccffd21c2d671a4b 490
+
+### Worker now
+
+1. Rebase `bean/isaac-baf1` (gchat) onto origin/main `00fd113`. Keep implementation. Worker `.feature` diff may only drop `@wip`.
+2. Confirm the baf1 scenario green (2 posts, `#index` 0 All green., `#index` 1 Looking now.).
+3. Keep the agent fixes (impl-id, tick keeps live comms). Land agent then gchat per pin rule, or hand verifier if ungated on agent.
+4. Do not recut queue-first. Do not restore gchat__send or the mw27 guard.
+
+This note resets the verify-fail counter.
