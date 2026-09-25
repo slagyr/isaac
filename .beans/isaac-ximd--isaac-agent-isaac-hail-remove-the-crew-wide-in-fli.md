@@ -72,3 +72,41 @@ feature-blob: isaac-hail features/bound_unclaimed.feature 76095baa1969af590039f0
 Done: isaac-agent branch `bean/isaac-ximd` pushed at `b7ee942` removes the crew cap, retires `:max-in-flight`, and activates the baselined concurrent-session scenario. isaac-hail branch `bean/isaac-ximd` removes delivery capacity gating and activates its baselined scenario; focused `bb spec spec/isaac/hail/delivery_worker_spec.clj` and `bb features features/bound_unclaimed.feature:46` pass.
 
 Next: finish full suites and version/pin work, then gate and land both repos. Agent full `bb spec` passed (1792 examples); its subsequent full `bb features` is red in the unrelated existing `features/session/parallel_tool_batches.feature:79` cancel-mid-batch scenario (868 examples, 1 failure, 1 pending). Resume from `/Users/zane/agents/isaac/work-2/isaac-agent-ximd/features/session/parallel_tool_batches.feature:79` after rerunning to determine flake versus regression; hail delivery implementation resumes at `/Users/zane/agents/isaac/work-2/isaac-hail-ximd/src/isaac/hail/delivery_worker.clj:535`.
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — crew-cap scenarios retired on hail main
+
+Conflict stands. Removing the crew cap makes three live hail contracts fail, and a worker may only drop `@wip`. Those contracts are retired on isaac-hail main `d2944e2` (planner commit). Do not restore them.
+
+### Retired (isaac-hail `d2944e2`)
+
+- `features/delivery.feature`: deleted "a delivery for an at-capacity crew is left pending". Header no longer says the worker gates on crew capacity. The two `max-in-flight` setup rows (in-flight pending, serialize-across-ticks) are gone — the key is retired, so a scenario must not set it.
+- `features/session-create.feature`: deleted "a create delivery waits when the resolved processing crew is at capacity". The wait-no-sibling scenario no longer sets `max-in-flight`. A busy *matching* session still waits and does not spawn a sibling. That stays.
+- `features/bound_unclaimed.feature`: "requeued unbound" is now `@wip` "a bound delivery unclaimed past the stale threshold while its session is genuinely busy stays bound — no crew-wide rebound (isaac-ximd)" (Scenario line 104). A stale bind stays on the busy session. It is not moved to another idle session of the crew. `:rebound-stale` must not fire. Feature preamble matches.
+
+The original ximd scenario is still `@wip` (Scenario line 48). Both `@wip` lines are this bean's.
+
+### Re-baselined (newest lines in force)
+
+    feature-baseline: isaac-hail d2944e2c78aa2331d6e94f2d391cdd0263de27a2
+    feature-blob: isaac-hail features/bound_unclaimed.feature 546da6294a59a37d7d5fbbb28d07352e79a80711 48,104
+    feature-blob: isaac-hail features/delivery.feature c78cd9b1f4a3965b09a3ee77f6454d0128aa9c66
+    feature-blob: isaac-hail features/session-create.feature 3ecc136863c1e2913ffbd06f6443aa688eb53f13
+
+Agent baseline is unchanged (`e1c3758`, concurrency.feature line 15).
+
+### Worker now
+
+1. Rebase both `bean/isaac-ximd` branches onto origin/main. Keep the implementation. On hail, the feature diff against `d2944e2` may only drop the two `@wip` lines (48 and 104). Do not restore the at-capacity scenarios, the `max-in-flight` rows, or the rebound-to-boiler-room contract.
+2. `recover-stale-bound!` must not rebind onto `alternate-session` when the bound session is genuinely busy. Leave it bound. Claim it when that session is idle (the false-in-flight path is unchanged).
+3. `:max-in-flight` still fails validation and names the key and isaac-ximd. `model_reload.feature` prose that contrasts `:max-in-flight` is a comment, not a contract — leave it, or drop the contrast in a non-scenario line if lint requires. Do not add a scenario for it.
+4. Deploy note stands: remove `:max-in-flight` from zanebot crews before upgrade. Planner does that; the worker does not edit `~/.isaac/config`.
+5. `parallel_tool_batches.feature:79` is not this bean. Re-run it. If it fails on main too, say so and do not absorb it. If it fails only on this branch, it is in scope.
+6. Hail pins the agent sha that carries the change. Land agent, then hail. `bb bean-gate verify isaac-ximd` exit 0 before landing.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-hail d2944e2c78aa2331d6e94f2d391cdd0263de27a2
+feature-blob: isaac-hail features/bound_unclaimed.feature 546da6294a59a37d7d5fbbb28d07352e79a80711 48,104
+feature-blob: isaac-hail features/delivery.feature c78cd9b1f4a3965b09a3ee77f6454d0128aa9c66
+feature-blob: isaac-hail features/session-create.feature 3ecc136863c1e2913ffbd06f6443aa688eb53f13
