@@ -1,11 +1,11 @@
 ---
 # isaac-ctsf
 title: 'bean-gate: baseline promotes a bean to todo — readiness is the frozen contract, checked before dispatch'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:13:00Z
-updated_at: 2026-09-25T03:13:00Z
+updated_at: 2026-09-25T13:55:33Z
 ---
 
 ## Why
