@@ -5,11 +5,10 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - unverified
     - foundation
     - config
 created_at: 2026-09-25T16:42:02Z
-updated_at: 2026-09-25T16:52:02Z
+updated_at: 2026-09-25T16:54:46Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/mutate.clj, where the target file is chosen). Scenarios live in **isaac-agent** (features/config/cli.feature, in the "Set" file-placement section), because crew is the frontmatter entity agent's fixtures exercise.
@@ -59,3 +58,11 @@ Remove `@wip` from both scenarios. Land foundation, repin agent, land agent. isa
 Foundation branch `bean/isaac-dv7p` at `7684cad` mutates the existing markdown entity's YAML frontmatter, preserving its body and key order. Foundation `bb spec` passed (1289 examples); focused mutate specs passed (54). Agent branch `bean/isaac-dv7p` at `9dc5d17` removes only the two `@wip` tags. With foundation on a local-root dependency, the selected CLI features passed (2 examples, 14 assertions), config features passed (883 examples, 0 failures, 1 unrelated pending), and agent `bb ci` passed (883 feature examples, 0 failures). Agent bb.edn is unchanged and pins foundation main `c1cb377`; verifier must land foundation first and repin agent to its landed main SHA before running published-pin CI and landing agent.
 
 `bb bean-gate verify isaac-dv7p --dir isaac-foundation=../dv7p/isaac-foundation --dir isaac-agent=../dv7p/isaac-agent` exited 2: no feature-baseline (bean predates the gate). Foundation `bb ci` passed its lint and 1289 specs, but unrelated `features/cli/modules_pins.feature` failed 4 cases because global gitlibs mirror `/Users/zane/.gitlibs/_repos/file/REL/fixture-agent` has a stale remote (`/Users/zane/agents/isaac/work-1/isaac-foundation-i5on/fixture-agent`) which no longer exists. This is the already-filed isaac-zr75 fixture isolation issue; do not change this bean's scope for it.
+
+
+
+## Verify fail (attempt 1, 2026-09-25): agent still pins pre-fix foundation; published-pin acceptance scenarios fail
+
+HEAD: foundation 7684cad; agent 9dc5d17; working trees: clean (detached verification worktrees).
+
+At agent bean/isaac-dv7p, bb.edn and deps.edn still pin foundation c1cb3778bbba4dc5142add0e3039a2cde21dde74; this version predates foundation fix 7684cad. Reproduce: cd isaac-agent (bean branch); bb features features/config/cli.feature:627 features/config/cli.feature:659 => 2 examples, 2 failures, 2 assertions (the .md is not edited; first file assertions fail). Repin both agent manifests to a published foundation SHA containing 7684cad after landing the foundation change, and demonstrate targeted/config/full bb ci GREEN using the published pin. The verifier must not edit implementation or manifest pins. Foundation bean branch bb spec: 1289 examples, 0 failures; bb ci: 1289 specs GREEN, 229 feature examples, 4 failures at cli/modules_pins.feature:51,75,95,111 from stale global fixture mirror /Users/zane/.gitlibs/_repos/file/REL/fixture-agent. Same four failures reproduce on clean foundation origin/main c1cb377 (229 examples, 5 failures total, 4 identical modules_pins rows); tracked by isaac-zr75. Do not claim the full foundation CI green until the fixture is isolated/fixed or document proven pre-existing results.
