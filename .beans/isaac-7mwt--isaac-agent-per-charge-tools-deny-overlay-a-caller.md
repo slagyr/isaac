@@ -1,11 +1,11 @@
 ---
 # isaac-7mwt
 title: 'isaac-agent: per-charge :tools {:deny …} overlay — a caller can withhold tools for one turn'
-status: completed
+status: scrapped
 type: feature
 priority: high
 created_at: 2026-09-25T02:47:03Z
-updated_at: 2026-09-25T02:53:47Z
+updated_at: 2026-09-25T02:54:14Z
 ---
 
 ## Why
@@ -67,3 +67,9 @@ Implemented on isaac-agent branch `bean/isaac-7mwt` (commit 1f623c9):
 main-sha: isaac-agent 62533d4009bd518dfab11a119f5acc5a3e987da6
 
 Verified by perceptor@isaac-verify: bb ci green on branch (1787 specs / 868 features, 0 failures, 1 pre-existing pending). bb lint 518 errors / 146 warnings identical to origin/main (pre-existing). bb jvm-spec 4 failures in manifest_spec comm berth, reproduced identically on origin/main 5ea0e4c (pre-existing). All acceptance bullets covered by turn_spec "per-charge tools deny overlay" + charge_spec; version 0.1.82 -> 0.1.83. (Worker notes were in a stray literal-glob file .beans/isaac-7mwt--*.md; merged into this body and removed.)
+
+
+
+## Scrapped (2026-09-25 02:54Z)
+
+Micah: not the right decision. Do not work, verify, or land this bean. Any branch for it is abandoned.

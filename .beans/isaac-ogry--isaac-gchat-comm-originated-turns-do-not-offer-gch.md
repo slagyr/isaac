@@ -1,11 +1,11 @@
 ---
 # isaac-ogry
 title: 'isaac-gchat: comm-originated turns do not offer gchat__send — the answer text is the reply'
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-25T02:47:03Z
-updated_at: 2026-09-25T02:47:03Z
+updated_at: 2026-09-25T02:54:14Z
 blocked_by:
     - isaac-7mwt
 ---
@@ -38,3 +38,9 @@ isaac-mw27's dedupe stays as a belt-and-braces guard.
   overlay; version bump; bb spec / bb features / bb lint green.
 
 Likely repo scope: isaac-gchat (handler.clj, guidance.clj, deps.edn pin).
+
+
+
+## Scrapped (2026-09-25 02:54Z)
+
+Micah: not the right decision. Do not work, verify, or land this bean. Any branch for it is abandoned.

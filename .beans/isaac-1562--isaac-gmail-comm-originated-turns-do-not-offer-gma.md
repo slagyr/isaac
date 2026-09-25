@@ -1,11 +1,11 @@
 ---
 # isaac-1562
 title: 'isaac-gmail: comm-originated turns do not offer gmail__send — the answer text is the reply'
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-25T02:47:03Z
-updated_at: 2026-09-25T02:47:03Z
+updated_at: 2026-09-25T02:54:15Z
 blocked_by:
     - isaac-7mwt
 ---
@@ -35,3 +35,9 @@ isaac-3t0z's dedupe stays as a guard.
   bb spec / bb features / bb lint green.
 
 Likely repo scope: isaac-gmail (gmail.clj / handler.clj, guidance, deps.edn).
+
+
+
+## Scrapped (2026-09-25 02:54Z)
+
+Micah: not the right decision. Do not work, verify, or land this bean. Any branch for it is abandoned.
