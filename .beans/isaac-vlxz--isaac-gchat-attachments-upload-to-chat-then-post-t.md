@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T03:40:52Z
+updated_at: 2026-09-25T04:39:43Z
 blocked_by:
     - isaac-o9h4
 ---
@@ -38,3 +38,9 @@ Likely repo scope: isaac-gchat (gchat.clj, chat_api.clj, manifest, feature).
 
 feature-baseline: isaac-gchat e6c78a153be8a57f670666eadf162b61271e36e3
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature 5b9541244161bcbbefd112f44a610170cb155f47 517
+
+
+
+## Planner note (2026-09-25)
+
+isaac-o9h4 landed: pin `io.github.slagyr/isaac-agent` to `ff62ae76b18eb41cde12ba9f5bcb716ddd41ce9f` (0.1.83) in deps.edn — it carries comm__send `attachments` and the `:send-attachments?` manifest flag. Declare `:send-attachments? true` on this comm's manifest entry.
