@@ -1,11 +1,11 @@
 ---
 # isaac-5n68
 title: Per-model extra system prompt on the model entry, placed after the crew soul
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-09-21T04:58:11Z
-updated_at: 2026-09-21T16:23:24Z
+updated_at: 2026-09-25T16:22:30Z
 blocked_by:
     - isaac-jl9p
     - isaac-ruom
@@ -134,3 +134,9 @@ config-only, it hot-reloads, and the gauge can measure it (isaac-f5tn).
 
 Built-in per-model defaults, per the decision above. How to help users know
 which models need text is an open question, not this bean.
+
+
+
+## Scrapped (2026-09-25)
+
+Micah: the extra-system-prompt key was only ever used by models/glm-5-3.edn on zanebot to coax tool batching; no crew runs glm-5-3 now and gpt-terra batches unaided (1.5–2.6 tool calls per request on the workers today). Key deleted from the model file; if a model ever needs coaching, that is a crew soul or skill, not a per-model system prompt.
