@@ -1,14 +1,14 @@
 ---
 # isaac-gs4a
 title: config set conforms a CLI value to the field's schema type; unset takes a set member
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - foundation
     - config
 created_at: 2026-09-25T14:46:21Z
-updated_at: 2026-09-25T14:46:21Z
+updated_at: 2026-09-25T14:51:09Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/cli/mutate_common.clj). Scenarios live in **isaac-agent** (features/config/set_unset.feature), because the crew schema they exercise (`tags` is a set of keywords, `soul` is a string) is agent's.
