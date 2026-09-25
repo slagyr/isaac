@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "5ea0e4c1c4e54ad89e0174b00975542f4fcc65ea"}
+                                      :git/sha "30c9a9dff33e7ecf09ac0bd75132bbbd03b1c229"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "9965aebe260f989a4665b60d54985f221d64c7cd"}
@@ -35,7 +35,7 @@
                                       :git/sha "48625f2fea2f687f6fb984aef51310a2127f95d0"}
                               :desc  "Shared Google Workspace plumbing — OAuth for the Google user, the Pub/Sub push door and durable inbox, registrations and renewal, health."}
  :isaac.comm.gchat           {:coord {:git/url "https://github.com/slagyr/isaac-gchat.git"
-                                      :git/sha "2a9d04dc93f38b8c7bfa92f3afa5b763e6c1234e"}
+                                      :git/sha "06cedb3465aa06377970d19b6c769c61a78b0b47"}
                               :desc  "Google Chat comm — inbound gate, routing and dispatch for spaces and DMs; outbound replies and sends. Built on isaac-google."}
  :isaac.comm.gmail           {:coord {:git/url "https://github.com/slagyr/isaac-gmail.git"
                                       :git/sha "7d99525dd2ec87424421b18d0974bcfa423a4e5e"}
