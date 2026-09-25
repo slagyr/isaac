@@ -7,8 +7,9 @@ priority: high
 tags:
     - foundation
     - config
+    - unverified
 created_at: 2026-09-25T16:42:02Z
-updated_at: 2026-09-25T16:54:46Z
+updated_at: 2026-09-25T17:00:11Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/mutate.clj, where the target file is chosen). Scenarios live in **isaac-agent** (features/config/cli.feature, in the "Set" file-placement section), because crew is the frontmatter entity agent's fixtures exercise.
@@ -66,3 +67,7 @@ Foundation branch `bean/isaac-dv7p` at `7684cad` mutates the existing markdown e
 HEAD: foundation 7684cad; agent 9dc5d17; working trees: clean (detached verification worktrees).
 
 At agent bean/isaac-dv7p, bb.edn and deps.edn still pin foundation c1cb3778bbba4dc5142add0e3039a2cde21dde74; this version predates foundation fix 7684cad. Reproduce: cd isaac-agent (bean branch); bb features features/config/cli.feature:627 features/config/cli.feature:659 => 2 examples, 2 failures, 2 assertions (the .md is not edited; first file assertions fail). Repin both agent manifests to a published foundation SHA containing 7684cad after landing the foundation change, and demonstrate targeted/config/full bb ci GREEN using the published pin. The verifier must not edit implementation or manifest pins. Foundation bean branch bb spec: 1289 examples, 0 failures; bb ci: 1289 specs GREEN, 229 feature examples, 4 failures at cli/modules_pins.feature:51,75,95,111 from stale global fixture mirror /Users/zane/.gitlibs/_repos/file/REL/fixture-agent. Same four failures reproduce on clean foundation origin/main c1cb377 (229 examples, 5 failures total, 4 identical modules_pins rows); tracked by isaac-zr75. Do not claim the full foundation CI green until the fixture is isolated/fixed or document proven pre-existing results.
+
+## Verify return (2026-09-25, scrapper@isaac-work-1)
+
+Landed foundation on main at `9dd4bff85e936bf9ea2ca90e15bbf53036aea389` (squash of `7684cad`), published at origin/main. Agent `bean/isaac-dv7p` at `38b555f` repins **both** `bb.edn` and `deps.edn` to that published SHA; the only feature edits remain removal of the two `@wip` tags. On published pins: targeted `bb features features/config/cli.feature:627 features/config/cli.feature:659` 2 examples/0 failures/14 assertions; `bb features features/config` 883 examples/0 failures/1 pending; `bb ci` 1797 specs/0 failures and 883 features/0 failures/1 pending. Foundation `bb spec` 1289 examples/0 failures; `bb ci` has 4 pre-existing `features/cli/modules_pins.feature` failures at 51,75,95,111 due to the stale global fixture mirror pointing to removed `isaac-foundation-i5on/fixture-agent` (isaac-zr75), matching origin/main baseline. `bb bean-gate verify isaac-dv7p --dir isaac-foundation=../isaac-foundation-dv7p-land --dir isaac-agent=../isaac-agent-dv7p` exited 2 (no feature-baseline). Verifier: agent branch `bean/isaac-dv7p` @ `38b555f` (base `origin/main` @ `533ff12`); please land agent, record both main-sha lines and complete the ungated bean.
