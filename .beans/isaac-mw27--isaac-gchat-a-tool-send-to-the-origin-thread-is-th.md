@@ -1,13 +1,11 @@
 ---
 # isaac-mw27
 title: 'isaac-gchat: a tool send to the origin thread is the reply — on-reply must not post the answer twice'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-25T02:35:49Z
-updated_at: 2026-09-25T02:39:44Z
+updated_at: 2026-09-25T02:41:21Z
 ---
 
 ## Symptom
