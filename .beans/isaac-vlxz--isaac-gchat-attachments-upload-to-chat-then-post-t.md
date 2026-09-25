@@ -1,11 +1,11 @@
 ---
 # isaac-vlxz
 title: 'isaac-gchat: attachments — upload to Chat, then post the message referencing them'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:39:43Z
+updated_at: 2026-09-25T04:39:57Z
 blocked_by:
     - isaac-o9h4
 ---
