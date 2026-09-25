@@ -4,8 +4,10 @@ title: 'isaac-mcp: a turn never waits on an MCP server — connect in the backgr
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-25T02:00:22Z
-updated_at: 2026-09-25T02:09:16Z
+updated_at: 2026-09-25T02:13:07Z
 ---
 
 ## Symptom
@@ -125,3 +127,13 @@ isaac-mcp main `8ab0aa3` (planner feature recut) failed CI Tests run [3608493354
 **Reverted** on isaac-mcp main: `3bdc096`. Main is back to `a28c098` tree for those files. Do not re-push the step until `await-connects!` is on main (this bean lands first, or the step lands in the same commit as the runtime).
 
 Worker: rebase onto `3bdc096`. Keep runtime. Do not put `await-connects!` calls on main ahead of the function. Feature recut ships with the implementation commit, or after it — not before. Hand to verifier when `bb spec` and the named features are green **on the branch that contains both**.
+
+## Worker note (2026-09-25, scrapper@isaac-work-2) — rebased on 3bdc096, recut ships with runtime
+
+isaac-mcp `bean/isaac-aswr` @ `cac8478` (single commit on `3bdc096`): runtime from 65cd3ce unchanged + the planner's feature recut (8ab0aa3's step and And-inserts) in the same commit. Boot `start!` not wired.
+
+Step fix: `await-connects!` alone was a no-op in features — nothing is pending after "the Isaac system is started" (no `start!`), so 8 still failed. The step now reaches each configured server through `ensure-server!` (the production tool-provider entry, same as a first turn) and awaits, one server at a time by sorted id (parallel connects made the ordered `:mcp/connected` log assertion in lifecycle "two servers…" racy).
+
+Results on cac8478: `bb spec` 40/0, `bb lint` 0/0, `bb features` 13/2 ×3 runs — the only failures are hosts.feature (prompt, acp), deferred per planner. Note: hosts.feature is not @wip, so `bb ci` on main stays red on those two until the follow-up bean.
+
+Race: a parallel session force-pushed `18a4a42` (based on the reverted 8ab0aa3; puts the warm-up inside `await-connects!`) to the branch at 02:10:45; my push replaced it. Preserved at `origin/bean/isaac-aswr-alt-18a4a42`.
