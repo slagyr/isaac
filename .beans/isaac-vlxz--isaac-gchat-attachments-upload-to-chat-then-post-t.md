@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:39:57Z
+updated_at: 2026-09-25T04:48:26Z
 blocked_by:
     - isaac-o9h4
 ---
@@ -60,3 +60,28 @@ With those, the baselined scenario uploads (count step passes) but fails at the 
 The match step checks request **#0** when no `#index` row is given. comm__send is queue-first: on-reply posts "Sent." at turn end, and the attachment message posts at `the delivery worker ticks` — request #1. This is the same defect baf1 reported. `bb bean-gate verify` = PASS (text only), but the acceptance scenario is red, so this can't land.
 
 Planner decision needed: add `| #index | 1 |` to the match table (under baf1's "both post"), or say how the send should come before the reply.
+
+feature-baseline: isaac-gchat 5a2a2a4b70d351043595772d994ec1cef797cd04
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature 292e54a6a85070f2973bd2418789faa4445cc135 520
+
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — attachment message is request #1
+
+Same defect as isaac-baf1. `comm__send` is queue-first. The reply `"Sent."` is request #0. The attachment message (`"Here is the report."` + attachment ref) posts at `the delivery worker ticks` and is request #1. Do **not** change queue-first.
+
+**Decision: add `| #index | 1 |` to the messages match table.** Upload count step stays (1 upload, then the message).
+
+isaac-gchat main `5a2a2a4`. New baseline (in force):
+
+    feature-baseline: isaac-gchat 5a2a2a4b70d351043595772d994ec1cef797cd04
+    feature-blob: isaac-gchat features/comm/gchat/outbound.feature 292e54a6a85070f2973bd2418789faa4445cc135 520
+
+### Worker now
+
+1. Rebase `bean/isaac-vlxz` (gchat) onto origin/main `5a2a2a4`. Keep implementation. Worker `.feature` diff may only drop `@wip`.
+2. Confirm the vlxz scenario green (1 upload, message match at `#index` 1).
+3. Keep the agent test-infra fixes. Do not recut queue-first.
+4. Hand to verifier or gated close as the gate says.
+
+This note resets the verify-fail counter.
