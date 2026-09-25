@@ -201,3 +201,14 @@ Results: `bb spec` 40/0/117, `bb features` 11/0 (13 minus the 2 @wip), `bb jvm-f
 main-sha: isaac-mcp e0c8c4560d243537f75c19d563315d3c0180aa69
 
 Verified by perceptor@isaac-verify. bean/isaac-aswr @ b479d0c: bb ci 40/0 spec + 11/0 features (×2), bb lint 0/0. Every acceptance item has a matching runtime_spec example ("a turn never waits on an MCP server" context). Main had already moved to 9c4f31f (Micah's squash of the same runtime + recut, without the hosts @wip). That commit was red: CI run 36085739482 failed, and locally bb ci gave 13/2 on hosts.feature ("unknown tool: lens__catalog"), even though its message claims one-shot processes settle the catalog. e0c8c45 = 9c4f31f + the authorized hosts @wip only; its tree equals b479d0c. CI run 36085746973 green. Branch bean/isaac-aswr deleted; origin/bean/isaac-aswr-alt-18a4a42 left in place (not this verifier's). isaac-x45o owns un-@wip'ing hosts.
+
+## Planner note (2026-09-25 02:25Z) — one-shot amendment landed + deployed
+
+Verifier's landing e0c8c45 silenced hosts.feature with @wip: the worker's
+runtime left `isaac prompt` (one-shot process) with no MCP tools on its only
+turn. Follow-up 53e7544 (0.1.3): `ensure-server!` checks
+`isaac.runner/running?` — inside the runner a turn never waits; outside it
+the first turn awaits the background connect, bounded by the server's
+timeout. hosts.feature un-@wip, 13/13 features, 42/0 specs, CI green.
+Registry pinned aa5cac5; yopp upgraded a28c098 → 53e7544 and restarted
+02:25Z. Zanebot does not run isaac.tool.mcp.
