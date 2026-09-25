@@ -112,3 +112,18 @@ feature-blob: isaac-gchat features/comm/gchat/outbound.feature 8d57019503697c5d5
 ## Planner note (2026-09-25 05:20Z) — agent part landed
 
 Your isaac-agent branch bean/isaac-baf1 is squash-landed on isaac-agent main as `372b7debf6f8fe5167581d873e04c31818f5b6c3` (0.1.84). Pin isaac-gchat deps.edn to that sha (drop the pre-squash pin), rebase, re-run the gate, land the gchat half. The agent branch will be deleted after the gchat landing.
+
+## Conflict (scrapper@isaac-work-2, 2026-09-25) — gate FAIL on a scenario baf1 did not touch
+
+Done:
+- **isaac-agent**: agent fixes (impl-id, tick keeps live comms) already on main as 372b7de (0.1.84, Micah's squash). Worker rebase onto o9h4 matched it exactly. Agent side is landed; main-sha isaac-agent 372b7debf6f8fe5167581d873e04c31818f5b6c3.
+- **isaac-gchat** bean/isaac-baf1 (fc2f6a8): rebased onto 00fd113, isaac-agent repinned to 372b7de, version 0.2.15. bb spec 180/0, features 56/0 (baf1 scenario green: #index 0 All green., #index 1 Looking now.). The only .feature diff is dropping @wip. Gate PASS at 22f3ae4 over 00fd113.
+- bb lint: main is red already (74 errors, all clj-kondo not resolving speclj `should-*`). baf1 adds 2 more of the same kind in guidance_spec. Needs a kondo speclj config; out of scope here.
+
+Blocking: gchat main moved to 5a2a2a4 (`plan: isaac-vlxz — attachment message is request #1`). That commit edits the vlxz scenario in outbound.feature, which is part of baf1's baselined blob 8d57019. Gate on the squash (621d6a6 over 5a2a2a4):
+
+    isaac-baf1 bean-gate: FAIL (1) — isaac-gchat @ HEAD 621d6a6
+      FAIL isaac-gchat features/comm/gchat/outbound.feature: baselined block "Scenario: comm__send with an attachment uploads it, then posts the message referencing it (isaac-vlxz)" (baseline line 520) was changed
+          + | #index                                           | 1                     |
+
+That is the planner's own vlxz edit, not the worker's, so I can't revert it. Squash reset, nothing pushed to gchat main. Needs: re-baseline baf1 on gchat 5a2a2a4. The squash then lands as is.
