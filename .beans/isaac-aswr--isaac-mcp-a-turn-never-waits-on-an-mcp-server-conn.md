@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T02:00:22Z
-updated_at: 2026-09-25T02:01:48Z
+updated_at: 2026-09-25T02:07:50Z
 ---
 
 ## Symptom
@@ -79,3 +79,39 @@ on spawn, not on initialize, not on a timeout.
 
 Likely repo scope: isaac-mcp (runtime.clj, spec). Read-only in isaac-agent
 (tool/registry.clj) for the provider contract.
+
+
+
+## Exceptions
+
+### features that require lens tools on the first turn (authorized, 2026-09-25, prowl@isaac-plan)
+
+Micah's ruling stands: a turn never waits on an MCP server. Production never calls `start!`, so the first turn that allows `lens/*` sees no tools. The existing scenarios contradict that. Recut them; do **not** wire boot to `start!` (option b would re-block boot on a dead server).
+
+Authorized feature edits on isaac-mcp (module main, then worker drops `@wip` only):
+
+- Add one new step: **the MCP servers have connected** — calls `isaac.mcp.runtime/await-connects!` (bounded). Not a hand-`start!`.
+- Insert that step **after** `When the Isaac system is started` and **before** the first assertion that the prompt offers or the turn invokes `lens__catalog`, in:
+  - `features/turn.feature` — "crew glob lens/* offers prefixed MCP tools", "a turn invokes lens__catalog"
+  - `features/lifecycle.feature` — "two servers with the same MCP tool name stay distinct", "a hung MCP call is a tool error"
+  - `features/catalog.feature` — "a server that announces list_changed is re-catalogued for the next turn", "a server without listChanged keeps its catalog"
+  - `features/hosts.feature` — not recut. Those scenarios run `isaac prompt` / `isaac acp` (a full process), not "the Isaac system is started". A background connect cannot finish inside that one process under "a turn never waits". Hosts scenarios stay red until a later bean (or a process-local warm-up). Do not block this bean on them.
+- Do **not** add the await on scenarios that assert the tool is **absent** ("crew without lens…", "a dead lens server is not offered", "a dead command does not fail the turn"). Those must stay first-turn, no wait.
+- Do **not** restore synchronous `ensure-server!` or a boot `start!` factory.
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — option (a): await-connects step, not boot start!
+
+Conflict: runtime at `65cd3ce` is green (`bb spec` 40/0). `bb features` 13/8 because first-turn scenarios require `lens__catalog` before the background connect finishes. Ruling: a turn never waits.
+
+**Decision: (a).** New step `the MCP servers have connected` backed by `await-connects!`. Not (b) — wiring `start!` into boot reintroduces the 30s tax on a dead server.
+
+Planner already landed the step + inserts on isaac-mcp main `8ab0aa3`:
+- `feature-steps/isaac/mcp_steps.clj` — `the MCP servers have connected` → `await-connects!`
+- `features/turn.feature`, `lifecycle.feature`, `catalog.feature` — And-step after "the Isaac system is started" on the offer/invoke scenarios only
+
+Worker now:
+1. Rebase `bean/isaac-aswr` onto origin/main `8ab0aa3`. Keep runtime. Do not wire boot `start!`.
+2. Confirm `bb spec` 40/0 and `bb features` on turn/lifecycle/catalog 0 failures. hosts.feature may still fail — not this bean.
+3. Hand to verifier (no feature-baseline → exit 2). Do not land until those files are green.
+
+This note resets the verify-fail counter.
