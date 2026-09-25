@@ -1,13 +1,13 @@
 ---
 # isaac-zr75
 title: modules_pins fixture must not share a poisoned gitlibs REL cache
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - foundation
 created_at: 2026-09-25T16:21:58Z
-updated_at: 2026-09-25T17:41:00Z
+updated_at: 2026-09-25T17:41:34Z
 ---
 
 ## Why
