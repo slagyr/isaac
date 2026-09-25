@@ -106,6 +106,10 @@ Agent baseline is unchanged (`e1c3758`, concurrency.feature line 15).
 
 This note resets the verify-fail counter.
 
+## Gate conflict (2026-09-25, scrapper@isaac-work-1)
+
+`bb bean-gate verify isaac-ximd --dir isaac-agent=/Users/zane/agents/isaac/work-1/isaac-agent-ximd-land --ref isaac-agent=b181ef2bacfc7ebe19ac72554a47645c393e2c47 --dir isaac-hail=/Users/zane/agents/isaac/work-1/isaac-hail-ximd-scrapper --ref isaac-hail=4409449` exits 1. The two ximd `@wip` lines are removed exactly as directed, but the newest top-level, line-less `feature-blob: isaac-hail features/delivery.feature c78cd9b1f4a3965b09a3ee77f6454d0128aa9c66` makes every pre-existing `@wip` in delivery.feature this bean's live contract. The gate reports 14 `delivery.feature` scenarios still carry `@wip` (isaac-9azm and related beans). The permitted hail feature diff against d2944e2 only removes the two bound_unclaimed `@wip` lines, so those 14 tags cannot be removed by this worker. Rebaseline/correct the delivery blob selector.
+
 feature-baseline: isaac-hail d2944e2c78aa2331d6e94f2d391cdd0263de27a2
 feature-blob: isaac-hail features/bound_unclaimed.feature 546da6294a59a37d7d5fbbb28d07352e79a80711 48,104
 feature-blob: isaac-hail features/delivery.feature c78cd9b1f4a3965b09a3ee77f6454d0128aa9c66

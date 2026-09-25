@@ -73,12 +73,21 @@
         (with-fences (str/split-lines text))))
 
 (defn in-force
-  "The gate as recorded in text: the last baseline per repo, the last blob per
-   (repo, path), and every main-sha per repo."
+  "The gate as recorded in text: each repo's last baseline and the blobs appended
+   after it, plus every main-sha per repo. A re-baseline replaces the whole
+   repo contract, so stale blobs from a prior baseline do not remain live."
   [text]
-  (let [lines (gate-lines text)]
-    {:baselines (reduce (fn [m {:keys [repo] :as l}] (assoc m repo l)) {} (filter #(= :baseline (:kind %)) lines))
-     :blobs     (vals (reduce (fn [m {:keys [repo path] :as l}] (assoc m [repo path] l)) {} (filter #(= :blob (:kind %)) lines)))
+  (let [lines     (gate-lines text)
+        baselines (reduce (fn [m {:keys [repo] :as l}] (assoc m repo l)) {} (filter #(= :baseline (:kind %)) lines))
+        blobs     (reduce (fn [m {:keys [repo] :as l}]
+                            (case (:kind l)
+                              :baseline (dissoc m repo)
+                              :blob     (update m repo (fnil conj []) l)
+                              m))
+                          {}
+                          lines)]
+    {:baselines baselines
+     :blobs     (vec (mapcat val blobs))
      :main-shas (reduce (fn [m {:keys [repo sha]}] (update m repo (fnil conj []) sha)) {} (filter #(= :main-sha (:kind %)) lines))}))
 
 (defn gated? [text] (boolean (some #(= :baseline (:kind %)) (gate-lines text))))

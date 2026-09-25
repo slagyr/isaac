@@ -30,7 +30,18 @@
     (it "is a contract line"
       (let [text (bean-text (str "feature-baseline: isaac-marigold " sha "\n"))]
         (should-contain [:gate (str "feature-baseline: isaac-marigold " sha)]
-                        (sut/contract-lines text)))))
+                        (sut/contract-lines text))))
+
+    (it "replaces a repo's previous blobs when it is re-baselined"
+      (let [new-sha  "1d0b1e5ac0ffeebadf00d5ca1ab1e5d0c0ffee00"
+            new-blob "0ddba11f00d5ba11c0ffee001d0b1e5ac0ffeeba"
+            text     (bean-text (str "feature-baseline: isaac-marigold " sha "\n"
+                                     "feature-blob: isaac-marigold features/old.feature " blob "\n"
+                                     "feature-baseline: isaac-marigold " new-sha "\n"
+                                     "feature-blob: isaac-marigold features/new.feature " new-blob " 14\n"))]
+        (should= [{:kind :blob :repo "isaac-marigold" :path "features/new.feature"
+                   :blob new-blob :lines [14]}]
+                 (:blobs (sut/in-force text))))))
 
   (context "a baseline quoted in prose"
 
