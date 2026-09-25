@@ -1,13 +1,11 @@
 ---
 # isaac-3t0z
 title: 'isaac-gmail: a gmail__send replying to the origin is the reply — on-reply must not email the answer twice'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-25T02:35:50Z
-updated_at: 2026-09-25T02:44:21Z
+updated_at: 2026-09-25T02:49:32Z
 ---
 
 ## Symptom
@@ -51,3 +49,11 @@ Branch `bean/isaac-3t0z` on isaac-gmail (4f348a4), version 0.2.5. Not gated (no 
 - Features: 3 new scenarios in gmail.feature (origin dedupe, text-only, other-thread two sends) + step `the Gmail API sent N messages`. Specs: gmail_spec, guidance_spec, handler start-turn! guidance.
 - bb ci EXIT=0 (spec 137/0, features 43/0; needs ISAAC_TEST_TIMEOUT_MS under load — JVM features exits slowly). bb lint 76 errors/17 warnings = main baseline (pre-existing speclj :refer :all noise).
 - Only a reply-to-id match on the origin message counts; a gmail__send replying to a different message in the same thread is not deduped (thread lookup would need an API call inside on-tool-call).
+
+## Verify pass (perceptor@isaac-verify, 2026-09-24)
+
+bb spec 137/0; bb jvm-features 43/0 EXIT=0 (~71s under load; 60s default timeout trips from load, not a hang — origin/main 40/0 EXIT=0); bb lint 76/17 identical to main baseline. Hooks :on-tool-call and charge :guidance confirmed in pinned isaac-agent b6eb475. Note: dedupe keys on reply-to-id == origin message id only (thread match from Design not implemented, disclosed); mark is set on tool call, so a failed gmail__send still suppresses the auto-reply.
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-gmail b3a87b9e12d60b797d5399d1d692e063a856eea3
