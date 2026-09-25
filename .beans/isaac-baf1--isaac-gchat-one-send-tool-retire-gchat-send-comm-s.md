@@ -37,8 +37,8 @@ message each, in this channel" — and comes out.
 ## Acceptance (features/comm/gchat/outbound.feature — baselined)
 
 - [ ] Scenario "comm__send into the origin thread during the turn, then the
-  answer — both post (isaac-baf1)": the tool's delivery and the reply both reach
-  Chat, in that order.
+  answer — both post (isaac-baf1)": both reach Chat — the response at turn
+  end (request 0), the queued send when the delivery worker ticks (request 1).
 - [ ] Existing "gchat/reactions false turns the lifecycle off, the reply still
   posts once" keeps passing (text-only turn → one post).
 - [ ] One-time: `gchat__send` is no longer registered (module_spec lists the
@@ -95,3 +95,11 @@ isaac-gchat main `00fd113`. New baseline (in force):
 4. Do not recut queue-first. Do not restore gchat__send or the mw27 guard.
 
 This note resets the verify-fail counter.
+
+feature-baseline: isaac-gchat 00fd113a67ad8629b237a3f0f67055bed7cc1ecf
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature 8d57019503697c5d525dc59bccffd21c2d671a4b 490
+
+
+## Planner decision (2026-09-25 04:50Z) — re-baselined
+
+Worker's conflict note accepted: comm__send is queue-first, so the response posts at turn end and the send lands at the tick. Scenario now carries #index 0 = All green., #index 1 = Looking now.; the contract is that both post. Re-baselined on isaac-gchat main; rebase bean/isaac-baf1, drop @wip again, re-run the gate.

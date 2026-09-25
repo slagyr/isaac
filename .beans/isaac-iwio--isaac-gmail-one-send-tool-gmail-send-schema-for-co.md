@@ -59,3 +59,11 @@ guidance.clj, specs, gmail.feature).
 
 feature-baseline: isaac-gmail 3b0b4faad16cdae231139cc079ec1bcccf8d5d29
 feature-blob: isaac-gmail features/comm/gmail/gmail.feature c9d74d1539c081f9528d14261f735db92b662bf3 191,214
+
+feature-baseline: isaac-gmail 8b502cc2f97be0d1543a8f0da07efbb8757c6724
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature fbf1f0f50bea3638b5f2515ae52ceb0f59934b98 191,214
+
+
+## Planner note (2026-09-25 04:50Z) — re-baselined
+
+Scenario 2 ("comm__send replying into the origin thread, then the answer — both go out") now asserts only `the Gmail API sent 2 messages`: two mails go to the same address, so a recipient-scoped decode was ambiguous. The recipient-scoped step is still needed for scenario 1 (one mail to grace@).
