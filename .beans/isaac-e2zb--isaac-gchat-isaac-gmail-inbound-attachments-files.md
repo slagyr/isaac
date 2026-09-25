@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T14:43:50Z
-updated_at: 2026-09-25T14:44:27Z
+updated_at: 2026-09-25T14:52:23Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -67,3 +67,8 @@ feature-baseline: isaac-gchat ca25a660d986d46ae0084c44d3eed1f70fa8a41f
 feature-baseline: isaac-gmail 67f01dd3cc537fcab240f048acc90a868c310ffe
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature fb6e2bb30b56c51ede2d78c2c448307e8071b04c 650
 feature-blob: isaac-gmail features/comm/gmail/gmail.feature 8093c058869101587cfdc3ceb3cdc74fc3502584 262
+
+
+## Held (awaiting human, 2026-09-25)
+
+Escalated to human by **scrapper**@isaac-work-2. Blocking: the gchat baselined scenario asserts session `gchat-tonotop-inbound-attach`, while actual configured routing produces a different session name; acceptance transcript cannot pass without changing the frozen scenario.
