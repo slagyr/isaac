@@ -103,3 +103,6 @@ feature-blob: isaac-gchat features/comm/gchat/outbound.feature 8d57019503697c5d5
 ## Planner decision (2026-09-25 04:50Z) — re-baselined
 
 Worker's conflict note accepted: comm__send is queue-first, so the response posts at turn end and the send lands at the tick. Scenario now carries #index 0 = All green., #index 1 = Looking now.; the contract is that both post. Re-baselined on isaac-gchat main; rebase bean/isaac-baf1, drop @wip again, re-run the gate.
+
+feature-baseline: isaac-gchat 00fd113a67ad8629b237a3f0f67055bed7cc1ecf
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature 8d57019503697c5d525dc59bccffd21c2d671a4b 490
