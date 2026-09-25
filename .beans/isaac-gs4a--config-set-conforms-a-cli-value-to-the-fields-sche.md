@@ -9,7 +9,7 @@ tags:
     - foundation
     - config
 created_at: 2026-09-25T14:46:21Z
-updated_at: 2026-09-25T15:19:53Z
+updated_at: 2026-09-25T15:24:57Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/cli/mutate_common.clj). Scenarios live in **isaac-agent** (features/config/set_unset.feature), because the crew schema they exercise (`tags` is a set of keywords, `soul` is a string) is agent's.
@@ -112,3 +112,15 @@ Verify fail 2 is a pin, not a behavior change. Foundation landed as squash `b7f1
 Acceptance is otherwise unchanged. Do not re-cut the scenarios.
 
 This note resets the verify-fail counter.
+
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-foundation b7f1d00fc6ed4748468d849befdae86911b0f914
+main-sha: isaac-agent 07f0f3b2acc6db05c98d7e69c6ff33ed316842df
+
+## Verification repair evidence (2026-09-25)
+
+Confirmed foundation `origin/main` is `b7f1d00fc6ed4748468d849befdae86911b0f914` and its `member-keyword` strips exactly one leading colon before keywordizing (`:hail/send` becomes `:hail/send`, not `::hail/send`). Agent `main` is `07f0f3b2acc6db05c98d7e69c6ff33ed316842df`; all 13 `deps.edn` and 5 `bb.edn` foundation pins name that landed SHA, with no `399b679` pin remaining. The post-land runs used the SHA-pinned foundation (not `:dev-local`): focused six acceptance scenarios passed (6 examples, 0 failures, 24 assertions) and full `features/config/set_unset.feature` passed (24 examples, 0 failures, 74 assertions).
+
+Independent-main check: foundation `features/cli/modules_pins.feature` still fails 4/6 due to obsolete unavailable fixture path `/Users/zane/agents/isaac/verify-2/isaac-foundation-rxun/fixture-agent`; this is outside this bean. Agent `features/session/parallel_tool_batches.feature:79` passed on agent main (1 example, 0 failures, 4 assertions), so no persistent main failure was reproduced.
