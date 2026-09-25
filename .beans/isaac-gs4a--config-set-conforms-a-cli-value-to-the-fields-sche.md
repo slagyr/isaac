@@ -5,11 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - config
     - unverified
     - foundation
+    - config
 created_at: 2026-09-25T14:46:21Z
-updated_at: 2026-09-25T15:03:39Z
+updated_at: 2026-09-25T15:13:58Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/cli/mutate_common.clj). Scenarios live in **isaac-agent** (features/config/set_unset.feature), because the crew schema they exercise (`tags` is a set of keywords, `soul` is a string) is agent's.
@@ -69,3 +69,21 @@ Remove `@wip` from those six scenarios; all of set_unset.feature is green.
 
 
 ## Verify fail (attempt 1, 2026-09-25): agent foundation pin was not repinned, so the six acceptance scenarios execute against eaea445 and fail 5/6; additionally, colon-prefixed unset members are converted to ::name rather than :name.
+
+
+## Verify Repair (2026-09-25)
+
+Repaired verifier findings across both repositories:
+
+- `isaac-foundation` branch `bean/isaac-gs4a` at `399b679c42071cff9f0a6000b8425659792ea29a`: normalizes one leading `:` before keywordizing a raw `config unset <set-path> <member>` argument, so `:hail/send` removes `:hail/send`, not `::hail/send`; covered by a unit spec.
+- `isaac-agent` branch `bean/isaac-gs4a` at `5c7ec2d`: repins every foundation dependency (product, spec, test-support, marigold.bridge, marigold.longwave) in both `deps.edn` and `bb.edn` to foundation `399b679c42071cff9f0a6000b8425659792ea29a`; rebased on `origin/main@89af4b7`.
+
+Passing checks:
+
+- foundation: `bb lint src/isaac/config/cli/mutate_common.clj`; `bb spec` — 1285 examples, 0 failures; focused mutation spec — 17 examples, 0 failures.
+- agent: focused six scenarios against `:dev-local` — 6 examples, 0 failures; `bb features features/config/set_unset.feature` — 24 examples, 0 failures.
+- agent: `bb spec` — 1794 examples, 0 failures.
+
+Full `bb ci` was attempted in both repositories after the focused green runs. It is red only in unrelated existing integration scenarios: foundation's `cli/modules_pins.feature` resolves an obsolete `verify-2/isaac-foundation-rxun/fixture-agent` git fixture (4 failures); agent's `session/parallel_tool_batches.feature:79` cancellation assertion flaked (1 failure). Neither failure overlaps the config CLI implementation or acceptance feature.
+
+Branches: foundation `bean/isaac-gs4a @ 399b679c42071cff9f0a6000b8425659792ea29a` (base `origin/main@eaea445b268545311fb5fc9292b3872a000dc83c`); agent `bean/isaac-gs4a @ 5c7ec2d` (base `origin/main@89af4b7`).
