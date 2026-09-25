@@ -1,11 +1,11 @@
 ---
 # isaac-468y
 title: 'isaac-gchat: inbound attachments download from Chat''s media endpoint — /v1/media/{resourceName}?alt=media, not /v1/{resourceName}'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T15:56:18Z
-updated_at: 2026-09-25T15:56:18Z
+updated_at: 2026-09-25T15:57:09Z
 ---
 
 ## Symptom (yopp, 2026-09-25 15:52Z)
