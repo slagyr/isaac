@@ -4,8 +4,10 @@ title: 'No crew named main: remove the last "main" crew fallbacks from gchat, gm
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-23T21:11:58Z
-updated_at: 2026-09-23T21:43:07Z
+updated_at: 2026-09-25T00:16:08Z
 ---
 
 Micah 2026-09-23: "There should be no fallback to any crew named `main`." isaac-bfwn (completed 2026-09-16) removed every production "main" crew identity from **isaac-agent** and made `:defaults :crew` required (`:present?` + `:crew-exists?`), so a config without a default crew fails validation and the charge's last resort is defaults.crew. The comm and surface modules were outside that bean and still carry the fallback; isaac-od6i covers isaac-episodes separately.
@@ -94,3 +96,12 @@ Swept `src` on origin/main of every isaac-* repo for `"main"`:
 - Every other repo is clean: acp, agent, claude-code, cli-proxy, cli-server, cron, foreman, foundation, gchat, google, hail, hooks, http, imessage, mcp, server, worksite.
 
 Remaining: isaac-od6i completes → re-run the sweep → close zule. The zanebot upgrade (gchat, gmail, discord, acp, hooks) is Micah's call.
+
+## Final sweep and handoff (planner, 2026-09-25)
+
+- isaac-od6i is completed: isaac-episodes 9965aeb. `git grep '"main"' origin/main -- src` in isaac-episodes returns nothing.
+- Re-ran the whole-fleet sweep on origin/main. The only remaining hit is a comment in isaac-discord discord.clj:147. No isaac-* repo has a "main" crew fallback in `src`.
+- Registry is repinned (d95404b3) and zanebot is upgraded to it: discord 6df59f7, episodes 9965aeb, agent 5ea0e4c, imessage d7a1447. Service restarted clean.
+- zanebot's `:defaults :frequencies :crew` is `:main`, and a crew named main exists there. That is operator config, not a code fallback, so it is outside this bean's rule.
+
+Acceptance: both "done when" conditions are met. Handed off `unverified`.
