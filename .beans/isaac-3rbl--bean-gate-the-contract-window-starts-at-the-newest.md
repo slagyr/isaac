@@ -1,11 +1,11 @@
 ---
 # isaac-3rbl
 title: 'bean-gate: the contract window starts at the newest planner baseline — a re-baseline re-cuts the contract'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-25T05:02:11Z
-updated_at: 2026-09-25T05:02:11Z
+updated_at: 2026-09-25T05:02:59Z
 ---
 
 ## Why (Micah, 2026-09-25, on isaac-baf1)
