@@ -1,11 +1,11 @@
 ---
 # isaac-468y
 title: 'isaac-gchat: inbound attachments download from Chat''s media endpoint — /v1/media/{resourceName}?alt=media, not /v1/{resourceName}'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-25T15:56:18Z
-updated_at: 2026-09-25T15:57:09Z
+updated_at: 2026-09-25T16:00:35Z
 ---
 
 ## Symptom (yopp, 2026-09-25 15:52Z)
@@ -46,3 +46,7 @@ Likely repo scope: isaac-gchat (chat_api.clj, inbound_attachment.clj, feature-st
 
 feature-baseline: isaac-gchat 0e77c04a19d5350ca067a6a0fb8a8dc308662880
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature 7124ba35044061f10352d982d8444cfacbf708cd 677
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-gchat 17039effa84e7505368b516ee881638b3c242450
