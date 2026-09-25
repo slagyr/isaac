@@ -4,8 +4,10 @@ title: 'bean-gate: baseline promotes a bean to todo — readiness is the frozen 
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-25T03:13:00Z
-updated_at: 2026-09-25T13:55:33Z
+updated_at: 2026-09-25T13:59:44Z
 ---
 
 ## Why
