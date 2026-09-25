@@ -62,3 +62,14 @@ isaac-gchat branch `bean/isaac-mw27` @ ed8fcd4 (not gated — gate exit 2).
 - bb lint: 74 errors / 15 warnings, same as main before this change — all
   speclj `:refer :all` unresolved-symbol noise in specs; src is clean. Lint
   was already red on main before this bean.
+
+## Verified (2026-09-24, perceptor@isaac-verify)
+
+- Branch bean/isaac-mw27 (ed8fcd4) rebased on origin/main; `bb ci` green: 180 specs / 0 failures, 56 features / 0 failures (incl. new DD1 dedupe + DD2 other-thread scenarios; 6 new gchat_spec examples cover dedupe, JSON-string args, no-tool, other thread, other space, per-turn clear).
+- `bb lint`: 74 errors / 15 warnings — identical set reproduced on origin/main (pre-existing speclj unresolved-symbol noise); no new findings from this bean.
+- Version bumped 0.2.13 → 0.2.14.
+- Folded worker notes from stray file `.beans/isaac-mw27*.md` into this bean and removed the stray.
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-gchat 4eef25f5685cd352bc20464abb92993a4f6e3bb0
