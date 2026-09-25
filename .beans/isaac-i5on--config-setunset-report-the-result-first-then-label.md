@@ -1,14 +1,14 @@
 ---
 # isaac-i5on
 title: config set/unset report the result first, then labelled validation warnings scoped to the changed path; crews can acknowledge broad directory grants
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - foundation
     - config
 created_at: 2026-09-25T14:46:38Z
-updated_at: 2026-09-25T16:03:14Z
+updated_at: 2026-09-25T16:20:26Z
 blocked_by:
     - isaac-gs4a
 ---
@@ -63,3 +63,12 @@ Remove `@wip` from set_report.feature and the two rewritten scenarios; all of fe
 Blocked by isaac-gs4a: both edit isaac-foundation mutate_common.clj. Dispatch after gs4a lands, and rebase onto its foundation main.
 
 ## Verify fail (attempt 1, 2026-09-25): Agent acceptance is red against its declared foundation pin; the reporting implementation exists only on the unlanded isaac-foundation branch, so the required foundation landing/agent repin integration is incomplete.
+
+
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-foundation c1cb3778bbba4dc5142add0e3039a2cde21dde74
+main-sha: isaac-agent 469c478a64633ede21be5cf8735e0a5806b28b89
+
+Verification: foundation bb spec 1285 examples/0 failures; foundation bb ci 229 feature examples/4 failures (identical on origin/main: stale ~/.gitlibs fixture-agent cache refers to deleted worker checkout, cli/modules_pins.feature:51,75,95,111). Agent targeted features 6/0, config features 881/0 (1 pending outside scope), bb ci spec 1797/0 + features 881/0.
