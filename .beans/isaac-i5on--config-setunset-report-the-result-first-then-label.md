@@ -1,14 +1,14 @@
 ---
 # isaac-i5on
 title: config set/unset report the result first, then labelled validation warnings scoped to the changed path; crews can acknowledge broad directory grants
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - foundation
     - config
 created_at: 2026-09-25T14:46:38Z
-updated_at: 2026-09-25T14:50:42Z
+updated_at: 2026-09-25T16:03:14Z
 blocked_by:
     - isaac-gs4a
 ---
@@ -61,3 +61,5 @@ Remove `@wip` from set_report.feature and the two rewritten scenarios; all of fe
 ## Sequencing (planner, 2026-09-25)
 
 Blocked by isaac-gs4a: both edit isaac-foundation mutate_common.clj. Dispatch after gs4a lands, and rebase onto its foundation main.
+
+## Verify fail (attempt 1, 2026-09-25): Agent acceptance is red against its declared foundation pin; the reporting implementation exists only on the unlanded isaac-foundation branch, so the required foundation landing/agent repin integration is incomplete.
