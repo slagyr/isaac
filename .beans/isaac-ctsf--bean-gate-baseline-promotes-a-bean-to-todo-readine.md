@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-09-25T03:13:00Z
-updated_at: 2026-09-25T13:59:44Z
+updated_at: 2026-09-25T14:01:49Z
 ---
 
 ## Why
@@ -65,3 +65,6 @@ to baseline against. Dispatched ungated on purpose; verify path applies.
 Likely repo scope: isaac (src/isaac/bean_gate/main.clj + core, spec,
 AGENTS.md, .toolbox/commands/plan.md, .toolbox/skills/hail-bean-plan) and
 plan/AGENTS.md (planner home — not a git repo; planner edits it by hand).
+
+
+## Verify fail (attempt 1, 2026-09-25): Required planner dispatch integration is missing: hail-bean-plan neither runs `bb bean-gate ready <id>` before `isaac-work` nor implements the documented ungated exception.
