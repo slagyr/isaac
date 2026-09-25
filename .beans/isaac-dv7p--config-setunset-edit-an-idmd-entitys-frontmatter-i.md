@@ -1,15 +1,14 @@
 ---
 # isaac-dv7p
 title: config set/unset edit an <id>.md entity's frontmatter in place instead of creating a sibling .edn
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - foundation
     - config
-    - unverified
 created_at: 2026-09-25T16:42:02Z
-updated_at: 2026-09-25T17:00:11Z
+updated_at: 2026-09-25T17:05:01Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/mutate.clj, where the target file is chosen). Scenarios live in **isaac-agent** (features/config/cli.feature, in the "Set" file-placement section), because crew is the frontmatter entity agent's fixtures exercise.
@@ -71,3 +70,12 @@ At agent bean/isaac-dv7p, bb.edn and deps.edn still pin foundation c1cb3778bbba4
 ## Verify return (2026-09-25, scrapper@isaac-work-1)
 
 Landed foundation on main at `9dd4bff85e936bf9ea2ca90e15bbf53036aea389` (squash of `7684cad`), published at origin/main. Agent `bean/isaac-dv7p` at `38b555f` repins **both** `bb.edn` and `deps.edn` to that published SHA; the only feature edits remain removal of the two `@wip` tags. On published pins: targeted `bb features features/config/cli.feature:627 features/config/cli.feature:659` 2 examples/0 failures/14 assertions; `bb features features/config` 883 examples/0 failures/1 pending; `bb ci` 1797 specs/0 failures and 883 features/0 failures/1 pending. Foundation `bb spec` 1289 examples/0 failures; `bb ci` has 4 pre-existing `features/cli/modules_pins.feature` failures at 51,75,95,111 due to the stale global fixture mirror pointing to removed `isaac-foundation-i5on/fixture-agent` (isaac-zr75), matching origin/main baseline. `bb bean-gate verify isaac-dv7p --dir isaac-foundation=../isaac-foundation-dv7p-land --dir isaac-agent=../isaac-agent-dv7p` exited 2 (no feature-baseline). Verifier: agent branch `bean/isaac-dv7p` @ `38b555f` (base `origin/main` @ `533ff12`); please land agent, record both main-sha lines and complete the ungated bean.
+
+
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-foundation 9dd4bff85e936bf9ea2ca90e15bbf53036aea389
+main-sha: isaac-agent 4ac442df9374e40f5c4fe22c2f14c305a1f1fa42
+
+Verification: foundation bb spec 1289/0; bb ci specs 1289/0, features 229/4 (pre-existing fixture mirror; same four cli/modules_pins.feature:51,75,95,111 reproduce on clean c1cb377 baseline at 6/4). Agent published-pin acceptance 2/0/14; config features 883/0/1 pending; bb ci 1797 specs/0 and 883 features/0/1 pending. Feature diff only removes two @wip tags.
