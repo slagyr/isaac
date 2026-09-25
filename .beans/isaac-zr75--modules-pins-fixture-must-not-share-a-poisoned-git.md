@@ -1,13 +1,13 @@
 ---
 # isaac-zr75
 title: modules_pins fixture must not share a poisoned gitlibs REL cache
-status: draft
+status: todo
 type: bug
-priority: normal
+priority: high
 tags:
     - foundation
 created_at: 2026-09-25T16:21:58Z
-updated_at: 2026-09-25T16:21:58Z
+updated_at: 2026-09-25T17:41:00Z
 ---
 
 ## Why
@@ -51,3 +51,24 @@ Same four failures, second clean reproduction:
 - agent CI on dv7p was green (1797 specs, 883 features) and is unrelated
 
 This draft already owns the follow-up. Stays `draft` for human review. No scenarios yet, so it is not dispatched. Do not `rm -rf` the cache as the fix — that clears one poison and the next checkout recreates it.
+
+
+
+## Design (planner review, 2026-09-25)
+
+Two layers, both in isaac-foundation:
+
+1. **Tests never touch the shared cache.** The feature harness sets tools.gitlibs's cache directory (`clojure.gitlibs.dir` system property, or `GITLIBS` env — tools.gitlibs honours both) to `<checkout>/target/gitlibs` before the first gitlibs call, so every checkout has its own cache and a deleted checkout can poison nothing. `isaac.module.coords/gitlibs-root` (hard-coded `~/.gitlibs/libs`) reads the same override so discovery and pins agree.
+2. **Production self-heals a stale remote.** `isaac.modules.pins` resolves a relative `:git/url` to an absolute path against the deps directory before handing it to gitlibs (the cache key becomes that path, not the bare word), and when gitlibs fails because the cached repo's remote path no longer exists (fetch exit 128 / "does not exist"), it removes that `_repos` entry and retries once, logging `:modules.pins/cache-recloned` at info. A second failure is the real error.
+
+## Acceptance (features/cli/modules_pins.feature — baselined)
+
+- [ ] Scenario "the fixture is cached under this checkout, never in the shared gitlibs (isaac-zr75)". New step: `the gitlibs cache for "<url>" lives under this checkout's "target" directory` (asserts tools.gitlibs's effective cache dir is under the checkout's target/ and holds a repo for that url).
+- [ ] Scenario "a cached fixture whose remote path no longer exists is recloned, not a failure (isaac-zr75)". New step: `the gitlibs cache holds "<url>" with a remote that points at a deleted path` (seeds the per-run cache with a clone whose origin is a nonexistent path).
+- [ ] Existing four modules_pins scenarios green on a machine whose ~/.gitlibs slot is poisoned (planner verifies on zanebot after landing — one-time).
+- [ ] Version bump; bb spec / bb features / bb lint green.
+
+Do not reopen isaac-i5on or isaac-dv7p.
+
+feature-baseline: isaac-foundation 066316f9d07b49cb4437e149069b18f7e0bdfdd6
+feature-blob: isaac-foundation features/cli/modules_pins.feature 2131fadde42c59811eca025c7a06d665b184cfa9 137,147
