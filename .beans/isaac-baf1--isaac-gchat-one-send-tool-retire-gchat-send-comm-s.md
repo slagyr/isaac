@@ -1,11 +1,11 @@
 ---
 # isaac-baf1
 title: 'isaac-gchat: one send tool — retire gchat__send, comm__send is the send, guidance carries the response/send distinction, mw27 guard out'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T03:37:51Z
+updated_at: 2026-09-25T03:40:52Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -50,3 +50,6 @@ Deploy note: yopp crew allow `:gchat/*` needs no change.
 
 Likely repo scope: isaac-gchat (manifest, tools.clj, gchat.clj, guidance.clj,
 specs, outbound.feature).
+
+feature-baseline: isaac-gchat e6c78a153be8a57f670666eadf162b61271e36e3
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature 5b9541244161bcbbefd112f44a610170cb155f47 489

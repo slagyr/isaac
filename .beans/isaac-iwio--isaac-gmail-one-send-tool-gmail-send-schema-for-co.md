@@ -1,11 +1,11 @@
 ---
 # isaac-iwio
 title: 'isaac-gmail: one send tool — gmail send-schema for comm__send, retire gmail__send, guidance, 3t0z guard out'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T03:37:51Z
+updated_at: 2026-09-25T03:40:52Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -56,3 +56,6 @@ the same thread with gmail__send" — change to comm__send with
 
 Likely repo scope: isaac-gmail (manifest, gmail.clj send!*, tools.clj,
 guidance.clj, specs, gmail.feature).
+
+feature-baseline: isaac-gmail 3b0b4faad16cdae231139cc079ec1bcccf8d5d29
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature c9d74d1539c081f9528d14261f735db92b662bf3 191,214

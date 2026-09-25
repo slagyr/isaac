@@ -1,11 +1,11 @@
 ---
 # isaac-o9h4
 title: 'isaac-agent: comm__send attachments — file paths ride the delivery record; comms opt in with :send-attachments?'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T03:37:51Z
+updated_at: 2026-09-25T03:40:52Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -44,3 +44,6 @@ half; isaac-gchat and isaac-gmail beans add the uploads.
 
 Likely repo scope: isaac-agent (tool/comm_send.clj, comm manifest schema,
 telly fixture, comm_send.feature).
+
+feature-baseline: isaac-agent ee969478c6d14cc2ba7578fa9eb96386e7a5ffc1
+feature-blob: isaac-agent features/tool/comm_send.feature dcf7e6996c469bfd743e41d12a85ed1c864287e8 84,96,116,131

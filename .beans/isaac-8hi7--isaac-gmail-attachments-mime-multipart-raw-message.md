@@ -1,11 +1,11 @@
 ---
 # isaac-8hi7
 title: 'isaac-gmail: attachments — MIME multipart raw message from the delivery''s files'
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T03:37:51Z
+updated_at: 2026-09-25T03:40:52Z
 blocked_by:
     - isaac-o9h4
 ---
@@ -36,3 +36,6 @@ Gmail wants a MIME multipart/mixed raw message.
 
 Likely repo scope: isaac-gmail (rfc2822.clj, gmail.clj, manifest, feature,
 feature-steps).
+
+feature-baseline: isaac-gmail 3b0b4faad16cdae231139cc079ec1bcccf8d5d29
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature c9d74d1539c081f9528d14261f735db92b662bf3 239
