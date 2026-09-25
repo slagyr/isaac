@@ -1,11 +1,11 @@
 ---
 # isaac-ozh5
 title: 'isaac-episodes: recall ledger — an opt-in per-crew record of every recall (query, candidates, scores, what was injected) for research'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-25T16:32:30Z
-updated_at: 2026-09-25T16:32:30Z
+updated_at: 2026-09-25T16:39:55Z
 ---
 
 ## Why (Micah, 2026-09-25)
