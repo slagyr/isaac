@@ -1,11 +1,11 @@
 ---
 # isaac-o9h4
 title: 'isaac-agent: comm__send attachments — file paths ride the delivery record; comms opt in with :send-attachments?'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:21:57Z
+updated_at: 2026-09-25T04:33:43Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -47,3 +47,9 @@ telly fixture, comm_send.feature).
 
 feature-baseline: isaac-agent ee969478c6d14cc2ba7578fa9eb96386e7a5ffc1
 feature-blob: isaac-agent features/tool/comm_send.feature dcf7e6996c469bfd743e41d12a85ed1c864287e8 84,96,116,131
+
+
+
+## Landed (2026-09-25)
+
+isaac-agent main ff62ae7 (0.1.83), gate PASS on branch and squash; bb spec 1791/0, features 872/0, jvm-spec 1791/0. Unblocks isaac-vlxz and isaac-8hi7 — pin isaac-agent ff62ae7 in those.
