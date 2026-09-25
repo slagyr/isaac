@@ -1,13 +1,11 @@
 ---
 # isaac-ctsf
 title: 'bean-gate: baseline promotes a bean to todo — readiness is the frozen contract, checked before dispatch'
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-25T03:13:00Z
-updated_at: 2026-09-25T14:19:36Z
+updated_at: 2026-09-25T14:24:06Z
 ---
 
 ## Why
@@ -110,3 +108,9 @@ worker-notes file, and added the lookup/CLI ready regression. Verification:
 `bb ci` — 77 examples, 0 failures; `bb bean-gate ready isaac-ctsf` — exit 1
 with `status in-progress` (not `status unknown`); `bb bean-gate verify
 isaac-ctsf` — exit 2 (documented ungated path).
+
+
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac a2c246a7bdd90893cfd2eae3ae15b1c4fe1d41e3
