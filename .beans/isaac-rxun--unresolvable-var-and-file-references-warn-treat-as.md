@@ -1,13 +1,11 @@
 ---
 # isaac-rxun
 title: 'Unresolvable ${VAR} and ${file:…} references: warn, treat as unset, never send the literal'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-21T16:28:51Z
-updated_at: 2026-09-24T23:46:35Z
+updated_at: 2026-09-25T00:02:43Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
@@ -482,3 +480,17 @@ started. Recording what exists so it is not redone:
 So it reproduces with zero rxun code and depends on ordering/timing (probably the isaac-600d ambient-snapshot registration, triggered by some other early read). After the rework, the branch passed twice in a row. isaac-600d should make it go away.
 
 **Gate:** `bb bean-gate verify isaac-rxun` returned exit **2** (`no feature-baseline: use the verify path`). Tagged `unverified` and handed to the verify band.
+
+## Verify pass (2026-09-24, perceptor@isaac-verify-2)
+
+Both halves rebased onto the current origin/main, gated, squash-landed, and pinned.
+
+- **Planner note met.** `resolve-provider` stamps the provider's own `:unresolved-refs` onto the slice. `api-key-missing-error` uses the two-arity `loader/unresolved-ref` on that slice, and agent `src` has no one-arity or ambient call. End to end on a throwaway root with `:api-key "${RXUN_E2E_MISSING}"` and `loader/snapshot` redefined to throw, load → `resolve-crew-context` → `missing-auth-error` gives: warn `:config/unresolved-reference path providers.zane.api-key`, slice `{"providers.zane.api-key" "RXUN_E2E_MISSING"}`, and the message *"No API key for zane. :api-key references ${RXUN_E2E_MISSING}, which is not set in this environment."*
+- **Seq nil guard fixed.** The sentinel keeps the explicit nil, and `parse_spec` has the example.
+- **isaac-foundation:** `bb ci` exit 0 on the rebased branch (1274/0, 229/0/2 pending). Main then moved (isaac-600d landed at 3da008f), so I re-ran it on the landed squash `eaea445`: exit 0 (1280/0/2306, 229/0/608, 2 pending, lint-pins ok). The `cli/modules_pins` reds in one run came from the shared `~/.gitlibs/.../fixture-agent` mirror, which another session re-created at the same time. They pass 6/0 in isolation, and the re-run was clean.
+- **isaac-agent:** I repinned all 18 foundation coordinates (5 in bb.edn, 13 in deps.edn) to `eaea445`. `bb ci` on the squash tree: run 4 exit 0 and run 5 exit 0 (1780/0/3680, 868/0/2098, 1 pending). Run 3 red on `session_steps_spec` "parks a slow tool-loop send so a later cancel can still fire". That flake is **pre-existing**: it fails 3/15 on origin/main 1cc8679 with no rxun code and 5/15 on the branch, with the same example and message. It is a timing assertion on a `sleep 0.05` tool call and not touched by this bean. The earlier runs on the local-root pin were also green, twice (1780/0, 868/0).
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-foundation eaea445b268545311fb5fc9292b3872a000dc83c
+main-sha: isaac-agent 5ea0e4c1c4e54ad89e0174b00975542f4fcc65ea
