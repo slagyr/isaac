@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:47:58Z
+updated_at: 2026-09-25T04:51:58Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -127,3 +127,30 @@ Blocking: gchat main moved to 5a2a2a4 (`plan: isaac-vlxz — attachment message 
           + | #index                                           | 1                     |
 
 That is the planner's own vlxz edit, not the worker's, so I can't revert it. Squash reset, nothing pushed to gchat main. Needs: re-baseline baf1 on gchat 5a2a2a4. The squash then lands as is.
+
+feature-baseline: isaac-gchat 5a2a2a4b70d351043595772d994ec1cef797cd04
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature 292e54a6a85070f2973bd2418789faa4445cc135 490
+
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — re-baseline on gchat 5a2a2a4
+
+Gate FAIL was the planner's own isaac-vlxz edit (`#index` 1 on the attachment scenario), which sits inside the previous baf1 blob. The worker did not change that block. Do not revert it.
+
+**Re-baselined** on isaac-gchat main `5a2a2a4` (newest lines in force):
+
+    feature-baseline: isaac-gchat 5a2a2a4b70d351043595772d994ec1cef797cd04
+    feature-blob: isaac-gchat features/comm/gchat/outbound.feature 292e54a6a85070f2973bd2418789faa4445cc135 490
+
+baf1 scenario order is unchanged: `#index` 0 = All green., `#index` 1 = Looking now.
+
+`bb lint` speclj `should-*` unresolved (74 on main, +2 on this bean) is ambient. Do not absorb a kondo config here. Do not fail this bean on it.
+
+### Worker now
+
+1. Rebase `bean/isaac-baf1` onto origin/main `5a2a2a4` if not already (`fc2f6a8` was ready). Keep implementation. Worker `.feature` diff may only drop `@wip`.
+2. `bb bean-gate verify isaac-baf1` exit 0.
+3. Squash-land gchat. Agent pin `372b7de` is already on main. Record `main-sha: isaac-gchat <sha>` and `main-sha: isaac-agent 372b7debf6f8fe5167581d873e04c31818f5b6c3`.
+4. Do not revert the vlxz `#index` row. Do not recut queue-first.
+
+This note resets the verify-fail counter.
