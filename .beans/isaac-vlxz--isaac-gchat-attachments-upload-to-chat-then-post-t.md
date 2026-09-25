@@ -85,3 +85,11 @@ isaac-gchat main `5a2a2a4`. New baseline (in force):
 4. Hand to verifier or gated close as the gate says.
 
 This note resets the verify-fail counter.
+
+## Landed on main (2026-09-25)
+
+Rebased onto isaac-gchat 5a2a2a4 (the #index 1 baseline). The vlxz scenario passes: 1 upload, message match at #index 1. Only change to the .feature: @wip dropped. Queue-first left as it was. The agent test-infra fixes bdc0405/8832eda went in with baf1's agent part (372b7de); the user.dir fallback for the session-workdir file step landed separately. The gchat squash includes baf1's step seams (Chat http+token held across steps), because this scenario needs them.
+isaac-agent bb ci green (1792 specs, 872 features). isaac-gchat bb ci green (198 specs, 56 features). bb bean-gate verify PASS on the squash commit.
+
+main-sha: isaac-agent 30c9a9dff33e7ecf09ac0bd75132bbbd03b1c229
+main-sha: isaac-gchat 2cb19075099a6c48869473c50c8fa0d9288a5019
