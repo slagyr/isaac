@@ -8,7 +8,9 @@ tags:
     - foundation
     - config
 created_at: 2026-09-25T14:46:38Z
-updated_at: 2026-09-25T14:46:38Z
+updated_at: 2026-09-25T14:50:42Z
+blocked_by:
+    - isaac-gs4a
 ---
 
 Repos: **isaac-foundation** (src/isaac/config/cli/mutate_common.clj `handle-mutate-result!`, src/isaac/config/cli/common.clj `print-warnings!`) and **isaac-agent** (src/isaac/config/checks.clj `check-crew-broad-directories`, plus the crew `:tools :directories` schema). Scenarios live in isaac-agent.
@@ -55,3 +57,7 @@ cd isaac-agent && bb features features/config && bb ci
 ```
 
 Remove `@wip` from set_report.feature and the two rewritten scenarios; all of features/config is green. Land foundation first, repin agent, then land agent.
+
+## Sequencing (planner, 2026-09-25)
+
+Blocked by isaac-gs4a: both edit isaac-foundation mutate_common.clj. Dispatch after gs4a lands, and rebase onto its foundation main.
