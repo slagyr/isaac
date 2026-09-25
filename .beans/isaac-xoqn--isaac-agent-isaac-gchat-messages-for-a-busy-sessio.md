@@ -67,3 +67,11 @@ feature-baseline: isaac-agent 8794de90f8493b31911318e508741c1e7ef281af
 feature-baseline: isaac-gchat 0e77c04a19d5350ca067a6a0fb8a8dc308662880
 feature-blob: isaac-agent features/session/waiting.feature 2982c9383a0f89ef3c1e43c19e3a6e971634a96f 11,34
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature 7124ba35044061f10352d982d8444cfacbf708cd 702
+
+## Checkpoint (2026-09-25)
+
+Implemented and pushed initial waiting-room/coalescing branches:
+- `isaac-agent` `bean/isaac-xoqn` at `861c8ba`: dispatches an in-flight session to `turns/held` with `:waiting-session`, logs `:turn/waiting`, groups same non-nil keys, joins inputs, retains final origin, and drains from turn completion. Agent unit specs green (`98 examples, 0 failures, 207 assertions`).
+- `isaac-gchat` `bean/isaac-xoqn` at `0431ad2`: supplies `:coalesce-key` from the Chat thread and adds thread-consolidation guidance; focused specs green (`21 examples, 0 failures, 34 assertions`).
+
+Next: complete the feature-step integration. `bb features features/session/waiting.feature` currently fails at `features/session/waiting.feature:28,51`: the second/third harness sends do not consistently reach bridge while the first Grover-delayed turn owns in-flight state, so `:turn/waiting` / `:turn/coalesced` are absent. The gchat scenario at `features/comm/gchat/inbound.feature:702` remains pending because its cross-module step implementation is absent. Do not land or gate until both acceptance scenarios execute and pass.
