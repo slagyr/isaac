@@ -4,8 +4,10 @@ title: 'isaac-agent: per-charge :tools {:deny …} overlay — a caller can with
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-25T02:47:03Z
-updated_at: 2026-09-25T02:47:19Z
+updated_at: 2026-09-25T02:49:46Z
 ---
 
 ## Why
