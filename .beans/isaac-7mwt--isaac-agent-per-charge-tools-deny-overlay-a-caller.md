@@ -1,11 +1,11 @@
 ---
 # isaac-7mwt
 title: 'isaac-agent: per-charge :tools {:deny …} overlay — a caller can withhold tools for one turn'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T02:47:03Z
-updated_at: 2026-09-25T02:47:03Z
+updated_at: 2026-09-25T02:47:19Z
 ---
 
 ## Why
