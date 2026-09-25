@@ -1,11 +1,11 @@
 ---
 # isaac-baf1
 title: 'isaac-gchat: one send tool — retire gchat__send, comm__send is the send, guidance carries the response/send distinction, mw27 guard out'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T05:05:03Z
+updated_at: 2026-09-25T05:06:38Z
 ---
 
 ## Why (Micah, 2026-09-25)
