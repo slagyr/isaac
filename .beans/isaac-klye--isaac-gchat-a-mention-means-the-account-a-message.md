@@ -1,13 +1,11 @@
 ---
 # isaac-klye
 title: 'isaac-gchat: a mention means the account — a message that @-mentions someone else is not addressed to Yopp'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-25T02:35:49Z
-updated_at: 2026-09-25T02:40:54Z
+updated_at: 2026-09-25T02:42:32Z
 ---
 
 ## Symptom
@@ -54,3 +52,13 @@ Branch: isaac-gchat `bean/isaac-klye` (402af62, 88beea4). Not gated (bean-gate e
 - Features: inbound/outbound Backgrounds declare `account-id users/yopp`; new scenario "a message that mentions someone else is heard, not answered (isaac-klye)"; tenant scenario (isaac-mm7o) deletes the configured id and mentions the id tonotop learned (`users/self-at-tonotop`).
 - Manifest 0.2.13 → 0.2.14. bb spec 180/0, bb features 55/0, bb lint src 0/0 (spec lint 74 errors pre-existing on main — speclj refer :all).
 - Operational note: a deployment with neither `:gchat/account-id` nor a working People directory scope cannot recognise its own mention until its first send teaches it the id — set `:gchat/account-id` on Yopp's comm.
+
+## Verify (perceptor@isaac-verify-2, 2026-09-24): PASS
+
+- Rebased bean/isaac-klye onto isaac-gchat main 4eef25f with no conflicts. Full `bb ci`: specs 187/0, features 57/0. `bb lint src` 0/0. `bb lint spec` 74 errors, the same count on origin/main (already there before this bean).
+- The new gate_spec context run against main's gate.clj: 4 failures. So the specs catch the bug.
+- Acceptance: a mention of another user → :log. A mention of the account by users/<id> or by email → route, in both the map and sequence annotation shapes. No annotations → :log. DM → route. @all counts as a mention (documented in the docstring). No @wip tags.
+- Version: isaac-mw27 landed first and already set the manifest to 0.2.14, so the squash has no manifest change. This bean ships under 0.2.14 along with mw27 and has no version bump of its own.
+
+## Landed on main (2026-09-24)
+main-sha: isaac-gchat 2a9d04dc93f38b8c7bfa92f3afa5b763e6c1234e
