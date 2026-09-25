@@ -2,7 +2,7 @@
                                       :git/sha "23ffdaec6359b3021d90294ce4057a2d83765d04"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
-                                      :git/sha "9965aebe260f989a4665b60d54985f221d64c7cd"}
+                                      :git/sha "9b3f50b674d1e45f319d906852b52848f4f7a447"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
                                       :git/sha "591b5a0c6c9e7906a4772cd57e5221266d304e8b"}
@@ -35,7 +35,7 @@
                                       :git/sha "5cdf80720b4012de0ee9d692f07bbaf3599b35e4"}
                               :desc  "Shared Google Workspace plumbing — OAuth for the Google user, the Pub/Sub push door and durable inbox, registrations and renewal, health."}
  :isaac.comm.gchat           {:coord {:git/url "https://github.com/slagyr/isaac-gchat.git"
-                                      :git/sha "364cf4fc3fee8ba85f4f4ef0a067edef38a6547f"}
+                                      :git/sha "17039effa84e7505368b516ee881638b3c242450"}
                               :desc  "Google Chat comm — inbound gate, routing and dispatch for spaces and DMs; outbound replies and sends. Built on isaac-google."}
  :isaac.comm.gmail           {:coord {:git/url "https://github.com/slagyr/isaac-gmail.git"
                                       :git/sha "b1c9da1e931b13dfc5ae06ffca455b9fdd1e3e6f"}
