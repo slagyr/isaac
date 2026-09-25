@@ -4,8 +4,10 @@ title: 'isaac-gmail: a gmail__send replying to the origin is the reply — on-re
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-25T02:35:50Z
-updated_at: 2026-09-25T02:36:46Z
+updated_at: 2026-09-25T02:44:21Z
 ---
 
 ## Symptom
@@ -40,3 +42,12 @@ sent automatically as the reply; `gmail__send` is for other threads.
 - [ ] Version bump, bb spec / bb features / bb lint green.
 
 Likely repo scope: isaac-gmail (gmail.clj hooks, guidance).
+
+## Work notes (scrapper@isaac-work-1, 2026-09-24)
+
+Branch `bean/isaac-3t0z` on isaac-gmail (4f348a4), version 0.2.5. Not gated (no feature-baseline) → verify path.
+- `isaac.comm.gmail`: `:on-tool-call` marks the session when a gmail__send's reply-to-id equals the origin message id (`reply-to-origin?`); `on-reply*` then logs `:gmail/reply-deduped` (debug) and sends nothing; mark cleared in `on-turn-end*`.
+- `isaac.comm.gmail.guidance/TEXT` rides `:guidance` on every gmail dispatch: answer text is the reply; gmail__send is for other threads/new messages.
+- Features: 3 new scenarios in gmail.feature (origin dedupe, text-only, other-thread two sends) + step `the Gmail API sent N messages`. Specs: gmail_spec, guidance_spec, handler start-turn! guidance.
+- bb ci EXIT=0 (spec 137/0, features 43/0; needs ISAAC_TEST_TIMEOUT_MS under load — JVM features exits slowly). bb lint 76 errors/17 warnings = main baseline (pre-existing speclj :refer :all noise).
+- Only a reply-to-id match on the origin message counts; a gmail__send replying to a different message in the same thread is not deduped (thread lookup would need an API call inside on-tool-call).
