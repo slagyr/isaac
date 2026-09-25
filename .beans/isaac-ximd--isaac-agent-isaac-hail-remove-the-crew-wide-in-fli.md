@@ -1,11 +1,11 @@
 ---
 # isaac-ximd
 title: 'isaac-agent + isaac-hail: remove the crew-wide in-flight cap — turns serialize per session only, sessions run in parallel'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-25T14:54:13Z
-updated_at: 2026-09-25T14:54:52Z
+updated_at: 2026-09-25T15:33:22Z
 ---
 
 ## Why (Micah, 2026-09-25)
