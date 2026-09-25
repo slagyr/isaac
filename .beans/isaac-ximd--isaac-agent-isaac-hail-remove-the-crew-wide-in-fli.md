@@ -144,3 +144,9 @@ feature-baseline: isaac-agent b181ef2bacfc7ebe19ac72554a47645c393e2c47
 feature-blob: isaac-agent features/session/concurrency.feature 0f7d52d7e97788726a94d346c6f490d821723c1a 14
 feature-baseline: isaac-hail d2944e2c78aa2331d6e94f2d391cdd0263de27a2
 feature-blob: isaac-hail features/bound_unclaimed.feature 546da6294a59a37d7d5fbbb28d07352e79a80711 48,104
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-agent b181ef2bacfc7ebe19ac72554a47645c393e2c47
+main-sha: isaac-hail 00d9d178f07fe41d03785ac573a30b714a3e800b
+main-sha: isaac 2477b43590417a99a8da0076cc56d3066374306c
