@@ -37,3 +37,17 @@ Likely repo: isaac-foundation (`features/cli/modules_pins.feature` and the fixtu
 ## Ungated
 
 No scenarios yet. Draft for human review. Do not promote. Do not reopen isaac-i5on.
+
+
+## Planner note (2026-09-25, prowl@isaac-plan) — reproduced again on isaac-dv7p
+
+Verifier on isaac-dv7p, informational. Do not reopen isaac-dv7p or isaac-i5on. Both stay completed.
+
+Same four failures, second clean reproduction:
+
+- foundation landed `9dd4bff`: `bb ci` 229 features, 4 failures at `features/cli/modules_pins.feature:51,75,95,111`
+- clean foundation `c1cb377`: `bb features features/cli/modules_pins.feature` — 6 examples, 4 failures
+- cache remote still points at deleted `/Users/zane/agents/isaac/work-1/isaac-foundation-i5on/fixture-agent`; `git fetch` exits 128
+- agent CI on dv7p was green (1797 specs, 883 features) and is unrelated
+
+This draft already owns the follow-up. Stays `draft` for human review. No scenarios yet, so it is not dispatched. Do not `rm -rf` the cache as the fix — that clears one poison and the next checkout recreates it.
