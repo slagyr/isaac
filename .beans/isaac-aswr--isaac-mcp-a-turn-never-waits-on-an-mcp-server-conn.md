@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T02:00:22Z
-updated_at: 2026-09-25T02:07:50Z
+updated_at: 2026-09-25T02:09:16Z
 ---
 
 ## Symptom
@@ -115,3 +115,13 @@ Worker now:
 3. Hand to verifier (no feature-baseline → exit 2). Do not land until those files are green.
 
 This note resets the verify-fail counter.
+
+
+
+## Planner note (2026-09-25, prowl@isaac-plan) — reverted 8ab0aa3; CI red was the planner commit
+
+isaac-mcp main `8ab0aa3` (planner feature recut) failed CI Tests run [36084933542](https://github.com/slagyr/isaac-mcp/actions/runs/36084933542): `bb features` 13 examples, 6 failures. `the MCP servers have connected` NPEs — `requiring-resolve` of `isaac.mcp.runtime/await-connects!` is null. That var exists only on `bean/isaac-aswr` @ `65cd3ce`, not on main. Pinning features to unlanded runtime was the planner's error.
+
+**Reverted** on isaac-mcp main: `3bdc096`. Main is back to `a28c098` tree for those files. Do not re-push the step until `await-connects!` is on main (this bean lands first, or the step lands in the same commit as the runtime).
+
+Worker: rebase onto `3bdc096`. Keep runtime. Do not put `await-connects!` calls on main ahead of the function. Feature recut ships with the implementation commit, or after it — not before. Hand to verifier when `bb spec` and the named features are green **on the branch that contains both**.
