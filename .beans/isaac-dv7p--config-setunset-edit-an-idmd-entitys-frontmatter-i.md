@@ -1,14 +1,14 @@
 ---
 # isaac-dv7p
 title: config set/unset edit an <id>.md entity's frontmatter in place instead of creating a sibling .edn
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - foundation
     - config
 created_at: 2026-09-25T16:42:02Z
-updated_at: 2026-09-25T16:42:02Z
+updated_at: 2026-09-25T16:42:47Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/mutate.clj, where the target file is chosen). Scenarios live in **isaac-agent** (features/config/cli.feature, in the "Set" file-placement section), because crew is the frontmatter entity agent's fixtures exercise.
