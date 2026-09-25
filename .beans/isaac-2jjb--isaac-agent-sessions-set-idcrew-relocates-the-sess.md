@@ -1,11 +1,11 @@
 ---
 # isaac-2jjb
 title: 'isaac-agent: sessions set <id>.crew relocates the session — the next turn keeps its transcript instead of an empty folder'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-25T14:54:13Z
-updated_at: 2026-09-25T15:01:56Z
+updated_at: 2026-09-25T15:30:58Z
 ---
 
 ## Symptom (yopp, 2026-09-25 14:32Z–14:47Z)
@@ -48,3 +48,9 @@ feature-blob: isaac-agent features/session/mutation.feature 51e4c2cd8479c78333a7
 ## Claimed by the planner (2026-09-25 15:02Z)
 
 Hail f64cd1c1 dropped; implemented as a planner subagent in a local worktree. Workers: do not pick this up.
+
+
+
+## Landed (2026-09-25)
+
+isaac-agent main fc074f8 (0.1.86). Gate PASS on branch and squash; spec 1797/0, jvm-spec 1797/0, features 868/0. Root cause: write-sidecar! wrote the record into the old crew folder and moved only the index.
