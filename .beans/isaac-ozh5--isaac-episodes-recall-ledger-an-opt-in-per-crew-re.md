@@ -1,11 +1,11 @@
 ---
 # isaac-ozh5
 title: 'isaac-episodes: recall ledger — an opt-in per-crew record of every recall (query, candidates, scores, what was injected) for research'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-25T16:32:30Z
-updated_at: 2026-09-25T16:39:55Z
+updated_at: 2026-09-25T16:47:02Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -51,3 +51,8 @@ recall/index.clj or a new recall/ledger.clj, manifest, features/recall).
 
 feature-baseline: isaac-episodes 51c9ba6a1bf7d90719036da9df76c165efcf9e7c
 feature-blob: isaac-episodes features/recall/ledger.feature 2cdc1380c3fb010863e19956a3add1a18acfd903 27,38
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-episodes 9b3f50b674d1e45f319d906852b52848f4f7a447
+main-sha: isaac e07041c8
