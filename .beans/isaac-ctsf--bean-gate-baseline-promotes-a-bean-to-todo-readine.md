@@ -70,3 +70,24 @@ plan/AGENTS.md (planner home — not a git repo; planner edits it by hand).
 ## Verify fail (attempt 1, 2026-09-25): Required planner dispatch integration is missing: hail-bean-plan neither runs `bb bean-gate ready <id>` before `isaac-work` nor implements the documented ungated exception.
 
 ## Verify fail (attempt 2, 2026-09-25): `bean/with-file` resolves `.beans/isaac-ctsf--*.md` (a tracked literal wildcard worker-notes file) before the actual bean file. Consequently `bb bean-gate ready isaac-ctsf` reads no front matter and returns exit 1, `status unknown`, so valid beans cannot dispatch. Remove the stray wildcard file and make bean lookup select the actual bean filename; add a regression spec with both files.
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — lookup must not treat a literal `*` filename as the bean
+
+Verify fail 2 is real. `bean/bean-file` does `(first (sort (fs/glob dir (str id "--*.md"))))`. babashka glob treats `*` as a wildcard, so both of these match `isaac-ctsf`:
+
+- `.beans/isaac-ctsf--*.md` — a tracked literal filename (worker notes). Created in `52847a16` (Isaac-Session: isaac-work-1). Sort order puts `*` before letters, so this file wins.
+- `.beans/isaac-ctsf--bean-gate-baseline-promotes-a-bean-to-todo-readine.md` — the actual bean.
+
+`bb bean-gate ready isaac-ctsf` then reads a file with no front matter and exits 1 `status unknown`.
+
+The accidental file is a worker session's notes, not a second bean. Do not keep it. Do not rename the real bean to dodge the sort.
+
+### Worker now
+
+1. Delete `.beans/isaac-ctsf--*.md` from the branch and from main if it is still there. Fold any unique note into the real bean body if it is not already there. Do not create another filename containing `*`.
+2. `bean/bean-file` must select the bean file, not a literal-glob collision. A filename that is exactly `<id>--*.md` is not a bean. Regression spec: both files present, lookup returns the real bean (the one whose front matter is `# <id>`), and `bb bean-gate ready <id>` reads that status.
+3. Keep the rest of the bean as written. Acceptance is unchanged. This repo stays ungated (`## Ungated` already says why).
+4. `bb ci` green is not enough — the direct `bb bean-gate ready isaac-ctsf` smoke must exit on the real bean's status, not `status unknown`.
+
+This note resets the verify-fail counter.
