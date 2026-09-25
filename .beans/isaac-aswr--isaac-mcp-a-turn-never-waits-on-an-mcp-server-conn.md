@@ -1,13 +1,11 @@
 ---
 # isaac-aswr
 title: 'isaac-mcp: a turn never waits on an MCP server — connect in the background, hold failures with backoff'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-25T02:00:22Z
-updated_at: 2026-09-25T02:17:45Z
+updated_at: 2026-09-25T02:19:48Z
 ---
 
 ## Symptom
@@ -197,3 +195,9 @@ This note resets the verify-fail counter.
 isaac-mcp `bean/isaac-aswr` @ `b479d0c` (on `cac8478`, base `3bdc096` = origin/main). The only change is `@wip` on the two authorized hosts.feature scenarios ("the prompt command offers and invokes an MCP tool", "an acp session invokes an MCP tool"). Steps are unchanged. No synchronous connect and no boot `start!`. isaac-x45o owns the warm-up.
 
 Results: `bb spec` 40/0/117, `bb features` 11/0 (13 minus the 2 @wip), `bb jvm-features` 11/0, `bb lint` 0/0. `bb bean-gate verify` exit 2 (no feature-baseline), so this goes to verify.
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-mcp e0c8c4560d243537f75c19d563315d3c0180aa69
+
+Verified by perceptor@isaac-verify. bean/isaac-aswr @ b479d0c: bb ci 40/0 spec + 11/0 features (×2), bb lint 0/0. Every acceptance item has a matching runtime_spec example ("a turn never waits on an MCP server" context). Main had already moved to 9c4f31f (Micah's squash of the same runtime + recut, without the hosts @wip). That commit was red: CI run 36085739482 failed, and locally bb ci gave 13/2 on hosts.feature ("unknown tool: lens__catalog"), even though its message claims one-shot processes settle the catalog. e0c8c45 = 9c4f31f + the authorized hosts @wip only; its tree equals b479d0c. CI run 36085746973 green. Branch bean/isaac-aswr deleted; origin/bean/isaac-aswr-alt-18a4a42 left in place (not this verifier's). isaac-x45o owns un-@wip'ing hosts.
