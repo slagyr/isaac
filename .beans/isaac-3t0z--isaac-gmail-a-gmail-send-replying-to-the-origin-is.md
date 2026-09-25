@@ -1,11 +1,11 @@
 ---
 # isaac-3t0z
 title: 'isaac-gmail: a gmail__send replying to the origin is the reply — on-reply must not email the answer twice'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T02:35:50Z
-updated_at: 2026-09-25T02:35:50Z
+updated_at: 2026-09-25T02:36:46Z
 ---
 
 ## Symptom
