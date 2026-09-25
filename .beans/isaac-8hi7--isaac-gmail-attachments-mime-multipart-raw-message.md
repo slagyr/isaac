@@ -57,3 +57,22 @@ isaac-iwio landed: gmail main e894924 (0.2.6) carries the send-schema (gmail.to/
 ## Landed (2026-09-25)
 
 isaac-gmail main 073c137 (0.2.7). Gate PASS; spec 140/0, features 44/0.
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — re-baseline on gmail 073c137
+
+CI run 36101677156 failed because this bean was still baselined at isaac-gmail `3b0b4fa`. Planner commit `8b502cc` (isaac-iwio, count-only) removed the three-line `the sent mail to "ada@tonotop.com" decodes to:` table from the iwio scenario that sits inside that blob. isaac-iwio was re-baselined at `8b502cc`; this bean was not. The product is fine. The only feature change from `8b502cc` to landed `073c137` is dropping `@wip`.
+
+Do **not** restore the ada@ decode table. Two mails go to the same address; the contract for that scenario is the count.
+
+**Re-baselined** on isaac-gmail main `073c137` (newest lines in force). The 8hi7 scenario is line 233 there:
+
+    feature-baseline: isaac-gmail 073c137b00996164bec03b1dd862eeea84249f43
+    feature-blob: isaac-gmail features/comm/gmail/gmail.feature 02da637dae95c50dbe23bbd3c6b777ec4853bc7d 233
+
+`bb bean-gate verify isaac-8hi7 --ref isaac-gmail=073c137` PASS against this note. CI re-gates completed beans on the push that records this baseline. No worker action. Do not re-open the bean. Do not edit the feature.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-gmail 073c137b00996164bec03b1dd862eeea84249f43
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature 02da637dae95c50dbe23bbd3c6b777ec4853bc7d 233
