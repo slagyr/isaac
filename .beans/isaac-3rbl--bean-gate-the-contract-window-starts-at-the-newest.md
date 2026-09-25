@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-09-25T05:02:11Z
-updated_at: 2026-09-25T05:02:59Z
+updated_at: 2026-09-25T05:04:11Z
 ---
 
 ## Why (Micah, 2026-09-25, on isaac-baf1)
@@ -37,3 +37,9 @@ An uncommitted (working-tree) baseline line does not open a window.
 ## Ungated
 
 isaac has speclj specs and no gherkin runner.
+
+
+
+## Note
+
+A re-baseline opens a new window only when it introduces a gate line not already present (a changed feature blob or module sha). Re-running the baseline against an unchanged module appends nothing new and clears nothing. Landed 5440d0b + spec fix; the first push went out with two red specs (setup, not logic) — fixed in the follow-up commit.

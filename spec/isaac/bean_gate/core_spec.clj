@@ -185,9 +185,11 @@
       (should= :pass (:status (verify w)))))
 
   (it "passes when an edited contract line is followed by a planner re-baseline (isaac-3rbl)"
-    (let [w (gated-world)]
+    (let [w       (gated-world)
+          revised (str/replace f/relay-feature "Then the logbook contains \"tide report\"" "Then the logbook contains exactly \"tide report\"")]
       (f/edit-bean! w id #(str/replace % (str "bb features " f/feature) "bb spec"))
       (f/commit! (:root w) "plan: reword acceptance")
+      (f/module-main! w {f/feature revised} "plan: tighten relay")
       (baseline! w)
       (f/commit! (:root w) "plan: re-baseline")
       (f/work-branch! w id f/unwip)
@@ -203,9 +205,11 @@
                         (failures (verify w))))))
 
   (it "a worker-session re-baseline after an edit still fails (isaac-3rbl)"
-    (let [w (gated-world)]
+    (let [w       (gated-world)
+          revised (str/replace f/relay-feature "Then the logbook contains \"tide report\"" "Then the logbook contains exactly \"tide report\"")]
       (f/edit-bean! w id #(str/replace % (str "bb features " f/feature) "bb spec"))
       (f/commit! (:root w) "plan: reword acceptance")
+      (f/module-main! w {f/feature revised} "plan: tighten relay")
       (baseline! w)
       (f/commit! (:root w) "rebaseline\n\nIsaac-Session: isaac-work-1")
       (f/work-branch! w id f/unwip)
