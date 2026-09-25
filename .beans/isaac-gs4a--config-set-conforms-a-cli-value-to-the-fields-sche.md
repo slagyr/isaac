@@ -9,7 +9,7 @@ tags:
     - foundation
     - config
 created_at: 2026-09-25T14:46:21Z
-updated_at: 2026-09-25T15:13:58Z
+updated_at: 2026-09-25T15:19:53Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/cli/mutate_common.clj). Scenarios live in **isaac-agent** (features/config/set_unset.feature), because the crew schema they exercise (`tags` is a set of keywords, `soul` is a string) is agent's.
@@ -87,3 +87,7 @@ Passing checks:
 Full `bb ci` was attempted in both repositories after the focused green runs. It is red only in unrelated existing integration scenarios: foundation's `cli/modules_pins.feature` resolves an obsolete `verify-2/isaac-foundation-rxun/fixture-agent` git fixture (4 failures); agent's `session/parallel_tool_batches.feature:79` cancellation assertion flaked (1 failure). Neither failure overlaps the config CLI implementation or acceptance feature.
 
 Branches: foundation `bean/isaac-gs4a @ 399b679c42071cff9f0a6000b8425659792ea29a` (base `origin/main@eaea445b268545311fb5fc9292b3872a000dc83c`); agent `bean/isaac-gs4a @ 5c7ec2d` (base `origin/main@89af4b7`).
+
+
+
+## Verify fail (attempt 2, 2026-09-25): foundation landed as squash commit b7f1d00fc6ed4748468d849befdae86911b0f914, but the agent branch still pins pre-landing branch commit 399b679c42071cff9f0a6000b8425659792ea29a in deps.edn and bb.edn. Repin all foundation dependencies to the landed main SHA, re-run the complete acceptance gate, then return for verification.
