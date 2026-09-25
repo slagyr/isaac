@@ -87,3 +87,8 @@ feature-blob: isaac-gmail features/comm/gmail/gmail.feature 8093c058869101587cfd
 
 
 (Correction: the re-baseline above only took effect with this commit — the bean had to pass through todo for the baseline command to accept it. The worker keeps the claim.)
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-gchat 364cf4fc3fee8ba85f4f4ef0a067edef38a6547f
+main-sha: isaac-gmail b1c9da1e931b13dfc5ae06ffca455b9fdd1e3e6f
