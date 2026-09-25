@@ -7,7 +7,7 @@ priority: high
 tags:
     - foundation
 created_at: 2026-09-25T16:21:58Z
-updated_at: 2026-09-25T17:49:05Z
+updated_at: 2026-09-25T17:54:35Z
 ---
 
 ## Why
@@ -77,3 +77,10 @@ feature-blob: isaac-foundation features/cli/modules_pins.feature 2131fadde42c598
 ## Worker checkpoint (2026-09-25)
 Done: isolated bb feature gitlibs cache, resolved local URLs, retried stale remotes, implemented both baselined steps; focused modules_pins feature 8/0 and pins/coords specs green. Pushed foundation bean branch 2f14a3a.
 Next: strengthen retry/log specs at spec/isaac/modules/pins_spec.clj:20, run bb spec, bb features, bb lint, bb ci; gate, rebase and land.
+
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-foundation 3a199d92c4f1ba73600e879f3a68559e2371980c
+
+Verification: bb ci 1293 specs, 231 features (2 pre-existing pending berth-registration scenarios); bb lint 0 errors; gate PASS. Shared ~/.gitlibs/REL poison left untouched.
