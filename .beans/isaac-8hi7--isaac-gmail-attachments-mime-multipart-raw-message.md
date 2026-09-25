@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T06:10:14Z
+updated_at: 2026-09-25T06:14:10Z
 blocked_by:
     - isaac-o9h4
 ---
@@ -76,3 +76,7 @@ This note resets the verify-fail counter.
 
 feature-baseline: isaac-gmail 073c137b00996164bec03b1dd862eeea84249f43
 feature-blob: isaac-gmail features/comm/gmail/gmail.feature 02da637dae95c50dbe23bbd3c6b777ec4853bc7d 233
+
+## Planner note (2026-09-25) — gate now PASS
+
+The Bean Gate CI failure on the landing commit was a gate defect: the intact check froze every @wip block in the blob, so the planner's later edit of the sibling isaac-iwio scenario failed this bean. Fixed in isaac-3rbl (7bd196c): the check guards the bean's own named scenarios and every non-@wip block. `bb bean-gate verify isaac-8hi7` → PASS at gmail 073c137. CI-failure hail d4f2977e told to stand down.
