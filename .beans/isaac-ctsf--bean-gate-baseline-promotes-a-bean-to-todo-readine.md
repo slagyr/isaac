@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-09-25T03:13:00Z
-updated_at: 2026-09-25T14:01:49Z
+updated_at: 2026-09-25T14:13:13Z
 ---
 
 ## Why
@@ -68,3 +68,5 @@ plan/AGENTS.md (planner home — not a git repo; planner edits it by hand).
 
 
 ## Verify fail (attempt 1, 2026-09-25): Required planner dispatch integration is missing: hail-bean-plan neither runs `bb bean-gate ready <id>` before `isaac-work` nor implements the documented ungated exception.
+
+## Verify fail (attempt 2, 2026-09-25): `bean/with-file` resolves `.beans/isaac-ctsf--*.md` (a tracked literal wildcard worker-notes file) before the actual bean file. Consequently `bb bean-gate ready isaac-ctsf` reads no front matter and returns exit 1, `status unknown`, so valid beans cannot dispatch. Remove the stray wildcard file and make bean lookup select the actual bean filename; add a regression spec with both files.
