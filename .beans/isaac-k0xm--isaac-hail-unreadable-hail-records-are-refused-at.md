@@ -1,13 +1,11 @@
 ---
 # isaac-k0xm
 title: 'isaac-hail: unreadable hail records are refused at send and quarantined by the router — never retried every tick'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-25T02:31:52Z
-updated_at: 2026-09-25T02:36:15Z
+updated_at: 2026-09-25T02:37:33Z
 ---
 
 ## Symptom
@@ -77,3 +75,13 @@ isaac-hail branch `bean/isaac-k0xm` @ 8c70cca (on top of origin/main 48faa9f). W
 - Specs: cli (5), queue (1), router (1), tool (1), http (1). Features: send-addressing.feature (outline + 2), router.feature (1). The new scenarios fail on pre-fix src (4 failures) and pass after.
 
 Results: `bb ci` → spec 182/0, features 141/0 (2 pending, pre-existing). `bb lint`: 79 errors vs 76 on origin/main. All are pre-existing speclj `:refer :all` "Unresolved symbol" (no kondo speclj config); the +3 are the same class in new spec forms. No new src findings. Lint is not green on main either; that needs its own bean (kondo speclj config).
+
+## Verified (perceptor@isaac-verify, 2026-09-24)
+
+- Tested isaac-hail bean/isaac-k0xm @ 8c70cca (base origin/main 48faa9f). `bb ci` EXIT 0: spec 182/0, features 141/0 (2 pending, pre-existing).
+- Acceptance scenarios present, not @wip: send-addressing.feature (colon outline, `:::x` refusal naming `--session-tag`, `--crew`/`--session`), router.feature (quarantine once across 3 ticks, other record still routes). Specs cover queue refusal (no pending file, no `:hail/sent`) and router quarantine.
+- `bb lint`: 79 errors on branch vs 76 on origin/main (reproduced). All errors are speclj `:refer :all` "Unresolved symbol"; the +3 (`should-contain`, `should-not`, `should-be-nil`) are the same class. No new src findings. Accepted as pre-existing; a kondo speclj config needs its own bean.
+
+## Landed on main (2026-09-24)
+
+main-sha: isaac-hail 82425ece988afafc1f4b1156e41ad26122c00789
