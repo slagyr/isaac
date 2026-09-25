@@ -135,13 +135,26 @@
     (concat (map #(str "      - " %) (remove a expected))
             (map #(str "      + " %) (remove e actual)))))
 
+(defn- protected-blocks
+  "The baseline blocks this bean guards: its own scenarios (the named lines,
+   else every @wip block) and every block that was not @wip at baseline. A
+   sibling @wip block is another bean's contract, guarded by that bean's own
+   baseline (isaac-3rbl)."
+  [lines base-blocks]
+  (let [mine? (if lines
+                #(contains? (set lines) (:line %))
+                g/wip?)]
+    (remove #(and (g/wip? %) (not (mine? %))) base-blocks)))
+
 (defn- intact-failures
-  "Every baseline block (with @wip stripped) appears verbatim in the checked file."
-  [repo path base-blocks cur-blocks]
+  "Every protected baseline block (with @wip stripped) appears verbatim in the
+   checked file."
+  [repo path lines base-blocks cur-blocks]
   (let [have   (frequencies (map g/normalized cur-blocks))
         by-ttl (group-by #(g/strip-wip (:title %)) cur-blocks)
-        need   (frequencies (map g/normalized base-blocks))]
-    (for [b base-blocks
+        guard  (protected-blocks lines base-blocks)
+        need   (frequencies (map g/normalized guard))]
+    (for [b guard
           :let [n (g/normalized b)]
           :when (< (get have n 0) (get need n))]
       (let [twin (first (get by-ttl (g/strip-wip (:title b))))]
@@ -301,7 +314,7 @@
       (nil? base-text) [(str repo " " path ": baseline blob " (short (:blob b)) " unavailable")]
       (nil? cur-text)  [(str repo " " path ": missing at " (short tip))]
       :else (let [bb (g/blocks base-text) cb (g/blocks cur-text)]
-              (concat (intact-failures repo path bb cb)
+              (concat (intact-failures repo path lines bb cb)
                       (live-failures repo path lines bb cb))))))
 
 (defn- repo-report [{:keys [root id dirs refs]} {:keys [repo sha]} blobs main-shas]

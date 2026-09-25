@@ -105,6 +105,28 @@
       (f/work-branch! w id f/unwip)
       (should= :pass (:status (verify w)))))
 
+  (it "passes when a sibling @wip scenario (another bean's) is edited by the planner after the baseline (isaac-3rbl)"
+    (let [w        (f/world!)
+          sibling  "\n  @wip\n  Scenario: a relayed message is timestamped\n    When Cordelia relays \"dawn\"\n    Then the logbook entry has a timestamp\n"
+          two-wips (str f/relay-feature sibling)]
+      (f/module-main! w {f/feature two-wips} "plan: two beans on one file")
+      (f/bean! w id)
+      (baseline! w {:lines [f/relayed-line]})
+      (f/commit! (:root w) "plan: baseline")
+      (f/module-main! w {f/feature (str/replace two-wips "has a timestamp" "has a UTC timestamp")} "plan: the other bean's scenario changes")
+      (f/work-branch! w id f/unwip)
+      (should= :pass (:status (verify w)))))
+
+  (it "still fails when the bean's own named scenario is edited after the baseline (isaac-3rbl)"
+    (let [w (f/world!)]
+      (f/module-main! w {f/feature f/relay-feature} "plan")
+      (f/bean! w id)
+      (baseline! w {:lines [f/relayed-line]})
+      (f/commit! (:root w) "plan: baseline")
+      (f/module-main! w {f/feature (str/replace f/relay-feature "Then the logbook contains \"tide report\"" "Then the logbook has it")} "plan: edit")
+      (f/work-branch! w id f/unwip)
+      (should-contain "was changed" (failures (verify w)))))
+
   (it "fails a reworded step"
     (let [w (gated-world)]
       (f/work-branch! w id #(-> % f/unwip (str/replace "Then the logbook contains \"tide report\"" "Then the logbook is not empty")))
