@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:21:57Z
+updated_at: 2026-09-25T04:47:58Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -67,3 +67,9 @@ feature-blob: isaac-gmail features/comm/gmail/gmail.feature fbf1f0f50bea3638b5f2
 ## Planner note (2026-09-25 04:50Z) — re-baselined
 
 Scenario 2 ("comm__send replying into the origin thread, then the answer — both go out") now asserts only `the Gmail API sent 2 messages`: two mails go to the same address, so a recipient-scoped decode was ambiguous. The recipient-scoped step is still needed for scenario 1 (one mail to grace@).
+
+
+
+## Planner note (2026-09-25 05:20Z)
+
+The two isaac-agent bugs blocking the comm__send scenarios are fixed on isaac-agent main `372b7debf6f8fe5167581d873e04c31818f5b6c3` (0.1.84): impl-keyword falls back to the slot id; the delivery-tick step layers stubs over live comms. Pin that sha, un-@wip both scenarios, re-run features.

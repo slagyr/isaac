@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:40:52Z
+updated_at: 2026-09-25T04:47:58Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -106,3 +106,9 @@ Worker's conflict note accepted: comm__send is queue-first, so the response post
 
 feature-baseline: isaac-gchat 00fd113a67ad8629b237a3f0f67055bed7cc1ecf
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature 8d57019503697c5d525dc59bccffd21c2d671a4b 490
+
+
+
+## Planner note (2026-09-25 05:20Z) — agent part landed
+
+Your isaac-agent branch bean/isaac-baf1 is squash-landed on isaac-agent main as `372b7debf6f8fe5167581d873e04c31818f5b6c3` (0.1.84). Pin isaac-gchat deps.edn to that sha (drop the pre-squash pin), rebase, re-run the gate, land the gchat half. The agent branch will be deleted after the gchat landing.
