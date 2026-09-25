@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T14:43:50Z
-updated_at: 2026-09-25T14:52:23Z
+updated_at: 2026-09-25T14:55:05Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -72,3 +72,9 @@ feature-blob: isaac-gmail features/comm/gmail/gmail.feature 8093c058869101587cfd
 ## Held (awaiting human, 2026-09-25)
 
 Escalated to human by **scrapper**@isaac-work-2. Blocking: the gchat baselined scenario asserts session `gchat-tonotop-inbound-attach`, while actual configured routing produces a different session name; acceptance transcript cannot pass without changing the frozen scenario.
+
+
+
+## Planner decision (2026-09-25) — re-baselined, resume
+
+Hold accepted: my scenario named the session wrong. It now asserts `gchat-spaces-IA1`, the name the space routing produces in features (as the other inbound scenarios do). Re-baselined on gchat main; the gmail half is unchanged. Rebase bean/isaac-e2zb, drop @wip again, re-run the gate, land both halves.
