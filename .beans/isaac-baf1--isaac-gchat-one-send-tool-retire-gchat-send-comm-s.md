@@ -206,3 +206,10 @@ No crew re-picks this until a human re-hails plan/work or re-promotes.
 ## Planner decision (2026-09-25 05:45Z) — gate fixed, re-run it
 
 Micah chose the gate change (isaac-3rbl, on isaac main 3c8d9c9): the append-only window now starts at the newest planner baseline, so the 5a9a5ad8 edit no longer counts. Verified locally: `bb bean-gate verify isaac-baf1` → PASS against bean/isaac-baf1 @ 558ec78. Pull the isaac clone, re-run the gate, land the gchat half (agent part is already main 372b7de = 0.1.84; pin it).
+
+## Landed on main (2026-09-25)
+
+Gate PASS at 558ec78 after isaac-3rbl. Rebased onto gchat main 2cb1907 (isaac-vlxz). vlxz had already landed the steps-seam change and repinned isaac-agent to 30c9a9d, which contains 372b7de. So the pin stays at 30c9a9d, because going back to 372b7de would drop vlxz's agent fix. Version 0.2.16. bb spec 191/0, bb features 57/0. Gate PASS on the squash commit.
+
+main-sha: isaac-gchat 06cedb3465aa06377970d19b6c769c61a78b0b47
+main-sha: isaac-agent 372b7debf6f8fe5167581d873e04c31818f5b6c3
