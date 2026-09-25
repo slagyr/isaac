@@ -66,3 +66,9 @@ feature-baseline: isaac-agent e1c375810961b75b1aaadecf5ca3e982ec2f9aaa
 feature-baseline: isaac-hail 2c80a6867ed2179a3f52d884db260d143da1633c
 feature-blob: isaac-agent features/session/concurrency.feature fb68b791310039d1b0b9a5dc5ff2ad5b262839c0 15
 feature-blob: isaac-hail features/bound_unclaimed.feature 76095baa1969af590039f01e1eb647ed2fbf54eb 46
+
+## Checkpoint (2026-09-25)
+
+Done: isaac-agent branch `bean/isaac-ximd` pushed at `b7ee942` removes the crew cap, retires `:max-in-flight`, and activates the baselined concurrent-session scenario. isaac-hail branch `bean/isaac-ximd` removes delivery capacity gating and activates its baselined scenario; focused `bb spec spec/isaac/hail/delivery_worker_spec.clj` and `bb features features/bound_unclaimed.feature:46` pass.
+
+Next: finish full suites and version/pin work, then gate and land both repos. Agent full `bb spec` passed (1792 examples); its subsequent full `bb features` is red in the unrelated existing `features/session/parallel_tool_batches.feature:79` cancel-mid-batch scenario (868 examples, 1 failure, 1 pending). Resume from `/Users/zane/agents/isaac/work-2/isaac-agent-ximd/features/session/parallel_tool_batches.feature:79` after rerunning to determine flake versus regression; hail delivery implementation resumes at `/Users/zane/agents/isaac/work-2/isaac-hail-ximd/src/isaac/hail/delivery_worker.clj:535`.
