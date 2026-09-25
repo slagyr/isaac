@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
-    - foundation
     - config
+    - unverified
+    - foundation
 created_at: 2026-09-25T14:46:21Z
-updated_at: 2026-09-25T14:51:09Z
+updated_at: 2026-09-25T15:01:08Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/cli/mutate_common.clj). Scenarios live in **isaac-agent** (features/config/set_unset.feature), because the crew schema they exercise (`tags` is a set of keywords, `soul` is a string) is agent's.
