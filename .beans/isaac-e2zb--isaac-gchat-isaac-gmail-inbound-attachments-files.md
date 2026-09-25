@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T14:43:50Z
-updated_at: 2026-09-25T14:55:05Z
+updated_at: 2026-09-25T14:55:26Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -78,3 +78,12 @@ Escalated to human by **scrapper**@isaac-work-2. Blocking: the gchat baselined s
 ## Planner decision (2026-09-25) — re-baselined, resume
 
 Hold accepted: my scenario named the session wrong. It now asserts `gchat-spaces-IA1`, the name the space routing produces in features (as the other inbound scenarios do). Re-baselined on gchat main; the gmail half is unchanged. Rebase bean/isaac-e2zb, drop @wip again, re-run the gate, land both halves.
+
+feature-baseline: isaac-gchat fa4e57c19c63ed5150c8ecef9fef9493a3fd1ed7
+feature-baseline: isaac-gmail 67f01dd3cc537fcab240f048acc90a868c310ffe
+feature-blob: isaac-gchat features/comm/gchat/inbound.feature f0cb456d4f2219360997710543e93152443b7348 650
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature 8093c058869101587cfdc3ceb3cdc74fc3502584 262
+
+
+
+(Correction: the re-baseline above only took effect with this commit — the bean had to pass through todo for the baseline command to accept it. The worker keeps the claim.)
