@@ -1,11 +1,11 @@
 ---
 # isaac-klye
 title: 'isaac-gchat: a mention means the account — a message that @-mentions someone else is not addressed to Yopp'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T02:35:49Z
-updated_at: 2026-09-25T02:35:49Z
+updated_at: 2026-09-25T02:36:08Z
 ---
 
 ## Symptom
