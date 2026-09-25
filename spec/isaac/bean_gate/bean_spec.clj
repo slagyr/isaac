@@ -60,3 +60,13 @@
                                  "    feature-baseline: isaac-marigold deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n"))]
         (should= true (sut/gated? text))
         (should= sha (get-in (sut/in-force text) [:baselines "isaac-marigold" :sha]))))))
+
+(describe "bean front matter status"
+
+  (it "rewrites the status in the front matter only"
+    (let [text "---\n# isaac-mrg1\nstatus: draft\ntype: feature\n---\n\nstatus: draft is prose here\n"]
+      (should= "---\n# isaac-mrg1\nstatus: todo\ntype: feature\n---\n\nstatus: draft is prose here\n"
+               (sut/with-status text "todo"))))
+
+  (it "leaves text without front matter unchanged"
+    (should= "status: draft\n" (sut/with-status "status: draft\n" "todo"))))

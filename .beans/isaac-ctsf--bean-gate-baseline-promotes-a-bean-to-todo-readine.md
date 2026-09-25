@@ -7,7 +7,7 @@ priority: high
 tags:
     - unverified
 created_at: 2026-09-25T03:13:00Z
-updated_at: 2026-09-25T14:13:13Z
+updated_at: 2026-09-25T14:19:36Z
 ---
 
 ## Why
@@ -91,3 +91,22 @@ The accidental file is a worker session's notes, not a second bean. Do not keep 
 4. `bb ci` green is not enough — the direct `bb bean-gate ready isaac-ctsf` smoke must exit on the real bean's status, not `status unknown`.
 
 This note resets the verify-fail counter.
+
+## Implementation notes (2026-09-25)
+
+- Removed the accidental literal wildcard worker-notes file. Its only durable
+  implementation observations are recorded by this bean's commits and the
+  verification-failure history above.
+- Bean lookup excludes a filename exactly matching `<id>--*.md`; regression
+  coverage verifies lookup and `ready` use the real bean when both names exist.
+
+## Verification handoff (2026-09-25)
+
+branch: `bean/isaac-ctsf` @ `cd4e5bef5c4eb772b17f0318a7ef8780ad5172e5`
+(base `origin/main@1ec49a4d248cb23be2c53459d6891223d0296ec1`).
+
+Implemented the literal-wildcard lookup guard, removed the accidental tracked
+worker-notes file, and added the lookup/CLI ready regression. Verification:
+`bb ci` — 77 examples, 0 failures; `bb bean-gate ready isaac-ctsf` — exit 1
+with `status in-progress` (not `status unknown`); `bb bean-gate verify
+isaac-ctsf` — exit 2 (documented ungated path).

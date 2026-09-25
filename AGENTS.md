@@ -67,7 +67,14 @@ reaches main, so the contract is still checked by something other than the
 worker. Mechanics: [hail-bean-work-gate](.toolbox/skills/hail-bean-work-gate/SKILL.md)
 and [work-bean-gate](.toolbox/commands/work-bean-gate.md).
 
-**Status flow (gated):** `todo` → `in-progress` → `completed` (worker)
+**Status flow (gated):** `draft` → `todo` (planner, via `bb bean-gate baseline`) → `in-progress` → `completed` (worker)
+
+A bean is todo only when bb bean-gate baseline has frozen its scenarios; the baseline command sets the status.
+Nobody runs `beans update <id> --status=todo` by hand. Before hailing
+`isaac-work`, dispatch runs `bb bean-gate ready <id>` (exit 0 = todo and
+baselined); a non-zero exit stops the dispatch. The one exception: a bean whose
+module has no feature runner (the `isaac` repo itself) is dispatched ungated,
+with a `## Ungated` note in its body saying why.
 
 **Ungated beans (no `feature-baseline:`) — the exception; verification by a
 reviewer.** Workers leave the bean `in-progress` and add `tag=unverified` when
@@ -147,8 +154,10 @@ change. In the planner's own order of work:
    With them, name each scenario by the line of its `Scenario:` keyword (the
    keyword line, not the tag line above it). `--dir <repo>=<path>` points at a
    checkout that is not `../<repo>`. Baseline fetches `origin` and **appends**
-   `feature-baseline:` / `feature-blob:` lines to the bean body — it does not
-   commit.
+   `feature-baseline:` / `feature-blob:` lines to the bean body, and **promotes
+   the bean to `todo`** — it does not commit. A bean is todo only when bb bean-gate baseline has frozen its scenarios; the baseline command sets the status.
+   Baseline runs from `draft` or `todo` only; an `in-progress` / `completed` /
+   `scrapped` bean, or no `<repo>:<path>` refs, exits 2 and changes nothing.
 3. **Commit the bean** with the appended `feature-baseline:` / `feature-blob:`
    lines. The baseline commit must come from the **planner**: the gate fails a
    baseline introduced by a commit carrying an `Isaac-Session: isaac-work…` or
@@ -159,7 +168,11 @@ change. In the planner's own order of work:
    bean's git history and treats those lines, plus everything under
    `## Acceptance…` and `## Exceptions`, as **append-only**.
 
-`bb bean-gate --help` documents both subcommands and the exit codes.
+5. **Dispatch checks readiness:** `bb bean-gate ready <bean-id>` exits 0 when
+   the bean is `todo` and baselined, else 1 with the reason (`not baselined`,
+   `status draft`, …). Do not hail `isaac-work` on a non-zero exit.
+
+`bb bean-gate --help` documents the subcommands and the exit codes.
 
 ### Fixture theme — Marigold
 

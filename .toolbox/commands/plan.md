@@ -69,7 +69,8 @@ A `todo` bean without acceptance criteria has no contract; workers can't tell wh
 
 1. Write scenarios (commit them if they're files like `.feature` or specs).
 2. Update the bean body to reference scenario locations (paths + line numbers, or `bb spec <path>` commands).
-3. `beans update <id> --status=todo`.
+3. Baseline the bean: `bb bean-gate baseline <id> <repo>:<path>[:<line>…]…` from the isaac clone, then commit it. A bean is todo only when bb bean-gate baseline has frozen its scenarios; the baseline command sets the status. Never set `todo` by hand.
+4. Before dispatching to work, `bb bean-gate ready <id>` must exit 0; a non-zero exit stops the dispatch and its one-line reason is what to report. Exception: a bean whose module has no feature runner is dispatched ungated, with a `## Ungated` note in its body saying why.
 
 This pairs with the project-specific scenario discipline (e.g. `/plan-with-features`'s "feature-first, always" rule). The draft-status contract is general; the scenario format is per-project.
 

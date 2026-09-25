@@ -45,12 +45,26 @@
       (when-not (or header-wip (some g/wip? (g/scenarios blocks)))
         [(str repo ":" path " — no @wip scenario; nothing to implement")]))))
 
+(def ^:private baselinable #{"draft" "todo"})
+
+(defn- no-bean [root id] (str "no bean file .beans/" id "--*.md under " root))
+
 (defn baseline
-  "Records the baseline for bean id. Returns {:ok? :lines :errors}."
+  "Records the baseline for bean id and promotes it to todo: the frozen contract
+   is what makes a bean ready (isaac-ctsf). Returns {:ok? :lines :errors}, with
+   :refused? when the bean's status forbids a baseline (file untouched)."
   [{:keys [root id specs dirs]}]
-  (let [file (bean/bean-file root id)]
-    (if-not file
-      {:ok? false :errors [(str "no bean file .beans/" id "--*.md under " root)]}
+  (let [file   (bean/bean-file root id)
+        status (some-> file slurp bean/status)]
+    (cond
+      (not file)
+      {:ok? false :errors [(no-bean root id)]}
+
+      (not (baselinable status))
+      {:ok? false :refused? true
+       :errors [(str id " is status " (or status "unknown") "; only a draft or todo bean can be baselined")]}
+
+      :else
       (let [repos   (distinct (map :repo specs))
             heads   (into {} (for [repo repos
                                    :let [dir (module-dir root dirs repo)]]
@@ -78,8 +92,26 @@
           (let [lines (concat (for [repo repos] (str "feature-baseline: " repo " " (:sha (get heads repo))))
                               (map :line results))
                 text  (slurp file)]
-            (spit file (str (when-not (str/ends-with? text "\n") "\n") "\n" (str/join "\n" lines) "\n") :append true)
+            (spit file (-> (str text (when-not (str/ends-with? text "\n") "\n") "\n" (str/join "\n" lines) "\n")
+                           (bean/with-status "todo")))
             {:ok? true :lines (vec lines) :file file}))))))
+
+;; endregion
+
+;; region ready
+
+(defn ready
+  "Dispatch readiness: the bean is todo AND carries a feature-baseline line.
+   Pure read. Returns {:ready? bool :reason s}."
+  [{:keys [root id]}]
+  (let [file   (bean/bean-file root id)
+        text   (some-> file slurp)
+        status (some-> text bean/status)]
+    (cond
+      (not file)             {:ready? false :reason (no-bean root id)}
+      (not= "todo" status)   {:ready? false :reason (str "status " (or status "unknown"))}
+      (not (bean/gated? text)) {:ready? false :reason "not baselined"}
+      :else                  {:ready? true})))
 
 ;; endregion
 

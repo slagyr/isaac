@@ -8,11 +8,14 @@
 ;; region Locating
 
 (defn bean-file
-  "The bean's file under <root>/.beans, or nil."
+  "The bean's file under <root>/.beans, or nil. A literal wildcard filename is
+   worker metadata, not a bean."
   [root id]
-  (let [dir (fs/path root ".beans")]
+  (let [dir          (fs/path root ".beans")
+        wildcard-file (str id "--*.md")]
     (when (fs/directory? dir)
-      (first (sort (map str (fs/glob dir (str id "--*.md"))))))))
+      (first (sort (remove #(= wildcard-file (fs/file-name %))
+                           (map str (fs/glob dir (str id "--*.md")))))))))
 
 (defn relative-path [root file] (str (fs/relativize (fs/path root) (fs/path file))))
 
@@ -94,6 +97,14 @@
            (some #(some-> (re-matches #"(?i)status:\s*['\"]?([^'\"]+?)['\"]?\s*" %) second))))))
 
 (defn completed? [text] (= "completed" (status text)))
+
+(defn with-status
+  "text with its front-matter status set to s. Text without front matter is
+   returned unchanged; the body is never touched."
+  [text s]
+  (if-let [[_ front body] (re-matches #"(?s)(---\r?\n.*?\r?\n---)(.*)" text)]
+    (str (str/replace-first front #"(?mi)^status:.*$" (str "status: " s)) body)
+    text))
 
 ;; endregion
 

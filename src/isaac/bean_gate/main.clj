@@ -6,6 +6,7 @@
 (def usage
   "Usage:
   bb bean-gate baseline <bean-id> <repo>:<path>[:<line>…] … [--dir <repo>=<path>]
+  bb bean-gate ready <bean-id>
   bb bean-gate verify <bean-id> [--dir <repo>=<path>] [--ref <repo>=<ref>]
   bb bean-gate ci-scan <before-sha> <after-sha> [--edn]
 
@@ -16,6 +17,13 @@ baseline  (planner) Run from the isaac clone after the bean's @wip scenarios are
           <line> names one of the bean's scenarios by its Scenario: line; without
           lines, every @wip scenario in the file is the bean's. Does not commit.
           Re-running appends new lines; the newest lines are in force.
+          Promotes the bean to todo: a bean is todo only when its scenarios are
+          frozen. Allowed from draft or todo; any other status exits 2, untouched.
+          No refs exits 2 — a bean is baselined against scenarios.
+
+ready     (planner, dispatch) Exit 0 when the bean is todo AND carries a
+          feature-baseline line; exit 1 with a one-line reason otherwise
+          (not baselined, status draft, …). Pure read. Run before hailing work.
 
 verify    (worker, CI) Checks the bean against its baseline:
             1. baseline sha is on origin/main and each blob matches it
@@ -60,16 +68,26 @@ Module checkouts default to ../<repo> beside the isaac clone; --dir overrides.")
         specs (map (juxt identity core/parse-spec) raw)
         bad   (keep (fn [[r s]] (when-not s r)) specs)]
     (cond
-      (or (nil? id) (empty? raw)) (do (println usage) 2)
+      (nil? id) (do (println usage) 2)
+      (empty? raw) (do (println "bean-gate baseline: a bean is baselined against scenarios; none given") 2)
       (seq bad) (do (print-lines (map #(str "bean-gate: malformed spec " % " (want <repo>:<path>[:<line>…])") bad)) 2)
       :else
-      (let [{:keys [ok? lines errors file]} (core/baseline {:root root :id id :specs (map second specs) :dirs dirs})]
+      (let [{:keys [ok? refused? lines errors file]} (core/baseline {:root root :id id :specs (map second specs) :dirs dirs})]
         (if ok?
           (do (println (str "Appended to " file ":"))
               (print-lines (map #(str "  " %) lines))
-              (println "Commit the bean to record the baseline.")
+              (println "Status set to todo. Commit the bean to record the baseline.")
               0)
-          (do (print-lines (map #(str "bean-gate baseline: " %) errors)) 1))))))
+          (do (print-lines (map #(str "bean-gate baseline: " %) errors)) (if refused? 2 1)))))))
+
+(defn- ready! [root {:keys [positional]}]
+  (let [[_ id] positional]
+    (if (nil? id)
+      (do (println usage) 2)
+      (let [{:keys [ready? reason]} (core/ready {:root root :id id})]
+        (if ready?
+          (do (println (str id ": ready (todo, baselined)")) 0)
+          (do (println (str id ": not ready — " reason)) 1))))))
 
 (defn- verify! [root {:keys [positional dirs refs]}]
   (let [[_ id] positional]
@@ -113,6 +131,7 @@ Module checkouts default to ../<repo> beside the isaac clone; --dir overrides.")
         (cond
           (nil? root) (do (println "bean-gate: run from inside the isaac clone") 2)
           (= "baseline" cmd) (baseline! root parsed)
+          (= "ready" cmd) (ready! root parsed)
           (= "verify" cmd) (verify! root parsed)
           (= "ci-scan" cmd) (ci-scan! root parsed)
           :else (do (println (str "bean-gate: unknown subcommand " cmd)) (println usage) 2))))))
