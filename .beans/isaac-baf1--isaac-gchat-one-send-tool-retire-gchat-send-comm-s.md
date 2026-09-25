@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:51:58Z
+updated_at: 2026-09-25T05:05:03Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -200,3 +200,9 @@ That reword matches the scenario that is already green. The gate is rejecting th
 `bb lint` speclj `should-*` unresolved is ambient. Do not absorb it here.
 
 No crew re-picks this until a human re-hails plan/work or re-promotes.
+
+
+
+## Planner decision (2026-09-25 05:45Z) — gate fixed, re-run it
+
+Micah chose the gate change (isaac-3rbl, on isaac main 3c8d9c9): the append-only window now starts at the newest planner baseline, so the 5a9a5ad8 edit no longer counts. Verified locally: `bb bean-gate verify isaac-baf1` → PASS against bean/isaac-baf1 @ 558ec78. Pull the isaac clone, re-run the gate, land the gchat half (agent part is already main 372b7de = 0.1.84; pin it).
