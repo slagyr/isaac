@@ -1,11 +1,11 @@
 ---
 # isaac-kleb
 title: 'isaac-agent: the directory policy follows the crew the turn runs as — inject the resolved crew into tool args; stale session crews no longer lock the filesystem'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-25T14:34:20Z
-updated_at: 2026-09-25T14:34:23Z
+updated_at: 2026-09-25T14:45:45Z
 ---
 
 ## Symptom (yopp, 2026-09-25 14:28Z)
@@ -56,3 +56,7 @@ mcp-arguments strip list.
 
 feature-baseline: isaac-agent 0d2256baeb58107bdcce8e728b3ba80f2e8f7f78
 feature-blob: isaac-agent features/tool/directories.feature 0b97134a7230713bd491310672a16b657a000663 230
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-agent 592c87862acbb41a4929623d283b949f8dc8a71b
