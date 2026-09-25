@@ -1,11 +1,11 @@
 ---
 # isaac-k0xm
 title: 'isaac-hail: unreadable hail records are refused at send and quarantined by the router — never retried every tick'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T02:31:52Z
-updated_at: 2026-09-25T02:31:52Z
+updated_at: 2026-09-25T02:32:12Z
 ---
 
 ## Symptom
