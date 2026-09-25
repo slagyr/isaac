@@ -1,11 +1,11 @@
 ---
 # isaac-xoqn
 title: 'isaac-agent + isaac-gchat: messages for a busy session wait instead of being refused, and prompts in one thread consolidate into one reply'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T15:56:18Z
-updated_at: 2026-09-25T15:56:18Z
+updated_at: 2026-09-25T15:56:58Z
 ---
 
 ## Why (Micah, 2026-09-25)
