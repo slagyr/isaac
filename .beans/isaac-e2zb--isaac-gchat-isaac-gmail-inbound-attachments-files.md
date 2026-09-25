@@ -1,11 +1,11 @@
 ---
 # isaac-e2zb
 title: 'isaac-gchat + isaac-gmail: inbound attachments — files people send land in the session working directory and the turn is told'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T14:43:50Z
-updated_at: 2026-09-25T14:43:50Z
+updated_at: 2026-09-25T14:44:27Z
 ---
 
 ## Why (Micah, 2026-09-25)
