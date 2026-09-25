@@ -5,10 +5,11 @@ status: in-progress
 type: bug
 priority: high
 tags:
+    - unverified
     - foundation
     - config
 created_at: 2026-09-25T16:42:02Z
-updated_at: 2026-09-25T16:42:47Z
+updated_at: 2026-09-25T16:52:02Z
 ---
 
 Repo: **isaac-foundation** (src/isaac/config/mutate.clj, where the target file is chosen). Scenarios live in **isaac-agent** (features/config/cli.feature, in the "Set" file-placement section), because crew is the frontmatter entity agent's fixtures exercise.
@@ -52,3 +53,9 @@ cd isaac-agent && bb features features/config && bb ci
 ```
 
 Remove `@wip` from both scenarios. Land foundation, repin agent, land agent. isaac-i5on also touches foundation config CLI code (mutate_common.clj, not mutate.clj), so rebase onto whatever foundation main is when you start.
+
+## Implementation handoff (2026-09-25)
+
+Foundation branch `bean/isaac-dv7p` at `7684cad` mutates the existing markdown entity's YAML frontmatter, preserving its body and key order. Foundation `bb spec` passed (1289 examples); focused mutate specs passed (54). Agent branch `bean/isaac-dv7p` at `9dc5d17` removes only the two `@wip` tags. With foundation on a local-root dependency, the selected CLI features passed (2 examples, 14 assertions), config features passed (883 examples, 0 failures, 1 unrelated pending), and agent `bb ci` passed (883 feature examples, 0 failures). Agent bb.edn is unchanged and pins foundation main `c1cb377`; verifier must land foundation first and repin agent to its landed main SHA before running published-pin CI and landing agent.
+
+`bb bean-gate verify isaac-dv7p --dir isaac-foundation=../dv7p/isaac-foundation --dir isaac-agent=../dv7p/isaac-agent` exited 2: no feature-baseline (bean predates the gate). Foundation `bb ci` passed its lint and 1289 specs, but unrelated `features/cli/modules_pins.feature` failed 4 cases because global gitlibs mirror `/Users/zane/.gitlibs/_repos/file/REL/fixture-agent` has a stale remote (`/Users/zane/agents/isaac/work-1/isaac-foundation-i5on/fixture-agent`) which no longer exists. This is the already-filed isaac-zr75 fixture isolation issue; do not change this bean's scope for it.
