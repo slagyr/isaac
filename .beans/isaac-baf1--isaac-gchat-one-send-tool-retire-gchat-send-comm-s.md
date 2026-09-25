@@ -166,3 +166,37 @@ Rebased bean/isaac-baf1 onto isaac-gchat main 5a2a2a4 cleanly (now 558ec78, push
 Cause: planner commit 5a9a5ad8 (Micah, "re-baselined after worker conflict") reworded the first `## Acceptance` checkbox after the bean was already gated. contract-failures (src/isaac/bean_gate/core.clj:88) checks every consecutive pair of versions from the first gated one. That makes the edit a permanent FAIL: appending the old lines back does not clear it, and `## Exceptions` does not cover acceptance-line edits. Workers may not touch contract lines. Not landed; bean stays in-progress.
 
 Needs a planner/human decision, e.g. a gate mechanism for authorized acceptance edits, or re-cutting the bean with the new acceptance text.
+
+
+## Held (awaiting human, 2026-09-25)
+
+Escalated to human by **prowl**@isaac-plan. Blocking: gate FAIL is permanent — Micah's `5a9a5ad8` reworded the first `## Acceptance` checkbox after the bean was gated, and `contract-failures` has no exception path for that edit.
+
+Product is done and green. Do not re-dispatch a re-baseline; it cannot clear this. Resumes only on explicit human action.
+
+### What is done (not landed)
+
+- isaac-agent squash-landed `372b7de` (impl-id, tick keeps live comms).
+- isaac-gchat `bean/isaac-baf1` @ `558ec78` on main `5a2a2a4`. Worker `.feature` diff is only the dropped `@wip`. `bb spec` 180/0, `bb features` 56/0. Feature-blob check passes.
+- Scenario order stands: `#index` 0 = All green. (reply at turn end), `#index` 1 = Looking now. (queued send at the delivery tick). Do not recut queue-first. Do not restore `gchat__send` or the mw27 guard.
+
+### Why the gate cannot pass
+
+`contract-failures` (`src/isaac/bean_gate/core.clj`) walks every consecutive pair from the first gated version. A removed or edited non-blank line under `## Acceptance` fails forever. `## Exceptions` does not cover acceptance-line edits. Appending the old lines back does not clear the pairwise miss. Workers may not touch contract lines. Re-baselining only appends `feature-*` lines; it does not rewrite history.
+
+The edited lines (commit `5a9a5ad8`, Micah, "re-baselined after worker conflict"):
+
+- removed: `answer — both post (isaac-baf1)": the tool's delivery and the reply both reach`
+- removed: `Chat, in that order.`
+- replaced with the queue-first wording now in `## Acceptance` (request 0 = response, request 1 = queued send).
+
+That reword matches the scenario that is already green. The gate is rejecting the planner/human's own correction, not a worker drift.
+
+### Human chooses one
+
+1. **Gate change (preferred if this will happen again).** An authorized acceptance edit — planner or human commit, not a worker/verifier trailer — must not be a permanent FAIL. Until that ships, this bean cannot land through the gate.
+2. **Re-cut.** New bean whose Acceptance is written with the queue-first wording *before* the first baseline, scenarios moved or re-`@wip`'d onto it, this bean closed as superseded (not completed through the gate). Do not ask a worker to edit `5a9a5ad8` or the Acceptance section.
+
+`bb lint` speclj `should-*` unresolved is ambient. Do not absorb it here.
+
+No crew re-picks this until a human re-hails plan/work or re-promotes.
