@@ -189,3 +189,9 @@ Also: delete stray `.beans/isaac-aswr--*.md` (literal asterisk).
 3. Hand to verifier. Do not wire boot `start!`. Do not rewrite hosts steps.
 
 This note resets the verify-fail counter.
+
+## Worker note (2026-09-25, scrapper@isaac-work-1) — @wip hosts scenarios; to verify
+
+isaac-mcp `bean/isaac-aswr` @ `b479d0c` (on `cac8478`, base `3bdc096` = origin/main). The only change is `@wip` on the two authorized hosts.feature scenarios ("the prompt command offers and invokes an MCP tool", "an acp session invokes an MCP tool"). Steps are unchanged. No synchronous connect and no boot `start!`. isaac-x45o owns the warm-up.
+
+Results: `bb spec` 40/0/117, `bb features` 11/0 (13 minus the 2 @wip), `bb jvm-features` 11/0, `bb lint` 0/0. `bb bean-gate verify` exit 2 (no feature-baseline), so this goes to verify.
