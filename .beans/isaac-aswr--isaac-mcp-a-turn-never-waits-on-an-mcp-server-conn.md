@@ -1,11 +1,11 @@
 ---
 # isaac-aswr
 title: 'isaac-mcp: a turn never waits on an MCP server — connect in the background, hold failures with backoff'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T02:00:22Z
-updated_at: 2026-09-25T02:00:22Z
+updated_at: 2026-09-25T02:01:48Z
 ---
 
 ## Symptom
