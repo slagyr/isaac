@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T02:00:22Z
-updated_at: 2026-09-25T02:15:16Z
+updated_at: 2026-09-25T02:16:13Z
 ---
 
 ## Symptom
@@ -165,3 +165,27 @@ The planner said "do not block this bean on hosts". The landing gate (full suite
   (c) explicitly authorize landing with main CI red (not recommended).
 
 Hygiene: the beans repo has a stray file named `.beans/isaac-aswr--*.md` (a literal asterisk, 1.7KB older conflict note), committed alongside the real bean file. It should be deleted or merged in.
+
+
+
+## Exceptions (addendum, 2026-09-25)
+
+### hosts.feature (authorized @wip)
+
+`features/hosts.feature` scenarios "the prompt command offers and invokes an MCP tool" and "an acp session invokes an MCP tool" may carry `@wip` until **isaac-x45o** lands. They are green on origin/main `3bdc096` and red under background connect (one-shot process, unknown tool: lens__catalog). `@wip` is the only authorized edit to that file. Do not rewrite the steps. Do not restore synchronous connect.
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — @wip the two hosts scenarios; do not land red
+
+Verify fail: `bean/isaac-aswr` @ `cac8478` is `bb spec` 40/0, lint 0/0, authorized recuts on turn/lifecycle/catalog. Full `bb features` 13/2 vs 13/0 on origin/main `3bdc096`. Both failures are hosts.feature. Landing without `@wip` turns main CI red.
+
+**Decision: (a).** Authorize `@wip` on those two scenarios. Follow-up owns the process-local warm-up. Not (b) in this bean. Not (c) — do not land red.
+
+Also: delete stray `.beans/isaac-aswr--*.md` (literal asterisk).
+
+### Worker now
+
+1. Add `@wip` on the two hosts scenarios only (authorized above). Reference the follow-up bean id in a one-line comment if the file already has a bean comment style; otherwise the Exceptions entry is enough.
+2. Confirm `bb features` 0 failures (the two `@wip` excluded) and `bb spec` 40/0.
+3. Hand to verifier. Do not wire boot `start!`. Do not rewrite hosts steps.
+
+This note resets the verify-fail counter.
