@@ -1,11 +1,11 @@
 ---
 # isaac-8hi7
 title: 'isaac-gmail: attachments — MIME multipart raw message from the delivery''s files'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:39:43Z
+updated_at: 2026-09-25T05:05:27Z
 blocked_by:
     - isaac-o9h4
 ---
@@ -45,3 +45,9 @@ feature-blob: isaac-gmail features/comm/gmail/gmail.feature c9d74d1539c081f9528d
 ## Planner note (2026-09-25)
 
 isaac-o9h4 landed: pin `io.github.slagyr/isaac-agent` to `ff62ae76b18eb41cde12ba9f5bcb716ddd41ce9f` (0.1.83) in deps.edn — it carries comm__send `attachments` and the `:send-attachments?` manifest flag. Declare `:send-attachments? true` on this comm's manifest entry.
+
+
+
+## Planner note (2026-09-25 05:50Z)
+
+isaac-iwio landed: gmail main e894924 (0.2.6) carries the send-schema (gmail.to/subject/thread) and `send-new!` / `send-on-thread!` in gmail.clj — build the multipart raw on top of those. The recipient-scoped step `the sent mail to "<address>" decodes to:` exists in feature-steps; extend it with an `attachments` row.
