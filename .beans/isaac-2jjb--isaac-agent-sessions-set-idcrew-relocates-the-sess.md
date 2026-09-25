@@ -1,11 +1,11 @@
 ---
 # isaac-2jjb
 title: 'isaac-agent: sessions set <id>.crew relocates the session — the next turn keeps its transcript instead of an empty folder'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-25T14:54:13Z
-updated_at: 2026-09-25T14:54:13Z
+updated_at: 2026-09-25T15:01:56Z
 ---
 
 ## Symptom (yopp, 2026-09-25 14:32Z–14:47Z)
@@ -42,3 +42,9 @@ Likely repo scope: isaac-agent (session/store, sessions CLI, mutation.feature).
 
 feature-baseline: isaac-agent e1c375810961b75b1aaadecf5ca3e982ec2f9aaa
 feature-blob: isaac-agent features/session/mutation.feature 51e4c2cd8479c78333a72cc187717ab0a64a96c5 166
+
+
+
+## Claimed by the planner (2026-09-25 15:02Z)
+
+Hail f64cd1c1 dropped; implemented as a planner subagent in a local worktree. Workers: do not pick this up.
