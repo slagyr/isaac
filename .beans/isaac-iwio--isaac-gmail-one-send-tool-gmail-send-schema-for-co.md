@@ -1,11 +1,11 @@
 ---
 # isaac-iwio
 title: 'isaac-gmail: one send tool — gmail send-schema for comm__send, retire gmail__send, guidance, 3t0z guard out'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-25T03:37:51Z
-updated_at: 2026-09-25T04:47:58Z
+updated_at: 2026-09-25T05:05:13Z
 ---
 
 ## Why (Micah, 2026-09-25)
@@ -73,3 +73,9 @@ Scenario 2 ("comm__send replying into the origin thread, then the answer — bot
 ## Planner note (2026-09-25 05:20Z)
 
 The two isaac-agent bugs blocking the comm__send scenarios are fixed on isaac-agent main `372b7debf6f8fe5167581d873e04c31818f5b6c3` (0.1.84): impl-keyword falls back to the slot id; the delivery-tick step layers stubs over live comms. Pin that sha, un-@wip both scenarios, re-run features.
+
+
+
+## Landed (2026-09-25)
+
+isaac-gmail main e894924 (0.2.6). Gate PASS; spec 132/0, features 43/0. Deploy: repin registry, upgrade yopp, and switch hail/yopp-tasks.edn prompt from gmail__send to comm__send (comm gmail, gmail.thread).
