@@ -1,0 +1,68 @@
+---
+# isaac-ximd
+title: 'isaac-agent + isaac-hail: remove the crew-wide in-flight cap — turns serialize per session only, sessions run in parallel'
+status: todo
+type: feature
+priority: high
+created_at: 2026-09-25T14:54:13Z
+updated_at: 2026-09-25T14:54:13Z
+---
+
+## Why (Micah, 2026-09-25)
+
+"Time to remove that in-flight limit." A turn must be serialized per
+session — two prompts in one session never run at once — but two sessions
+must run in parallel. Today `:max-in-flight` is a crew-wide cap that
+defaults to **1** when unset (`isaac.session.store.spi/crew-max-in-flight`,
+`isaac.hail.delivery-worker/crew-max-in-flight`), so a crew with no setting
+serializes every session it owns: on yopp every space, DM and email thread
+queued behind one another until the planner set 4 by hand.
+
+## Design
+
+**isaac-agent**
+- `can-dispatch?` admits a turn whenever the target session itself is not
+  in flight. `crew-max-in-flight` is deleted; `in-flight-count` stays for
+  `sessions list --in-flight` and hail.
+- Crew schema: `:max-in-flight` becomes `{:type :ignore :validations
+  [[:retired? "the crew-wide in-flight cap is gone (isaac-ximd); turns serialize
+  per session only"]]}` — a config that still sets it fails validation and
+  says why.
+- Delivery/attention paths that read `:max-in-flight` from live config (see
+  model_reload.feature's note) read nothing.
+
+**isaac-hail**
+- `delivery-worker`: `crew-available?` no longer consults a cap; a spawn or
+  bind proceeds whenever the bound session is idle. The
+  `:crew-at-capacity` skip reason disappears; `:session-in-flight` stays.
+- Scenario "a crew at capacity is a named skip reason" is replaced by
+  "a busy session on the crew does not gate another session's delivery".
+
+**Deploy note (planner):** remove `:max-in-flight` from zanebot crews
+perceptor, prowl, qwen, ratchet, scrapper and from yopp crew yopp before
+upgrading, or validation fails.
+
+## Acceptance (baselined: agent concurrency.feature + hail bound_unclaimed.feature)
+
+- [ ] Agent scenario "two sessions on one crew run their turns at the same
+  time — no crew-wide cap (isaac-ximd)": a rendezvous tool that only returns
+  once 2 calls are in flight is called once from each of two sessions on
+  the same crew, and both turns complete. New step: `When the user sends
+  "<text>" on sessions "<a>" and "<b>" at the same time via memory comm`
+  (dispatch both, then wait for both).
+- [ ] Hail scenario "a busy session on the crew does not gate another
+  session's delivery — no crew-wide cap (isaac-ximd)".
+- [ ] Config with `:max-in-flight` set → validation error naming the key
+  and the bean (spec).
+- [ ] Existing suspend/cancel/in-flight scenarios green; version bumps in
+  both repos; bb spec / bb features / bb lint green in both. Hail pins the
+  agent sha that carries the change.
+
+Likely repo scope: isaac-agent (session/store/spi.clj, manifest crew schema,
+features/session/concurrency.feature, steps) and isaac-hail
+(delivery_worker.clj, bound_unclaimed.feature, deps pin).
+
+feature-baseline: isaac-agent e1c375810961b75b1aaadecf5ca3e982ec2f9aaa
+feature-baseline: isaac-hail 2c80a6867ed2179a3f52d884db260d143da1633c
+feature-blob: isaac-agent features/session/concurrency.feature fb68b791310039d1b0b9a5dc5ff2ad5b262839c0 15
+feature-blob: isaac-hail features/bound_unclaimed.feature 76095baa1969af590039f01e1eb647ed2fbf54eb 46
