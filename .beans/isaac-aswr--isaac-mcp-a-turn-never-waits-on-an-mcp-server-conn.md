@@ -4,10 +4,8 @@ title: 'isaac-mcp: a turn never waits on an MCP server — connect in the backgr
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-25T02:00:22Z
-updated_at: 2026-09-25T02:13:07Z
+updated_at: 2026-09-25T02:15:16Z
 ---
 
 ## Symptom
@@ -137,3 +135,33 @@ Step fix: `await-connects!` alone was a no-op in features — nothing is pending
 Results on cac8478: `bb spec` 40/0, `bb lint` 0/0, `bb features` 13/2 ×3 runs — the only failures are hosts.feature (prompt, acp), deferred per planner. Note: hosts.feature is not @wip, so `bb ci` on main stays red on those two until the follow-up bean.
 
 Race: a parallel session force-pushed `18a4a42` (based on the reverted 8ab0aa3; puts the warm-up inside `await-connects!`) to the branch at 02:10:45; my push replaced it. Preserved at `origin/bean/isaac-aswr-alt-18a4a42`.
+
+
+
+## Verify fail (attempt 1, 2026-09-24): landing gate red — hosts.feature regresses 0→2 failures vs origin/main; planner ruling needed
+
+HEAD: isaac-mcp origin/bean/isaac-aswr cac8478 (base 3bdc096 = origin/main)
+Working tree: clean (fresh clone, perceptor@isaac-verify)
+
+What passes (cac8478):
+- bb spec: 40 examples, 0 failures, 117 assertions
+- bb lint: 0 errors, 0 warnings
+- Manifest: only :version 0.1.1→0.1.2. isaac-agent untouched (provider contract unchanged).
+- Runtime read: ensure-server! is non-blocking (connect-async!, one :pending future per server), backoff hold 60s doubling to 15m and reset on success, :mcp/connect-held once per failure/hold, start! non-blocking, stop! bumps generation so an in-flight connect is abandoned. Matches the design.
+- Feature edits: only the authorized "And the MCP servers have connected" inserts in turn/lifecycle/catalog (per ## Exceptions). No tampering.
+
+What blocks landing:
+- bb features on branch: 13 examples, 2 failures. Both in features/hosts.feature:
+  1) "MCP tools reach every host — the prompt command offers and invokes an MCP tool"
+  2) "MCP tools reach every host — an acp session invokes an MCP tool"
+  got: "unknown tool: lens__catalog"
+- bb features on origin/main 3bdc096 (same command, clean): 13 examples, 0 failures.
+- So these are NOT pre-existing (verify.md §7). The bean introduces them, and landing makes main CI red. They are not @wip.
+- This is a real user-visible regression: one-shot hosts (`isaac prompt`, `isaac acp`) lose all MCP tools, because their only turn happens before the background connect lands.
+
+The planner said "do not block this bean on hosts". The landing gate (full suite green on main) still stands, and the worker cannot fix this without touching features. The worker's own note agrees main CI would stay red. I need a planner ruling on one of these:
+  (a) authorize @wip on the two hosts scenarios, referencing a filed follow-up bean id, so main stays green; or
+  (b) put a process-local warm-up for one-shot hosts (prompt/acp) in scope for this bean; or
+  (c) explicitly authorize landing with main CI red (not recommended).
+
+Hygiene: the beans repo has a stray file named `.beans/isaac-aswr--*.md` (a literal asterisk, 1.7KB older conflict note), committed alongside the real bean file. It should be deleted or merged in.
