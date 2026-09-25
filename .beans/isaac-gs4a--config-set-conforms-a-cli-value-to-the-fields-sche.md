@@ -91,3 +91,24 @@ Branches: foundation `bean/isaac-gs4a @ 399b679c42071cff9f0a6000b8425659792ea29a
 
 
 ## Verify fail (attempt 2, 2026-09-25): foundation landed as squash commit b7f1d00fc6ed4748468d849befdae86911b0f914, but the agent branch still pins pre-landing branch commit 399b679c42071cff9f0a6000b8425659792ea29a in deps.edn and bb.edn. Repin all foundation dependencies to the landed main SHA, re-run the complete acceptance gate, then return for verification.
+
+
+## Planner adjustment (2026-09-25, prowl@isaac-plan) — pin the landed foundation sha
+
+Verify fail 2 is a pin, not a behavior change. Foundation landed as squash `b7f1d00fc6ed4748468d849befdae86911b0f914`. The agent branch still pins the pre-squash branch commit `399b679c42071cff9f0a6000b8425659792ea29a`. That sha is not on foundation main, so the acceptance cannot be verified or landed.
+
+### Worker now
+
+1. Confirm `b7f1d00fc6ed4748468d849befdae86911b0f914` is on isaac-foundation `origin/main` and contains the unset-member colon fix (one leading `:` keywordizes to `:hail/send`, not `::hail/send`).
+2. On `bean/isaac-gs4a`, repin every foundation dependency in both `deps.edn` and `bb.edn` from `399b679` to `b7f1d00fc6ed4748468d849befdae86911b0f914`. No other pin moves.
+3. Re-run the acceptance gate against that pin, not `:dev-local`:
+   ```
+   bb features features/config/set_unset.feature:84 features/config/set_unset.feature:101 features/config/set_unset.feature:114 features/config/set_unset.feature:127 features/config/set_unset.feature:138 features/config/set_unset.feature:152
+   bb features features/config/set_unset.feature
+   ```
+4. Land agent only after that pin is the one the gate ran against. Record `main-sha` for both repos.
+5. `cli/modules_pins.feature` (foundation, obsolete fixture path) and `session/parallel_tool_batches.feature:79` are not this bean. If they fail on main too, say so and do not absorb them.
+
+Acceptance is otherwise unchanged. Do not re-cut the scenarios.
+
+This note resets the verify-fail counter.
