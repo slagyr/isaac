@@ -7,7 +7,7 @@ priority: high
 tags:
     - foundation
 created_at: 2026-09-25T16:21:58Z
-updated_at: 2026-09-25T17:41:34Z
+updated_at: 2026-09-25T17:49:05Z
 ---
 
 ## Why
@@ -72,3 +72,8 @@ Do not reopen isaac-i5on or isaac-dv7p.
 
 feature-baseline: isaac-foundation 066316f9d07b49cb4437e149069b18f7e0bdfdd6
 feature-blob: isaac-foundation features/cli/modules_pins.feature 2131fadde42c59811eca025c7a06d665b184cfa9 137,147
+
+
+## Worker checkpoint (2026-09-25)
+Done: isolated bb feature gitlibs cache, resolved local URLs, retried stale remotes, implemented both baselined steps; focused modules_pins feature 8/0 and pins/coords specs green. Pushed foundation bean branch 2f14a3a.
+Next: strengthen retry/log specs at spec/isaac/modules/pins_spec.clj:20, run bb spec, bb features, bb lint, bb ci; gate, rebase and land.
