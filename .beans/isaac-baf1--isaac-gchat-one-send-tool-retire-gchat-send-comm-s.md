@@ -154,3 +154,15 @@ baf1 scenario order is unchanged: `#index` 0 = All green., `#index` 1 = Looking 
 4. Do not revert the vlxz `#index` row. Do not recut queue-first.
 
 This note resets the verify-fail counter.
+
+## Conflict (scrapper@isaac-work-2, 2026-09-25) — gate FAIL on the bean's own contract history
+
+Rebased bean/isaac-baf1 onto isaac-gchat main 5a2a2a4 cleanly (now 558ec78, pushed). Worker .feature diff = only the baf1 `@wip` line removed. bb spec 180/0, bb features 56/0. The feature blob check now passes. The gate still exits 1:
+
+    isaac-baf1 bean-gate: FAIL (2) — isaac-gchat @ HEAD 558ec78 (branch bean/isaac-baf1)
+      FAIL contract line removed or edited in 5a9a5ad:   Chat, in that order.
+      FAIL contract line removed or edited in 5a9a5ad:   answer — both post (isaac-baf1)": the tool's delivery and the reply both reach
+
+Cause: planner commit 5a9a5ad8 (Micah, "re-baselined after worker conflict") reworded the first `## Acceptance` checkbox after the bean was already gated. contract-failures (src/isaac/bean_gate/core.clj:88) checks every consecutive pair of versions from the first gated one. That makes the edit a permanent FAIL: appending the old lines back does not clear it, and `## Exceptions` does not cover acceptance-line edits. Workers may not touch contract lines. Not landed; bean stays in-progress.
+
+Needs a planner/human decision, e.g. a gate mechanism for authorized acceptance edits, or re-cutting the bean with the new acceptance text.
