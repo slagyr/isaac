@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-24T13:37:58Z
-updated_at: 2026-09-26T02:39:50Z
+updated_at: 2026-09-26T02:46:28Z
 ---
 
 Micah, 2026-09-24: "Where is the list of scopes documented?" Nowhere. Scopes are whatever `:scope` each installed module puts on its `:isaac.http/route` entries (isaac-4o6r): today `hail/send` (POST /hail/send), `cli` (the /cli socket; read-only commands need no scope beyond authentication), `hooks` (webhook routes), plus `*` meaning everything and the legacy `:http :auth :token` acting as principal `admin` with `*`. The Google callback route is public.
@@ -25,4 +25,4 @@ Repo scope: isaac-http (`cli.clj`, `auth_cli.clj`, README, features).
 
 ## Follow-on (2026-09-25)
 
-isaac-jvzn adds command scopes that are not route `:scope` values: `cli/<command>` for each hosted command, plus `cli/read`. When this catalog lands after that, `auth scopes` and mint's known-scope check must name those too, or a laptop token minted as `cli/acp` is refused as a typo.
+isaac-jvzn adds command scopes that are not route `:scope` values: `cli/<command>` for each hosted command. There is no `cli/read` scope. When this catalog lands after that, `auth scopes` and mint's known-scope check must name those command scopes too, or a laptop token minted as `cli/acp` is refused as a typo.
