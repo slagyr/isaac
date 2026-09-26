@@ -1,13 +1,13 @@
 ---
 # isaac-jvzn
 title: 'Scope /cli by command: cli opens the socket, cli/<command> runs that command'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - security
 created_at: 2026-09-26T02:39:37Z
-updated_at: 2026-09-26T02:53:57Z
+updated_at: 2026-09-26T02:54:50Z
 parent: isaac-gym1
 ---
 
