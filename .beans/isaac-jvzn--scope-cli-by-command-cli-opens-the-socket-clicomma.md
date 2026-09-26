@@ -94,3 +94,7 @@ feature-baseline: isaac-http ff057d4188f7fa7681021b32e6229286c82629e1
 feature-baseline: isaac-cli-server 7d0e966151a3296d71cbd7bfa1954e48d49157dd
 feature-blob: isaac-http features/server/principals.feature e4325df7f42f157e7be4ecf574ff3563519eb816 150,161,172,180,188,196,207
 feature-blob: isaac-cli-server features/cli/endpoint.feature f89f775b8025c2f3b7d7b59e6a1f2c3dfce19dfe 170,183,197,210,220,230
+
+## Worker conflict (2026-09-25)
+
+Implementation is committed on `bean/isaac-jvzn` in isaac-http and isaac-cli-server. Acceptance scenarios pass (7/7 and 6/6), `bb bean-gate verify isaac-jvzn --dir isaac-http=../isaac-http-jvzn --dir isaac-cli-server=../isaac-cli-server-jvzn` passes. isaac-http `bb ci` passes (189 specs, 117 features). CLI-server `bb features` passes (20 scenarios), but `bb ci` fails on an unrelated preexisting spec: `dispatch replays buffered frames after attach and renders them once`, `spec/isaac/cli_server/dispatch_spec.clj:150`: `Expected: "second\n", got: ""`. This fails consistently on an isolated detached `origin/main` checkout (`bb spec spec/isaac/cli_server/dispatch_spec.clj:126`, 1 failure) as well as the bean branch; the trace on the bean branch showed an exit frame without a stdout frame after attach. The scope change does not touch stream buffering; need planner disposition on repairing this preexisting red suite or revising landing criteria. Neither repo landed on main; bean remains in progress.
