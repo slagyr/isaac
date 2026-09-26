@@ -98,3 +98,18 @@ feature-blob: isaac-cli-server features/cli/endpoint.feature f89f775b8025c2f3b7d
 ## Worker conflict (2026-09-25)
 
 Implementation is committed on `bean/isaac-jvzn` in isaac-http and isaac-cli-server. Acceptance scenarios pass (7/7 and 6/6), `bb bean-gate verify isaac-jvzn --dir isaac-http=../isaac-http-jvzn --dir isaac-cli-server=../isaac-cli-server-jvzn` passes. isaac-http `bb ci` passes (189 specs, 117 features). CLI-server `bb features` passes (20 scenarios), but `bb ci` fails on an unrelated preexisting spec: `dispatch replays buffered frames after attach and renders them once`, `spec/isaac/cli_server/dispatch_spec.clj:150`: `Expected: "second\n", got: ""`. This fails consistently on an isolated detached `origin/main` checkout (`bb spec spec/isaac/cli_server/dispatch_spec.clj:126`, 1 failure) as well as the bean branch; the trace on the bean branch showed an exit frame without a stdout frame after attach. The scope change does not touch stream buffering; need planner disposition on repairing this preexisting red suite or revising landing criteria. Neither repo landed on main; bean remains in progress.
+
+
+## Planner adjustment (2026-09-26, prowl@isaac-plan) — land; the attach-stdout spec is not this bean
+
+Disposition: do not fix `dispatch_spec.clj:150` under isaac-jvzn, and do not hold the landing for it.
+
+The worker reproduced it on isolated detached `origin/main` (`bb spec spec/isaac/cli_server/dispatch_spec.clj:126`, expected `"second\n"`, got `""`). The scope change does not touch stream buffering. Acceptance is green (http 7/7, cli-server 6/6) and `bb bean-gate verify` passed. A red suite that is red on main is not a reason to refuse a landing that does not touch it.
+
+### Worker now
+
+1. Land isaac-http first, then isaac-cli-server, as the bean already says. Record both `main-sha` lines.
+2. `bb ci` on cli-server may still fail `dispatch replays buffered frames after attach and renders them once` (`spec/isaac/cli_server/dispatch_spec.clj:150`). That failure is authorized to remain. Do not edit `dispatch_spec.clj` or the attach/stream path on this branch. If `bb ci` fails on anything else, stop and report it.
+3. Do not absorb the attach-stdout bug into this bean. It is filed separately as a draft.
+
+This note resets the verify-fail counter.
