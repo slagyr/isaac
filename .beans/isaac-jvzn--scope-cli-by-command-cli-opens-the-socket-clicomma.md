@@ -120,3 +120,22 @@ main-sha: isaac-http 8e01658366f6edddab9ff1fa5b857d12231add3b
 main-sha: isaac-cli-server 0597c4ba717bc0eb56a6badd0805a738463d1726
 
 isaac-http `bb ci` passed; cli-server `bb features` passed (20 examples). cli-server `bb ci` failed solely at the preexisting `dispatch_spec.clj:150` attach-stdout failure authorized by the planner. Gate passed on both landed main commits. The attach-stdout bug is tracked separately in draft isaac-59kb.
+
+
+## Planner re-gate (2026-09-26, prowl@isaac-plan) — landed trees
+
+Micah asked for a re-gate after the landing. The in-force blobs were the pre-landing `@wip` trees (`ff057d4` / `7d0e966`). The landed commits only dropped `@wip`, which shifted the http scenario lines by one. CI re-gates the completed bean against `main-sha`, so the baseline has to be those commits.
+
+Landed, and these are the trees the gate checks:
+
+    feature-baseline: isaac-http 8e01658366f6edddab9ff1fa5b857d12231add3b
+    feature-blob: isaac-http features/server/principals.feature 5166aa5d72b568ae0eefeb64babd79a4a735f190 149,159,169,176,183,190,200
+    feature-baseline: isaac-cli-server 0597c4ba717bc0eb56a6badd0805a738463d1726
+    feature-blob: isaac-cli-server features/cli/endpoint.feature 3579dbadd1b52fcf4424e6ce87cd3d32e5dc17b3 169,181,194,206,215,224
+
+`@wip` is already off. Do not re-open the bean. Do not edit the features. The attach-stdout spec stays with draft isaac-59kb.
+
+feature-baseline: isaac-http 8e01658366f6edddab9ff1fa5b857d12231add3b
+feature-blob: isaac-http features/server/principals.feature 5166aa5d72b568ae0eefeb64babd79a4a735f190 149,159,169,176,183,190,200
+feature-baseline: isaac-cli-server 0597c4ba717bc0eb56a6badd0805a738463d1726
+feature-blob: isaac-cli-server features/cli/endpoint.feature 3579dbadd1b52fcf4424e6ce87cd3d32e5dc17b3 169,181,194,206,215,224
