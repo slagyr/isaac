@@ -1,19 +1,19 @@
 ---
 # isaac-jvzn
 title: 'Scope /cli by command: cli opens the socket, cli/<command> runs that command'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
     - security
 created_at: 2026-09-26T02:39:37Z
-updated_at: 2026-09-26T02:46:28Z
+updated_at: 2026-09-26T02:53:57Z
 parent: isaac-gym1
 ---
 
 `GET /cli` declares no `:scope`. A route with no scope requires `:*`, so any token that can open the remote CLI is an admin token for every other route. Yopp and Zanebot publish that listener through Tailscale Funnel.
 
-isaac-4o6r specified `:scope :cli` on the route and `:cli/read` for read-only commands, and left four `@wip` scenarios in `isaac-cli-server/features/cli/endpoint.feature`. The manifest entry still has no `:scope`, dispatch never checks a principal, and the step `the /cli client is principal {name} with scopes {scopes}` was never defined. Delete those four scenarios. This bean does not implement them.
+On main, `GET /cli` already declares `:scope :cli`, and the command filter allows `:*`, `:cli`, and `:cli/read` when the command is marked read-only. The step `the /cli client is principal {name} with scopes {scopes}` already exists. The four live cli/read scenarios were removed in isaac-cli-server 7d0e966. Do not put them back. No new steps.
 
 ## Decision (2026-09-25, Micah)
 
@@ -80,3 +80,17 @@ Promote to `todo` only after those scenarios are committed `@wip` and `bb bean-g
 ## Decision (2026-09-25, Micah) — no read/write scope
 
 `:cli/read` is out. Classifying every command and subcommand as read or write is not part of this bean. The `:read-only` manifest hint stays what isaac-kjzq uses it for: while a restart is pending, a command marked read-only may still run. No production command sets that hint. Only the cli-server fixtures `fx-read` and `fx-multi` do. Auth scopes do not consult it.
+
+## Acceptance
+
+```
+cd isaac-http && bb features features/server/principals.feature:150 features/server/principals.feature:161 features/server/principals.feature:172 features/server/principals.feature:180 features/server/principals.feature:188 features/server/principals.feature:196 features/server/principals.feature:207
+cd isaac-cli-server && bb features features/cli/endpoint.feature:170 features/cli/endpoint.feature:183 features/cli/endpoint.feature:197 features/cli/endpoint.feature:210 features/cli/endpoint.feature:220 features/cli/endpoint.feature:230
+```
+
+Remove `@wip` as each scenario passes. Land the isaac-http door rule first (`authorized?`: an un-namespaced required scope is also satisfied by a held scope in that namespace; a namespaced required scope stays exact), then the cli-server filter (`:cli/<command>` instead of `:cli/read`; empty argv stays usage).
+
+feature-baseline: isaac-http ff057d4188f7fa7681021b32e6229286c82629e1
+feature-baseline: isaac-cli-server 7d0e966151a3296d71cbd7bfa1954e48d49157dd
+feature-blob: isaac-http features/server/principals.feature e4325df7f42f157e7be4ecf574ff3563519eb816 150,161,172,180,188,196,207
+feature-blob: isaac-cli-server features/cli/endpoint.feature f89f775b8025c2f3b7d7b59e6a1f2c3dfce19dfe 170,183,197,210,220,230
