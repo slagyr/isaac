@@ -113,3 +113,10 @@ The worker reproduced it on isolated detached `origin/main` (`bb spec spec/isaac
 3. Do not absorb the attach-stdout bug into this bean. It is filed separately as a draft.
 
 This note resets the verify-fail counter.
+
+## Landed on main (2026-09-25)
+
+main-sha: isaac-http 8e01658366f6edddab9ff1fa5b857d12231add3b
+main-sha: isaac-cli-server 0597c4ba717bc0eb56a6badd0805a738463d1726
+
+isaac-http `bb ci` passed; cli-server `bb features` passed (20 examples). cli-server `bb ci` failed solely at the preexisting `dispatch_spec.clj:150` attach-stdout failure authorized by the planner. Gate passed on both landed main commits. The attach-stdout bug is tracked separately in draft isaac-59kb.
