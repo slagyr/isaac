@@ -1,13 +1,13 @@
 ---
 # isaac-r5j4
 title: Strip caller_crew before MCP tool calls
-status: todo
+status: completed
 type: bug
 priority: high
 tags:
     - mcp
 created_at: 2026-09-27T01:40:18Z
-updated_at: 2026-09-27T01:40:18Z
+updated_at: 2026-09-27T01:49:35Z
 ---
 
 Every Linear MCP tool whose input schema sets `additionalProperties: false` fails. `list_issues`, `list_teams`, and `list_projects` return `Unrecognized key: "caller_crew"`. `get_workspace` succeeds because its schema declares no parameters and does not forbid extra keys.
@@ -27,3 +27,7 @@ Drop `caller_crew` in `mcp-arguments`, the same way `session_key` is dropped. Do
 Extend `isaac-mcp/spec/isaac/mcp/runtime_spec.clj`, the example "strips injected keys and callables before calling the server". The fake server records the argument map it was called with. Executing `lens__catalog` with `caller_crew` set, alongside `session_key`, `state_dir`, and `:progress!`, reaches the server without `caller_crew`, `session_key`, or `state_dir`. The call still succeeds.
 
 `bb spec` in isaac-mcp passes.
+
+## Outcome
+
+Landed in isaac-mcp 9422702. `mcp-arguments` drops `caller_crew` with `session_key` and `state_dir`. The runtime spec records the map the fake server receives and expects only `query`. `bb spec` for that file: 29 examples, 0 failures. Yopp's pin is that sha and the server was restarted onto it.
