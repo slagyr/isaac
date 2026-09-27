@@ -1,11 +1,11 @@
 ---
 # isaac-tjjm
 title: 'Foreman F2: durable event intake and turn observations'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:31:45Z
+updated_at: 2026-09-27T23:35:30Z
 parent: isaac-q3u3
 ---
 
@@ -47,3 +47,20 @@ Draft until scenarios are committed and baselined. Beans mirroring remains defer
 4. An acknowledged-but-unconsumed event is applied before the next one, in order.
 5. A turn that signals: instance moves on the signal; the later `:turn-ended` is recorded unhandled.
 6. A turn that ends without signaling takes the `:turn-ended` backstop row; a failed turn takes `:turn-failed`.
+
+
+## Acceptance
+
+Feature: `isaac-foreman/features/foreman/events.feature` (whole file, 6 scenarios, committed `@wip` on main at 1499e3f). Remove `@wip`; all pass:
+
+- [ ] `bb features features/foreman/events.feature` (from isaac-foreman)
+- [ ] Individually: `:23` signal tool, `:47` HTTP, `:72` duplicate id, `:91` resume unconsumed, `:109` signaling turn, `:131` backstop + failed turn
+- [ ] Unit spec: server start sweeps every instance's unconsumed events (not a scenario).
+- [ ] Unit spec: `:turn-died` is emitted from the observer's `on-turn-died` (no scenario can trigger a death).
+- [ ] Existing `cli.feature` and `machine.feature` stay green (status history lines gain `[<id>] via <source>` after the transition text).
+- [ ] `bb verify` green; version bump in `resources/isaac-manifest.edn`.
+
+Likely scope: isaac-foreman — `store.clj` (received/consumed records, dedupe, unconsumed scan), `core.clj` (intake + drain before handling), `cli.clj` (`--id`), new `foreman-signal` tool (`:isaac.agent/tools`), `POST /foreman/events` (`:isaac.http/route`), `foreman` turn observer registered with Agent's `isaac.drive.observer`.
+
+feature-baseline: isaac-foreman 1499e3f9f14ce16c593a3952ca070019e378ff4b
+feature-blob: isaac-foreman features/foreman/events.feature f1d57799352c714fc891b69de3386c63ba919f9b
