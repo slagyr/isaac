@@ -64,3 +64,7 @@ Likely scope: isaac-foreman — `store.clj` (received/consumed records, dedupe, 
 
 feature-baseline: isaac-foreman 1499e3f9f14ce16c593a3952ca070019e378ff4b
 feature-blob: isaac-foreman features/foreman/events.feature f1d57799352c714fc891b69de3386c63ba919f9b
+
+## Work checkpoint (2026-09-27)
+
+Done: durable received/duplicate records and drain, event history/status rendering, CLI --id, tool/HTTP/turn-observer module wiring, version bump, @wip removed; focused core JVM spec green (6 examples). Next: restore full spec compatibility (current `bb spec` red: 4 failures — legacy store record shape and CLI fixture validation against current foundation), then feature failures (5/6; tool fixture config, HTTP auth token, unconsumed status and turn observation). Resume at `spec/isaac/foreman/cli_spec.clj:23` and `src/isaac/foreman/store.clj:61`; run `bb spec` and `bb features features/foreman/events.feature`. No green full suite/claim of completion yet.
