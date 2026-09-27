@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:09:08Z
+updated_at: 2026-09-27T23:31:45Z
 parent: isaac-q3u3
 ---
 
@@ -26,3 +26,24 @@ Likely repo: **isaac-foreman** (with its HTTP route contribution). Design: Micah
 4. An unhandled observation is recorded without corrupting instance state.
 
 Draft until scenarios are committed and baselined. Beans mirroring remains deferred as recorded in isaac-tdgt.
+
+
+## Decisions (2026-09-27, Micah + planner)
+
+1. **Intake = the instance's existing `events.ednl`** (F1 already designed history and intake as one file). An arriving event is appended as `received` before it is acknowledged; consuming it appends the transition or unhandled record carrying the event id. A received event with no result is unconsumed. No second store.
+2. **Consumption:** immediately after the ack, in the same process. Before any new event for an instance is handled, its older unconsumed events are applied first, in order. Server start sweeps every instance (unit spec). No background worker.
+3. **Event ids:** caller-supplied or generated. A repeated id is acknowledged as a duplicate and changes nothing.
+4. **Unknown machine or instance:** refused, never acknowledged (F1 behavior kept).
+5. **Turn observations:** Foreman registers a `foreman` turn observer; a turn joins an instance via the ref `foreman:<machine>/<instance>` (existing Agent seam). Events: `:turn-started`, `:turn-ended`, `:turn-failed`, `:turn-died`. **No "expected signal" concept:** if the crew signaled, the instance already moved, so a `:turn-ended` row keyed on the old state *is* the backstop. Supersedes the "backstop event" wording above.
+6. **Crew tool `foreman-signal`** (matches `hail-send`): args `machine`, `instance`, `event`, optional `data`, `id`. All explicit; defaulting from the turn's observer ref is a later nicety.
+7. **HTTP `POST /foreman/events`:** JSON or EDN, server token auth. 202 with the event id; duplicate → 202 with `"duplicate": true`; unknown instance → 404.
+8. **Envelope:** `{:id :machine :instance :event :data :source :at}`; `:source` ∈ `:tool :http :cli :observer`; tool events also record crew and session. `:data` is stored in history, not interpreted (actions using it are isaac-lr8h).
+
+## Scenario plan (approved 2026-09-27) — `isaac-foreman/features/foreman/events.feature`
+
+1. The signal tool moves an instance; history shows source tool + crew.
+2. HTTP sends the same shape: 202 + event id; unknown instance refused, nothing acknowledged.
+3. A repeated event id (CLI then HTTP) changes state once; history shows the duplicate.
+4. An acknowledged-but-unconsumed event is applied before the next one, in order.
+5. A turn that signals: instance moves on the signal; the later `:turn-ended` is recorded unhandled.
+6. A turn that ends without signaling takes the `:turn-ended` backstop row; a failed turn takes `:turn-failed`.
