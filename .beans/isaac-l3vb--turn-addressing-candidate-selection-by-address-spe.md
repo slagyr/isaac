@@ -5,7 +5,8 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-25T18:57:47Z
-updated_at: 2026-09-27T22:45:05Z
+updated_at: 2026-09-27T23:09:08Z
+parent: isaac-q3u3
 blocked_by:
     - isaac-ohsy
     - isaac-ey7a
@@ -57,8 +58,9 @@ bound to ONE session; this bean lets a request name a SET.
 This bean now covers **Agent candidate selection and compatible resource-pool admission only**. Hail cutover is isaac-ex4q. The durable TurnStore contract is isaac-70cr; pool type/receipt contract is isaac-ey7a; Worksite's concrete pool adapter is isaac-npmp.
 
 - A submitted request carries session frequencies plus named `:resource-pools`. The names identify configured pool instances; no arbitrary `checkout`/`reports` aliases are required in frequencies.
-- At admission Agent considers session candidates and pool leases together. Acquire all applicable leases or release acquired ones and keep the request waiting. Re-evaluate candidates on each wake rather than binding a busy session prematurely.
-- A lease receipt supplies declarative bindings and an opaque release identity. `:session/cwd` is applied before opening a new session and building its charge; an existing session's pinned cwd must match. Do not patch a resolved charge after the drive has read the session context.
+- At admission Agent considers session candidates and pool leases together; the all-or-nothing lease acquisition and rollback are isaac-ey7a's contract, used here, not re-specified. Re-evaluate candidates on each wake rather than binding a busy session prematurely.
+- **Sessions are independent of resources** (Micah, 2026-09-27: the session/work-dir mapping was a forced coupling). Session candidates are chosen by the session pattern alone; no session is pinned to a directory and no session is ineligible because of its past cwd.
+- A lease receipt supplies declarative bindings and an opaque release identity. `:session/cwd` is a **per-turn** binding applied before the charge is built — for a new or an existing session alike. Boot files are read from the turn's cwd, and the transcript records which cwd each turn ran in. Do not patch a resolved charge after the drive has read the session context.
 - Preserve direct-session and `:reach :one` semantics; creation policy and ordering must be stated in scenarios. `:reach :all` fan-out remains a separate design question until scenario review.
 
-Revised scenario plan: free candidate wins over busy candidate; all combinations busy then wake and reselect; new session opens at selected cwd; incompatible pinned session is skipped; rollback releases a first lease when a later pool is busy. No Hail code or band feature belongs to this bean.
+Revised scenario plan: free candidate wins over busy candidate; all combinations busy then wake and reselect; an existing session runs a turn at the leased cwd, reads that directory's boot files, and its transcript records the cwd; the same session's next turn runs at a different leased cwd. No Hail code or band feature belongs to this bean.

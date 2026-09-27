@@ -5,7 +5,8 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T22:33:11Z
+updated_at: 2026-09-27T23:09:08Z
+parent: isaac-q3u3
 ---
 
 Likely repo: **isaac-foreman** (with its HTTP route contribution). Design: Micah + planner, 2026-09-27. Builds on completed F1 (isaac-mjr4) and the existing turn-observer seam (isaac-bbov).

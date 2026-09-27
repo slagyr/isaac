@@ -1,33 +1,27 @@
 ---
 # isaac-q3u3
-title: Migrate bean orchestration to Foreman and resource pools
+title: 'Milestone: bean orchestration on Foreman and resource pools'
 status: draft
-type: feature
+type: milestone
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-27T22:45:05Z
-blocked_by:
-    - isaac-npmp
-    - isaac-lr8h
-    - isaac-ex4q
+updated_at: 2026-09-27T23:09:08Z
 ---
 
-Likely repos: **orchestration** (deployed config/prompts) and **isaac** (bean workflow references). Design: Micah + planner, 2026-09-27. End-to-end migration after the Agent, Worksite, Foreman, and Hail seams land.
+Design: Micah + planner, 2026-09-27. **Milestone**: bean orchestration runs on Foreman + Agent turn admission + resource pools, replacing worker-to-worker hail choreography.
 
-## Contract to plan
+## Migration beans (children, in order)
 
-- Configure a machine for the bean lifecycle: planned/todo, claimed work, verification or gated completion, return for repair, held/human escalation, terminal completion. Preserve the project's gated-vs-ungated bean rule; settle exact rows during scenario planning.
-- Foreman submits ordinary work turns to Agent against a logical session selector and Worksite pool. Crew signals and turn observations advance the machine; status/history answer which step owns the bean.
-- Replace worker-to-worker Hail handoff prompts in this workflow with Foreman events/actions. Keep Hail available for independent messages or explicit human attention where its messaging semantics are useful.
-- Exercise a fresh bean through the happy path, verification failure/repair, resource exhaustion, restart during a handoff, and a turn ending without a signal. A duplicated event or turn request must not duplicate work.
-- After the new path runs successfully, remove obsolete orchestration band choreography. Hail and Worksite repository retirement are separate decisions based on their remaining uses.
+1. isaac-q6fj — machine config and happy path, running alongside the hail path.
+2. isaac-1rtr — failure paths: repair loop, busy worksites, restart mid-handoff, missing signal, auth outage, human escalation.
+3. isaac-20gd — cut over and retire band choreography.
 
-## Scenario plan to review
+## Upstream chain
 
-1. Gated bean reaches completion through Foreman with a Worksite pool.
-2. Ungated bean routes through verifier and returns to work on failure.
-3. Busy worksite waits; release starts exactly one pending turn.
-4. Restart and missing crew signal produce inspectable, recoverable machine states.
-5. Human escalation and operator status/history identify the current owner.
+- Now: finish isaac-xoqn (busy-session waiting room); isaac-tjjm (Foreman event intake) has no blockers and can run in parallel.
+- isaac-70cr (TurnStore port + drive-owned recovery) after xoqn.
+- isaac-ey7a (pool contract, turn leases, non-blocking acquire) → isaac-l3vb (session + pool selection; sessions independent of resources).
+- Then in parallel: isaac-npmp (Worksite pool), isaac-lr8h (Foreman `:turn` action), isaac-ex4q (Hail hands off to Agent).
+- Deferred, not on the path: isaac-kxqj (tool-call-scoped leases).
 
-Draft until its executable scenarios and target deployment checks are approved. No live dispatch is authorized by this planning bean.
+Design record: isaac-tdgt § "Architecture revision (2026-09-27)".

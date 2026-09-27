@@ -5,7 +5,8 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-27T22:45:05Z
+updated_at: 2026-09-27T23:09:08Z
+parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
     - isaac-tjjm
