@@ -1,7 +1,7 @@
 ---
 # isaac-vp7h
 title: Session selection merges default frequencies and drops prompt-default
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-27T01:00:25Z
@@ -36,6 +36,26 @@ If the merged map still names no session, crew, or tags, the turn fails. It does
 - `isaac.cron.service/job->frequencies` — merges `:create :always`, not the config defaults
 - `isaac.hail.router` — merges band and hail frequencies, not the config defaults
 
-## Scenarios still to write
+## Acceptance
 
-Prove the merge once in the resolver, and one wiring scenario per consumer: a bare prompt with `:defaults :frequencies {:crew "cordelia"}` opens or resumes a cordelia session and never creates `prompt-default`. A consumer-supplied session id still wins. An empty merge fails the turn.
+The merge lives in the shared resolver, underneath the map the consumer already built. Consumer keys win, so a Discord channel id, a hook name, or a gchat space still wins. `prompt_cli`'s `--crew` bypass of the resolver goes away. `--crew` is a frequency, like any other consumer key. `prompt-default` is not produced.
+
+`features/session/default_frequencies.feature` and the retargeted scenarios in `features/bridge/cli-prompt.feature` and `features/session/origin.feature` (@wip):
+
+- a bare prompt resumes the default crew's existing session and does not create `prompt-default`
+- a bare prompt with no existing session creates one for the default crew
+- `--session` wins over the default crew
+- `--crew` wins over the default crew
+- no session, crew, or tags: exit 1, stderr contains `no session`, no session is created
+- a created session still gets a cwd and `:origin :cli`
+
+Compaction scenarios in `cli-prompt.feature` address `prompt-default` with `--session`. That name is only a fixture id there. `bb spec` drops the hardcoded default in `frequencies`, `frequencies-cli`, and `prompt_cli`.
+
+```
+cd isaac-agent && bb features features/session/default_frequencies.feature features/bridge/cli-prompt.feature features/session/origin.feature && bb ci
+```
+
+feature-baseline: isaac-agent ac8404b8a65808f6a3b1cfcaf14e2aafe37915a6
+feature-blob: isaac-agent features/session/default_frequencies.feature 9e6e98fecadeab167e0bc16df8a2fff0b617d3ca 11,29,49,69
+feature-blob: isaac-agent features/bridge/cli-prompt.feature 33cf96c545e9329f03630abcca4b5b18eb78649b 25,371
+feature-blob: isaac-agent features/session/origin.feature fa7d005f452e27fc299334fa38e4dd3186119619 17
