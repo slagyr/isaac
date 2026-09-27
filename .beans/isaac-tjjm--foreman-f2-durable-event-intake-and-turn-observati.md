@@ -72,3 +72,38 @@ Done: durable received/duplicate records and drain, event history/status renderi
 ## Acceptance conflict (2026-09-27)
 
 Focused CLI preflight diagnosis in scenario :23: the unchanged step `the crew "bartholomew" allows tools: "foreman-signal"` writes `:tools {:allow [:foreman-signal]}`; production config validation refuses `crew.bartholomew.tools.allow[0]: must be a namespaced keyword (ns/name or ns/*); got :foreman-signal`. The tool contract is a bare name, while the current Agent policy only permits namespaced tool IDs. This cannot be fixed by changing the baselined .feature (worker is limited to @wip removal); planner needs to decide whether to change the tool identity/feature or authorize a namespace-compatible mapping. Separately scenarios :47/:72 send `Authorization: Bearer secret123` without configuring the server token: current HTTP middleware refuses unknown credentials with 401 before the route; expected 202 is unreachable without a configured token. Current `bb features features/foreman/events.feature`: 6 examples, 5 failures; core + CLI JVM specs: `bb spec` 32 examples, 0 failures. `bb bean-gate verify isaac-tjjm` passes contract-only, not acceptance. Work remains on bean branch 0aa8957; no landing attempted.
+
+
+## Planner adjustment (2026-09-27, prowl@isaac-plan) — namespaced allow, admin principal
+
+Both conflicts are the feature, not the product. Do not change the tool's wire name. Do not add a scope to the route under this bean.
+
+### Tool allow
+
+`the crew … allows tools:` writes keywords into `:tools :allow`. Agent rejects an unqualified keyword (`must be a namespaced keyword`). The model still calls `foreman-signal`. The allow token is `foreman/signal`, which is `:foreman/signal`.
+
+Both allow steps now say `foreman/signal`. The `tool_call` column stays `foreman-signal`.
+
+### HTTP auth
+
+`POST /foreman/events` declares no `:scope`. A route with no scope requires admin (`:*`). `Bearer secret123` with no principal is an unknown bearer, so the middleware returns 401 before the route. That is current HTTP, not a Foreman bug.
+
+Background now configures principal `keeper` with secret `secret123` and scopes `*`. The Bearer rows stay. 202 and 404 are reachable. Do not declare a route scope here. A later bean can if a non-admin caller should post events.
+
+### Re-baselined
+
+isaac-foreman main `1443cd8`. The feature file is not `@wip`; the six scenarios are this bean's because the blob names no lines. Newest lines in force:
+
+    feature-baseline: isaac-foreman 1443cd8c364bea435c660c042e3d0f6b6bff8c5c
+    feature-blob: isaac-foreman features/foreman/events.feature ca61b8fa436b02204adea79dae31ded1b8f43bde
+
+### Worker now
+
+1. Rebase `bean/isaac-tjjm` onto `1443cd8`. Keep the implementation (`0aa8957`). Feature diff may only drop `@wip`, and there is none left to drop.
+2. Do not rename the tool. Do not add `:scope` to the route. Do not put the allow token back to `foreman-signal`.
+3. `bb features features/foreman/events.feature` green, then `bb bean-gate verify isaac-tjjm` exit 0, then land.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-foreman 1443cd8c364bea435c660c042e3d0f6b6bff8c5c
+feature-blob: isaac-foreman features/foreman/events.feature ca61b8fa436b02204adea79dae31ded1b8f43bde
