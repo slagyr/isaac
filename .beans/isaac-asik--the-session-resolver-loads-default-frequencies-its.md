@@ -53,3 +53,9 @@ Repo: **isaac-agent** for the resolver and `build-frequencies`. **isaac-acp** fo
 feature-baseline: isaac-acp b1b31b9b1110a445670988db7cc8588bcb160b55
 feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
 feature-blob: isaac-acp features/comm/acp/episodes.feature 1310865e4d4caf2a71d9642983876dbe50da7d7d 123,153
+
+## Work checkpoint (2026-09-27)
+
+Done: `isaac-agent` branch `bean/isaac-asik` (cb41080) reads the config snapshot in the two-argument resolver and stops injecting CLI `:reach`/`:create`. Focused `bb spec spec/isaac/session/frequencies_spec.clj spec/isaac/session/frequencies_cli_spec.clj` passes (42 examples). `isaac-acp` branch `bean/isaac-asik` (5a57da5) drops the policy fork and `policy/default-session`, strips only `@wip`; `bb bean-gate verify isaac-asik --dir isaac-agent=../isaac-agent-asik --dir isaac-acp=../isaac-acp-asik` exits 0. JVM run of `default_frequencies.feature` against local agent/foundation passes (5 examples).
+
+Next: Implement the missing second-`session/new` reuse on ACP's create path (start at `isaac-acp/src/isaac/comm/acp/cli.clj:161`; currently only attaches when `target` is existing). Fix the cross-repo test environment to run acceptance: `bb features features/comm/acp/default_frequencies.feature features/comm/acp/episodes.feature` using `bb.edn` pins timed out after 180s on the first feature; `bb jvm-features ...` with temporary `:dev-local` paths to `../isaac-agent-asik`, `../isaac-foundation-asik` and `../isaac-http-ci` ran default frequencies green but episodes fails 5 scenarios (three existing scenarios and two retargeted) due to `ClassCastException` at `isaac.config.resolve/resolve-crew:91` during feature fixture creation (config's `:defaults :crew` string from episodes.feature); cannot edit baselined feature except `@wip`. No temporary deps edits remain. Re-run `bb ci` in both repos and gate before landing; no completion yet.
