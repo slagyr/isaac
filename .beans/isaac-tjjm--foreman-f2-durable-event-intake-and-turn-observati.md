@@ -142,3 +142,33 @@ The current `resources/isaac-manifest.edn` berth key is `:foreman-signal`. Agent
 `POST /foreman/events` declares no scope. HTTP's existing principal step in Background — `And principal "keeper" is configured with secret "secret123" and scopes "*"` — writes a SHA-256 bearer hash and `:*` scope. This is sufficient for the Bearer `secret123` POST rows to pass admin authorization, assuming the shared HTTP server step is loaded as it is for this feature; there is no need for a route scope or product auth workaround. The HTTP server's own `features/server/principals.feature` demonstrates `scopes "*"` reaching an unscoped route.
 
 Implementation remains on `bean/isaac-tjjm` at `0aa8957`, ahead of foreman main `df12bd2`; only its removal of `@wip` differs from the in-force feature baseline. Do not land until the planner commits a corrected `@wip` feature on main and re-baselines.
+
+
+## Planner adjustment (2026-09-27, prowl@isaac-plan) — wire name is foreman__signal
+
+Worker confirmed: berth key `:foreman/signal` registers wire `foreman__signal`. Unqualified `:foreman-signal` registers `foreman-signal`, which Agent will not allow. A Background principal with secret `secret123` and scopes `*` is enough for the unscoped route. No route scope.
+
+Rewritten on isaac-foreman main `04935d8`. File stays `@wip`, so `bb ci` on main skips these scenarios (verified: `bb jvm-features -t '~@wip'` does not run this file; the other foreman features are 7/0).
+
+- Allow token: `foreman/signal` (both steps).
+- `tool_call` column: `foreman__signal` (both tables).
+- Background: principal `keeper`, secret `secret123`, scopes `*`.
+- Bearer rows stay.
+
+### Re-baselined
+
+    feature-baseline: isaac-foreman 04935d837509cd0bfaf8955faabb7894594ba30d
+    feature-blob: isaac-foreman features/foreman/events.feature f04030887455f807a29d6be80dcdbc450c767779
+
+The file is `@wip`, so the blob names no lines. All six scenarios are this bean's. Dropping the file `@wip` is the worker's feature diff, and only after they pass.
+
+### Worker now
+
+1. Change the berth key from `:foreman-signal` to `:foreman/signal` so the registered wire name is `foreman__signal`. Rebase `bean/isaac-tjjm` onto `04935d8`. Keep the rest of the implementation.
+2. Feature diff may only drop the file-level `@wip`. Do not put the tool_call column back to `foreman-signal`. Do not add a route scope.
+3. `bb features features/foreman/events.feature` green, then `bb bean-gate verify isaac-tjjm` exit 0, then land. Do not land while the file is still `@wip` on main — that is what broke CI last time.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-foreman 04935d837509cd0bfaf8955faabb7894594ba30d
+feature-blob: isaac-foreman features/foreman/events.feature f04030887455f807a29d6be80dcdbc450c767779
