@@ -1,11 +1,11 @@
 ---
 # isaac-vp7h
 title: Session selection merges default frequencies and drops prompt-default
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-27T01:00:25Z
-updated_at: 2026-09-27T01:00:25Z
+updated_at: 2026-09-27T01:18:45Z
 ---
 
 Repo: **isaac-agent**, plus every turn consumer that builds a frequencies map (prompt, acp, discord, gchat, hooks, cron, hail).
