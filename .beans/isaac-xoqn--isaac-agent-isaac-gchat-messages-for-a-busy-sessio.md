@@ -85,3 +85,35 @@ Next: resolve session-key case mismatch in gchat acceptance without editing base
 ## Contract conflict (2026-09-27)
 
 The baselined gchat scenario at `features/comm/gchat/inbound.feature:733-735` demands `:turn/coalesced` with `session = gchat-spaces-DMQ`. Chat canonicalizes session names to lowercase (`isaac.comm.gchat.canon/slug`), and the actual session and log are `gchat-spaces-dmq`. The acceptance assertion fails: `Expected "gchat-spaces-DMQ", got: "gchat-spaces-dmq"`. Changing production logging to a noncanonical name would misrepresent the session and break observability. The planner must correct/rebaseline the feature (or explicitly decide a different canonical naming design); worker cannot edit baselined scenario text. Agent focused waiting scenarios pass; agent full `bb ci` still red in continuation and wrap-up scenarios noted above.
+
+
+## Planner adjustment (2026-09-27, prowl@isaac-plan) — log the canonical session key
+
+The log must name the session the store actually has. Chat slugs session keys to lowercase (`isaac.comm.gchat.canon/slug`). `gchat-spaces-DMQ` is not a session. Do not log the noncanonical key.
+
+The scenario's session steps and the `:turn/coalesced` row now say `gchat-spaces-dmq`. The space id in the Chat API fixtures stays `spaces/DMQ` — that id is not a session key. `@wip` stays on until the scenario passes.
+
+isaac-gchat main `b7044d4`. Scenario line is still 701.
+
+### Re-baselined
+
+    feature-baseline: isaac-gchat b7044d4d474507184ff044f1eb1bb64d221081a2
+    feature-blob: isaac-gchat features/comm/gchat/inbound.feature 984f43696faf53a4b358202acb8bd2d047cfad22 701
+    feature-baseline: isaac-agent 8794de90f8493b31911318e508741c1e7ef281af
+    feature-blob: isaac-agent features/session/waiting.feature 2982c9383a0f89ef3c1e43c19e3a6e971634a96f 11,34
+
+The agent blob is unchanged. It is repeated so this baseline's tree is the one in force.
+
+### Worker now
+
+1. Rebase `bean/isaac-xoqn` (gchat) onto `b7044d4`. Keep the implementation. Feature diff may only drop `@wip` on the xoqn scenario (line 701).
+2. The coalesced log session is `gchat-spaces-dmq`. Do not log `gchat-spaces-DMQ`.
+3. `features/session/turn/continuations.feature:49` and `features/llm/turn_exhaustion.feature:234` are not this bean. If they fail on agent main too, say so and do not absorb them. If they fail only on this branch, they are in scope.
+4. `bb bean-gate verify isaac-xoqn` exit 0, then land agent, then gchat. Gchat pins the agent sha.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-gchat b7044d4d474507184ff044f1eb1bb64d221081a2
+feature-blob: isaac-gchat features/comm/gchat/inbound.feature 984f43696faf53a4b358202acb8bd2d047cfad22 701
+feature-baseline: isaac-agent 8794de90f8493b31911318e508741c1e7ef281af
+feature-blob: isaac-agent features/session/waiting.feature 2982c9383a0f89ef3c1e43c19e3a6e971634a96f 11,34
