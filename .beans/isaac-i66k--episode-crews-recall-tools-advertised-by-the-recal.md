@@ -1,37 +1,48 @@
 ---
 # isaac-i66k
 title: 'Episode crews: recall tools advertised by the recall block must actually be allowed'
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-08-29T04:43:16Z
 updated_at: 2026-08-29T04:43:16Z
 ---
 
-Repo: **isaac-agent** (`isaac.recall.*` injection + tool allow cascade). Found in
-the isaac-h5dk field check, 2026-08-28.
+Repo: **isaac-agent** (tool allow cascade). Acceptance lives in
+**isaac-episodes** because that suite registers the recall tools.
+Found in the isaac-h5dk field check, 2026-08-28. Seen again on Yopp
+2026-09-26: the crew is `:session-policy :episodes`, scenes are cut and
+indexed, and the allow list never named `:recall/*`, so the model had no
+`recall__search` or `recall__scene`.
 
-## Problem
+## Decision (2026-09-27, Micah)
 
-The recall-at-open block header says "fetch full detail with `recall__scene <id>`",
-but the crew's tool allow list decides whether `recall__scene` / `recall__search`
-exist for the turn. Pilot had no `:tools :allow`, so the model improvised
-`skill__load recall__scene` → `Error: unknown skill`. A dead-end escape hatch
-is worse than none (decision 23: gist-only tiers must be fetchable).
+An episodes crew receives `recall__search` and `recall__scene` whether or
+not its allow list names them. A crew that denies `:recall/*` does not
+receive them. A chronicle crew receives them only when its own allow list
+says so. The implicit grant must not undo a deny: adding `:recall/*` onto
+the crew allow list would, because crew allow is applied after crew deny.
 
-## Options (pick in planning)
+Yopp's allow list was given `:recall/*` by hand on 2026-09-27 so the crew
+can call the tools before this lands. That line becomes redundant once the
+grant is implicit, and it should stay.
 
-1. Episode crews (`:conversation :episodes`) implicitly allow `:recall/*` —
-   the crew opted into recall; the tools are part of that contract.
-2. The header only advertises the tool when it is allowed for that crew;
-   otherwise says "(scene ids for reference)".
-3. Config validation: `:conversation :episodes` without `:recall/*` allowed
-   (and without `:all`) is a warning at load.
+## Acceptance
 
-Recommendation: 1 + 2 (2 is a one-line guard either way).
+`features/recall/implicit_tools.feature` (@wip):
 
-## Scenarios (to write before todo)
+- an episodes crew whose allow list is only `fs/read` is offered
+  `fs__read`, `recall__search`, and `recall__scene`
+- an episodes crew with no tools section is offered only the two recall tools
+- an episodes crew that allows `fs/read` and denies `:recall/*` is offered
+  only `fs__read`
+- a chronicle crew that allows `fs/read` is offered only `fs__read`
 
-- episode crew with no `:tools :allow` → first turn after a recalling cold
-  open can call `recall__scene` successfully.
-- chronicle crew with `:recall/*` denied → no recall tools in the request.
+```
+cd isaac-episodes && bb features features/recall/implicit_tools.feature
+```
+
+Remove `@wip` as each scenario passes. `bb ci` in isaac-agent and isaac-episodes.
+
+feature-baseline: isaac-episodes a72577310bf7bc4ee3087d48101183b79ee3e819
+feature-blob: isaac-episodes features/recall/implicit_tools.feature a9ad0b2c1670e9970dd4c8891fc34db56f1c7467 12,35,56,78
