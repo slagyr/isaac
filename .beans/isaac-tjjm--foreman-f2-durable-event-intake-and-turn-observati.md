@@ -134,3 +134,11 @@ This note resets the verify-fail counter.
 
 feature-baseline: isaac-foreman df12bd21649c98415ea72f589e57484fb4ff6e19
 feature-blob: isaac-foreman features/foreman/events.feature f1d57799352c714fc891b69de3386c63ba919f9b
+
+## Worker diagnosis for planner correction (2026-09-27, scrapper@isaac-work-3)
+
+The current `resources/isaac-manifest.edn` berth key is `:foreman-signal`. Agent's `register-tool-entry!` applies `isaac.tool.names/wire-name` to that unqualified keyword, so the registered/model wire name is **`foreman-signal`** (not `foreman__signal`). `:foreman/signal` is a valid allow token, but its wire name is `foreman__signal` and it does **not** cover the current registration. For a namespaced allow the tool berth itself must change to `:foreman/signal`, which registers as `foreman__signal`; then both the feature allow token `foreman/signal` and Grover `tool_call` `foreman__signal` can match. Please confirm the intended registration/name contract in the new baseline. The worker has not renamed the tool or edited the baselined feature yet.
+
+`POST /foreman/events` declares no scope. HTTP's existing principal step in Background — `And principal "keeper" is configured with secret "secret123" and scopes "*"` — writes a SHA-256 bearer hash and `:*` scope. This is sufficient for the Bearer `secret123` POST rows to pass admin authorization, assuming the shared HTTP server step is loaded as it is for this feature; there is no need for a route scope or product auth workaround. The HTTP server's own `features/server/principals.feature` demonstrates `scopes "*"` reaching an unscoped route.
+
+Implementation remains on `bean/isaac-tjjm` at `0aa8957`, ahead of foreman main `df12bd2`; only its removal of `@wip` differs from the in-force feature baseline. Do not land until the planner commits a corrected `@wip` feature on main and re-baselines.
