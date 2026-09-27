@@ -1,7 +1,7 @@
 ---
 # isaac-asik
 title: The session resolver loads default frequencies itself
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-27T02:25:46Z
@@ -30,12 +30,26 @@ isaac-vp7h added the config as an optional third argument and left the two-argum
 
 ACP then has a second fork. `resolve-attach-target` throws away the resolver result when `--crew` is set and no session id is set, and asks the crew policy for `default-session`. Episodes returns none, so every `acp --crew yopp` opens a new session. That fork goes away. The resolver is the only place a crew-only start picks or creates a session.
 
-## Acceptance to write
+## Acceptance
 
-- A blank `acp`, with `:defaults :frequencies {:crew "cordelia"}` and an existing cordelia session, resumes that session. It does not exit 1, and it does not open a second session.
-- A blank `acp` with no configured frequencies and no flags exits 1 with "no session selected".
-- `acp --crew ketch` resumes ketch's most recent session when one exists, and creates one when none does. The episodes policy is not asked for a default session.
-- `acp --session mooring` uses mooring even when the configured default crew is someone else.
-- A configured `:defaults :frequencies {:create :always}` is what a blank connect uses. The built-in `:if-missing` does not override it. An explicit `--create never` still wins.
+`isaac-acp/features/comm/acp/default_frequencies.feature` and the two retargeted scenarios in `features/comm/acp/episodes.feature` (@wip):
 
-Repo: **isaac-agent** for the resolver and `build-frequencies`. **isaac-acp** for dropping the policy `default-session` fork. The other two-argument callers get the config layer by the resolver reading the snapshot, without each of them passing a config map.
+- a blank `acp` resumes the session of the crew in `:defaults :frequencies`
+- a blank `acp` with no configured crew, session, or tags exits 1 with "no session selected"
+- `acp --session` wins over the configured crew
+- a configured `:create :always` outranks the built-in `:if-missing`
+- an explicit `--create never` outranks a configured `:create :always`
+- `acp --crew` on an episodes crew resumes that crew's most recent session
+- two `session/new` calls in one connect share the one session the resolver created
+
+The resolver reads the config snapshot on the two-argument call. `build-frequencies` adds `:reach` and `:create` only when the operator passed them. ACP's `resolve-attach-target` fork and the server `session/new` call to `policy/default-session` go away.
+
+```
+cd isaac-acp && bb features features/comm/acp/default_frequencies.feature features/comm/acp/episodes.feature && bb ci
+```
+
+Repo: **isaac-agent** for the resolver and `build-frequencies`. **isaac-acp** for dropping the policy fork. Discord, Google Chat, hooks, and cron keep calling the two-argument resolver and get the config layer from it.
+
+feature-baseline: isaac-acp b1b31b9b1110a445670988db7cc8588bcb160b55
+feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
+feature-blob: isaac-acp features/comm/acp/episodes.feature 1310865e4d4caf2a71d9642983876dbe50da7d7d 123,153
