@@ -59,3 +59,12 @@ feature-baseline: isaac-agent ac8404b8a65808f6a3b1cfcaf14e2aafe37915a6
 feature-blob: isaac-agent features/session/default_frequencies.feature 9e6e98fecadeab167e0bc16df8a2fff0b617d3ca 11,29,49,69
 feature-blob: isaac-agent features/bridge/cli-prompt.feature 33cf96c545e9329f03630abcca4b5b18eb78649b 25,371
 feature-blob: isaac-agent features/session/origin.feature fa7d005f452e27fc299334fa38e4dd3186119619 17
+
+## Implementation conflict (2026-09-27)
+
+The shared resolver now merges defaults beneath consumer frequencies; the prompt uses it without the --crew bypass, and the baselined acceptance scenarios pass (39 examples, 0 failures, 97 assertions). The bean branch is `isaac-agent` `bean/isaac-vp7h` at `55089dc`; `bb bean-gate verify isaac-vp7h --dir isaac-agent=../isaac-agent-vp7h` reports PASS. Full `bb ci` has 1800 specs green but two existing *unbaselined* feature scenarios fail in `features/session/session_policy.feature:155,184`:
+
+> `a start the policy has no default for is named by the agent, not the policy`: Expected `default-session` (crew cordelia) before `open-session!`; got `open-session!` first.
+> `a conversation start without a session id asks the policy for one`: Expected `default-session` (crew cordelia) before `record-turn-marker!`; got `open-session!` first.
+
+Those scenarios require prompt with `--crew` and no id to ask the policy for its default, even when the resolver's merged crew selector already picks the target. The decision here explicitly removes prompt's --crew bypass and says prompt is not a special case. Reinstating that bypass would violate this bean; editing these .feature files would violate the frozen-contract worker rule. Planner needs to settle policy integration and rebaseline/adjust the conflicting scenarios. No feature wording was changed on the branch (only @wip removed). Work remains in progress; after planner decision, resume at `src/isaac/bridge/prompt_cli.clj:173`, finish consumer integration and `bb ci`, gate and land.
