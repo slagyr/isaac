@@ -46,3 +46,8 @@ Remove `@wip` as each scenario passes. `bb ci` in isaac-agent and isaac-episodes
 
 feature-baseline: isaac-episodes a72577310bf7bc4ee3087d48101183b79ee3e819
 feature-blob: isaac-episodes features/recall/implicit_tools.feature a9ad0b2c1670e9970dd4c8891fc34db56f1c7467 12,35,56,78
+
+## Checkpoint (2026-09-27)
+
+Done: agent implicit episodes recall grant with crew deny preserved; episodes recall tools retain runtime context under current agent tool registry; removed @wip. Both repos' bean branches committed and pushed. Agent `bb ci` green (1798 specs, 883 features); episodes `bb ci` green (227 specs, 91 features); `bb bean-gate verify isaac-i66k --dir isaac-agent=../isaac-agent-i66k --dir isaac-episodes=../isaac-episodes-i66k` PASS.
+Next: land upstream isaac-agent on main; then repin episodes' deps.edn and bb.edn (currently local worktree paths) to upstream main sha, run episodes bb ci, squash onto main and rerun gate. Resume at `../isaac-agent-kleb` main worktree; upstream change at `../isaac-agent-i66k/src/isaac/drive/turn.clj:1364`.
