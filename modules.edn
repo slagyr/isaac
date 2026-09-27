@@ -29,7 +29,7 @@
                                       :git/sha "d9044bb0eed4b4026fcfd2c24702ae335d6ea85e"}
                               :desc  "Event hooks and inbound webhook routing."}
  :isaac.tool.mcp             {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
-                                      :git/sha "53e75444fe332b86d1b3fe2b81e171f2466977b8"}
+                                      :git/sha "9422702abc39ee5e055bbbb171e15b19f9a459e5"}
                               :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
  :isaac.google               {:coord {:git/url "https://github.com/slagyr/isaac-google.git"
                                       :git/sha "5cdf80720b4012de0ee9d692f07bbaf3599b35e4"}
