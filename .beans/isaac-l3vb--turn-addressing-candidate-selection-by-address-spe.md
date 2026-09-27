@@ -5,12 +5,13 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-25T18:57:47Z
-updated_at: 2026-09-27T23:09:08Z
+updated_at: 2026-09-27T23:45:55Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-ohsy
     - isaac-ey7a
     - isaac-70cr
+    - isaac-i5lv
 ---
 
 Likely repos: **isaac-agent** (selection in core) then **isaac-hail** (router

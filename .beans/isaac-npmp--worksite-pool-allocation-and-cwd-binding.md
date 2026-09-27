@@ -5,11 +5,12 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:09:08Z
+updated_at: 2026-09-27T23:45:55Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
     - isaac-ey7a
+    - isaac-i5lv
 ---
 
 Likely repos: **isaac-worksite** and **isaac-agent**. Design: Micah + planner, 2026-09-27. Extends completed W1 (isaac-l3ps); does not assume this repo must survive the cutover.

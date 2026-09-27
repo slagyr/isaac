@@ -1,35 +1,25 @@
 ---
 # isaac-ey7a
-title: Resource pool types, configuration, and lease receipts
+title: 'Resource pools replace turnstiles: types, named instances, busy-means-wait'
 status: draft
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:09:08Z
+updated_at: 2026-09-27T23:46:08Z
 parent: isaac-q3u3
 ---
 
-Likely repo: **isaac-agent**. Design: Micah + planner, 2026-09-27. This is the generic contract; it does not implement a database driver.
+Likely repo: **isaac-agent** (plus a mechanical rename touch in isaac-worksite's pin-bump, owned by isaac-npmp). Design: Micah + planner, 2026-09-27.
 
-## Contract to plan
+## Resource pools replace turnstiles (clean cutover)
 
-- Declare `:isaac.agent/resource-pool-types` in Agent. Modules contribute a type factory and type-specific config schema; registration does not create a lease.
-- Configure named instances under `:resource-pools` with a `:type`; turn frequencies refer to pool names. Unknown types, unknown names, and invalid type-specific config fail validation.
-- A successful acquisition returns a **lease receipt**: typed bindings plus an opaque release identity. Some receipts have no binding.
-- **Turn leases only.** A lease is acquired at admission and released when the turn ends: success, error, cancellation, or death. Tool-call-scoped leases are deferred to isaac-kxqj; the receipt shape leaves room for a scope, but only turn scope exists here.
-- **Acquisition never blocks.** A pool type's `try-acquire` returns within a bounded time with either a receipt or `:busy`. It never waits on a lock, connection, or network. Admission serves every session; one blocking acquire would stall them all (same failure class as MCP on the turn path).
-- **Agent coordinates.** If any requested pool is busy, Agent releases the leases it already took and the request stays waiting in the queue. This rollback lives here only; isaac-l3vb does not repeat it. Acquisition order must be deterministic and stated in scenarios.
-- **Release is idempotent** by release identity: releasing twice (e.g. recovery replay) is harmless.
-- **Release wakes waiters.** A release signals the existing queue release-token wake (isaac-ohsy) so waiting requests re-evaluate.
-- **Restart reconciliation.** Agent persists release identities (never live handles) and on restart hands them back to their pool types to clean up leases held by dead turns.
-- Bindings are applied at an Agent-defined seam before charge construction; pool implementations do not mutate arbitrary charges. Bindings are **per turn**, not session properties. The initial reserved binding is `:session/cwd`.
+Decision (2026-09-27, Micah): Agent's turnstiles already do all-or-nothing admission, give-back on a hold, reverse-order release, and wake-on-release. "Turnstile" was a pun (one turn through at a time) and confusing; the natural name for what we're building is **resource pool**. Pools replace turnstiles — one admission mechanism, no aliases, no `turnstile` name left in code, config, CLI, or features.
 
-## Scenario plan to review
-
-1. A contributed type validates two named pool instances and an unknown type fails loudly.
-2. Two requested pools acquire; a busy second pool releases the first and leaves the request waiting.
-3. A released lease wakes the waiting request, which then acquires both pools and runs.
-4. A receipt supplies a binding before charge construction and releases on success, error, and cancellation.
-5. After a restart, a lease left by a turn that died is reconciled and the member is usable again; a repeated release does not free a member held by another turn.
-
-Draft until the scenarios are approved, committed `@wip`, and baselined. No new `:resources` config key or binding aliases are implied by this bean. The pool contract is exercised with a scripted pool type; Worksite's directory pool is isaac-npmp.
+- Berth `:isaac.agent/turnstiles` → `:isaac.agent/resource-pool-types`. Modules contribute a type factory plus a type-specific config schema; registration does not create a lease.
+- **Pools are named config instances** under `:resource-pools` (entity dir `config/resource-pools/<name>.edn` and root form), each with a `:type`. Per-request refs with params (`--turnstile tide:22:00-06:00`) are removed. A turn names instances: CLI `--pool <name>` (repeatable), charge `:resource-pools [...]`. Unknown types, unknown names, and invalid type config fail validation; a turn naming an unknown pool refuses before dispatch.
+- Protocol `Turnstile (admit? / release!)` → `ResourcePool (try-acquire / release!)`. **Busy means wait**: `try-acquire` answers a lease or `:busy`; there is no busy-refusal (Worksite's `:worksite-busy` refusal goes away with isaac-npmp).
+- **Acquisition never blocks** (contract, not enforced by timeout): `try-acquire` returns promptly and never waits on a lock, connection, or network. Admission serves every session; one blocking acquire would stall them all.
+- **Order:** acquire in the order the turn lists its pools; on any `:busy`, release what was taken (reverse order) and the request stays held. Release on turn end runs in reverse order and wakes the queue (existing wake hook).
+- **Tide stays as a built-in pool type**: `{:type :tide :window "22:00-06:00"}` — available only inside its window. It is the only exercise of the clock-tick wake path.
+- `turns list` shows a `resource-pools` column.
+- Receipts (bindings, `:session/cwd`) and restart release are **isaac-i5lv**; tool-call leases are isaac-kxqj.
