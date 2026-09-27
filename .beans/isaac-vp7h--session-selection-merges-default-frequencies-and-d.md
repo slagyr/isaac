@@ -1,11 +1,11 @@
 ---
 # isaac-vp7h
 title: Session selection merges default frequencies and drops prompt-default
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-27T01:00:25Z
-updated_at: 2026-09-27T01:18:45Z
+updated_at: 2026-09-27T01:32:25Z
 ---
 
 Repo: **isaac-agent**, plus every turn consumer that builds a frequencies map (prompt, acp, discord, gchat, hooks, cron, hail).
@@ -104,3 +104,8 @@ feature-blob: isaac-agent features/session/session_policy.feature 9158b60debd94c
 feature-blob: isaac-agent features/session/default_frequencies.feature 9e6e98fecadeab167e0bc16df8a2fff0b617d3ca 11,29,49,69
 feature-blob: isaac-agent features/bridge/cli-prompt.feature 33cf96c545e9329f03630abcca4b5b18eb78649b 25,371
 feature-blob: isaac-agent features/session/origin.feature fa7d005f452e27fc299334fa38e4dd3186119619 17
+
+
+## Landed (2026-09-27)
+
+Rebased bean/isaac-vp7h onto isaac-agent main (1a6eda8, then bd1115f), removed @wip from the two rewritten session_policy scenarios, retained the shared resolver implementation. Feature diff against 1a6eda8 removes only @wip tags. Focused features: 46 examples, 0 failures; bb ci: 1800 specs and 891 features, 0 failures (1 unrelated pending). bb bean-gate verify isaac-vp7h exited 0 (PASS). Landed isaac-agent main at 180b83f; no policy/default-session prompt bypass.
