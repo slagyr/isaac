@@ -1,11 +1,11 @@
 ---
 # isaac-ey7a
 title: 'Resource pools replace turnstiles: types, named instances, busy-means-wait'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:46:08Z
+updated_at: 2026-09-27T23:47:04Z
 parent: isaac-q3u3
 ---
 
@@ -23,3 +23,20 @@ Decision (2026-09-27, Micah): Agent's turnstiles already do all-or-nothing admis
 - **Tide stays as a built-in pool type**: `{:type :tide :window "22:00-06:00"}` — available only inside its window. It is the only exercise of the clock-tick wake path.
 - `turns list` shows a `resource-pools` column.
 - Receipts (bindings, `:session/cwd`) and restart release are **isaac-i5lv**; tool-call leases are isaac-kxqj.
+
+
+## Acceptance
+
+Features committed `@wip` on isaac-agent main at 0cf9824. Remove every `@wip`; all pass:
+
+- [ ] `bb features features/turn/resource_pools.feature` — new file, 4 scenarios (`:19` validation, `:39` unknown pool, `:51` busy second pool gives back the first, `:75` tide window)
+- [ ] `bb features features/turn/turn_queue.feature` — 5 existing scenarios rewritten for pools (`:27`, `:53`, `:66`, `:84`, `:111`)
+- [ ] New/renamed steps in `spec/isaac/turn/queue_steps.clj` (and `session_steps.clj`): `a scripted resource pool "<name>" admits <n> turn(s) at a time` (registers a scripted type AND writes the named instance into config), `resource pool "<name>" is closed|opened`, `the user sends "…" on session "…" with resource pools "…"`. The old turnstile steps are deleted.
+- [ ] One-time check: `git grep -i turnstile` in isaac-agent returns nothing (src, spec, features, manifests, marigold). `features/turn/turnstiles.feature` is already deleted.
+- [ ] `bb verify` green; version bump.
+
+Knock-on: isaac-worksite's `:worksite` turnstile stops compiling when it repins to this Agent — converting it is isaac-npmp's job; do not touch worksite here.
+
+feature-baseline: isaac-agent 0cf98241c81f37b75f39661985d6ab4494e835e1
+feature-blob: isaac-agent features/turn/resource_pools.feature 9b36d5e4817a48d5700026cfd6412f56e7720e55
+feature-blob: isaac-agent features/turn/turn_queue.feature 32f594eef0e186626285d53765b5d3be66857fd1
