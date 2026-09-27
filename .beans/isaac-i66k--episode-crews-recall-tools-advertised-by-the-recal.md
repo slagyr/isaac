@@ -51,3 +51,8 @@ feature-blob: isaac-episodes features/recall/implicit_tools.feature a9ad0b2c1670
 
 Done: agent implicit episodes recall grant with crew deny preserved; episodes recall tools retain runtime context under current agent tool registry; removed @wip. Both repos' bean branches committed and pushed. Agent `bb ci` green (1798 specs, 883 features); episodes `bb ci` green (227 specs, 91 features); `bb bean-gate verify isaac-i66k --dir isaac-agent=../isaac-agent-i66k --dir isaac-episodes=../isaac-episodes-i66k` PASS.
 Next: land upstream isaac-agent on main; then repin episodes' deps.edn and bb.edn (currently local worktree paths) to upstream main sha, run episodes bb ci, squash onto main and rerun gate. Resume at `../isaac-agent-kleb` main worktree; upstream change at `../isaac-agent-i66k/src/isaac/drive/turn.clj:1364`.
+
+## Landed on main (2026-09-27)
+
+main-sha: isaac-agent f324f63c80591655f9ca1bc0cc991c4ba26537d8
+main-sha: isaac-episodes 3c7b6751b394dc8753d26b9a984d23be271f0032
