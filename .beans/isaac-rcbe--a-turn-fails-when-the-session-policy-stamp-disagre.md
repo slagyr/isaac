@@ -1,7 +1,7 @@
 ---
 # isaac-rcbe
 title: A turn fails when the session policy stamp disagrees with the crew
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-27T00:45:22Z
@@ -22,9 +22,22 @@ Migrating the sessions that already diverged. That is data repair on the host, a
 
 `prompt-default` is not configuration. It is the hardcoded `:default-session-key` inside `isaac prompt` when the command names no session. `:defaults :frequencies` is not consulted for that choice. A bare prompt uses the frequencies crew as the crew, and the literal session id `prompt-default` as the session.
 
-## Scenarios still to write
+## Acceptance
 
-- crew episodes, existing session stamped chronicle: the turn fails, the transcript is unchanged, no episode is opened
-- crew with no session-policy, existing session stamped episodes: the turn fails
-- crew episodes, no such session yet: the turn runs and the new record is stamped episodes
-- crew episodes, existing session stamped episodes: the turn runs
+`isaac-agent/features/session/policy_mismatch.feature` (@wip). Logbook is the
+stand-in for any non-chronicle policy, including episodes. The check compares
+the two policy names.
+
+- a session stamped chronicle refuses a turn from a logbook crew: exit 1, stderr names the session and both policies, logbook records no calls, no user message is appended
+- a session stamped logbook refuses the next turn after the crew policy is removed: exit 1, the first turn's transcript remains
+- a session that does not exist yet is created under the crew policy and the turn runs
+- a chronicle session runs when the crew is chronicle
+
+```
+cd isaac-agent && bb features features/session/policy_mismatch.feature
+```
+
+Remove `@wip` as each scenario passes. `bb ci` in isaac-agent.
+
+feature-baseline: isaac-agent d8d71f85612fff178438e1ffdd1df485780a2104
+feature-blob: isaac-agent features/session/policy_mismatch.feature 69c993f154504234f66e68c7c62bedca4743f77b 14,36,66,82
