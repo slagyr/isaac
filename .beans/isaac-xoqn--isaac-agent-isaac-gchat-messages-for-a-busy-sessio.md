@@ -75,3 +75,9 @@ Implemented and pushed initial waiting-room/coalescing branches:
 - `isaac-gchat` `bean/isaac-xoqn` at `0431ad2`: supplies `:coalesce-key` from the Chat thread and adds thread-consolidation guidance; focused specs green (`21 examples, 0 failures, 34 assertions`).
 
 Next: complete the feature-step integration. `bb features features/session/waiting.feature` currently fails at `features/session/waiting.feature:28,51`: the second/third harness sends do not consistently reach bridge while the first Grover-delayed turn owns in-flight state, so `:turn/waiting` / `:turn/coalesced` are absent. The gchat scenario at `features/comm/gchat/inbound.feature:702` remains pending because its cross-module step implementation is absent. Do not land or gate until both acceptance scenarios execute and pass.
+
+## Checkpoint (2026-09-27)
+
+Done: agent waiting.feature: both scenarios green after keeping the Grover delay through scripted queue reset, releasing first turn, and preserving coalesce-key through charge/build; fixed queue worker waiting-id flattening. Gchat in-flight-end step added, but focused scenario RED: three posts rather than one because configured `dm-queue` is normalized to `gchat-spaces-dmq` while Given marks `gchat-spaces-DMQ` in flight. Full agent `bb ci` RED: two unrelated continuation/wrap-up feature failures (`turn/continuations.feature:49`, `llm/turn_exhaustion.feature:234`); agent specs 1796 green. No claim of green checkpoint.
+
+Next: resolve session-key case mismatch in gchat acceptance without editing baselined feature; inspect `feature-steps/isaac/gchat_steps.clj:420` and `src/isaac/comm/gchat/handler.clj:103`. Then rerun gchat focused scenario and both full suites, fix agent full-suite failures, commit/push green branches, gate and land.
