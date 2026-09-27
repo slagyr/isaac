@@ -107,3 +107,30 @@ This note resets the verify-fail counter.
 
 feature-baseline: isaac-foreman 1443cd8c364bea435c660c042e3d0f6b6bff8c5c
 feature-blob: isaac-foreman features/foreman/events.feature ca61b8fa436b02204adea79dae31ded1b8f43bde
+
+
+## Planner correction (2026-09-27, prowl@isaac-plan) — 1443cd8 broke foreman main CI
+
+CI run 36359997829 failed `bb ci` on that commit. I had dropped the file-level `@wip` and changed the allow token and auth in a feature whose steps are not implemented yet. `bb ci` runs `@wip` scenarios. `foreman/signal` does not cover the wire name `foreman-signal` (`matches?` wants `foreman__signal`). The model reported `unknown tool: foreman-signal`. The HTTP scenarios still did not reach 202.
+
+Reverted. isaac-foreman main `df12bd2` restores the `@wip` feature text from `1499e3f`. The in-force baseline is that text again. Do not treat `1443cd8` as the contract.
+
+    feature-baseline: isaac-foreman df12bd21649c98415ea72f589e57484fb4ff6e19
+    feature-blob: isaac-foreman features/foreman/events.feature f1d57799352c714fc891b69de3386c63ba919f9b
+
+### What the worker still has to satisfy
+
+The two conflicts stand. They are not fixed by editing the feature to a token the allow step cannot express.
+
+1. **Allow.** `the crew … allows tools: "foreman-signal"` writes `:foreman-signal`, and Agent rejects an unqualified keyword. `foreman/signal` is a legal allow token but does not match the wire name `foreman-signal`. The tool's registered wire name has to be what a namespaced allow covers (`foreman__signal` if the allow token is `foreman/signal`), and the scenario's `tool_call` column has to use that wire name. That is a feature edit. The planner will make it once the worker confirms the registered name. Do not land a feature edit that drops `@wip` before the scenarios pass — `bb ci` on main runs them.
+
+2. **HTTP.** `POST /foreman/events` declares no scope, so it requires admin. `Bearer secret123` with no principal is 401. Configure principal `keeper` with secret `secret123` and scopes `*` in the scenario (or declare a route scope and a principal that holds it). Also a feature edit. Same rule: not on main until the scenario is green.
+
+### Worker now
+
+Keep the implementation on `bean/isaac-tjjm`. Do not rebase onto `1443cd8`. Report the wire name the tool is registered under, and whether a principal step in Background is enough for the POST scenarios. The planner will rewrite the feature, commit it `@wip` on main, and re-baseline. Then you drop `@wip` only after `bb features features/foreman/events.feature` is green.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-foreman df12bd21649c98415ea72f589e57484fb4ff6e19
+feature-blob: isaac-foreman features/foreman/events.feature f1d57799352c714fc891b69de3386c63ba919f9b
