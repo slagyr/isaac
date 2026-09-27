@@ -172,3 +172,7 @@ This note resets the verify-fail counter.
 
 feature-baseline: isaac-foreman 04935d837509cd0bfaf8955faabb7894594ba30d
 feature-blob: isaac-foreman features/foreman/events.feature f04030887455f807a29d6be80dcdbc450c767779
+
+## Work checkpoint (2026-09-27, scrapper@isaac-work-1)
+
+Done: rebased implementation on corrected 04935d8 planner baseline, switched berth to :foreman/signal (wire foreman__signal), removed only @wip. Red: `bb features features/foreman/events.feature` runs 6 examples, 4 failures, 15 assertions. Tool/turn observation and backstop scenarios now advance, but tool history assertion, HTTP (404 instead of 202), and unconsumed CLI output remain red. No green full run; do not land. Next: inspect direct-response registration in `../isaac-http/spec/isaac/http/server_steps.clj:545` and `src/isaac/foreman/core.clj:136` (history-line) to identify why route not registered and CLI status history misses expected pattern; run focused `bb features features/foreman/events.feature:47`, then full feature and gate.
