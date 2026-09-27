@@ -1,11 +1,11 @@
 ---
 # isaac-tjjm
 title: 'Foreman F2: durable event intake and turn observations'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:35:30Z
+updated_at: 2026-09-27T23:37:25Z
 parent: isaac-q3u3
 ---
 
