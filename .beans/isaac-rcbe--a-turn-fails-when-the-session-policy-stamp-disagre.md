@@ -41,3 +41,7 @@ Remove `@wip` as each scenario passes. `bb ci` in isaac-agent.
 
 feature-baseline: isaac-agent d8d71f85612fff178438e1ffdd1df485780a2104
 feature-blob: isaac-agent features/session/policy_mismatch.feature 69c993f154504234f66e68c7c62bedca4743f77b 14,36,66,82
+
+## Landed on main (2026-09-27)
+
+main-sha: isaac-agent bd1115fbd96aa12b118344d4a2a16309ca04fd02
