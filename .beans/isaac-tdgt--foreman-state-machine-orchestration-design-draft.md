@@ -59,3 +59,17 @@ Two narrow seams, no shared internals: (1) actions -> dispatch gate — foreman 
 - F2's events ride the turn-observer interface (the one-sentence-turn stall of 2026-08-24 becomes a routable event: :turn-ended-without-signal -> rehail).
 
 (2026-08-24 addendum: submitted per-turn observer refs — `isaac prompt --observer foreman:bean-work/bn-7` plugs a manual CLI turn into a machine instance's event flow. The foreman's doors gain a fourth: any turn, from any submitter, can volunteer its lifecycle as events.)
+
+## Architecture revision (2026-09-27, Micah + planner)
+
+This revision supersedes older statements above that Hail is the durable turn-request queue or that ordinary Foreman actions ride Hail. Agent owns one durable turn-request admission point; Hail remains an optional out-of-band messaging surface. Implementation drafts: isaac-ey7a (pool contract), isaac-70cr (TurnStore), revised isaac-l3vb (candidate/resource selection), isaac-npmp (Worksite pool), isaac-tjjm (Foreman events), isaac-lr8h (Foreman turn action), isaac-ex4q (Hail handoff), isaac-q3u3 (orchestration migration).
+
+Decisions:
+
+1. **Resource pools, plural.** Sessions are selectable candidates; a turn may also require multiple named pools (directories, capacity-only slots, later database connections). Config key is `:resource-pools`. Modules register pool *types* through an Agent berth; user config creates named instances. Frequencies name the instances.
+2. **Lease receipts.** Acquisition returns typed bindings plus a release identity, possibly with no binding. Agent applies permitted bindings before charge build; Worksite supplies `:session/cwd` before new-session creation. Existing session cwd is pinned and constrains eligibility. Tool-call leases can be shorter than a turn; live handles are never persisted.
+3. **Durable request store.** A separate TurnStore port persists unresolved requests and lifecycle state. File adapter first, database adapter possible later. The session store remains responsible for session/transcript state; Agent reconciles requests with durable turn markers on restart.
+4. **One admission owner.** Agent selects compatible sessions and pool members, acquires/relinquishes leases, creates charges, and runs turns. Foreman submits actions to Agent and consumes events. Hail expands/address messages and submits to Agent idempotently, retaining bands, threading, ingress, and receipts while shedding its own turn selection and capacity wait.
+5. **Module boundaries.** Foreman owns workflow state and events; Agent owns turn lifecycle contracts; pool implementations own concrete acquisition; Hail owns message semantics. Worksite's independent repo can be retired after its remaining directory-specific behavior is assessed. Hail retirement is a later usage decision, not a migration prerequisite.
+
+Deferred design choices for scenario review: exact pool-frequency wire syntax; multi-pool acquisition order and crash-safe lease identity; `:reach :all` fan-out; whether Worksite's remaining implementation warrants a separate repo; any concrete database adapter. These do not weaken the agreed ownership boundaries.

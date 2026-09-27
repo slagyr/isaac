@@ -1,13 +1,15 @@
 ---
 # isaac-l3vb
-title: 'Turn addressing: candidate selection by address spec; hail router contracts onto it'
+title: Agent turn addressing and compatible resource-pool selection
 status: draft
 type: feature
 priority: normal
 created_at: 2026-08-25T18:57:47Z
-updated_at: 2026-08-25T18:57:47Z
+updated_at: 2026-09-27T22:45:05Z
 blocked_by:
     - isaac-ohsy
+    - isaac-ey7a
+    - isaac-70cr
 ---
 
 Likely repos: **isaac-agent** (selection in core) then **isaac-hail** (router
@@ -49,3 +51,14 @@ bound to ONE session; this bean lets a request name a SET.
 ## Notes
 
 - Stays draft until scenarios exist. No hail↔foreman arrows either way.
+
+## Revision (2026-09-27, Micah + planner) — supersedes the scope above
+
+This bean now covers **Agent candidate selection and compatible resource-pool admission only**. Hail cutover is isaac-ex4q. The durable TurnStore contract is isaac-70cr; pool type/receipt contract is isaac-ey7a; Worksite's concrete pool adapter is isaac-npmp.
+
+- A submitted request carries session frequencies plus named `:resource-pools`. The names identify configured pool instances; no arbitrary `checkout`/`reports` aliases are required in frequencies.
+- At admission Agent considers session candidates and pool leases together. Acquire all applicable leases or release acquired ones and keep the request waiting. Re-evaluate candidates on each wake rather than binding a busy session prematurely.
+- A lease receipt supplies declarative bindings and an opaque release identity. `:session/cwd` is applied before opening a new session and building its charge; an existing session's pinned cwd must match. Do not patch a resolved charge after the drive has read the session context.
+- Preserve direct-session and `:reach :one` semantics; creation policy and ordering must be stated in scenarios. `:reach :all` fan-out remains a separate design question until scenario review.
+
+Revised scenario plan: free candidate wins over busy candidate; all combinations busy then wake and reselect; new session opens at selected cwd; incompatible pinned session is skipped; rollback releases a first lease when a later pool is busy. No Hail code or band feature belongs to this bean.
