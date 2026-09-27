@@ -68,3 +68,39 @@ The shared resolver now merges defaults beneath consumer frequencies; the prompt
 > `a conversation start without a session id asks the policy for one`: Expected `default-session` (crew cordelia) before `record-turn-marker!`; got `open-session!` first.
 
 Those scenarios require prompt with `--crew` and no id to ask the policy for its default, even when the resolver's merged crew selector already picks the target. The decision here explicitly removes prompt's --crew bypass and says prompt is not a special case. Reinstating that bypass would violate this bean; editing these .feature files would violate the frozen-contract worker rule. Planner needs to settle policy integration and rebaseline/adjust the conflicting scenarios. No feature wording was changed on the branch (only @wip removed). Work remains in progress; after planner decision, resume at `src/isaac/bridge/prompt_cli.clj:173`, finish consumer integration and `bb ci`, gate and land.
+
+
+## Planner adjustment (2026-09-27, prowl@isaac-plan) — crew selection does not ask the policy first
+
+Decision stands. Do not reinstate the `--crew` bypass. `prompt --crew` is a frequency. The shared resolver selects or creates the session. `policy/default-session` is not the prompt path.
+
+The two `session_policy.feature` scenarios were the old contract: `--crew` with no id must call `default-session` before `open-session!` / `record-turn-marker!`. That call was the bypass. Rewritten on isaac-agent main `1a6eda8` and marked `@wip`:
+
+- Line 139: "a start the policy has no default for is named by the agent, not the policy (isaac-vp7h)". The agent mints `session-1` and `open-session!` is first. No `default-session` row.
+- Line 168: "a conversation start without a session id resumes the crew's existing session (isaac-vp7h)". `lantern-room` is resumed. `record-turn-marker!` is first. No `default-session` row.
+
+Episodes still does not branch in the prompt command. isaac-6yg0's ACP scenario remains the proof that episodes mints a fresh id. Do not reintroduce a mode branch in frequencies or ACP.
+
+### Re-baselined (newest lines in force)
+
+    feature-baseline: isaac-agent 1a6eda8b97af541bf05e6be9dc964c175539a0a9
+    feature-blob: isaac-agent features/session/session_policy.feature 9158b60debd94c8d5b52657ba2b2d95dafadb94c 139,168
+    feature-blob: isaac-agent features/session/default_frequencies.feature 9e6e98fecadeab167e0bc16df8a2fff0b617d3ca 11,29,49,69
+    feature-blob: isaac-agent features/bridge/cli-prompt.feature 33cf96c545e9329f03630abcca4b5b18eb78649b 25,371
+    feature-blob: isaac-agent features/session/origin.feature fa7d005f452e27fc299334fa38e4dd3186119619 17
+
+The default_frequencies, cli-prompt, and origin blobs are unchanged from `ac8404b`. They are repeated so this baseline's tree is the one in force.
+
+### Worker now
+
+1. Rebase `bean/isaac-vp7h` onto `1a6eda8`. Keep the implementation (`55089dc`). Feature diff against `1a6eda8` may only drop `@wip` (the two new session_policy lines, plus the already-baselined default_frequencies / cli-prompt / origin lines).
+2. Do not call `policy/default-session` from `prompt --crew`. Do not restore `prompt-default`.
+3. `bb bean-gate verify isaac-vp7h` exit 0, then land. `bb ci` must be green, including the rewritten session_policy scenarios.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-agent 1a6eda8b97af541bf05e6be9dc964c175539a0a9
+feature-blob: isaac-agent features/session/session_policy.feature 9158b60debd94c8d5b52657ba2b2d95dafadb94c 139,168
+feature-blob: isaac-agent features/session/default_frequencies.feature 9e6e98fecadeab167e0bc16df8a2fff0b617d3ca 11,29,49,69
+feature-blob: isaac-agent features/bridge/cli-prompt.feature 33cf96c545e9329f03630abcca4b5b18eb78649b 25,371
+feature-blob: isaac-agent features/session/origin.feature fa7d005f452e27fc299334fa38e4dd3186119619 17
