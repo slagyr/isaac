@@ -1,11 +1,11 @@
 ---
 # isaac-ey7a
 title: 'Resource pools replace turnstiles: types, named instances, busy-means-wait'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T02:33:09Z
+updated_at: 2026-09-28T02:33:27Z
 parent: isaac-q3u3
 ---
 
