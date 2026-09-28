@@ -1,17 +1,16 @@
 ---
 # isaac-l3vb
 title: Agent turn addressing and compatible resource-pool selection
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-08-25T18:57:47Z
-updated_at: 2026-09-27T23:45:55Z
+updated_at: 2026-09-28T01:09:02Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-ohsy
     - isaac-ey7a
     - isaac-70cr
-    - isaac-i5lv
 ---
 
 Likely repos: **isaac-agent** (selection in core) then **isaac-hail** (router
@@ -65,3 +64,27 @@ This bean now covers **Agent candidate selection and compatible resource-pool ad
 - Preserve direct-session and `:reach :one` semantics; creation policy and ordering must be stated in scenarios. `:reach :all` fan-out remains a separate design question until scenario review.
 
 Revised scenario plan: free candidate wins over busy candidate; all combinations busy then wake and reselect; an existing session runs a turn at the leased cwd, reads that directory's boot files, and its transcript records the cwd; the same session's next turn runs at a different leased cwd. No Hail code or band feature belongs to this bean.
+
+
+## Decisions (2026-09-27, Micah + planner) — supersede the scenario lists above
+
+- Builds on the existing resolver `isaac.session.frequencies/resolve-session-targets` (`:session` / `:session-tags` / `:crew`, `:prefer`, `:create`, defaults merge). Today it picks one session at submission, blind to busy. isaac-asik (in progress) edits the same file — follow it.
+1. **Selection moves to admission.** A request addressed by crew or tags is held without a session; each wake re-resolves: matches minus sessions already running a turn, in `:prefer` order; the first free one wins, then its pools.
+2. **An explicit `:session` stays bound** and waits for that session (isaac-xoqn's waiting room).
+3. **Busy is not missing:** `:create :if-missing` waits when matches exist but are all busy; `:always` still creates.
+4. **Sessions and pools are checked together;** a request waiting on sessions holds no pool leases.
+5. `turns list` gains a `target` column (`crew ketch`, `tags …`, or the session name).
+6. `:reach :all` fan-out stays out of scope.
+7. Does not depend on isaac-i5lv (receipts). Keeps isaac-ey7a and isaac-70cr (both rewrite the queue; serialize).
+
+## Acceptance
+
+Feature: `isaac-agent/features/turn/session_selection.feature` (new, 4 scenarios, `@wip` on main at 2e6d6d5). Remove `@wip`; all pass:
+
+- [ ] `bb features features/turn/session_selection.feature` — `:23` free beats busy, `:40` all busy → wait, no create, takes whichever frees first, `:65` waiting request holds no pool, `:83` explicit session stays bound
+- [ ] Scenarios need two `the user sends` turns in flight at once; if the step keeps only one turn future, extend its internals (same phrase).
+- [ ] Existing `default_frequencies.feature` and `turn_queue.feature` stay green.
+- [ ] `bb verify` green; version bump.
+
+feature-baseline: isaac-agent 2e6d6d599e88f22e216807465f450bc8425e3bbe
+feature-blob: isaac-agent features/turn/session_selection.feature 0c1f1ca5acd63dd84cfd03f23c668bdc51811da2
