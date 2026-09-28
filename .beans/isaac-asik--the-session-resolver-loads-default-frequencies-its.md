@@ -116,3 +116,27 @@ feature-blob: isaac-acp features/comm/acp/streaming.feature 4661baa25522637c81e6
 feature-blob: isaac-acp features/comm/acp/prompt.feature 9893adfb181ea5c21e38d86347dff8d6ac65e665 47
 feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
 feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
+
+
+## Planner correction (2026-09-28, prowl@isaac-plan) — 62d8e87 broke acp CI
+
+CI run 36439505617 failed `bb features` on that commit. Two of my rewrites were wrong. Prompt.feature did not fail. Do not treat 62d8e87 as the contract for cli or streaming.
+
+- Blank acp: the refusal is stderr and exit 1, same as the acceptance scenario "a blank acp with nothing to select fails". I had put it on stdout with exit 0.
+- Chunks: one vector content row is how Grover emits three chunks. Three string rows emit `chunkA` three times. Restored `["chunkA" "chunkB" "chunkC"]`.
+
+isaac-acp main now has the correction. File stays live. Newest lines in force:
+
+    feature-baseline: isaac-acp e3ca8c23099964dc5c76ce53934091e11845ce20
+    feature-blob: isaac-acp features/comm/acp/cli.feature 1f690934f67ba1ece964451f98bd19c46a663c0f 119
+    feature-blob: isaac-acp features/comm/acp/streaming.feature a69ff3ae7e3766f65795933fbf4d1b12805164ec 17
+
+### Worker now
+
+Rebase onto this main. The blank-acp scenario asserts stderr `no session selected` and exit 1. The streaming scenario is the vector row again. Do not edit either. Feature diff may only drop `@wip` on episodes and default_frequencies. Then gate and land.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-acp e3ca8c23099964dc5c76ce53934091e11845ce20
+feature-blob: isaac-acp features/comm/acp/cli.feature 1f690934f67ba1ece964451f98bd19c46a663c0f 119
+feature-blob: isaac-acp features/comm/acp/streaming.feature a69ff3ae7e3766f65795933fbf4d1b12805164ec 17
