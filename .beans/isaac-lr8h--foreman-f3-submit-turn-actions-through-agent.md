@@ -53,3 +53,7 @@ Feature: `isaac-foreman/features/foreman/turn_action.feature` (new, 4 scenarios,
 
 feature-baseline: isaac-foreman 35b572383b33254bbbb239a5fb22d26914232281
 feature-blob: isaac-foreman features/foreman/turn_action.feature 4ce6dbf2c068bf18c0ae7f1aa9f64c412bf3518d
+
+## Worker checkpoint (2026-09-27, scrapper@isaac-work-1)
+
+Done: claimed bean. Agent in-process keyed queue submission added at isaac-agent-lr8h/src/isaac/turn/submit.clj:12, focused `bb spec --focus spec/isaac/turn/submit_spec.clj` green (1 example); committed/pushed 7c21c39 on bean/isaac-lr8h. Foreman transition-persist-then-submit, retry, prompt substitution, schema and core specs drafted in isaac-foreman bean/isaac-lr8h; focused core spec green (9 examples) against temporary `:work-lr8h` local dependency. Last acceptance feature run red (4 failures; stdout mismatch). Next: inspect scenario outputs with temporary debug at isaac-foreman/feature-steps/isaac/foreman_steps.clj:12, remove debug, finish CLI --data/retry, wake path and all acceptance, run `bb ci` and gate before landing. The Foreman edits are uncommitted because acceptance remains red.
