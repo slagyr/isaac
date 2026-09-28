@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-28T14:53:26Z
-updated_at: 2026-09-28T14:53:26Z
+updated_at: 2026-09-28T15:26:47Z
 ---
 
 Likely repo: **isaac-cargo** (new module). Depends on isaac-http (routes, auth) and Agent's tools berth. Idea: Micah + planner, 2026-09-28.
@@ -35,3 +35,6 @@ Micah asks a crew (e.g. Zane) for an image or a document, but is on another comp
 - Name: "cargo" is the working name (ship vocabulary).
 
 Draft until the design questions are settled and scenarios exist.
+
+
+(2026-09-28: private visibility depends on isaac-lie6 — OIDC sign-in in isaac-http.)

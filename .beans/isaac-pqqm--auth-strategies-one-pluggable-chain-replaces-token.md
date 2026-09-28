@@ -8,7 +8,7 @@ tags:
     - security
     - http
 created_at: 2026-09-20T00:25:07Z
-updated_at: 2026-09-20T00:25:07Z
+updated_at: 2026-09-28T15:26:47Z
 parent: isaac-gym1
 ---
 
@@ -44,3 +44,8 @@ No legacy validator and no legacy code path. `:http :auth :token` and a bare `:h
 Scenarios (worker writes, isaac-http `features/`): the chain tries strategies in order and the first match wins; a refusal from an early strategy is not overridden by a later one; a bearer principal and an OIDC identity both authenticate under one chain; a module-contributed strategy on the berth participates; bare `:token` still authenticates and logs one warning per boot; no `:legacy?` flag survives anywhere (`grep -rn "legacy?" src` is empty).
 
 Blocks isaac-gym1's remaining work: isaac-ews9 builds "on by default" on this chain.
+
+
+## Note (2026-09-28, Micah + planner): config stays maps
+
+Micah: if every strategy has an id, strategies should be a map, not a vector. Order doesn't matter in practice — each strategy recognizes only its own credential (bearer header, session-token cookie, machine JWT); two claiming one request is a loud error, not a precedence rule. And the existing `:http :auth` keys already cover the data: `:principals` (bearer hashes, `:previous` rotation), `:identity` (machine OIDC trust). Keep the pluggable strategy as a **code-level berth** without a `:strategies` config chain; sign-in adds `:login` and `:emails` beside them (isaac-lie6).
