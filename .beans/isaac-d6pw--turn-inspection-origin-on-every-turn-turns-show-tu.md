@@ -1,11 +1,11 @@
 ---
 # isaac-d6pw
 title: 'Turn inspection: origin on every turn, turns show, turn_get tool'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-28T01:52:08Z
-updated_at: 2026-09-28T18:24:12Z
+updated_at: 2026-09-28T18:25:32Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-70cr
