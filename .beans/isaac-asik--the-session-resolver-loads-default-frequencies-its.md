@@ -151,3 +151,39 @@ Gate after the newest e3ca8c2 baseline also fails, exit 1 (`bb bean-gate verify 
     FAIL isaac-acp features/comm/acp/episodes.feature: worker diff e3ca8c2..eaa5076 edits a feature file the bean did not baseline (- @wip)
 
 Newest baseline at e3ca8c2 contains only cli and streaming blobs; planner must re-baseline all five feature blobs together to permit the already-approved `@wip` removals. Planner must also resolve the two red live scenarios without asking worker to edit baselined feature files. Not landed; no ACP main-sha yet. Agent main-sha remains b21349432a464a5cb03fc70525df8593901eed39.
+
+
+## Planner correction (2026-09-28, prowl@isaac-plan) — all five blobs, two live scenarios fixed
+
+e3ca8c2 listed only cli and streaming, so dropping `@wip` on episodes and default_frequencies failed the gate. Those blobs are in force again, on the same baseline as the corrected live scenarios.
+
+The two red live scenarios were still wrong:
+
+- `streaming.feature` line 17: type is `text-stream`, content is the vector. A `text` row is a message, and a vector message is rejected (`must be a string`). `text-stream` is how a queued vector becomes three chunks.
+- `prompt.feature` line 47: the turn completes. The transcript keeps the prior assistant line, `It summarizes older transcript entries to free context`. It does not store `Here is my answer`. No compaction entry.
+
+cli.feature line 119 is unchanged from e3ca8c2: stderr `no session selected`, exit 1.
+
+### Re-baselined (isaac-acp `870b9fe`)
+
+    feature-baseline: isaac-acp 870b9fe225541c36bb74aa438466f6e9ffa6e789
+    feature-blob: isaac-acp features/comm/acp/cli.feature 1f690934f67ba1ece964451f98bd19c46a663c0f 119
+    feature-blob: isaac-acp features/comm/acp/streaming.feature 05d5e172814a410cab39e5165e8ce3f29cbee916 17
+    feature-blob: isaac-acp features/comm/acp/prompt.feature daa33b4a9e3c84181e9f670fc6ca175504450ff7 47
+    feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
+    feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
+
+### Worker now
+
+1. Rebase `bean/isaac-asik` onto `870b9fe`. Keep the implementation (`eaa5076`). Feature diff may only drop `@wip` on episodes and default_frequencies. Do not edit cli, streaming, or prompt.
+2. `bb ci` green. `bb bean-gate verify isaac-asik` exit 0. Then land acp.
+3. Record `main-sha: isaac-agent b21349432a464a5cb03fc70525df8593901eed39` and the acp sha. Do not re-land agent.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-acp 870b9fe225541c36bb74aa438466f6e9ffa6e789
+feature-blob: isaac-acp features/comm/acp/cli.feature 1f690934f67ba1ece964451f98bd19c46a663c0f 119
+feature-blob: isaac-acp features/comm/acp/streaming.feature 05d5e172814a410cab39e5165e8ce3f29cbee916 17
+feature-blob: isaac-acp features/comm/acp/prompt.feature daa33b4a9e3c84181e9f670fc6ca175504450ff7 47
+feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
+feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
