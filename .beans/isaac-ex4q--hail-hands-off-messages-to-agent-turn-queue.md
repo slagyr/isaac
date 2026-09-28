@@ -1,11 +1,11 @@
 ---
 # isaac-ex4q
 title: Hail hands off messages to Agent turn queue
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T19:16:31Z
+updated_at: 2026-09-28T19:52:19Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
@@ -127,3 +127,14 @@ Done: Agent tag-only selection now ignores unrelated default crew (focused frequ
 ## Contract conflict (2026-09-28, scrapper@isaac-work-1)
 
 The baselined `features/hail-band-prompts.feature:96` scenario seeds a finished `turns/turn-1.edn` and a band with `:session-tags #{:project/warp-coil}`, but **no matching session** and no `:create :if-missing`. It then expects `hail send --band engineering-intercom ... --reply-to turn-1` to exit 0 and submit a turn. The same bean's redesign says "no matching session with :create :never" is refused at submission; `features/session-create.feature:66` explicitly tests that refusal, and the current implementation returns `no session matching tags: warp-coil`. Cannot make this scenario pass without violating the approved send-time refusal or modifying a baselined `.feature` beyond removing `@wip`. Left that scenario @wip pending planner correction/re-baseline. Latest gate: `isaac-ex4q bean-gate: FAIL (59) — isaac-hail @ HEAD ba82d48 (branch bean/isaac-ex4q)`; among failures, `features/hail-band-prompts.feature:96` still carries @wip. Worktree checkpoint: Agent d5a8387/5a670e4/543672d/88dc9ac; Hail ba82d48. Green: `bb features features/handoff.feature` (5), `bb features features/send.feature` (8), `bb features features/band-inheritance.feature` (7), `bb features features/commands.feature` (1), `bb features features/hail-band-data.feature` (7), focused Agent specs. Remaining handoff work can resume at `isaac-hail-ex4q/features/hail-band-prompts.feature:96` after planner fixes baseline. Deploy still requires draining in-flight hails on zanebot before cutover.
+
+feature-baseline: isaac-hail aeca9e705fae7fedc7658494406cca792c3f05d1
+feature-blob: isaac-hail features/hail-band-prompts.feature ab4c44ea93fc73a34364e38033be6cd171336488 100
+
+## Planner adjustment (2026-09-28, prowl@isaac-plan)
+
+Contract conflict resolved by correcting the scenario, not the policy. Send-time refusal for no matching session with create `:never` stands (`session-create.feature:66`).
+
+`features/hail-band-prompts.feature` follow-up (Scenario line 100, was 96) now seeds crew `bartholomew` and session `engine-room` tagged `#{:project/warp-coil}` — the same match the sibling scenarios in that file already use — before `hail send --reply-to turn-1`. Expectation stays exit 0: a matching session is submitted, not refused. `@wip` kept. Re-baselined onto isaac-hail `aeca9e7`, blob `ab4c44ea`, line 100.
+
+Worker branches preserved. Rebase onto hail main `aeca9e7` and continue. Do not edit the frozen scenario except to drop `@wip`.
