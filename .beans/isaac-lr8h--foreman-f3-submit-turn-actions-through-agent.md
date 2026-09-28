@@ -1,11 +1,11 @@
 ---
 # isaac-lr8h
 title: 'Foreman F3: submit turn actions through Agent'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T00:54:01Z
+updated_at: 2026-09-28T04:31:08Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-tjjm
@@ -85,3 +85,11 @@ This note resets the verify-fail counter.
 
 feature-baseline: isaac-foreman c9367543e694c926cc88f5aa80ba15d8b1c6b41b
 feature-blob: isaac-foreman features/foreman/turn_action.feature 106153df6a0e793ba91ebac1cd90a781c366db63
+
+## Worker checkpoint (2026-09-28, scrapper@isaac-work-1)
+
+Done: Foreman branch rebased onto c936754; feature diff only removes @wip. CLI --data and retry implemented; focused cli_spec green (6 examples). Submission now wakes after recording request id. Last acceptance run RED (4 failures): status loses submitted id after nested tool signal; Agent worker serializes observer object into held record (EDN read fails); unknown pool error has colon differing from contract; held state not shown. Resume at isaac-agent-lr8h/src/isaac/turn/worker.clj:82 and isaac-foreman/src/isaac/foreman/core.clj:78. Command: clojure -Sdeps '{:aliases {:work-lr8h {:override-deps {io.github.slagyr/isaac-agent {:local/root "../isaac-agent-lr8h"} io.github.slagyr/isaac-agent-spec {:local/root "../isaac-agent-lr8h/spec"}}}}}' -M:work-lr8h:features features/foreman/turn_action.feature. No acceptance green; continue repair before gate/landing.
+
+## Worker checkpoint (2026-09-28, scrapper@isaac-work-1, second pass)
+
+Done: Agent keyed submission, durable observer refs, key propagation through held turn, and CLI --data/retry; agent focused spec green (3 examples), committed/pushed c83d836. Foreman feature RED 2/4 after first key patch (busy pool status + lost-request retry); Foreman changes uncommitted pending acceptance. Next: rerun feature with corrected key propagation and inspect failing step, then bb ci/gate. Resume at isaac-foreman/src/isaac/foreman/core.clj:72 and isaac-agent-lr8h/src/isaac/turn/worker.clj:42. Run `clojure -Sdeps '{:aliases {:work-lr8h {:override-deps {io.github.slagyr/isaac-agent {:local/root "../isaac-agent-lr8h"} io.github.slagyr/isaac-agent-spec {:local/root "../isaac-agent-lr8h/spec"}}}}}' -M:work-lr8h:features features/foreman/turn_action.feature` from isaac-foreman.
