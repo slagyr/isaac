@@ -99,3 +99,16 @@ feature-blob: isaac-hail features/bands.feature 75115c7c7ff9302fd563ffb525e73c97
 feature-blob: isaac-hail features/send-addressing.feature bb1721453d51ce5d4412b7e320afee17b53dbf76 82
 feature-baseline: isaac-agent 928ff788bcb444b8e170fdeeafb08485a0895e3d
 feature-blob: isaac-agent features/session/default_frequencies.feature db5289eb885b00b066fe720a08b3b23a2193a705 79
+
+## Worker checkpoint (2026-09-28)
+
+Done: isaac-agent removes reach schema/default, rejects default reach via config check; `bb verify` green; committed/pushed e98aee3 on bean/isaac-5gu1. Hail source fan-out removed in worktree, two acceptance scenarios un-WIP, not yet committed. Next: repair hail spec fixtures after removal; `bb spec` RED (parser broken in spec/isaac/hail/bands_spec.clj:9 and spec/isaac/config/hail_loader_spec.clj:55 from removal of reach-only lines). Resume at those files, run bb spec then bb verify; then gchat/cron/hooks/discord and repins, gate/land.
+
+## Gate conflict (2026-09-28)
+
+`bb bean-gate verify isaac-5gu1 --dir isaac-agent=../isaac-agent-5gu1 --dir isaac-hail=../isaac-hail-5gu1` exits 1: baselined `isaac-hail features/bands.feature` scenario at baseline line 109 expects `prefer: 5`, `Bad prefer type.`, stderr `prefer`; module main c8fbb23 changed this to `create: 5`, `Bad create type.`, stderr `create` after baseline. Restoring baseline scenario made `bb features features/bands.feature:109` fail (exit 0 vs expected 1); it cannot honestly be reverted. Restored module feature to module main version, leaving only @wip removals on worker branch. Planner must correct/rebaseline this contract. Implementation commits pushed: agent e98aee3, hail 37fc7c4, gchat cf4a62e, cron 797e986, hooks 29f9951, discord 8a1bd55; all six suites green prior to gate. No module main branches landed or bean completed.
+
+
+## Worker checkpoint (2026-09-28, landing)
+
+Done: corrected planner baseline is on this branch; gate PASS with agent/hail worktrees. Agent `bb verify` green and landed on main b1de8dc554ff9eefac90ea34e6e1902c642d2aaf. Cron, Discord, Gchat, Hooks, Hail branches rebased, pinned to landed agent in deps.edn and bb.edn, and pushed; cron/Discord integration failures from upstream behavior were fixed with tests. `bb ci` green for all five (gchat/hail before bb.edn pin, cron/Discord/hooks after). Next: land downstream repos from their clean bean branches, re-run gate then land Hail, update isaac/modules.edn and main-sha lines, complete bean. Resume from `../isaac-gchat-5gu1/bb.edn:1`: re-run `bb ci`, then squash/push gchat, cron, hooks, discord; `bb bean-gate verify isaac-5gu1 --dir isaac-agent=../isaac-agent-5gu1 --dir isaac-hail=../isaac-hail-5gu1` before Hail landing.
