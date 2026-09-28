@@ -92,3 +92,7 @@ feature-blob: isaac-agent features/turn/session_selection.feature 0c1f1ca5acd63d
 
 
 (2026-09-27, Micah: fan-out is killed — `:reach` is removed from frequencies entirely in isaac-5gu1. Decision 6 above is moot.)
+
+## Checkpoint (2026-09-28, scrapper@isaac-work-1)
+
+Done: isaac-agent bean/isaac-l3vb b8c3e3f pushed. Four session_selection scenarios green; targeted continuations and turn-exhaustion regressions green; concurrent session feature fixtures and target column implemented. Next: run full `bb verify` and fix regressions; complete submit!/wake admission for queued frequency addresses (src/isaac/turn/submit.clj:14), version bump, then gate and land. Resume at src/isaac/turn/submit.clj:14.
