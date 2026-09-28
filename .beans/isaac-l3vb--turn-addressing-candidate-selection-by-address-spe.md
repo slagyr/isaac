@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-08-25T18:57:47Z
-updated_at: 2026-09-28T01:09:02Z
+updated_at: 2026-09-28T01:32:07Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-ohsy
@@ -88,3 +88,6 @@ Feature: `isaac-agent/features/turn/session_selection.feature` (new, 4 scenarios
 
 feature-baseline: isaac-agent 2e6d6d599e88f22e216807465f450bc8425e3bbe
 feature-blob: isaac-agent features/turn/session_selection.feature 0c1f1ca5acd63dd84cfd03f23c668bdc51811da2
+
+
+(2026-09-27, Micah: fan-out is killed — `:reach` is removed from frequencies entirely in isaac-5gu1. Decision 6 above is moot.)
