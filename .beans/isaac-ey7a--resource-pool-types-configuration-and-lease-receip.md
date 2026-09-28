@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T01:57:29Z
+updated_at: 2026-09-28T02:07:56Z
 parent: isaac-q3u3
 ---
 
@@ -40,3 +40,9 @@ Knock-on: isaac-worksite's `:worksite` turnstile stops compiling when it repins 
 feature-baseline: isaac-agent 0cf98241c81f37b75f39661985d6ab4494e835e1
 feature-blob: isaac-agent features/turn/resource_pools.feature 9b36d5e4817a48d5700026cfd6412f56e7720e55
 feature-blob: isaac-agent features/turn/turn_queue.feature 32f594eef0e186626285d53765b5d3be66857fd1
+
+
+## Worker checkpoint (2026-09-27)
+
+Done: implemented named pool types/instances, validation, CLI --pool, busy rollback and wake path; resource_pools.feature passes (4/4). Commit 3d0fd21 pushed on bean/isaac-ey7a.
+Next: turn_queue.feature remains RED (3 transcript assertions after wake at :44, :59, :74; :84 can hang). Inspect wake-config at src/isaac/turn/worker.clj:26 and feature config installation in spec/isaac/turn/queue_steps.clj:65; then run bb features features/turn/turn_queue.feature:27. Remaining spec cutover and bb verify/gate pending.
