@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T02:18:41Z
+updated_at: 2026-09-28T02:27:45Z
 parent: isaac-q3u3
 ---
 
@@ -44,5 +44,5 @@ feature-blob: isaac-agent features/turn/turn_queue.feature 32f594eef0e186626285d
 
 ## Worker checkpoint (2026-09-27)
 
-Done: named resource pool implementation, type berth, instance validation, CLI --pool and queue wake. bb spec green (1779 examples); resource_pools.feature 4/4 and turn_queue.feature :27/:53/:66/:111 pass individually. Latest green commit 0ed65a3 pushed on bean/isaac-ey7a.
-Next: turn_queue.feature:84 hangs (bb features features/turn/turn_queue.feature:84 timed out after 25s). Diagnose session send wait/release at spec/isaac/turn/queue_steps.clj:158, then run full bb features and bb verify; gate and land only once all suites green.
+Done: named resource pool implementation, type berth, instance validation, CLI --pool and queue wake. bb spec green (1779 examples); resource_pools.feature 4/4 and turn_queue.feature :27/:53/:66/:111 pass individually. Latest green commit 0ed65a3 pushed on bean/isaac-ey7a; bean-gate verify PASS on that branch.
+Next: turn_queue.feature:84 still hangs. Instrumentation showed direct session send charge :config lacks :resource-pools, yielding :unknown-resource-pool before dispatch; session-steps config at spec/isaac/session/session_steps.clj:1238-1256 has a config snapshot sequencing issue. Correct fixture path, run bb features features/turn/turn_queue.feature:84 then full bb ci, rebase, gate and land. No new implementation edits since last green commit.
