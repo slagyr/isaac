@@ -7,7 +7,7 @@ priority: high
 tags:
     - agent
 created_at: 2026-09-28T14:10:02Z
-updated_at: 2026-09-28T14:10:02Z
+updated_at: 2026-09-28T14:54:57Z
 ---
 
 A crew names an ordered fallback chain. When the model at the head of the chain is unavailable, the turn continues on the next model that can take it. The transcript and the tool results already written stay. The tools are not run again.
@@ -16,7 +16,7 @@ Today a 429, a 503, a usage limit, a billing wall, an auth rejection, or a stall
 
 ## Decision (2026-09-28, Micah)
 
-The chain lives on the crew. `:model` stays the head. `:fallback` is an ordered seq of model ids, each of which must exist. A model may name a different provider. Zane can be `:grok-4-6`, then `:grok-4-7`, then a Claude model.
+The chain lives on the crew. `:model` stays a single model id, the head. `:model-fallback` is an ordered seq of model ids, each of which must exist. A model may name a different provider. Zane can be `:model :grok-4-6` and `:model-fallback [:grok-4-7 :sonnet :opus]`. `:model` does not accept a vector. A field that is sometimes one id and sometimes a list hides the chain and splits the schema.
 
 Fall back only when the provider wall says the model is unavailable (`:unavailable?` with reason `:wall`, `:auth`, or `:stream-stalled`). Do not fall back on a genuine `:api-error` such as a 400 contract rejection. Do not fall back on `:context-overflow`. That path still compacts and retries the same model.
 
