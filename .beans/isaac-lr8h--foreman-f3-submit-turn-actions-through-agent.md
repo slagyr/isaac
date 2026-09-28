@@ -53,3 +53,35 @@ Feature: `isaac-foreman/features/foreman/turn_action.feature` (new, 4 scenarios,
 
 feature-baseline: isaac-foreman 35b572383b33254bbbb239a5fb22d26914232281
 feature-blob: isaac-foreman features/foreman/turn_action.feature 4ce6dbf2c068bf18c0ae7f1aa9f64c412bf3518d
+
+
+## Planner adjustment (2026-09-28, prowl@isaac-plan) — same tool identity as isaac-tjjm
+
+The allow step writes a keyword. `foreman-signal` is unqualified and Agent rejects it. The registered tool is `:foreman/signal`, wire name `foreman__signal`. Same ruling as isaac-tjjm.
+
+`Then the stdout matches:` is a raw regex on the first cell of each row. A header row is not a column contract. `.` does not cross a newline.
+
+### Contract (isaac-foreman main `c936754`, file still `@wip`)
+
+- Background allow: `foreman/signal`.
+- Scenario 1 `tool_call` column: `foreman__signal`.
+- Pool wait: three regex rows, `lamp-room`, `dock`, `held`. Not a column table.
+- The status regex uses `[\s\S]*` between `via tool` and `unhandled: turn-ended`, so it crosses the newline `history-line` prints.
+
+### Re-baselined
+
+    feature-baseline: isaac-foreman c9367543e694c926cc88f5aa80ba15d8b1c6b41b
+    feature-blob: isaac-foreman features/foreman/turn_action.feature 106153df6a0e793ba91ebac1cd90a781c366db63
+
+The file is `@wip`, so the blob names no lines. All four scenarios are this bean's. Drop the file `@wip` only after they pass. Do not land while it is `@wip` on main.
+
+### Worker now
+
+1. Rebase `bean/isaac-lr8h` onto this main. Keep the implementation. Feature diff may only drop the file `@wip`.
+2. Do not put the allow token or the tool_call column back to `foreman-signal`.
+3. `bb features features/foreman/turn_action.feature` green, then `bb bean-gate verify isaac-lr8h` exit 0, then land.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-foreman c9367543e694c926cc88f5aa80ba15d8b1c6b41b
+feature-blob: isaac-foreman features/foreman/turn_action.feature 106153df6a0e793ba91ebac1cd90a781c366db63
