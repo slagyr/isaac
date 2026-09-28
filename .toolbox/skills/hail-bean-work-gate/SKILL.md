@@ -256,7 +256,14 @@ and only two:
   in the module, then remove `@wip` again) and re-run the gate.
 - **The scenarios themselves are wrong** (they contradict the code, each other,
   or the bean) → hail the **plan band** with the gate output quoted. The
-  planner edits the feature on module `main` and re-baselines.
+  planner edits the feature on module `main` and re-baselines. A new
+  `feature-baseline:` line drops every earlier blob for that repo, so the
+  planner repeats every file that is still this bean's contract after the
+  new baseline line. A line-less blob freezes every `@wip` scenario in the
+  file; pass scenario line numbers when other beans share the file.
+- **The gate already exits 0** → land. Do not start another full `bb ci`,
+  and do not hand the bean back. Another baseline after a passing gate is
+  what starts the thrash.
 
 You **never** add a `## Exceptions` entry, never edit or delete a `feature-*`
 line, and never run `bb bean-gate baseline`. All three are the planner's. A

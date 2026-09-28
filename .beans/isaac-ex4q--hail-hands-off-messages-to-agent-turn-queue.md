@@ -1,11 +1,11 @@
 ---
 # isaac-ex4q
 title: Hail hands off messages to Agent turn queue
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T20:57:50Z
+updated_at: 2026-09-28T21:09:27Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
@@ -195,3 +195,10 @@ feature-blob: isaac-hail features/http.feature 4c125aaf70f0824b8063c7f4455ccb4d6
 feature-blob: isaac-hail features/hail-band-prompts.feature ab4c44ea93fc73a34364e38033be6cd171336488 100
 feature-blob: isaac-hail features/send.feature 3a1e7aa1cf37e94ec8adf45f582e76ad279f929e
 feature-blob: isaac-hail features/session-create.feature 1ede1ac7c2bfffd75046e61587534671c70f1b88
+
+## Landed on main (2026-09-28)
+
+main-sha: isaac-agent 65b25efca7d74395851536e65c1fcd1727354cb6
+main-sha: isaac-hail 3a00323ac9e428f8d4b1a8590bc97f574797abef
+
+Agent was already on main at that tree. Hail was squash-merged after pinning Agent to it. `bb ci` on Hail: 102 features, 53 specs, 0 failures. `bb bean-gate verify` passed. Zanebot was not restarted. The running server still has the old modules until an upgrade.

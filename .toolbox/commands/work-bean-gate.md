@@ -102,7 +102,13 @@ Upstream repo first, then each downstream repo:
   its baselined text is allowed; rewording it, re-baselining it, or adding a
   `## Exceptions` entry is the planner's job and a gate failure from you.
   (Planners: correct a contract by re-baselining — the append-only window
-  restarts at the newest planner baseline — never by editing a line in place.)
+  restarts at the newest planner baseline — never by editing a line in place.
+  A new `feature-baseline:` line drops every earlier blob for that repo.
+  Repeat every file that is still this bean's contract after the new baseline
+  line. A line-less blob freezes every `@wip` scenario in the file; pass
+  scenario line numbers when other beans share the file. When the gate
+  already exits 0, land. Do not start another full `bb ci`, and do not hand
+  the bean back.)
 - **Landing without rebasing.** A squash of a stale branch silently drops
   someone else's landed work out of the tree you tested.
 - **Multi-worker collisions.** If another worker claimed the bean while you
