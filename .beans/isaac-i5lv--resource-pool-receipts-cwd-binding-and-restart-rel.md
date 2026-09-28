@@ -47,3 +47,7 @@ Feature: `isaac-agent/features/turn/resource_pool_receipts.feature` (new, 4 scen
 
 feature-baseline: isaac-agent 517388fd82b9a2b6e55791d69a2bd7096b95a6cd
 feature-blob: isaac-agent features/turn/resource_pool_receipts.feature 0b3f689ecf00b6eef7af0abdc0c105af9e312fa9
+
+## Landed on main (2026-09-27)
+
+main-sha: isaac-agent dbce720fc080b0f29f7687c18f05ea5973f63407
