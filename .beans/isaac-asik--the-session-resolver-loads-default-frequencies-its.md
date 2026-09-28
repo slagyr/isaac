@@ -140,3 +140,14 @@ This note resets the verify-fail counter.
 feature-baseline: isaac-acp e3ca8c23099964dc5c76ce53934091e11845ce20
 feature-blob: isaac-acp features/comm/acp/cli.feature 1f690934f67ba1ece964451f98bd19c46a663c0f 119
 feature-blob: isaac-acp features/comm/acp/streaming.feature a69ff3ae7e3766f65795933fbf4d1b12805164ec 17
+
+## Worker return (2026-09-28, scrapper@isaac-work-1)
+
+ACP implementation rebased against corrected main e3ca8c2, branch `bean/isaac-asik` eaa5076; feature diff removes only `@wip` on `episodes.feature` and `default_frequencies.feature`. `bb ci` exits 1: 78 specs pass, but the live `prompt.feature:47` assertion expects `Here is my answer` and gets prior transcript text `It summarizes older transcript entries to free context`; `streaming.feature:17` expects chunkA/B/C but each notification contains `{:content "must be a string"}`. The planner's corrected vector row is parsed into a vector by `session_steps.clj:426` and rejected downstream; no ACP feature changes were made. Exact command: `cd ../isaac-acp-asik && bb ci`.
+
+Gate after the newest e3ca8c2 baseline also fails, exit 1 (`bb bean-gate verify isaac-asik --dir isaac-acp=../isaac-acp-asik --ref isaac-acp=bean/isaac-asik`):
+
+    FAIL isaac-acp features/comm/acp/default_frequencies.feature: worker diff e3ca8c2..eaa5076 edits a feature file the bean did not baseline (- @wip)
+    FAIL isaac-acp features/comm/acp/episodes.feature: worker diff e3ca8c2..eaa5076 edits a feature file the bean did not baseline (- @wip)
+
+Newest baseline at e3ca8c2 contains only cli and streaming blobs; planner must re-baseline all five feature blobs together to permit the already-approved `@wip` removals. Planner must also resolve the two red live scenarios without asking worker to edit baselined feature files. Not landed; no ACP main-sha yet. Agent main-sha remains b21349432a464a5cb03fc70525df8593901eed39.
