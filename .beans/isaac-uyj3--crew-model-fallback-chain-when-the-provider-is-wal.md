@@ -1,13 +1,13 @@
 ---
 # isaac-uyj3
 title: Crew model fallback chain when the provider is walled
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - agent
 created_at: 2026-09-28T14:10:02Z
-updated_at: 2026-09-28T18:29:25Z
+updated_at: 2026-09-28T18:55:21Z
 ---
 
 A crew names an ordered fallback chain. When the model at the head of the chain is unavailable, the turn continues on the next model that can take it. The transcript and the tool results already written stay. The tools are not run again.
