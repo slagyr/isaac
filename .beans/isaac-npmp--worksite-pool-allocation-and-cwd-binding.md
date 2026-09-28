@@ -57,3 +57,7 @@ Features: `isaac-worksite/features/worksite/registry.feature` and `lock.feature`
 feature-baseline: isaac-worksite 0dbf76b31fb9606e104a2224a7b05485608133d5
 feature-blob: isaac-worksite features/worksite/registry.feature 1803468dfa13f297c854a2c351f8f4b5224a729a
 feature-blob: isaac-worksite features/worksite/lock.feature f8d38eb9c4818b5bb17474c70b13de3cbc3e5301
+
+## Worker checkpoint (2026-09-28)
+
+Done: claimed bean; Agent branch bean/isaac-npmp commit 4d703a8 adds member schema (1794 specs green). Worksite branch has member pool, per-member locks with nonblocking cross-process file guards, CLI and validation migration, @wip removal, and pool/concurrency specs. Next: run worksite against Agent branch with local override (pinned main Agent drops :members); fix registry feature validation and list, then lock scenarios and full suite. Last run red: `bb features features/worksite/registry.feature` (2 failures: config validation and list), `bb spec` (2 CLI spec failures; pinned Agent drops :members). Resume at `src/isaac/worksite/cli.clj:33` and `src/isaac/worksite/checks.clj:4`; investigate feature harness module discovery and unknown removed key. Do not land until both suites and gate pass.
