@@ -1,7 +1,7 @@
 ---
 # isaac-ex4q
 title: Hail hands off messages to Agent turn queue
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
@@ -97,3 +97,20 @@ Features on isaac-hail main at 5a5e517 (`@wip` per scenario). Remove every `@wip
 - [ ] Orchestration prompts/skills that call `hail_get` or `isaac hail show` switch to `turn__get` / `isaac turns show` in the same deploy.
 - [ ] Deploy note: drain in-flight hails on zanebot before cutover.
 - [ ] `bb verify` green in isaac-hail and isaac-agent; version bumps; repin; modules.edn registry.
+
+feature-baseline: isaac-hail 5a5e51720d114dbd5c5b11e7c37f6ac2895628ab
+feature-blob: isaac-hail features/band-inheritance.feature 2ee5eabf31cb89fd04c33d8b2390fb2ac1ba2e34
+feature-blob: isaac-hail features/explicit-session-routing.feature cd96c66544440d4a227a21ab84491e7d8db8251c
+feature-blob: isaac-hail features/delivery.feature 5e21ad17308d321a015eafd3c0e9452a0e19a4a5
+feature-blob: isaac-hail features/commands.feature eb3b4309d8b2a473fdce6fc5c96fc938e3cccc3c
+feature-blob: isaac-hail features/crew-tool.feature 8c5b786578e74b8b3dafa470b8387bf73e449497
+feature-blob: isaac-hail features/hail-threading.feature a0b3084754dbc292001a45d32167d39f28b28d23
+feature-blob: isaac-hail features/hail-band-data.feature c3254b8c2d18b08350c172bcb372cc4ec66d1c0d
+feature-blob: isaac-hail features/hail-metadata.feature 868055a9bb2df3f4031a11b285e948b4c8781753
+feature-blob: isaac-hail features/send-addressing.feature c864ab9677e09fa2943e01d8c81d820fe07693a2
+feature-blob: isaac-hail features/handoff.feature f53f61268fd18901791d3944db736ccf9f17bb7b
+feature-blob: isaac-hail features/router.feature 569458809792d9b357a7c37fd9fb4ac84c4e5027
+feature-blob: isaac-hail features/http.feature 4c125aaf70f0824b8063c7f4455ccb4d622f1ba8
+feature-blob: isaac-hail features/hail-band-prompts.feature 6d797c2aeaa90d26a2981aa611974189194d1af7
+feature-blob: isaac-hail features/send.feature 3a1e7aa1cf37e94ec8adf45f582e76ad279f929e
+feature-blob: isaac-hail features/session-create.feature 1ede1ac7c2bfffd75046e61587534671c70f1b88
