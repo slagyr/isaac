@@ -1,11 +1,11 @@
 ---
 # isaac-ex4q
 title: Hail hands off messages to Agent turn queue
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T20:45:53Z
+updated_at: 2026-09-28T20:57:50Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
