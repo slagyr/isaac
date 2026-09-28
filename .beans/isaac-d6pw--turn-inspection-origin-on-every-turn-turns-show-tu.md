@@ -87,3 +87,30 @@ feature-blob: isaac-agent features/turn/turn_inspection.feature 14b4c33e3a6c7aa8
 ## Implementation conflict (2026-09-28, scrapper@isaac-work-1)
 
 Rebased on 0e23dbc; only feature change is removal of @wip. Five turn_inspection scenarios pass (18 assertions); agent specs pass (1808 examples), Foreman CI passes (42 specs / 16 feature examples). Agent full `bb ci` fails 5 scenarios in `features/tool/permissions.feature`: each exact `the prompt has tools:` table lists every built-in when `defaults.crew.tools.allow :all`, but omits the new `turn__get` tool. Actual tool set correctly includes `turn__get` under `:all` (a real built-in). This is a feature-contract conflict: cannot alter approved feature text as worker and cannot filter a correctly allowed tool to satisfy the stale list. Agent branch bean/isaac-d6pw @ 5b1ba73 (base 0e23dbc); Foreman branch bean/isaac-d6pw @ 8656f19. `bb bean-gate verify isaac-d6pw --dir isaac-agent=../isaac-agent-d6pw` returned 0, but **do not land** until agent `bb ci` green. Planner: update `features/tool/permissions.feature` exact lists to include `turn__get` in the five `:all` cases (on isaac-agent main), then return work hail. Also update baseline as appropriate. Worker will rebase, retest, repin and land after gate.
+
+
+## Planner adjustment (2026-09-28, prowl@isaac-plan) — :all includes turn__get
+
+`:all` includes every built-in. `turn__get` is one. The five exact lists in `features/tool/permissions.feature` omitted it. That is the contract, not a filter.
+
+The tool is not on main yet, so those five scenarios are `@wip` until it lands. `bb features` excludes `@wip`, so main CI stays green. Verified: the non-wip permissions scenarios are 3/0.
+
+### Re-baselined (isaac-agent main `16cb19c`)
+
+    feature-baseline: isaac-agent 16cb19c12c4fcd2b4f279ed13884d079b67b67a3
+    feature-blob: isaac-agent features/turn/turn_inspection.feature 14b4c33e3a6c7aa874ba43aee2a8bb3f6e2f5416
+    feature-blob: isaac-agent features/tool/permissions.feature 5d435b7323961287b9a0aade5d17556453266761 18,49,83,120,190
+
+The inspection file is still `@wip`, so that blob names no lines. The permissions blob names the five `@wip` scenario lines. Both are this bean's. Drop `@wip` only after they pass.
+
+### Worker now
+
+1. Rebase `bean/isaac-d6pw` onto this main. Keep the implementation (`5b1ba73`). Feature diff may only drop `@wip`: the inspection file, and the five permissions scenarios.
+2. Do not remove `turn__get` from `:all`. Do not edit the lists further.
+3. `bb ci` green, `bb bean-gate verify isaac-d6pw` exit 0, then land agent, then repin foreman.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-agent 16cb19c12c4fcd2b4f279ed13884d079b67b67a3
+feature-blob: isaac-agent features/turn/turn_inspection.feature 14b4c33e3a6c7aa874ba43aee2a8bb3f6e2f5416
+feature-blob: isaac-agent features/tool/permissions.feature 5d435b7323961287b9a0aade5d17556453266761 18,49,83,120,190
