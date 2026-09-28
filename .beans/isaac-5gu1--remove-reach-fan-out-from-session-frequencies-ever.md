@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-28T01:32:07Z
-updated_at: 2026-09-28T01:32:45Z
+updated_at: 2026-09-28T01:38:33Z
 parent: isaac-q3u3
 ---
 
@@ -41,3 +41,6 @@ Removal checks (no broadcast code path left, `git grep ':reach'` empty per repo)
 ## Live migration (2026-09-27, Micah: migrate zanebot and yopp)
 
 Every live use is `:reach :one`, which is already the default (Hail `bands.clj` and `router.clj` fill `:one` when absent). So stripping the key is a no-op today and can happen **before** this bean ships — do it first, then the Agent that rejects `:reach` deploys with nothing to trip on. Inventory as of 09-27: zanebot has six live hail band/template files carrying it (plus `.bak` copies — leave or delete, they aren't loaded); yopp has one hail band. The orchestration repo's two files are the source of the zanebot templates.
+
+
+- [x] 2026-09-27: live `:reach :one` stripped on zanebot and yopp (`isaac config validate` OK on both) and in orchestration (df94dbd). Nothing live carries `:reach` now.
