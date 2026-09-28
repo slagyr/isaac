@@ -1,11 +1,11 @@
 ---
 # isaac-i5lv
 title: 'Resource pool receipts: cwd binding and restart release'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T23:45:55Z
-updated_at: 2026-09-27T23:59:31Z
+updated_at: 2026-09-28T04:12:31Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-ey7a
