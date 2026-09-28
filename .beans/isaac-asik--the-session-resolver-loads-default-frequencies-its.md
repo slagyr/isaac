@@ -79,3 +79,9 @@ The 09-27 checkpoint stopped on a contract problem the worker could not fix: `ep
 feature-baseline: isaac-acp 8c76772099b96a5aed62f113d38ebb64f6880142
 feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
 feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
+
+## Work checkpoint (2026-09-28, scrapper)
+
+Done: rebased agent and acp bean branches onto their current mains; ACP episodes @wip removed, config fixtures migrated, default crew reads use defaults/crew-id, create path session/new reuses the first opened session, and acp pins updated to current main. Focused acceptance (10 examples, 43 assertions) and 78 specs green against local agent/foundation worktrees.
+
+Next: bb ci red (3 unrelated existing features: prompt compaction, CLI no-model, streaming chunk fixture); with pinned bb.edn, focused acceptance red (3 default-frequency cases until agent branch lands). Resume at isaac-acp-asik/features/comm/acp/cli.feature:119 and spec/isaac/comm/acp/acp_steps.clj:250, then rerun bb ci with local bb.edn overrides and gate.
