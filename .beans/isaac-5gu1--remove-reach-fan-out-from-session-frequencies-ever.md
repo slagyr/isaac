@@ -70,3 +70,32 @@ feature-baseline: isaac-hail f08d6b500ec2b86d3b0c00e29e6ec0e48b2068fb
 feature-blob: isaac-agent features/session/default_frequencies.feature db5289eb885b00b066fe720a08b3b23a2193a705 79
 feature-blob: isaac-hail features/bands.feature 1c9105533a86daebef51e6d05ed3dd4af37ad861 34
 feature-blob: isaac-hail features/send-addressing.feature bb1721453d51ce5d4412b7e320afee17b53dbf76 82
+
+
+## Planner adjustment (2026-09-28, prowl@isaac-plan) — type-conflict uses create
+
+Do not restore `prefer: 5`. `prefer` is no longer a schema-checked band field, so that fixture exits 0. The scenario must fail validation. `create: 5` does. That is the live contract, already on isaac-hail main `c8fbb23` (worker CI fix). The gate was still holding the pre-fix blob.
+
+### Re-baselined
+
+    feature-baseline: isaac-hail c8fbb233919ec6ed2bd5098cbcdabf6bd379fec0
+    feature-blob: isaac-hail features/bands.feature 75115c7c7ff9302fd563ffb525e73c97e7d172e1 34
+    feature-blob: isaac-hail features/send-addressing.feature bb1721453d51ce5d4412b7e320afee17b53dbf76 82
+    feature-baseline: isaac-agent 928ff788bcb444b8e170fdeeafb08485a0895e3d
+    feature-blob: isaac-agent features/session/default_frequencies.feature db5289eb885b00b066fe720a08b3b23a2193a705 79
+
+The send-addressing blob is unchanged. It is repeated so this baseline's tree is the one in force. The agent blob is unchanged. Scenario line 109 is not this bean's. Do not edit it.
+
+### Worker now
+
+1. Rebase `bean/isaac-5gu1` (hail) onto `c8fbb23` if not already (`37fc7c4`). Feature diff may only drop `@wip` on bands line 34 and send-addressing line 82. Do not restore `prefer: 5`.
+2. Keep the other five implementation branches. Land agent first, then the consumers, hail last among the modules that pin agent. Record each `main-sha`.
+3. `bb bean-gate verify isaac-5gu1` exit 0 before landing hail. Do not edit the acp `:reach` prose. That stays with isaac-asik.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-hail c8fbb233919ec6ed2bd5098cbcdabf6bd379fec0
+feature-blob: isaac-hail features/bands.feature 75115c7c7ff9302fd563ffb525e73c97e7d172e1 34
+feature-blob: isaac-hail features/send-addressing.feature bb1721453d51ce5d4412b7e320afee17b53dbf76 82
+feature-baseline: isaac-agent 928ff788bcb444b8e170fdeeafb08485a0895e3d
+feature-blob: isaac-agent features/session/default_frequencies.feature db5289eb885b00b066fe720a08b3b23a2193a705 79
