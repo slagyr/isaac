@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T02:07:56Z
+updated_at: 2026-09-28T02:18:41Z
 parent: isaac-q3u3
 ---
 
@@ -44,5 +44,5 @@ feature-blob: isaac-agent features/turn/turn_queue.feature 32f594eef0e186626285d
 
 ## Worker checkpoint (2026-09-27)
 
-Done: implemented named pool types/instances, validation, CLI --pool, busy rollback and wake path; resource_pools.feature passes (4/4). Commit 3d0fd21 pushed on bean/isaac-ey7a.
-Next: turn_queue.feature remains RED (3 transcript assertions after wake at :44, :59, :74; :84 can hang). Inspect wake-config at src/isaac/turn/worker.clj:26 and feature config installation in spec/isaac/turn/queue_steps.clj:65; then run bb features features/turn/turn_queue.feature:27. Remaining spec cutover and bb verify/gate pending.
+Done: named resource pool implementation, type berth, instance validation, CLI --pool and queue wake. bb spec green (1779 examples); resource_pools.feature 4/4 and turn_queue.feature :27/:53/:66/:111 pass individually. Latest green commit 0ed65a3 pushed on bean/isaac-ey7a.
+Next: turn_queue.feature:84 hangs (bb features features/turn/turn_queue.feature:84 timed out after 25s). Diagnose session send wait/release at spec/isaac/turn/queue_steps.clj:158, then run full bb features and bb verify; gate and land only once all suites green.
