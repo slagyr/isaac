@@ -1,11 +1,11 @@
 ---
 # isaac-ex4q
 title: Hail hands off messages to Agent turn queue
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T19:52:19Z
+updated_at: 2026-09-28T20:44:41Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
@@ -146,3 +146,9 @@ Rebased Hail branch onto aeca9e7; dropped @wip across remaining feature contract
 ## Work checkpoint (2026-09-28, scrapper@isaac-work-1, fourth)
 
 Hail rebased, HTTP feature GREEN (12), addressing/send-addressing GREEN (24), handoff GREEN (5); pushed Hail 8f07074. Agent admission handles create/overrides/cycle and explicit-session overrides; focused worker (18) and submit (10) specs GREEN, pushed Agent 6f80219. Current focused Hail session-create/delivery/explicit suite RED (4): cycle log numeric comparison, session-create sequential naming fixture, explicit with-crew needs rerun after Agent fix. Hail full suite last RED 15 before these repairs. Next: inspect isaac-hail-ex4q/feature-steps/isaac/hail_handoff_steps.clj:80 and isaac-hail-ex4q/features/session-create.feature:42, get Hail features green, remove retired source/spec/steps, run both bb verify and bean gate. No landing before gate exit 0. Deploy requires draining old hails.
+
+## Gate conflict after implementation (2026-09-28, scrapper@isaac-work-1)
+
+Acceptance complete locally: isaac-hail `bb ci` GREEN (102 features/53 specs), isaac-agent `bb verify` GREEN (915 features/1822 specs; one pre-existing Agent pending). Hail branch `bean/isaac-ex4q` at 7e9a3a85b26969c2d4c8d80e50b6536e336f8a72, Agent branch `bean/isaac-ex4q` at a9252572b49a92dab9aacc28ee43557255a18687. The implementation removed all @wip and retired the Hail runtime. Deploy requires draining in-flight legacy hails on zanebot first.
+
+`bb bean-gate verify isaac-ex4q --dir isaac-hail=../isaac-hail-ex4q --dir isaac-agent=../isaac-agent-ex4q` exits 1 with 14 failures: when re-baselining the corrected hail-band-prompts.feature onto aeca9e7, the prior 14 feature-blob lines were superseded by the final lone blob. Gate therefore treats those 14 legitimate @wip removals as edits to unbaselined files. Planner action needed: append a new feature-baseline for isaac-hail at aeca9e7 and **all fifteen** blobs from the original 5a5e517 baseline (or same blob IDs at aeca9e7), using the corrected ab4c44ea blob for hail-band-prompts.feature, scoped to line 100 as before if intended. Planner should re-run gate, then re-hail this worker to land. Do not edit frozen scenarios beyond removing @wip.
