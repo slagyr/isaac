@@ -1,11 +1,11 @@
 ---
 # isaac-lr8h
 title: 'Foreman F3: submit turn actions through Agent'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T00:54:01Z
+updated_at: 2026-09-28T04:31:08Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-tjjm
