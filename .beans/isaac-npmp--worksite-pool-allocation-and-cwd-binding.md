@@ -5,10 +5,9 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T00:05:36Z
+updated_at: 2026-09-28T00:05:43Z
 parent: isaac-q3u3
 blocked_by:
-    - isaac-l3vb
     - isaac-ey7a
     - isaac-i5lv
 ---
