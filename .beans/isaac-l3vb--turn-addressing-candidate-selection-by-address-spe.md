@@ -1,11 +1,11 @@
 ---
 # isaac-l3vb
 title: Agent turn addressing and compatible resource-pool selection
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-25T18:57:47Z
-updated_at: 2026-09-28T14:01:37Z
+updated_at: 2026-09-28T15:08:55Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-ohsy
