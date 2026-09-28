@@ -117,3 +117,14 @@ feature-baseline: isaac-gchat b7044d4d474507184ff044f1eb1bb64d221081a2
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature 984f43696faf53a4b358202acb8bd2d047cfad22 701
 feature-baseline: isaac-agent 8794de90f8493b31911318e508741c1e7ef281af
 feature-blob: isaac-agent features/session/waiting.feature 2982c9383a0f89ef3c1e43c19e3a6e971634a96f 11,34
+
+## Checkpoint (2026-09-27, scrapper@isaac-work-3)
+
+Done: rebased both branches, implemented guarded waiting-room drain, repinned Chat to agent's landed main SHA, adapted canonical per-space routing to the current agent frequency selector. Agent `bb ci`: 1801 specs and 886 features, 0 failures (1 pre-existing pending). Gchat `bb ci`: 196 specs and 60 features, 0 failures. `bb lint src feature-steps` in gchat: 0 errors. Gate PASS on squash commits: agent `87c3e1ec65bc1fbdd976bb9373538c23eba91d11`, gchat `b9dce73671bd98c0be50c90a89b7e603b14e230e`; both pushed to main. Earlier continuation/wrap-up failures appeared only on bean branch before guarding the drain; main's two focused scenarios were green, and the branch's full suite is now green. Gchat's initial pinned-agent run exposed seven unrelated canonical route failures caused by agent's changed frequency selector; updating the Chat selector resolved them.
+
+Next: record `main-sha:` lines, remove bean branches and complete the bean. Resume at `.beans/isaac-xoqn--isaac-agent-isaac-gchat-messages-for-a-busy-sessio.md` below this note; rerun `bb bean-gate verify isaac-xoqn --dir isaac-agent=../isaac-agent-xoqn-landing --dir isaac-gchat=../isaac-gchat-xoqn-landing` after recording landing.
+
+## Landed on main (2026-09-27)
+
+main-sha: isaac-agent 87c3e1ec65bc1fbdd976bb9373538c23eba91d11
+main-sha: isaac-gchat b9dce73671bd98c0be50c90a89b7e603b14e230e
