@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-28T01:32:07Z
-updated_at: 2026-09-28T01:32:07Z
+updated_at: 2026-09-28T01:32:45Z
 parent: isaac-q3u3
 ---
 
@@ -36,3 +36,8 @@ Background: Hail's router fans a band out to every matching session; gchat's `se
 3. A gchat space entry with `:reach` fails config validation (gchat).
 
 Removal checks (no broadcast code path left, `git grep ':reach'` empty per repo) are one-time acceptance items, not scenarios.
+
+
+## Live migration (2026-09-27, Micah: migrate zanebot and yopp)
+
+Every live use is `:reach :one`, which is already the default (Hail `bands.clj` and `router.clj` fill `:one` when absent). So stripping the key is a no-op today and can happen **before** this bean ships — do it first, then the Agent that rejects `:reach` deploys with nothing to trip on. Inventory as of 09-27: zanebot has six live hail band/template files carrying it (plus `.bak` copies — leave or delete, they aren't loaded); yopp has one hail band. The orchestration repo's two files are the source of the zanebot templates.
