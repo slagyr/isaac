@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T01:52:08Z
+updated_at: 2026-09-28T18:37:50Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
@@ -67,3 +67,17 @@ Of 160 Hail scenarios: 71 keep, 20 rewrite ("the hail delivery worker ticks" →
 - **Fan-out scenarios belong to isaac-5gu1**, which lands first: bands:34, delivery:222, explicit-session-routing:37, hail-get:67, hail-get:79, hail-naming:40, router:142, router:313.
 
 The keep/rewrite/remove survey above assumed Hail kept records; it must be redone against this design before scenarios are drafted.
+
+
+## Survey + decisions (2026-09-28, Micah + planner) — supersede the 09-27 survey above
+
+Survey against the stateless design (Hail on origin/main 2026-09-28): ~20 scenarios keep as-is (band config validation, pre-submit send refusals, HTTP 400s); ~55 are removed (bound_unclaimed, most of delivery, dead_letter_resurrection, context_window_guard, all of hail-get and hail-naming, turn-marker-claim, turn-resume, router frozen-candidates/scheduler/quarantine, hail-metadata reach-one binding); ~75 are rewritten (band inheritance/data/prompts/metadata/threading, send, http, crew-tool, router selector + undeliverable, explicit-session-routing, session-create, send-addressing record checks, delivery `--with-model` and band `cycle`).
+
+Surfaces: keep `hail send`, the `hail-send` tool, `POST /hail/send`. `hail show` → `isaac turns show`; `hail drop` → `isaac turns drop`; `hail-get` tool → `turn__get` (isaac-d6pw). Delete `hail requeue`, the HailRuntime component, the `hail/route` and `hail/deliver` scheduler tasks, and the router / delivery-worker / attention / store namespaces. Keep bands, band-resolve, templates.
+
+1. **Preamble rides the submission.** Hail builds the metadata preamble at send time and passes it as a generic `:preamble` string on the turn request; Agent adds it to that turn's system prompt without knowing it came from Hail (small isaac-agent change in this bean; the drive stays generic).
+2. **No delivered-session line in the preamble** — for crew/tag targets the session is chosen at admission, and identity is ambient (isaac-sx4g).
+3. **Session creation is Agent's.** Hail passes `:create` with the frequencies; Agent applies it at admission (isaac-l3vb).
+4. **Output:** `hail send` prints the turn id; `--edn` / `--json` print the turn id plus what was submitted. `sent-at` becomes the turn's `created-at`.
+5. **One new Hail step does most of the rewriting:** `the turn Hail submitted has:` (path/value table over the newest Agent turn record). Mechanical rewrite recipe: drop router/worker ticks; "pending hail EDN contains" → "the turn Hail submitted has"; `hail_get` → `turn__get` / `turns show`; scenarios that check a real turn's transcript get `the turn queue ticks at`. "no pending hails" → `turns list --all` prints nothing.
+6. **One bean** (two would leave Hail half-migrated). Micah reviews the pattern — the new step, ~5 new scenarios, 3 representative rewrites — then the planner applies it to the rest.
