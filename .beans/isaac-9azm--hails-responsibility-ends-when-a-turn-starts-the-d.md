@@ -1,11 +1,11 @@
 ---
 # isaac-9azm
 title: Hail's responsibility ends when a turn starts; the drive must not know about hail
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-21T16:39:07Z
-updated_at: 2026-09-21T17:14:05Z
+updated_at: 2026-09-28T02:00:47Z
 blocked_by:
     - isaac-xpkf
     - isaac-f3hq
@@ -380,3 +380,8 @@ feature-baseline: isaac-hail cc67116c4599f25602a7c01bfce395949b8256e8
 feature-blob: isaac-hail features/delivery.feature a3109529a73da71975f05ba86246d7d53611c1d0
 feature-blob: isaac-hail features/turn-resume.feature 1bde3e062c91a16ee7c434599f0bf6ca495f2967
 feature-blob: isaac-hail features/turn-marker-claim.feature 00604a10bcc1d538037598178e7a0d092aff3a91
+
+
+## Scrapped (2026-09-27, Micah)
+
+Superseded by today's ruling: **Hail is done once the turn is queued with Agent.** Hail becomes stateless (isaac-ex4q): a send expands the band, submits to Agent's queue, and returns Agent's turn id; Hail's delivery worker, router selection, records, and turn-marker handling are deleted. This bean's baselined Hail scenarios (delivery.feature, session-create.feature, turn-marker-claim.feature, turn-resume.feature) are removed or rewritten by isaac-ex4q. Its Agent-side blockers (isaac-xpkf, isaac-f3hq) stand on their own.
