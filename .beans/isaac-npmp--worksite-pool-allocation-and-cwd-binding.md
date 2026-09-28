@@ -1,11 +1,11 @@
 ---
 # isaac-npmp
 title: Worksite pool allocation and CWD binding
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:45:55Z
+updated_at: 2026-09-28T00:05:36Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
@@ -32,3 +32,29 @@ Likely repos: **isaac-worksite** and **isaac-agent**. Design: Micah + planner, 2
 5. Separate processes cannot acquire the same member simultaneously.
 
 Draft until scenarios are committed and baselined. No database-pool implementation is in scope.
+
+
+## Decisions (2026-09-27, Micah + planner)
+
+1. **A worksite is a pool instance**: `:resource-pools {"decks" {:type :worksite :members ["/abs/path" …]}}` (root and `config/resource-pools/<name>.edn`). The `:worksites` config key is removed and hard-rejects — one config entry per thing.
+2. **Leases, locks, and state are per member**, and a member is its directory path. CLI stays `isaac worksites`: `list` shows each pool's members as free / leased (session) / locked (operator); `lock` / `unlock` take a member path; a path outside every worksite pool errors.
+3. **First free member in config order wins** — deterministic.
+4. **Pools bind cwd, never read it.** Inferring the member from the session's cwd is removed, as is the `:worksite-busy` refusal: busy means wait. The `:worksite` turnstile is deleted (Agent removes turnstiles in isaac-ey7a).
+5. **Cross-process exclusivity is a unit spec**, not a scenario: concurrent acquires against the file lock never both win a member.
+6. The old "turns outside any worksite sail through" scenario is dropped: a turn that names no pool never touches one.
+
+## Acceptance
+
+Features: `isaac-worksite/features/worksite/registry.feature` and `lock.feature`, both rewritten `@wip` on main at 0dbf76b. Remove `@wip`; all pass:
+
+- [ ] `bb features features/worksite/registry.feature` — `:13` validation (incl. old key rejected), `:44` list states
+- [ ] `bb features features/worksite/lock.feature` — `:27` two members + third waits, `:50` one session across members, `:67` operator lock + waiting + unlock/tick, `:89` lock/unlock by path, `:107` failed turn releases, `:128` dead-pid lease stolen, operator lock not
+- [ ] Step `a stale turn lock holds worksite {string} with pid {int}` keeps its wording; its argument is now a member path.
+- [ ] Scenario `:27` has two `the user sends … with resource pools` turns in flight at once; if the Agent step keeps only one turn future, extend its internals (same phrase) in isaac-agent's `session_steps.clj`.
+- [ ] Unit spec: concurrent acquires on one member — exactly one wins.
+- [ ] One-time check: `git grep -i turnstile` and `git grep ':worksites'` in isaac-worksite find nothing outside the removed-key validation.
+- [ ] Repin isaac-agent to the main sha that lands isaac-ey7a + isaac-i5lv; `bb verify` green; version bump; bump the worksite entry in the isaac repo's modules.edn registry.
+
+feature-baseline: isaac-worksite 0dbf76b31fb9606e104a2224a7b05485608133d5
+feature-blob: isaac-worksite features/worksite/registry.feature 1803468dfa13f297c854a2c351f8f4b5224a729a
+feature-blob: isaac-worksite features/worksite/lock.feature f8d38eb9c4818b5bb17474c70b13de3cbc3e5301
