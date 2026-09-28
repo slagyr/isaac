@@ -114,3 +114,8 @@ feature-blob: isaac-hail features/http.feature 4c125aaf70f0824b8063c7f4455ccb4d6
 feature-blob: isaac-hail features/hail-band-prompts.feature 6d797c2aeaa90d26a2981aa611974189194d1af7
 feature-blob: isaac-hail features/send.feature 3a1e7aa1cf37e94ec8adf45f582e76ad279f929e
 feature-blob: isaac-hail features/session-create.feature 1ede1ac7c2bfffd75046e61587534671c70f1b88
+
+## Work checkpoint (2026-09-28, scrapper@isaac-work-1)
+
+Done: Agent generic per-turn preamble propagated through durable submit, worker, charge and provider prompt; caller-provided id accepted atomically. Agent focused specs green, pushed bean/isaac-ex4q at dfb7ce4. Hail stateless queue submission with band expansion, origin and reply threading started; focused queue_handoff_spec green, pushed bean/isaac-ex4q at b2c81fd.
+Next: implement CLI/HTTP/tool idempotency and refusal handling, remove old Hail runtime/steps and migrate all @wip scenarios; integrate with Agent branch locally and run bb verify. Resume at isaac-hail-ex4q/src/isaac/hail/cli.clj:201 and isaac-hail-ex4q/src/isaac/hail/queue.clj:62. Agent branch is isaac-agent-ex4q. The last focused tests are green; full suites not yet run. Do not land until acceptance and gate pass.
