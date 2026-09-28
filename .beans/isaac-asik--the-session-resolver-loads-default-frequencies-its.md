@@ -1,11 +1,11 @@
 ---
 # isaac-asik
 title: The session resolver loads default frequencies itself
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-27T02:25:46Z
-updated_at: 2026-09-27T02:31:03Z
+updated_at: 2026-09-28T14:00:56Z
 ---
 
 Follow-up to isaac-vp7h, which is deployed. A blank `acp` on Yopp exits 1 with "no session selected". The launcher papered over it with `--crew yopp`, and that opens a new session on every connect because the episodes policy answers no default session.
@@ -59,3 +59,23 @@ feature-blob: isaac-acp features/comm/acp/episodes.feature 1310865e4d4caf2a71d96
 Done: `isaac-agent` branch `bean/isaac-asik` (cb41080) reads the config snapshot in the two-argument resolver and stops injecting CLI `:reach`/`:create`. Focused `bb spec spec/isaac/session/frequencies_spec.clj spec/isaac/session/frequencies_cli_spec.clj` passes (42 examples). `isaac-acp` branch `bean/isaac-asik` (5a57da5) drops the policy fork and `policy/default-session`, strips only `@wip`; `bb bean-gate verify isaac-asik --dir isaac-agent=../isaac-agent-asik --dir isaac-acp=../isaac-acp-asik` exits 0. JVM run of `default_frequencies.feature` against local agent/foundation passes (5 examples).
 
 Next: Implement the missing second-`session/new` reuse on ACP's create path (start at `isaac-acp/src/isaac/comm/acp/cli.clj:161`; currently only attaches when `target` is existing). Fix the cross-repo test environment to run acceptance: `bb features features/comm/acp/default_frequencies.feature features/comm/acp/episodes.feature` using `bb.edn` pins timed out after 180s on the first feature; `bb jvm-features ...` with temporary `:dev-local` paths to `../isaac-agent-asik`, `../isaac-foundation-asik` and `../isaac-http-ci` ran default frequencies green but episodes fails 5 scenarios (three existing scenarios and two retargeted) due to `ClassCastException` at `isaac.config.resolve/resolve-crew:91` during feature fixture creation (config's `:defaults :crew` string from episodes.feature); cannot edit baselined feature except `@wip`. No temporary deps edits remain. Re-run `bb ci` in both repos and gate before landing; no completion yet.
+
+
+## Planner unblock (2026-09-28, Micah + planner) — isaac-mfc9 folded in
+
+The 09-27 checkpoint stopped on a contract problem the worker could not fix: `episodes.feature`'s Background wrote the pre-ruom flat `:defaults` shape (`defaults.crew cordelia`, `defaults.model echo`), which the current foundation reads as a crew *template*, so `resolve-crew` threw `ClassCastException`. The root cause is isaac-mfc9 (acp never got the isaac-0r95 defaults migration and still pins pre-ruom foundation/agent/episodes). **isaac-mfc9 is merged into this bean** and scrapped.
+
+- Planner migrated `episodes.feature` on acp main (8c76772): `defaults.crew` → `defaults.frequencies.crew`, `defaults.model` → `defaults.crew.model`; the three scenarios that share that Background (`:32`, `:58`, `:92`) are now `@wip` and belong to this bean with `:126`, `:156`. Rebase `bean/isaac-asik` (acp 5a57da5) onto acp main first.
+- Added scope (from isaac-mfc9): replace every `[:defaults :crew]` read in acp (`cli.clj`, `server.clj`) with `isaac.config.defaults/crew-id`; repin foundation, agent (current main, including isaac-ey7a/70cr/i5lv), and episodes to current mains in `deps.edn` AND `bb.edn`; migrate spec fixtures that write the flat `:defaults` shape (`cli_spec.clj`, `server_spec.clj`) to the new shape. `:crew {:defaults …}` in `cli.feature` is a crew entity named defaults' template — leave it unless it fails.
+- Still open from the checkpoint: a second `session/new` on the create path reuses the session (`isaac-acp/src/isaac/comm/acp/cli.clj:161`).
+
+## Acceptance (added 2026-09-28)
+
+- [ ] `bb features features/comm/acp/episodes.feature` (acp) — all five scenarios `:32`, `:58`, `:92`, `:126`, `:156`, `@wip` removed
+- [ ] `bb features features/comm/acp/default_frequencies.feature` (acp) — unchanged contract
+- [ ] One-time check: `git grep -n '\[:defaults :crew\]'` in isaac-acp src finds nothing
+- [ ] Both repos `bb ci` green; acp version bump; modules.edn registry repin
+
+feature-baseline: isaac-acp 8c76772099b96a5aed62f113d38ebb64f6880142
+feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
+feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156

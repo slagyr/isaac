@@ -1,11 +1,11 @@
 ---
 # isaac-mfc9
 title: isaac-acp reads the pre-ruom :defaults shape and pins pre-ruom foundation/agent — the isaac-0r95 migration never reached acp
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-24T21:34:13Z
-updated_at: 2026-09-24T21:34:13Z
+updated_at: 2026-09-28T14:01:04Z
 ---
 
 Found 2026-09-24 while landing isaac-j95x: repinning isaac-acp's deps to the landed agent (8cfd44d) fails to load — `Unable to resolve symbol: schema-compose/resolve-entity-templates` — because acp still pins a pre-ruom isaac-foundation (1afd934…) and agent (8aecfc3a…) and isaac-episodes 0cbe24b5…. isaac-0r95 ("seven repos landed") migrated episodes, hail, cron, hooks, http, gchat and gmail but not acp.
@@ -20,3 +20,7 @@ zanebot runs the ruom agent (da9214a → 8cfd44d) with acp 0.1.15. Every acp cre
 - `bb ci` green; version bump; registry repin; zanebot upgrade + restart.
 
 Repo scope: isaac-acp. Read-only in isaac-agent (accessor) and the 0r95-migrated repos for the fixture pattern.
+
+
+## Scrapped (2026-09-28) — merged into isaac-asik
+isaac-asik's ACP work cannot pass without this migration, so its scope (accessor, repins, fixture migration) moved there; see asik's "Planner unblock" section.
