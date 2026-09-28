@@ -1,11 +1,11 @@
 ---
 # isaac-npmp
 title: Worksite pool allocation and CWD binding
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T00:05:43Z
+updated_at: 2026-09-28T13:58:53Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-ey7a
