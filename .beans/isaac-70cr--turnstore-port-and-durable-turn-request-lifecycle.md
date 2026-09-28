@@ -46,3 +46,9 @@ Serialized after isaac-ey7a (both rewrite `turn/queue.clj`). Candidate selection
 
 feature-baseline: isaac-agent ba5921425d3ed889e1b472be49afa9ed04a599a7
 feature-blob: isaac-agent features/turn/turn_store.feature 5b50a2dbc53ce829df12be89c2dc1e5021e48335
+
+## Contract conflict (2026-09-27)
+
+The baselined feature uses step-table capture DSL in `Then the stdout matches:` (lines 25, 39, 48, 62, 143, 150): `#"[a-z0-9]+":turn-id`, `#turn-id`, `#"[a-z0-9]+":waiting-id`, and `#waiting-id`. That step in `isaac-foundation/spec-support/src/isaac/foundation/cli_steps.clj:430` calls `extract-patterns` and `re-find (re-pattern pattern)` on the raw row. It does **not** apply `isaac.foundation.step-tables/match-value` or capture refs; only `stdout-json-contains`/`stdout-edn-contains` invoke the step-table DSL. The first `queued:` assertion passes as a regex by accident, but the later `#turn-id` assertion expects the literal string `#turn-id` in the table, not the captured id; feature run is red (4 failures/6 examples). The scenario requires an id to be captured and re-used by subsequent steps. It cannot be fixed by editing the baselined feature as a worker. Planner must amend/rebaseline this scenario or provide a supported capture step. The step also uses literal `#waiting-id` in `turns drop`, which has no registered interpolation (only `#held-id` is interpolated).
+
+Worker checkpoint (in `isaac-agent-70cr`, `bean/isaac-70cr`): TurnStore port with memory/file adapters and atomic in-process claim unit spec green (`bb spec --focus spec/isaac/turn/store_spec.clj`), queue/prompt/worker/CLI integration in progress and acceptance red (`bb features features/turn/turn_store.feature`, 4 failures). No green full suite or gate; no landing attempted. Resume at `spec/isaac/turn/queue_steps.clj:43` for capture/interpolation once planner resolves the contract. The `@wip` removal is the only feature edit.
