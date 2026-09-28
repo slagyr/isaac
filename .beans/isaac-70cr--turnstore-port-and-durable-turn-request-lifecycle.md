@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T02:36:51Z
+updated_at: 2026-09-28T02:52:40Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-xoqn
@@ -86,3 +86,9 @@ This note resets the verify-fail counter.
 
 feature-baseline: isaac-agent 8c36e43998b6dbae9c7b7d5af46263f39ace0a0a
 feature-blob: isaac-agent features/turn/turn_store.feature ee6be659a6e7eb4a1bfe313279b204036badd8d8
+
+
+## Worker checkpoint (2026-09-28, scrapper@isaac-work-1)
+
+Done: rebased bean/isaac-70cr onto 8c36e43; commit 4345341 pushed. Six turn_store scenarios green (32 assertions), four dependent feature files green (27 examples), postflight captures queued/held/waiting ids without table capture, turns show prints four lines, comm turns recorded and crash records reconciled. Feature diff only removes @wip.
+Next: run full bb spec (last run red at spec/isaac/turn/queue_spec.clj:44, fixed in commit), then bb features, bb verify, gate from isaac clone, version bump per acceptance, land only on exit 0. Resume at spec/isaac/turn/queue_spec.clj:44.
