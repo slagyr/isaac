@@ -1,11 +1,11 @@
 ---
 # isaac-asik
 title: The session resolver loads default frequencies itself
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-27T02:25:46Z
-updated_at: 2026-09-28T15:00:52Z
+updated_at: 2026-09-28T15:06:11Z
 ---
 
 Follow-up to isaac-vp7h, which is deployed. A blank `acp` on Yopp exits 1 with "no session selected". The launcher papered over it with `--crew yopp`, and that opens a new session on every connect because the episodes policy answers no default session.
@@ -187,3 +187,7 @@ feature-blob: isaac-acp features/comm/acp/streaming.feature 05d5e172814a410cab39
 feature-blob: isaac-acp features/comm/acp/prompt.feature daa33b4a9e3c84181e9f670fc6ca175504450ff7 47
 feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
 feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
+
+## Wrapped (2026-09-28, Micah)
+
+The implementation is already on the bean branches and is being committed. The Zanebot work session `isaac-work-1` was cancelled so the crew stops re-driving this bean. Do not hail it again.
