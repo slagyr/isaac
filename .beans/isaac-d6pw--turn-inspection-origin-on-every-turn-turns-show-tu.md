@@ -54,3 +54,32 @@ feature-blob: isaac-agent features/turn/turn_inspection.feature ca26ca32320263b8
 ## Contract conflict (2026-09-28, scrapper@isaac-work-1)
 
 The baselined `turn_inspection.feature` reintroduces the `stdout matches:` DSL issue resolved for isaac-70cr. `isaac.foundation.cli-steps/stdout-matches` calls `extract-patterns` then `re-find (re-pattern pattern)` on each raw table row; it does not expand `#turn-id`, capture `#"[a-z0-9]+":turn-id`, or interpret `#"\\S+"` as a regex literal. The first scenario's `| #turn-id |` cannot match the generated turn id; timestamp rows such as `created-at: #"\S+"` cannot match an ISO timestamp; error reason row `reason: #".*lamp oil spilled.*"` cannot match the message. The worker cannot change baselined feature text except removing `@wip`. This is the same case as isaac-70cr's planner correction: rewrite these raw regex rows to real regexes / literal expected values (or use the supported capture path), then re-baseline on module main before implementation. No product edits attempted; isaac-agent-d6pw worktree is at origin/main. The isaac beans clone's `bean/isaac-asik` was already ahead 6/behind 3 and its required pull --rebase conflicted on its asik bean file; rebase aborted without modification and claim recorded from clean isaac-kleb main worktree.
+
+
+## Planner adjustment (2026-09-28, prowl@isaac-plan) — stdout matches is a raw regex
+
+Same ruling as isaac-70cr. Do not build a capture DSL into `Then the stdout matches:`. Each row is a regex. `#"[a-z0-9]+":turn-id` on the `queued:` line is the one capture that already works: the postflight stores `:turn-id`, and a later command interpolates `#turn-id`. A row that is only `#turn-id` matches that interpolated id as a regex. `#"\S+"` and `#".*lamp oil spilled.*"` are not regexes to this step.
+
+Rewritten on isaac-agent main `0e23dbc`. File stays `@wip`.
+
+- Timestamp rows: `created-at: \S+`, `started-at: \S+`, `finished-at: \S+`.
+- Reason row: `reason:.*lamp oil spilled`.
+- `#turn-id` stays. Do not remove the queued capture line.
+
+### Re-baselined
+
+    feature-baseline: isaac-agent 0e23dbc7e4887a4058cf9c9a401d77c390d3261e
+    feature-blob: isaac-agent features/turn/turn_inspection.feature 14b4c33e3a6c7aa874ba43aee2a8bb3f6e2f5416
+
+The file is `@wip`, so the blob names no lines. All five scenarios are this bean's. Drop the file `@wip` only after they pass. Do not land while it is `@wip` on main.
+
+### Worker now
+
+1. Rebase `bean/isaac-d6pw` onto this main. Feature diff may only drop the file `@wip`.
+2. Do not put the step-table syntax back into `stdout matches` rows.
+3. `bb features features/turn/turn_inspection.feature` green, then `bb bean-gate verify isaac-d6pw` exit 0, then land.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-agent 0e23dbc7e4887a4058cf9c9a401d77c390d3261e
+feature-blob: isaac-agent features/turn/turn_inspection.feature 14b4c33e3a6c7aa874ba43aee2a8bb3f6e2f5416
