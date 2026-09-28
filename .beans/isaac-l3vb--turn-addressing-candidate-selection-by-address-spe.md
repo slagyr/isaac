@@ -96,3 +96,9 @@ feature-blob: isaac-agent features/turn/session_selection.feature 0c1f1ca5acd63d
 ## Checkpoint (2026-09-28, scrapper@isaac-work-1)
 
 Done: isaac-agent bean/isaac-l3vb b8c3e3f pushed. Four session_selection scenarios green; targeted continuations and turn-exhaustion regressions green; concurrent session feature fixtures and target column implemented. Next: run full `bb verify` and fix regressions; complete submit!/wake admission for queued frequency addresses (src/isaac/turn/submit.clj:14), version bump, then gate and land. Resume at src/isaac/turn/submit.clj:14.
+
+## Landed on main (2026-09-28)
+
+main-sha: isaac-agent c223daa6effde87f8b2da681dc96b6cec9f185ed
+
+Verification: `bb verify` (1800 specs, 909 feature examples, 0 failures; 1 pre-existing pending); `bb bean-gate verify isaac-l3vb --dir isaac-agent=../isaac-agent-kleb` PASS on squash commit.
