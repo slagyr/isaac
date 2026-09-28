@@ -1,11 +1,11 @@
 ---
 # isaac-70cr
 title: 'TurnStore: a durable record and stable id for every turn, queue-only submission, idempotency keys'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-28T02:12:12Z
+updated_at: 2026-09-28T02:36:51Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-xoqn
