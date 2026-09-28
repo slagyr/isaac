@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-28T01:32:07Z
-updated_at: 2026-09-28T01:38:33Z
+updated_at: 2026-09-28T01:52:08Z
 parent: isaac-q3u3
 ---
 
@@ -44,3 +44,8 @@ Every live use is `:reach :one`, which is already the default (Hail `bands.clj` 
 
 
 - [x] 2026-09-27: live `:reach :one` stripped on zanebot and yopp (`isaac config validate` OK on both) and in orchestration (df94dbd). Nothing live carries `:reach` now.
+
+
+## Fan-out scenarios owned here (2026-09-27)
+
+isaac-hail scenarios that exist only for fan-out are removed by this bean (not by isaac-ex4q): `bands.feature:34` (becomes: `:reach` is rejected as an unknown key), `delivery.feature:222`, `explicit-session-routing.feature:37`, `hail-get.feature:67` and `:79`, `hail-naming.feature:40`, `router.feature:142` and `:313`. Do not edit any `@wip` scenario another bean has baselined.
