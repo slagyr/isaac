@@ -83,3 +83,7 @@ This note resets the verify-fail counter.
 
 feature-baseline: isaac-agent 0e23dbc7e4887a4058cf9c9a401d77c390d3261e
 feature-blob: isaac-agent features/turn/turn_inspection.feature 14b4c33e3a6c7aa874ba43aee2a8bb3f6e2f5416
+
+## Implementation conflict (2026-09-28, scrapper@isaac-work-1)
+
+Rebased on 0e23dbc; only feature change is removal of @wip. Five turn_inspection scenarios pass (18 assertions); agent specs pass (1808 examples), Foreman CI passes (42 specs / 16 feature examples). Agent full `bb ci` fails 5 scenarios in `features/tool/permissions.feature`: each exact `the prompt has tools:` table lists every built-in when `defaults.crew.tools.allow :all`, but omits the new `turn__get` tool. Actual tool set correctly includes `turn__get` under `:all` (a real built-in). This is a feature-contract conflict: cannot alter approved feature text as worker and cannot filter a correctly allowed tool to satisfy the stale list. Agent branch bean/isaac-d6pw @ 5b1ba73 (base 0e23dbc); Foreman branch bean/isaac-d6pw @ 8656f19. `bb bean-gate verify isaac-d6pw --dir isaac-agent=../isaac-agent-d6pw` returned 0, but **do not land** until agent `bb ci` green. Planner: update `features/tool/permissions.feature` exact lists to include `turn__get` in the five `:all` cases (on isaac-agent main), then return work hail. Also update baseline as appropriate. Worker will rebase, retest, repin and land after gate.
