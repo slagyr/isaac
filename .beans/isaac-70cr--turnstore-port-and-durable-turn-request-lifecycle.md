@@ -52,3 +52,37 @@ feature-blob: isaac-agent features/turn/turn_store.feature 5b50a2dbc53ce829df12b
 The baselined feature uses step-table capture DSL in `Then the stdout matches:` (lines 25, 39, 48, 62, 143, 150): `#"[a-z0-9]+":turn-id`, `#turn-id`, `#"[a-z0-9]+":waiting-id`, and `#waiting-id`. That step in `isaac-foundation/spec-support/src/isaac/foundation/cli_steps.clj:430` calls `extract-patterns` and `re-find (re-pattern pattern)` on the raw row. It does **not** apply `isaac.foundation.step-tables/match-value` or capture refs; only `stdout-json-contains`/`stdout-edn-contains` invoke the step-table DSL. The first `queued:` assertion passes as a regex by accident, but the later `#turn-id` assertion expects the literal string `#turn-id` in the table, not the captured id; feature run is red (4 failures/6 examples). The scenario requires an id to be captured and re-used by subsequent steps. It cannot be fixed by editing the baselined feature as a worker. Planner must amend/rebaseline this scenario or provide a supported capture step. The step also uses literal `#waiting-id` in `turns drop`, which has no registered interpolation (only `#held-id` is interpolated).
 
 Worker checkpoint (in `isaac-agent-70cr`, `bean/isaac-70cr`): TurnStore port with memory/file adapters and atomic in-process claim unit spec green (`bb spec --focus spec/isaac/turn/store_spec.clj`), queue/prompt/worker/CLI integration in progress and acceptance red (`bb features features/turn/turn_store.feature`, 4 failures). No green full suite or gate; no landing attempted. Resume at `spec/isaac/turn/queue_steps.clj:43` for capture/interpolation once planner resolves the contract. The `@wip` removal is the only feature edit.
+
+
+## Planner adjustment (2026-09-28, prowl@isaac-plan) — stdout matches is a regex
+
+Do not build a capture DSL into `Then the stdout matches:`. That step runs each row as a raw regex (`cli_steps/stdout-matches`). `#"[a-z0-9]+":turn-id` and `#turn-id` inside that table are not captures. Only `stdout-json-contains` and `stdout-edn-contains` use the step-table DSL.
+
+The one capture that already works is the held-id path: a line `held: <id>` is stored, and a later command interpolates `#held-id`. Extend that same hook. Do not add a second interpolation name.
+
+### Contract (isaac-agent main `8c36e43`, file still `@wip`)
+
+- `prompt --queue` prints `queued: <id>`. The postflight stores that id as `:turn-id`, the same way it stores `:held-id` from `held:`.
+- `turns show #turn-id` prints the id, session, state, and outcome as plain lines. The scenario matches those lines as regex rows. Scenarios 1 and 2 use this. They no longer match a column table.
+- `turns list` / `turns list --all` assertions are regex rows (`Status\?`, `ok`, `error`, `tide-9`, `one`, `two`, `three`, `merged-into`, `dropped`). Not column tables.
+- A waiting turn's list prints `waiting: <id>`. The postflight stores that id as `:held-id`. The drop command is `turns drop #held-id`. There is no `#waiting-id`.
+
+`turns show <id>` is in this bean. It prints the record's id, session, state, and outcome, one per line. isaac-d6pw may add origin and a richer show later. Do not wait for it.
+
+### Re-baselined
+
+    feature-baseline: isaac-agent 8c36e43998b6dbae9c7b7d5af46263f39ace0a0a
+    feature-blob: isaac-agent features/turn/turn_store.feature ee6be659a6e7eb4a1bfe313279b204036badd8d8
+
+The file is `@wip`, so the blob names no lines. All six scenarios are this bean's. Drop the file `@wip` only after they pass.
+
+### Worker now
+
+1. Rebase `bean/isaac-70cr` onto `8c36e43`. Keep the implementation (`3cff743`). Feature diff may only drop the file `@wip`.
+2. Extend the existing postflight: `queued: <id>` → `:turn-id`, `waiting: <id>` → `:held-id`. Interpolate `#turn-id` and `#held-id` in later `isaac` commands. Do not implement table-cell capture.
+3. `bb features features/turn/turn_store.feature` green, then `bb bean-gate verify isaac-70cr` exit 0, then land. Do not land while the file is `@wip` on main.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-agent 8c36e43998b6dbae9c7b7d5af46263f39ace0a0a
+feature-blob: isaac-agent features/turn/turn_store.feature ee6be659a6e7eb4a1bfe313279b204036badd8d8
