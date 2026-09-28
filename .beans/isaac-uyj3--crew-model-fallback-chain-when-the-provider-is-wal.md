@@ -1,7 +1,7 @@
 ---
 # isaac-uyj3
 title: Crew model fallback chain when the provider is walled
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -46,3 +46,6 @@ Written `@wip` in `isaac-agent` `features/llm/model_fallback.feature` at `56c9a0
 12. The jump log names the skipped model and the reason.
 
 Promote to `todo` only after those scenarios are committed `@wip` and `bb bean-gate baseline` has frozen them.
+
+feature-baseline: isaac-agent 56c9a06a056f3192753625e90c39f56efaf89eab
+feature-blob: isaac-agent features/llm/model_fallback.feature edef9234ff51faec816724ca0e22942cd539d6ca 43,73,92,116,138,165,188,208,228,246,264,285
