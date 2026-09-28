@@ -7,7 +7,7 @@ priority: high
 tags:
     - agent
 created_at: 2026-09-28T14:10:02Z
-updated_at: 2026-09-28T14:54:57Z
+updated_at: 2026-09-28T18:29:25Z
 ---
 
 A crew names an ordered fallback chain. When the model at the head of the chain is unavailable, the turn continues on the next model that can take it. The transcript and the tool results already written stay. The tools are not run again.
@@ -26,7 +26,11 @@ The model that answers keeps the rest of the turn. The next user message returns
 
 The jump is logged with the skipped model and the reason. The transcript records which model wrote the reply. Discord says the provider is broken only when the chain is exhausted.
 
-## Scenario plan (not yet written)
+## Scenarios
+
+Written `@wip` in `isaac-agent` `features/llm/model_fallback.feature` at `56c9a06`. One new step: `LLM request N has no <path>`. Still draft until `bb bean-gate baseline` freezes them.
+
+## Scenario plan
 
 1. A walled primary continues the turn on the next model. Tool results already written are not run again. The reply is stamped with the fallback model.
 2. A 400 contract error does not fall back.
