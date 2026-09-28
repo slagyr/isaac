@@ -1,11 +1,11 @@
 ---
 # isaac-5gu1
 title: Remove :reach (fan-out) from session frequencies everywhere
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-28T01:32:07Z
-updated_at: 2026-09-28T01:52:08Z
+updated_at: 2026-09-28T01:58:27Z
 parent: isaac-q3u3
 ---
 
@@ -49,3 +49,22 @@ Every live use is `:reach :one`, which is already the default (Hail `bands.clj` 
 ## Fan-out scenarios owned here (2026-09-27)
 
 isaac-hail scenarios that exist only for fan-out are removed by this bean (not by isaac-ex4q): `bands.feature:34` (becomes: `:reach` is rejected as an unknown key), `delivery.feature:222`, `explicit-session-routing.feature:37`, `hail-get.feature:67` and `:79`, `hail-naming.feature:40`, `router.feature:142` and `:313`. Do not edit any `@wip` scenario another bean has baselined.
+
+
+## Acceptance
+
+Scenarios (`@wip` on main): isaac-agent 928ff78, isaac-hail f08d6b5. Remove `@wip`; all pass:
+
+- [ ] isaac-agent: `bb features features/session/default_frequencies.feature:79` — `:reach` in `:defaults :frequencies` fails `config validate`
+- [ ] isaac-hail: `bb features features/bands.feature:34` — a band with `:reach` fails validation; `bb features features/send-addressing.feature:82` — `hail send --prompt 'orphan'` (no selector, no `--reach` flag) still refuses naming addressing
+- [ ] Already done on main by the planner (f08d6b5): fan-out scenarios deleted (delivery reach-all child, explicit-session prevents fan-out, hail-get broadcast parent + fan-out child, hail-naming reach-all children, router broadcast + reach-all zero-match); `reach :one` rows/lines stripped from all Hail scenarios (it was the default); bands frontmatter type-conflict scenario now uses `prefer: 5`.
+- [ ] Unit specs: gchat space schema rejects `:reach`; cron, hooks, discord manifests no longer declare it.
+- [ ] One-time checks: `git grep -n ':reach\|reach-modes\|--reach'` finds nothing in src/resources of isaac-agent, isaac-hail, isaac-gchat, isaac-cron, isaac-hooks, isaac-discord. Hail's broadcast code (`hail/broadcasts`, `:children`, `:source-hail`) is gone.
+- [ ] Do not edit isaac-acp `features/comm/acp/default_frequencies.feature` — its `:reach :one` prose line belongs to isaac-asik's baselined contract; fix it after asik lands.
+- [ ] Each module: `bb verify` green, version bump, repin isaac-agent; bump the modules.edn registry.
+
+feature-baseline: isaac-agent 928ff788bcb444b8e170fdeeafb08485a0895e3d
+feature-baseline: isaac-hail f08d6b500ec2b86d3b0c00e29e6ec0e48b2068fb
+feature-blob: isaac-agent features/session/default_frequencies.feature db5289eb885b00b066fe720a08b3b23a2193a705 79
+feature-blob: isaac-hail features/bands.feature 1c9105533a86daebef51e6d05ed3dd4af37ad861 34
+feature-blob: isaac-hail features/send-addressing.feature bb1721453d51ce5d4412b7e320afee17b53dbf76 82
