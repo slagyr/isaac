@@ -67,7 +67,7 @@ feature-blob: isaac-foreman features/foreman/events.feature f1d57799352c714fc891
 
 ## Work checkpoint (2026-09-27)
 
-Done: durable received/duplicate records and drain, event history/status rendering, CLI --id, tool/HTTP/turn-observer module wiring, version bump, @wip removed; focused core JVM spec green (6 examples). Next: restore full spec compatibility (current `bb spec` red: 4 failures — legacy store record shape and CLI fixture validation against current foundation), then feature failures (5/6; tool fixture config, HTTP auth token, unconsumed status and turn observation). Resume at `spec/isaac/foreman/cli_spec.clj:23` and `src/isaac/foreman/store.clj:61`; run `bb spec` and `bb features features/foreman/events.feature`. No green full suite/claim of completion yet.
+Done: rebased bean branch onto 04935d8; registered `:foreman/signal`, preserved the corrected feature with only file-level @wip removed; fixed HTTP/observer root resolution and tool caller metadata; separated newline-less injected received rows on append. `ISAAC_TEST_TIMEOUT_MS=120000 bb features features/foreman/events.feature` green (6 examples, 29 assertions); focused store spec green (7 examples). Committed and pushed d599c83 on `bean/isaac-tjjm`. Next: run `bb spec`, `ISAAC_TEST_TIMEOUT_MS=120000 bb ci`, individual acceptance selectors, then `bb bean-gate verify isaac-tjjm` from isaac and land if exit 0. Resume at `src/isaac/foreman/store.clj:27` (append boundary) and `src/isaac/foreman/tool.clj:9` (crew/session metadata). Default 60s JVM feature wrapper timed out *after* 6/0 reporting; 120s override exited 0.
 
 ## Acceptance conflict (2026-09-27)
 
