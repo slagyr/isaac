@@ -1,11 +1,11 @@
 ---
 # isaac-5gu1
 title: Remove :reach (fan-out) from session frequencies everywhere
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-28T01:32:07Z
-updated_at: 2026-09-28T15:29:06Z
+updated_at: 2026-09-28T16:08:32Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-asik
@@ -112,3 +112,15 @@ Done: isaac-agent removes reach schema/default, rejects default reach via config
 ## Worker checkpoint (2026-09-28, landing)
 
 Done: corrected planner baseline is on this branch; gate PASS with agent/hail worktrees. Agent `bb verify` green and landed on main b1de8dc554ff9eefac90ea34e6e1902c642d2aaf. Cron, Discord, Gchat, Hooks, Hail branches rebased, pinned to landed agent in deps.edn and bb.edn, and pushed; cron/Discord integration failures from upstream behavior were fixed with tests. `bb ci` green for all five (gchat/hail before bb.edn pin, cron/Discord/hooks after). Next: land downstream repos from their clean bean branches, re-run gate then land Hail, update isaac/modules.edn and main-sha lines, complete bean. Resume from `../isaac-gchat-5gu1/bb.edn:1`: re-run `bb ci`, then squash/push gchat, cron, hooks, discord; `bb bean-gate verify isaac-5gu1 --dir isaac-agent=../isaac-agent-5gu1 --dir isaac-hail=../isaac-hail-5gu1` before Hail landing.
+
+## Landed on main (2026-09-28)
+
+main-sha: isaac-agent b1de8dc554ff9eefac90ea34e6e1902c642d2aaf
+main-sha: isaac-gchat 8bf47707924b5678c8b655d972a7ec3235e28ffd
+main-sha: isaac-cron 9c13a6a43c911f3d4595b31bca295615c75bbb9d
+main-sha: isaac-hooks 3a6377051052d9a88cc6a368b62b576bcaee75ad
+main-sha: isaac-discord 28ce56789d7570be1155174f76723a4b2b550ef7
+main-sha: isaac-hail efa8f1909dda2cdec9ccf76b57bacb6a94a21957
+main-sha: isaac 36061659bc9f337c8c6eeb2c7de2a940b1966c1a
+
+All six module suites green; `bb bean-gate verify isaac-5gu1` PASS against the landed agent/hail main refs. ACP feature remains untouched for isaac-asik. The historical acceptance text mentioning `prefer: 5` was superseded by the planner's corrected baseline for `create: 5`.
