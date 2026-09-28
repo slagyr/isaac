@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T18:37:50Z
+updated_at: 2026-09-28T19:14:25Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
@@ -81,3 +81,19 @@ Surfaces: keep `hail send`, the `hail-send` tool, `POST /hail/send`. `hail show`
 4. **Output:** `hail send` prints the turn id; `--edn` / `--json` print the turn id plus what was submitted. `sent-at` becomes the turn's `created-at`.
 5. **One new Hail step does most of the rewriting:** `the turn Hail submitted has:` (path/value table over the newest Agent turn record). Mechanical rewrite recipe: drop router/worker ticks; "pending hail EDN contains" → "the turn Hail submitted has"; `hail_get` → `turn__get` / `turns show`; scenarios that check a real turn's transcript get `the turn queue ticks at`. "no pending hails" → `turns list --all` prints nothing.
 6. **One bean** (two would leave Hail half-migrated). Micah reviews the pattern — the new step, ~5 new scenarios, 3 representative rewrites — then the planner applies it to the rest.
+
+
+## Acceptance
+
+Features on isaac-hail main at 5a5e517 (`@wip` per scenario). Remove every `@wip`; all pass:
+
+- [ ] `bb features features/handoff.feature` — 5 new scenarios: submit + turn id, busy target waits in Agent, refusals at send, reply threading through turn ids, idempotency key
+- [ ] `bb features` — every rewritten scenario in band-inheritance, commands, crew-tool, delivery (3 left: `--with-model`, band `cycle.limit`, band `cycle` map), explicit-session-routing, hail-band-data, hail-band-prompts, hail-metadata, hail-threading, http, router (retitled "Hail addressing"), send, send-addressing, session-create
+- [ ] New step `the turn Hail submitted has:` (path/value over the newest Agent turn record). Delete the removed Hail steps (router/worker ticks, pending/delivery hail EDN, hail_get, broadcast/child, marker/claim, dir-scan, bare hail id).
+- [ ] Already done by the planner (5a5e517): deleted bound_unclaimed, context_window_guard, dead_letter_resurrection, hail-get, hail-naming, turn-marker-claim, turn-resume features and the removed scenarios in delivery, router, hail-metadata.
+- [ ] isaac-agent: turn requests accept a generic `:preamble` string, added to that turn's system prompt (the drive stays generic); spec + a scenario-free unit spec in agent.
+- [ ] Surfaces: `hail show` / `hail drop` / `hail requeue` subcommands and the `hail-get` tool removed (replaced by `turns show` / `turns drop` / `turn__get`); `--idempotency-key` on `hail send`, `idempotency-key` on HTTP and the tool.
+- [ ] One-time checks: no `hail/` directory is created by any send; `git grep` finds no `delivery_worker`, `router` scheduler task, `hail.store`, or `hail.attention` in isaac-hail src.
+- [ ] Orchestration prompts/skills that call `hail_get` or `isaac hail show` switch to `turn__get` / `isaac turns show` in the same deploy.
+- [ ] Deploy note: drain in-flight hails on zanebot before cutover.
+- [ ] `bb verify` green in isaac-hail and isaac-agent; version bumps; repin; modules.edn registry.
