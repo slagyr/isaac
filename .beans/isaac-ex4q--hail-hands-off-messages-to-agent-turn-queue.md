@@ -1,11 +1,11 @@
 ---
 # isaac-ex4q
 title: Hail hands off messages to Agent turn queue
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T20:44:41Z
+updated_at: 2026-09-28T20:45:34Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-l3vb
@@ -152,3 +152,25 @@ Hail rebased, HTTP feature GREEN (12), addressing/send-addressing GREEN (24), ha
 Acceptance complete locally: isaac-hail `bb ci` GREEN (102 features/53 specs), isaac-agent `bb verify` GREEN (915 features/1822 specs; one pre-existing Agent pending). Hail branch `bean/isaac-ex4q` at 7e9a3a85b26969c2d4c8d80e50b6536e336f8a72, Agent branch `bean/isaac-ex4q` at a9252572b49a92dab9aacc28ee43557255a18687. The implementation removed all @wip and retired the Hail runtime. Deploy requires draining in-flight legacy hails on zanebot first.
 
 `bb bean-gate verify isaac-ex4q --dir isaac-hail=../isaac-hail-ex4q --dir isaac-agent=../isaac-agent-ex4q` exits 1 with 14 failures: when re-baselining the corrected hail-band-prompts.feature onto aeca9e7, the prior 14 feature-blob lines were superseded by the final lone blob. Gate therefore treats those 14 legitimate @wip removals as edits to unbaselined files. Planner action needed: append a new feature-baseline for isaac-hail at aeca9e7 and **all fifteen** blobs from the original 5a5e517 baseline (or same blob IDs at aeca9e7), using the corrected ab4c44ea blob for hail-band-prompts.feature, scoped to line 100 as before if intended. Planner should re-run gate, then re-hail this worker to land. Do not edit frozen scenarios beyond removing @wip.
+
+feature-baseline: isaac-hail aeca9e705fae7fedc7658494406cca792c3f05d1
+feature-blob: isaac-hail features/band-inheritance.feature 2ee5eabf31cb89fd04c33d8b2390fb2ac1ba2e34
+feature-blob: isaac-hail features/explicit-session-routing.feature cd96c66544440d4a227a21ab84491e7d8db8251c
+feature-blob: isaac-hail features/delivery.feature 5e21ad17308d321a015eafd3c0e9452a0e19a4a5
+feature-blob: isaac-hail features/commands.feature eb3b4309d8b2a473fdce6fc5c96fc938e3cccc3c
+feature-blob: isaac-hail features/crew-tool.feature 8c5b786578e74b8b3dafa470b8387bf73e449497
+feature-blob: isaac-hail features/hail-threading.feature a0b3084754dbc292001a45d32167d39f28b28d23
+feature-blob: isaac-hail features/hail-band-data.feature c3254b8c2d18b08350c172bcb372cc4ec66d1c0d
+feature-blob: isaac-hail features/hail-metadata.feature 868055a9bb2df3f4031a11b285e948b4c8781753
+feature-blob: isaac-hail features/send-addressing.feature c864ab9677e09fa2943e01d8c81d820fe07693a2
+feature-blob: isaac-hail features/handoff.feature f53f61268fd18901791d3944db736ccf9f17bb7b
+feature-blob: isaac-hail features/router.feature 569458809792d9b357a7c37fd9fb4ac84c4e5027
+feature-blob: isaac-hail features/http.feature 4c125aaf70f0824b8063c7f4455ccb4d622f1ba8
+feature-blob: isaac-hail features/hail-band-prompts.feature ab4c44ea93fc73a34364e38033be6cd171336488
+feature-blob: isaac-hail features/send.feature 3a1e7aa1cf37e94ec8adf45f582e76ad279f929e
+feature-blob: isaac-hail features/session-create.feature 1ede1ac7c2bfffd75046e61587534671c70f1b88
+
+
+## Planner re-baseline (2026-09-28, plan session)
+
+Fixed the gate conflict the worker reported: the corrected `hail-band-prompts.feature` re-baseline had left only that one file in force. Re-baselined **all fifteen** files at isaac-hail aeca9e7, whole-file (every `@wip` in them is this bean's), including the corrected `hail-band-prompts.feature` (blob ab4c44ea). No scenario text changed. Worker: rebase if needed, re-run the gate, and land.
