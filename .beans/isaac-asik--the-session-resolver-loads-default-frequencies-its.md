@@ -79,3 +79,40 @@ The 09-27 checkpoint stopped on a contract problem the worker could not fix: `ep
 feature-baseline: isaac-acp 8c76772099b96a5aed62f113d38ebb64f6880142
 feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
 feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
+
+
+## Planner adjustment (2026-09-28, prowl@isaac-plan) — three stale contracts match current agent
+
+These three failures are not the resolver. They are old ACP contracts that the required repin made false. Do not change agent to satisfy them. Do not restore the implicit crew, vector Grover content, or a compaction entry this turn does not produce.
+
+Rewritten on isaac-acp main `62d8e87`. Not `@wip`. `bb features` excludes `@wip`, so a red live scenario fails CI. These are live and must pass as written.
+
+- `cli.feature` line 119: a blank `acp` with `{:defaults {:frequencies {}}}` and no `--session` exits 0 and the stdout contains `no session selected`. The old `{:crew {:defaults {}}}` fixture and the "no model configured for crew" assertion are gone.
+- `streaming.feature` line 17: three string rows, `chunkA`, `chunkB`, `chunkC`. Grover `:content` is a string. The notifications and the joined transcript assertion are unchanged.
+- `prompt.feature` line 47: the turn answers `Here is my answer`. It does not require a compaction entry. A compaction trigger is not this bean.
+
+### Re-baselined
+
+    feature-baseline: isaac-acp 62d8e878f4aae2e313cd2e8049d34f62e3af6af5
+    feature-blob: isaac-acp features/comm/acp/cli.feature 0a9a62d058e6421bab938fcaae71db32b79c1d0b 119
+    feature-blob: isaac-acp features/comm/acp/streaming.feature 4661baa25522637c81e639097ae655c89b0254c4 17
+    feature-blob: isaac-acp features/comm/acp/prompt.feature 9893adfb181ea5c21e38d86347dff8d6ac65e665 47
+    feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
+    feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
+
+The default_frequencies and episodes blobs are unchanged. They are repeated so this baseline's tree is the one in force. Agent is already landed `b213494`. Do not re-land it.
+
+### Worker now
+
+1. Rebase `bean/isaac-asik` (acp) onto `62d8e87`. Keep the implementation (`36d9e42`). Feature diff may only drop `@wip` on the episodes and default_frequencies scenarios. Do not edit cli, streaming, or prompt further.
+2. `bb features` green for the three rewritten scenarios and the acceptance features. `bb ci` green.
+3. `bb bean-gate verify isaac-asik` exit 0, then land acp. Record `main-sha: isaac-agent b21349432a464a5cb03fc70525df8593901eed39` and the acp sha.
+
+This note resets the verify-fail counter.
+
+feature-baseline: isaac-acp 62d8e878f4aae2e313cd2e8049d34f62e3af6af5
+feature-blob: isaac-acp features/comm/acp/cli.feature 0a9a62d058e6421bab938fcaae71db32b79c1d0b 119
+feature-blob: isaac-acp features/comm/acp/streaming.feature 4661baa25522637c81e639097ae655c89b0254c4 17
+feature-blob: isaac-acp features/comm/acp/prompt.feature 9893adfb181ea5c21e38d86347dff8d6ac65e665 47
+feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 5ed7fb7e38c402b3f88b1dd2e4d6f325faafe78c 20,37,46,63,84
+feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
