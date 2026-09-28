@@ -1,11 +1,11 @@
 ---
 # isaac-5gu1
 title: Remove :reach (fan-out) from session frequencies everywhere
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-28T01:32:07Z
-updated_at: 2026-09-28T14:01:37Z
+updated_at: 2026-09-28T15:29:06Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-asik
