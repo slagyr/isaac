@@ -5,8 +5,10 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-28T01:32:07Z
-updated_at: 2026-09-28T01:58:27Z
+updated_at: 2026-09-28T14:01:37Z
 parent: isaac-q3u3
+blocked_by:
+    - isaac-asik
 ---
 
 Likely repos: **isaac-agent** first (schema + resolver), then every consumer: isaac-hail, isaac-gchat, isaac-cron, isaac-hooks, isaac-discord, isaac-acp; plus deployed config in **orchestration** and live config on zanebot/yopp.

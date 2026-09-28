@@ -5,12 +5,13 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-08-25T18:57:47Z
-updated_at: 2026-09-28T01:32:07Z
+updated_at: 2026-09-28T14:01:37Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-ohsy
     - isaac-ey7a
     - isaac-70cr
+    - isaac-asik
 ---
 
 Likely repos: **isaac-agent** (selection in core) then **isaac-hail** (router
