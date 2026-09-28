@@ -1,11 +1,11 @@
 ---
 # isaac-lr8h
 title: 'Foreman F3: submit turn actions through Agent'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-28T04:31:08Z
+updated_at: 2026-09-28T05:08:52Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-tjjm
@@ -93,3 +93,10 @@ Done: Foreman branch rebased onto c936754; feature diff only removes @wip. CLI -
 ## Worker checkpoint (2026-09-28, scrapper@isaac-work-1, second pass)
 
 Done: Agent keyed submission, durable observer refs, key propagation through held turn, and CLI --data/retry; agent focused spec green (3 examples), committed/pushed c83d836. Foreman feature RED 2/4 after first key patch (busy pool status + lost-request retry); Foreman changes uncommitted pending acceptance. Next: rerun feature with corrected key propagation and inspect failing step, then bb ci/gate. Resume at isaac-foreman/src/isaac/foreman/core.clj:72 and isaac-agent-lr8h/src/isaac/turn/worker.clj:42. Run `clojure -Sdeps '{:aliases {:work-lr8h {:override-deps {io.github.slagyr/isaac-agent {:local/root "../isaac-agent-lr8h"} io.github.slagyr/isaac-agent-spec {:local/root "../isaac-agent-lr8h/spec"}}}}}' -M:work-lr8h:features features/foreman/turn_action.feature` from isaac-foreman.
+
+## Landed on main (2026-09-28)
+
+main-sha: isaac-agent 2724899d1d7b69f9c4b8239930f4b03dbd631090
+main-sha: isaac-foreman 753118c5d9719b4a73f3d3c899fa1f0247fd191f
+
+Agent `bb ci`: 1793 specs / 905 features, 0 failures (one pre-existing pending). Foreman `bb ci`: 42 specs / 16 features, 0 failures. `bb features features/foreman/turn_action.feature`: 4 examples, 0 failures, 21 assertions. `bb bean-gate verify isaac-lr8h`: exit 0 after Foreman squash. Feature diff removes only @wip. `git grep ':hail\|:band'` in Foreman src/resources: no matches.
