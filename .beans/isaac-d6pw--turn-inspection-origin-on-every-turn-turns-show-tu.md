@@ -1,11 +1,11 @@
 ---
 # isaac-d6pw
 title: 'Turn inspection: origin on every turn, turns show, turn_get tool'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-28T01:52:08Z
-updated_at: 2026-09-28T18:25:32Z
+updated_at: 2026-09-28T18:45:03Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-70cr
@@ -114,3 +114,10 @@ This note resets the verify-fail counter.
 feature-baseline: isaac-agent 16cb19c12c4fcd2b4f279ed13884d079b67b67a3
 feature-blob: isaac-agent features/turn/turn_inspection.feature 14b4c33e3a6c7aa874ba43aee2a8bb3f6e2f5416
 feature-blob: isaac-agent features/tool/permissions.feature 5d435b7323961287b9a0aade5d17556453266761 18,49,83,120,190
+
+## Landed on main (2026-09-28)
+
+Agent `bb ci`: 1808 specs, 915 feature examples, zero failures (one pre-existing pending). Foreman `bb ci`: 42 specs, 16 feature examples, zero failures. Bean gate: exit 0 on agent squash commit.
+
+main-sha: isaac-agent 6736ca27ff3665767bddc5b00b56704f4c1270cd
+main-sha: isaac-foreman 09419d62327b0183f6719d09f24a9a1c74e235fd
