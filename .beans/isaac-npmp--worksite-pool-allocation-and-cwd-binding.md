@@ -61,3 +61,11 @@ feature-blob: isaac-worksite features/worksite/lock.feature f8d38eb9c4818b5bb174
 ## Worker checkpoint (2026-09-28)
 
 Done: Agent member-schema change on `bean/isaac-npmp-rebased` at 8f9fd19 (rebased against current main); `bb ci` green (1796 specs, 905 features, one pre-existing pending). Worksite branch `bean/isaac-npmp` at f2d3e8b, `bb ci` green (16 specs, 8 features), including all baselined scenarios without @wip. Next: gate from isaac with explicit checkout paths; land Agent first, repin Worksite from upstream pre-squash SHA to Agent main SHA (`bb.edn:31`, `deps.edn:9`), then land Worksite and bump `modules.edn:52`. Note: prior Agent branch remote contains original pre-rebase commit; current rebased branch is pushed separately, no force-push. Resume at `isaac-worksite/bb.edn:31` after Agent landing. 
+
+## Landed on main (2026-09-28)
+
+main-sha: isaac-agent 92cd8a1307d28b13f378e6a53aa4b2ff06618356
+main-sha: isaac-worksite 8d9ab8aea1026ca88d4d7d5af24deceb8bdf58f3
+main-sha: isaac 4019a454e6708b720eedc5ec4fa18996df434335
+
+Verification: Agent `bb ci` green (1796 specs, 905 features, one pre-existing pending); Worksite `bb ci` green (16 specs, 8 features). `bb bean-gate verify isaac-npmp --dir isaac-worksite=../isaac-worksite --dir isaac-agent=../isaac-agent-kleb` PASS on squash commits. Worksite version 0.1.2; module registry repinned to landed main.
