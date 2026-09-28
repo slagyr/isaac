@@ -1,11 +1,11 @@
 ---
 # isaac-tjjm
 title: 'Foreman F2: durable event intake and turn observations'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-27T22:33:11Z
-updated_at: 2026-09-27T23:37:25Z
+updated_at: 2026-09-28T00:12:32Z
 parent: isaac-q3u3
 ---
 
@@ -176,3 +176,9 @@ feature-blob: isaac-foreman features/foreman/events.feature f04030887455f807a29d
 ## Work checkpoint (2026-09-27, scrapper@isaac-work-1)
 
 Done: rebased implementation on corrected 04935d8 planner baseline, switched berth to :foreman/signal (wire foreman__signal), removed only @wip. Red: `bb features features/foreman/events.feature` runs 6 examples, 4 failures, 15 assertions. Tool/turn observation and backstop scenarios now advance, but tool history assertion, HTTP (404 instead of 202), and unconsumed CLI output remain red. No green full run; do not land. Next: inspect direct-response registration in `../isaac-http/spec/isaac/http/server_steps.clj:545` and `src/isaac/foreman/core.clj:136` (history-line) to identify why route not registered and CLI status history misses expected pattern; run focused `bb features features/foreman/events.feature:47`, then full feature and gate.
+
+## Landed on main (2026-09-27)
+
+main-sha: isaac-foreman c4a61d4c24c1a74d2d5c8bb8537471028ac9ea8d
+
+The corrected implementation passes `bb features features/foreman/events.feature` (6/0), `bb ci` (33 specs and 13 features, 0 failures), and `bb bean-gate verify isaac-tjjm` (exit 0) on the squash commit. The earlier checkpoint's red result predates the fix.
