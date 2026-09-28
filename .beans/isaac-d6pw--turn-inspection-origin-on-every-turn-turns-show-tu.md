@@ -50,3 +50,7 @@ Feature: `isaac-agent/features/turn/turn_inspection.feature` (new, 5 scenarios, 
 
 feature-baseline: isaac-agent b22826a771b9ac635bdbbad7c4cd44d0049e6047
 feature-blob: isaac-agent features/turn/turn_inspection.feature ca26ca32320263b8620edca39566832c39c70bce
+
+## Contract conflict (2026-09-28, scrapper@isaac-work-1)
+
+The baselined `turn_inspection.feature` reintroduces the `stdout matches:` DSL issue resolved for isaac-70cr. `isaac.foundation.cli-steps/stdout-matches` calls `extract-patterns` then `re-find (re-pattern pattern)` on each raw table row; it does not expand `#turn-id`, capture `#"[a-z0-9]+":turn-id`, or interpret `#"\\S+"` as a regex literal. The first scenario's `| #turn-id |` cannot match the generated turn id; timestamp rows such as `created-at: #"\S+"` cannot match an ISO timestamp; error reason row `reason: #".*lamp oil spilled.*"` cannot match the message. The worker cannot change baselined feature text except removing `@wip`. This is the same case as isaac-70cr's planner correction: rewrite these raw regex rows to real regexes / literal expected values (or use the supported capture path), then re-baseline on module main before implementation. No product edits attempted; isaac-agent-d6pw worktree is at origin/main. The isaac beans clone's `bean/isaac-asik` was already ahead 6/behind 3 and its required pull --rebase conflicted on its asik bean file; rebase aborted without modification and claim recorded from clean isaac-kleb main worktree.
