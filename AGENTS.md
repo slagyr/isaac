@@ -168,19 +168,6 @@ change. In the planner's own order of work:
    bean's git history and treats those lines, plus everything under
    `## Acceptance…` and `## Exceptions`, as **append-only**.
 
-   **A new `feature-baseline:` line drops every earlier `feature-blob:` for
-   that repo.** The gate keeps only the blobs that appear after the latest
-   baseline. Re-baselining one corrected file and not repeating the others
-   makes those other files look like edits the bean never froze. The worker
-   then fails the gate, hands the bean back, and the planner appends another
-   partial baseline. That loop is the thrash. When you re-baseline, repeat
-   every file that is still this bean's contract, after the new baseline
-   line, in the same update. A line-less blob freezes every `@wip` scenario
-   in the file. Pass scenario line numbers when the file contains another
-   bean's scenarios. When `bb bean-gate verify` already exits 0, the worker
-   lands. It does not start another full `bb ci`, and it does not hand the
-   bean back to the planner.
-
 5. **Dispatch checks readiness:** `bb bean-gate ready <bean-id>` exits 0 when
    the bean is `todo` and baselined, else 1 with the reason (`not baselined`,
    `status draft`, …). Do not hail `isaac-work` on a non-zero exit.
