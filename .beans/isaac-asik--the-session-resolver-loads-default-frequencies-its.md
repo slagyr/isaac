@@ -1,11 +1,11 @@
 ---
 # isaac-asik
 title: The session resolver loads default frequencies itself
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-27T02:25:46Z
-updated_at: 2026-09-28T14:00:56Z
+updated_at: 2026-09-28T14:32:52Z
 ---
 
 Follow-up to isaac-vp7h, which is deployed. A blank `acp` on Yopp exits 1 with "no session selected". The launcher papered over it with `--crew yopp`, and that opens a new session on every connect because the episodes policy answers no default session.
