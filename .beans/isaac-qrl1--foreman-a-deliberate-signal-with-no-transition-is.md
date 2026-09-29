@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-29T15:47:20Z
-updated_at: 2026-09-29T16:27:44Z
+updated_at: 2026-09-29T16:28:25Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-50zy
@@ -89,3 +89,7 @@ feature-blob: isaac-foreman features/foreman/events.feature 724768bd4a36490485b3
 ## Planner re-baseline (2026-09-29, plan session)
 
 The gate failure above was the planner's: an in-place edit to an Acceptance line (later reverted) still counts in the contract history. Fresh baseline at current isaac-foreman main re-cuts it; scenarios and text unchanged. Worker: re-run the gate and land.
+
+feature-baseline: isaac-foreman 4767bcef60dddae02f1b30c33aa4613777ee6165
+feature-blob: isaac-foreman features/foreman/cli.feature 5c429f591ae6469debb2f7578a11a9399eab92cb 46
+feature-blob: isaac-foreman features/foreman/events.feature 724768bd4a36490485b399f263959c4bd14c5676
