@@ -1,11 +1,11 @@
 ---
 # isaac-gp4g
 title: modules show reports a module's description, manual and contributions
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-29T15:58:40Z
-updated_at: 2026-09-29T16:03:19Z
+updated_at: 2026-09-29T16:33:09Z
 ---
 
 Design: Micah + planner, 2026-09-29. First bean toward **isaac-manual**, the ship's operating manual. isaac-manual is a module whose `manual__read` tool is generated from live config + installed modules, and whose `manual__configure` tool is the write operation, granted separately. This bean is the foundation layer it reads from.
@@ -33,3 +33,7 @@ Scenarios in `isaac-foundation/features/module/modules_show_manifest.feature` (4
 
 feature-baseline: isaac-foundation cde1a05792e62c721195a35f234af36cbae7798f
 feature-blob: isaac-foundation features/module/modules_show_manifest.feature 1bb365592b3390012234fd7ecc45cbd8194e800d
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-foundation b83ff93820ccc7220193ff6b34b4471459d1095b
