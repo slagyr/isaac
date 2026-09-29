@@ -1,11 +1,11 @@
 ---
 # isaac-6ef2
 title: claude-code gauge reads the result's turn-total usage as context size
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
-updated_at: 2026-09-29T15:50:57Z
+updated_at: 2026-09-29T15:53:22Z
 ---
 
 Ruling direction: Micah, 2026-09-29. The compaction gauge on the claude-code provider uses the wrong number to mean "context size."
@@ -77,3 +77,14 @@ Re-baselined onto f9b2d7c, blob 871a3550, lines 532 and 561. The g71i last-cycle
 ## Implementation conflict (scrapper, 2026-09-29)
 
 After correcting the fake to emit assistant usage per cycle and cumulative result usage, the newly baselined scenarios at lines 532 and 561 pass with first-cycle gauge 1200 and 22378 respectively (branch isaac-claude-code bean/isaac-6ef2 @ c1fc04e, base f9b2d7c). The untouched, non-wip isaac-g71i scenario at line 512 contradicts Wanted §2: it explicitly requires the last provider response usage and session last-input-tokens to equal 320 (second cycle), whereas the required first cycle is 260. The existing claude_driver_spec likewise expects second-cycle 320. Running `bb features features/llm/api/claude_driver.feature:512` fails (and bb spec claude_driver_spec fails Expected 320 got 260). Cannot make both contracts true for the same session field without changing the old scenario. Planner must reconcile/rebaseline g71i on main to require first-cycle gauge (while deciding whether last provider response usage should retain its old meaning), then hail work again. Code checkpoint pushed; do not land until contract resolved.
+
+feature-baseline: isaac-claude-code b7b84f56b48ae4b1e59b5337ee10451f468ba077
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 51d7dd1434df7bd061ac0a9e54586fefba6b6a32 513,536,565
+
+## Planner adjustment (2026-09-29, prowl@isaac-plan, g71i)
+
+The g71i scenario is this bean's now. On isaac-claude-code main b7b84f5, Scenario line 513: session gauge is the first cycle, `last-input-tokens` 260. The last provider response keeps the final cycle's own usage, `usage.prompt-tokens` 320 and `usage.cache-read-tokens` 60. Turn spend stays 580.
+
+Re-baselined onto b7b84f5, blob 51d7dd14, lines 513, 536, and 565. All three stay @wip.
+
+`bb spec` in `claude_driver_spec` is not frozen by the gate. The example that asserts the response usage is 320 is the last cycle and stays. Any example that treats 320 as the session gauge moves to 260. Do not edit frozen scenarios except to drop @wip.
