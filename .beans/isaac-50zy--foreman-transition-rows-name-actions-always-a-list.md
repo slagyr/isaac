@@ -1,11 +1,11 @@
 ---
 # isaac-50zy
 title: 'Foreman: transition rows name :actions, always a list'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-29T15:47:20Z
-updated_at: 2026-09-29T15:54:33Z
+updated_at: 2026-09-29T15:58:57Z
 parent: isaac-q3u3
 ---
 
