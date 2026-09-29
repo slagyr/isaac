@@ -45,3 +45,7 @@ feature-baseline: isaac-foreman 74b70f54700baf7aeea410dfe0f246b11b021642
 feature-blob: isaac-foreman features/foreman/machine.feature de6f36319e17886dc95a3ef58907b8f0639e73ee 14,44,69,93
 feature-blob: isaac-foreman features/foreman/cli.feature 41152f141d71b7d294ae2a482e6db1bb898ad230 24,62
 feature-blob: isaac-foreman features/foreman/turn_action.feature fd589ab3afc864f005264bb74edf041f617e28ca 35,55,91,124
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-foreman 4767bcef60dddae02f1b30c33aa4613777ee6165
