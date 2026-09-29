@@ -77,3 +77,5 @@ Deferred design choices for scenario review: exact pool-frequency wire syntax; m
 
 
 (2026-09-27, Micah: **Foreman and Hail are unrelated.** No `:hail` action type in Foreman — not built in, not contributed by the Hail module. Earlier notes above that say otherwise are superseded; F1's `:hail` schema entry is removed in isaac-lr8h.)
+
+(2026-09-29, isaac-qrl1: deliberate signals with no transition are refused — CLI exit 1, tool error, HTTP 409; observations from turns stay lenient.)
