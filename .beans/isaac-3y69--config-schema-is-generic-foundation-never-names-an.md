@@ -1,11 +1,11 @@
 ---
 # isaac-3y69
 title: 'config schema is generic: foundation never names another module''s config'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-29T19:24:33Z
-updated_at: 2026-09-29T19:27:04Z
+updated_at: 2026-09-29T20:06:30Z
 ---
 
 ## Ruling
@@ -222,3 +222,35 @@ feature-baseline: isaac-foundation dc4bc3d7ad07ad5de05619ddcabf054ea334c8c9
 feature-baseline: isaac-agent 8bc1e862afe8d9c334b58ed29c3843a873f13837
 feature-blob: isaac-foundation features/cli/config_schema.feature 2886689e26b15c710d06ecb9b1a9c6c2b8e8006c
 feature-blob: isaac-agent features/config/cli.feature be3696c8660b99880216d3856e8b74a7280d8751 479
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-foundation af448df3b557d4d03a9314ca0bca229a890f1aee
+main-sha: isaac-agent a77bf6f55bf57f4617abc72271024d43b9710f02
+
+Ran locally (zanebot down): `bb spec` + `bb features` green in both repos
+(foundation: 1307 specs / 12 targeted @wip-now-live scenarios; agent: 1827
+specs / 72 config-schema scenarios), agent re-run against the landed
+foundation pin (not dev-local). `bb bean-gate verify` PASS on both landed
+main shas.
+
+Other sibling repos pinning isaac-foundation (isaac-acp, isaac-cron,
+isaac-discord, isaac-hail, isaac-hooks, isaac-imessage, isaac-server,
+isaac-mcp, isaac-http, isaac-cli-proxy, isaac-cli-server, isaac-gchat,
+isaac-gmail, isaac-google, isaac-episodes, isaac-foreman, isaac-worksite,
+isaac-claude-code) were checked: none call `isaac.config.cli.schema`,
+`isaac.config.schema.term`, or `isaac.config.comm-kinds`, so none break and
+none were repinned. isaac-server's own `isaac.http.module/comm-kinds` copy
+is unchanged per the bean's scope note (follow-up bean candidate).
+
+Observed and unrelated to this bean: a full `bb features`/`bb ci` run in
+isaac-foundation (all ~247 scenarios together) nondeterministically fails a
+scenario elsewhere in the suite due to a process-global `builtin-index`
+classpath cache that leaks module contributions across scenarios when many
+feature files run in one process. Reproduced the same class of failure
+(different scenario) on unmodified `origin/main` before this bean's changes
+existed, so it predates this work. The bean's own 12 scenarios pass
+reliably standalone and in combination with the surrounding `cli/` feature
+files. Also saw one unrelated timing flake in isaac-agent's full
+`bb features` (`turn_store.feature` "queued turn runs on the server's own
+tick", bean isaac-2lc4) that did not recur on a clean re-run.
