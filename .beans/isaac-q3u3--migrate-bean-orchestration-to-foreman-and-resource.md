@@ -5,7 +5,7 @@ status: draft
 type: milestone
 priority: normal
 created_at: 2026-09-27T22:33:12Z
-updated_at: 2026-09-27T23:09:08Z
+updated_at: 2026-09-29T13:59:46Z
 ---
 
 Design: Micah + planner, 2026-09-27. **Milestone**: bean orchestration runs on Foreman + Agent turn admission + resource pools, replacing worker-to-worker hail choreography.
@@ -13,7 +13,7 @@ Design: Micah + planner, 2026-09-27. **Milestone**: bean orchestration runs on F
 ## Migration beans (children, in order)
 
 1. isaac-q6fj — machine config and happy path, running alongside the hail path.
-2. isaac-1rtr — failure paths: repair loop, busy worksites, restart mid-handoff, missing signal, auth outage, human escalation.
+2. (merged into isaac-q6fj) isaac-1rtr — failure paths: repair loop, busy worksites, restart mid-handoff, missing signal, auth outage, human escalation.
 3. isaac-20gd — cut over and retire band choreography.
 
 ## Upstream chain

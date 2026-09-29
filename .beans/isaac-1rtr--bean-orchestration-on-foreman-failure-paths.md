@@ -1,10 +1,11 @@
 ---
 # isaac-1rtr
 title: 'Bean orchestration on Foreman: failure paths'
-status: draft
+status: scrapped
 type: feature
+priority: normal
 created_at: 2026-09-27T23:09:08Z
-updated_at: 2026-09-27T23:09:08Z
+updated_at: 2026-09-29T13:59:46Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-q6fj
@@ -26,3 +27,7 @@ Exercise the bean machine's non-happy paths on the Foreman path. A duplicated ev
 6. Human escalation: a held bean appears in `isaac foreman list --state held` with its owner.
 
 Draft until scenarios are approved.
+
+
+## Scrapped (2026-09-29) — merged into isaac-q6fj
+Micah + planner: orchestration has no feature runner, so the migration becomes two ungated beans; the failure rows are part of the one bean-work machine (isaac-q6fj).

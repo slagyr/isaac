@@ -3,12 +3,13 @@
 title: 'Bean orchestration on Foreman: cut over and retire band choreography'
 status: draft
 type: task
+priority: normal
 created_at: 2026-09-27T23:09:08Z
-updated_at: 2026-09-27T23:09:08Z
+updated_at: 2026-09-29T13:59:46Z
 parent: isaac-q3u3
 blocked_by:
-    - isaac-1rtr
     - isaac-ex4q
+    - isaac-q6fj
 ---
 
 Likely repos: **orchestration** (bands, prompts, crew config) and **isaac** (AGENTS.md bean workflow, dispatch docs, hail-bean-work skills). Last of three migration beans under milestone isaac-q3u3.
@@ -26,3 +27,7 @@ Likely repos: **orchestration** (bands, prompts, crew config) and **isaac** (AGE
 - The removed bands are absent from the deployed config and no doc or skill still instructs a worker-to-worker hail.
 
 Draft until the preceding migration bean is complete.
+
+
+## Ungated (2026-09-29)
+Orchestration and isaac-repo docs only; no feature runner. Acceptance is the one-time checks above plus a live todo → completed run on zanebot with no worker-to-worker hail. No Isaac code changes; nothing legacy kept.
