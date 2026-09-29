@@ -1,0 +1,34 @@
+---
+# isaac-qrl1
+title: 'Foreman: a deliberate signal with no transition is refused; observations stay quiet'
+status: draft
+type: feature
+priority: normal
+created_at: 2026-09-29T15:47:20Z
+updated_at: 2026-09-29T15:47:20Z
+parent: isaac-q3u3
+blocked_by:
+    - isaac-50zy
+---
+
+Likely repo: **isaac-foreman**. Decision: Micah + planner, 2026-09-29 — revises the F1 ruling (08-23, isaac-tdgt) that unhandled events are never fatal.
+
+## Why
+
+Today every unhandled event is recorded and warned, and the sender is told OK (CLI exit 0, HTTP 202, tool success). A crew that signals `:landed` while the instance is still `:todo` believes it handed off; the bean sits stuck until someone digs. "Fail" here changes only the answer the sender gets — Foreman does not crash and the instance does not move.
+
+## Contract
+
+- **Deliberate signals** — CLI `foreman signal`, the `foreman__signal` tool, `POST /foreman/events` — with no matching row (explicit or `:*`) are **refused**: message `no transition for <event> from <state>`; CLI exit 1 (stderr), tool error result, HTTP 409. The instance does not change. The refusal is still recorded in history (audit).
+- **Observations** from turns (`:turn-started`, `:turn-ended`, `:turn-failed`, `:turn-died`) have no sender waiting; an unhandled observation stays quiet — recorded in history, never an error. Machines stay sparse: write rows only for the events they care about.
+- Idempotency is unchanged: a repeated event id returns the original answer.
+
+## Scenario plan (to draft)
+
+1. `foreman signal` with no transition exits 1 with `no transition for earthquake from dark`; the instance stays `dark`; history records it. (Rewrites cli.feature "unhandled events are recorded, never fatal".)
+2. A crew's `foreman__signal` with no transition gets a tool error it can read in-turn.
+3. `POST /foreman/events` with no transition answers 409 with the same message.
+4. A `:*` row still catches the event (not refused).
+5. An unhandled turn observation is recorded quietly (existing events.feature coverage stands).
+
+Draft until scenarios exist.
