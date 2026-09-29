@@ -1,11 +1,11 @@
 ---
 # isaac-ppyj
 title: Rename the manifest :manual key to :handbook
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-29T20:24:44Z
-updated_at: 2026-09-29T20:27:12Z
+updated_at: 2026-09-29T20:33:38Z
 ---
 
 Ruling: Micah, 2026-09-29. The module is **isaac-handbook** (after the POH, the Pilot Operating Handbook; repo slagyr/isaac-handbook). "Manual" is retired. A module's operating doc is its **handbook**.
@@ -37,3 +37,7 @@ Rename the manifest key gp4g added, clean cutover (no alias; `:manual` becomes a
 
 feature-baseline: isaac-foundation 64c620cb5e9978dc25326b3ab5a246cf6e444da0
 feature-blob: isaac-foundation features/module/modules_show_manifest.feature 91f4bb72fd5d7a4e3b45bd8634e7fd374a4e781f
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-foundation 5ee1e6f1dec052d39f171daf2b0a8805e89dfb73
