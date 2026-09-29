@@ -1,11 +1,11 @@
 ---
 # isaac-qrl1
 title: 'Foreman: a deliberate signal with no transition is refused; observations stay quiet'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-29T15:47:20Z
-updated_at: 2026-09-29T15:47:20Z
+updated_at: 2026-09-29T15:54:34Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-50zy
@@ -32,3 +32,18 @@ Today every unhandled event is recorded and warned, and the sender is told OK (C
 5. An unhandled turn observation is recorded quietly (existing events.feature coverage stands).
 
 Draft until scenarios exist.
+
+
+## Acceptance
+
+Scenarios `@wip` on isaac-foreman main at 74b70f5. Remove `@wip` from this bean's scenarios; all pass:
+
+- [ ] `bb features features/foreman/cli.feature:47` — refused with `no transition for earthquake from dark`, exit 1, instance stays `dark`, history records it, a later `dusk` still transitions
+- [ ] `bb features features/foreman/events.feature:165` (tool error in-turn) and `:189` (HTTP 409 with the message)
+- [ ] Existing coverage stands: `machine.feature:69` (a `:*` row catches — not refused), `events.feature:109` and `:131` (unhandled observations stay quiet)
+- [ ] Update `isaac-tdgt`'s F1 note: deliberate signals with no transition are refused (2026-09-29); observations stay lenient.
+- [ ] `bb verify` green; version bump.
+
+feature-baseline: isaac-foreman 74b70f54700baf7aeea410dfe0f246b11b021642
+feature-blob: isaac-foreman features/foreman/cli.feature 41152f141d71b7d294ae2a482e6db1bb898ad230 47
+feature-blob: isaac-foreman features/foreman/events.feature 724768bd4a36490485b399f263959c4bd14c5676 165,189
