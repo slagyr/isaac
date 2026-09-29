@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-29T15:47:20Z
-updated_at: 2026-09-29T15:54:34Z
+updated_at: 2026-09-29T16:16:59Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-50zy
@@ -38,7 +38,7 @@ Draft until scenarios exist.
 
 Scenarios `@wip` on isaac-foreman main at 74b70f5. Remove `@wip` from this bean's scenarios; all pass:
 
-- [ ] `bb features features/foreman/cli.feature:46` (was :47 before isaac-50zy landed) — refused with `no transition for earthquake from dark`, exit 1, instance stays `dark`, history records it, a later `dusk` still transitions
+- [ ] `bb features features/foreman/cli.feature:47` — refused with `no transition for earthquake from dark`, exit 1, instance stays `dark`, history records it, a later `dusk` still transitions
 - [ ] `bb features features/foreman/events.feature:165` (tool error in-turn) and `:189` (HTTP 409 with the message)
 - [ ] Existing coverage stands: `machine.feature:69` (a `:*` row catches — not refused), `events.feature:109` and `:131` (unhandled observations stay quiet)
 - [ ] Update `isaac-tdgt`'s F1 note: deliberate signals with no transition are refused (2026-09-29); observations stay lenient.
@@ -51,3 +51,6 @@ feature-blob: isaac-foreman features/foreman/events.feature 724768bd4a36490485b3
 feature-baseline: isaac-foreman 4767bcef60dddae02f1b30c33aa4613777ee6165
 feature-blob: isaac-foreman features/foreman/cli.feature 5c429f591ae6469debb2f7578a11a9399eab92cb 46
 feature-blob: isaac-foreman features/foreman/events.feature 724768bd4a36490485b399f263959c4bd14c5676 165,189
+
+
+(2026-09-29: after isaac-50zy landed, the CLI scenario above is at `cli.feature:46`; the newest baseline lines are in force.)
