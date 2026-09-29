@@ -1,11 +1,11 @@
 ---
 # isaac-1qgv
 title: 'Foreman machine tests: Gherkin features with Foreman-provided steps, run by isaac foreman test'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-29T13:59:46Z
-updated_at: 2026-09-29T15:55:19Z
+updated_at: 2026-09-29T16:31:06Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-50zy
