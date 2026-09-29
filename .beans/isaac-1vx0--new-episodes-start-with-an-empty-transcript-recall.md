@@ -1,11 +1,11 @@
 ---
 # isaac-1vx0
 title: New episodes start with an empty transcript (recall only)
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
-updated_at: 2026-09-29T14:58:51Z
+updated_at: 2026-09-29T15:36:00Z
 ---
 
 Ruling: Micah, 2026-09-29. **A new episode starts with an empty transcript.** The only thing in it is recall for the prompt that opened it.
