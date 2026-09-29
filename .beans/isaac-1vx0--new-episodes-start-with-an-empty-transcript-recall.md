@@ -1,7 +1,7 @@
 ---
 # isaac-1vx0
 title: New episodes start with an empty transcript (recall only)
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
@@ -35,3 +35,6 @@ Evidence: yopp, session `acp-2026-09-28-1645-a6c4`, 2026-09-29 13:51Z. It sat id
 ## Likely repo scope
 
 `isaac-episodes` (ensure-open-container!, recall inject), maybe `isaac-agent` (turn ordering: cold check before `should-compact?`; a session-store truncate/splice without a summary).
+
+feature-baseline: isaac-episodes f5e87dee78204250d86a330e706f5b1c0d0ce2e3
+feature-blob: isaac-episodes features/episodes/live.feature bf841d3b717f37d832de14f2996c6e54b2b2b827 112
