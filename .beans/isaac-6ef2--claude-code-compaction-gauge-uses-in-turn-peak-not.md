@@ -1,11 +1,11 @@
 ---
 # isaac-6ef2
 title: claude-code gauge reads the result's turn-total usage as context size
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
-updated_at: 2026-09-29T14:54:34Z
+updated_at: 2026-09-29T15:37:22Z
 ---
 
 Ruling direction: Micah, 2026-09-29. The compaction gauge on the claude-code provider uses the wrong number to mean "context size."
