@@ -1,11 +1,11 @@
 ---
 # isaac-1vx0
 title: New episodes start with an empty transcript (recall only)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
-updated_at: 2026-09-29T14:31:12Z
+updated_at: 2026-09-29T14:58:51Z
 ---
 
 Ruling: Micah, 2026-09-29. **A new episode starts with an empty transcript.** The only thing in it is recall for the prompt that opened it.
@@ -38,3 +38,20 @@ Evidence: yopp, session `acp-2026-09-28-1645-a6c4`, 2026-09-29 13:51Z. It sat id
 
 feature-baseline: isaac-episodes f5e87dee78204250d86a330e706f5b1c0d0ce2e3
 feature-blob: isaac-episodes features/episodes/live.feature bf841d3b717f37d832de14f2996c6e54b2b2b827 112
+
+## Work checkpoint (2026-09-29)
+
+Done: claimed; added agent store rotation primitive with memory/sidecar persistence and turn preparation hook; episodes policy closes and rotates cold transcripts; focused scenario `bb features features/episodes/live.feature:111` green. Agent store memory spec green (24 examples). Agent checkpoint 65132ad pushed.
+Next: red full live suite (`bb features features/episodes/live.feature`: 20 examples, 2 failures) because seeded open episodes with no opened-at and old fixture messages are incorrectly classified cold; preserve warm behavior for undated seeded episodes. Resume at `isaac-episodes-1vx0/src/isaac/session/policy/episodes.clj:109`; rerun live suite, then full suites and gate. No completed acceptance yet.
+
+## Work checkpoint (2026-09-29, second)
+
+Done: focused cold scenario green; added warm-path unit guard (229 examples green), added opened-at fallback and active transcript cold check; agent store rotation checkpoint already pushed.
+Next: full live suite remains red (`bb features features/episodes/live.feature`, 20 examples, 2 failures: compaction scenarios at lines 207 and 683). Investigate fixture seed timestamp / open episode classification in `isaac-episodes-1vx0/src/isaac/session/policy/episodes.clj:109`; then rerun both focused scenarios and full suites. In-flight episodes edits are uncommitted because live acceptance is red.
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-agent 68628b3ceb0be4df685353eecc1b043bf0ae7d74
+main-sha: isaac-episodes c0a6c82fbf340597740cb638468c4a9bc301d605
+
+Acceptance: `bb ci` green in isaac-agent (1823 specs, 915 feature examples; 1 pre-existing pending) and isaac-episodes (229 specs, 92 feature examples). `bb bean-gate verify isaac-1vx0 --dir isaac-episodes=../isaac-episodes --dir isaac-agent=../isaac-agent-kleb` PASS on landed main.
