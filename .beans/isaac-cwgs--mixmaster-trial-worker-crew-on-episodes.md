@@ -1,10 +1,11 @@
 ---
 # isaac-cwgs
 title: 'Mixmaster: trial worker crew on episodes'
-status: draft
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-09-29T23:32:13Z
-updated_at: 2026-09-29T23:32:13Z
+updated_at: 2026-09-29T23:41:07Z
 blocked_by:
     - isaac-jvwr
     - isaac-3ljt
@@ -39,6 +40,6 @@ needs, while `:context-mode :reset` keeps old turns out of the request.
 
 ## Todo
 
-- [ ] Crew + soul + session created; `config validate` clean
+- [x] Crew + soul + session created; `config validate` clean (2026-09-29: crew/mixmaster.edn + mixmaster.md on zanebot, session isaac-work-4 with no tags so the isaac-work pool never picks it; hail it with --band isaac-work --session isaac-work-4. Recall half-life is global only ([:recall :half-life]), left at 30d.)
 - [ ] First bean hailed to isaac-work-4; recall seen in the request
 - [ ] Findings written back here after ~5 beans
