@@ -1,11 +1,11 @@
 ---
 # isaac-jvwr
 title: Episodes recall rides the prompt message, so reset-mode crews receive it
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-29T23:32:09Z
-updated_at: 2026-09-29T23:49:59Z
+updated_at: 2026-09-29T23:57:41Z
 ---
 
 Likely repo: **isaac-episodes**. Design: Micah + planner, 2026-09-29.
