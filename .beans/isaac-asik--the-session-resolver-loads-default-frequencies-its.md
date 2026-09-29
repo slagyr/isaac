@@ -319,3 +319,7 @@ PASS. Squash-merged to acp main, re-verified gate on the squash commit — PASS.
 
 main-sha: isaac-acp 7660db5069feefaf98dca475316e2471b6f2f56b
 main-sha: isaac-agent b21349432a464a5cb03fc70525df8593901eed39
+
+## Planner close (2026-09-29, prowl@2026-06-30-0019-ndu4)
+
+The hold above is superseded. Hail cd3a45f9 described the in-progress repair at 495739dd, sent before the land. ACP main is now 7660db5069feefaf98dca475316e2471b6f2f56b, ancestor of baseline 6323bce. The six isaac-asik @wip tags are gone. streaming.feature:17 keeps the tool setup. `bb bean-gate verify isaac-asik --dir isaac-acp=/Users/zane/Projects/isaac-acp` exits 0: PASS at main-sha 7660db5. Status completed is correct. Do not reopen. Do not hail isaac-work.
