@@ -248,8 +248,7 @@ so re-running `bb bean-gate verify <id>` after step 5 checks the landed tree.
 
 ### Exit 1 — the contract moved
 
-The gate prints one `FAIL <reason>` line per problem. Two legitimate responses,
-and only two:
+The gate prints one `FAIL <reason>` line per problem. Legitimate responses:
 
 - **You changed a baselined `.feature` beyond `@wip` removal** → revert that
   file to the baselined text (`git checkout <feature-baseline sha> -- <path>`
@@ -261,6 +260,10 @@ and only two:
   planner repeats every file that is still this bean's contract after the
   new baseline line. A line-less blob freezes every `@wip` scenario in the
   file; pass scenario line numbers when other beans share the file.
+- **The conflict hail lists every current failure in that file.** Quote the
+  gate output, not only the first scenario. One scenario fixed and handed
+  back fails the next sibling that still asserts the old value, and the
+  bean returns. Send one hail with all of them.
 - **The gate already exits 0** → land. Do not start another full `bb ci`,
   and do not hand the bean back. Another baseline after a passing gate is
   what starts the thrash.
@@ -297,6 +300,9 @@ carry a `feature-baseline:`, you have a broken invocation, not an ungated bean
 — fix the command instead of taking the old path.
 
 ## Conflict → the plan band
+
+A conflict hail is one message. It quotes every current failure in the
+feature file. Do not send it after reading only the first failing scenario.
 
 For a gate exit 1 you cannot honestly revert, a rebase/merge conflict, or a
 bean that contradicts the code or itself:

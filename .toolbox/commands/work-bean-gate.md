@@ -108,7 +108,11 @@ Upstream repo first, then each downstream repo:
   line. A line-less blob freezes every `@wip` scenario in the file; pass
   scenario line numbers when other beans share the file. When the gate
   already exits 0, land. Do not start another full `bb ci`, and do not hand
-  the bean back.)
+  the bean back. When the failure is one scenario asserting the wrong value
+  for a field, the planner updates every scenario in that file that still
+  asserts the old value, including scenarios the suite already runs, names
+  the spec examples that assert the same field, re-baselines once, and hands
+  back once. The conflict hail quotes every current failure in the file.)
 - **Landing without rebasing.** A squash of a stale branch silently drops
   someone else's landed work out of the tree you tested.
 - **Multi-worker collisions.** If another worker claimed the bean while you
