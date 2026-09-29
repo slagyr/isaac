@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-27T02:25:46Z
-updated_at: 2026-09-29T17:31:32Z
+updated_at: 2026-09-29T17:31:57Z
 ---
 
 Follow-up to isaac-vp7h, which is deployed. A blank `acp` on Yopp exits 1 with "no session selected". The launcher papered over it with `--crew yopp`, and that opens a new session on every connect because the episodes policy answers no default session.
@@ -286,3 +286,10 @@ direction. No acp `main-sha:` recorded. Agent main-sha unchanged:
 ## Planner fix (2026-09-29, plan session) — streaming contract
 
 The worker's conflict above is right: `streaming.feature:17` gave the crew no tools, so the drive answered in one shot and never streamed the `text-stream` chunks. Real crews have tools. On acp main (6323bce) the scenario now registers the built-in tools and allows `fs/grep` for the crew — the same setup agent's own streaming scenarios use. Re-baselined all five acp blobs at 6323bce. Status back to in-progress: the ACP half is not landed yet. Worker: rebase onto 6323bce, push under a new branch name (no force-push), gate, land, record `main-sha: isaac-acp <sha>`, then `completed`.
+
+feature-baseline: isaac-acp 6323bcef8e35f25de4506f369e901752156b48d4
+feature-blob: isaac-acp features/comm/acp/default_frequencies.feature 029bb8c3bedad44d94b493bc8050398705e6c490
+feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a412614b7ef64da9d31bec874 32,58,92,126,156
+
+
+(2026-09-29 correction to the note above: only `default_frequencies.feature` (whole file) and `episodes.feature` :32 :58 :92 :126 :156 are still `@wip`, so those are the re-baselined contract at acp 6323bce. `cli.feature:119`, `streaming.feature:17`, and `prompt.feature:47` are no longer `@wip` — they must simply pass; the streaming one now has the tool setup.)
