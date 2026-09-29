@@ -97,3 +97,7 @@ New coverage:
   fails red against the pre-fix code, green after.
 
 No isaac-foundation change was needed.
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-agent 505a60edfab0ab91115e143f73a922d0ff54eb37
