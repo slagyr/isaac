@@ -1,11 +1,11 @@
 ---
 # isaac-cgzd
 title: 'isaac-hail: frontmatter band values are checked raw — create: :never is rejected and would be sent as a string'
-status: in-progress
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-29T17:34:04Z
-updated_at: 2026-09-29T17:34:50Z
+updated_at: 2026-09-29T17:42:44Z
 ---
 
 Likely repo: **isaac-hail**. Found 2026-09-29 rehearsing the zanebot deploy: `isaac config validate` against the new Hail (3a00323) fails on zanebot's live bands `ci-failure` and `tono-ci-failure` (single .md with frontmatter `create: :never`): `hail.ci-failure.create - must be one of :never, :if-missing [bad value: :never]`. The current zanebot Hail (48faa9f) validates them fine. **Blocks the zanebot deploy** (the new Agent needs the new Hail).
@@ -32,3 +32,8 @@ feature-blob: isaac-hail features/bands.feature 89e74444480056c787f96a1003d9c375
 - [ ] `bands.feature:33` (`:reach` still rejected) and the whole Hail suite stay green.
 - [ ] Unit spec: `check-config` and `apply-to-load-result!` detect `:reach` from the raw slice but resolve bands from the conformed `(:hail config)`.
 - [ ] Version bump; `bb ci` green; bump `modules.edn` `:isaac.hail` to the landed sha.
+
+
+## Landed on main
+
+main-sha: isaac-hail e95274a3fac7b9285c00bddac21544199624103f
