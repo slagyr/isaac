@@ -48,3 +48,6 @@ Sibling bean (seal skips recall) strips this block at seal time.
 
 - isaac-episodes `features/episodes/live.feature` — "a reset-mode crew receives its recall on the prompt message"
 - Every other scenario in `features/episodes/live.feature` stays green (recall request-regex scenarios included).
+
+feature-baseline: isaac-episodes ae6db393b3a1ee4dcd3f1cad20c178b7fff203ef
+feature-blob: isaac-episodes features/episodes/live.feature 7e96ef19a21d5812b57771cc396873a4e1bc1ea7 373

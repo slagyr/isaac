@@ -36,3 +36,6 @@ describe only what the episode itself said and did.
 
 - isaac-episodes `features/episodes/live.feature` — "sealing leaves recalled memory out of the new scenes"
 - Every other scenario in `features/episodes/live.feature` stays green.
+
+feature-baseline: isaac-episodes ae6db393b3a1ee4dcd3f1cad20c178b7fff203ef
+feature-blob: isaac-episodes features/episodes/live.feature 7e96ef19a21d5812b57771cc396873a4e1bc1ea7 408
