@@ -3,8 +3,9 @@
 title: Sealing leaves injected recall out of scenes and gists
 status: todo
 type: bug
+priority: normal
 created_at: 2026-09-29T23:32:13Z
-updated_at: 2026-09-29T23:32:13Z
+updated_at: 2026-09-29T23:35:19Z
 blocked_by:
     - isaac-jvwr
 ---
@@ -39,3 +40,7 @@ describe only what the episode itself said and did.
 
 feature-baseline: isaac-episodes ae6db393b3a1ee4dcd3f1cad20c178b7fff203ef
 feature-blob: isaac-episodes features/episodes/live.feature 7e96ef19a21d5812b57771cc396873a4e1bc1ea7 408
+
+## Planner note (2026-09-29)
+
+Today the scenario fails at the `an episode exists` step: the new episode seals as `:partial`, because the standalone recall entry makes three distilled entries and the queued gist `1-2` leaves entry 3 flagged. With recall kept out of the seal, the episode has two entries and closes clean. The `does not contain` rows then cover the jvwr shape, where recall is a prefix of the prompt message.
