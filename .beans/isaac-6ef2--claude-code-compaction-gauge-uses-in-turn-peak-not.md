@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
-updated_at: 2026-09-29T15:42:43Z
+updated_at: 2026-09-29T15:50:57Z
 ---
 
 Ruling direction: Micah, 2026-09-29. The compaction gauge on the claude-code provider uses the wrong number to mean "context size."
@@ -72,3 +72,8 @@ Corrected on isaac-claude-code main f9b2d7c, both kept @wip:
 - `claude_driver.feature:532` (was 548) no longer stores 802832 on a 200000 window. The replayed result carries that figure as `result_usage`; the one stamp is the request's own 1200. Above-window figures are not the gauge.
 
 Re-baselined onto f9b2d7c, blob 871a3550, lines 532 and 561. The g71i last-cycle scenario at line 512 is untouched and not this bean's. Do not edit frozen scenarios except to drop @wip.
+
+
+## Implementation conflict (scrapper, 2026-09-29)
+
+After correcting the fake to emit assistant usage per cycle and cumulative result usage, the newly baselined scenarios at lines 532 and 561 pass with first-cycle gauge 1200 and 22378 respectively (branch isaac-claude-code bean/isaac-6ef2 @ c1fc04e, base f9b2d7c). The untouched, non-wip isaac-g71i scenario at line 512 contradicts Wanted §2: it explicitly requires the last provider response usage and session last-input-tokens to equal 320 (second cycle), whereas the required first cycle is 260. The existing claude_driver_spec likewise expects second-cycle 320. Running `bb features features/llm/api/claude_driver.feature:512` fails (and bb spec claude_driver_spec fails Expected 320 got 260). Cannot make both contracts true for the same session field without changing the old scenario. Planner must reconcile/rebaseline g71i on main to require first-cycle gauge (while deciding whether last provider response usage should retain its old meaning), then hail work again. Code checkpoint pushed; do not land until contract resolved.
