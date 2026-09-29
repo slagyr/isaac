@@ -1,11 +1,11 @@
 ---
 # isaac-3y69
 title: 'config schema is generic: foundation never names another module''s config'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-29T19:24:33Z
-updated_at: 2026-09-29T19:24:33Z
+updated_at: 2026-09-29T19:27:04Z
 ---
 
 ## Ruling
