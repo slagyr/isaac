@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "180b83f8e64a50dd4d7d1fd10efecf05657e993a"}
+                                      :git/sha "505a60edfab0ab91115e143f73a922d0ff54eb37"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "3c7b6751b394dc8753d26b9a984d23be271f0032"}
@@ -17,16 +17,16 @@
                                         :git/sha "8e01658366f6edddab9ff1fa5b857d12231add3b"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                                      :git/sha "6030a978463d1245342118c68b1d540032c1424b"}
+                                      :git/sha "7660db5069feefaf98dca475316e2471b6f2f56b"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
-                                      :git/sha "d329e684783d894b6ae2a52af07f9ffe548b9eb8"}
+                                      :git/sha "9c13a6a43c911f3d4595b31bca295615c75bbb9d"}
                               :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
-                                      :git/sha "48faa9fb61586837989f4961d99d33d08d7cccd8"}
+                                      :git/sha "8a8ad252bbc8cc9fda58b11fabd8cb59f8999cc7"}
                               :desc  "Cross-session hail messaging — tool and CLI."}
  :isaac.hooks                {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
-                                      :git/sha "d9044bb0eed4b4026fcfd2c24702ae335d6ea85e"}
+                                      :git/sha "3a6377051052d9a88cc6a368b62b576bcaee75ad"}
                               :desc  "Event hooks and inbound webhook routing."}
  :isaac.tool.mcp             {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
                                       :git/sha "9422702abc39ee5e055bbbb171e15b19f9a459e5"}
@@ -41,7 +41,7 @@
                                       :git/sha "b1c9da1e931b13dfc5ae06ffca455b9fdd1e3e6f"}
                               :desc  "Gmail comm — watch on INBOX, history walk, thread-as-session routing; replies on thread. Built on isaac-google."}
  :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                                      :git/sha "6df59f7963f67f23db09a13159f34ff288ccb572"}
+                                      :git/sha "28ce56789d7570be1155174f76723a4b2b550ef7"}
                               :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage        {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                       :git/sha "d7a14471f15225948af453ac792596a320e41ea3"}
