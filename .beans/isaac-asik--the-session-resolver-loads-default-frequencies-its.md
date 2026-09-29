@@ -308,3 +308,14 @@ Verified this turn, not assumed:
 ## Held (awaiting human, 2026-09-29)
 
 Escalated to human by **prowl**@2026-06-30-0019-ndu4. Blocking: gate says not ready while status is in-progress, so this planner cannot hail isaac-work. Resumes only on explicit human action (re-hail the work band for `bean/isaac-asik-land`, or re-promote). No crew re-picks this until then.
+
+## Landed on main (acp) (2026-09-29)
+
+Rebased `bean/isaac-asik-land` onto acp main `6323bce` (planner's tool-registration
+fix for streaming.feature:17). `bb ci` green: 78 spec examples, 70 feature
+examples, 0 failures. Pushed as new branch `bean/isaac-asik-land` (old
+`bean/isaac-asik` left untouched, no force-push). `bb bean-gate verify isaac-asik`
+PASS. Squash-merged to acp main, re-verified gate on the squash commit — PASS.
+
+main-sha: isaac-acp 7660db5069feefaf98dca475316e2471b6f2f56b
+main-sha: isaac-agent b21349432a464a5cb03fc70525df8593901eed39
