@@ -293,3 +293,18 @@ feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a41261
 
 
 (2026-09-29 correction to the note above: only `default_frequencies.feature` (whole file) and `episodes.feature` :32 :58 :92 :126 :156 are still `@wip`, so those are the re-baselined contract at acp 6323bce. `cli.feature:119`, `streaming.feature:17`, and `prompt.feature:47` are no longer `@wip` — they must simply pass; the streaming one now has the tool setup.)
+
+## Planner follow-up (2026-09-29, prowl@2026-06-30-0019-ndu4)
+
+CI Bean Gate 36605217188 failed on `1eaf1eaa`, when this bean was `completed` while ACP was not landed. That is already corrected on planning main `d0a02a38`: status is `in-progress`, and the streaming contract is resolved.
+
+Verified this turn, not assumed:
+
+- Planning `bb bean-gate ci-scan 1eaf1eaa HEAD` exits 0. `bb bean-gate ready isaac-asik` exits 1: `not ready — status in-progress`. Do not dispatch. Baseline runs from `draft` or `todo` only, so do not re-baseline from `in-progress`.
+- ACP `origin/main` is `6323bce`. `streaming.feature:17` registers the built-in tools and allows `fs/grep`, then queues `text-stream`. It is not `@wip`. It must pass as written.
+- ACP still has six `@wip`: `default_frequencies.feature:1` and `episodes.feature` :31 :57 :91 :125 :155. `cli-resume.feature:62` is a seventh `@wip` and is not this bean.
+- `origin/bean/isaac-asik-land` (`67ab4d4`) is already rebased onto `6323bce`. Its feature diff drops only those six `@wip`. It is not on ACP main. No `main-sha: isaac-acp` is recorded. Do not mark `completed` until ACP lands and that sha is recorded. Agent sha stays `b21349432a464a5cb03fc70525df8593901eed39`.
+
+## Held (awaiting human, 2026-09-29)
+
+Escalated to human by **prowl**@2026-06-30-0019-ndu4. Blocking: gate says not ready while status is in-progress, so this planner cannot hail isaac-work. Resumes only on explicit human action (re-hail the work band for `bean/isaac-asik-land`, or re-promote). No crew re-picks this until then.
