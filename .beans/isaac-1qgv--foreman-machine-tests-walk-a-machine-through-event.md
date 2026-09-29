@@ -92,3 +92,23 @@ Feature: `isaac-foreman/features/foreman/machine_tests.feature` (new, 4 scenario
 
 feature-baseline: isaac-foreman 1608cacd69edff0632a42801c5dcfc8112beedc6
 feature-blob: isaac-foreman features/foreman/machine_tests.feature 8aa9f6af29cc592409cf0ec64bf9c9307c67b602 33,67,83,109
+
+## Parser decision
+
+Used gherclj's own parser as a library: `gherclj.parser` (`src/gherclj/parser.clj`)
+is part of gherclj's main `src` path, not a test-only namespace, and depends on
+nothing beyond `clojure.java.io`/`clojure.string`. It already parses the full
+subset Foreman needs — Feature/Background/Scenario, Given/When/Then/And, `|
+k | v |` tables, `#`-comments (blank lines only reset pending tags, `#` isn't
+special-cased but no fixture needs it), doc-strings — and is mutation-tested
+upstream. Promoted `io.github.slagyr/gherclj {:git/tag "v1.3.0" :git/sha
+"9c3bb1d"}` from `isaac-foreman`'s `:test`/`:spec`/`:features` aliases into the
+base `:deps` (same coordinates the aliases and `bb.edn` already pinned) so
+`isaac foreman test` has it at runtime. Its own deps (cheshire, c3kit/apron,
+tools.cli) already overlap what `isaac-foundation` transitively pulls in, and
+`isaac foreman test` uses only `gherclj.parser`, not the rest of the gherclj
+test-generation framework. `isaac.foreman.test-runner` calls
+`gherclj.parser/parse-feature` on file text read through `isaac.fs` (so it
+still resolves relative paths against the Isaac root through the normal
+fs/nexus path) and walks the returned IR with Foreman's own fixed-vocabulary
+step interpreter — no Foreman-owned Gherkin grammar was written.
