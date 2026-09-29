@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: high
 created_at: 2026-08-28T17:17:47Z
-updated_at: 2026-08-28T19:51:08Z
+updated_at: 2026-09-29T19:58:00Z
 ---
 
 Likely repo: **isaac-agent** (`isaac.llm.api.claude-cli/subprocess-env` + provider schema).
@@ -49,11 +49,13 @@ Invocation-table matcher extensions (existing step `the claude binary was invoke
 
 ## Acceptance
 
-- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:253`
-- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:269`
-- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:287`
-- [ ] `cd isaac-agent && bb features features/llm/api/claude_cli.feature:309`
-- [ ] `@wip` removed from the four scenarios
-- [ ] Provider schema includes `:forward-env` (seq of strings); default `["CLAUDE_CODE_OAUTH_TOKEN"]`
+- [x] `cd isaac-claude-code && bb features features/llm/api/claude_cli.feature:253`
+- [x] `cd isaac-claude-code && bb features features/llm/api/claude_cli.feature:268`
+- [x] `cd isaac-claude-code && bb features features/llm/api/claude_cli.feature:285`
+- [x] `cd isaac-claude-code && bb features features/llm/api/claude_cli.feature:306`
+- [x] `@wip` removed from the four scenarios
+- [x] Provider schema includes `:forward-env` (seq of strings); default `["CLAUDE_CODE_OAUTH_TOKEN"]`
+
+Landed 2026-09-29 in isaac-claude-code `a751b38` (the code moved out of isaac-agent). The invocation rows use the existing matcher dialect `(env NAME=VALUE)` and `(no NAME in env)`. Yopp's isaac.provider.claude-code pin is that sha. The hand-added systemd `EnvironmentFile` was removed; the server process does not carry the token, and the claude child reads it from `<isaac-home>/.env` at spawn.
 
 DoD: `@wip` gone and the four commands pass.
