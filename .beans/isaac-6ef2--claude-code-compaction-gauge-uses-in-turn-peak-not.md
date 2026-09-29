@@ -1,11 +1,11 @@
 ---
 # isaac-6ef2
 title: claude-code gauge reads the result's turn-total usage as context size
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
-updated_at: 2026-09-29T15:37:22Z
+updated_at: 2026-09-29T15:41:42Z
 ---
 
 Ruling direction: Micah, 2026-09-29. The compaction gauge on the claude-code provider uses the wrong number to mean "context size."
@@ -58,3 +58,17 @@ Captured a real multi-cycle turn with `claude -p --model sonnet --output-format 
 - Final result: `{"input_tokens":4,"cache_creation_input_tokens":14947,"cache_read_input_tokens":52103,"output_tokens":79}`; prompt total = 67,054 = 33,466 + 33,588, **not** a single request size. The result also carries an `iterations` entry. `output_tokens` need not equal the sum of the assistant messages' reported outputs.
 
 The first assistant message's input + cache read + cache creation measures the prompt sent for the first request. The result usage is cumulative spend. The acceptance feature at `features/llm/api/claude_driver.feature:561` instead demands `last-input-tokens = 39765` (last cycle) for first cycle 22,378 and result total 92,754, whereas Wanted §2 explicitly demands the **first** cycle. An earlier baselined scenario at line 548 demands storing 802,832 with a 200,000 window, whereas Acceptance explicitly requires rejecting above-window cycle gauges. Those frozen contracts cannot both be satisfied without changing approved feature text; the planner must revise/re-baseline them. No implementation or feature edits were made.
+
+feature-baseline: isaac-claude-code f9b2d7cfaa269e6f2948fe68eef8d267cd9c6d52
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 871a3550d43433d791c80cfcbab341f018269958 532,561
+
+## Planner adjustment (2026-09-29, prowl@isaac-plan)
+
+Capture stands: assistant prompt sizes 33466 then 33588, result total 67054 = their sum. Result usage is spend, never the gauge. Wanted §2 stands: the gauge is the first cycle.
+
+Corrected on isaac-claude-code main f9b2d7c, both kept @wip:
+
+- `claude_driver.feature:561` now expects `last-input-tokens` 22378 (first cycle), not 39765 (last). `turn-input-tokens` stays 92754.
+- `claude_driver.feature:532` (was 548) no longer stores 802832 on a 200000 window. The replayed result carries that figure as `result_usage`; the one stamp is the request's own 1200. Above-window figures are not the gauge.
+
+Re-baselined onto f9b2d7c, blob 871a3550, lines 532 and 561. The g71i last-cycle scenario at line 512 is untouched and not this bean's. Do not edit frozen scenarios except to drop @wip.
