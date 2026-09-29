@@ -1,11 +1,11 @@
 ---
 # isaac-dnib
 title: 'Schema defaults: loaded config is effective (conform overlay), --raw is what''s set'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-29T23:46:53Z
-updated_at: 2026-09-29T23:46:53Z
+updated_at: 2026-09-29T23:50:39Z
 ---
 
 # Schema-declared defaults and required fields (foundation + isaac-agent)
