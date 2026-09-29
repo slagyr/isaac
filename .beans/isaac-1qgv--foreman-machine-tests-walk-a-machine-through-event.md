@@ -1,11 +1,11 @@
 ---
 # isaac-1qgv
 title: 'Foreman machine tests: Gherkin features with Foreman-provided steps, run by isaac foreman test'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-29T13:59:46Z
-updated_at: 2026-09-29T16:31:06Z
+updated_at: 2026-09-29T16:48:48Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-50zy
@@ -112,3 +112,7 @@ test-generation framework. `isaac.foreman.test-runner` calls
 still resolves relative paths against the Isaac root through the normal
 fs/nexus path) and walks the returned IR with Foreman's own fixed-vocabulary
 step interpreter — no Foreman-owned Gherkin grammar was written.
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-foreman 5b981e5e35ad29b2cb22a3df07d1d6c4aa7d3b4a
