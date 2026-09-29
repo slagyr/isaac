@@ -1,11 +1,11 @@
 ---
 # isaac-jvwr
 title: Episodes recall rides the prompt message, so reset-mode crews receive it
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-29T23:32:09Z
-updated_at: 2026-09-29T23:46:45Z
+updated_at: 2026-09-29T23:49:59Z
 ---
 
 Likely repo: **isaac-episodes**. Design: Micah + planner, 2026-09-29.
@@ -67,3 +67,9 @@ The third bare-prompt row is loosened. `features/recall/live_tools.feature` line
 Re-baselined onto isaac-episodes `7df55cc`. In force: `live.feature` blob `7e96ef19` line 373, and `live_tools.feature` blob `9968902a` line 14. The other live_tools scenario is not this bean's.
 
 Rebase onto `7df55cc`. Drop `@wip` on both scenarios. Do not edit frozen scenario text.
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-episodes 9c90b05ff72eea317db2dded03e5f509bddcfc96
+
+The reset-mode and recall live-tools scenarios are enabled. `bb ci` passed on the landed module main (230 specs, 89 features); `bb bean-gate verify isaac-jvwr` passed on the squash commit.
