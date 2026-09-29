@@ -54,3 +54,29 @@ feature-blob: isaac-foreman features/foreman/events.feature 724768bd4a36490485b3
 
 
 (2026-09-29: after isaac-50zy landed, the CLI scenario above is at `cli.feature:46`; the newest baseline lines are in force.)
+
+## Contract conflict (2026-09-29, isaac-qrl1-local-worker)
+
+Implementation is done and green (core, http, cli, tool; specs + features all
+pass; `bb ci` exits 0 on branch `bean/isaac-qrl1` at isaac-foreman 76b2354),
+but `bb bean-gate verify isaac-qrl1 --dir isaac-foreman=<worktree>` exits 1:
+
+```
+isaac-qrl1 bean-gate: FAIL (1) — isaac-foreman @ HEAD 76b2354 (branch bean/isaac-qrl1)
+  FAIL contract line removed or edited in f56fb9b: - [ ] `bb features features/foreman/cli.feature:46` (was :47 before isaac-50zy landed) — refused with `no transition for earthquake from dark`, exit 1, instance stays `dark`, history records it, a later `dusk` still transitions
+```
+
+This is pre-existing history, not something introduced by this worker: commit
+`e3ff4593` (planner) edited the `cli.feature:47` Acceptance line in place to
+`cli.feature:46 (was :47 ...)`, then commit `f56fb9b3` (planner) reverted it
+back to the original `:47` wording and added the addendum paragraph at the
+bottom of `## Acceptance` explaining the line-number shift instead. The
+current text matches the bean's very first baselined wording, but the gate
+walks full git history and treats the intermediate in-place edit (even though
+reverted to identical text) as an append-only violation — worker cannot and
+must not touch `## Acceptance` lines to work around this.
+
+No code or feature-file changes are held back by this — branch `bean/isaac-qrl1`
+is pushed and ready. Needs a planner re-baseline (fresh `feature-baseline:` /
+`feature-blob:` lines per the append-only-restarts-the-window rule) before the
+gate can pass and this bean can land.
