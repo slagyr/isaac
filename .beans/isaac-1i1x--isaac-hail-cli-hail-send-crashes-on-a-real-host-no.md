@@ -1,11 +1,11 @@
 ---
 # isaac-1i1x
 title: 'isaac-hail CLI: hail send crashes on a real host — no session store in the CLI process'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-09-29T18:42:29Z
-updated_at: 2026-09-29T18:56:00Z
+updated_at: 2026-09-29T18:56:55Z
 ---
 
 Found 2026-09-29 smoking the zanebot deploy (hail e95274a, agent 6aa86a3; rolled back). `isaac hail send --band smoke --prompt …` from a shell on zanebot → `IllegalArgumentException: No implementation of method: :list-sessions of protocol: isaac.session.policy/SessionPolicy found for: nil`. Since isaac-ex4q, send resolves sessions at send time (Agent submit / frequencies resolver) and the CLI process has no registered session store. The feature suite runs the CLI in-process with a store registered, so it never saw this. `POST /hail/send` (in the server) works — 201 with a turn id. Crews and skills on zanebot call `isaac hail send` from the shell.
