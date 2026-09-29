@@ -1,11 +1,11 @@
 ---
 # isaac-2lc4
 title: 'isaac-agent: queued turns never run in production — the turn queue tick does not fire'
-status: in-progress
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-29T18:42:29Z
-updated_at: 2026-09-29T18:56:50Z
+updated_at: 2026-09-29T19:25:32Z
 ---
 
 Found 2026-09-29 smoking the zanebot deploy (agent 6aa86a3; rolled back). A hail sent over HTTP was accepted as turn 7a04b76a (state :queued, frequencies {:session-tags #{:smoke} :create :never}; a :smoke session exists) at 18:37:05 and stayed :queued for 5+ minutes. The `turn-queue` component started at 18:33:09, `isaac.turn.worker/start!` schedules `:turn.queue/tick` every 10 s on the runner's shared scheduler, yet the log shows no `:turn.queue/woke` after boot. Features drive the queue with the `the turn queue ticks at` step, so the production tick path is untested.
