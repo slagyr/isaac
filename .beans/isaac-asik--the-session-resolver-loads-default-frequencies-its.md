@@ -1,11 +1,11 @@
 ---
 # isaac-asik
 title: The session resolver loads default frequencies itself
-status: completed
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-27T02:25:46Z
-updated_at: 2026-09-28T15:06:11Z
+updated_at: 2026-09-29T17:31:32Z
 ---
 
 Follow-up to isaac-vp7h, which is deployed. A blank `acp` on Yopp exits 1 with "no session selected". The launcher papered over it with `--crew yopp`, and that opens a new session on every connect because the episodes policy answers no default session.
@@ -281,3 +281,8 @@ only) pushed nowhere yet — left as a local worktree at
 `/Users/micahmartin/agents/isaac/plan/isaac-acp-asik-land` pending planner
 direction. No acp `main-sha:` recorded. Agent main-sha unchanged:
 `main-sha: isaac-agent b21349432a464a5cb03fc70525df8593901eed39`.
+
+
+## Planner fix (2026-09-29, plan session) — streaming contract
+
+The worker's conflict above is right: `streaming.feature:17` gave the crew no tools, so the drive answered in one shot and never streamed the `text-stream` chunks. Real crews have tools. On acp main (6323bce) the scenario now registers the built-in tools and allows `fs/grep` for the crew — the same setup agent's own streaming scenarios use. Re-baselined all five acp blobs at 6323bce. Status back to in-progress: the ACP half is not landed yet. Worker: rebase onto 6323bce, push under a new branch name (no force-push), gate, land, record `main-sha: isaac-acp <sha>`, then `completed`.
