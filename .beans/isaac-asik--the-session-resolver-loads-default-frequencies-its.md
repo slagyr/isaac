@@ -191,3 +191,93 @@ feature-blob: isaac-acp features/comm/acp/episodes.feature 9d8e785d953c111a41261
 ## Wrapped (2026-09-28, Micah)
 
 The implementation is already on the bean branches and is being committed. The Zanebot work session `isaac-work-1` was cancelled so the crew stops re-driving this bean. Do not hail it again.
+
+## Contract conflict (2026-09-29, worker)
+
+Rebased `bean/isaac-asik` (acp `eaa5076`) onto `870b9fe` cleanly (clean rebase,
+no conflicts). Feature diff vs origin/main is `@wip`-removal only on
+episodes.feature and default_frequencies.feature — cli.feature, streaming.feature,
+prompt.feature are byte-identical to origin/main (`git diff origin/main..HEAD --
+features/` shows zero diff for those three). Repinned foundation
+(`b83ff938…`), agent (`6aa86a37…`, current origin/main tip, `b213494` is an
+ancestor), episodes (`c0a6c82f…`) in deps.edn + bb.edn; `git grep -n
+'\[:defaults :crew\]' src/` is already clean; spec fixtures already use the
+`:defaults :frequencies :crew` shape; the second `session/new` reuse on the
+create path is already implemented (`create-once-handler` in cli.clj). `bb spec`
+is green (78 examples). `bb features` is red on exactly one scenario:
+
+    ACP Streaming Updates > Provider text chunks are forwarded as session/update notifications (streaming.feature:17)
+    Expected notification content.text "chunkA"/"chunkB"/"chunkC" (3 rows).
+    Got all 3 rows = "{:content \"must be a string\"}"  (identical text 3x)
+
+cli.feature:119 and prompt.feature:47 (the isaac-asik context-window scenario)
+both pass as written; only streaming.feature:17 is red.
+
+Root cause, traced with debug instrumentation against the exact pinned
+isaac-agent sha (`6aa86a374a1815cd85a73e5b090689c3172845af`, via
+`~/.gitlibs`) plus a throwaway detached worktree — no source edited in the
+shared `isaac-agent` checkout:
+
+- `"text-stream"` is not a recognized type anywhere in isaac-agent,
+  isaac-foundation, isaac-acp, or isaac-episodes production source (`grep -rn
+  text-stream` on all four repos' `src/` returns nothing). Its only effect is
+  through `isaac.llm.api.grover/chat-stream`'s generic "vector content →
+  stream one word per element" behavior, which runs only when
+  `isaac.drive.turn/chat-fn-for` takes a *streaming* branch.
+- That branch requires either `(:tools request)` truthy (crew has an
+  explicit tool allow-list) or `stream-non-tool-turns?` true in the
+  resolved provider config. Neither holds for this scenario: the
+  Background is generic `Given default Grover setup` (crew "main", no
+  `:tools :allow` list — "Empty/missing `:allow` is deny-all", per
+  `turn.clj`'s own comment) and ACP sets no `:stream-non-tool-turns`
+  anywhere. isaac-agent's own equivalent scenario
+  (`features/session/llm_interaction.feature`, "tools-using turns stream
+  text deltas as they arrive") only passes because it explicitly adds
+  `Given the built-in tools are registered` + `And the crew "main" allows
+  tools: "fs/grep"` before queuing the same `text-stream` row — steps
+  streaming.feature's Background does not have.
+- Without a streaming branch, `chat-fn-for` falls to the one-shot branch:
+  `dispatch/dispatch-chat` validates the raw response against
+  `isaac.llm.api.protocol/response`, whose `:content` schema slot is
+  `{:type :string}`. The scripted `text-stream` response's `:content` is
+  still the raw vector at this point (nothing flattens it outside
+  `chat-stream`), so validation fails with `{:content "must be a
+  string"}`, producing `{:error :provider-contract, :message "{:content
+  \"must be a string\"}"}`. ACP's `run-prompt`/`end-turn-with-error!`
+  turns that into one `agent_message_chunk` notification whose text is
+  the error message; `default-continuations` (2) retries the same turn,
+  so the identical text appears 3 times — coincidentally the same count
+  as the 3 expected chunk rows, which is why the failure shows 3
+  identical wrong rows instead of 1.
+- Tried an ACP-only fix: default `:stream-non-tool-turns true` onto every
+  resolved provider in `isaac.comm.acp.server/effective-cfg`. Confirmed
+  with debug prints that the flag survives `effective-cfg` and the
+  *first* `resolve-crew-context` call (at ACP `initialize`), but
+  `session-prompt-handler` rebuilds config from `(config/snapshot ...)`
+  (the on-disk isaac.edn) for the actual prompt call, and the injected
+  provider key does not survive that second `resolve-provider` /
+  `loader/normalize-config` round-trip — it comes back as `{}`. Making it
+  stick would mean teaching isaac-foundation's provider config
+  normalization to keep an unrecognized field, which is out of scope for
+  this bean and out of isaac-acp's repo. Even if it worked, forcing
+  `stream-non-tool-turns` on unconditionally would change ACP's default
+  behavior for every plain (non-tool) turn — many other baselined ACP
+  scenarios (`cli.feature`, `session.feature`, `tools.feature`,
+  `provider_errors.feature`, etc.) assert a single `agent_message_chunk`
+  notification carrying the full response text; switching those turns to
+  per-word streaming would very likely turn them red. Reverted this
+  experiment; no production code changed.
+
+I don't see an ACP-only, low-risk way to make streaming.feature:17 pass as
+currently written. Either the Background needs a tool-registration step (a
+scenario edit I'm not allowed to make — feature diff may only drop `@wip`),
+or something needs to make `text-stream` force the streaming branch
+regardless of tools — which lives in isaac-agent (already landed,
+`b213494`, "do not re-land it") or isaac-foundation (out of this bean's
+repo scope), not isaac-acp.
+
+Not landed. acp branch `bean/isaac-asik-land` (rebased, sha `a9ba318`, repin
+only) pushed nowhere yet — left as a local worktree at
+`/Users/micahmartin/agents/isaac/plan/isaac-acp-asik-land` pending planner
+direction. No acp `main-sha:` recorded. Agent main-sha unchanged:
+`main-sha: isaac-agent b21349432a464a5cb03fc70525df8593901eed39`.
