@@ -1,11 +1,11 @@
 ---
 # isaac-qrl1
 title: 'Foreman: a deliberate signal with no transition is refused; observations stay quiet'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-29T15:47:20Z
-updated_at: 2026-09-29T16:28:25Z
+updated_at: 2026-09-29T16:30:09Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-50zy
