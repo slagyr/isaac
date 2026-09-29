@@ -23,7 +23,7 @@
                                       :git/sha "9c13a6a43c911f3d4595b31bca295615c75bbb9d"}
                               :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
-                                      :git/sha "3a00323ac9e428f8d4b1a8590bc97f574797abef"}
+                                      :git/sha "e95274a3fac7b9285c00bddac21544199624103f"}
                               :desc  "Cross-session hail messaging — tool and CLI."}
  :isaac.hooks                {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
                                       :git/sha "3a6377051052d9a88cc6a368b62b576bcaee75ad"}
