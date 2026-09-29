@@ -48,3 +48,13 @@ Slow compaction: the summary call through the claude-code CLI took 4m16s for a 2
 
 feature-baseline: isaac-claude-code cc21c0fd598cc212e0ea02a14e2ee17c34157719
 feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 4d74b229e357d0dd2de862283e8824a68660820f 561
+
+## CLI usage investigation (scrapper, 2026-09-29)
+
+Captured a real multi-cycle turn with `claude -p --model sonnet --output-format stream-json --verbose --no-session-persistence 'Use the Bash tool to print the number 42, then answer only the number.'` (Claude Code 2.1.282, exit 0, two assistant messages and one result). Raw usage objects, with metadata omitted:
+
+- First assistant message: `{"input_tokens":2,"cache_creation_input_tokens":14825,"cache_read_input_tokens":18639,"output_tokens":16}`; prompt size = 33,466.
+- Second assistant message: `{"input_tokens":2,"cache_creation_input_tokens":122,"cache_read_input_tokens":33464,"output_tokens":3}`; prompt size = 33,588.
+- Final result: `{"input_tokens":4,"cache_creation_input_tokens":14947,"cache_read_input_tokens":52103,"output_tokens":79}`; prompt total = 67,054 = 33,466 + 33,588, **not** a single request size. The result also carries an `iterations` entry. `output_tokens` need not equal the sum of the assistant messages' reported outputs.
+
+The first assistant message's input + cache read + cache creation measures the prompt sent for the first request. The result usage is cumulative spend. The acceptance feature at `features/llm/api/claude_driver.feature:561` instead demands `last-input-tokens = 39765` (last cycle) for first cycle 22,378 and result total 92,754, whereas Wanted §2 explicitly demands the **first** cycle. An earlier baselined scenario at line 548 demands storing 802,832 with a 200,000 window, whereas Acceptance explicitly requires rejecting above-window cycle gauges. Those frozen contracts cannot both be satisfied without changing approved feature text; the planner must revise/re-baseline them. No implementation or feature edits were made.
