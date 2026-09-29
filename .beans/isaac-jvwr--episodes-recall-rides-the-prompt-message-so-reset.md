@@ -51,3 +51,7 @@ Sibling bean (seal skips recall) strips this block at seal time.
 
 feature-baseline: isaac-episodes ae6db393b3a1ee4dcd3f1cad20c178b7fff203ef
 feature-blob: isaac-episodes features/episodes/live.feature 7e96ef19a21d5812b57771cc396873a4e1bc1ea7 373
+
+## Worker conflict (2026-09-29)
+
+Implemented on isaac-episodes `bean/isaac-jvwr` at 0d96194. `bb features features/episodes/live.feature` passes (21 examples, 138 assertions); focused specs pass (33 examples, 105 assertions). Full `bb ci` has 230 specs green but 1 failure among 93 feature examples: `features/recall/live_tools.feature:36-38` still requires the opening user message content to equal `Remember that wine talk?`. With the agreed recall-on-prompt design the actual value begins `[Recalled memory; not a request]...` and ends `Remember that wine talk?`. The bean's design explicitly loosened two bare-prompt assertions in `features/episodes/live.feature` but omitted this third one in `features/recall/live_tools.feature`. Worker may only remove `@wip` from feature files. Planner needs to loosen that row to a regex preserving the prompt suffix and rebaseline as appropriate before this can land. Gate at current branch reports PASS once the @wip is removed; suite is still red, so not landing.
