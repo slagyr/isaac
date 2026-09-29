@@ -1,11 +1,11 @@
 ---
 # isaac-1qgv
 title: 'Foreman machine tests: Gherkin features with Foreman-provided steps, run by isaac foreman test'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-29T13:59:46Z
-updated_at: 2026-09-29T15:47:39Z
+updated_at: 2026-09-29T15:55:19Z
 parent: isaac-q3u3
 blocked_by:
     - isaac-50zy
@@ -78,3 +78,17 @@ Feature: lighthouse-watch
 4. An expected unhandled signal passes; an unexpected one fails, naming the event and state.
 
 Blocked by isaac-50zy (`:actions`) and isaac-qrl1 (refused signals) so the harness is built on the final semantics.
+
+
+## Acceptance
+
+Feature: `isaac-foreman/features/foreman/machine_tests.feature` (new, 4 scenarios, `@wip` on main at 1608cac). The scenarios embed test `.feature` files in docstrings — only lines `:33`, `:67`, `:83`, `:109` are scenarios of this feature. Remove `@wip`; all pass:
+
+- [ ] `bb features features/foreman/machine_tests.feature` — `:33` PASS + nothing left behind (no instance, no turn, no `:log` output), `:67` wrong state FAIL with expectation and actual, `:83` prompt is/contains/matches + a miss shows the actual prompt, `:109` expected vs unexpected unhandled
+- [ ] Unit specs for every step in the vocabulary, including `Then the "<action>" target is:` over `:frequencies` and `:resource-pools`, `Given the state is`, and the `test-1` / `:initial` defaults.
+- [ ] Parser decision recorded in the bean (gherclj library vs. a Foreman-owned subset parser).
+- [ ] `isaac help foreman` lists `test`.
+- [ ] `bb verify` green; version bump.
+
+feature-baseline: isaac-foreman 1608cacd69edff0632a42801c5dcfc8112beedc6
+feature-blob: isaac-foreman features/foreman/machine_tests.feature 8aa9f6af29cc592409cf0ec64bf9c9307c67b602 33,67,83,109
