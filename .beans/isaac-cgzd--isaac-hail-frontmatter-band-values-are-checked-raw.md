@@ -1,11 +1,11 @@
 ---
 # isaac-cgzd
 title: 'isaac-hail: frontmatter band values are checked raw — create: :never is rejected and would be sent as a string'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-09-29T17:34:04Z
-updated_at: 2026-09-29T17:34:21Z
+updated_at: 2026-09-29T17:34:50Z
 ---
 
 Likely repo: **isaac-hail**. Found 2026-09-29 rehearsing the zanebot deploy: `isaac config validate` against the new Hail (3a00323) fails on zanebot's live bands `ci-failure` and `tono-ci-failure` (single .md with frontmatter `create: :never`): `hail.ci-failure.create - must be one of :never, :if-missing [bad value: :never]`. The current zanebot Hail (48faa9f) validates them fine. **Blocks the zanebot deploy** (the new Agent needs the new Hail).
