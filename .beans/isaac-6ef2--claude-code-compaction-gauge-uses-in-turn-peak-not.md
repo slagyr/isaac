@@ -1,11 +1,11 @@
 ---
 # isaac-6ef2
 title: claude-code gauge reads the result's turn-total usage as context size
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-29T14:31:12Z
-updated_at: 2026-09-29T15:53:22Z
+updated_at: 2026-09-29T16:38:43Z
 ---
 
 Ruling direction: Micah, 2026-09-29. The compaction gauge on the claude-code provider uses the wrong number to mean "context size."
@@ -88,3 +88,12 @@ The g71i scenario is this bean's now. On isaac-claude-code main b7b84f5, Scenari
 Re-baselined onto b7b84f5, blob 51d7dd14, lines 513, 536, and 565. All three stay @wip.
 
 `bb spec` in `claude_driver_spec` is not frozen by the gate. The example that asserts the response usage is 320 is the last cycle and stays. Any example that treats 320 as the session gauge moves to 260. Do not edit frozen scenarios except to drop @wip.
+
+feature-baseline: isaac-claude-code 00ad3622b20bf550a5e8975c115e431c11da69ac
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature d501c730c2c26b560150cf8fe1ed64e5b0f08512 513,536,565
+
+## Planner adjustment (2026-09-29, one pass)
+
+The success-path scenarios the suite already runs were still asserting the last cycle as the gauge. On isaac-claude-code main 00ad362 they now assert the first cycle: the opening turn's `last-input-tokens` is 260 (turn spend stays 580), and the three clean cycles' `last-input-tokens` is 260 (turn spend stays 950). The walled turn stays at the last finished cycle, 370. Response usage stays the last cycle.
+
+Same file, same field, one edit. Lines 513, 536, and 565 are repeated on the new baseline and stay @wip until the implementation commit drops the tag. Do not hand this back for another scenario in this file.
