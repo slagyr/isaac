@@ -93,3 +93,7 @@ The gate failure above was the planner's: an in-place edit to an Acceptance line
 feature-baseline: isaac-foreman 4767bcef60dddae02f1b30c33aa4613777ee6165
 feature-blob: isaac-foreman features/foreman/cli.feature 5c429f591ae6469debb2f7578a11a9399eab92cb 46
 feature-blob: isaac-foreman features/foreman/events.feature 724768bd4a36490485b399f263959c4bd14c5676
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-foreman 630dae06d951af627a6498007dd17e93e705762f
