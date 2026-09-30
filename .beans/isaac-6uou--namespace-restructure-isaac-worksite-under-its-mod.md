@@ -1,13 +1,11 @@
 ---
 # isaac-6uou
 title: 'Namespace restructure: isaac-worksite under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T21:13:37Z
+updated_at: 2026-09-30T21:15:34Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -70,3 +68,7 @@ isaac-n8uv/isaac-8evx fixed the `await-transcript-turn!` regression on isaac-age
 Squashed to one commit, pushed straight to `main` (`git push origin e152aa4:main`) — accepted, no classifier denial. Shared checkout fast-forwarded. GitHub CI (`verify` job, run 36777878034) green on `e152aa4`.
 
 main-sha: isaac-worksite e152aa4
+
+## Planner verification (2026-09-30)
+
+Verified on e152aa4: all namespaces isaac.worksite.*, agent pin f953042, CI green.
