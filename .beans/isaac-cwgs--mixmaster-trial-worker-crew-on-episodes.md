@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-29T23:32:13Z
-updated_at: 2026-09-30T05:07:08Z
+updated_at: 2026-09-30T14:03:18Z
 blocked_by:
     - isaac-jvwr
     - isaac-3ljt
@@ -60,3 +60,7 @@ No Mixmaster turn has had recall delivered yet, so these are baselines, not a co
 | e3cd7bbf | Mixmaster | 3ljt | 55 | 3.09M | 12.0k | 61 | recall computed, not delivered (klcb) |
 
 Mixmaster made **zero** recall__search / recall__scene calls across all four turns. The real comparison starts after klcb deploys.
+
+## Recall live (2026-09-30 14:02Z)
+
+Episodes aa839f3 deployed (klcb + 3ljt). Smoke: a cold Pilot session stored its opening message with the recall block ahead of the prompt, and the model called recall__scene on an injected id. Mixmaster's next bean is the first real trial data point.
