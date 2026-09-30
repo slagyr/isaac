@@ -1,11 +1,11 @@
 ---
 # isaac-on0o
 title: 'Namespace restructure: isaac-agent → isaac.agent.*'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T14:12:23Z
+updated_at: 2026-09-30T15:49:42Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-davq
