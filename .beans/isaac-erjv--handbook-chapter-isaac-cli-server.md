@@ -4,8 +4,10 @@ title: 'Handbook chapter: isaac-cli-server'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T06:31:39Z
+updated_at: 2026-09-30T06:33:00Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,27 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+## Landed on main (2026-09-30)
+
+main-sha: isaac-cli-server 54285968e673a6ae44276d1c951d53e3f8ae29a9
+
+`bb ci` green locally (20 spec examples incl. the 4 new handbook-lint
+examples, 20 feature examples) and on GitHub CI (run 36678730843).
+
+Also bumped isaac-cli-server's isaac-foundation pin to `0c6e881` and
+isaac-http pin to `42e302f` (both origin/main tips as of this bean;
+deps.edn + bb.edn) — no fallout from the known upstream changes (this
+module doesn't depend on isaac-agent, so isaac-e9jl's async
+`worker/tick!` doesn't apply here; isaac-q1iu's bearer adjudication
+didn't touch anything this module's tests exercise).
+
+Handbook chapter: `src/isaac/cli_server/handbook.md` (topic
+`isaac.cli-server`), covering the `/cli` endpoint, the isaac-jvzn
+per-command scope model, local-only/`--root` refusal, the grace window,
+and stale-basis refusal, each with `### Troubleshooting`. One `[verify]`
+left for Micah: whether the fixed 2s grace window should become a config
+key. Lint spec: `spec/isaac/cli_server/handbook_chapter_spec.clj`
+(isaac-imessage's non-`:builtin?` pattern — merges this module's own raw
+manifest into `discovery/builtin-index` for schema composition, since
+this bean doesn't add `:builtin? true`).
