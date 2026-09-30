@@ -5,10 +5,12 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T14:12:24Z
+updated_at: 2026-09-30T18:14:06Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
+    - isaac-n8rb
+    - isaac-8evx
 ---
 
 Micah, 2026-09-30. **A module's code lives under its module id.** isaac-foundation → `isaac.foundation.*`, isaac-agent → `isaac.agent.*` (e.g. `isaac.session.frequencies` → `isaac.agent.frequencies`), isaac-claude-code (`:isaac.provider.claude-code`) → `isaac.provider.claude-code.*`, isaac-episodes (`:isaac.session.episodes`) → `isaac.session.episodes.*`, comm modules → `isaac.comm.<name>.*`, and so on. Source, specs, spec-support, step namespaces, manifest symbols (`:factory`, berth entries), bb tasks and docs all move together. Clean cutover: no alias namespaces.
