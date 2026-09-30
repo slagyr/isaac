@@ -1,11 +1,11 @@
 ---
 # isaac-4eay
 title: Conformed overlay duplicates keyword keys under a :string key-spec (":ops" beside :ops)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-30T17:54:28Z
-updated_at: 2026-09-30T17:54:28Z
+updated_at: 2026-09-30T19:02:53Z
 ---
 
 Found 2026-09-30 by the gmail restructure (isaac-j4m5). Foundation's conformed-over-raw overlay (isaac-dnib) canonicalizes dynamic-map keys between raw and conformed config. A map whose `:key-spec` is `{:type :string}` conforms a keyword key with `str` (":ops", colon included), not `name` ("ops"). Raw `:ops` and conformed ":ops" never unify, so BOTH land in the loaded config: gmail-routes produced a bogus ":ops" route that sorted first and mislabeled every message "isaac/:<route>". gmail worked around it by switching its key-spec to `{:type :id}`.
