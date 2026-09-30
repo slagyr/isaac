@@ -1,11 +1,11 @@
 ---
 # isaac-tt1q
 title: 'Namespace restructure: isaac-episodes under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:30:46Z
+updated_at: 2026-09-30T22:16:50Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -135,3 +135,7 @@ then `git -C isaac-episodes pull --ff-only`, confirm GitHub CI green, and
 this bean can move to `unverified` with the main-sha recorded. Leaving
 `status=in-progress`, no `unverified` tag, until that push lands — the
 worktree and branch are preserved, not deleted, pending that.
+
+## Landed + planner verification (2026-09-30)
+
+main-sha: isaac-episodes 907b42c (pushed by the planner on Micah's authority after the classifier blocked the worker). CI Tests green. Namespaces verified under the module prefix.

@@ -1,11 +1,11 @@
 ---
 # isaac-gvvc
 title: 'Namespace restructure: isaac-hooks under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:42:13Z
+updated_at: 2026-09-30T22:16:50Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -130,3 +130,7 @@ origin c584193d9007362865baa9b11ee5c2cb4a74b649:main`, confirm GitHub CI
 green, fast-forward the shared `isaac-hooks` checkout
 (`git -C ../isaac-hooks pull --ff-only`), record the main-sha here, tag
 this bean `unverified`, then remove the branch/worktree.
+
+## Landed + planner verification (2026-09-30)
+
+main-sha: isaac-hooks c584193 (pushed by the planner on Micah's authority after the classifier blocked the worker). CI Tests green. Namespaces verified under the module prefix.

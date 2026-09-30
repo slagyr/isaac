@@ -1,11 +1,11 @@
 ---
 # isaac-fkqz
 title: 'Namespace restructure: isaac-http under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:07:35Z
+updated_at: 2026-09-30T22:16:50Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -30,3 +30,7 @@ An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take
 - greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
+
+## Landed + planner verification (2026-09-30)
+
+main-sha: isaac-http 5dedcaf (pushed by the planner on Micah's authority after the classifier blocked the worker). CI Tests green. Namespaces verified under the module prefix.

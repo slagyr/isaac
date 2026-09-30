@@ -1,11 +1,11 @@
 ---
 # isaac-wjng
 title: 'Namespace restructure: isaac-discord under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:37:26Z
+updated_at: 2026-09-30T22:16:50Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -124,3 +124,7 @@ the isaac-discord repo once available).
 Full grep of the tracked tree for any remaining non-`isaac.comm.discord.*` /
 `isaac.foundation.*` / `isaac.agent.*` / `isaac.http.*` namespace token: 0
 unjustified hits (module-id keywords and `isaac.edn` path mentions excluded).
+
+## Landed + planner verification (2026-09-30)
+
+main-sha: isaac-discord 3544a4e (pushed by the planner on Micah's authority after the classifier blocked the worker). CI Tests green. Namespaces verified under the module prefix.
