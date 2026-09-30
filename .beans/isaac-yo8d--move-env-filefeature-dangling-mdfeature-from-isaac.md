@@ -1,11 +1,11 @@
 ---
 # isaac-yo8d
 title: Move env_file.feature + dangling_md.feature from isaac-agent to isaac-foundation
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:46:25Z
+updated_at: 2026-09-30T05:48:04Z
 ---
 
 ## Ruling
@@ -105,3 +105,8 @@ files, confirm nothing else references them).
 feature-baseline: isaac-foundation fcbf65ee21eebd0798177b55c309b5692405faba
 feature-blob: isaac-foundation features/cli/config_env_file.feature 6e38eada14153c02406f9ce94d4c60fe3ef66fc0
 feature-blob: isaac-foundation features/cli/config_dangling_md.feature acfd31aa849ab4147570359dabeba2ea0da359ab
+
+## Landed on main (recorded by the planner, 2026-09-30)
+
+main-sha: isaac-foundation e269038bc7963005f71c42d4499757f68b59348b
+main-sha: isaac-agent 184b6e3
