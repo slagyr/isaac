@@ -53,5 +53,5 @@
                                       :git/sha "8d9ab8aea1026ca88d4d7d5af24deceb8bdf58f3"}
                               :desc  "Worksite registry, locks, and pools — named working directories for crews."}
  :isaac.handbook             {:coord {:git/url "https://github.com/slagyr/isaac-handbook.git"
-                                      :git/sha "57705bff9bbc0b05f84dc13fd2f43a7956779cec"}
+                                      :git/sha "a0cc9538e0506ea1ee2754801adb2edfbbff5fcf"}
                               :desc  "Isaac's operating handbook (POH) — handbook__read surfaces installed modules' handbook chapters to a crew; handbook__configure changes config through the same tool."}}
