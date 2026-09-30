@@ -1,0 +1,125 @@
+---
+# isaac-v38i
+title: Delete legacy config normalization and the retired :server block
+status: draft
+type: task
+priority: normal
+created_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T02:43:45Z
+---
+
+## Ruling
+
+Micah, 2026-09-29: clean cutover, no back-compat (isaac/AGENTS.md
+"Back-compat stance"): removed keys hard-reject, no deprecated aliases, old
+scenarios deleted not retained.
+
+## Problem
+
+`isaac-foundation/src/isaac/config/normalize.clj` carries three legacy
+old-format rewriting branches that predate the current map-of-id entity-dir
+shape:
+
+- `normalize-crew-config` (lines 62-74): `old-crew-list` — a `:crew` block
+  shaped as `{:list [...]}` (crew as a vector of entities with `:id`)
+  instead of today's map-of-id.
+- `normalize-model-config` (lines 76-90): `old-models` — models nested
+  under `(:models crew-block)` (i.e. inside the OLD `:crew {:models {...}}`
+  shape) instead of today's top-level `:models` map.
+- `normalize-provider-config` (lines 92-104): `old-providers` — providers
+  as a vector under `(get-in cfg [:models :providers])` instead of today's
+  top-level `:providers` map.
+
+`modern-crew-map?` (line 58-60) exists specifically to distinguish "modern
+map-shaped crew" from "old `:list`/`:defaults`/`:models`-nested shape" so
+`normalize-crew-config` can branch between them.
+
+Additionally `src/isaac/config/schema_base.clj`'s `base-root` declares a
+`:server` block (lines 35-49) — a fully retired top-level key whose only
+job is to tell someone still writing `:server {...}` to use `:http`/
+`:hot-reload`/`:bridge` instead, field by field, via `:retired?`
+validations.
+
+Both are back-compat surface foundation carries for configs nobody should
+still be writing, and (per the cleanup's framing) the legacy-format
+branches also happen to be part of why `normalize.clj` hard-codes
+`:crew`/`:models`/`:providers` by name — deleting them is a prerequisite
+for cleanup-bean-4's generalization of what's left.
+
+## Wanted
+
+1. **Verify no live config needs the legacy branches before deleting.**
+   Checked this planning session:
+   - **yopp** (`ssh yopp@yopp`, reachable): `~/.isaac/config/isaac.edn` +
+     `crew/*.edn` + `models/*.edn` + `providers/*.edn` — modern shape
+     throughout (`:crew`/`:models`/`:providers` all top-level maps of id,
+     no `:list`, no `:server` key anywhere; `grep -n ':list\|:server\b'`
+     across all of them returned nothing).
+   - **zanebot**: NOT reachable from this planning session (no SSH key
+     authorized for this sandbox — `ssh zanebot` and `ssh zane@zanebot`
+     both failed with permission denied). **The worker must check zanebot
+     directly** (`ssh zane@zanebot "grep -n ':list\|:server\b'
+     ~/.isaac/config/isaac.edn ~/.isaac/config/crew/*.edn
+     ~/.isaac/config/models/*.edn ~/.isaac/config/providers/*.edn"` or
+     equivalent) before deleting — this bean's acceptance is gated on
+     that check finding nothing, same as yopp.
+   - Any other deployed Isaac instance Micah knows about (personal
+     laptop config, other hosts) should get the same check.
+2. Delete `old-crew-list`, `old-models`, `old-providers`, and
+   `modern-crew-map?` from `normalize.clj`. `normalize-crew-config` /
+   `normalize-model-config` / `normalize-provider-config` become
+   unconditional (always map-of-id in, conform each entry, no branch).
+3. Delete the `:server` block from `schema_base.clj`'s `base-root`.
+   Per the same candidate's suggestion: if the retired-key hint is still
+   valuable UX (someone upgrading an old isaac-http-era config), it moves
+   to isaac-http's OWN manifest schema (a module can declare
+   `:retired?`-validated fields same as foundation's base schema does —
+   nothing foundation-specific about that mechanism) rather than living in
+   foundation's base-root. Otherwise just delete — `:server` becomes an
+   ordinary unknown top-level key (warns, doesn't error), same as any
+   other stray key.
+4. Grep `isaac-foundation/features/` for any scenario exercising the old
+   `:list`-shaped crew, `:server`, or old nested `:models :providers` —
+   delete those scenarios outright (no absence tests per project
+   convention — this is a removal, not a new permanent scenario).
+
+## Acceptance
+
+- `grep -n "old-crew-list\|old-models\|old-providers\|modern-crew-map?" isaac-foundation/src/isaac/config/normalize.clj` returns nothing.
+- `grep -n ":server" isaac-foundation/src/isaac/config/schema_base.clj` returns nothing (or only in isaac-http's manifest if the hint moved there — worker's call per item 3).
+- Full foundation feature suite green with the deleted scenarios gone, not
+  skipped.
+- zanebot's live config confirmed modern (or migrated first, if it isn't —
+  which would itself need a separate one-time migration, not a reason to
+  keep the code path indefinitely).
+
+## Likely repo scope
+
+`isaac-foundation` only: `src/isaac/config/normalize.clj`,
+`src/isaac/config/schema_base.clj`, `features/` (delete any legacy-shape
+scenario). `isaac-http` only if the `:server` retired-hint moves there
+(item 3).
+
+## Notes
+
+- **Sequence after isaac-dnib lands on main.** isaac-dnib
+  (`bean/isaac-dnib`, in progress as of this planning session, already
+  84 changed lines in `normalize.clj` and 72 in `schema_base.clj` beyond
+  main) is actively rewriting both files this bean touches — applying the
+  conform-overlay treatment to `normalize-crew`/`normalize-model`/
+  `normalize-defaults`, and deepening `:modules`' schema in
+  `schema_base.clj`. **Do not draft this bean's diff against current
+  main's normalize.clj/schema_base.clj — rebase onto isaac-dnib's landed
+  sha first**, since the line numbers and even some function shapes cited
+  above will have shifted.
+- This bean should land before cleanup-bean-4 (entity-table derivation),
+  which generalizes what's LEFT in normalize.clj after this deletion.
+
+## Open questions
+
+- None blocking — the only real unknown is zanebot's actual config
+  shape, which the worker must check directly (see Wanted item 1).
+
+## Planner note (2026-09-30)
+
+Checked zanebot live config (zane@zanebot ~/.isaac/config): no `:list`, no `:server`, models/providers in their own dirs — fully modern, like yopp. Safe to delete.
