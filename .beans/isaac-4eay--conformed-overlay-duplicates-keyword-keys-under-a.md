@@ -25,3 +25,7 @@ Scenario TBD: a Marigold table with a :string key-spec, EDN keyword keys, loaded
 
 feature-baseline: isaac-foundation 69c8def0dc9924247908223147c1a15e326579ca
 feature-blob: isaac-foundation features/cli/config_string_keys.feature c386a74309d76e7c12212e634e6c89c4513e10e8
+
+## Landed on main (2026-09-30)
+
+main-sha: isaac-foundation 78cd7bcb4e45da489f10aa8d6f07508ba1c5f128
