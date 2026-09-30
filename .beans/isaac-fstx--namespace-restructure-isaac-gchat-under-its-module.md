@@ -1,13 +1,11 @@
 ---
 # isaac-fstx
 title: 'Namespace restructure: isaac-gchat under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:34Z
-updated_at: 2026-09-30T21:14:54Z
+updated_at: 2026-09-30T21:16:24Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -210,3 +208,7 @@ hits.
 
 No live-config edits were needed (checked before the initial push — no hits
 on zanebot or yopp for any renamed namespace token).
+
+## Planner verification (2026-09-30)
+
+Verified on ae1a75f: all namespaces isaac.comm.gchat.*, agent pin f953042, CI green.
