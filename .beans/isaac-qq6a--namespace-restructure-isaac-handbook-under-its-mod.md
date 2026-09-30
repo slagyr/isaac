@@ -1,11 +1,11 @@
 ---
 # isaac-qq6a
 title: 'Namespace restructure: isaac-handbook under its module id'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T14:12:24Z
+updated_at: 2026-09-30T17:45:57Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
