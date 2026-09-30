@@ -1,11 +1,11 @@
 ---
 # isaac-n8uv
 title: 'agent session steps: stale :turn-future blocks transcript checks on a still-parked session'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-30T17:58:47Z
-updated_at: 2026-09-30T17:58:47Z
+updated_at: 2026-09-30T19:23:46Z
 ---
 
 Found 2026-09-30 by the worksite restructure (isaac-6uou). isaac-agent's test support (`isaac.agent.session.session-steps`, shipped in isaac-agent-spec): `user-sends-on-session` now sets the single `:turn-future` slot only when nothing is already parked. After a second session's turn ends, `:turn-future` still points at a different, intentionally parked session's future, so asserting the first session's transcript (`await-turn!` / `await-transcript-turn!`) blocks 30s and fails.
