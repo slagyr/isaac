@@ -4,8 +4,10 @@ title: 'Handbook chapter: isaac-foreman'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T06:32:22Z
+updated_at: 2026-09-30T06:33:05Z
 parent: isaac-u5f5
 ---
 
