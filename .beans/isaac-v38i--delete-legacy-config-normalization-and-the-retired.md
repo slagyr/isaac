@@ -1,11 +1,13 @@
 ---
 # isaac-v38i
 title: Delete legacy config normalization and the retired :server block
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:44:57Z
+updated_at: 2026-09-30T02:57:47Z
 ---
 
 ## Ruling
@@ -127,3 +129,58 @@ Checked zanebot live config (zane@zanebot ~/.isaac/config): no `:list`, no `:ser
 ## Ungated
 
 Refactor with no new user-visible behavior, so no new scenarios: acceptance is both repos' full CI green (existing scenarios are the regression net), the grep checks named in this bean, and planner verification. Worker hands off with `tag=unverified`.
+
+## Landed on main
+
+Zanebot was down for this session; ran locally in its place, on a worktree
+(`isaac-foundation-v38i`, branch `bean/isaac-v38i`), rebased onto latest
+`origin/main` (which had picked up isaac-yo8d) right before landing.
+
+Deleted from `isaac-foundation/src/isaac/config/normalize.clj`:
+`modern-crew-map?`, and the `old-crew-list`/`old-models`/`old-providers`
+branches inside `normalize-crew-config`/`normalize-model-config`/
+`normalize-provider-config` — all three are now unconditional (map-of-id
+in, conform each entry via the existing `normalize-crew`/`normalize-model`
+overlay helpers from isaac-dnib, no legacy-shape branch). Also dropped the
+now-dead `crew-block` parameter from `normalize-model-config` and the
+unused `clojure.set` require.
+
+Deleted the `:server` block from `schema_base.clj`'s `base-root` outright
+(no hint moved to isaac-http) — per the bean's "otherwise just delete"
+option and the project's clean-cutover stance; `:server` is now an
+ordinary unknown top-level key (warns, doesn't error). isaac-http's own
+`schema/root.clj` `server` var already read from manifest contributions
+(none declare `:server`), so it was already effectively dead — left
+untouched, out of this bean's scope.
+
+Left `isaac.config.watch/hot-reload?`'s `[:server :hot-reload]` fallback
+(a separate, functional back-compat path from isaac-1pi2, not part of
+`schema_base.clj`'s declarative retirement) untouched — not named in this
+bean's Wanted/Acceptance, and both `watch_spec.clj` tests for it still
+pass unchanged.
+
+Tests removed (legacy-shape-only, no absence tests added):
+- `isaac-foundation/spec/isaac/config/normalize_spec.clj`: `"normalizes
+  legacy crew lists nested models and provider vectors"` — the only spec
+  in the repo exercising `:list`-shaped crew, crew-nested `:models`, or
+  vector `:providers`.
+- `isaac-foundation/spec/isaac/config/schema_base_spec.clj`: narrowed
+  `"contains process-owned config and retired server settings"` to
+  `"contains process-owned config"`, dropping the `:server`-keys/
+  `:retired?`-message assertions.
+
+Grepped `isaac-foundation/features/` and `isaac-agent` (specs + features):
+no scenario anywhere exercises the legacy crew/models/providers shapes or
+the retired `:server` block, so no `.feature` deletions were needed and
+isaac-agent was not touched.
+
+Results: `bb ci` green (270 examples, 0 failures, 741 assertions, 2
+pre-existing unrelated `@wip` pendings) and `bb features-slow` green (6
+scenarios, 0 failures) on isaac-foundation, both before and after the
+rebase onto origin/main. GitHub Actions CI on the landed main commit:
+success (all jobs, including the cross-repo isaac-http boot scenario).
+
+main-sha: isaac-foundation 7f5b519282d1731c88a6da5b787aca5a455bcb27
+
+Branch `bean/isaac-v38i` and its worktree deleted after landing (local +
+remote).
