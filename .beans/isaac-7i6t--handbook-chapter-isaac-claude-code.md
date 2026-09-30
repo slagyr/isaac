@@ -4,8 +4,10 @@ title: 'Handbook chapter: isaac-claude-code'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T06:17:58Z
+updated_at: 2026-09-30T06:35:34Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,26 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+## Landed on main
+
+main-sha: isaac-claude-code d06922368009fb0c264da82ad0f0dd455a7f12a5
+
+Pins bumped (deps.edn + bb.edn) to isaac-foundation `0c6e881e`, isaac-agent
+`13d18c70`, isaac-http `42e302f3` — required for the manifest's `:handbook`
+key to be recognized (the previously pinned foundation predated `:handbook`
+support and warned `:manifest/unknown-key`). `bb ci` green against the
+bumped pins with no other fallout; GitHub CI green
+(https://github.com/slagyr/isaac-claude-code/actions/runs/36678750887).
+
+Chapter: `src/isaac/llm/handbook.md` (manifest `:handbook
+"isaac/llm/handbook.md"`). Lint spec:
+`spec/isaac/llm/handbook_chapter_spec.clj` — since this module's own
+manifest carries no `:builtin? true`, the spec finds its own manifest by id
+(`isaac.module.discovery/manifest-resource`) and folds it into the builtin
+index rather than declaring the module builtin just to pass.
+
+`[verify]` items left in the chapter text for Micah: the exact `claude` CLI
+login/re-login subcommand name (auth is `auth: "none"` — Isaac never
+manages this provider's credential, so the exact external command wasn't
+grounded in this repo's code).
