@@ -1,13 +1,11 @@
 ---
 # isaac-51fg
 title: 'Namespace restructure: isaac-mcp under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T22:28:56Z
+updated_at: 2026-09-30T22:29:37Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -62,3 +60,7 @@ Rebased on origin/main (no new commits there), squashed the pin bump into the or
 **Test results, HOME-isolated (`/tmp/isaac_scratch_home_51fg`):** `bb ci` (config-bypass-lint + `bb spec` 45/45 + `bb jvm-features` 13/13) green. `bb jvm-spec` 45/45 green. `bb lint` 0 errors/0 warnings. Only benign noise: pre-existing `WARNING: resolve/reset! already refers to...` var-shadow warnings from isaac-agent's own `resource-pool`/`drive.observer` and isaac-acp's `system` namespaces (not this repo's code).
 
 Removed `isaac-wqs8` from `blocked_by` (isaac-acp has migrated) and tagged `unverified` for `/verify`. Worktree `../isaac-mcp-isaac-51fg` and branch `bean/isaac-51fg` (both local and the earlier-pushed `origin/bean/isaac-51fg`) still need cleanup — deleting next.
+
+## Planner verification (2026-09-30)
+
+Verified on 7d6ee59: all namespaces isaac.tool.mcp.*, CI green.
