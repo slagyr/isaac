@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-29T23:32:13Z
-updated_at: 2026-09-30T02:39:02Z
+updated_at: 2026-09-30T05:07:08Z
 blocked_by:
     - isaac-jvwr
     - isaac-3ljt
@@ -47,3 +47,16 @@ needs, while `:context-mode :reset` keeps old turns out of the request.
 ## 2026-09-30 deploy
 
 Episodes 8ef1955 live (recall rides the prompt, seal skips recall, :episodes crew overrides, append-checkpoint!); agent a6231af (parallel queue). Mixmaster crew now has :episodes {:recall {:half-life 7}}. His recall reaches the model from here on; jvwr landed via a Scrapper, 0lb7 was his first bean (no recall, crashed at checkpoint after landing).
+
+## Trial data so far (2026-09-30, planner)
+
+No Mixmaster turn has had recall delivered yet, so these are baselines, not a comparison. On 3ljt the episodes policy logged 10 recalled lineage scenes, but the block was stripped before it reached the model (isaac-klcb: held on the agent session record, which the sidecar store conforms away).
+
+| Turn | Crew | Bean | Requests | Prompt tokens | Output | Tools | Notes |
+|---|---|---|---|---|---|---|---|
+| f4cc2421 | Mixmaster | jvwr (attempt 1) | 26 | 1.51M | 6.4k | 31 | stopped on a contract conflict |
+| b0ae2ae6 | Scrapper | jvwr (landed) | 33 | 1.34M | 4.5k | 43 | |
+| 2de84201 | Mixmaster | 0lb7 | ~50 | n/a | n/a | n/a | landed, then crashed at checkpoint (rmbz) |
+| e3cd7bbf | Mixmaster | 3ljt | 55 | 3.09M | 12.0k | 61 | recall computed, not delivered (klcb) |
+
+Mixmaster made **zero** recall__search / recall__scene calls across all four turns. The real comparison starts after klcb deploys.
