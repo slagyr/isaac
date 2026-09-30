@@ -4,8 +4,10 @@ title: Delete dead activate-server! and the :server? manifest key
 status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-09-30T04:57:54Z
-updated_at: 2026-09-30T04:59:07Z
+updated_at: 2026-09-30T05:07:42Z
 ---
 
 Found verifying isaac-6pqo (2026-09-30). `isaac.module.lifecycle/activate-server!` (and `loader/activate-server!`) have no callers anywhere except their own spec, and 6pqo's new `:server?` manifest key is declared by no module, so it would throw if called. Dead code.
@@ -21,3 +23,7 @@ Delete `activate-server!`, `loader/activate-server!`, `server-module-id`, the `:
 ## Ungated
 
 Dead-code deletion. Hand off `tag=unverified`.
+
+## Landed on main
+
+main-sha: isaac-foundation e025af26bbc59b0ab3063841da478360da7d5715
