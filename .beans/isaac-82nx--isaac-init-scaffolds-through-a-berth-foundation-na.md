@@ -1,13 +1,11 @@
 ---
 # isaac-82nx
 title: isaac init scaffolds through a berth (foundation names no module's starter files)
-status: in-progress
+status: completed
 type: task
 priority: low
-tags:
-    - unverified
 created_at: 2026-09-30T02:44:10Z
-updated_at: 2026-09-30T22:21:55Z
+updated_at: 2026-09-30T22:23:09Z
 blocked_by:
     - isaac-on0o
 ---
@@ -100,3 +98,7 @@ checkout, and confirmed all three GitHub Actions CI jobs (Slow features,
 Server boot, verify/`bb ci`) green on the landed commit.
 
 main-sha: isaac-foundation 98de59a
+
+## Planner verification (2026-09-30)
+
+Gate PASS on 98de59a; CI green on all 3 jobs. Follow-ups: agent and cron contribute their starters through :isaac/setup (separate beans).
