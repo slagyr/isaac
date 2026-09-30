@@ -1,13 +1,11 @@
 ---
 # isaac-kcck
 title: Companion .md loading reads the table's :companion descriptor (no :crew/:berths in foundation)
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T04:57:54Z
-updated_at: 2026-09-30T06:17:18Z
+updated_at: 2026-09-30T06:18:24Z
 ---
 
 Found by the isaac-mxgn/601n scenario drafting (2026-09-30). Foundation's config-LOAD side of companion markdown files (`isaac.config.companions/companion-md-relative`) is hard-coded to the kinds `:crew` and `:berths`, while the WRITE side (`isaac.config.mutate/companion-spec`) already reads each table's own `:companion` descriptor from its schema. So a module-declared table with a companion field (e.g. cron's `:prompt`) loads its `.md` only by accident of naming, and foundation names agent's `:crew`.
