@@ -1,11 +1,11 @@
 ---
 # isaac-davq
 title: 'Namespace restructure: isaac-foundation → isaac.foundation.*'
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T14:12:23Z
+updated_at: 2026-09-30T15:08:25Z
 parent: isaac-vyqs
 ---
 
