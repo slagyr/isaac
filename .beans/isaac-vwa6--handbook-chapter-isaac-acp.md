@@ -1,11 +1,13 @@
 ---
 # isaac-vwa6
 title: 'Handbook chapter: isaac-acp'
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T04:56:36Z
+updated_at: 2026-09-30T06:13:42Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,36 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+
+## Landed on main
+
+main-sha: isaac-acp e257230
+
+Shipped `src/isaac/comm/acp/handbook.md` (manifest `:handbook`), a lint
+spec (`spec/isaac/comm/acp/handbook_chapter_spec.clj`, following
+isaac-gmail's isaac-g8k2 raw-manifest pattern) checking every backtick
+`config:<path>` ref against the composed schema and every `isaac
+<command>` invocation against the registered CLI. isaac-acp declares no
+config schema of its own, so no `:description` backfills were needed.
+
+Also added `:builtin? true` to the manifest (matching isaac-agent's
+isaac-aaf4 and isaac-gmail's isaac-g8k2), needed for this module's own
+"acp" command and `:handbook` resource to resolve via
+`discovery/builtin-index` in its own tests. No pins bumped. `bb ci`
+green locally (81 spec examples, 70 feature examples) and on GitHub CI
+(run 36676883608). The `:handbook` key warns as unknown under the
+pinned foundation sha in this repo's own tests, as expected until a
+foundation repin.
+
+Chapter covers: the ACP comm and initialize/agentInfo, session
+selection and per-turn overrides (shared frequencies flags plus the
+blank-invocation defaults.frequencies fallback, isaac-asik), episodes
+rotating beneath a fixed sessionId, streaming/replay notification
+shapes, tool-call display lifecycle, session/cancel, slash command
+advertisement and /status, and errors/exceptions/compaction status
+surfacing as agent_message_chunk/agent_thought_chunk with end_turn.
+
+`[verify]` in the chapter: whether ACP's `promptCapabilities.text`-only
+advertisement (no image/audio) is a permanent design choice or just
+not-yet-implemented.
