@@ -1,13 +1,11 @@
 ---
 # isaac-hzw2
 title: config_schema.feature relays.value.type gains a required marker after apron 3.2.1 (isaac-3y69 follow-up)
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T01:17:28Z
-updated_at: 2026-09-30T01:24:20Z
+updated_at: 2026-09-30T01:41:00Z
 ---
 
 isaac-dnib bumped foundation to apron 3.2.1. apron's `doc/required-fields` now resolves `:validations [:present? ...]` keyword refs to required-ness (previously only a literal `present?` fn reference counted) — this is an apron 3.2.1 behavior change, not anything isaac-dnib added to `field-block`/`leaf-block`.

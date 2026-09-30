@@ -354,7 +354,7 @@ feature-blob: isaac-foundation features/cli/config_defaults.feature d9d0d7bc8be3
 
 ## Landed on main (2026-09-30)
 
-main-sha: isaac-foundation 322151c
+main-sha: isaac-foundation e5eed86
 main-sha: isaac-agent 5dcbb33
 
 Both repos' full `bb ci` green (spec + features) on the landed commits;
