@@ -1,11 +1,11 @@
 ---
 # isaac-lshz
 title: 'isaac-handbook: handbook__configure (atomic multi-set, prose fields)'
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-30T00:28:23Z
-updated_at: 2026-09-30T05:09:26Z
+updated_at: 2026-09-30T05:13:28Z
 blocked_by:
     - isaac-z90t
     - isaac-cvri
@@ -339,3 +339,6 @@ asymmetry in `isaac-foundation`'s spec-support (small, mechanical, but a
 separate repo/bean); (b) accept the current behavior and re-baseline those
 three scenarios' literal expectations to `:grover` (keyword) to match the
 fixture step's actual write, if that is judged acceptable.
+
+feature-baseline: isaac-handbook a78681892a68058aaa0ec4154e3014b69fe41fde
+feature-blob: isaac-handbook features/configure.feature 02a34af0afbc22df4ef655ae8dd53ec0e94e952a
