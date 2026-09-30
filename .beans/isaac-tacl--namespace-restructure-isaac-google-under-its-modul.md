@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T16:55:22Z
+updated_at: 2026-09-30T17:08:56Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -30,3 +30,98 @@ An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take
 - greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
+
+## Findings (branch pushed, not landed — blocked on isaac-http)
+
+Work done on `bean/isaac-tacl` in `isaac-google`, pushed to origin, **not
+merged to main**.
+
+**isaac-google's own namespaces are already `isaac.google.*`** — nothing to
+rename there. The work is: bump `deps.edn`/`bb.edn` pins to isaac-foundation
+`33ac50d9d7a50c9c22b7fe8e1f02c1220c360527` and isaac-agent
+`123d71850b480dc0859886e1a4fa53e082c258f1`, and rename every cross-module
+reference to their renamed namespaces: `isaac.cli.{api,common,registry}`,
+`isaac.component.{factory,protocol,registry,runtime}`,
+`isaac.config.{loader,root,schema-compose,schema.resolve}`, `isaac.fs`,
+`isaac.logger`, `isaac.main`, `isaac.module.{berths,discovery,protocol}`,
+`isaac.nexus`, `isaac.runner`, `isaac.scheduler.runtime`,
+`isaac.schema.lexicon` → `isaac.foundation.*`; `isaac.comm.delivery.queue`,
+`isaac.llm.{auth.store,http,providers-steps}`, `isaac.tool.memory` →
+`isaac.agent.*` — across `src/`, `spec/`, `feature-steps/`, a
+`requiring-resolve` symbol (`isaac.component.registry/instance-for` in
+`registration.clj`), a fixture manifest `:factory` symbol
+(`test-resources/marigold/skybeam/resources/isaac-manifest.edn`), and factual
+doc-string/comment pointers (`isaac.runner`, `isaac.component.runtime`,
+`isaac.llm.providers-steps` mentions in `feature-steps/isaac/google_steps.clj`
+and `spec/isaac/google/handbook_chapter_spec.clj`). Left alone (isaac-http's
+own, unmigrated, bean isaac-fkqz still `todo`): `isaac.http.*`,
+`isaac.config.server-config`. Left alone (fixture/data, false-positive
+matches, not namespaces): `isaac.acme.example`, `isaac.example`,
+`isaac.tonotop.example` (fixture URLs), `isaac.edn` (a config filename
+mentioned in a string), `isaac.cron`/`isaac.episodes` (other modules' ids,
+mentioned in a comment), `:isaac.agent/tools` and other `:isaac.config/*`
+berth keywords (data contracts, per the bean).
+
+**Live-config greps (read-only, no edits needed).** zanebot and yopp
+`~/.isaac/config`: no hits for any of the renamed namespace tokens on either
+host.
+
+**Handbook/README.** No edits needed — `resources/isaac/google/handbook.md`
+only names other modules by their (unchanged) module ids (`isaac.agent`,
+`isaac.foundation`), and `README.md` has no namespace mentions.
+
+**Test results.** `bb lint`: 101 errors/16 warnings, byte-identical to
+pristine pre-bean `main` (pre-existing clj-kondo speclj-macro gap, not a
+regression). `bb spec` / `bb jvm-spec`: 267/268 green — the one failure is
+real but not fixable here (see below). Full grep of the tracked tree for any
+remaining pre-rename foundation/agent namespace token outside the justified
+exceptions above: 0 hits.
+
+**The one spec failure** — `handbook_chapter_spec.clj`'s config-schema-compose
+test: `config-schema collision at :comms [:schema :value-spec :factory]:
+isaac.agent.comm.factory/create! vs isaac.comm.factory/create!`.
+`isaac.foundation.module.discovery` composes every `:builtin? true` manifest
+found on the classpath; isaac-agent's new manifest contributes
+`isaac.agent.comm.factory/create!` for the `:comms` berth, but isaac-http's
+still-pinned old manifest (sha `689d3686`, unmigrated) contributes the same
+berth path with the old bare `isaac.comm.factory/create!` — a real value
+mismatch now that agent renamed. Confirmed **not** present on pristine
+pre-bean `main` (3/3 green there, both sides still bare and identical). Not
+fixable from isaac-google's side; resolves once isaac-http migrates.
+
+**Blocker — `bb jvm-features` (and therefore `bb ci`) cannot even boot, and
+CI would be red too.** gherclj's `"isaac.**-steps"` feature-runner glob
+eagerly `require`s every matching step namespace on the classpath, including
+`isaac.http.server-steps` (from the `isaac-http-spec` coordinate — google
+uses it via `requiring-resolve` for the push-door/oauth-callback HTTP
+scenarios). That namespace still directly `:require`s several of isaac-http's
+own bare namespaces (at minimum `isaac.component.protocol`, `isaac.config.loader`,
+`isaac.config.runtime`, `isaac.nexus`, `isaac.fs`, `isaac.logger`, `isaac.main`,
+`isaac.module.loader`, `isaac.session.store.spi`, `isaac.comm.{factory,registry}`)
+— none of which exist anymore once foundation/agent are pinned to their
+renamed mains. `clojure -M:features` dies at namespace-load time with
+`FileNotFoundException: Could not locate isaac/fs__init.class...` (via
+`isaac.http.audit`), before any scenario runs. Confirmed **not** a
+pre-existing failure: pristine pre-bean `main` runs `bb jvm-features` clean
+(44/44 examples). `.github/workflows/ci-tests.yml` runs `bb ci` directly
+against the pinned shas, so this reproduces in CI identically —
+**landing this branch to main would turn isaac-google's own CI red**, not a
+downstream smoke job (unlike isaac-davq's accepted "Server boot..." fallout,
+which was foundation's own `bb ci` staying green while a *different* repo's
+integration job went red).
+
+This is the same blocker isaac-81ua (isaac-hail) independently hit and
+reported. Per the milestone's own ordering note ("A module that requires
+another leaf... goes after that leaf"), isaac-http is such a leaf for every
+module that pulls in `isaac-http-spec`/`isaac-http-test-support` for HTTP
+feature-step helpers — likely most of wave 3. isaac-fkqz (isaac-http's own
+rename bean) is now claimed in-progress, which should unblock this once it
+lands.
+
+**Not landing on my own judgment.** Leaving this bean `in-progress` (not
+`unverified`), branch `bean/isaac-tacl` pushed to `isaac-google` for review
+rather than merging red CI to main. No main-sha to hand to isaac-gchat/
+isaac-gmail yet — they should wait on isaac-fkqz landing, then this bean
+resuming and merging, before pinning to isaac-google. Recommend: land
+isaac-fkqz first, then re-run `bb ci` on `bean/isaac-tacl` (rebased on
+whatever isaac-google/main looks like at that point) before merging.
