@@ -1,11 +1,11 @@
 ---
 # isaac-x9y5
 title: isaac-http start gate ignores principals; jwks-alert-threshold undeclared
-status: in-progress
+status: todo
 type: bug
 priority: normal
 created_at: 2026-09-30T06:37:18Z
-updated_at: 2026-09-30T22:17:35Z
+updated_at: 2026-09-30T22:53:36Z
 blocked_by:
     - isaac-fkqz
 ---
@@ -32,3 +32,9 @@ The start gate accepts principals (any configured auth) as sufficient. Declare `
 feature-baseline: isaac-http 7fd602ab7ca1ca057781553fbfb81e298ad491ac
 feature-blob: isaac-http features/server/auth.feature 231c6fd2835552a69e7e7ddd014c44f753f9044e
 feature-blob: isaac-http features/http/config.feature 87aa73eb1c82dbd68e3802de53935e3fe8c17895
+
+feature-baseline: isaac-http 35476d41db73fdc0dbfb556a69d3cc017c469dff
+feature-blob: isaac-http features/server/auth.feature 4d202e12b8076fca139e9878584727dd717525a7
+feature-blob: isaac-http features/http/config.feature 87aa73eb1c82dbd68e3802de53935e3fe8c17895
+
+Re-baselined 2026-09-30 after the planner retired the refuse-to-start scenario on isaac-http main (35476d4), per Micah ("if the feature should be retired, retire it").
