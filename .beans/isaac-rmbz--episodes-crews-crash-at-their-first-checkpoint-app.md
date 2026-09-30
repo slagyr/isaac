@@ -1,11 +1,11 @@
 ---
 # isaac-rmbz
 title: Episodes crews crash at their first checkpoint (append-checkpoint! missing)
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-30T00:34:07Z
-updated_at: 2026-09-30T00:34:07Z
+updated_at: 2026-09-30T00:44:12Z
 ---
 
 Likely repo: **isaac-episodes**. Live on zanebot: any episodes crew with `:cycle :checkpoint-every` crashes at its first checkpoint.
@@ -38,3 +38,7 @@ when called.
 
 feature-baseline: isaac-episodes f1f7142ca8b5cbf0f17710ae8935a9ffe6f90016
 feature-blob: isaac-episodes features/episodes/live.feature 8d8ee685dbd12a07d079ea30a153dc249253beaa 825
+
+## Summary of Changes
+
+EpisodesPolicy implements append-checkpoint! by delegating to the store (8ef1955 on isaac-episodes main). New guard spec derives every SessionPolicy method from the protocol and checks the deftype declares it, so the next agent protocol change fails episodes' own suite. Gate PASS at 8ef1955; spec 233/0, features 96/0.
