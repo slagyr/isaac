@@ -1,11 +1,11 @@
 ---
 # isaac-x9y5
 title: isaac-http start gate ignores principals; jwks-alert-threshold undeclared
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-09-30T06:37:18Z
-updated_at: 2026-09-30T22:53:36Z
+updated_at: 2026-09-30T22:53:59Z
 blocked_by:
     - isaac-fkqz
 ---
