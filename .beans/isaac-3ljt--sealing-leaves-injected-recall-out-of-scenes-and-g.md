@@ -51,3 +51,11 @@ feature-blob: isaac-episodes features/episodes/live.feature 0f6030711f52d2728435
 ## Planner note (2026-09-30)
 
 Re-baselined at isaac-episodes 8ef1955: jvwr landed and removed its @wip line above, so the scenario now sits at live.feature:407. Since jvwr, recall is a prefix of the opening user message (header `[Recalled memory; not a request]`); strip that prefix at seal, and drop a standalone legacy recall entry whole.
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-episodes 3e9b24141813d5ad0aab1bafaff23288ad439098
+
+## Work note (2026-09-29)
+
+Done: stripped search/lineage recall only in scene distillation (including text-part envelopes and standalone legacy entries); `bb ci` green (97 feature examples), gate PASS on landed main SHA. Next: delete bean branch and mark completed. Resume at `beans update isaac-3ljt --status=completed` after branch cleanup.
