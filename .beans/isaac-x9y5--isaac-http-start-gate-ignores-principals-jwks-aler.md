@@ -4,8 +4,10 @@ title: isaac-http start gate ignores principals; jwks-alert-threshold undeclared
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T06:37:18Z
-updated_at: 2026-09-30T22:53:59Z
+updated_at: 2026-09-30T22:58:58Z
 blocked_by:
     - isaac-fkqz
 ---
@@ -38,3 +40,9 @@ feature-blob: isaac-http features/server/auth.feature 4d202e12b8076fca139e987858
 feature-blob: isaac-http features/http/config.feature 87aa73eb1c82dbd68e3802de53935e3fe8c17895
 
 Re-baselined 2026-09-30 after the planner retired the refuse-to-start scenario on isaac-http main (35476d4), per Micah ("if the feature should be retired, retire it").
+
+## Landed on main
+
+main-sha: isaac-http ff2a367
+
+`bb bean-gate verify isaac-x9y5 --dir isaac-http=<worktree>` passed after rebasing bean/isaac-x9y5 onto isaac-http main 35476d4 and taking main's version of features/server/auth.feature (worker diff there is only the two @wip removals). `bb spec` (197/197), `bb features` (120/120), and `bb jvm-spec` (197/197) all green in the worktree; GitHub CI green on main (run 36788427554). Squash was a no-op — the rebase already replayed to a single commit on top of main.
