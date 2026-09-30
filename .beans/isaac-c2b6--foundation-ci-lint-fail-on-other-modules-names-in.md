@@ -5,7 +5,7 @@ status: draft
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T04:57:54Z
 blocked_by:
     - isaac-6pqo
     - isaac-h2oo
@@ -13,6 +13,8 @@ blocked_by:
     - isaac-n140
     - isaac-mxgn
     - isaac-601n
+    - isaac-kcck
+    - isaac-ks8r
 ---
 
 ## Ruling
