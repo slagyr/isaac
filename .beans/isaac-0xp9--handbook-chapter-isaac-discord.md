@@ -1,11 +1,13 @@
 ---
 # isaac-0xp9
 title: 'Handbook chapter: isaac-discord'
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T04:56:36Z
+updated_at: 2026-09-30T06:15:38Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,13 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+
+
+## Landed on main
+
+main-sha: isaac-discord feea68768d8172e56989076d2a0cabe83373b30f
+
+CI: green (isaac-discord CI Tests, run 36677102734).
+
+Chapter at `isaac-discord/src/isaac/comm/discord/handbook.md` (manifest `:handbook`), lint spec at `isaac-discord/spec/isaac/comm/discord/handbook_chapter_spec.clj` (raw-manifest approach, mirrors isaac-google/isaac-cron since isaac-discord is not `:builtin?` and carries an older foundation pin). [verify] items left in the chapter text for Micah's review: the exact clip-vs-third-message split behavior, the `comms.discord.model` field being schema-undeclared, and the Discord close-code 4004/>=4010 fatal-close interpretation.
