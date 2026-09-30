@@ -4,8 +4,10 @@ title: Coalesced busy-session messages get a second, duplicate turn (drain tick 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-09-30T17:56:19Z
-updated_at: 2026-09-30T18:58:38Z
+updated_at: 2026-09-30T19:23:23Z
 ---
 
 Found 2026-09-30 by the gchat restructure (isaac-fstx). Scenario: three quick messages in one DM thread (gchat features, isaac-xoqn) should get ONE consolidated reply; against agent 123d718 they get two.
@@ -21,3 +23,45 @@ Production impact: any comm (gchat, discord, imessage…) on an agent with e9jl 
 - Full isaac-agent `bb ci` + `bb jvm-spec` green.
 
 Ungated; planner verifies. Agent main is on the post-restructure namespaces (`isaac.agent.*`).
+
+## Landed on main
+
+Root cause confirmed exactly as traced: `isaac.agent.turn.worker/run-one-pass!`
+claimed only the coalesced group's own merged-record id, leaving trailing
+coalesced members at `:waiting-session`. A nested `tick!` (bridge.core's
+own-session drain-waiting-session, fired from inside that same coalesced
+turn's `dispatch!` — after `clear-in-flight!` but before `process-record!`
+marks the group `:finished`) rediscovered those trailing members and started
+a second, spurious turn for them.
+
+Fix: `run-one-pass!` now claims every id in a coalesced group up front
+(before starting the async turn), so a nested drain sees nothing left in
+`:waiting-session` to pick up. `process-record!`'s still-held branch was
+also updated to revert every held-id (not just the primary) back to
+`:held`, keeping the claim/unclaim symmetric for a group that ends up
+parked again.
+
+Red spec added: `isaac.agent.turn.worker-spec` — "does not run a duplicate
+turn for a coalesced member exposed by a nested drain (isaac-2tez)" —
+mocks `bridge/dispatch!` to fire a nested `tick!` mid-dispatch (mirroring
+bridge.core's real finally-block drain) and asserts only one dispatch call
+happens for the merged input. Failed on main (`["two\nthree" "three"]`,
+duplicate), passes with the fix.
+
+Verified against the gchat downstream repro (`../isaac-gchat-isaac-fstx`,
+`features/comm/gchat/inbound.feature:700`, isaac-xoqn) via a temporary
+`:dev-local` deps.edn edit (reverted, nothing committed there): the
+isaac-xoqn scenario failed on unfixed agent (`Expected: 1, got: 2`
+outbound HTTP requests), passed after the fix; full gchat `bb
+jvm-features` via `:dev-local` then went 60/60, matching this bean's
+acceptance criterion.
+
+`bb ci` (native spec+features) and `bb jvm-spec` fully green. `bb
+jvm-features` full suite: 818 examples, 2 failures — both timing-sensitive
+`grover/waiting?` assertions in `turn/turn_store.feature` (`isaac-2lc4`'s
+"server's own tick" scenario and isaac-e9jl's "different sessions run side
+by side" scenario), reproduced identically on unfixed main — pre-existing
+flake, unrelated to this fix (not the coalescing scenario at line 116,
+which passed both isolated reruns).
+
+main-sha: isaac-agent 7e81a236366c00215910201614e0572e41898cad
