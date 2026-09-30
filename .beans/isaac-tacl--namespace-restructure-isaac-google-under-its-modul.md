@@ -152,3 +152,13 @@ No live-config edits were needed (checked before landing, see above — no hits 
 ## Planner verification (2026-09-30)
 
 Verified on c9c92f8: pins on migrated foundation/agent/http, CI green. Leftovers sent back: `isaac.google-steps` outside the prefix, stale lint doc-string.
+
+## Follow-up: leftovers fixed (2026-09-30)
+
+main-sha: isaac-google d16c9ac7ceda55c7c0dae583f047a590e9f154b2
+
+Fixed in a fresh worktree off `c9c92f8`: moved `feature-steps/isaac/google_steps.clj` (ns `isaac.google-steps`) to `feature-steps/isaac/google/steps.clj` (ns `isaac.google.steps`), updating the `helper!` call and all 66 internal fully-qualified self-references; added an explicit `"-s" "isaac.google.steps"` entry to `deps.edn`'s `:features` `:main-opts` (the existing `"isaac.**-steps"` glob only matches a `-steps`-suffixed final segment, so it can't pick up `isaac.google.steps` on its own — same fix shape isaac-discord already uses for its own non-conforming `isaac.discord.feature-bootstrap`). Fixed `bb.edn`'s `config-bypass-lint` `:doc` string: `isaac.config.*` → `isaac.foundation.config.*`.
+
+Tests (HOME isolated at `/tmp/isaac_scratch_home_tacl2`): `bb config-bypass-lint` ok, `bb spec` 268/268, `bb jvm-features` **44/44** (same scenario count as before the move — confirms the relocated step namespace still registers via the new explicit `-s` entry). `bb lint feature-steps`: 0 errors, 1 pre-existing warning (byte-identical to pristine `c9c92f8`, not a regression). Committed as one commit "isaac-tacl: move google-steps under isaac.google.*", no divergence from `origin/main` at push time, pushed directly to `main` (not denied by the classifier). Fast-forwarded the shared `isaac-google` checkout. GitHub CI on `d16c9ac`: `CI Tests / verify` — green (`gh run watch 36750538434`, 40s). Worktree and local branch removed; nothing was pushed to a remote `bean/isaac-tacl-followup` ref (pushed straight to `main`), so there was nothing to delete there.
+
+**For isaac-gchat / isaac-gmail:** pin isaac-google to `d16c9ac7ceda55c7c0dae583f047a590e9f154b2` (supersedes the `c9c92f8` pin noted above).
