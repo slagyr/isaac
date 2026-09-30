@@ -1,11 +1,11 @@
 ---
 # isaac-3ljt
 title: Sealing leaves injected recall out of scenes and gists
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-09-29T23:32:13Z
-updated_at: 2026-09-30T02:44:22Z
+updated_at: 2026-09-30T02:56:21Z
 blocked_by:
     - isaac-jvwr
 ---
