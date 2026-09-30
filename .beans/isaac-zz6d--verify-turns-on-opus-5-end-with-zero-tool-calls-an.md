@@ -1,6 +1,6 @@
 ---
 # isaac-zz6d
-title: Verify turns on Opus 5 end with zero tool calls and report delivered, stranding every ungated bean
+title: Verify turns on Opus 5 end with a short reply and zero tool calls, and count as success
 status: todo
 type: bug
 priority: high
@@ -8,7 +8,7 @@ tags:
     - hail
     - ops
 created_at: 2026-09-20T06:30:48Z
-updated_at: 2026-09-20T19:35:35Z
+updated_at: 2026-09-30T14:05:33Z
 ---
 
 Found 2026-09-20 05:20–06:35Z on zanebot while driving the Bean Gate train (isaac-rmq6).
@@ -71,3 +71,7 @@ honestly is worth checking alongside the `:delivered` path.
 
 Both observations are from the planner's watch loop, not a verify turn — so the acceptance
 scenarios should not assume the verify band is the only place this shows up.
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+The 'report delivered' framing is obsolete: hail has no delivery outcomes now, and Agent's TurnStore records :finished with :outcome. The symptom itself still looks uncovered: isaac-k4mf guards empty terminal responses and isaac-ntt6 guards loop exhaustion, but a short non-empty reply with zero tool calls on a work/verify turn passes both. Restate against isaac.turn.store / isaac.turn.worker and re-verify on the current model before dispatch.

@@ -8,7 +8,7 @@ tags:
     - security
     - http
 created_at: 2026-09-18T04:13:56Z
-updated_at: 2026-09-26T02:46:28Z
+updated_at: 2026-09-30T14:05:32Z
 ---
 
 ## Why (Micah, 2026-09-17)
@@ -53,3 +53,7 @@ One bearer token (`:server :auth :token`) is root: whoever holds it can run any 
 ## Decision (2026-09-25, Micah) — cli hierarchy
 
 isaac-jvzn is the real need the "no hierarchy" default was waiting on, and only for the `cli` namespace. `:cli/<command>` may open a route scoped `:cli`. Holding `:cli` does not satisfy a required `:cli/<command>`, and siblings do not grant each other. There is no `:cli/read` scope and no read/write classification of commands. See isaac-jvzn.
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+Delivered except the rollout: hashed principals, scopes on routes, 401 vs 403, mint/rotate/revoke/list and audit are in isaac-http; children bzgw, auie, 4o6r, 2a2x, jvzn completed. Only isaac-xo5p remains (zanebot: mint per-client principals, retire the legacy :server :auth :token).

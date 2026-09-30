@@ -5,9 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-21T15:38:42Z
-updated_at: 2026-09-21T16:41:58Z
-blocked_by:
-    - isaac-rxun
+updated_at: 2026-09-30T14:05:33Z
 ---
 
 Repo: **isaac-foundation** (`src/isaac/config/parse.clj`).
@@ -106,3 +104,7 @@ yopp.
 - isaac-5n68: `:extra-system-prompt` can live in a file
 - the defaults restructure (to be filed): large default text without making
   `:defaults` an entity
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+Unblocked: isaac-rxun (unresolvable ${VAR}/${file:...} warns and is treated as unset) is completed. Still unimplemented: isaac-foundation config/parse.clj substitute-env handles only ${VAR}.

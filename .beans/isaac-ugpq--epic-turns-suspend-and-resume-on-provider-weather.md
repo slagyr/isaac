@@ -9,7 +9,7 @@ tags:
     - turn
     - hail
 created_at: 2026-09-18T14:42:12Z
-updated_at: 2026-09-18T14:57:44Z
+updated_at: 2026-09-30T14:05:33Z
 ---
 
 ## Why (Micah, 2026-09-18)
@@ -46,3 +46,7 @@ Prerequisite/related: isaac-v64q (mid-stream 429 must classify as weather, or th
 - **What a parked turn waits on (Micah, 2026-09-18)**: the marker records `:suspended-on {:provider … :model …}` and `:reason`. The sweep re-drives at every `retry-at` (each re-drive IS the probe; no separate health check), so a lifted wall is picked up within one backoff interval (≤ 30 min). **Resume re-resolves the crew's effective provider/model from live config** — move the crew to another model and its parked turns continue on the next sweep. A charge that explicitly pinned a model (`--model`, cron `with-model`) keeps that pin and keeps waiting on it; that is the "model that never comes back" case and it stays parked until the pin is changed or the turn cancelled. **A config hot-reload that touches a crew's model/provider or a provider's auth triggers an immediate sweep** for turns suspended on that crew/provider, so fixing the problem does not wait out the backoff.
 
 Status: DESIGN APPROVED — children get scenarios next (child 1 first).
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+The core mechanism shipped (isaac-agent drive/weather.clj, bridge/resume.clj, bridge/suspend.clj; children nqeq and h5v8 completed). The hail-side retry path is gone with stateless hail, so isaac-q2v5's intent is met by the rewrite; recut or scrap it. Still open: isaac-a0q6, cron's :suspended last-status (no :suspended in isaac-cron).

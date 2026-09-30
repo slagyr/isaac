@@ -1,6 +1,6 @@
 ---
 # isaac-t0hh
-title: 'Held work beans are invisible: a work turn ending :reply with the bean still in-progress and no handoff must be re-delivered by the hail worker (bounded) and the model told its real cycle limit'
+title: 'Held work beans are invisible: a work turn that ends :reply with the bean still in-progress and no handoff must be surfaced and resumed'
 status: todo
 type: bug
 priority: high
@@ -8,7 +8,7 @@ tags:
     - hail
     - durability
 created_at: 2026-09-19T03:36:17Z
-updated_at: 2026-09-19T03:36:17Z
+updated_at: 2026-09-30T14:05:33Z
 ---
 
 ## Problem (zanebot, 2026-09-18/19 — six beans in one day)
@@ -35,3 +35,7 @@ cd isaac-hail && bb features features/delivery.feature && bb ci
 cd isaac-agent && bb features features/bridge && bb ci   # preamble
 ```
 Field: a bean that a worker holds is re-delivered within a minute; `grep work-held server.log` shows it; no planner hand re-hails for a week.
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+The proposed mechanism is obsolete: hail is stateless, with no delivery worker, re-delivery or :max-continuations. The drive now records why a turn ended (:ended-by includes :cycle-limit, distinct from :reply) and has an exhaustion-policy hook (isaac-y802), so the model no longer has to self-report its budget. Rescope onto the Agent turn queue/drive: detect a finished work turn that left its bean in-progress with no handoff, and surface or resume it (bounded). Needs new scenarios before dispatch.

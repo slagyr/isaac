@@ -1,13 +1,13 @@
 ---
 # isaac-onzi
-title: Hail drops a band's or hail's :with-context-mode when building the delivery charge
+title: 'Queued turns drop :with-context-mode: isaac.turn.worker/wake-charge never forwards it'
 status: todo
 type: bug
 priority: normal
 tags:
     - hail
 created_at: 2026-09-22T21:27:18Z
-updated_at: 2026-09-22T21:27:18Z
+updated_at: 2026-09-30T14:05:33Z
 blocked_by:
     - isaac-zdnx
 ---
@@ -39,3 +39,7 @@ Needs isaac-hail's agent pin bumped to a main sha that carries it.
 ## Related
 
 isaac-zdnx (CLI side, blocks this), isaac-dgod trial notes (2026-09-22).
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+Likely repo is now **isaac-agent**. isaac-hail's delivery_worker.clj is gone; hail carries :with-context-mode in :frequencies to Agent's TurnStore, but isaac.turn.worker/wake-charge forwards only :with-crew and :with-model into charge/build. The target shape already exists: charge/build accepts :context-mode-override, and bridge/prompt_cli.clj:267 maps it for the CLI (isaac-zdnx). The fix is the same one-line mapping in wake-charge; scenarios should move to isaac-agent's turn queue features.

@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: critical
 created_at: 2026-09-20T19:06:50Z
-updated_at: 2026-09-20T19:52:55Z
+updated_at: 2026-09-30T14:05:32Z
 blocking:
     - isaac-ebup
 ---
@@ -138,3 +138,7 @@ rather than dead-lettering, which is the weather path behaving.
 So this bean's fix stands and is necessary, but it is not sufficient: see
 isaac-ebup for the entry that cannot be chunked, which is what actually killed
 isaac-work-2 and isaac-work-3.
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+The gauge-reads-0 fix landed (isaac-agent d0eed3d; compaction.clj context-gauge + :tally-after-id). Remaining scope: classify a prompt_too_long session as poisoned (no such classification exists in isaac-agent src yet), and the oversized-single-entry case, still blocked on isaac-ebup.

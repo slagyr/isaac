@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-09-21T22:17:56Z
-updated_at: 2026-09-21T22:17:56Z
+updated_at: 2026-09-30T14:05:33Z
 ---
 
 Repo: **isaac-foundation** (the `sessions` CLI).
@@ -34,3 +34,7 @@ prominently too.
   naming the reason.
 - `isaac sessions show <id>` displays the block and its `:at` timestamp.
 - A run with no blocked sessions looks exactly as it does today.
+
+## Triage update (2026-09-30, planner, approved by Micah)
+
+Repo correction: the sessions CLI lives in **isaac-agent** (src/isaac/session/cli.clj), not isaac-foundation. Still unfixed: print-session-table, session->row and run-show ignore :block.
