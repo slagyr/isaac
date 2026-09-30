@@ -179,6 +179,33 @@ into one combined plan before staging/validating/applying.
   only because it's a real edge the implementer should have a test for, not
   because it's ambiguous.
 
+## Landed on main (2026-09-30)
+
+Implemented `set-many!` (name chosen, per the open question) and the rule-2
+`:siblings-all-files?` fix in `choose-set-location`, plus a whole-entity
+companion-field split fix in `set-plan` needed for scenario 5 (a new
+whole-entity write with a companion field now splits it into the .md, same
+as a per-field write already did). `set-many!` never blocks on reference
+errors (mirrors the CLI's `set-config`/`unset-config` `:skip-ref-validation?
+true` default) — required for scenario 5's forward gauge reference and a
+reasonable default for a primitive meant to wire up mutually-referencing
+entities. `choose-unset-location` needed no code change: `fs/children`
+(not `fs/dir?`) already reads a just-emptied directory as having no
+siblings, so the open-question edge case (new entry after the last
+file-backed sibling was unset) falls through to rules 3/4 for free.
+
+zanebot was down; landed locally per dispatcher instruction.
+
+main-sha: isaac-foundation a036b84cb5d59f37b174926472f4774176faf4f9
+
+GitHub CI on that commit: the `verify` job (`bb ci` — spec + features) is
+green. Two unrelated jobs are red — "Server boot with a module-provided
+config type" (cross-repo isaac-http check) and "Slow features (@slow
+launcher lane)" — but both were ALREADY red on the immediately-prior commit
+(isaac-n140, landed before this bean started), confirmed via
+`gh run view` on that commit's run. Pre-existing, unrelated to this bean's
+diff (isaac.config.mutate / config-steps / handbook only).
+
 feature-baseline: isaac-foundation 30a11ba4b00cf3e4a9be9c060a4fe473a5821b2e
 feature-blob: isaac-foundation features/cli/config_set_many.feature fd8514dfed298db9197ffba42e9cbba9dc1b3e72
 feature-blob: isaac-foundation features/cli/config_set_new_entity_placement.feature c42e290be01426b80365b34fc8cd7090e60ec0cd
