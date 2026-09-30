@@ -1,13 +1,11 @@
 ---
 # isaac-j4m5
 title: 'Namespace restructure: isaac-gmail under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:35Z
-updated_at: 2026-09-30T17:53:00Z
+updated_at: 2026-09-30T17:54:15Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -108,3 +106,7 @@ No `bb pins` task exists in this repo.
 (https://github.com/slagyr/isaac-gmail/actions/runs/36754345526).
 
 **Main sha**: `09f5077` (squashed single commit, pushed directly, no PR).
+
+## Planner verification (2026-09-30)
+
+Verified on 09f5077: all namespaces isaac.comm.gmail.*, CI green. The :string key-spec finding is beaned separately.
