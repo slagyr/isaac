@@ -1,11 +1,11 @@
 ---
 # isaac-0lb7
 title: 'Episodes config: recall moves under :episodes; crews may override :episodes'
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-29T23:54:31Z
-updated_at: 2026-09-29T23:58:37Z
+updated_at: 2026-09-30T00:08:35Z
 ---
 
 Likely repo: **isaac-episodes**. Design: Micah + planner, 2026-09-29.
@@ -72,3 +72,19 @@ feature-blob: isaac-episodes features/episodes/idle_seal.feature e5edb587444fc40
 ## Implementation conflict (2026-09-29)
 
 Implementation branch `bean/isaac-0lb7` in isaac-episodes at eac4b30. `bb spec`: 232 examples, 0 failures, 627 assertions. `bb features`: 95 examples, 1 failure, 579 assertions. All other acceptance scenarios pass. The sole failure is `features/recall/embedding.feature:98` (crew override config validation). The frozen scenario asserts stderr contains `bad value: soon`; config validate actually emits `error: crew.cordelia.episodes.recall.half-life - can't coerce "soon" to int` (exit 1). This is foundation's generic integer coercion error (not a schema validation error) and cannot honestly match the baselined contract without either changing the scenario or changing foundation's validation reporting. Planner decision needed: rebaseline expected stderr to the real error or authorize a foundation change. No edits to feature text beyond removing @wip.
+
+feature-baseline: isaac-episodes b1dedc301190aa8754b2c16a33587bb5d7c16c4e
+feature-blob: isaac-episodes features/recall/embedding.feature 1c7481c1299c78517b10166c0d12f4b7bfc1291f 98
+feature-blob: isaac-episodes features/recall/ledger.feature 715fd67a4f5f9b1df9be4d3d935266f45fb7d9b7 27
+feature-blob: isaac-episodes features/recall/ledger.feature 715fd67a4f5f9b1df9be4d3d935266f45fb7d9b7 38
+feature-blob: isaac-episodes features/recall/query.feature ac1e6e103e705cb12a3aa13e0e6f18c0025ea20f 86
+feature-blob: isaac-episodes features/recall/query.feature ac1e6e103e705cb12a3aa13e0e6f18c0025ea20f 147
+feature-blob: isaac-episodes features/episodes/idle_seal.feature e5edb587444fc400723d65e08d9e8315b199684c 51
+
+## Planner adjustment (2026-09-29, prowl@isaac-plan)
+
+No foundation change. An integer that will not coerce reports foundation's own wording.
+
+`features/recall/embedding.feature:98` now expects `can't coerce "soon" to int`, still with the path `crew.cordelia.episodes.recall.half-life` and exit 1. Kept `@wip`.
+
+Re-baselined onto isaac-episodes `b1dedc3`. Embedding blob `1c7481c1` line 98. The other five blobs are unchanged. Rebase onto `b1dedc3`. Drop `@wip`. Do not edit frozen scenario text.
