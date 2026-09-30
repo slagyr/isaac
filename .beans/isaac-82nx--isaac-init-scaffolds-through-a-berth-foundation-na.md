@@ -1,11 +1,11 @@
 ---
 # isaac-82nx
 title: isaac init scaffolds through a berth (foundation names no module's starter files)
-status: todo
+status: in-progress
 type: task
 priority: low
 created_at: 2026-09-30T02:44:10Z
-updated_at: 2026-09-30T15:19:03Z
+updated_at: 2026-09-30T19:03:01Z
 blocked_by:
     - isaac-on0o
 ---
