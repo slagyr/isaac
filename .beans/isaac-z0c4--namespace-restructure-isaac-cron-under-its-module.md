@@ -1,11 +1,11 @@
 ---
 # isaac-z0c4
 title: 'Namespace restructure: isaac-cron under its module id'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T14:12:23Z
+updated_at: 2026-09-30T16:56:26Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
