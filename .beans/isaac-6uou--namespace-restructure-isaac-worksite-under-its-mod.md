@@ -4,8 +4,10 @@ title: 'Namespace restructure: isaac-worksite under its module id'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T17:58:47Z
+updated_at: 2026-09-30T21:13:37Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -56,3 +58,15 @@ This is not fixable from isaac-worksite: the offending code lives in isaac-agent
 Per the coordinator brief's "don't land red" rule, **stopping here rather than landing**. Recommend a follow-up isaac-agent bean to restore the old overwrite behavior (or otherwise stop treating a still-parked *other* session's future as equivalent to `(g/get :turn-future)` in `await-transcript-turn!`), then re-run this bean's `bb jvm-features` to confirm green and land.
 
 Rename work itself is complete and pushed: branch `bean/isaac-6uou` on isaac-worksite, commit `51e0da2` (not merged — do not land until the isaac-agent regression above is fixed).
+
+## Landed on main (2026-09-30, follow-up)
+
+isaac-n8uv/isaac-8evx fixed the `await-transcript-turn!` regression on isaac-agent main (`f9530426d04b6f66f17ae51f6f9a1a697531b39d`, still pinning foundation `06d58b75bc52b3e118dc8e81569096de2532a0d4`). In the same worktree: bumped the agent pin (deps.edn top-level + `:features` alias, bb.edn top-level + `isaac-agent-spec`) from `123d71850b480dc0859886e1a4fa53e082c258f1` → `f9530426d04b6f66f17ae51f6f9a1a697531b39d`; foundation and isaac-http pins unchanged. Rebase onto isaac-worksite `origin/main` was a no-op (main hadn't moved). Re-ran with an isolated `HOME`:
+
+- `bb ci` (config-bypass-lint, lint-cli-host, `bb spec`, `bb jvm-features`): **green** — `bb spec` 21/21, `bb jvm-features` **8/8** (the previously-hanging "two members run two turns; a third waits..." scenario now passes).
+- `bb jvm-spec`: 21/21, green.
+- No slow lane / `bb pins` task exists in this repo.
+
+Squashed to one commit, pushed straight to `main` (`git push origin e152aa4:main`) — accepted, no classifier denial. Shared checkout fast-forwarded. GitHub CI (`verify` job, run 36777878034) green on `e152aa4`.
+
+main-sha: isaac-worksite e152aa4
