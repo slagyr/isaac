@@ -148,3 +148,7 @@ Full grep of the tracked tree for any remaining pre-rename namespace token (foun
 No live-config edits were needed (checked before landing, see above — no hits on zanebot or yopp for any renamed namespace token).
 
 **For isaac-gchat / isaac-gmail:** pin isaac-google to `c9c92f868db5bcd03510be70772e29c2c4003adb`.
+
+## Planner verification (2026-09-30)
+
+Verified on c9c92f8: pins on migrated foundation/agent/http, CI green. Leftovers sent back: `isaac.google-steps` outside the prefix, stale lint doc-string.
