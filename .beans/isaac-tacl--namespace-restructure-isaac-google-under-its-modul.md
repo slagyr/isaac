@@ -1,13 +1,11 @@
 ---
 # isaac-tacl
 title: 'Namespace restructure: isaac-google under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:13:59Z
+updated_at: 2026-09-30T17:20:58Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
