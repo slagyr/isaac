@@ -4,8 +4,10 @@ title: Derive entity-table sets and display names from the schema itself
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:59:49Z
+updated_at: 2026-09-30T03:27:57Z
 blocked_by:
     - isaac-v38i
 ---
@@ -153,3 +155,42 @@ possibly `src/isaac/config/schema_compose.clj` (new shared helper) and
 ## Ungated (planner, 2026-09-30)
 
 Refactor plus one bug fix (schema vs validate disagree on `:hail` paths). The worker writes the regression scenario named in Acceptance (Marigold fixture entity table, unique module id, manifest-only); the planner reviews it at verification. Hand off with `tag=unverified`.
+
+## Worker notes (2026-09-30)
+
+Items 1-2 landed. Item 3 (normalize.clj's hard-coded `:crew`/`:models`/
+`:providers` dispatch) investigated but NOT folded in: `normalize-provider-
+config` skips schema conform entirely (just `->id`s the key) while
+`normalize-crew`/`normalize-model` run `lexicon/conform` per entity — the
+three kinds are not just named differently, they're handled differently, so
+a generic `entity-dir-names`/`merge-root-entity-kinds` iteration would need
+to unify that behavior first (a bigger, riskier change than this bean's
+scope). Recommend a follow-up bean if Micah wants item 3 pursued.
+
+Collateral fix: making `schema.resolve`'s structural check actually correct
+exposed a real bug in `cli/mutate_common.clj`'s `set-config!` — spec
+resolution for a field reached through an entity table's `.value` now
+succeeds where it previously silently returned nil, so a `:registered-in?`
+validation on that field started firing for real, but `*module-index*`/
+`*config*` weren't bound around the conform call (only `cli/schema.clj`
+bound them, for display). Fixed by binding them from the already-computed
+`schema-context`, matching `cli/schema.clj`'s pattern. Caught by the
+pre-existing `isaac-a5dx` feature (`config_set_undeclared_key.feature`),
+which went red and is green again.
+
+Investigated whether `config validate --as <table>.<id>.<field> -` can
+observably distinguish correct (entity-id) vs incorrect (keywordized-field)
+path parsing for a manifest-only, non-factory table: it can't currently —
+`:key-spec` types aren't enforced on open dynamic maps anywhere in the
+load/validate pipeline (confirmed empirically), and non-factory tables never
+reach `conform-berth-slices`. The new `config_validate_entity_collections
+.feature` scenario is therefore a structural consistency pin (both `config
+schema` and `config validate` resolve the same fixture table the same way),
+not a fails-under-old-code regression test — the real fails-under-old-code
+coverage for this bug lives in the `config set` path via `isaac-a5dx`'s
+existing feature, which the resolve.clj fix now makes take the real,
+schema-checked branch for the first time.
+
+## Landed on main
+
+main-sha: isaac-foundation 4d0cd8bf8a4ac01608caffdb4e3cf591f9076a55
