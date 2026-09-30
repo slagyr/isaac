@@ -1,11 +1,11 @@
 ---
 # isaac-3z1b
 title: Foundation's handbook chapter (the introduction)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-29T23:50:57Z
-updated_at: 2026-09-29T23:50:57Z
+updated_at: 2026-09-30T00:51:25Z
 ---
 
 ## Ruling
