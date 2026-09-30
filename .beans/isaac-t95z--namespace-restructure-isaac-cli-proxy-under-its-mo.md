@@ -4,12 +4,11 @@ title: 'Namespace restructure: isaac-cli-proxy under its module id'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T18:16:33Z
+updated_at: 2026-09-30T22:30:28Z
 parent: isaac-vyqs
-blocked_by:
-    - isaac-on0o
-    - isaac-wqs8
 ---
 
 Micah, 2026-09-30. **A module's code lives under its module id.** isaac-foundation → `isaac.foundation.*`, isaac-agent → `isaac.agent.*` (e.g. `isaac.session.frequencies` → `isaac.agent.frequencies`), isaac-claude-code (`:isaac.provider.claude-code`) → `isaac.provider.claude-code.*`, isaac-episodes (`:isaac.session.episodes`) → `isaac.session.episodes.*`, comm modules → `isaac.comm.<name>.*`, and so on. Source, specs, spec-support, step namespaces, manifest symbols (`:factory`, berth entries), bb tasks and docs all move together. Clean cutover: no alias namespaces.
@@ -65,3 +64,15 @@ Could not locate isaac/comm/registry.bb, isaac/comm/registry.clj or isaac/comm/r
 (and one masked earlier in the same run as "Reached EOF before ACP initialize response" / "Could not locate isaac/cli/api.bb..."). This confirms the collision genuinely came from isaac-cli-server (now fixed) — the remaining failure is isaac-acp still requiring old, pre-rename namespaces (`isaac.comm.registry`, `isaac.cli.api`) that no longer exist against the renamed foundation/agent. Per the coordinator: isaac-acp's own migration (isaac-wqs8) waits on isaac-episodes, which waits on a push by Micah — out of this bean's control.
 
 **Stopping here per the coordinator's instruction.** `blocked_by: isaac-wqs8` added above. Pin bump committed and pushed to `bean/isaac-t95z` (not main). `bb spec` 27/27, `bb features` 29/29, both lints green with the new pin. `bb features-slow` is 3/6 (the 3 ACP scenarios blocked on isaac-wqs8 → isaac-acp migration).
+
+## Landed on main (2026-09-30, final)
+
+Coordinator confirmed isaac-acp has migrated too (main `07f9fb8`, isaac-wqs8), and gave current mains for the rest: isaac-agent `f9530426d04b6f66f17ae51f6f9a1a697531b39d` (still pins foundation `06d58b75`, so this repo's own foundation pin stays put), isaac-http `5dedcafbc0fcc199a72e1d378ba78d1db9305750`, isaac-cli-server `f1477a71c2efa8f7992fe4a7243eb14cc74c3e7e`.
+
+Bumped all three (acp, agent, http) in the worktree — deps.edn, bb.edn, and `integration_steps.clj`'s hardcoded `acp-module-coord`/`cli-server-git-coord` — rebased on `origin/main` (no-op, main hadn't moved), and reran `bb ci` with `HOME` isolated to a scratch dir. **Fully green**: `bb spec` 27/27, `bb features` 29/29, `bb features-slow` 6/6 (all six `features/integration.feature` scenarios, including the three ACP ones that were blocked). Confirmed again on a fresh GitHub Actions runner via `workflow_dispatch` against `bean/isaac-t95z` (run [36785709276](https://github.com/slagyr/isaac-cli-proxy/actions/runs/36785709276)) before touching main.
+
+Squashed the branch's three commits to one, pushed `267b8aa:main` (accepted, no classifier denial), fast-forwarded the shared `isaac-cli-proxy` checkout, and confirmed `CI Tests` green on `main` (run [36785844754](https://github.com/slagyr/isaac-cli-proxy/actions/runs/36785844754)).
+
+**main-sha: isaac-cli-proxy 267b8aa**
+
+Final pin set: isaac-foundation `06d58b75bc52b3e118dc8e81569096de2532a0d4`, isaac-agent `f9530426d04b6f66f17ae51f6f9a1a697531b39d`, isaac-http `5dedcafbc0fcc199a72e1d378ba78d1db9305750`, isaac-cli-server `f1477a71c2efa8f7992fe4a7243eb14cc74c3e7e`, isaac-acp `07f9fb813e8f6b6e7b5f10776e30825796315ea4` — all migrated. `blocked_by` cleared (isaac-on0o and isaac-wqs8 both landed); tagged `unverified` for `/verify`. Branch `bean/isaac-t95z` and worktree `../isaac-cli-proxy-isaac-t95z` deleted.
