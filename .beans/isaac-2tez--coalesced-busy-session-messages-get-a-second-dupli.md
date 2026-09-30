@@ -1,11 +1,11 @@
 ---
 # isaac-2tez
 title: Coalesced busy-session messages get a second, duplicate turn (drain tick races finish-marking)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-30T17:56:19Z
-updated_at: 2026-09-30T17:56:19Z
+updated_at: 2026-09-30T18:58:38Z
 ---
 
 Found 2026-09-30 by the gchat restructure (isaac-fstx). Scenario: three quick messages in one DM thread (gchat features, isaac-xoqn) should get ONE consolidated reply; against agent 123d718 they get two.
