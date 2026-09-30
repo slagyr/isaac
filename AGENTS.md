@@ -195,6 +195,23 @@ redesign removes or renames something, take the breaking-clean path and make it
 explicit in the bean (removed keys hard-reject, no deprecated aliases, old
 scenarios deleted not retained).
 
+### Keep the handbook current
+
+Each module ships a handbook chapter (its manifest's `:handbook` markdown), read
+by crews through `handbook__read` (isaac-handbook). It describes how to operate
+what that module owns: config, behavior, and troubleshooting. A stale chapter
+misleads the crews that rely on it.
+
+- A bean that changes documented behavior (a config key, a default, a CLI
+  command, a user-visible behavior, a new troubleshooting case) lists "update
+  the handbook chapter" in its acceptance. The worker updates the chapter in
+  the same commit as the code.
+- New config keys carry a `:description` in the schema. The handbook's config
+  reference is generated from it, so the schema is the documentation.
+- Chapters are written for a model operating Isaac: what it is, how to change
+  it with `handbook__configure`, how to verify, then Troubleshooting. No source
+  code walkthroughs.
+
 ## Parallel-Worker Sync
 
 Multiple worker checkouts (`isaac-main`, `isaac-worker-1`, ...) run in
