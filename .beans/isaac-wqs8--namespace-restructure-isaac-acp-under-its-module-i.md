@@ -1,13 +1,11 @@
 ---
 # isaac-wqs8
 title: 'Namespace restructure: isaac-acp under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T22:24:14Z
+updated_at: 2026-09-30T22:25:28Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -50,3 +48,7 @@ main-sha: isaac-acp 07f9fb8
 Full grep of the tracked tree for any remaining pre-rename namespace token (excluding `isaac.session.episodes`/`isaac.gmail`/`isaac.google`/`isaac.comm.telly`/`isaac.agent`/`isaac.foundation` prose pointers to other modules, and `isaac.edn` the config filename): 0 unjustified hits. `src/`, `spec/` namespace prefixes: 100% `isaac.comm.acp.*`.
 
 **GitHub CI on main-sha 07f9fb8:** `CI Tests / verify` — green (fresh checkout of isaac-foundation/isaac-agent/isaac-http mains, `bb ci` end-to-end).
+
+## Planner verification (2026-09-30)
+
+Verified on 07f9fb8: pins agent f953042 / http 5dedcaf / episodes 907b42c; CI green.
