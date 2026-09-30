@@ -1,13 +1,11 @@
 ---
 # isaac-6pqo
 title: Comms move to isaac-agent; foundation keeps only generic berth/registry machinery
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T02:43:44Z
-updated_at: 2026-09-30T04:29:20Z
+updated_at: 2026-09-30T04:30:59Z
 ---
 
 ## Ruling
@@ -209,3 +207,7 @@ the planner's explicit correction.
   for the new `:server?` manifest flag in foundation.
 - Handbook: no user-facing config key, default, or CLI command changed
   (the moved code is internal wiring); no handbook chapter update needed.
+
+## Planner verification (2026-09-30)
+
+Verified: foundation `src/` has no `isaac.agent/comm`, `isaac.http`, `isaac.server` or `:comms` references; agent, http and server CI green; `:comms` is declared only by agent. Finding: `activate-server!` (and the new `:server?` manifest key it reads) has no callers outside its own spec in any repo, and no manifest declares `:server? true`, so it would throw if called. It's dead code. Follow-up: delete `activate-server!`, `loader/activate-server!` and the `:server?` schema key rather than keep a generalized dead path.
