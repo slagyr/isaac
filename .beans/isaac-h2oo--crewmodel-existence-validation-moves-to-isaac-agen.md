@@ -161,3 +161,7 @@ How agent's validations reach foundation: foundation declares a berth for config
 ## Ungated
 
 Refactor with no new user-visible behavior, so no new scenarios: acceptance is both repos' full CI green (existing scenarios are the regression net), the grep checks named in this bean, and planner verification. Worker hands off with `tag=unverified`.
+
+## Held (awaiting human, 2026-09-30)
+
+Escalated to human by **prowl**@isaac-plan. Blocking: foundation main `2371258` deleted `:crew-exists?` before agent registered it and before http stopped using it. CI `36663809056` fails config-schema because `:comms` still validates with `:crew-exists?` and the lexicon has no entry. Agent main `9a33cc3` still references the keyword and has not added `:isaac.config/validation-ref`. Http manifest still uses it. Micah claimed this bean (`e408b57b`). No independent fix. Resumes only on explicit human action.
