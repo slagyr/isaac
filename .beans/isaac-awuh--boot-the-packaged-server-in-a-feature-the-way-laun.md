@@ -3,8 +3,9 @@
 title: Boot the packaged server in a feature, the way launchd does
 status: draft
 type: task
+priority: normal
 created_at: 2026-09-30T03:01:46Z
-updated_at: 2026-09-30T03:01:46Z
+updated_at: 2026-09-30T05:01:58Z
 ---
 
 Likely repo: **isaac-foundation**. Follow-up to isaac-5kd0 / isaac-oc3f.
@@ -48,3 +49,7 @@ One feature (tag `@slow` if needed, and make sure CI runs it) that:
   a subprocess step.
 
 Draft until scenarios are written.
+
+## Note (2026-09-30)
+
+Foundation already has the subprocess step `the isaac launcher is run with …` (features/module/modules_list.feature, module_deps.feature) and "the emitted --edn deps boot isaac on the JVM" (modules_deps_emit.feature:83). Build the server-boot scenario on those.
