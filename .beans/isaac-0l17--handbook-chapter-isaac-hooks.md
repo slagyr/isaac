@@ -4,8 +4,10 @@ title: 'Handbook chapter: isaac-hooks'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T05:34:23Z
+updated_at: 2026-09-30T05:34:45Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,27 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+## Landed on main
+
+main-sha: isaac-hooks 92394bc
+
+Shipped `resources/isaac/hooks/handbook.md` (manifest `:handbook`), a lint
+spec (`spec/isaac/hooks/handbook_chapter_spec.clj`, following
+isaac-episodes' pattern) checking every backtick `config:<path>` ref
+against the composed schema and every `isaac <command>` against the
+registered CLI, and `:description`s for the two undescribed schema
+fields (the `isaac.hooks/hook` berth's `:factory`, the retired
+`hooks.auth.token`).
+
+Bumped isaac-foundation/isaac-agent/isaac-http pins (deps.edn + bb.edn,
+every occurrence) to current `origin/main` tips — the manifest's
+`:handbook` key needs a foundation new enough to read it (isaac-ppyj
+renamed `:manual` to `:handbook`). No code fallout from the bump: `bb ci`
+green locally (config-bypass-lint, 36 spec examples, 20 feature
+examples) and on GitHub CI (run 36673933216).
+
+`[verify]` in the chapter: whether any builtin module currently
+contributes a module-sourced hook via the `isaac.hooks/hook` berth
+(none does today), and the exact failure surfaced when a contributed
+hook's `:factory` can't be resolved.
