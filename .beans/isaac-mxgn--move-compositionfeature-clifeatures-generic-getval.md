@@ -1,11 +1,11 @@
 ---
 # isaac-mxgn
 title: Move composition.feature + cli.feature's generic get/validate/sources scenarios to isaac-foundation
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T04:59:33Z
+updated_at: 2026-09-30T05:28:52Z
 ---
 
 ## Ruling
@@ -309,3 +309,31 @@ All ten: **deleted as redundant: covered by config_schema.feature** (see file he
 feature-baseline: isaac-foundation 4a96956d29e8ca2d5eb225fdfb29628068f48622
 feature-blob: isaac-foundation features/cli/config_composition.feature 9c47a7f9327eea17a9ccb5c9eb2ead2a4ced91e9
 feature-blob: isaac-foundation features/cli/config_get_validate.feature 60161ffc7c91fa32f81875b11a8f9b01f6e7736a
+
+## Landed on main (2026-09-30)
+
+main-sha: isaac-foundation 9f8a4136195efab11c7f6f55123d4313ab05978a
+main-sha: isaac-agent 4d08434ffa7ab29b8a7061b582c526065572914f
+
+Foundation: `bb bean-gate verify isaac-mxgn` PASS both pre- and post-push
+(against `origin/main`). `bb spec` 1321/0 failures, `bb features` 307/0
+failures (2 pre-existing pending, unrelated) on the landed commit.
+GitHub CI green (run 36672368809).
+
+Agent: composition.feature trimmed from 21 to 8 scenarios (13 moved to
+foundation); cli.feature trimmed from 69 to 40 scenarios (18 moved +
+11 deleted as redundant with config_schema.feature/isaac-3y69). No agent
+step definitions were dead — all steps used by the deleted scenarios are
+generic and shared with other feature files. `bb spec` 1834/0 failures,
+`bb features` 870/0 failures (1 pre-existing pending, unrelated) on the
+landed commit. GitHub CI green (run 36673253612).
+
+Note: a `bb pins` failure ("missing lex :model-exists? in :validations")
+reproduces identically on foundation's pre-bean main — pre-existing/
+environmental (reads the machine's global `~/.isaac` module registry),
+unrelated to this bean; `bb ci`'s other steps (config-bypass-lint,
+lint-cli-host, lint-pins, spec, features) all ran green standalone.
+One agent `bb features` run showed 6 transient failures under concurrent
+`/tmp/isaac` load from other workers' CI; two immediate reruns on the
+same commit were clean (0 failures), so this is the known local
+collision, not a real regression.
