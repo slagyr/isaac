@@ -1,11 +1,11 @@
 ---
 # isaac-h2oo
 title: Crew/model existence validation moves to isaac-agent
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T02:44:57Z
 ---
 
 ## Ruling
@@ -157,3 +157,7 @@ registrations move.
 ## Decision (planner recommendation; Micah approved the cleanup 2026-09-30)
 
 How agent's validations reach foundation: foundation declares a berth for config validation refs (lexicon entries); isaac-agent contributes `:crew-exists?` and `:model-exists?` through its manifest. No special loading, no foundation reference to agent namespaces.
+
+## Ungated
+
+Refactor with no new user-visible behavior, so no new scenarios: acceptance is both repos' full CI green (existing scenarios are the regression net), the grep checks named in this bean, and planner verification. Worker hands off with `tag=unverified`.

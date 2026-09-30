@@ -1,11 +1,11 @@
 ---
 # isaac-6pqo
 title: Comms move to isaac-agent; foundation keeps only generic berth/registry machinery
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:44Z
-updated_at: 2026-09-30T02:43:44Z
+updated_at: 2026-09-30T02:44:57Z
 ---
 
 ## Ruling
@@ -132,3 +132,7 @@ specific berth. Only `retired-berth-messages` breaks that.
 ## Decision (planner recommendation; Micah approved the cleanup 2026-09-30)
 
 Also fold in: `isaac.module.lifecycle` names `:isaac.http` as the server module. Replace it with a manifest flag (e.g. `:server? true` on the module that runs the server process) so foundation names no module id.
+
+## Ungated
+
+Refactor with no new user-visible behavior, so no new scenarios: acceptance is both repos' full CI green (existing scenarios are the regression net), the grep checks named in this bean, and planner verification. Worker hands off with `tag=unverified`.

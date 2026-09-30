@@ -1,11 +1,11 @@
 ---
 # isaac-v38i
 title: Delete legacy config normalization and the retired :server block
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T02:44:57Z
 ---
 
 ## Ruling
@@ -123,3 +123,7 @@ scenario). `isaac-http` only if the `:server` retired-hint moves there
 ## Planner note (2026-09-30)
 
 Checked zanebot live config (zane@zanebot ~/.isaac/config): no `:list`, no `:server`, models/providers in their own dirs — fully modern, like yopp. Safe to delete.
+
+## Ungated
+
+Refactor with no new user-visible behavior, so no new scenarios: acceptance is both repos' full CI green (existing scenarios are the regression net), the grep checks named in this bean, and planner verification. Worker hands off with `tag=unverified`.
