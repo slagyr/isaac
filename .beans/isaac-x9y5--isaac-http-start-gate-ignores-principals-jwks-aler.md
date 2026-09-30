@@ -5,9 +5,9 @@ status: draft
 type: bug
 priority: normal
 created_at: 2026-09-30T06:37:18Z
-updated_at: 2026-09-30T15:19:03Z
+updated_at: 2026-09-30T15:19:08Z
 blocked_by:
-    - isaac-fkqz
+    - isaac-t95z
 ---
 
 Found overnight 2026-09-30 (handbook chapter isaac-mdj2). isaac-http's non-loopback start gate (`isaac.http.component.runtime/valid-start?`) only accepts the legacy `:http :auth :token`; a config with only `:http :auth :principals` refuses to start when bound off loopback. Confirmed by direct invocation. Also: `http.oidc.jwks-alert-threshold` is read by `isaac.http.audit` but never declared in the schema.
