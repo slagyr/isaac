@@ -1,7 +1,7 @@
 ---
 # isaac-yo8d
 title: Move env_file.feature + dangling_md.feature from isaac-agent to isaac-foundation
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
@@ -101,3 +101,7 @@ files, confirm nothing else references them).
   command is not installed in this environment; `bb features`/`bb
   gherclj` already wrap their own JVM-level timeout (`bb.test-timeout`),
   so no `timeout` wrapping is needed or possible.
+
+feature-baseline: isaac-foundation fcbf65ee21eebd0798177b55c309b5692405faba
+feature-blob: isaac-foundation features/cli/config_env_file.feature 6e38eada14153c02406f9ce94d4c60fe3ef66fc0
+feature-blob: isaac-foundation features/cli/config_dangling_md.feature acfd31aa849ab4147570359dabeba2ea0da359ab
