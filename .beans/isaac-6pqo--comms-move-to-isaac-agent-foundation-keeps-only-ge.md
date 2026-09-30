@@ -1,11 +1,13 @@
 ---
 # isaac-6pqo
 title: Comms move to isaac-agent; foundation keeps only generic berth/registry machinery
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T02:43:44Z
-updated_at: 2026-09-30T02:44:57Z
+updated_at: 2026-09-30T04:29:20Z
 ---
 
 ## Ruling
@@ -136,3 +138,74 @@ Also fold in: `isaac.module.lifecycle` names `:isaac.http` as the server module.
 ## Ungated
 
 Refactor with no new user-visible behavior, so no new scenarios: acceptance is both repos' full CI green (existing scenarios are the regression net), the grep checks named in this bean, and planner verification. Worker hands off with `tag=unverified`.
+
+## Landed on main
+
+main-sha: isaac-foundation 4ffde0564101d880029161ca4b75f1d436999fe0
+main-sha: isaac-agent 9a33cc34967df34abe538f29ac86ff8062751e33
+main-sha: isaac-agent b588695af4a0cc8a60a88f6836620e2c08d835e2
+main-sha: isaac-http 567cae411a424689ae85046318f0543e74b75fe7
+main-sha: isaac-http c9b6644f9c8d6e0d9fb3ef46b33d8be99a3596ad
+main-sha: isaac-server c9b6644f9c8d6e0d9fb3ef46b33d8be99a3596ad
+
+Sequence: isaac-foundation (delete comm/factory.clj, comm/registry.clj,
+retired-berth-messages; manifest :server? flag replaces hard-coded
+:isaac.http) → isaac-agent (add isaac.comm.factory/isaac.comm.registry,
+same bare ns names, zero caller changes; then declare the :comms
+:isaac.config/schema table, moved off isaac-http/isaac-server) →
+isaac-http (remove its now-duplicate :comms declaration, which
+coordinator flagged as fallout from isaac-h2oo's foundation-side
+:crew-exists? removal breaking foundation's "Server boot with a
+module-provided config type" CI job; fix verified by reproducing that
+exact smoke-test boot locally; then a follow-up commit dropping a dead
+Timbre require in spec/isaac/http/server-steps, discovered while
+checking whether isaac-discord's pins could safely advance — apron
+3.2.1 dropped Timbre entirely) → isaac-server (git-mirrors isaac-http;
+both commits landed there automatically, no separate push needed).
+
+isaac-discord/isaac-imessage/isaac-gchat/isaac-gmail/isaac-acp need **no
+source changes** — they already require `isaac.comm.factory` /
+`isaac.comm.registry` by the same bare names, and all five already
+depend on isaac-agent directly (confirmed in their deps.edn), so the
+namespaces resolve once they eventually bump their isaac-agent pin.
+**Their pins were NOT bumped in this bean**: advancing isaac-discord's
+foundation/agent pins past isaac-dnib's apron 3.0.0 → 3.2.1 bump (already
+on both mains, unrelated to this bean) surfaces (a) the dead-Timbre issue
+above (now fixed in isaac-http) and (b) at least one more failure —
+isaac-discord's "Discord client lifecycle" feature scenarios stopped
+seeing `:discord.client/started` events (saw `:server/hello` instead) —
+not triaged; ran out of scope/budget to chase it safely. Recommend a
+dedicated pin-modernization bean for the five comm-impl modules rather
+than folding it into isaac-6pqo.
+
+Foundation's own main is currently red (isaac-h2oo's :crew-exists?/
+:model-exists? regression — foundation removed the lexicon registration,
+isaac-agent's matching addition hasn't landed yet). Confirmed via local
+reproduction that isaac-6pqo's foundation commit (4ffde05) was green
+before isaac-h2oo landed on top, and that the isaac-http fix here is
+sufficient for the "Server boot" job independent of when isaac-h2oo's
+agent-side lands. isaac-h2oo's own regression is out of scope here per
+the planner's explicit correction.
+
+### Acceptance recap
+
+- `grep -rn "isaac\.comm\." isaac-foundation/src` — clean except
+  `module/coords.clj`'s `split-repo-lib-sym`, which special-cases the
+  `"isaac.comm."` module-id *naming convention* (e.g. `:isaac.comm.acp`
+  -> repo `isaac-acp`) to derive deps.edn lib coordinates for ANY
+  comm-impl module — generic, tested (`coords_spec.clj`), pre-dates and
+  is orthogonal to the comm/factory+registry code this bean moves. Left
+  in place; flagged as a candidate for a follow-up bean if it should
+  generalize too.
+- `grep -n ":isaac\.agent/comm\|:isaac\.http/comm\|:isaac\.server/comm" isaac-foundation/src/isaac/module/berths.clj` — clean.
+- Both repos' berth/module feature scenarios pass unchanged (foundation
+  `bb features`: 270 examples, 0 failures, 2 pre-existing pending).
+- isaac-agent's own comm specs (`spec/isaac/comm/factory_spec.clj`,
+  `spec/isaac/comm/registry_spec.clj`) already existed there (testing the
+  code transitively through foundation's classpath contribution before
+  this move) and now test it directly — no new spec files needed; added
+  `spec/isaac/agent/manifest_spec.clj` coverage for the relocated `:comms`
+  table and `spec/isaac/module/{lifecycle,manifest}_spec.clj` coverage
+  for the new `:server?` manifest flag in foundation.
+- Handbook: no user-facing config key, default, or CLI command changed
+  (the moved code is internal wiring); no handbook chapter update needed.
