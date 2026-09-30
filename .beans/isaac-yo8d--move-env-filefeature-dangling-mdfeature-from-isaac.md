@@ -1,11 +1,11 @@
 ---
 # isaac-yo8d
 title: Move env_file.feature + dangling_md.feature from isaac-agent to isaac-foundation
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T02:46:25Z
 ---
 
 ## Ruling
