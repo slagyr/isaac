@@ -4,13 +4,14 @@ title: 'Namespace restructure: isaac-gchat under its module id'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T14:12:34Z
-updated_at: 2026-09-30T17:56:20Z
+updated_at: 2026-09-30T21:14:54Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
     - isaac-tacl
-    - isaac-2tez
 ---
 
 Micah, 2026-09-30. **A module's code lives under its module id.** isaac-foundation → `isaac.foundation.*`, isaac-agent → `isaac.agent.*` (e.g. `isaac.session.frequencies` → `isaac.agent.frequencies`), isaac-claude-code (`:isaac.provider.claude-code`) → `isaac.provider.claude-code.*`, isaac-episodes (`:isaac.session.episodes`) → `isaac.session.episodes.*`, comm modules → `isaac.comm.<name>.*`, and so on. Source, specs, spec-support, step namespaces, manifest symbols (`:factory`, berth entries), bb tasks and docs all move together. Clean cutover: no alias namespaces.
@@ -33,7 +34,7 @@ An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
-## Findings (branch pushed, not landed — blocked on an isaac-agent race)
+## Findings (initial branch — blocked on an isaac-agent race, since fixed)
 
 Work done on `bean/isaac-fstx` in `isaac-gchat`, pushed to origin
 (https://github.com/slagyr/isaac-gchat/tree/bean/isaac-fstx), **not merged
@@ -176,3 +177,36 @@ Full grep of the tracked tree for any remaining pre-rename foundation/agent/
 http/google namespace token outside the justified exceptions above: 0 hits.
 `src/`, `spec/` namespace prefixes: 100% `isaac.comm.gchat.*` (already true
 before this bean).
+
+## Landed on main
+
+main-sha: isaac-gchat ae1a75f4b98e75b0577d13c6c6a1eb84fb0d2e17
+
+isaac-2tez landed the fix for the `dispatch-charge!`/`tick!` finish-marking
+race in isaac-agent (main now `f9530426d04b6f66f17ae51f6f9a1a697531b39d`,
+still pinning foundation `06d58b75bc52b3e118dc8e81569096de2532a0d4` — no
+change there). Resumed on the same worktree/branch: bumped every
+isaac-agent pin site in `deps.edn`/`bb.edn` (base, `-spec` deps) from
+`123d71850b480dc0859886e1a4fa53e082c258f1` to `f9530426…`; no other change
+needed. No divergence from `origin/main` at push time; squashed both
+working commits into one and pushed `ae1a75f:main` directly (accepted, not
+denied by the classifier). Fast-forwarded the shared `isaac-gchat`
+checkout; deleted branch `bean/isaac-fstx` and its worktree.
+
+**Test results (HOME isolated at `/tmp/isaac_scratch_home_fstx_land`).**
+`bb config-bypass-lint`: ok. `bb lint`: 90 errors/17 warnings, identical to
+pristine pre-bean main (pre-existing clj-kondo speclj-macro gap). `bb spec`:
+200/200. `bb jvm-spec`: 200/200. `bb jvm-features`: **60/60, 161
+assertions** — the xoqn consolidation scenario now posts exactly one reply;
+assertion count matches pristine pre-bean main exactly. `bb ci`: green
+end-to-end.
+
+**GitHub CI on main-sha ae1a75f:** `CI Tests / verify` — green (run
+36777896499, 54s).
+
+Full grep of the tracked tree for any remaining pre-rename namespace token
+(foundation/agent/http/google) outside the justified exceptions above: 0
+hits.
+
+No live-config edits were needed (checked before the initial push — no hits
+on zanebot or yopp for any renamed namespace token).
