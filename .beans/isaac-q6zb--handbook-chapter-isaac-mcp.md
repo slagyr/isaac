@@ -1,11 +1,11 @@
 ---
 # isaac-q6zb
 title: 'Handbook chapter: isaac-mcp'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T04:56:36Z
+updated_at: 2026-09-30T06:05:04Z
 parent: isaac-u5f5
 ---
 
