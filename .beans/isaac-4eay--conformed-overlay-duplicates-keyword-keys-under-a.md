@@ -1,7 +1,7 @@
 ---
 # isaac-4eay
 title: Conformed overlay duplicates keyword keys under a :string key-spec (":ops" beside :ops)
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-09-30T17:54:28Z
@@ -16,3 +16,12 @@ Latent everywhere: `:key-spec {:type :string}` also appears in agent, cron, goog
 Fix in foundation: a keyword key under a :string key-spec conforms via `name`, so raw and conformed unify and the loaded table has one entry. Then decide per manifest whether :string or :id is the right key type (no bulk manifest change in this bean).
 
 Scenario TBD: a Marigold table with a :string key-spec, EDN keyword keys, loaded config has exactly one entry per key.
+
+## Acceptance (gated, Micah approved 2026-09-30)
+
+- The @wip scenarios in isaac-foundation `features/cli/config_string_keys.feature` pass with @wip removed: keyword keys in a `{:type :string}` key-spec table load as one entry each (`config keys` lists `north`, `south` only), and the entry carries its conformed values (`berth "3"` → 3).
+- Fix in foundation (conform/overlay), not in module manifests. No manifest key-spec changes in this bean.
+- `bb ci`, `bb features-slow`, `bb jvm-spec` green.
+
+feature-baseline: isaac-foundation 69c8def0dc9924247908223147c1a15e326579ca
+feature-blob: isaac-foundation features/cli/config_string_keys.feature c386a74309d76e7c12212e634e6c89c4513e10e8

@@ -1,7 +1,7 @@
 ---
 # isaac-82nx
 title: isaac init scaffolds through a berth (foundation names no module's starter files)
-status: draft
+status: todo
 type: task
 priority: low
 created_at: 2026-09-30T02:44:10Z
@@ -29,3 +29,14 @@ Scenarios TBD by the planner (foundation: bare init; a Marigold fixture module c
 - Agent/cron/providers move their current init starters into their setups, so a full install ends up with what init produces today.
 
 Scenarios to be written by the planner (foundation: bare init, a Marigold fixture setup that runs on install, is idempotent on rerun, dry-run).
+
+## Acceptance (gated, Micah approved 2026-09-30)
+
+- The @wip scenarios in isaac-foundation `features/module/module_setup.feature` pass with @wip removed: bare init; install runs setup, prints writes and hints; setup never overwrites; rerun reports already set up; --dry-run; a module without setup says so.
+- A Marigold fixture module `modules/marigold.setup` provides the setup (proposes marigold.greeting "ahoy", marigold.chimes 3, hint "Polish the bell before first use.") and declares its :marigold schema.
+- `modules upgrade` also runs setup (covered by specs; upgrade scenarios need real git coords).
+- One-time: the two old init scenarios in `features/cli/init.feature` ("output lists created files…", "scaffolds each file…") are deleted, along with the crew/model/provider/cron scaffold in foundation; the "refuses when a config already exists" scenario stays. Follow-up beans (not this one) move the agent/cron starters into their own setups.
+- `bb ci`, `bb features-slow`, `bb jvm-spec` green.
+
+feature-baseline: isaac-foundation 69c8def0dc9924247908223147c1a15e326579ca
+feature-blob: isaac-foundation features/module/module_setup.feature e587ae7cf128d96589dd0ceaf4aac214fa9ed660

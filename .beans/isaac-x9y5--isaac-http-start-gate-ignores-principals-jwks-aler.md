@@ -1,7 +1,7 @@
 ---
 # isaac-x9y5
 title: isaac-http start gate ignores principals; jwks-alert-threshold undeclared
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-09-30T06:37:18Z
@@ -21,3 +21,14 @@ The start gate accepts principals (any configured auth) as sufficient. Declare `
 - Remove the non-loopback start gate entirely: an intranet server may run without auth. Instead, when the server binds beyond loopback with no auth configured (no token, no principals, no oidc), it logs one warning at startup and starts.
 - Declare `http.oidc.jwks-alert-threshold` in the http schema with `:default 1` and a description; drop the `(or … 1)` fallback in `isaac.http.audit`.
 - Update the http handbook chapter (it currently notes the field is undeclared).
+
+## Acceptance (gated, Micah approved 2026-09-30)
+
+- The @wip scenarios in isaac-http `features/server/auth.feature` (no-auth non-loopback start warns `:server/auth-absent`; principals-only starts without the warning) and `features/http/config.feature` (jwks-alert-threshold default 1; accepts a configured value) pass with @wip removed.
+- One-time: the old "Non-loopback bind without a token refuses to start" scenario and the feature-description sentence saying so are deleted; `valid-start?` no longer refuses for missing auth (the dropped-auth-key refusal stays).
+- Handbook chapter updated (threshold now declared; startup warning described).
+- `bb ci` green.
+
+feature-baseline: isaac-http 7fd602ab7ca1ca057781553fbfb81e298ad491ac
+feature-blob: isaac-http features/server/auth.feature 231c6fd2835552a69e7e7ddd014c44f753f9044e
+feature-blob: isaac-http features/http/config.feature 87aa73eb1c82dbd68e3802de53935e3fe8c17895
