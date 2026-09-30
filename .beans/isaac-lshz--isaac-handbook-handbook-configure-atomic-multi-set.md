@@ -1,7 +1,7 @@
 ---
 # isaac-lshz
 title: 'isaac-handbook: handbook__configure (atomic multi-set, prose fields)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-30T00:28:23Z
@@ -243,3 +243,6 @@ bean; response is plain prose. Remaining, non-blocking:
    `.env`, which is forbidden. The defense is the handbook chapter
    instructing crews to always use `${VAR}`, not a hard technical
    guarantee for first-time secret fields.
+
+feature-baseline: isaac-handbook 48d5e794bfa917b0bfeb9e8e4736a3e1889c9f50
+feature-blob: isaac-handbook features/configure.feature de9bc2198c4bdfab38fc9c8b8cef9e2c3c810c3e
