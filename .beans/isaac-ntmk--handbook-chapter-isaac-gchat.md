@@ -4,8 +4,10 @@ title: 'Handbook chapter: isaac-gchat'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T05:52:00Z
+updated_at: 2026-09-30T05:53:56Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,18 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+## Landed on main
+
+main-sha: isaac-gchat 5c2a09aa6c75b3666f49c1a83cc45648f16ee807
+
+No pin bump. Bumping isaac-foundation/isaac-agent/isaac-http to their
+origin/main tips reproducibly broke the isaac-xoqn feature scenario
+("three quick messages in one DM thread get one consolidated reply") —
+fails only with the bumped isaac-agent pin (queue/tick changes landed on
+isaac-agent main since), passes clean on the current pin. Reverted the
+bump and followed isaac-cron's precedent instead: `:handbook` added
+against the current foundation pin, which logs a `:manifest/unknown-key`
+warning for `:handbook` (that foundation predates handbook support)
+rather than a "not found" warning. `bb ci` is green on the current pins
+(200 spec + 60 feature examples); GitHub CI on main confirms it.
