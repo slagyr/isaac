@@ -1,11 +1,11 @@
 ---
 # isaac-lp5y
 title: 'Handbook chapter: isaac-cron'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T04:56:36Z
+updated_at: 2026-09-30T05:10:33Z
 parent: isaac-u5f5
 ---
 
