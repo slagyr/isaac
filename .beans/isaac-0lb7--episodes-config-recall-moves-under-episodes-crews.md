@@ -1,11 +1,11 @@
 ---
 # isaac-0lb7
 title: 'Episodes config: recall moves under :episodes; crews may override :episodes'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-29T23:54:31Z
-updated_at: 2026-09-30T00:10:22Z
+updated_at: 2026-09-30T00:14:11Z
 ---
 
 Likely repo: **isaac-episodes**. Design: Micah + planner, 2026-09-29.
@@ -88,3 +88,10 @@ No foundation change. An integer that will not coerce reports foundation's own w
 `features/recall/embedding.feature:98` now expects `can't coerce "soon" to int`, still with the path `crew.cordelia.episodes.recall.half-life` and exit 1. Kept `@wip`.
 
 Re-baselined onto isaac-episodes `b1dedc3`. Embedding blob `1c7481c1` line 98. The other five blobs are unchanged. Rebase onto `b1dedc3`. Drop `@wip`. Do not edit frozen scenario text.
+
+
+## Landed on main (2026-09-29)
+
+main-sha: isaac-episodes d9fd03cb014da9940b0c05545681df638bd14633
+
+Validated with bb ci (232 specs, 95 features) and bb bean-gate verify (PASS).
