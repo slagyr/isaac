@@ -108,9 +108,10 @@ jobs:
           fi
 
           # Clone every repo the beans baseline, beside this checkout, where
-          # bean-gate looks for it. blob:none keeps the clone small while
-          # leaving every commit reachable, which the baseline sha and the
-          # main-sha diffs both need. All slagyr/isaac-* repos are public.
+          # bean-gate looks for it. Some repos have a default branch other than
+          # main; an unqualified clone checks out that branch and the gate then
+          # compares the wrong feature tree. blob:none keeps the clone small
+          # while leaving every commit reachable. All slagyr/isaac-* repos are public.
           # Column 0 only, matching isaac.bean-gate.bean (isaac-dopm): an
           # indented feature-baseline: is prose quoting another bean's
           # contract, and the gate will not honour it either.
@@ -121,7 +122,7 @@ jobs:
               esac
               [ -d "../$repo" ] && continue
               echo "cloning $repo"
-              git clone --filter=blob:none --quiet "https://github.com/${OWNER}/${repo}.git" "../${repo}"
+              git clone --branch main --filter=blob:none --quiet "https://github.com/${OWNER}/${repo}.git" "../${repo}"
             done
           done
 
@@ -131,7 +132,12 @@ jobs:
           set +e
           status=0
           for id in $ids; do
-            out=$(bb bean-gate verify "$id" 2>&1)
+            # Explicit refs also keep the gate independent of clone HEAD.
+            refs=()
+            for repo in $(awk '/^feature-baseline:/ {print $2}' .beans/${id}--*.md | sort -u); do
+              refs+=(--ref "$repo=origin/main")
+            done
+            out=$(bb bean-gate verify "$id" "${refs[@]}" 2>&1)
             code=$?
             printf '%s\n' "$out"
             case "$code" in
