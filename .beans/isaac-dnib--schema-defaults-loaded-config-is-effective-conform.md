@@ -1,11 +1,11 @@
 ---
 # isaac-dnib
 title: 'Schema defaults: loaded config is effective (conform overlay), --raw is what''s set'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-29T23:46:53Z
-updated_at: 2026-09-29T23:50:39Z
+updated_at: 2026-09-30T01:39:07Z
 ---
 
 # Schema-declared defaults and required fields (foundation + isaac-agent)
@@ -351,3 +351,68 @@ steps).
 
 feature-baseline: isaac-foundation 53c8aa83627eb4334cec1e64c72ceb42bf17fb3e
 feature-blob: isaac-foundation features/cli/config_defaults.feature d9d0d7bc8be39db484d4bd78e7a8895a17cfedef
+
+## Landed on main (2026-09-30)
+
+main-sha: isaac-foundation 322151c
+main-sha: isaac-agent 5dcbb33
+
+Both repos' full `bb ci` green (spec + features) on the landed commits;
+GitHub CI confirmed green on both mains (runs 36654831441 isaac-foundation,
+36655742053 isaac-agent). `bb bean-gate verify isaac-dnib` PASS against
+both landed shas.
+
+Known, disclosed side effect of the mandatory apron 3.2.1 bump (not
+introduced by this bean's own design choices): `doc/required-fields` now
+resolves `:validations [:present? ...]` refs to required-ness, which
+newly flags a couple of pre-existing fields `*required` in `config
+schema` output. Two fixture/test text updates were needed outside this
+bean's own baseline:
+- `isaac-foundation features/cli/config_schema.feature` — the pinned
+  regex for `marigold.cnfs.bridge`'s `:type` field (isaac-3y69's
+  contract). Since fixing this in-line would have made isaac-dnib's own
+  `bb bean-gate verify` fail (a worker diff may only touch its own
+  baselined `.feature` file), it was landed as a **separate**, tiny,
+  unrelated commit straight to isaac-foundation main
+  (`322151c`), tracked as isaac-hzw2 (filed, fixed, and landed in this
+  same session; left `tag=unverified` since zanebot/verify is down).
+- `isaac-agent spec/isaac/config/schema_spec.clj` — provider entity
+  conform now genuinely fills `:auth-retry-ms`/`:retry-after-ms`/
+  `:stream-idle-timeout-ms` (their `:default`s were always declared but
+  never applied under apron 3.0.0); updated the expected maps.
+- `isaac-agent features/config/cli.feature` — `crew.key`/`providers.key`
+  now correctly render `id`, not `string` (their key-specs were
+  `:string`, a latent bug masked until this bean made root-level fields
+  actually conform; fixed to `:id`, matching how `->id` already
+  canonicalizes these ids everywhere else).
+
+Also found and fixed mid-implementation (all in isaac-foundation,
+within this bean's own baseline):
+- `overlay-conformed` needed apron's `field-error?` check twice: once at
+  each node (keep raw on a failed field), and once specifically for a
+  "conform-only" key (a required-but-absent field renders as the field's
+  own key mapped to a bare `ValidateError` in apron's conform output —
+  that must never leak into the runtime config as a value).
+- `overlay-conformed` needed canonical-key matching (name-only, apron's
+  own `:id`-coercion convention) rather than raw key equality — a
+  dynamic map whose `:key-spec` canonicalizes keyword keys to strings
+  (`:crew`, `:models`, `:providers`, or the ad-hoc `:signals` chartroom
+  fixture) would otherwise silently double every entry (once
+  keyword-keyed from raw, once string-keyed from conformed).
+- `config get`'s new `(default)` annotation reads a `:raw-root` key
+  `load-config-result` now returns alongside `:config` — computed for
+  free from data already in hand — rather than issuing a second
+  `load-config-result` call, which would have broken "the CLI resolves
+  the config once per command" (isaac-v1la,
+  `cli/config_resolution.feature`).
+- `isaac-agent`'s `:provider`/`:model`/`:defaults.frequencies.crew`
+  manifest fields carried both `:required true` (now apron-native) and a
+  redundant `:validations [:present? ...]` — for a field reachable
+  directly (`:provider`, `:model`), the two independently produced the
+  same "is required" error/warning, so `config set --force`'s "N other
+  validation warnings" count doubled; dropped the redundant `:present?`
+  there. `:defaults.frequencies.crew` needed the opposite: its `:present?`
+  had to stay, since it's the *only* thing that fires once
+  `demands-a-field?` substitutes `{}` for a wholly-absent `:frequencies`
+  map — apron's native `:required` never descends into an absent parent
+  to check a grandchild.
