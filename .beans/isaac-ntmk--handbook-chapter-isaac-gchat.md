@@ -1,11 +1,11 @@
 ---
 # isaac-ntmk
 title: 'Handbook chapter: isaac-gchat'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T04:56:36Z
+updated_at: 2026-09-30T05:52:00Z
 parent: isaac-u5f5
 ---
 
