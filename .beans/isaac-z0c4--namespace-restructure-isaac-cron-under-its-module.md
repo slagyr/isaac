@@ -4,8 +4,10 @@ title: 'Namespace restructure: isaac-cron under its module id'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T16:56:26Z
+updated_at: 2026-09-30T17:24:28Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
