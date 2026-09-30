@@ -137,3 +137,84 @@ New repo: `isaac-handbook`. No changes needed in `isaac-foundation` /
 
 feature-baseline: isaac-handbook 6da4a9f77081299c0d1e31e1e492719882ffc112
 feature-blob: isaac-handbook features/read.feature 4065ff0fc8bb72d3c39b4596dd113efe508d21cb
+
+## Conflict — frozen Background fixture can't activate for a live turn (2026-09-30)
+
+Worker (local, zanebot down). Module skeleton + `handbook__read` implementation
+is done and unit-tested (`isaac-handbook` `bean/isaac-z90t`, pushed, not
+landed): `deps.edn`/`bb.edn` pinned to isaac-foundation `53c8aa83627eb4334cec1e64c72ceb42bf17fb3e`
+/ isaac-agent `a77bf6f55bf57f4617abc72271024d43b9710f02`, CI workflows,
+`resources/isaac-manifest.edn` (`:isaac.agent/tools {:handbook__read ...}`,
+`:isaac.config/schema {:handbook {:max-chars ...}}}`), and
+`isaac.handbook.{sections,chapters,render,module,tools}` implementing the
+reading/sectioning/TOC/foundation-first-ordering/size-cap logic, covered by
+speclj specs in `spec/isaac/handbook/` (22 examples green via `bb spec`).
+
+**`features/read.feature`'s 7 `@wip` scenarios cannot pass as written.** All 6
+scenarios that configure the `marigold.charts` fixture module under `:modules`
+fail identically: the whole CLI comes back with "Unknown command: prompt" and
+an empty transcript (scenario 7, which never configures `marigold.charts`,
+passes). Root cause, confirmed by reproducing the exact Background steps
+directly against `isaac-foundation` `53c8aa8` / `isaac-agent` `a77bf6f`
+(bypassing gherclj's own silent-catch in `isaac.main/register-module-cli-commands!`,
+which swallows the exception and explains why every command — not just
+`prompt` — disappears):
+
+1. **mem-fs vs. real classpath.** The Background writes
+   `/tmp/modules/marigold.charts/{deps.edn,src/marigold/charts.clj,resources/...}`
+   via `the isaac file "..." exists with:` — which, under `default Grover
+   setup`, writes only into the virtual `mem-fs` the gherclj harness installs
+   (`isaac.foundation.root_steps/initialize-root!` with `virtual? true`).
+   `isaac.module.lifecycle/instantiate-module!` activates any `:local/root`
+   module that declares a `:factory` (`eager-load?`), which calls
+   `isaac.module.classpath/ensure-module-deps!` → `add-libs`/`add-deps` —
+   real-JVM-classloader operations that read real `java.io` files. They
+   cannot see mem-fs-only content, so `(require 'marigold.charts)` fails:
+   `java.io.FileNotFoundException: Could not locate marigold/charts__init.class,
+   marigold/charts.clj or marigold/charts.cljc on classpath.` Every other
+   module that exercises a *live prompt turn* with a marigold fixture
+   (isaac-episodes' `recall/live_tools.feature`, isaac-google/isaac-cron/etc.)
+   uses a **real, git-committed** fixture under `isaac-foundation/modules/marigold.*`
+   (resolved as a real git/local-root coord onto real disk), never one
+   written on the fly via the mem-fs `the isaac file ... exists` step. The
+   only prior user of that step for a `:local/root` module
+   (`isaac-foundation/features/module/modules_show_manifest.feature`) only
+   exercises read-only introspection (`modules show`, `the config is
+   loaded`), which never activates/instantiates the module.
+2. **Fixture factory arity/return type.** Independent of (1): the
+   Background's `src/marigold/charts.clj` is `(defn create-module [_opts]
+   {})`. `instantiate-module!` calls the manifest `:factory` as `(factory)`
+   — zero args — so this throws `ArityException: Wrong number of args (0)
+   passed to: marigold.charts/create-module` (confirmed by re-running the
+   repro with a real on-disk copy of the fixture). Even with the arity
+   fixed, returning `{}` fails `module/module?` ("module factory returned
+   non-Module") — every real fixture in the ecosystem
+   (`isaac-foundation/modules/marigold.{bridge,longwave}`) is
+   `(defn create-module [] (module/module))`.
+
+Both are structural properties of the frozen Background text, not something
+fixable from the `isaac-handbook` side — `handbook__read`'s own reads (of the
+handbook markdown content) go through `isaac.module.coords/read-text-file`
+against the ambient nexus `:fs` (mem-fs during a turn) and work fine; the
+failure is entirely in module *activation*, forced merely by declaring
+`marigold.charts` under `:modules` with a `:factory`, before `handbook__read`
+ever runs.
+
+Per the worker brief ("if one can't be satisfied as written, STOP and report
+with evidence"), stopping here rather than editing the frozen `.feature` text
+or re-baselining. Left `@wip` in place (scenarios still can't run); `bb ci` is
+green on the unit specs. Possible fixes for the planner to choose among:
+write the fixture's `deps.edn`/`src`/`resources` to the **real** disk (not via
+the mem-fs `the isaac file` step) so `:local/root` activation can see it;
+mark the fixture `:builtin?` some other way that skips eager activation; or
+change what `marigold.charts` looks like (no `:factory`, so it never needs
+activation — a plain manifest-only module, since `handbook__read` doesn't
+need the module *running*, only its manifest + handbook resource, both readable
+via mem-fs). The third option looks cleanest but would still need
+`resources/marigold/charts/handbook.md` writable this way and the `deps.edn`/`src`
+files dropped entirely from the Background.
+
+Branch `bean/isaac-z90t` pushed to `isaac-handbook` with the skeleton +
+implementation + unit specs (not merged to main; CI on that branch does not
+run per the repo's CI-on-main-only convention). `isaac-handbook.modules.edn`
+registry entry in this repo intentionally NOT added yet (no landed main sha).
