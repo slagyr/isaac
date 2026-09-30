@@ -68,3 +68,7 @@ feature-blob: isaac-episodes features/recall/ledger.feature 715fd67a4f5f9b1df9be
 feature-blob: isaac-episodes features/recall/query.feature ac1e6e103e705cb12a3aa13e0e6f18c0025ea20f 86
 feature-blob: isaac-episodes features/recall/query.feature ac1e6e103e705cb12a3aa13e0e6f18c0025ea20f 147
 feature-blob: isaac-episodes features/episodes/idle_seal.feature e5edb587444fc400723d65e08d9e8315b199684c 51
+
+## Implementation conflict (2026-09-29)
+
+Implementation branch `bean/isaac-0lb7` in isaac-episodes at eac4b30. `bb spec`: 232 examples, 0 failures, 627 assertions. `bb features`: 95 examples, 1 failure, 579 assertions. All other acceptance scenarios pass. The sole failure is `features/recall/embedding.feature:98` (crew override config validation). The frozen scenario asserts stderr contains `bad value: soon`; config validate actually emits `error: crew.cordelia.episodes.recall.half-life - can't coerce "soon" to int` (exit 1). This is foundation's generic integer coercion error (not a schema validation error) and cannot honestly match the baselined contract without either changing the scenario or changing foundation's validation reporting. Planner decision needed: rebaseline expected stderr to the real error or authorize a foundation change. No edits to feature text beyond removing @wip.
