@@ -1,13 +1,11 @@
 ---
 # isaac-on0o
 title: 'Namespace restructure: isaac-agent → isaac.agent.*'
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T15:56:39Z
+updated_at: 2026-09-30T15:58:19Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-davq
@@ -64,3 +62,7 @@ main-sha: isaac-agent 123d71850b480dc0859886e1a4fa53e082c258f1
 **GitHub CI on main-sha 123d718:** `CI Tests / verify` — green (`bb ci` passed end-to-end on a fresh checkout against the real published foundation sha). No cross-repo "boots against another repo's live main" job exists in this repo's workflow (unlike foundation's "Server boot..." job) — isaac-agent's CI is fully self-contained via git/sha pins, so no isaac-davq-style expected-red job here.
 
 Full grep of the tracked tree (excluding `modules/`, which keeps its own fixture-module namespaces by design) for any remaining pre-rename namespace token: 0 unjustified hits. `src/`, `spec/` namespace prefixes: 100% `isaac.agent.*` (plus the pre-existing `bb.cli-host-lint` exception, generic dev tooling per the davq precedent).
+
+## Planner verification (2026-09-30)
+
+Verified: every src/spec/spec-support namespace is `isaac.agent.*` (bb/dev tooling aside); no old foundation or agent namespace references remain beyond a docstring naming isaac-http's own not-yet-renamed namespace. CI Tests green on 123d718. Follow-up noted: `isaac.agent.turn.tool` has no dedicated spec after the duplicate spec was deleted. Note: the shared checkout was left renamed `isaac-agent.hidden-for-test`; restoring it needs Micah.
