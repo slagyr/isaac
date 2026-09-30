@@ -1,11 +1,11 @@
 ---
 # isaac-slx2
 title: 'Handbook chapter: isaac-episodes'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T04:56:35Z
-updated_at: 2026-09-30T04:56:35Z
+updated_at: 2026-09-30T05:14:45Z
 parent: isaac-u5f5
 ---
 
