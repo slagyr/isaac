@@ -1,13 +1,11 @@
 ---
 # isaac-qn7h
 title: 'Namespace restructure: isaac-claude-code under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:41:14Z
+updated_at: 2026-09-30T17:43:57Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -57,3 +55,7 @@ Every foundation/agent require in this repo's own code got the new prefix (found
 **Test results.** `bb ci` (config-bypass-lint + lint-cli-host + bb spec + bb features): green, 98 spec examples / 303 assertions (3 pending, opt-in `@real` smoke) + 67 feature examples / 223 assertions — identical counts to pre-change main. `bb jvm-spec`: 87/89 (2 failures), confirmed byte-for-byte identical on pristine pre-change main under the same `HOME=<scratch>` isolation — pre-existing `:model-exists?` lex-validator classpath leak (the same trap isaac-davq's bean documented), not a rename regression. `bb jvm-features`: 67/67 green; the "timed out after 60s" JVM-shutdown message after is also reproduced identically on pre-change main (exit 0, harmless teardown quirk). No `bb pins` task exists in this repo. Full grep of the tracked tree: 0 remaining `isaac.llm.` references; all src/spec namespaces are `isaac.provider.claude-code.*` (plus the untouched berth/module-id keywords, justified above).
 
 **GitHub CI on main-sha 8c54c38:** `verify` (bb ci) — green.
+
+## Planner verification (2026-09-30)
+
+Verified on 8c54c38: all namespaces isaac.provider.claude-code.*, CI green. Noted: foundation and agent each ship a divergent step-tables (re-matches vs re-find); follow-up to reconcile after the wave.
