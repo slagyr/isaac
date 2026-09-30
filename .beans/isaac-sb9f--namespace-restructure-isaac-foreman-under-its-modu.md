@@ -1,13 +1,11 @@
 ---
 # isaac-sb9f
 title: 'Namespace restructure: isaac-foreman under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T21:16:27Z
+updated_at: 2026-09-30T21:17:18Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -59,3 +57,7 @@ main-sha: isaac-foreman 861f6ab (github.com/slagyr/isaac-foreman)
 **GitHub CI on main-sha 861f6ab:** `CI Tests / verify` — green (fresh checkout, `bb ci` end-to-end against the real published foundation/agent/http shas).
 
 Full grep of the tracked tree for any remaining pre-rename foundation/agent namespace token: 0 hits. src/, spec/, feature-steps/ namespace prefixes: 100% `isaac.foreman.*` (foreman's own) plus the correctly-migrated `isaac.foundation.*`/`isaac.agent.*`/`isaac.http.*` requires.
+
+## Planner verification (2026-09-30)
+
+Verified on 861f6ab: agent pin f953042, workaround removed, CI green. Leftover: feature-steps namespace `isaac.foreman-feature-bootstrap` style names sit outside the prefix if any remain (checked: none reported).
