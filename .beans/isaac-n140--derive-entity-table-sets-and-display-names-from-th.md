@@ -194,3 +194,36 @@ schema-checked branch for the first time.
 ## Landed on main
 
 main-sha: isaac-foundation 4d0cd8bf8a4ac01608caffdb4e3cf591f9076a55
+
+## Follow-up (planner note, 2026-09-30): config set on a fresh entity-dir table
+
+A scenario drafter flagged that `isaac.config.schema.resolve/schema-for-
+data-path` (used by `config set`/`unset` to find a path's field spec) needed
+checking against a module-declared entity-dir table not in the old
+hard-coded list. Verified: the landed fix already covers this — I removed
+`entity-collections` from `schema/resolve.clj` itself (not just
+`validate.clj`), replacing it with the same `entity-collection-key?`
+structural check. Confirmed empirically with a throwaway probe spec (since
+deleted): `config set <fresh-entity-dir-table>.<id>.<keyword-field> <val>`
+now correctly resolves the field's real spec and coerces the value (e.g.
+`"admin"` -> `:admin`); reverting `schema/resolve.clj` to its pre-bean
+version reproduces the bug (value stored as a raw string, no coercion — spec
+resolution silently fell back to a guess).
+
+Added a genuinely falsifiable regression scenario to
+`features/cli/config_validate_entity_collections.feature` ("config set
+finds a field's real spec inside a fresh module-declared entity-dir table")
+that fails against the pre-fix `schema/resolve.clj` and passes with it —
+confirmed both ways. Committed locally in the `isaac-foundation-n140`
+worktree (branch `bean/isaac-n140-followup`) on top of the landed commit:
+
+    c4522ccc7c9bd41b3d03a0f6c61e8f56f9079066  isaac-n140: add config set regression scenario for module-declared entity-dir tables
+
+**Not yet pushed** — `git push` to `isaac-foundation` main was denied by
+the permission classifier ("Out-of-Place Publication"), coinciding with
+this session's primary working directory moving to `isaac-handbook`
+mid-task. No workaround attempted per the tool's own instruction. The
+worktree/branch/commit are intact and ready to push
+(`git push origin c4522ccc7c9bd41b3d03a0f6c61e8f56f9079066:main` from
+`/Users/micahmartin/agents/isaac/plan/isaac-foundation-n140`) once someone
+with permission does it, or the classifier is satisfied.
