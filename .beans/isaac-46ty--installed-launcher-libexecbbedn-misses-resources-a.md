@@ -1,11 +1,11 @@
 ---
 # isaac-46ty
 title: Installed launcher (libexec/bb.edn) misses resources/ and pins apron 3.0.0
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-09-30T17:12:21Z
-updated_at: 2026-09-30T17:12:21Z
+updated_at: 2026-09-30T17:17:01Z
 ---
 
 Found 2026-09-30 while restoring foundation's http boot smoke. The installed CLI (brew keg: /opt/homebrew/bin/isaac -> <keg>/libexec/isaac-foundation/libexec/isaac) runs `bb --config libexec/bb.edn`. That file has `:paths ["../src"]` (no `../resources`) and its own `:deps` with c3kit apron **3.0.0**, while deps.edn/bb.edn use apron 3.2.1.
