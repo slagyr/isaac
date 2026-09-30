@@ -1,11 +1,11 @@
 ---
 # isaac-601n
 title: Move set_unset.feature + set_report.feature generic mechanics to isaac-foundation; check schema_cli_options.feature for redundancy
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T05:46:01Z
 ---
 
 ## Ruling
