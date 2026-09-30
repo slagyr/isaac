@@ -24,8 +24,8 @@ Design notes: Micah + planner, 2026-09-29. Not scenario-ready; draft to hold dec
 - Secrets: never write secret values inline; reference `${VAR}` (open: can a crew write `.env`? probably not).
 - The response confirms what was written and where, plus validation warnings, like `config set`'s report.
 
-## Open
+## Decided (Micah, 2026-09-29, round 2)
 
-- Can a crew write `.env` / secrets at all?
-- Unset of a set member, entity creation/deletion (new crew, new cron job) — in scope for v1?
-- Audit trail: log every configure call with the calling crew and session.
+- **No `.env` access.** A crew never reads or writes `.env` or secret values; it references `${VAR}` and a human sets the value.
+- **Creating new entries is in scope for v1** (a new crew, a new cron job, a new comm): an entity file (EDN or markdown with frontmatter + companion prose) is created through configure. Deleting entries: include if cheap, same path as unset of the entry.
+- **Every configure call is logged**: calling crew, session, the pairs requested, and the outcome (written / refused + reason).
