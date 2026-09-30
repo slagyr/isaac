@@ -1,7 +1,7 @@
 ---
 # isaac-3z1b
 title: Foundation's handbook chapter (the introduction)
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-29T23:50:57Z
@@ -105,3 +105,16 @@ Every section follows one pattern: what it is, how to change it with `handbook__
 
 - Chapter text is drafted and under Micah's review (resolved answers: runtime and running components come from the handbook inventory; no `--force`, configure takes several pairs atomically; a failed reload keeps the last good config and logs `:config/reload-failed`; cron jobs are config edited through configure, including companion prose).
 - **Maintenance:** add a lint spec in foundation that fails when the chapter mentions a `config:` path or a CLI command that no longer exists in the composed schema / CLI registry. Include it in this bean's acceptance.
+
+## Acceptance (planner, 2026-09-29, supersedes earlier acceptance text)
+
+- `isaac-handbook/features/foundation_chapter.feature`: 2 scenarios, `@wip`, baselined. The table of contents leads with `isaac.foundation` (ahead of a module whose id sorts first), and `isaac.foundation#vocabulary` returns that section.
+- isaac-foundation: manifest gains `:handbook "isaac/foundation/handbook.md"`, and the chapter ships at that resource path. **Starting text:** Micah-reviewed draft at `/private/tmp/claude-501/-Users-micahmartin-agents-isaac-plan/0480c17b-b210-4d8f-a878-010786e26e29/scratchpad/foundation-handbook-final-draft.md` (local worker only). Keep its 8 sections and their Troubleshooting subsections. Resolve its `[dnib]` markers against what isaac-dnib actually landed (or keep them marked if dnib hasn't landed).
+- isaac-foundation: a lint spec fails when the chapter mentions a `config:` path / config key path or a CLI command that doesn't exist in the composed schema / CLI registry.
+- isaac-foundation: fix the stale `manifest.clj` docstring (it still describes fixed Purpose/Procedures/Emergencies headings; chapters are free-form).
+- isaac-handbook: bump its foundation pin to the landed foundation sha (pins must be on foundation main).
+
+`modules show isaac.foundation` is out of scope: `modules show` only knows configured modules, and the handbook scenarios are the user-facing proof.
+
+feature-baseline: isaac-handbook 572da47c82c6e0eeccb25f25a383d105d293c0f8
+feature-blob: isaac-handbook features/foundation_chapter.feature c3157fb44b299c1499fe91891f441cfb2e372430
