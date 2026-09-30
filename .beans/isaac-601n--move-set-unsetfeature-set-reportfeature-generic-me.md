@@ -1,11 +1,11 @@
 ---
 # isaac-601n
 title: Move set_unset.feature + set_report.feature generic mechanics to isaac-foundation; check schema_cli_options.feature for redundancy
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T05:46:01Z
+updated_at: 2026-09-30T05:46:32Z
 ---
 
 ## Ruling
@@ -337,3 +337,29 @@ feature-blob: isaac-foundation features/cli/config_schema_provenance.feature 25f
 feature-blob: isaac-foundation features/cli/config_set_entity_routing.feature d38e9dd3b1d3c8963a2d7e975717a3a54c9e221f
 feature-blob: isaac-foundation features/cli/config_set_report.feature df9c9f9a336b50800605c96276f3f20973beae75
 feature-blob: isaac-foundation features/cli/config_set_unset.feature 2382439e471572087850bc25ae1fe13a22979f20
+
+## Landed on main (2026-09-30)
+
+main-sha: isaac-foundation 6b95406a4052cc3c8b0000383a878b0a47b409a7
+main-sha: isaac-agent 1d262870aab52a7f589873e1d54d27afd290b243
+
+`bb bean-gate verify isaac-601n` PASS against both landed worktrees.
+Foundation: `bb spec` 1321/0, `bb features` 350/0 (2 pre-existing pending,
+unrelated). Agent: `bb spec` 1834/0, `bb features` 823/0 (1 pre-existing
+pending, unrelated), re-run green against the landed foundation sha.
+`bb pins`/`lint-pins` in foundation's `bb ci` fails locally for the known
+environmental reason (this machine's `~/.isaac` registry); config-bypass-lint,
+lint-cli-host, and lint-pins were run individually and passed.
+
+isaac-agent deletions: `set_unset.feature` 26 → 7 scenarios (19 removed: 17
+moved, 2 deleted-as-redundant); `cli.feature` 40 → 19 scenarios (21 removed:
+20 moved, 1 deleted-as-redundant); `schema_cli_options.feature` deleted
+entirely (7 scenarios: 4 moved/folded, 3 deleted-as-redundant).
+`set_report.feature` untouched (all 4 STAYS). dnib's 6 pinned set_unset.feature
+scenarios and the "still accepts a reference to an entity not defined yet"
+scenario confirmed present and green. The 3 companion-.md scenarios and the 4
+comm-field scenarios (pre-existing `@wip`, untouched, out of this bean's scope
+per the Final mapping preamble) stayed in cli.feature untouched.
+
+isaac-foundation: 5 new feature files (43 scenarios total) un-@wip'd, no other
+text edits.
