@@ -1,11 +1,11 @@
 ---
 # isaac-lshz
 title: 'isaac-handbook: handbook__configure (atomic multi-set, prose fields)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-30T00:28:23Z
-updated_at: 2026-09-30T05:13:28Z
+updated_at: 2026-09-30T05:13:53Z
 blocked_by:
     - isaac-z90t
     - isaac-cvri
