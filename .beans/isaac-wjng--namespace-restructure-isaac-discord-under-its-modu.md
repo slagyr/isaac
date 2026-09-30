@@ -1,11 +1,11 @@
 ---
 # isaac-wjng
 title: 'Namespace restructure: isaac-discord under its module id'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T14:12:23Z
+updated_at: 2026-09-30T17:37:26Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
