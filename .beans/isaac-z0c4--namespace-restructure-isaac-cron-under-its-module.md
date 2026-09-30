@@ -1,13 +1,11 @@
 ---
 # isaac-z0c4
 title: 'Namespace restructure: isaac-cron under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:24:28Z
+updated_at: 2026-09-30T17:25:14Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -62,3 +60,7 @@ Every foundation/agent require got the module prefix: `isaac.config.{loader,api,
 Full grep of the tracked tree for any remaining pre-rename namespace token: 0 hits. Every `src/`, `spec/`, `feature-steps/` namespace declaration is `isaac.cron.*` (no justified exceptions needed — this repo has no fixture modules or bb/dev tooling of its own).
 
 **GitHub CI on main-sha c7607f4:** `verify` (bb ci) — green.
+
+## Planner verification (2026-09-30)
+
+Verified on c7607f4: all namespaces isaac.cron.*, CI green.
