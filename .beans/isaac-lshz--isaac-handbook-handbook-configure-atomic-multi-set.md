@@ -5,10 +5,11 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-30T00:28:23Z
-updated_at: 2026-09-30T03:00:10Z
+updated_at: 2026-09-30T04:03:09Z
 blocked_by:
     - isaac-z90t
     - isaac-cvri
+    - isaac-c4em
 ---
 
 Design notes: Micah + planner, 2026-09-29. Not scenario-ready; draft to hold
@@ -246,3 +247,6 @@ bean; response is plain prose. Remaining, non-blocking:
 
 feature-baseline: isaac-handbook 48d5e794bfa917b0bfeb9e8e4736a3e1889c9f50
 feature-blob: isaac-handbook features/configure.feature de9bc2198c4bdfab38fc9c8b8cef9e2c3c810c3e
+
+feature-baseline: isaac-handbook 09cc43bcadc019fe25dc5e94178f91dc6a6af2a1
+feature-blob: isaac-handbook features/configure.feature 05cc0b80d44958a94b268fc2c39f1d6b8f774a57
