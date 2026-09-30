@@ -42,61 +42,18 @@ has a hole where the introduction should be.
   comment to describe the real convention (free-form, concept headings,
   `### Troubleshooting` subsections) instead of the retired fixed set.
 
-## Chapter outline (draft — grounded in current foundation source; Micah
-must confirm accuracy before this ships as real chapter text)
+## Chapter outline (revised with Micah, 2026-09-29)
 
-1. **Root layout** — `isaac.config.root`: where Isaac keeps config and
-   state on disk, and the lookup chain that decides it (`--root` flag →
-   test-injection → `ISAAC_ROOT` env → `~/.config/isaac.edn` →
-   `~/.isaac.edn` → `~/.isaac` default).
-   - Troubleshooting: "which root is this command actually using?" —
-     check the lookup chain in order; a stray `ISAAC_ROOT` in the
-     environment beats a `--root` flag typo into looking like it worked.
+Every section follows one pattern: what it is, how to change it with `handbook__configure`, how to verify, then **Troubleshooting**.
 
-2. **Config composition** — `isaac.edn` at the root, plus per-entity files
-   under `config/<kind>/<id>.edn` (crew, providers, etc.), plus a
-   markdown companion file beside an entity for prose fields (souls,
-   prompts) — inline value or `.md` sidecar, never both silently merged
-   (`isaac.config.companion`). `${VAR}` substitution pulls from the
-   process environment and a locked `<root>/.env` snapshot taken at load
-   time (`isaac.config.env`).
-   - Troubleshooting: a `${VAR}` that shows as `<VAR:UNRESOLVED>` means
-     the var isn't set in either the environment or `.env` at load time —
-     editing `.env` after boot doesn't help until reload; an inline field
-     value silently wins over a same-named companion file, so an edit to
-     the `.md` that "isn't taking" is usually a leftover inline value.
-
-3. **Schemas** — config tables are c3kit apron schemas, composed from
-   every installed module's `:isaac.config/schema` contribution
-   (`isaac.config.schema-compose` / `schema-base`); `isaac config schema`
-   walks the live composed root, not a hand-written doc.
-   - Troubleshooting: a field that "isn't in the schema" after adding a
-     module is usually a module that isn't actually installed/discovered
-     yet (see Modules & berths) rather than a schema bug — check `isaac
-     modules list` first.
-
-4. **Modules & berths** — a module is a manifest (`isaac-manifest.edn`)
-   naming an id, version, factory, and its contributions; a berth is a
-   named extension point one module declares and others contribute into.
-   Two collision rules: a *structural* clash (two modules declaring the
-   same berth, or the same config-table shape) is an error; a *named*
-   clash (two modules contributing the same tool/comm/command name) lets
-   the later module in `:modules` order win, logged as an override
-   warning. A missing `:handbook` resource is a warning, never an error —
-   the module still loads.
-   - Troubleshooting: "my module's contribution isn't showing up" —
-     check `isaac modules show <id>` for what it declares/contributes and
-     any warnings; a silently-overridden named contribution is usually a
-     `:modules` ordering question, not a bug.
-
-5. **Hot reload** — foundation owns noticing that config changed (it owns
-   config and the daemon), watching every file the config layer
-   recognizes: `isaac.edn`, every `<kind>/<id>.edn`, and their markdown
-   companions, recursively under the config root. Default ON; `:hot-reload
-   false` turns it off.
-   - Troubleshooting: an edit that "isn't taking effect" — confirm
-     `:hot-reload` isn't set to `false`, and that the edit landed under
-     the watched config root (not a similarly-named file elsewhere).
+1. **Vocabulary**: the spaceship metaphor. Ship, bridge, comm, crew, quarters, modules, berths, hail and bands, soul, session, episode, turn.
+2. **Runtime**: babashka or JVM (which one is live, what differs: startup, classpath/module loading, protocol-extension trap); server and service (process, launchd/systemd, logs; config hot-reloads, a restart is never the fix); components (what runs in the server, start/stop order).
+3. **Files**: root layout (brief: operator concept); EDN format (keywords, maps, sets, strings, comments; common mistakes); markdown files (entity files with frontmatter, companion files for prose fields; unquoted `": "` in frontmatter).
+4. **Config**: composition (`isaac.edn` + entity files + companions); paths and editing (dots, brackets, namespaced segments, set members; set/unset behavior: refusal, `--force` for required fields, confirmations; where a write lands); schemas (types, defaults, required, options, descriptions); effective vs written (defaults, coercion, unknown keys warned, `--raw`); secrets and `${VAR}` (never inline; `.env`; redaction; unresolved warns); templates (`:_base`); validation (errors vs warnings); hot reload.
+5. **Modules and berths**: installed modules, contributions, versions and conflicts, named vs structural clashes, the `:handbook` doc.
+6. **Scheduler**: tasks, triggers (interval, delay, at, cron), policies (coalesce, on-error, timeout).
+7. **Logs**: streams (cli, server, module-added), levels, structured event names.
+8. **Appendix**: the CLI and remote routing.
 
 ## Acceptance
 
