@@ -1,13 +1,11 @@
 ---
 # isaac-qq6a
 title: 'Namespace restructure: isaac-handbook under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T17:53:54Z
+updated_at: 2026-09-30T17:54:36Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -70,3 +68,7 @@ No isaac-agent namespace was referenced anywhere in this repo (agent is only a `
 **GitHub CI on main-sha f7f7534:** `CI Tests / verify` — green (1m46s, fresh checkout of isaac-foundation + isaac-agent mains, `bb ci`).
 
 Full grep of tracked src/spec/resources/README/bb.edn/deps.edn/features for any remaining non-`isaac.handbook.*`/non-`isaac.foundation.*` `isaac.*` token: only module-id keywords (`isaac.foundation`, `isaac.agent`, `isaac.config` berth key) and `isaac.edn` (the config filename, not a namespace) remain — all justified as above.
+
+## Planner verification (2026-09-30)
+
+Verified on f7f7534: all namespaces isaac.handbook.*, CI green.
