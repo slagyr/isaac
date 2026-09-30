@@ -1,11 +1,11 @@
 ---
 # isaac-klcb
 title: 'Episodes recall never reaches the model in production: the held block lives on the agent session record, which the sidecar store strips'
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-30T05:05:47Z
-updated_at: 2026-09-30T05:06:12Z
+updated_at: 2026-09-30T05:15:39Z
 ---
 
 Likely repo: **isaac-episodes**. Critical: live on zanebot since the 2026-09-30 02:38Z deploy (episodes 8ef1955, which carries isaac-jvwr).
@@ -43,3 +43,7 @@ message holds only the hail prompt and no `:pending-recall` exists anywhere.
 
 feature-baseline: isaac-episodes f5add9063ce34b1a344888ebce43540071cc35b2
 feature-blob: isaac-episodes features/episodes/live.feature 4f9e5e2a7a7b3fd78ab49c8d0fb07f24228e54a7 407
+
+## Summary of Changes
+
+The cold-open recall block is held on the open episode's record (episode.edn) instead of the agent session record; append-message! reads it from the open episode, prefixes the next user message, and clears it there. No agent change. Specs updated; the scenario runs on the file-backed (sidecar) store that production uses. Episodes aa839f3; gate PASS; spec 238/0, features 98/0.
