@@ -1,13 +1,11 @@
 ---
 # isaac-81ua
 title: 'Namespace restructure: isaac-hail under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:14:41Z
+updated_at: 2026-09-30T17:17:20Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -155,3 +153,7 @@ leaving this bean `in-progress` (not `unverified`) with the branch pushed for
 review, rather than merging red CI to isaac-hail's main. Recommend: cut an
 isaac-http rename bean (parent isaac-vyqs), land it first, then resume/re-verify
 this branch's `bb features` before merging.
+
+## Planner verification (2026-09-30)
+
+Verified on 923c1d8: every namespace under isaac.hail.*, no old foundation/agent/http references, CI green. Shared-checkout ff and branch/worktree cleanup were classifier-blocked for the worker; left for Micah.
