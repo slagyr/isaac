@@ -197,8 +197,10 @@ scenarios deleted not retained).
 
 ### Keep the handbook current
 
-Each module ships a handbook chapter (its manifest's `:handbook` markdown), read
-by crews through `handbook__read` (isaac-handbook). It describes how to operate
+Each module ships a handbook chapter at `resources/isaac/<pkg>/handbook.md`
+(not `src/`: it isn't code), named by its manifest's `:handbook` classpath path
+and read by crews through `handbook__read` (isaac-handbook). Chapters hold only
+text for crews: no developer notes or lint comments. It describes how to operate
 what that module owns: config, behavior, and troubleshooting. A stale chapter
 misleads the crews that rely on it.
 
