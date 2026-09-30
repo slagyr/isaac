@@ -29,3 +29,37 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+## Landed on main
+
+main-sha: isaac-foreman c0836e3
+
+Handbook chapter at isaac-foreman's src/isaac/foreman/handbook.md (manifest
+:handbook isaac/foreman/handbook.md), plus a lint spec at
+spec/isaac/foreman/handbook_chapter_spec.clj using discovery/builtin-index
+directly (foreman's manifest already carries :builtin? true, unchanged —
+no isaac-imessage-style raw-manifest workaround needed). Backfilled schema
+:description on :resource-pools and :prompt (both action-shape copies:
+the shared :foreman :actions pool and machine-local :actions), and on
+transition-row :start/:event/:end. No pin bump; isaac-foundation
+3a199d92c4 / isaac-agent 6736ca27ff / isaac-http 8e01658366 unchanged.
+`bb ci` green locally (76 spec examples, 23 feature scenarios) and on
+GitHub CI (run 36678626021).
+
+Config-path note: this pinned foundation's `schema.resolve` recognizes
+entity collections via a hardcoded set (`:berths :gauges :foundries :crew
+:hail :models :providers`) rather than the newer structural check —
+`machines` isn't in that set, so a bare `machines.lighthouse-watch.field`
+path does not resolve. Every config: ref in the chapter therefore uses
+bracket-string syntax (`machines["lighthouse-watch"].field`,
+`foreman.actions["tend-lamp"].field`), which resolves generically for any
+:map-typed schema node regardless of that set — confirmed by testing
+every ref in the chapter directly against schema-resolve/schema-for-data-path
+before writing it in.
+
+[verify] items in the chapter text: the `:notify` action type is declared
+in the config schema (`:one-of? :log :turn :notify`) but nothing in
+core.clj/checks.clj ever executes or resolves a pending `:notify` entry —
+documented as a known, currently-inert gap rather than a bug, flagged
+`[verify]` for Micah to confirm that's the intended state (vs. a real gap
+to bean separately).
