@@ -1,11 +1,11 @@
 ---
 # isaac-n140
 title: Derive entity-table sets and display names from the schema itself
-status: draft
+status: todo
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T02:59:21Z
 blocked_by:
     - isaac-v38i
 ---
@@ -149,3 +149,7 @@ possibly `src/isaac/config/schema_compose.clj` (new shared helper) and
   kind, not singular) with the singular `:hook` living one level down at
   `:value-spec :name`. Make sure the accessor path reads the right level;
   a wrong accessor would silently regress the dangling-md message text.
+
+## Ungated (planner, 2026-09-30)
+
+Refactor plus one bug fix (schema vs validate disagree on `:hail` paths). The worker writes the regression scenario named in Acceptance (Marigold fixture entity table, unique module id, manifest-only); the planner reviews it at verification. Hand off with `tag=unverified`.

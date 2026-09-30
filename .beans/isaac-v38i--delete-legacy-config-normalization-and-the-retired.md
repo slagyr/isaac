@@ -1,13 +1,11 @@
 ---
 # isaac-v38i
 title: Delete legacy config normalization and the retired :server block
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:57:47Z
+updated_at: 2026-09-30T02:59:04Z
 ---
 
 ## Ruling
