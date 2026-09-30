@@ -1,13 +1,11 @@
 ---
 # isaac-t95z
 title: 'Namespace restructure: isaac-cli-proxy under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T22:30:28Z
+updated_at: 2026-09-30T22:31:37Z
 parent: isaac-vyqs
 ---
 
@@ -76,3 +74,7 @@ Squashed the branch's three commits to one, pushed `267b8aa:main` (accepted, no 
 **main-sha: isaac-cli-proxy 267b8aa**
 
 Final pin set: isaac-foundation `06d58b75bc52b3e118dc8e81569096de2532a0d4`, isaac-agent `f9530426d04b6f66f17ae51f6f9a1a697531b39d`, isaac-http `5dedcafbc0fcc199a72e1d378ba78d1db9305750`, isaac-cli-server `f1477a71c2efa8f7992fe4a7243eb14cc74c3e7e`, isaac-acp `07f9fb813e8f6b6e7b5f10776e30825796315ea4` — all migrated. `blocked_by` cleared (isaac-on0o and isaac-wqs8 both landed); tagged `unverified` for `/verify`. Branch `bean/isaac-t95z` and worktree `../isaac-cli-proxy-isaac-t95z` deleted.
+
+## Planner verification (2026-09-30)
+
+Verified on 267b8aa: all namespaces isaac.cli-proxy.*, features-slow 6/6, CI green.
