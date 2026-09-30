@@ -104,3 +104,10 @@ scope, just a dependency).
 - Secrets in the reference reuse `config get`'s existing redaction (`<VAR:redacted>`); no second "set / not set" signal.
 - Size cap: config key `handbook.max-chars`, default 40000 characters.
 - The schema-defaults dependency is **isaac-dnib** (in progress); this bean waits for it and for bean 1.
+
+## Addendum (Micah, 2026-09-29)
+
+The inventory also reports two pieces of live state, cheap and clearly useful now (the fuller `status` topic comes later):
+- **Runtime:** "babashka <version>" or "JVM <version>" (babashka sets the `babashka.version` system property).
+- **Running components:** from `isaac.component.runtime/started-components` (id, owning module, boot order).
+Add scenarios for both when this bean's scenarios are finalized after isaac-dnib lands.

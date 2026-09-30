@@ -100,3 +100,8 @@ Every section follows one pattern: what it is, how to change it with `handbook__
 - Secrets in the reference reuse `config get`'s existing redaction (`<VAR:redacted>`); no second "set / not set" signal.
 - Size cap: config key `handbook.max-chars`, default 40000 characters.
 - The 5-section outline stands; "config vs state discipline" goes inside Config composition. Micah reviews the written chapter for accuracy before it lands.
+
+## Addendum (Micah, 2026-09-29)
+
+- Chapter text is drafted and under Micah's review (resolved answers: runtime and running components come from the handbook inventory; no `--force`, configure takes several pairs atomically; a failed reload keeps the last good config and logs `:config/reload-failed`; cron jobs are config edited through configure, including companion prose).
+- **Maintenance:** add a lint spec in foundation that fails when the chapter mentions a `config:` path or a CLI command that no longer exists in the composed schema / CLI registry. Include it in this bean's acceptance.
