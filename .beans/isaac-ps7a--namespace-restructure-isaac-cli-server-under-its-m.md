@@ -1,13 +1,11 @@
 ---
 # isaac-ps7a
 title: 'Namespace restructure: isaac-cli-server under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T17:51:42Z
+updated_at: 2026-09-30T17:52:22Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -66,3 +64,7 @@ Read-only grep of zanebot (~/.isaac/config) and yopp (~/.isaac/config) for all o
 - bb jvm-spec / bb jvm-features: both fail with 'Could not locate speclj/main on classpath' — reproduced identically on pre-change main (same isaac-foundation-test-support test_timeout.clj stack trace at the old pin), so this is a pre-existing environmental issue, not introduced by this bean.
 - No bb lint or bb pins task exists in this repo's bb.edn.
 - GitHub CI (main, run 36754331420): green.
+
+## Planner verification (2026-09-30)
+
+Verified on f1477a7: all namespaces isaac.cli-server.*, CI green. Pre-existing: bb jvm-spec/jvm-features fail locally with speclj/main not on classpath (also on old main).
