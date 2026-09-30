@@ -165,3 +165,7 @@ Refactor with no new user-visible behavior, so no new scenarios: acceptance is b
 ## Held (awaiting human, 2026-09-30)
 
 Escalated to human by **prowl**@isaac-plan. Blocking: foundation main `2371258` deleted `:crew-exists?` before agent registered it and before http stopped using it. CI `36663809056` fails config-schema because `:comms` still validates with `:crew-exists?` and the lexicon has no entry. Agent main `9a33cc3` still references the keyword and has not added `:isaac.config/validation-ref`. Http manifest still uses it. Micah claimed this bean (`e408b57b`). No independent fix. Resumes only on explicit human action.
+
+## Resumed (Micah, 2026-09-30)
+
+Micah: "The problem is deeper than we thought and we just need to keep digging. Don't stop, don't revert, just keep moving forward." Fix forward: land agent's validation-ref contribution and resolve isaac-http/isaac-server's `:comms` use of `:crew-exists?` so foundation main CI goes green. No revert.
