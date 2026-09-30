@@ -1,13 +1,11 @@
 ---
 # isaac-davq
 title: 'Namespace restructure: isaac-foundation → isaac.foundation.*'
-status: in-progress
+status: completed
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T15:17:07Z
+updated_at: 2026-09-30T15:18:22Z
 parent: isaac-vyqs
 ---
 
@@ -60,3 +58,7 @@ One genuine collision: `spec/isaac/module_spec.clj` (ns `isaac.module-spec`, tes
 **GitHub CI on main-sha 06d58b7:** `verify` (bb ci) — green. `Slow features (@slow launcher lane)` — green. `Server boot with a module-provided config type` — **red**, and this one is a real, expected consequence of the inside-out order, not a foundation defect: that job checks out `isaac-http`'s current `main` fresh and boots `libexec/isaac` against a config declaring `:isaac.http` as a module. isaac-http's own deps.edn still pins the **old**, pre-rename foundation sha (correctly excluded from the classpath so our local `../src` wins), but isaac-http's own *source* (`isaac.http.module/create-module` etc.) still directly requires the **old** namespace names (`isaac.module.protocol`, ...) — which no longer exist anywhere on the classpath once foundation only ships `isaac.foundation.module.protocol`. `register-module-cli-commands!`'s blanket `(catch Exception _ nil)` swallows the resulting `module factory resolution failed for isaac.http: isaac.http.module/create-module`, so every CLI command (including foundation's own `config`) silently fails to register. This will stay red until isaac-http (or whichever module this smoke test targets) completes its own isaac-vyqs migration bean; it passed on the immediately-preceding commit (8022906) and would pass again if pointed at a foundation sha before this one. Flagging for a planner decision — accept as a known, temporary cross-repo casualty of the inside-out order (most consistent with the bean's own "Deploy freeze" reasoning), or re-pin/skip that CI job until the fleet catches up. I did not touch isaac-http or the CI workflow.
 
 Full grep of the tracked tree for any remaining pre-rename namespace token: 0 hits. `src/`, `spec/`, `spec-support/src/` namespace prefixes: 100% `isaac.foundation.*` (plus the justified `bb.*`/`dev.*` exceptions above).
+
+## Planner verification (2026-09-30)
+
+Verified: all 244 src/spec/spec-support namespaces are `isaac.foundation.*`; remaining `:isaac.config/*` hits are berth ids (shared keyword contracts), not namespaces, and stay. CI on 06d58b7: verify + slow lane green; "Server boot with a module-provided config type" red because it boots against isaac-http main, which still requires the old names. Accepted as expected fallout; it goes green when isaac-http migrates.
