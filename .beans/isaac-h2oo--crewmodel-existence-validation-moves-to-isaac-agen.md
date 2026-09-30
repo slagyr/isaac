@@ -4,8 +4,10 @@ title: Crew/model existence validation moves to isaac-agent
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:45:59Z
+updated_at: 2026-09-30T04:43:58Z
 ---
 
 ## Ruling
@@ -169,3 +171,22 @@ Escalated to human by **prowl**@isaac-plan. Blocking: foundation main `2371258` 
 ## Resumed (Micah, 2026-09-30)
 
 Micah: "The problem is deeper than we thought and we just need to keep digging. Don't stop, don't revert, just keep moving forward." Fix forward: land agent's validation-ref contribution and resolve isaac-http/isaac-server's `:comms` use of `:crew-exists?` so foundation main CI goes green. No revert.
+
+## Held resolved — fixed forward (2026-09-30)
+
+isaac-6pqo (concurrent, separately dispatched) had already moved `:comms` off isaac-http/isaac-server onto isaac-agent (agent commit b588695, http/server commit 567cae4) by the time I resumed — that fixed the cross-module-naming half on its own; no isaac-http/isaac-server edits were needed from this bean.
+
+What I found and fixed here, beyond landing agent's contribution:
+
+- The scoped `cs/with-lexicon` overlay from the first landing (foundation `2371258`) only covered whichever single compose/validate function established it. Config load is a long, deeply-nested pipeline — `schema-compose/effective-root-schema` (compose-root-schema, then `berths/effective-root-schema`, then `resolve-entity-templates`), then `isaac.config.loader`'s root-config conform via `isaac.schema.lexicon` (a *separate* rebinding of `*lexicon*`), then per-entity-file validation, then checks — and the scoped binding closed before later steps ran, silently dropping the ref. Surfaced as `missing lex :crew-exists? in :validations` from foundation's own `@slow` `modules_registry_install.feature`, the `server-boot-smoke` CI job, and 60 failing specs in isaac-agent's own suite once its contribution was wired up (reproduced standalone via `isaac.config.loader/load-config-result` under a mem-fs test fixture — traced by instrumenting `c3kit.apron.schema/verify-schema-lexes` to print `(:validations cs/*lexicon*)` at each call).
+- Fix: `isaac.config.validation-lexicon/register-contributed-existence-refs!` now assocs each contributed ref into apron's **global** lexicon (`cs/update-lexicon!`, the same mechanism foundation's own static refs use) instead of a scoped override — called from `schema-compose/merge-contributions` and `isaac.config.validation/semantic-errors`, idempotent, safe on every pass. Landed as foundation `1318641`.
+- Foundation's own `modules_registry_install.feature` also pinned isaac-http at a pre-fix sha (`6960803`); bumped to isaac-http main `567cae4` (isaac-6pqo's fix). Landed as foundation `fd91dd1`.
+
+All four affected repos' GitHub Actions CI confirmed green on main after these landings:
+
+- `main-sha: isaac-foundation fd91dd101ff41ed5ea85d1b245536a9b0bb7afb9`
+- `main-sha: isaac-agent 7d3910f2c4d02bcbaf6d8bc87f166c0ceb59b58a`
+- `main-sha: isaac-http c9b6644f9c8d6e0d9fb3ef46b33d8be99a3596ad` (isaac-6pqo's landing; confirmed green, no change made here)
+- `main-sha: isaac-server c9b6644f9c8d6e0d9fb3ef46b33d8be99a3596ad` (isaac-6pqo's landing; confirmed green, no change made here)
+
+Held status lifted — no longer blocked. Handing off `tag=unverified` for planner review; status stays `in-progress` per the ungated flow.
