@@ -1,11 +1,11 @@
 ---
 # isaac-cvri
 title: 'config set: siblings-all-files placement rule + atomic multi-path write (set-many!)'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-30T03:00:10Z
-updated_at: 2026-09-30T03:31:12Z
+updated_at: 2026-09-30T03:36:21Z
 ---
 
 Design notes: planner, 2026-09-29/30, drafted while scoping isaac-lshz
