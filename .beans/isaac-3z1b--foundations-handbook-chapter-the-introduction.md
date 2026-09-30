@@ -1,11 +1,11 @@
 ---
 # isaac-3z1b
 title: Foundation's handbook chapter (the introduction)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-29T23:50:57Z
-updated_at: 2026-09-30T00:51:25Z
+updated_at: 2026-09-30T01:05:35Z
 ---
 
 ## Ruling
@@ -118,3 +118,15 @@ Every section follows one pattern: what it is, how to change it with `handbook__
 
 feature-baseline: isaac-handbook 572da47c82c6e0eeccb25f25a383d105d293c0f8
 feature-blob: isaac-handbook features/foundation_chapter.feature c3157fb44b299c1499fe91891f441cfb2e372430
+
+## Landed on main (2026-09-30)
+
+main-sha: isaac-foundation 7b6ec2c440d19bcadcaba634747dc718fe64d41b
+main-sha: isaac-handbook 864e9f7dbc3b4a290f807a89cbb6d1e9dae544fd
+
+GitHub CI green on both mains. isaac-dnib had not landed on isaac-foundation
+main as of this landing (still only on `bean/isaac-dnib`), so the chapter's
+`[dnib]` markers (Config → "Effective vs. written `[dnib]`" heading, its
+opening caveat, and one `[dnib]` callout in Hot reload Troubleshooting) were
+kept as-is, per the acceptance's fallback. `isaac/modules.edn`'s
+`:isaac.handbook` entry bumped to the landed handbook sha.
