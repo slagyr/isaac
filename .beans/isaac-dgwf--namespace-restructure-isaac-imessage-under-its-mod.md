@@ -1,13 +1,11 @@
 ---
 # isaac-dgwf
 title: 'Namespace restructure: isaac-imessage under its module id'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:35:57Z
+updated_at: 2026-09-30T17:37:01Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -53,3 +51,7 @@ isaac.api→isaac.agent.api; isaac.charge→isaac.agent.charge; isaac.comm.deliv
 **GitHub CI on main-sha 6d19667:** `CI Tests / verify` (`bb ci`, checking out isaac-foundation/isaac-agent/isaac-http main fresh) — green.
 
 Full grep of the tracked tree for any remaining pre-rename namespace token outside `isaac.comm.imessage.*`/`isaac.foundation.*`/`isaac.agent.*`/`isaac.http.*`: 0 hits. All 9 src/spec namespaces are `isaac.comm.imessage.*`.
+
+## Planner verification (2026-09-30)
+
+Verified on 6d19667: all namespaces isaac.comm.imessage.*, CI green. Worktree/branch cleanup classifier-blocked; left for Micah.
