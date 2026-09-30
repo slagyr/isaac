@@ -1,11 +1,13 @@
 ---
 # isaac-aaf4
 title: 'Handbook chapter: isaac-agent'
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:35Z
-updated_at: 2026-09-30T04:56:35Z
+updated_at: 2026-09-30T05:21:36Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,11 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+## Landed on main
+
+Chapter at `src/isaac/agent/handbook.md` (manifest `:handbook "isaac/agent/handbook.md"`), covering: Crews, Tools and directories, Sessions and transcripts, Turns and the tool loop, Compaction and context modes, Providers/models/effort, Bridge and slash commands, Comms and delivery — each with a `### Troubleshooting` subsection. Lint spec at `spec/isaac/agent/handbook_chapter_spec.clj` (mirrors foundation's; passes — 3 examples, 0 failures). Backfilled missing schema `:description`s: `resource-pools` (table + all 5 fields), `tools.web_search.provider`/`.api-key`, the three `:compaction` maps (`:async?`, `:head`, `:strategy`, `:threshold`, plus the crew-level map's own top description), `attention.break-glass.comm`/`.target`, and 8 retired fields (`tools.max-parallel`/`.defaults`/`.allow`/`.deny`/`.directories`, `crew.max-in-flight`, and 8 `:defaults` top-level retired fields). One `[verify]` flag in the chapter: `attention.break-glass` is declared but confirmed unused anywhere in source/features — flagged for Micah rather than asserted as functional.
+
+`bb ci` green locally (1834 spec examples + 912 feature examples, 0 failures). GitHub CI green on agent main.
+
+main-sha: isaac-agent 7509c43d48f5d7ff8be302d915938b3820cd4832
