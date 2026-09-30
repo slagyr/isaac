@@ -4,8 +4,10 @@ title: isaac init scaffolds through a berth (foundation names no module's starte
 status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-09-30T02:44:10Z
-updated_at: 2026-09-30T19:03:01Z
+updated_at: 2026-09-30T22:21:55Z
 blocked_by:
     - isaac-on0o
 ---
@@ -81,3 +83,20 @@ above the fold in this session — regenerate with `git diff
 the pushed branch), or bless this bean to touch that file too. Bean stays
 `in-progress`; branch `bean/isaac-82nx` is pushed and ready to land the
 moment the init.feature question is resolved.
+
+## Landed on main
+
+Micah retired the two scaffold-era `features/cli/init.feature` scenarios
+directly on `isaac-foundation` main (`2eefeb2`), unblocking the gate.
+Rebased `bean/isaac-82nx` onto that (dropped my own init.feature edit,
+took main's version — no diff left on that file), re-ran `bb spec`,
+`bb jvm-spec`, `bb features`, `bb features-slow` under an isolated HOME
+(same pre-existing failure sets as before, byte-identical to a from-
+scratch vanilla-main run; `bb features` and the slow scenarios I could
+individually re-check are green). `bb bean-gate verify isaac-82nx
+--dir isaac-foundation=<worktree>` now PASSes. Squashed to one commit,
+pushed straight to main, fast-forwarded the shared `isaac-foundation`
+checkout, and confirmed all three GitHub Actions CI jobs (Slow features,
+Server boot, verify/`bb ci`) green on the landed commit.
+
+main-sha: isaac-foundation 98de59a
