@@ -1,13 +1,11 @@
 ---
 # isaac-8evx
 title: Retry wake of a pool-held turn resolves its resource pool as unknown
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-30T18:14:06Z
-updated_at: 2026-09-30T21:08:54Z
+updated_at: 2026-09-30T21:10:08Z
 ---
 
 Found 2026-09-30 by the foreman restructure (isaac-sb9f). A turn held by a closed resource pool: the first wake correctly resolves the pool (known, closed). A later wake via `foreman retry` (which loads a fresh config snapshot and calls `isaac.agent.turn.worker/tick!`) resolves the same pool as `:unknown-resource-pool`, with the same pool file on disk. Foreman scenarios in features/foreman/turn_action.feature: "a refused submission stays pending…" and "a retry after Foreman lost the request id…" fail on agent 123d718 and pass on the old pins. Root cause not yet traced (resource-pool resolution on the wake path vs the config snapshot tick! uses).
@@ -95,3 +93,7 @@ session while landing isaac-2tez, isaac-n8uv, and isaac-n8rb; unrelated
 to this fix.
 
 main-sha: isaac-agent f9530426d04b6f66f17ae51f6f9a1a697531b39d
+
+## Planner verification (2026-09-30)
+
+Verified: landed on isaac-agent main with a red-first test; CI green.
