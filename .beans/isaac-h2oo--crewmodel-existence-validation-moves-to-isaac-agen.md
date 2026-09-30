@@ -1,13 +1,11 @@
 ---
 # isaac-h2oo
 title: Crew/model existence validation moves to isaac-agent
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T04:43:58Z
+updated_at: 2026-09-30T04:45:27Z
 ---
 
 ## Ruling
@@ -190,3 +188,7 @@ All four affected repos' GitHub Actions CI confirmed green on main after these l
 - `main-sha: isaac-server c9b6644f9c8d6e0d9fb3ef46b33d8be99a3596ad` (isaac-6pqo's landing; confirmed green, no change made here)
 
 Held status lifted — no longer blocked. Handing off `tag=unverified` for planner review; status stays `in-progress` per the ungated flow.
+
+## Planner verification (2026-09-30)
+
+Verified: foundation main `fd91dd1` CI green on all three jobs (verify, server-boot-smoke, slow-features); foundation `src/` has no crew/model existence code; agent contributes `:crew-exists?`/`:model-exists?` through `:isaac.config/validation-ref`. Note for later: contributed refs are registered into apron's global lexicon (`register-contributed-existence-refs!` via `cs/update-lexicon!`) and only ever added. A module uninstalled at runtime would leave its ref registered until restart. Harmless today (refs are keyed by name and the check reads live config), but worth remembering if modules start unloading.
