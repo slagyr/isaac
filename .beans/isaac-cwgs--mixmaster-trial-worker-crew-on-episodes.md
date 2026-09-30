@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-29T23:32:13Z
-updated_at: 2026-09-29T23:41:07Z
+updated_at: 2026-09-30T02:39:02Z
 blocked_by:
     - isaac-jvwr
     - isaac-3ljt
@@ -43,3 +43,7 @@ needs, while `:context-mode :reset` keeps old turns out of the request.
 - [x] Crew + soul + session created; `config validate` clean (2026-09-29: crew/mixmaster.edn + mixmaster.md on zanebot, session isaac-work-4 with no tags so the isaac-work pool never picks it; hail it with --band isaac-work --session isaac-work-4. Recall half-life is global only ([:recall :half-life]), left at 30d.)
 - [ ] First bean hailed to isaac-work-4; recall seen in the request
 - [ ] Findings written back here after ~5 beans
+
+## 2026-09-30 deploy
+
+Episodes 8ef1955 live (recall rides the prompt, seal skips recall, :episodes crew overrides, append-checkpoint!); agent a6231af (parallel queue). Mixmaster crew now has :episodes {:recall {:half-life 7}}. His recall reaches the model from here on; jvwr landed via a Scrapper, 0lb7 was his first bean (no recall, crashed at checkpoint after landing).
