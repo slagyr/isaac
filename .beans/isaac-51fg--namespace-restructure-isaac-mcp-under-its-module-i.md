@@ -4,12 +4,13 @@ title: 'Namespace restructure: isaac-mcp under its module id'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T17:47:27Z
+updated_at: 2026-09-30T22:28:56Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
-    - isaac-wqs8
 ---
 
 Micah, 2026-09-30. **A module's code lives under its module id.** isaac-foundation → `isaac.foundation.*`, isaac-agent → `isaac.agent.*` (e.g. `isaac.session.frequencies` → `isaac.agent.frequencies`), isaac-claude-code (`:isaac.provider.claude-code`) → `isaac.provider.claude-code.*`, isaac-episodes (`:isaac.session.episodes`) → `isaac.session.episodes.*`, comm modules → `isaac.comm.<name>.*`, and so on. Source, specs, spec-support, step namespaces, manifest symbols (`:factory`, berth entries), bb tasks and docs all move together. Clean cutover: no alias namespaces.
@@ -48,3 +49,16 @@ Namespace rename done and pushed to `bean/isaac-51fg`, **not merged to main**: `
 **Live-config greps (read-only, no edits made).** Both zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config` have zero matches for `isaac.mcp` in any form. No config edits required on either host.
 
 **Left undone:** the squash-merge to main. Work is on `bean/isaac-51fg` (pushed to origin, commit `94eccfa`), local worktree `../isaac-mcp-isaac-51fg` still present. Re-run `bb ci` once isaac-wqs8 (isaac-acp's own namespace restructure) lands, then land this bean the normal way (squash to main, confirm CI, `--tag=unverified`).
+
+
+## Landed on main (2026-09-30, resumed after isaac-wqs8)
+
+isaac-acp migrated (main 07f9fb8, isaac.comm.acp.*) while this bean was blocked. Resumed in the same worktree: bumped acp pin to `07f9fb813e8f6b6e7b5f10776e30825796315ea4`, agent to `f9530426d04b6f66f17ae51f6f9a1a697531b39d`, http to `5dedcafbc0fcc199a72e1d378ba78d1db9305750` (foundation unchanged at `06d58b75bc52b3e118dc8e81569096de2532a0d4`). `isaac.comm.acp.cli` (the namespace this repo's `mcp_steps.clj` requires) kept its own name across isaac-acp's migration — only its internal requires moved to `isaac.foundation.*`/`isaac.agent.*` — so no change was needed on this repo's side beyond the pin bump.
+
+Rebased on origin/main (no new commits there), squashed the pin bump into the original rename commit, pushed directly as `7d6ee59` (`git push origin 7d6ee59:main`; not denied by the classifier), fast-forwarded the shared `isaac-mcp` checkout, and confirmed GitHub CI Tests green on `main-sha 7d6ee59` (`bb ci` job, ~42s).
+
+**main-sha: isaac-mcp 7d6ee595bd92b08d7370456bd95b00def28e1e75** (see `git -C isaac-mcp log -1 --format=%H` for the full sha; short form confirmed via `gh run watch`).
+
+**Test results, HOME-isolated (`/tmp/isaac_scratch_home_51fg`):** `bb ci` (config-bypass-lint + `bb spec` 45/45 + `bb jvm-features` 13/13) green. `bb jvm-spec` 45/45 green. `bb lint` 0 errors/0 warnings. Only benign noise: pre-existing `WARNING: resolve/reset! already refers to...` var-shadow warnings from isaac-agent's own `resource-pool`/`drive.observer` and isaac-acp's `system` namespaces (not this repo's code).
+
+Removed `isaac-wqs8` from `blocked_by` (isaac-acp has migrated) and tagged `unverified` for `/verify`. Worktree `../isaac-mcp-isaac-51fg` and branch `bean/isaac-51fg` (both local and the earlier-pushed `origin/bean/isaac-51fg`) still need cleanup — deleting next.
