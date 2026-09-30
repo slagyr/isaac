@@ -1,11 +1,11 @@
 ---
 # isaac-z90t
 title: 'isaac-handbook: module skeleton + handbook__read (chapters, TOC, multi-topic, size cap)'
-status: in-progress
+status: todo
 type: feature
 priority: high
 created_at: 2026-09-29T23:50:57Z
-updated_at: 2026-09-30T00:27:53Z
+updated_at: 2026-09-30T00:31:56Z
 ---
 
 ## Ruling
@@ -218,3 +218,6 @@ Branch `bean/isaac-z90t` pushed to `isaac-handbook` with the skeleton +
 implementation + unit specs (not merged to main; CI on that branch does not
 run per the repo's CI-on-main-only convention). `isaac-handbook.modules.edn`
 registry entry in this repo intentionally NOT added yet (no landed main sha).
+
+feature-baseline: isaac-handbook 52c00aff4375278f2f73fde3776ba59444963c2d
+feature-blob: isaac-handbook features/read.feature 2cfcee14f317f4ed8936fc522638c3c413152969
