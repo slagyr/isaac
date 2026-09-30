@@ -4,8 +4,10 @@ title: 'Namespace restructure: isaac-google under its module id'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:08:56Z
+updated_at: 2026-09-30T17:13:59Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -125,3 +127,24 @@ isaac-gmail yet — they should wait on isaac-fkqz landing, then this bean
 resuming and merging, before pinning to isaac-google. Recommend: land
 isaac-fkqz first, then re-run `bb ci` on `bean/isaac-tacl` (rebased on
 whatever isaac-google/main looks like at that point) before merging.
+
+## Landed on main
+
+main-sha: isaac-google c9c92f868db5bcd03510be70772e29c2c4003adb
+
+isaac-http landed its own migration (isaac-fkqz, main `56998543b3e5c40593d2a3ea97b16550e3731463`, `isaac.http.*`, on foundation `33ac50d` / agent `123d718`), which unblocked this bean. Resumed on the same worktree/branch:
+
+- Bumped isaac-http/isaac-http-spec/isaac-http-test-support pins (`deps.edn`, `bb.edn`) old `689d3686` → `56998543b3e5c40593d2a3ea97b16550e3731463`.
+- `isaac.http.{auth,http,oidc,oidc-fixture,server-steps}` requires needed no change — isaac-http's migration kept those names. The one real fix: `isaac.config.server-config` → `isaac.http.config.server-config` (3 mentions in `src/isaac/google/cli.clj`, 1 in `spec/isaac/google/cli_spec.clj` — a `requiring-resolve` symbol plus doc-string/comment pointers), confirmed against the new `isaac-http` tree (`src/isaac/http/config/server_config.clj`, `defn server-config`).
+- Rebased on `origin/main` (no divergence — main hadn't moved), squashed the two working commits into one, pushed `c9c92f8:main` directly (push was accepted, not denied by the classifier).
+- Fast-forwarded the shared `isaac-google` checkout to `c9c92f8`; deleted branch `bean/isaac-tacl` and its worktree.
+
+**Test results (HOME isolated at `/tmp/isaac_scratch_home_tacl`).** `bb config-bypass-lint`: ok. `bb lint`: 101 errors/16 warnings, same pre-existing count as pristine main (not a regression). `bb spec`: **268/268 green** (the isaac-agent/isaac-http `:comms` factory collision from the earlier note is gone now that isaac-http contributes `isaac.http.comm.factory`-shaped names consistent with the new agent — resolved by isaac-http's own migration, not by anything here). `bb jvm-spec`: **268/268 green**. `bb jvm-features`: **44/44 green** (the earlier `FileNotFoundException` boot failure is gone — isaac-http's `isaac.http.server-steps` no longer requires any bare pre-rename namespace). `bb ci`: green end-to-end.
+
+**GitHub CI on main-sha c9c92f8:** `CI Tests / verify` — green (`gh run watch 36749731708`, 43s).
+
+Full grep of the tracked tree for any remaining pre-rename namespace token (foundation/agent/http) outside the justified exceptions in the prior note: 0 hits.
+
+No live-config edits were needed (checked before landing, see above — no hits on zanebot or yopp for any renamed namespace token).
+
+**For isaac-gchat / isaac-gmail:** pin isaac-google to `c9c92f868db5bcd03510be70772e29c2c4003adb`.
