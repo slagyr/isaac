@@ -1,11 +1,11 @@
 ---
 # isaac-0lb7
 title: 'Episodes config: recall moves under :episodes; crews may override :episodes'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-29T23:54:31Z
-updated_at: 2026-09-30T00:08:35Z
+updated_at: 2026-09-30T00:10:22Z
 ---
 
 Likely repo: **isaac-episodes**. Design: Micah + planner, 2026-09-29.
