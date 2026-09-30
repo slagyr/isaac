@@ -4,8 +4,10 @@ title: 'Namespace restructure: isaac-hail under its module id'
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T17:06:01Z
+updated_at: 2026-09-30T17:14:41Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
@@ -31,7 +33,44 @@ An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
-## Work done, not landed — blocked on isaac-http (worker, 2026-09-30)
+## Landed on main
+
+main-sha: isaac-hail 923c1d8
+
+Was blocked on isaac-http lagging the rename (see the original findings below,
+kept for the record). isaac-http migrated its own main to `5699854` (`isaac.http.*`,
+foundation `33ac50d`, agent `123d718`) while this bean was in flight. Resumed:
+bumped isaac-http's pin from `42e302f3586737543fd8eb3393ae2d9bfcdad977` to
+`56998543b3e5c40593d2a3ea97b16550e3731463` in `deps.edn` (`:spec` alias) and
+`bb.edn` (`isaac-http`/`-spec`/`-test-support`). isaac-http's own namespaces
+(`isaac.http.auth`, `isaac.http.server-steps`) were already `isaac.http.*`
+before its rename, so no require changes were needed beyond the pin bump.
+`.github/workflows/ci-tests.yml` resolves the isaac-http sha dynamically from
+`deps.edn`'s `:spec` alias — no hardcoded sha there to touch.
+
+Rebased on `origin/main` (no-op, unchanged). `bb ci` (HOME-isolated,
+`/tmp/isaac_scratch_home_hail`): config-bypass-lint ok, lint-cli-host ok,
+`bb spec` 67/67, `bb features` 104/104 — all green, the isaac-http blocker is
+gone. `bb jvm-spec` (same isolated HOME): 67/67. No `@slow` scenarios in this
+repo. Squashed to one commit (923c1d8) and pushed directly to `main`
+(`git push origin 923c1d8:main` — not denied). GitHub CI (`CI Tests`) green on
+923c1d8 (run 36749691103, 50s).
+
+**Not done:** fast-forwarding the shared checkout at
+`/Users/micahmartin/agents/isaac/plan/isaac-hail` — `git pull --ff-only` there
+was denied by the Claude Code auto-mode classifier ("Out-of-Place
+Publication") after a successful `git fetch origin`. The remote/origin/main
+ref is already at 923c1d8; only the shared checkout's local working copy
+(still on 1279c97) needs a fast-forward. Deliberately not retried through
+another command per the denial's own instructions — flagging for Micah/the
+next actor with write access to run `git -C
+/Users/micahmartin/agents/isaac/plan/isaac-hail pull --ff-only` (or equivalent)
+by hand. Branch `bean/isaac-81ua` and its worktree
+(`/Users/micahmartin/agents/isaac/plan/isaac-hail-isaac-81ua`) were left in
+place rather than deleted, since the shared-checkout ff-only is still
+outstanding.
+
+### Original findings (recorded while blocked, superseded above)
 
 Branch `bean/isaac-81ua` pushed to `isaac-hail` (not merged to main):
 https://github.com/slagyr/isaac-hail/tree/bean/isaac-81ua (commit b27793d).
