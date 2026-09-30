@@ -1,11 +1,13 @@
 ---
 # isaac-9o5c
 title: 'Handbook chapter: isaac-handbook'
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:37Z
-updated_at: 2026-09-30T04:56:37Z
+updated_at: 2026-09-30T06:33:36Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,19 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+
+
+## Worker notes (isaac-9o5c)
+
+Chapter rewritten to the foundation/agent/mcp standard: `## Reading the
+handbook`, `## Changing config`, `## Granting the tools`, `## Shipping a
+chapter`, each with `### Troubleshooting`. Flags handbook__read reference
+topics (module:/crew:/config: ids) as drafted but not yet built (isaac-niqx,
+`features/reference.feature` still `@wip`) — `[verify]` once that lands.
+`handbook.max-chars` already had a schema `:description` (isaac-lshz).
+Added `spec/isaac/handbook/handbook_chapter_spec.clj`, mirroring
+foundation/agent/mcp's raw-manifest lint pattern. `bb ci` green locally
+(pinned deps) and on GitHub CI.
+
+main-sha: a0cc953
