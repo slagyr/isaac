@@ -1,11 +1,11 @@
 ---
 # isaac-lshz
 title: 'isaac-handbook: handbook__configure (atomic multi-set, prose fields)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-30T00:28:23Z
-updated_at: 2026-09-30T05:13:53Z
+updated_at: 2026-09-30T05:22:09Z
 blocked_by:
     - isaac-z90t
     - isaac-cvri
@@ -342,3 +342,23 @@ fixture step's actual write, if that is judged acceptable.
 
 feature-baseline: isaac-handbook a78681892a68058aaa0ec4154e3014b69fe41fde
 feature-blob: isaac-handbook features/configure.feature 02a34af0afbc22df4ef655ae8dd53ec0e94e952a
+
+## Landed on main (2026-09-30)
+
+Rebased `bean/isaac-lshz` onto isaac-handbook main (taking main's
+re-baselined `configure.feature` as-is), removed all 12 `@wip` tags (no
+other scenario edits), `bb ci` green (37 spec + 21 feature examples), gate
+PASS, squash-merged, gate re-verified PASS on the squash commit, pushed.
+GitHub CI (`verify` job) green on the landed commit.
+
+main-sha: isaac-handbook 57705bff9bbc0b05f84dc13fd2f43a7956779cec
+
+Note for later: the foundation step quirk that caused the earlier "3
+scenarios can't pass" conflict is real but no longer blocking (the
+re-baseline made the keyword assertion the honest one, sidestepping it) —
+`isaac.foundation.fs-steps/parse-isaac-value` still special-cases
+`path == "model"` differently depending on whether its `file-path` arg is
+absolute (write side) or the raw relative path as typed in a feature (read
+side). Worth a small foundation-side fix someday so `EDN contains`
+assertions don't have to know which form a given path renders as; not
+scoped to this bean.
