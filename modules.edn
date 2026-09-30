@@ -1,8 +1,8 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "505a60edfab0ab91115e143f73a922d0ff54eb37"}
+                                      :git/sha "a6231af17d85b4aca5e3f232cb7bb02c5e14ad94"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
-                                      :git/sha "c0a6c82fbf340597740cb638468c4a9bc301d605"}
+                                      :git/sha "8ef1955d51202cd650b73fda70ce937dc1d35d38"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
                                       :git/sha "591b5a0c6c9e7906a4772cd57e5221266d304e8b"}

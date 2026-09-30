@@ -1,11 +1,11 @@
 ---
 # isaac-e9jl
 title: Turn queue runs one turn at a time across the server
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-30T00:04:30Z
-updated_at: 2026-09-30T00:04:30Z
+updated_at: 2026-09-30T00:57:56Z
 ---
 
 Likely repo: **isaac-agent**. Critical: live on zanebot since the 2026-09-29 train (agent 505a60e).
@@ -47,3 +47,7 @@ isaac-work-4 sat `queued` behind a Scrapper turn (b0ae2ae6) running since
 
 feature-baseline: isaac-agent 3f3cabb2d4be8c74e67f281e6bace4084dfe0fe1
 feature-blob: isaac-agent features/turn/turn_store.feature df09889c67cf4c959ba3959b42db544c554cb85e 174
+
+## Summary of Changes
+
+The queue tick claims each runnable turn and starts it on its own thread (bound-fn + future), then moves on; process-record!'s bookkeeping runs when that turn ends. Per-session serialization unchanged. Test-only worker/await-idle! drains started turns; finished futures leave the registry (planner fix on review: the registry otherwise grew forever in production). New steps: 'session X is waiting on the model', 'the model releases session X'. Main 38e2789; deploy hotfix a6231af = 505a60e + this (branch hotfix/e9jl). bb spec + jvm-spec 1827/0, features 917/0; gate PASS.
