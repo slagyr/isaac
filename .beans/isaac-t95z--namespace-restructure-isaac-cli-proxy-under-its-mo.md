@@ -5,10 +5,11 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:24Z
-updated_at: 2026-09-30T18:13:04Z
+updated_at: 2026-09-30T18:16:33Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
+    - isaac-wqs8
 ---
 
 Micah, 2026-09-30. **A module's code lives under its module id.** isaac-foundation → `isaac.foundation.*`, isaac-agent → `isaac.agent.*` (e.g. `isaac.session.frequencies` → `isaac.agent.frequencies`), isaac-claude-code (`:isaac.provider.claude-code`) → `isaac.provider.claude-code.*`, isaac-episodes (`:isaac.session.episodes`) → `isaac.session.episodes.*`, comm modules → `isaac.comm.<name>.*`, and so on. Source, specs, spec-support, step namespaces, manifest symbols (`:factory`, berth entries), bb tasks and docs all move together. Clean cutover: no alias namespaces.
@@ -51,4 +52,16 @@ Reproduces identically on a **fresh GitHub Actions runner** (dispatched `CI Test
 
 **Recommendation for the planner:** either (a) isaac-cli-server and isaac-acp need their own isaac-vyqs migration beans landed first (their manifests both also declare the old `:factory isaac.module.protocol/module`, which would itself fail to resolve against the new foundation the moment they're actually activated, not just schema-composed — so they need to migrate regardless), or (b) `features/integration.feature`'s harness needs to stop dynamically resolving real, unmigrated sibling-repo coordinates during discovery (a bigger change, out of scope for a namespace-rename bean). Not proposing either myself — flagging for a decision.
 
-**Not yet done because of the blocker:** the zanebot/yopp live-config greps, squash+push to main, and final `bb ci`/CI confirmation. Branch `bean/isaac-t95z` and worktree `../isaac-cli-proxy-isaac-t95z` are left in place (not deleted) pending a decision.
+**Not yet done because of the blocker:** squash+push to main, and final `bb ci`/CI confirmation. Branch `bean/isaac-t95z` and worktree `../isaac-cli-proxy-isaac-t95z` are left in place (not deleted) pending a decision.
+
+## Follow-up (2026-09-30, later) — isaac-cli-server bump isolated the real blocker to isaac-acp
+
+Coordinator confirmed isaac-cli-server has migrated (main `f1477a7`, isaac-ps7a). Bumped this repo's isaac-cli-server pin from `7c7774b8`/`007da61d` (both spots: deps.edn/bb.edn's product pin, and `integration_steps.clj`'s own hardcoded `cli-server-git-coord`) to `f1477a71c2efa8f7992fe4a7243eb14cc74c3e7e`, committed on `bean/isaac-t95z`, and re-ran `bb features-slow`.
+
+**Result: the `:comms` config-schema collision is gone.** 3 of 6 `features/integration.feature` scenarios now pass cleanly (the plain remote/token ones). The remaining 3 — the ACP-specific scenarios (`isaac-lcay` generic pipe, `isaac-dqy9` ACP session inside the server, `isaac-dqy9` remote prompt turn visibility) — now fail differently:
+```
+Could not locate isaac/comm/registry.bb, isaac/comm/registry.clj or isaac/comm/registry.cljc on classpath.
+```
+(and one masked earlier in the same run as "Reached EOF before ACP initialize response" / "Could not locate isaac/cli/api.bb..."). This confirms the collision genuinely came from isaac-cli-server (now fixed) — the remaining failure is isaac-acp still requiring old, pre-rename namespaces (`isaac.comm.registry`, `isaac.cli.api`) that no longer exist against the renamed foundation/agent. Per the coordinator: isaac-acp's own migration (isaac-wqs8) waits on isaac-episodes, which waits on a push by Micah — out of this bean's control.
+
+**Stopping here per the coordinator's instruction.** `blocked_by: isaac-wqs8` added above. Pin bump committed and pushed to `bean/isaac-t95z` (not main). `bb spec` 27/27, `bb features` 29/29, both lints green with the new pin. `bb features-slow` is 3/6 (the 3 ACP scenarios blocked on isaac-wqs8 → isaac-acp migration).
