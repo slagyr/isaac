@@ -1,11 +1,13 @@
 ---
 # isaac-8m6y
 title: 'Handbook chapter: isaac-google'
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T04:56:36Z
+updated_at: 2026-09-30T05:41:01Z
 parent: isaac-u5f5
 ---
 
@@ -29,3 +31,24 @@ Part of the "handbook chapters for every module" milestone (Micah, 2026-09-30).
 ## Ungated
 
 Documentation plus a lint spec; no behavior change. Worker hands off `tag=unverified`; Micah reviews the chapter text.
+
+## Worker notes
+
+Shipped `src/isaac/google/handbook.md` (~3500 words) plus
+`spec/isaac/google/handbook_chapter_spec.clj`, manifest gained `:handbook`
+and a version bump (0.1.15 → 0.1.16). All schema fields already carried a
+`:description`; none needed adding.
+
+Pins: **not bumped**. Followed isaac-cron's fallback (isaac-lp5y) instead —
+the lint spec reads raw manifests for `known-cli-commands` rather than
+`isaac.module.berths/module-report`, which this module's current
+foundation pin (9ab25271…, same as isaac-cron's) doesn't need for this
+pattern. `bb ci` is green at the existing pins (isaac-foundation
+9ab25271…, isaac-agent b6eb475c…); no isaac-agent/isaac-http bump was
+needed for this bean.
+
+One `[verify]`-worthy note left inline in the chapter itself is absent —
+every claim traced to source/manifest/features directly, so no `[verify]`
+markers were needed in the final text.
+
+main-sha: isaac-google cd43d0c845a402c4b779d3a7aca1ead9c7100a93
