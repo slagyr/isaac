@@ -1,11 +1,11 @@
 ---
 # isaac-lshz
 title: 'isaac-handbook: handbook__configure (atomic multi-set, prose fields)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-30T00:28:23Z
-updated_at: 2026-09-30T04:03:09Z
+updated_at: 2026-09-30T05:09:26Z
 blocked_by:
     - isaac-z90t
     - isaac-cvri
@@ -250,3 +250,92 @@ feature-blob: isaac-handbook features/configure.feature de9bc2198c4bdfab38fc9c8b
 
 feature-baseline: isaac-handbook 09cc43bcadc019fe25dc5e94178f91dc6a6af2a1
 feature-blob: isaac-handbook features/configure.feature 05cc0b80d44958a94b268fc2c39f1d6b8f774a57
+
+## Conflict — 2 of 12 scenarios cannot pass as written (2026-09-30)
+
+Implemented `handbook__configure` on `bean/isaac-lshz` (isaac-handbook,
+commit e65718c, pushed): atomic multi-set/unset through foundation's
+`isaac.config.mutate/set-many!`, whole-entity + companion-field writes,
+`${VAR}`-secret-write refusal, `:handbook/configure` logging, manifest
+grant, isaac-handbook's own `:handbook` chapter, README tools section.
+Bumped isaac-handbook's foundation pin to `fd91dd101ff41ed5ea85d1b245536a9b0bb7afb9`
+(current main: set-many! + isaac-c4em placement fix + isaac-h2oo's
+validator-ref relocation, which landed live mid-session) and its isaac-agent
+pin to `7d3910f2c4d02bcbaf6d8bc87f166c0ceb59b58a` (isaac-h2oo's agent-side
+lexicon contribution — required, since the old agent pin predates the
+validator-ref move and no longer boots against new foundation). Added
+isaac-cron as a `:features`-only test dependency (pinned
+`9c13a6a43c911f3d4595b31bca295615c75bbb9d`) — the cron-entity scenarios need
+real `:cron` schema on the classpath (isaac-cron is `:builtin? true`,
+auto-discovered via `isaac.module.discovery/classpath-builtin-index`; without
+it "cron.hull-watch" is refused as an unrecognized root key, correctly).
+
+8 of 12 scenarios are green with these changes. Real (non-dev-local) `bb ci`
+against the bumped pins is green. `configure.feature` itself is untouched
+(`@wip` intact) — I did not remove it, since removing it selectively would
+misrepresent the contract. Two scenarios are conflicts, not implementation
+gaps:
+
+**1. "atomic multi-set writes two fields that are only valid together"**
+(`models.riptide.model` / `models.riptide.provider`) asserts the new
+`riptide` model lands inline in `isaac.edn`. But `models` is declared
+`:entity-dir "models"` in isaac-agent's manifest, and the Background sets
+`:prefer-entity-files true` — so per the landed isaac-c4em rule ("new entry:
+its own entity file if `:prefer-entity-files` is true, otherwise inline"),
+a brand-new `models.riptide` correctly becomes its own `models/riptide.edn`
+file. Confirmed empirically (it does land there, `models/riptide.edn`
+exists with the right content) and confirmed against foundation's own
+already-passing precedent,
+`isaac-foundation/features/cli/config_set_many.feature` scenario "a new
+whole-entity value in a batch follows the same placement preference as
+config set (isaac-c4em)" — same pattern, same rule, asserts the file
+placement (not inline) for exactly this reason. The scenario's choice of
+`models.*` for a "two fields, inline" example predates realizing `models` is
+entity-dir; it needs a different root key (or an assertion against
+`models/riptide.edn` instead of `isaac.edn`) to match the rule this same
+bean's own prerequisite (isaac-cvri/isaac-c4em) already landed. Per
+`hail-bean-work-gate`: "the scenarios themselves are wrong ... contradict
+the code" → conflict for the planner, not a worker fix. No tool-specific
+placement override is applicable per this bean's own Decided-round-3 ruling.
+
+**2. Three scenarios** ("an invalid pair in the batch refuses the whole
+call...", "unset removes a field through the same tool", "an unrecognized
+config path refuses the whole call") each assert, after a refused or
+partial call, that `config/crew/marvin.edn`'s `model` field is unchanged —
+via `And the isaac file "config/crew/marvin.edn" EDN contains: | model |
+grover |`. This can never pass, independent of `handbook__configure`:
+isaac-foundation's own spec-support,
+`isaac.foundation.fs-steps/parse-isaac-value`, special-cases `path ==
+"model"` to a keyword only when its `file-path` argument contains
+`"/config/crew/"` (leading slash). The Given-step fixture
+(`isaac-edn-file-exists`) calls it with the ABSOLUTE path (has the leading
+slash, from `<root>/config/crew/marvin.edn`) → writes `:grover` (keyword).
+The Then-step assertion (`isaac-file-edn-contains`) calls it with the RAW
+relative path exactly as typed in the feature (`"config/crew/marvin.edn"`,
+no leading slash) → the same check fails → expects the literal string
+`"grover"`. Reproduced in complete isolation, with no `handbook__configure`
+code in the picture at all: a bare `Given the isaac EDN file
+"config/crew/marvin.edn" exists with: model | grover` followed by `Then the
+isaac file "config/crew/marvin.edn" EDN contains: model | grover` already
+fails with `Expected: "grover" got: :grover`. This is a pre-existing
+asymmetry in `isaac-foundation`'s shared `spec-support` (write path vs. read
+path pass a differently-shaped `file-path` into the same special-case
+check), unrelated to and unfixable from isaac-handbook. It would affect any
+feature anywhere that both seeds a crew's `:model` this way AND later
+asserts it unchanged with an exact `EDN contains` check — scenarios 1, 5,
+and 6 avoid it only because they assert the field **we just wrote**
+(a plain string, matching the read side's un-prefixed-path expectation).
+
+Left `in-progress`, not `unverified` — no gate run yet (blocked pre-suite,
+not post-green). Branch `bean/isaac-lshz` pushed to isaac-handbook with the
+implementation, deps bumps, and a full spec file (`configure_spec.clj`, 8
+examples). Worktree left at `isaac-handbook-lshz` for continuity. Options
+for the planner: (a) re-baseline the multi-set scenario against
+`models/riptide.edn` placement (or swap its fixture path to a non-entity-dir
+key), and either re-baseline the three "unchanged model field" scenarios to
+a substring check (`does not contain`) the way
+`config_set_undeclared_key.feature` does, or fix the `parse-isaac-value`
+asymmetry in `isaac-foundation`'s spec-support (small, mechanical, but a
+separate repo/bean); (b) accept the current behavior and re-baseline those
+three scenarios' literal expectations to `:grover` (keyword) to match the
+fixture step's actual write, if that is judged acceptable.
