@@ -1,13 +1,11 @@
 ---
 # isaac-46ty
 title: Installed launcher (libexec/bb.edn) misses resources/ and pins apron 3.0.0
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-09-30T17:12:21Z
-updated_at: 2026-09-30T17:19:04Z
+updated_at: 2026-09-30T17:19:48Z
 ---
 
 Found 2026-09-30 while restoring foundation's http boot smoke. The installed CLI (brew keg: /opt/homebrew/bin/isaac -> <keg>/libexec/isaac-foundation/libexec/isaac) runs `bb --config libexec/bb.edn`. That file has `:paths ["../src"]` (no `../resources`) and its own `:deps` with c3kit apron **3.0.0**, while deps.edn/bb.edn use apron 3.2.1.
@@ -35,3 +33,7 @@ prints only `OK - config is valid`.
 schema error — pre-existing environmental issue, unrelated to this bean. `bb spec` / `bb jvm-spec` with HOME
 isolated show identical pre-existing failure counts on patched vs unpatched trees (the two new
 `libexec_bb_edn_spec.clj` examples pass; no regressions).
+
+## Planner verification (2026-09-30)
+
+Verified: libexec/bb.edn now has ../resources and the same :deps as deps.edn; guard spec added; CI green on a7129dd (all 3 jobs).
