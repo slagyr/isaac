@@ -1,11 +1,11 @@
 ---
 # isaac-z90t
 title: 'isaac-handbook: module skeleton + handbook__read (chapters, TOC, multi-topic, size cap)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-29T23:50:57Z
-updated_at: 2026-09-30T00:31:56Z
+updated_at: 2026-09-30T00:32:27Z
 ---
 
 ## Ruling
