@@ -1,11 +1,11 @@
 ---
 # isaac-n140
 title: Derive entity-table sets and display names from the schema itself
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:59:21Z
+updated_at: 2026-09-30T02:59:49Z
 blocked_by:
     - isaac-v38i
 ---
