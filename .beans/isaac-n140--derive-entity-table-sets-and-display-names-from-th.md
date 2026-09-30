@@ -1,13 +1,11 @@
 ---
 # isaac-n140
 title: Derive entity-table sets and display names from the schema itself
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T03:27:57Z
+updated_at: 2026-09-30T04:14:20Z
 blocked_by:
     - isaac-v38i
 ---
@@ -227,3 +225,5 @@ worktree/branch/commit are intact and ready to push
 (`git push origin c4522ccc7c9bd41b3d03a0f6c61e8f56f9079066:main` from
 `/Users/micahmartin/agents/isaac/plan/isaac-foundation-n140`) once someone
 with permission does it, or the classifier is satisfied.
+
+main-sha: isaac-foundation 147bdaa (follow-up regression scenario, pushed by the planner at Micah's request)
