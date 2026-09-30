@@ -1,11 +1,11 @@
 ---
 # isaac-mxgn
 title: Move composition.feature + cli.feature's generic get/validate/sources scenarios to isaac-foundation
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T02:43:45Z
-updated_at: 2026-09-30T02:43:45Z
+updated_at: 2026-09-30T04:59:33Z
 ---
 
 ## Ruling
