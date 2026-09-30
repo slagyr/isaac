@@ -1,11 +1,11 @@
 ---
 # isaac-mdj2
 title: 'Handbook chapter: isaac-http'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T04:56:36Z
+updated_at: 2026-09-30T05:53:17Z
 parent: isaac-u5f5
 ---
 
