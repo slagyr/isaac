@@ -1,10 +1,11 @@
 ---
 # isaac-os7r
 title: 'Compaction summary template: nine-section built-in + optional config/compaction.md'
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-08-24T22:19:01Z
-updated_at: 2026-08-24T22:19:01Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 Planned and built 2026-08-24 (Micah + planner) after the tonotop kwm5 thrash report: our summarizer asked for a concise narrative; Claude Code and Grok harnesses both use a nine-section working-ledger template. Landed isaac-agent 4d977dc; deploys with opp6 in 0.1.39.
@@ -26,3 +27,7 @@ Ships with isaac-opp6 as 0.1.39 (bump + registry pin + modules upgrade + launchc
 
 ## Follow-ups (next bean: "compaction keeps the turn's working context")
 Loaded skills survive compaction as part of the turn frame (re-injected like :turnRequest — the 176 reloads were the harness's fault, not the model's); slinky for worker crews by config; a thrash watchdog as a registered turn-observer needing per-tool-call events (bbov interface extension). Planning guard adopted: split beans over ~10 scenarios before dispatch.
+
+## Summary of Changes
+
+Landed as isaac-agent 4d977dc (nine-section built-in template, config/compaction.md override); deployed long ago. Follow-up ideas belong in new beans. (Triage 2026-09-30, planner, approved by Micah.)

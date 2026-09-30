@@ -1,11 +1,11 @@
 ---
 # isaac-ey6q
 title: Google refresh token dies in ~15h, and invalid-grant-message blames a cause it never checks
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-24T16:16:34Z
-updated_at: 2026-09-24T16:16:34Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 Repo: **isaac-google** (`src/isaac/google/oauth.clj`, `src/isaac/google/token.clj`).
@@ -234,3 +234,7 @@ mishandled.
 If it **does** fail again on the same clock, the scope was not the whole story
 and the next suspect is whatever else in the grant Google treats as Cloud —
 check the consent screen's granted scopes directly rather than the manifest.
+
+## Summary of Changes
+
+Root cause fixed and deployed (Cloud/pubsub scope removed from the user OAuth grant, isaac-google 5cdf807); the 24-hour proof window closed 2026-09-25 with no recurrence. (Triage 2026-09-30, planner, approved by Micah.)

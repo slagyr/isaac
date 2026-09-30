@@ -1,11 +1,11 @@
 ---
 # isaac-eqkb
 title: 'Epic: CLI runs inside the server process (single-writer sessions, warm CLI)'
-status: todo
+status: completed
 type: epic
 priority: high
 created_at: 2026-07-13T17:29:33Z
-updated_at: 2026-09-17T15:55:24Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 ## Goal (reopened 2026-09-17, Micah)
@@ -51,3 +51,7 @@ Stdin readers (`acp`, `mcp-bridge`, `hail send`, `config set/validate`, `auth`) 
 ## History
 
 Parked 2026-07-13 as a read-only speed daemon justified by a "1.3 s bb source-load floor"; isaac-v1la (09-04) showed that floor was redundant config resolution. Supersedes/absorbs the warm-CLI part of isaac-5zfv's motivation.
+
+## Summary of Changes
+
+Epic delivered: all six children completed (isaac-dq4v, isaac-1fwl, isaac-qvhy, isaac-gar0, isaac-kjzq, isaac-dqy9). (Triage 2026-09-30, planner, approved by Micah.)

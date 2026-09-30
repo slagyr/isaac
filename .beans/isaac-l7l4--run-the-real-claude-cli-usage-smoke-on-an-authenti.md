@@ -1,11 +1,11 @@
 ---
 # isaac-l7l4
 title: Run the @real Claude-CLI usage smoke on an authenticated host (isaac-l70j crit 5)
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-07-12T22:29:32Z
-updated_at: 2026-07-12T22:29:32Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 ## Goal
@@ -46,3 +46,7 @@ here.
 - No production code expected here; this is an environment/execution check.
 - Depends on isaac-l70j merging first (and the `:isaac.agent` pin advancing if
   the run is done against a deployed launcher rather than a source checkout).
+
+## Reasons for Scrapping
+
+Done as a side effect of isaac-6fyn (2026-09-24): ISAAC_CLAUDE_REAL=1 bb smoke ran on an authenticated host and the usage case passed; only the separate ozv9 case fails, tracked by 6fyn. (Triage 2026-09-30, planner, approved by Micah.)

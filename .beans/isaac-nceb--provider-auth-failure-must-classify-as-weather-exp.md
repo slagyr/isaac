@@ -1,11 +1,11 @@
 ---
 # isaac-nceb
 title: 'An empty terminal response must say why: carry the provider''s exit status and stderr, then classify'
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-20T07:34:11Z
-updated_at: 2026-09-20T18:41:26Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 **Rewritten 2026-09-20 (planner), premise corrected.** This bean was filed
@@ -49,3 +49,7 @@ which had already handed off to verify), `f479c534` (isaac-dymn work), three
 isaac-przv verify hails — plus `aacf8ca7` (isaac-e20m) at 18:04Z. Related:
 isaac-zz6d (the root cause, fixed), isaac-3wiu (the retries bound to a
 three-month-old session), isaac-v64q (429/401 mid-stream on the Responses path).
+
+## Reasons for Scrapping
+
+Superseded by landed work: isaac-claude-code carries :exit/:stderr and classifies CLI auth failures as :auth-failed; isaac-agent drive/provider-wall.clj treats auth as weather and drive/weather.clj treats :empty-terminal-response as :silence (isaac-f3hq, isaac-k4mf). (Triage 2026-09-30, planner, approved by Micah.)

@@ -1,3 +1,13 @@
+---
+# isaac-b809
+title: ""
+status: scrapped
+type: task
+priority: normal
+created_at: 2026-09-30T14:05:06Z
+updated_at: 2026-09-30T14:05:07Z
+---
+
 isaac-b809  todo   bug  [high]  discord, config
 Discord JVM spec: token added via config hot-reload never propagates — current-config stays at boot
 ---
@@ -38,3 +48,7 @@ isaac-discord. Trace the notify → watcher → reload → current-config
 chain against foundation's watching seam; fix the spec harness or the
 seam, whichever is wrong. Acceptance: that spec passes in the JVM suite
 and isaac-discord CI goes green on main.
+
+## Reasons for Scrapping
+
+Fixed by later work (isaac-oc3f Discord component, isaac-01kv repins): isaac-discord CI run 36448705167 on main shows the JVM suite at 109 examples, 0 failures, including the hot-reload spec. (Triage 2026-09-30, planner, approved by Micah.)

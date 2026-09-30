@@ -1,14 +1,14 @@
 ---
 # isaac-8cur
 title: 'claude-cli driver replays tool cycles after the fact: N identical stamps and N full transcript reads per turn'
-status: todo
+status: completed
 type: bug
 priority: normal
 tags:
     - accounting
     - claude-code
 created_at: 2026-09-20T20:32:30Z
-updated_at: 2026-09-20T20:32:52Z
+updated_at: 2026-09-30T14:05:06Z
 blocking:
     - isaac-dgod
 ---
@@ -78,3 +78,7 @@ Sibling of isaac-dgod, which owns the *value* being stamped (a turn total read
 as a current prompt size, on both claude-code and chatgpt-stateful). This bean
 owns the *frequency*. Split because they live in different modules with
 different baselines: this one is isaac-claude-code, dgod is isaac-agent.
+
+## Summary of Changes
+
+Landed under this id: isaac-claude-code claude_cli.clj replays cycles with zero usage so only the final cycle stamps the prompt size; isaac-agent drive/turn.clj stamp-provider-prompt! reads the transcript only when prompt tokens are positive. Both cite isaac-8cur. (Triage 2026-09-30, planner, approved by Micah.)

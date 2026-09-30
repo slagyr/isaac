@@ -1,11 +1,11 @@
 ---
 # isaac-3rxx
 title: 'isaac-agent: test-resources/isaac-manifest.edn shadows the real manifest under the JVM spec path'
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-09-22T22:05:28Z
-updated_at: 2026-09-22T22:05:28Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 Repo: **isaac-agent**.
@@ -33,3 +33,7 @@ green" bar).
 - the manifest spec reads the shipped manifest on both runners (name the
   fixture something else, or read it from the `resources/` path explicitly)
 - `clojure -M:spec` and `bb spec` agree: 0 failures
+
+## Summary of Changes
+
+Landed: isaac-agent spec/isaac/agent/manifest_spec.clj reads resources/isaac-manifest.edn directly instead of io/resource, with a comment on the JVM classpath shadowing. (Triage 2026-09-30, planner, approved by Micah.)

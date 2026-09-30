@@ -1,11 +1,11 @@
 ---
 # isaac-3wiu
 title: Hail routing bound a work hail to a three-month-old ad-hoc session
-status: todo
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-09-20T07:34:20Z
-updated_at: 2026-09-21T16:39:18Z
+updated_at: 2026-09-30T14:05:06Z
 blocked_by:
     - isaac-9azm
 ---
@@ -80,3 +80,7 @@ The narrow fix, if wanted: make `alternate-session` (:285) and the
 `runnable-delivery` crew fallback (:243) resolve through the band when the
 delivery has one, falling back to `delivery-crew-sessions` only for band-less
 legacy deliveries. Discard `be9d659`.
+
+## Reasons for Scrapping
+
+Moot: hail is stateless (isaac-ex4q, isaac-5gu1). Delivery records, post-restart rebinding and band-candidate spawning no longer exist, so this routing bug has nowhere to live. (Triage 2026-09-30, planner, approved by Micah.)

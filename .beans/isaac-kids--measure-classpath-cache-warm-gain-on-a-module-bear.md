@@ -1,11 +1,11 @@
 ---
 # isaac-kids
 title: Measure classpath-cache warm gain on a module-bearing root (isaac-tki3 design pt 4)
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-07-12T23:48:44Z
-updated_at: 2026-09-04T16:30:55Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 ## Goal
@@ -64,3 +64,7 @@ observation that cannot gate a green, verified code contract pre-merge.
 
 ## Superseded measurement (2026-09-04)
 Measured on zanebot, see isaac-v1la: classpath compose from cache = 3 ms (tki3/ogiu work as designed); the residual ~1.3 s is redundant config resolution, not classpath. Close or fold into isaac-v1la.
+
+## Reasons for Scrapping
+
+Superseded by isaac-v1la (completed): classpath-from-cache measured at 3ms; the residual CLI time was redundant config resolution. The bean's own note said to close or fold into v1la. (Triage 2026-09-30, planner, approved by Micah.)

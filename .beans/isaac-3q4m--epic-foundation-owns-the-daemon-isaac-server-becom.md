@@ -1,7 +1,7 @@
 ---
 # isaac-3q4m
 title: 'Epic: foundation owns the daemon; isaac-server becomes isaac-http; the server stops knowing the agent'
-status: todo
+status: completed
 type: epic
 priority: high
 tags:
@@ -10,7 +10,7 @@ tags:
     - server
     - agent
 created_at: 2026-09-11T05:22:32Z
-updated_at: 2026-09-11T05:22:32Z
+updated_at: 2026-09-30T14:05:06Z
 ---
 
 ## Why
@@ -69,3 +69,7 @@ contribute to it. The rename is last.
 Renaming `isaac server` (the command keeps its name; "server" means the
 process). The scheduler stays in foundation. Fresh-box "install every
 registry module" is an ops note, not code.
+
+## Summary of Changes
+
+Epic delivered: all eleven legs closed (vs6f, jrj0, q9j6, zgfx, yrxx, 8got, tdlz, oc3f, 1pi2, bbe0 completed; 2eec scrapped). isaac-http manifest declares :isaac.http with the route and identity berths. (Triage 2026-09-30, planner, approved by Micah.)
