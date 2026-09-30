@@ -1,11 +1,11 @@
 ---
 # isaac-fkqz
 title: 'Namespace restructure: isaac-http under its module id'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T14:12:23Z
-updated_at: 2026-09-30T14:12:23Z
+updated_at: 2026-09-30T17:07:35Z
 parent: isaac-vyqs
 blocked_by:
     - isaac-on0o
