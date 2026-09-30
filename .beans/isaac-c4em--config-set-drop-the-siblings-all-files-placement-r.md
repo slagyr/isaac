@@ -1,11 +1,11 @@
 ---
 # isaac-c4em
 title: 'config set: drop the siblings-all-files placement rule (preference only)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-30T04:01:23Z
-updated_at: 2026-09-30T04:01:23Z
+updated_at: 2026-09-30T04:04:39Z
 ---
 
 Ruling: Micah, 2026-09-30. Drop the "siblings are all files" placement rule that isaac-cvri added. Placement is just:
