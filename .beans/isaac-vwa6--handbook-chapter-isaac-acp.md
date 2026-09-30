@@ -64,3 +64,14 @@ surfacing as agent_message_chunk/agent_thought_chunk with end_turn.
 `[verify]` in the chapter: whether ACP's `promptCapabilities.text`-only
 advertisement (no image/audio) is a permanent design choice or just
 not-yet-implemented.
+
+main-sha: isaac-acp 3f9be4d (builtin flag reverted)
+
+Follow-up: `:builtin? true` changed isaac-acp's runtime loading (eager
+classpath activation per isaac-foundation's `eager-load?` /
+`classpath-builtin-index`), which a docs bean must not do. Removed the
+flag; `handbook_chapter_spec.clj` now reads isaac-acp's own manifest
+directly via `isaac.module.discovery/manifest-resource` (not
+builtin-index) and unions its `:isaac/cli` commands with
+foundation/agent's builtin commands for the CLI-mention check. `bb ci`
+green locally and on GitHub CI (run 36677650624).
