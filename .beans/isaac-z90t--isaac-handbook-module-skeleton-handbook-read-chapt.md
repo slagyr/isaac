@@ -1,11 +1,11 @@
 ---
 # isaac-z90t
 title: 'isaac-handbook: module skeleton + handbook__read (chapters, TOC, multi-topic, size cap)'
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-09-29T23:50:57Z
-updated_at: 2026-09-30T00:32:27Z
+updated_at: 2026-09-30T00:41:08Z
 ---
 
 ## Ruling
@@ -221,3 +221,19 @@ registry entry in this repo intentionally NOT added yet (no landed main sha).
 
 feature-baseline: isaac-handbook 52c00aff4375278f2f73fde3776ba59444963c2d
 feature-blob: isaac-handbook features/read.feature 2cfcee14f317f4ed8936fc522638c3c413152969
+
+## Landed on main (2026-09-30)
+
+main-sha: isaac-handbook 476a8cc96cbe9bc6333ba40d2da58bd31eebcc29
+
+Re-baselined fixture (manifest-only marigold.charts/bridge/longwave, no
+:factory/deps.edn/src) fixed the activation conflict from the earlier note.
+All 7 scenarios green (`bb features`), plus 29 unit-spec examples
+(`bb spec`) including new specs for `isaac.handbook.tools` and
+`isaac.handbook.module`. `bb bean-gate verify isaac-z90t --dir
+isaac-handbook=... --ref isaac-handbook=main` passed at 476a8cc. GitHub
+Actions CI green on main (run 36651304234). Added `:isaac.handbook` to
+`isaac/modules.edn` (this commit) pointing at the same main sha — every
+other module in that registry is registered at creation time, so
+isaac-handbook follows suit. Registry-only: no `modules install`/`upgrade`
+run on zanebot or yopp, per the brief.

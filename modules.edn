@@ -51,4 +51,7 @@
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
                                       :git/sha "8d9ab8aea1026ca88d4d7d5af24deceb8bdf58f3"}
-                              :desc  "Worksite registry, locks, and pools — named working directories for crews."}}
+                              :desc  "Worksite registry, locks, and pools — named working directories for crews."}
+ :isaac.handbook             {:coord {:git/url "https://github.com/slagyr/isaac-handbook.git"
+                                      :git/sha "476a8cc96cbe9bc6333ba40d2da58bd31eebcc29"}
+                              :desc  "Isaac's operating handbook (POH) — handbook__read surfaces installed modules' handbook chapters to a crew."}}
