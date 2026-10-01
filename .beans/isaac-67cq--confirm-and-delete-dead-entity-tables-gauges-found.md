@@ -4,8 +4,10 @@ title: Confirm and delete dead entity tables (gauges, foundries, berths)
 status: in-progress
 type: task
 priority: low
+tags:
+    - unverified
 created_at: 2026-09-30T02:44:10Z
-updated_at: 2026-10-01T05:24:28Z
+updated_at: 2026-10-01T05:47:07Z
 blocked_by:
     - isaac-on0o
 ---
@@ -94,3 +96,73 @@ No code changed; moved to `draft` pending a re-scope decision.
 ## Re-scope (Micah, 2026-10-01)
 
 The tables stay as foundation test-fixture vocabulary. What goes: foundation production code that exists only for that fixture. Move `:gauge-exists?` and `:berth-exists?` (and `known-gauge-ids`/`known-berth-ids`) out of `src/isaac/foundation/config/validation_lexicon.clj`; the marigold.chartroom fixture contributes them itself through `:isaac.config/validation-ref`, the same way isaac-agent contributes `:crew-exists?`/`:model-exists?`. No behavior change; every spec that uses them stays green. Acceptance: grep shows no gauge/berth/foundry vocabulary in foundation `src/`; `bb ci`, `bb features-slow`, `bb jvm-spec` green. Ungated.
+
+## Landed on main (worker, 2026-10-01)
+
+`:gauge-exists?`/`:berth-exists?` and `known-gauge-ids`/`known-berth-ids` are
+out of `isaac-foundation/src/isaac/foundation/config/validation_lexicon.clj`.
+`spec/isaac/foundation/config/marigold.clj`'s `:marigold.chartroom` fixture now
+owns `known-gauge-ids`/`known-berth-ids` and contributes both refs through its
+`baseline-chartroom-manifest`'s `:isaac.config/validation-ref` key, exactly
+like isaac-agent's `:crew-exists?`/`:model-exists?`. The sibling
+`spec/isaac/foundation/marigold.clj` fixture (used by load_result/
+semantic_errors/etc.) gained the matching `:isaac.config/validation-ref` berth
+declaration so a manifest combining both fixtures still composes.
+`semantic_errors_spec.clj`'s `with-redefs-fn` targets were repointed from
+`vlex/known-berth-ids`/`vlex/known-gauge-ids` to the fixture's own vars — same
+assertions, same behavior.
+
+Also dropped two other gauge/foundry-only spots that existed only for this
+fixture: `cli/common.clj`'s `present-identifiers` hard-coded `:foundry`/
+`:gauge` keyword-coercion cases (no real module has either field; verified
+unused by re-running the full spec suite with them removed — identical
+failure count), and two doc-comment examples in `mutate.clj` that cited
+`:berth-exists?`/`:gauge-exists?`/`"berths, relays"` as if they were
+foundation's own refs or real entity tables — reworded to
+`:crew-exists?`/`:model-exists?` and `"crews, models, providers,
+resource-pools"`.
+
+**Grep (foundation `src/`), from isaac-foundation-67cq at main-sha 8f57bb6:**
+
+```
+$ grep -rniE "gauge|foundry" src/
+(no output)
+$ grep -rn "gauge-exists\|known-gauge\|berth-exists\|known-berth" src/
+src/isaac/foundation/module/berths.clj:220:(defn unknown-berth-error [consumer-id berth-key]
+src/isaac/foundation/module/berths.clj:315:                [(unknown-berth-error consumer-id berth-key)]))
+```
+(those two hits are the berth SYSTEM's own error helper — module-contribution
+plumbing, not the entity-table fixture vocabulary; left in place per scope.)
+
+**Test comparison** (isaac-foundation, HOME isolated to an empty tmp dir, vs.
+unmodified main at `b133e06`):
+
+- `bb spec`: main 1338 examples / 65 failures; worktree 1338 / 56 failures —
+  a strict subset (0 new failures, 9 fewer); re-run twice, stable. The 56
+  that remain reproduce identically on unmodified main too (pre-existing,
+  order-dependent global-lexicon/schema-cache pollution across spec files
+  when the full suite runs in one process — confirmed by running the
+  affected files in isolation, where they're all green). Not touched; out
+  of scope for this bean.
+- `bb jvm-spec`: 1338 examples / 49 failures on both main and worktree —
+  exact same failure set (diffed, zero new/fixed). Pre-existing (macOS
+  `service.cli` launchctl specs failing under a non-standard `$HOME`),
+  unrelated to this change.
+- `bb features` (non-wip): 356 examples / 0 failures / 2 pending, identical
+  on both.
+- `bb features-slow`: both main and worktree abort at the same first
+  scenario (`module/modules_deps_emit.feature:83`) with byte-identical
+  output regardless of HOME isolation (reproduces even with the real
+  `$HOME`) — a pre-existing environmental issue in this sandbox, not
+  something this change touches. No `@slow` feature references gauge/berth/
+  foundry at all, so this change isn't exercised by that suite anyway.
+- `bb lint`: 0 errors / 290 warnings on both.
+- `bb ci`'s `config-bypass-lint`, `lint-cli-host`, `lint-pins` steps: all
+  `ok` on both; the `pins` step itself fails identically on both (pre-existing,
+  needs the real module registry/classpath this sandbox doesn't have).
+
+**CI:** https://github.com/slagyr/isaac-foundation/actions/runs/36821325200 —
+all 3 jobs green (`verify`, `Slow features (@slow launcher lane)`, `Server
+boot with a module-provided config type`).
+
+main-sha: isaac-foundation 8f57bb6
