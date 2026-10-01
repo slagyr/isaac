@@ -1,13 +1,11 @@
 ---
 # isaac-67cq
 title: Confirm and delete dead entity tables (gauges, foundries, berths)
-status: in-progress
+status: completed
 type: task
 priority: low
-tags:
-    - unverified
 created_at: 2026-09-30T02:44:10Z
-updated_at: 2026-10-01T05:47:07Z
+updated_at: 2026-10-01T05:47:59Z
 blocked_by:
     - isaac-on0o
 ---
@@ -166,3 +164,7 @@ all 3 jobs green (`verify`, `Slow features (@slow launcher lane)`, `Server
 boot with a module-provided config type`).
 
 main-sha: isaac-foundation 8f57bb6
+
+## Planner verification (2026-10-01)
+
+Verified on 8f57bb6: no gauge/foundry vocabulary in foundation src; refs contributed by the fixture via :isaac.config/validation-ref; CI green.
