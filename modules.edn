@@ -1,57 +1,57 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "a6231af17d85b4aca5e3f232cb7bb02c5e14ad94"}
+                                      :git/sha "c81bf0920b65e1558ab2f06d7af055713632bef0"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
-                                      :git/sha "aa839f378fc8eeeaf1537677f239c1f4b280cc04"}
+                                      :git/sha "f0efa17f19e3685409697b528dc1c22e05cbcfa5"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
-                                      :git/sha "591b5a0c6c9e7906a4772cd57e5221266d304e8b"}
+                                      :git/sha "ad434cb2eb846b587a0cadc6a518b43d4041b84d"}
                               :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
-                                      :git/sha "d1380ad0216a14c13323548c537f3e1e9bbed9d7"}
+                                      :git/sha "6676a8070092bfb75a09a8ae7fc99cd3e6bfd5b2"}
                               :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
  :isaac.cli-server           {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
-                                      :git/sha "5d13881456a8ff022059fd90e9e3f9eac9380de0"}
+                                      :git/sha "a57a97ad253b0d3f9d09a7c71e48606445148c63"}
                               :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.http                 {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
-                                        :git/sha "8e01658366f6edddab9ff1fa5b857d12231add3b"}
+                                        :git/sha "4fdd535bb7231fa18d7812c6f0d5b2d35fab740c"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                                      :git/sha "7660db5069feefaf98dca475316e2471b6f2f56b"}
+                                      :git/sha "e0f9711b63a81cccd936bca16af405b70a37a421"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
-                                      :git/sha "9c13a6a43c911f3d4595b31bca295615c75bbb9d"}
+                                      :git/sha "d8f383194a624668c0dcd20a067c4ee2f8d74343"}
                               :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
-                                      :git/sha "8a8ad252bbc8cc9fda58b11fabd8cb59f8999cc7"}
+                                      :git/sha "b3b6f133c05e67f99f35da0fcd044f1462535ce4"}
                               :desc  "Cross-session hail messaging — tool and CLI."}
  :isaac.hooks                {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
-                                      :git/sha "3a6377051052d9a88cc6a368b62b576bcaee75ad"}
+                                      :git/sha "c54989825c39462c23d7dcbf3c6f5217a32b01eb"}
                               :desc  "Event hooks and inbound webhook routing."}
  :isaac.tool.mcp             {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
-                                      :git/sha "9422702abc39ee5e055bbbb171e15b19f9a459e5"}
+                                      :git/sha "a7c301e9cf9c462843b789db83b668b14edc7744"}
                               :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
  :isaac.google               {:coord {:git/url "https://github.com/slagyr/isaac-google.git"
-                                      :git/sha "5cdf80720b4012de0ee9d692f07bbaf3599b35e4"}
+                                      :git/sha "342da242baf29256d5ef8636ad1ae85a90a9b44d"}
                               :desc  "Shared Google Workspace plumbing — OAuth for the Google user, the Pub/Sub push door and durable inbox, registrations and renewal, health."}
  :isaac.comm.gchat           {:coord {:git/url "https://github.com/slagyr/isaac-gchat.git"
-                                      :git/sha "8bf47707924b5678c8b655d972a7ec3235e28ffd"}
+                                      :git/sha "b322f589a413cfab98fc3ee27ac9c3a3369d6fb7"}
                               :desc  "Google Chat comm — inbound gate, routing and dispatch for spaces and DMs; outbound replies and sends. Built on isaac-google."}
  :isaac.comm.gmail           {:coord {:git/url "https://github.com/slagyr/isaac-gmail.git"
-                                      :git/sha "b1c9da1e931b13dfc5ae06ffca455b9fdd1e3e6f"}
+                                      :git/sha "d3d849b644e8373628a4a928c269f3f9178ac6ba"}
                               :desc  "Gmail comm — watch on INBOX, history walk, thread-as-session routing; replies on thread. Built on isaac-google."}
  :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                                      :git/sha "28ce56789d7570be1155174f76723a4b2b550ef7"}
+                                      :git/sha "f34ef3d8902c764d86f9ff810d5173885c851c90"}
                               :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage        {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
-                                      :git/sha "d7a14471f15225948af453ac792596a320e41ea3"}
+                                      :git/sha "c6adcd640bcdce7dc00ca0edefce0297adb7bb52"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
-                                      :git/sha "a2057ae907a167c11c70c261fe13517923276a40"}
+                                      :git/sha "eb0e5b34a6f8ae3c749b0fa6fb9fa1fa580ec6c3"}
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
-                                      :git/sha "8d9ab8aea1026ca88d4d7d5af24deceb8bdf58f3"}
+                                      :git/sha "9e6a0dff94776850147f552e50ed05f9d5c3efca"}
                               :desc  "Worksite registry, locks, and pools — named working directories for crews."}
  :isaac.handbook             {:coord {:git/url "https://github.com/slagyr/isaac-handbook.git"
-                                      :git/sha "15fe1dfe25a0fd3bb7913b61d0ce1303a5cc4a17"}
+                                      :git/sha "46f0b0dbcc5bd5350e4886dcefe351d63d64804b"}
                               :desc  "Isaac's operating handbook (POH) — handbook__read surfaces installed modules' handbook chapters to a crew; handbook__configure changes config through the same tool."}}
