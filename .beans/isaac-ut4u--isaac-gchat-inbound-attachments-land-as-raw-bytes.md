@@ -1,13 +1,13 @@
 ---
 # isaac-ut4u
 title: 'isaac-gchat: inbound attachments land as raw bytes — Chat media is not UTF-8 text'
-status: draft
+status: todo
 type: bug
 priority: high
 tags:
     - gchat
 created_at: 2026-10-01T00:09:20Z
-updated_at: 2026-10-01T00:09:30Z
+updated_at: 2026-10-01T00:14:40Z
 parent: isaac-bv1l
 ---
 
@@ -67,16 +67,24 @@ a String.
   Gmail (isaac-vmlu, blocked on this bean for `write-bytes`). Image
   input to the model.
 
-## Acceptance
+## Acceptance (features/comm/gchat/inbound.feature:702)
 
-Draft. Scenarios after the scenario plan is approved.
+- [ ] Scenario "a PNG attachment is saved byte-identical and the turn is told (isaac-ut4u)":
+  `bb features features/comm/gchat/inbound.feature:702`
+- [ ] Spec: `fs/write-bytes` round-trips a payload containing 0x89 on mem-fs
+  and real-fs (`bb spec spec/isaac/foundation/fs_spec.clj` from
+  isaac-foundation). There is no fs.feature.
+- [ ] Spec: `download-attachment!` calls `-http!` with `:as :bytes` and
+  returns the byte[] unparsed (`bb spec spec/isaac/comm/gchat/chat_api_spec.clj`
+  from isaac-gchat).
+- [ ] Handbook inbound-attachment troubleshooting names this UTF-8
+  replacement failure.
+- [ ] Version bump; pin isaac-gchat to the new foundation sha; `bb spec` /
+  `bb features` / `bb lint` green.
 
-Likely home: isaac-gchat `features/comm/gchat/inbound.feature` (next to
-isaac-468y). Foundation `write-bytes` is spec-only
-(`spec/isaac/foundation/fs_spec.clj`); there is no fs.feature.
-
-Existing string steps (`serves attachment … with content "…"`,
-`the file … contains "…"`) are too weak — they only exercise ASCII.
+New steps: `the Chat API serves attachment "…" with bytes "…"`,
+`the file "…" under the session working directory has bytes "…"`,
+`the outbound HTTP request to "…" used as bytes`.
 
 ## Likely repo scope
 
@@ -84,3 +92,6 @@ isaac-foundation (`fs.clj` + `fs_spec.clj`), then isaac-gchat
 (`chat_api.clj`, `inbound_attachment.clj`, inbound.feature,
 feature-steps, handbook). GChat pins the new foundation sha at land.
 Gmail waits on this bean.
+
+feature-baseline: isaac-gchat 9ebd9d728160726630b45342bc146c782944cbc7
+feature-blob: isaac-gchat features/comm/gchat/inbound.feature 874e533f595a48c06a8cb9b3ea698c3b44592a46 702
