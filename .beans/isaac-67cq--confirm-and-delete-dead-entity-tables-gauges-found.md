@@ -1,11 +1,11 @@
 ---
 # isaac-67cq
 title: Confirm and delete dead entity tables (gauges, foundries, berths)
-status: draft
+status: todo
 type: task
 priority: low
 created_at: 2026-09-30T02:44:10Z
-updated_at: 2026-10-01T05:02:13Z
+updated_at: 2026-10-01T05:23:46Z
 blocked_by:
     - isaac-on0o
 ---
@@ -90,3 +90,7 @@ module-contributed ref the fixture itself declares, mirroring how isaac-agent
 now owns `:crew-exists?`/`:model-exists?`). That's a real refactor, not a
 "confirm dead, delete" task — flagging back rather than guessing at scope.
 No code changed; moved to `draft` pending a re-scope decision.
+
+## Re-scope (Micah, 2026-10-01)
+
+The tables stay as foundation test-fixture vocabulary. What goes: foundation production code that exists only for that fixture. Move `:gauge-exists?` and `:berth-exists?` (and `known-gauge-ids`/`known-berth-ids`) out of `src/isaac/foundation/config/validation_lexicon.clj`; the marigold.chartroom fixture contributes them itself through `:isaac.config/validation-ref`, the same way isaac-agent contributes `:crew-exists?`/`:model-exists?`. No behavior change; every spec that uses them stays green. Acceptance: grep shows no gauge/berth/foundry vocabulary in foundation `src/`; `bb ci`, `bb features-slow`, `bb jvm-spec` green. Ungated.
