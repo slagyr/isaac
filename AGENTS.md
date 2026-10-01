@@ -32,7 +32,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [c3kit](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit/SKILL.md)
 - [c3kit-schema](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit-schema/SKILL.md)
 - [planning](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/planning/SKILL.md) — co-authoring beans + Gherkin with the user; the craft layer (Isaac specifics in `## Planning` below)
-- [hail-bean-work](.toolbox/skills/hail-bean-work/SKILL.md) — hail-driven worker bootstrap; repo discovery; `list_skills` fallback; process-test beans (ungated beans / other projects)
+- [hail-bean-work](.toolbox/skills/hail-bean-work/SKILL.md) — hail-driven worker bootstrap; repo discovery; `prompt__list` fallback; process-test beans (ungated beans / other projects)
 - [hail-bean-work-gate](.toolbox/skills/hail-bean-work-gate/SKILL.md) — gated worker bootstrap: implement, `bb bean-gate verify`, land on main, `completed` (the `isaac-work` band loads this one)
 
 ### Commands

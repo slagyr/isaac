@@ -16,7 +16,7 @@ If you arrived via hail (band/skill) rather than `/work`:
    `../AGENTS.md` "Agent homes vs repo checkouts"). Session cwd may be your
    role home, not this repo.
 2. **`git pull --rebase`** in that isaac clone before any `beans` read.
-3. **Skills fallback** — if `list_skills` is empty or `load_skill` fails, read
+3. **Skills fallback** — if `prompt__list` is empty or `prompt__load` fails, read
    `isaac/.toolbox/skills/hail-bean-work/SKILL.md` and this file directly; do
    not stop.
 4. Continue with the steps below from the isaac clone (claim beans here; edit

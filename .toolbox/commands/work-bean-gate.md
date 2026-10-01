@@ -25,7 +25,7 @@ If you arrived via hail (band/skill) rather than `/work-bean-gate`:
    your role home, not this repo.
 2. **`git pull --rebase`** in that clone before any `beans` read. Run it alone;
    a parallel `beans show` can race the pull and return stale data.
-3. **Skills fallback** — if `list_skills` is empty or `load_skill` fails, read
+3. **Skills fallback** — if `prompt__list` is empty or `prompt__load` fails, read
    `isaac/.toolbox/skills/hail-bean-work-gate/SKILL.md` and this file directly;
    do not stop.
 4. Continue below from the isaac clone (claim beans here; edit module repos per

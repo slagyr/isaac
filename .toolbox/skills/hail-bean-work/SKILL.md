@@ -1,12 +1,12 @@
 ---
 name: hail-bean-work
-description: Bootstrap and run bean work from a hail delivery when session cwd, skills catalog, or checkout layout are ambiguous. Use for isaac-work hails, orchestration/process-test beans, or when list_skills returns empty.
+description: Bootstrap and run bean work from a hail delivery when session cwd, skills catalog, or checkout layout are ambiguous. Use for isaac-work hails, orchestration/process-test beans, or when prompt__list returns empty.
 ---
 
 # Hail-driven bean work
 
 Use when a hail (or band prompt) assigns bean work and you need a reliable start
-path without guessing checkout locations or waiting on `load_skill`.
+path without guessing checkout locations or waiting on `prompt__load`.
 
 ## Bootstrap checklist
 
@@ -22,7 +22,7 @@ Run in order before claiming or editing anything.
 4. **Find the implementation repo** — bean scope / title names the repo
    (`isaac-discord`, `isaac-hail`, monolith `isaac`, …). Work in the sibling
    checkout under your role home; `git clone` on demand per `AGENTS.md`.
-5. **Skills** — try `list_skills` / `load_skill` if available. If empty or
+5. **Skills** — try `prompt__list` / `prompt__load` if available. If empty or
    missing, read directly:
    - `../AGENTS.md` (shared boot)
    - `isaac/AGENTS.md`

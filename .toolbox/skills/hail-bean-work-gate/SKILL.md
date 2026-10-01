@@ -39,7 +39,7 @@ Run in order before claiming or editing anything.
 4. **Find the implementation repo** — bean scope / title names the repo
    (`isaac-discord`, `isaac-hail`, monolith `isaac`, …). Work in the sibling
    checkout under your role home; `git clone` on demand per `AGENTS.md`.
-5. **Skills** — try `list_skills` / `load_skill` if available. If empty or
+5. **Skills** — try `prompt__list` / `prompt__load` if available. If empty or
    missing, read directly:
    - `../AGENTS.md` (shared boot)
    - `isaac/AGENTS.md` (`## Bean Workflow`, `## Planning`)
