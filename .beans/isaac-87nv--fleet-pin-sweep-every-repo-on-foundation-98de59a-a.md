@@ -1,11 +1,11 @@
 ---
 # isaac-87nv
 title: 'Fleet pin sweep: every repo on foundation 98de59a+ and agent''s new main, coherent'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-09-30T23:58:18Z
-updated_at: 2026-09-30T23:58:18Z
+updated_at: 2026-10-01T00:58:46Z
 ---
 
 Micah, 2026-09-30: after the namespace restructure (isaac-vyqs) leaves pin foundation 06d58b7 + agent f953042 (+ older sibling shas), while foundation main has moved to 98de59a (4eay, 82nx, 46ty, CI restore). `bb pins` requires each repo's direct pins to agree with what its pinned siblings themselves pin.
@@ -85,3 +85,7 @@ isaac-handbook: pinned cron to d8f3831, plus foundation/agent (no isaac-http dep
 | isaac-gmail | d3d849b644e8373628a4a928c269f3f9178ac6ba | 98de59aa49f3950b5f6d5189e383249c2a1861c0 | c81bf0920b65e1558ab2f06d7af055713632bef0 | http 4fdd535bb7231fa18d7812c6f0d5b2d35fab740c, google 342da242baf29256d5ef8636ad1ae85a90a9b44d |
 
 isaac-gchat, isaac-gmail: GitHub CI green on the shas above. `bb ci` green with isolated HOME on both (gchat 200 spec + 60 feature examples; gmail 147 spec + 45 feature examples; 0 failures everywhere); `bb jvm-spec` also run and green on both (gchat 200 examples; gmail 147 examples). Neither has a `bb pins` CI step. Both already had their own steps namespaces correctly named (`isaac.comm.gchat.gchat-steps`, `isaac.comm.gmail.gmail-steps`) from an earlier bean (isaac-j4m5 on gmail; gchat likewise) — no gherclj alias collision to fix. The only `isaac.google.steps` touch-point in either repo was the explicit `-s "isaac.google.steps"` entry in each `deps.edn`'s `:features` main-opts (added back when isaac-google hadn't yet renamed its own steps ns); dropped it from both now that the `isaac.**-steps` glob matches isaac-google's renamed `isaac.google.google-steps`. No other code in either repo references the google steps namespace — all other `isaac.google.*` requires are to `people`/`tenants`/`token`/`events`/`registration`, untouched. Did not hit the known `http.oidc.jwks-alert-threshold` nil/500 bug noted for isaac-google in layer 3 — neither gchat's nor gmail's features exercise that oidc path, so nothing further to report there beyond it staying open upstream.
+
+## Planner verification (2026-09-30)
+
+All 19 repos on foundation 98de59a + agent c81bf09 (http 4fdd535, google 342da24, acp e0f9711, episodes f0efa17, cron d8f3831, cli-server a57a97a where pinned). No stale shas remain in any main; CI Tests green on every main. `.steps` renames done (google, hooks). Open follow-up: isaac-zmub (absent berth slice defaults); google push_door.feature carries a jwks-alert-threshold workaround until it lands.
