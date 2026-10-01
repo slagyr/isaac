@@ -1,13 +1,11 @@
 ---
 # isaac-v9ef
 title: 'Contributed validation refs registered too late: other modules'' schemas judged invalid (missing lex :model-exists?)'
-status: in-progress
+status: completed
 type: bug
 priority: critical
-tags:
-    - unverified
 created_at: 2026-10-01T02:22:19Z
-updated_at: 2026-10-01T02:43:31Z
+updated_at: 2026-10-01T02:44:15Z
 ---
 
 Found 2026-09-30 rehearsing the zanebot deploy (new foundation + the post-sweep module pins, live zanebot config copy). `isaac config validate` reports:
@@ -73,3 +71,7 @@ unrelated JVM-boot feature failure (also identical before/after).
 
 CI (isaac-foundation, 3 jobs: verify, Server boot with a module-provided
 config type, Slow features) green on f79823d.
+
+## Planner verification (2026-09-30)
+
+Verified on f79823d: discover! registers contributed refs before validating contributions; CI green. Follow-up noted: handbook_chapter_spec bypasses discover!.
