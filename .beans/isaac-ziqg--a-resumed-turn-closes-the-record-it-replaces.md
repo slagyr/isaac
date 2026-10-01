@@ -24,3 +24,18 @@ When the boot resume scan re-queues an interrupted turn, any `:running` record f
 
 feature-baseline: isaac-agent fead24a5574b7260b74a99b3453abfbe5168013b
 feature-blob: isaac-agent features/turn/resume_records.feature 8bb970799be25eb01ff84309e132d61bd988d101
+
+## Landed on main (2026-10-01)
+
+main-sha: isaac-agent def0bfe65c8fad85897c0c8cf9f02ff460804050
+
+`enqueue-resume-turn!` (bridge/resume.clj) now looks up the stuck `:running`
+turn-queue record for the marker's session before enqueuing the resumed turn,
+closes it (`:state :finished`, `:outcome :interrupted`, `:resumed-by <new-id>`),
+and stamps `:resumes <old-id>` on the new record. `turns show`/`turns list`
+(turn/cli.clj) display both fields; `turns list` scans all turns (not just the
+held/queued/waiting-session subset) for `:resumes` so the link still shows once
+both records have finished. `bb ci` and `bb jvm-spec` green; `bb jvm-features`
+hit the two known `turn_store.feature` timing flakes (unrelated scenarios) on
+both runs — reran per the gated brief, same two each time. CI green:
+https://github.com/slagyr/isaac-agent/actions/runs/36909327198
