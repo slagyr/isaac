@@ -1,13 +1,11 @@
 ---
 # isaac-ewua
 title: Implicit remote CLI routing resolves a runner cli-proxy doesn't provide
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T06:37:18Z
-updated_at: 2026-10-01T05:08:09Z
+updated_at: 2026-10-01T05:08:46Z
 blocked_by:
     - isaac-on0o
 ---
@@ -39,3 +37,7 @@ main-sha: isaac-foundation b133e0621631af57a368b1042d8f3610d4e1a91e
 CI (verify / Server boot with a module-provided config type / Slow features) all green: https://github.com/slagyr/isaac-foundation/actions/runs/36818198994
 
 Grep confirms `cli-proxy`, `:cli :remote`, `:remote-runner`, `ISAAC_CLI_LOCAL` are gone from isaac-foundation src/resources/features/spec.
+
+## Planner verification (2026-10-01)
+
+Verified on b133e06: no remote-routing code or mentions left in foundation; CI green. Follow-up: isaac-cli-proxy handbook chapter still describes implicit routing.
