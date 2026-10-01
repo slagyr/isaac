@@ -47,3 +47,17 @@ Verified on b133e06: no remote-routing code or mentions left in foundation; CI g
 Rewrote `resources/isaac/cli_proxy/handbook.md` to drop the implicit-routing mentions flagged above — "The remote target" `[verify]` paragraph and its "what it is" framing, the `isaac.cli-proxy.client/run!` references, the Troubleshooting entries about the implicit-routing seam, the `server`/`service`/`modules`/`remote` local-only paragraph's foundation-Appendix claim, and the `--local`/`ISAAC_CLI_LOCAL` paragraph. README needed no change (already explicit-only). `bb ci` green locally and in CI.
 
 main-sha: isaac-cli-proxy 5a2bbca1b75439f09a4dea42b5aa7d66c476a0c9
+
+## Follow-up: drop dead --local hint from cli-proxy errors (2026-10-01)
+
+`src/isaac/cli_proxy/proxy.clj` `connect-error` (token-rejected/exit 77 and
+unreachable/exit 69 messages) still told users to "run with --local to
+bypass" — that flag was deleted from foundation above. Removed the hint from
+both messages (exit codes unchanged), updated `features/remote.feature`
+(three scenarios asserting the old stderr text) and
+`resources/isaac/cli_proxy/handbook.md`'s "How to verify" paragraph. Grepped
+src/spec/features/README/handbook for any other `--local` mention — none
+left. `bb ci` (spec + features + features-slow) green locally with isolated
+HOME and in CI.
+
+main-sha: isaac-cli-proxy 3e57a7639f7bacac14af5936593823ddfeb97796
