@@ -1,11 +1,11 @@
 ---
 # isaac-208u
 title: Inline entity in a companion-descriptor table crashes config load
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-10-01T02:19:26Z
-updated_at: 2026-10-01T02:19:26Z
+updated_at: 2026-10-01T02:23:51Z
 ---
 
 Found 2026-09-30 rehearsing the zanebot deploy. With foundation 0c6e881 (isaac-kcck, companion .md load side) or later, any command fails to load a config whose isaac.edn defines an entity INLINE in a table that has a :companion descriptor, e.g. zanebot's
