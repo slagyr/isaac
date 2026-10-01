@@ -1,11 +1,11 @@
 ---
 # isaac-4g2k
 title: Global tool-call timeout in the agent tool registry
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-01T17:23:56Z
-updated_at: 2026-10-01T17:23:56Z
+updated_at: 2026-10-01T18:22:52Z
 ---
 
 Micah, 2026-10-01. Only `exec__run` has a timeout (30s default, per-call `timeout` arg). File tools (`fs__read`, `fs__glob`, `fs__grep`) and others have none: on zanebot a read of an iCloud-evicted (dataless) file and an unbounded home-directory glob each held a cron turn for ~7 hours (tempest-vault-sync 25f87b25, heartbeat 9bfff473) until a restart.
