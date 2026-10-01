@@ -32,3 +32,31 @@ feature-blob: isaac-agent features/prompts/skill_activation.feature 94d5e5361a98
 feature-blob: isaac-agent features/prompts/skill_resources.feature 2f8904ac99e2d88dbed9d58ab0d1e38990338fe2
 feature-blob: isaac-agent features/tool/permissions.feature 841de4d419da381bcde5ff98fbaddd3e0a69a7c1
 feature-blob: isaac-agent features/tool/window_cache.feature cc9e28553b9758b7dc6941cff188f588379bbf9f
+
+## Worker notes (2026-10-01)
+
+- `prompt__list`/`prompt__load` implemented in `isaac-agent` (new
+  `src/isaac/agent/tool/prompt.clj`, replacing `skill.clj`); catalog gained
+  `find-entry`/`resolve-entry-body`/`resolve-prompt-menu`; `resolve-skill-disclosure`
+  now auto-grants `prompt__list` whenever the catalog has any commands or
+  rules (not just over the skill-menu threshold), since commands aren't
+  advertised in the cached menu text the way skills are. Manifest grant
+  `:skill/load`/`:skill/list` replaced by `:prompt/load`/`:prompt/list`.
+  No mentions of `skill__list`/`skill__load`/`list_skills`/`load_skill`
+  remain in isaac-agent src/spec/features/README/manifest.
+  `resources/isaac/agent/handbook.md` had no skill-tool mentions to update.
+- Read-only grep on hosts for `:skill/` crew grants (none edited — planner's
+  call):
+  - **zanebot** (`~/.isaac/config`, current crew files only, `.bak-*`
+    excluded): `main.edn`, `prowl.edn`, `scrapper.edn`, `tempest.edn`,
+    `bebop.edn`, `keaton.edn`, `perceptor.edn`, `zane.edn`,
+    `rocksteady.edn`, `qwen.edn`, `mixmaster.edn`, `ratchet.edn` all grant
+    `:skill/*`.
+  - **yopp** (`~/.isaac/config`): no `:skill/` grants found.
+- `bb ci` and `bb jvm-spec` green. `bb jvm-features` (HOME isolated,
+  `ISAAC_TEST_TIMEOUT_MS=600000` — the shared 60s helper timeout is too
+  short for this suite, same as the native `features` task's documented
+  600s override) ran twice: both runs hit the same pre-existing
+  `turn/turn_store.feature:169` and `:185` timing flakes (isaac-2lc4,
+  isaac-e9jl scenarios), unrelated to prompt tools. Native `bb features`
+  (bb's own 600s-wrapped runner) was green both times with 0 failures.
