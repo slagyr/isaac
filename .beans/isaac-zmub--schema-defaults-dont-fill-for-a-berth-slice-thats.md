@@ -1,11 +1,11 @@
 ---
 # isaac-zmub
 title: Schema defaults don't fill for a berth slice that's absent from config (jwks-alert-threshold nil → 500)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-01T00:49:18Z
-updated_at: 2026-10-01T00:49:18Z
+updated_at: 2026-10-01T01:50:56Z
 ---
 
 Found 2026-09-30 by the pin sweep (isaac-87nv, isaac-google). isaac-x9y5 declared `http.oidc.jwks-alert-threshold` with `:default 1` and dropped audit.clj's `(or … 1)` fallback. But foundation's `conform-berth-slices` only conforms berth slices already present in raw config, so with no `:http` section at all the default never fills: the threshold is nil and the JWKS-unreachable path NPEs on `(>= count nil)`, returning 500 instead of a fail-closed 401. isaac-google's push_door.feature hit it; the worker worked around it by adding `http.oidc.jwks-alert-threshold | 1` to that feature's Background (revert once fixed).
