@@ -1,11 +1,11 @@
 ---
 # isaac-v9ef
 title: 'Contributed validation refs registered too late: other modules'' schemas judged invalid (missing lex :model-exists?)'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-10-01T02:22:19Z
-updated_at: 2026-10-01T02:22:19Z
+updated_at: 2026-10-01T02:22:51Z
 ---
 
 Found 2026-09-30 rehearsing the zanebot deploy (new foundation + the post-sweep module pins, live zanebot config copy). `isaac config validate` reports:
