@@ -1,7 +1,7 @@
 ---
 # isaac-ziqg
 title: A resumed turn closes the record it replaces
-status: draft
+status: todo
 type: bug
 priority: normal
 created_at: 2026-10-01T17:23:56Z
@@ -15,3 +15,12 @@ When a resume picks up an interrupted turn, the original record is closed (e.g. 
 
 ## Acceptance (to write as scenarios when planned)
 - Restart with an in-flight turn → after resume, the original record is not `running` and names the resuming turn; the resuming turn names its source.
+
+## Decision + Acceptance (Micah, 2026-10-01; gated)
+
+When the boot resume scan re-queues an interrupted turn, any `:running` record for that session is closed: `:state :finished`, `:outcome :interrupted`, `:resumed-by <new id>`; the new record carries `:resumes <old id>`. `isaac turns show` and `turns list` display both links.
+- The @wip scenarios in isaac-agent `features/turn/resume_records.feature` pass with @wip removed.
+- `bb ci`, `bb jvm-spec`, `bb jvm-features` green.
+
+feature-baseline: isaac-agent fead24a5574b7260b74a99b3453abfbe5168013b
+feature-blob: isaac-agent features/turn/resume_records.feature 8bb970799be25eb01ff84309e132d61bd988d101
