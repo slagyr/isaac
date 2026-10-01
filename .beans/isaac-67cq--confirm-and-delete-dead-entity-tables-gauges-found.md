@@ -1,11 +1,11 @@
 ---
 # isaac-67cq
 title: Confirm and delete dead entity tables (gauges, foundries, berths)
-status: todo
+status: in-progress
 type: task
 priority: low
 created_at: 2026-09-30T02:44:10Z
-updated_at: 2026-09-30T15:19:03Z
+updated_at: 2026-10-01T05:01:34Z
 blocked_by:
     - isaac-on0o
 ---
