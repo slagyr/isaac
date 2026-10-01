@@ -27,3 +27,70 @@ The tool registry runs every call against a deadline: `defaults.tools.timeout-ms
 
 feature-baseline: isaac-agent fead24a5574b7260b74a99b3453abfbe5168013b
 feature-blob: isaac-agent features/tool/timeout.feature 8ee8a2879ccbf166256954c5b1290ac8113eecc0
+
+## Implementation note (worker, 2026-10-01)
+
+Implemented on `bean/isaac-4g2k` in isaac-agent, gate PASS:
+
+```
+isaac-4g2k bean-gate: PASS (isaac-agent @ HEAD 00bb1a6 (branch bean/isaac-4g2k))
+```
+
+Rebased onto origin/main (f68f039, after isaac-3rac/isaac-ziqg landed) at
+commit `ce1913c`; `bb ci` green on the rebased tree (1855 spec examples / 828
+feature examples, 0 failures, 1 pre-existing pending). `bb jvm-spec` green
+(1846 examples, 0 failures). `bb jvm-features` hit the two known
+`turn_store.feature` timing flakes (queue-tick scenarios at lines 169/185,
+unrelated to this bean — no tool calls involved); reran once, same two
+flaked again. Both the native `bb features` run (part of `bb ci`) and the
+earlier full native pass show 0 failures across the whole suite including
+that file, so this is the documented JVM-variant flake, not a regression.
+
+Design notes for the verifier/planner:
+- Precedence: a tool's own declared `:timeout-ms` (number or fn/#'var of
+  the raw call args) > `crew.<id>.tools.timeout-ms` > `defaults.tools
+  .timeout-ms` (60000 fallback hard-coded in the registry). exec__run
+  declares its own timeout arg + a 5000ms safety margin; web__fetch
+  declares a flat 30000.
+- Abandonment: `run-handler` now runs the handler in a future and polls
+  (5ms) for completion, turn cancellation, or deadline; on timeout/cancel
+  it calls `future-cancel` (best-effort interrupt) and returns without
+  waiting further, logging `:tool/timed-out` then `:tool/abandoned`.
+- Suspend interaction (isaac-2xj5): suspend reuses the cancellation path
+  but deliberately lets a stuck tool run past its own short cap so the
+  turn marker stays `:unclean`. The new registry-level cancel hook checks
+  `suspend/session-suspended?` and no-ops during a suspend, mirroring
+  exec.clj's own on-cancel guard — without this a suspended exec call was
+  immediately treated as "cancelled" by the registry and the marker came
+  back `:clean` instead of `:unclean` (caught by bridge/suspend.feature).
+- Fixed two pre-existing test-support gaps the new scenarios exposed
+  (isaac-agent only, not foundation): (1) `update-crew-config!` wrote
+  tool-allow into the `config/crew/<id>.edn` entity file, which foundation's
+  `merge-root-entity-with-schema` wholesale-replaces whenever a root-
+  declared crew entity exists in `config/isaac.edn` for the same id — it
+  now merges into the root entity when one is present. (2)
+  `tool-result-is-error`/`tool-result-not-error` read `:tool-result`
+  without awaiting the turn first, unlike `tool-result-contains`; a call
+  slower than the harness's 50ms sync-peek window read a premature nil.
+
+## Landing blocked — classifier denial (worker, 2026-10-01)
+
+Gate PASS, ready to land, but the squash-merge step was blocked:
+
+```
+cd /Users/micahmartin/agents/isaac/plan/isaac-agent
+git fetch origin && git checkout main && git pull --ff-only origin main
+git merge --squash bean/isaac-4g2k
+```
+
+Denied by the Claude Code auto-mode classifier ("Modify Shared Resources")
+— even a plain `git status --short --branch` in that shared checkout was
+denied afterward. No merge state was written (the tool call was blocked
+before the shell command ran); the shared `isaac-agent` checkout should
+still be clean at `origin/main`. `bean/isaac-4g2k` is pushed to origin
+(squashed single commit `ce1913c`, rebased onto current main) and the
+worktree `../isaac-agent-isaac-4g2k` is still in place for the next step.
+Resuming the land requires either explicit permission for that shared
+checkout or a different actor/session performing the squash-merge +
+push + re-verify + bean-complete steps in `isaac-bean-work-gate` §"Exit
+0 — land it".
