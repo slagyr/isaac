@@ -1,11 +1,11 @@
 ---
 # isaac-3rac
 title: Prompt tools load commands, not just skills
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-01T17:23:56Z
-updated_at: 2026-10-01T17:23:56Z
+updated_at: 2026-10-01T18:23:23Z
 ---
 
 Micah, 2026-10-01. Crews can list and load skills (`skill__list`, `skill__load`) but not commands: `~/.isaac/prompts/commands/*.md` (`verify`, `work`, `plan`, `harden`, …) have no tool. Found on zanebot: perceptor (verifier) learned from its own memory notes to `fs__read ~/.isaac/prompts/commands/verify.md`, which its `:cwd`-only directory grant correctly refuses.
