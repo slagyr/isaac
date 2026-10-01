@@ -1,11 +1,11 @@
 ---
 # isaac-ewua
 title: Implicit remote CLI routing resolves a runner cli-proxy doesn't provide
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-09-30T06:37:18Z
-updated_at: 2026-09-30T15:19:03Z
+updated_at: 2026-10-01T04:56:59Z
 blocked_by:
     - isaac-on0o
 ---
