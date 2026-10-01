@@ -35,3 +35,13 @@ Ungated; planner verifies.
 | isaac-http | 4fdd535bb7231fa18d7812c6f0d5b2d35fab740c | 98de59aa49f3950b5f6d5189e383249c2a1861c0 | c81bf0920b65e1558ab2f06d7af055713632bef0 |
 
 Both repos' GitHub CI green on the shas above. isaac-agent: `bb ci` (1840 spec examples / 819 feature examples, 0 failures) and `bb jvm-spec` (1840 examples, 0 failures) green on the first try with isolated HOME — the turn_store.feature timing flakes did not reproduce, so no rerun was needed. isaac-http: `bb spec`/`bb features`/`bb jvm-spec` all green (197/120/197 examples, 0 failures); `bb pins` fails locally on this machine (macOS) with an unrelated pre-existing error (`missing lex :model-exists? in :validations` composing the :crew schema when the standalone foundation CLI boots with no real `~/.isaac` root) — reproduced identically against the *old* pins and a from-scratch clone matching CI's exact layout, so it predates this bump and isn't platform-portable to CI; GitHub Actions (Linux) CI for both commits is green, `bb pins` included (silent/passing step).
+
+## Layer 3
+
+| repo | new main sha | foundation pin | agent pin | other pins |
+|------|---------------|-----------------|-----------|------------|
+| isaac-hooks | c54989825c39462c23d7dcbf3c6f5217a32b01eb | 98de59aa49f3950b5f6d5189e383249c2a1861c0 | c81bf0920b65e1558ab2f06d7af055713632bef0 | n/a |
+| isaac-imessage | c6adcd640bcdce7dc00ca0edefce0297adb7bb52 | 98de59aa49f3950b5f6d5189e383249c2a1861c0 | c81bf0920b65e1558ab2f06d7af055713632bef0 | http 4fdd535bb7231fa18d7812c6f0d5b2d35fab740c |
+| isaac-worksite | 9e6a0dff94776850147f552e50ed05f9d5c3efca | 98de59aa49f3950b5f6d5189e383249c2a1861c0 | c81bf0920b65e1558ab2f06d7af055713632bef0 | http 4fdd535bb7231fa18d7812c6f0d5b2d35fab740c |
+
+isaac-hooks, isaac-imessage, isaac-worksite: GitHub CI green on the shas above. All three `bb ci` green with isolated HOME (hooks 20/20 examples; imessage 76 spec + 23 feature examples; worksite 21 spec + 8 feature examples, 0 failures everywhere); `bb jvm-spec` also run and green on each. None of the three has a `bb pins` CI step. isaac-hooks also renamed `isaac.hooks.steps` → `isaac.hooks.hooks-steps` (feature-steps/isaac/hooks/steps.clj → hooks_steps.clj) in the same commit, updated the ns, `helper!`, and defgiven/defthen refs, and dropped the now-redundant explicit `-s isaac.hooks.steps` glob entry (and its stale comment) from deps.edn's `:features` main-opts.
