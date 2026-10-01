@@ -41,3 +41,9 @@ Grep confirms `cli-proxy`, `:cli :remote`, `:remote-runner`, `ISAAC_CLI_LOCAL` a
 ## Planner verification (2026-10-01)
 
 Verified on b133e06: no remote-routing code or mentions left in foundation; CI green. Follow-up: isaac-cli-proxy handbook chapter still describes implicit routing.
+
+## Follow-up: isaac-cli-proxy handbook (2026-10-01)
+
+Rewrote `resources/isaac/cli_proxy/handbook.md` to drop the implicit-routing mentions flagged above — "The remote target" `[verify]` paragraph and its "what it is" framing, the `isaac.cli-proxy.client/run!` references, the Troubleshooting entries about the implicit-routing seam, the `server`/`service`/`modules`/`remote` local-only paragraph's foundation-Appendix claim, and the `--local`/`ISAAC_CLI_LOCAL` paragraph. README needed no change (already explicit-only). `bb ci` green locally and in CI.
+
+main-sha: isaac-cli-proxy 5a2bbca1b75439f09a4dea42b5aa7d66c476a0c9
