@@ -1,7 +1,7 @@
 ---
 # isaac-zmub
 title: Schema defaults don't fill for a berth slice that's absent from config (jwks-alert-threshold nil → 500)
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-01T00:49:18Z
@@ -17,3 +17,14 @@ A. Foundation: conform every declared berth slice, absent ones as {}, so nested 
 B. isaac-http: restore the `(or … 1)` fallback in audit.clj (narrow; the schema default stays documentation).
 
 Scenario TBD after the choice.
+
+## Decision + Acceptance (Micah, 2026-09-30: option A; gated)
+
+- Foundation conforms every declared schema section that is absent from config as {}, so nested defaults fill: both root-level :isaac.config/schema fragments (root conform) and config-berth-claimed slices (`conform-berth-slices`, the path isaac-http's :http takes). Required fields inside a wholly ABSENT section are not enforced (no validation error); a present section still enforces them.
+- The @wip scenarios at the end of isaac-foundation `features/cli/config_defaults.feature` pass with @wip removed. Add a unit spec covering the berth-slice path (absent slice → defaults filled, no required error).
+- Check isaac-http: with no :http section, `http.oidc.jwks-alert-threshold` resolves to 1 (spec or one-time check against the new foundation sha).
+- `bb ci`, `bb features-slow`, `bb jvm-spec` green.
+- Follow-up (separate, after landing): revert isaac-google push_door.feature's `http.oidc.jwks-alert-threshold | 1` workaround when google next pins foundation.
+
+feature-baseline: isaac-foundation c13d496a13a6f2c0ddd76d05a19e13fcd2e05053
+feature-blob: isaac-foundation features/cli/config_defaults.feature 01ac36959d44ff93989b6d6f6f7d9a6cea6e3338
