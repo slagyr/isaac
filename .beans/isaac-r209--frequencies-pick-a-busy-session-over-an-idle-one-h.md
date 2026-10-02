@@ -1,7 +1,7 @@
 ---
 # isaac-r209
 title: Frequencies pick a busy session over an idle one (hails pile onto the running worker)
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-02T14:43:02Z
@@ -43,3 +43,11 @@ Sessions are NOT resource pools (explored and rejected: sessions are identities,
 - **All matching sessions busy:** the charge waits in agent's queue (held) and is retried when any session or pool lease is released (existing wake hook).
 - **Hails never merge** into a running turn; chat bursts to one session keep coalescing (isaac-e3f4 later makes merge/queue a sender choice).
 - Resource pools stay as they are (declared, interchangeable capacity); a future provider-token budget is one more pool in the same admission step.
+
+## Acceptance (Micah approved 2026-10-02; gated)
+- The 5 @wip scenarios in isaac-agent `features/turn/session_selection.feature` pass with @wip removed: two hails claimed in one tick land on different sessions; with every match busy a hail waits then runs as its own turn on the session that frees (never merged); `:create :never` empty match fails immediately; `:create :if-missing` creates; a free session is not reserved by a pool-busy charge. The planning commit added queue steps that drive agent's `submit!` like hail does.
+- Guard (unchanged, must stay green): `features/session/waiting.feature` coalescing (isaac-2tez/xoqn).
+- `bb ci` + jvm-spec/jvm-features green.
+
+feature-baseline: isaac-agent ea52185597e904e54daf6b092eab5f8f62d316f7
+feature-blob: isaac-agent features/turn/session_selection.feature 868cf43e23e0e5604b74690e30271869c83f3976 83,111,137,143,160
