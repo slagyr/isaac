@@ -49,3 +49,11 @@ Promote to `todo` only after those scenarios are committed `@wip` and `bb bean-g
 
 feature-baseline: isaac-agent 56c9a06a056f3192753625e90c39f56efaf89eab
 feature-blob: isaac-agent features/llm/model_fallback.feature edef9234ff51faec816724ca0e22942cd539d6ca 43,73,92,116,138,165,188,208,228,246,264,285
+
+## Resume note (planner, 2026-10-01)
+
+The 09-28 worker pushed one implementation commit to `bean/isaac-uyj3` (`3f57c1d`, 11 files, ~325 lines) and stopped before the gate; nothing landed. Since then isaac-agent main moved a lot: every namespace moved under `isaac.agent.*` (isaac-on0o; e.g. `src/isaac/llm/api/protocol.clj` → `src/isaac/agent/llm/api/protocol.clj`), plus the coalesced-turn fixes (2tez/n8uv/n8rb/8evx), prompt tools (3rac), the global tool timeout (4g2k) and resume records (ziqg).
+
+Finish it: start a fresh `bean/isaac-uyj3` work from current `origin/main` and port `3f57c1d` onto the renamed code (cherry-pick and resolve, or re-apply by hand), make the 12 baselined @wip scenarios in `features/llm/model_fallback.feature` pass with only @wip removed, `bb bean-gate verify`, land per the gated flow. Declare `:model-fallback` on the crew schema with a description; update the agent handbook chapter (crews/models section).
+
+After landing, the planner deploys agent to zanebot and sets (Micah, 2026-10-01): scrapper, perceptor, mixmaster `:model-fallback [:grok-4-6 :micah-opus]`; prowl `[:gpt-sol :micah-opus]`. Heads unchanged.
