@@ -62,3 +62,8 @@ Contract fix (planner, 2026-10-02): the frozen claude_driver.feature still set `
 feature-baseline: isaac-claude-code 54fd69e68fdbb79299e494d311c0f185deb406d1
 feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 5404d7e5560ee2f61f82ecf35c8a5361ee648367
 feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696dc93f07227534c05beecd3c146456
+
+## Worker checkpoint (2026-10-02, scrapper@isaac-work-3)
+
+Done: claimed bean; agent weather reason :mcp-unavailable implemented, focused spec green and branch pushed (6ae2d9d). Claude-code worktree has 23 @wip tags removed, fence parser/fallback cut, manifest key removed; no claude-code commit yet.
+Next: last test RED: `clojure -Sdeps ... -M:features features/llm/api/claude_driver.feature features/llm/api/claude_cli.feature` reported 49 examples, 2 failures (resume transcript and repeated-failure attention); resume at `../isaac-claude-code-izc1/src/isaac/provider/claude_code/api/claude_cli.clj:110` for reset of test MCP failure, and `../isaac-agent-izc1/src/isaac/agent/drive/weather.clj:145` for attention after retry. Then update obsolete specs/handbook, bb ci and JVM suites, gate and land.
