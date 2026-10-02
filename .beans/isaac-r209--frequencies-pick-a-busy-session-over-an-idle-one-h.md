@@ -18,3 +18,7 @@ When several sessions match a frequencies map, prefer a session with no running 
 ## Acceptance (scenarios TBD)
 - Two sessions match; one has a running turn → the turn goes to the idle one.
 - All matching sessions busy → existing tiebreak, and the request waits its turn.
+
+## Decision (Micah, 2026-10-02)
+
+Separate hails queue; they never merge into a running turn.
