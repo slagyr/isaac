@@ -1,11 +1,11 @@
 ---
 # isaac-r209
 title: Frequencies pick a busy session over an idle one (hails pile onto the running worker)
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-02T14:43:02Z
-updated_at: 2026-10-02T14:43:02Z
+updated_at: 2026-10-02T16:45:28Z
 ---
 
 Found 2026-10-02 on zanebot: three hails to band `isaac-work` (isaac-izc1, isaac-o13p, isaac-ixcm), sent seconds apart, all resolved to session `isaac-work-1`. The first started a turn; the other two arrived while it was busy and were folded into the running turn as extra messages (records `finished` immediately, `turn/waiting` → woke), while `isaac-work-2` and `isaac-work-3` (same crew/tags) sat idle. The planner had to re-hail them session-direct.
@@ -51,3 +51,7 @@ Sessions are NOT resource pools (explored and rejected: sessions are identities,
 
 feature-baseline: isaac-agent ea52185597e904e54daf6b092eab5f8f62d316f7
 feature-blob: isaac-agent features/turn/session_selection.feature 868cf43e23e0e5604b74690e30271869c83f3976 83,111,137,143,160
+
+## Landed on main (2026-10-02)
+
+main-sha: isaac-agent 085decd82a0e9255ebf8b47a62489e4da058e16e
