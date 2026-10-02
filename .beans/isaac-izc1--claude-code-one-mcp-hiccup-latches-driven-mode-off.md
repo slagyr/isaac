@@ -1,11 +1,11 @@
 ---
 # isaac-izc1
 title: 'claude-code: remove the fence fallback; a driven-mode failure is weather'
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:33Z
-updated_at: 2026-10-02T14:43:34Z
+updated_at: 2026-10-02T15:27:40Z
 ---
 
 Found 2026-10-02 on yopp (agent ce1913c, claude-code ad434cb). A yopp ACP turn ended `:error :llm-error` on "You've hit your session limit · resets 5am (UTC)" and Isaac announced the provider broken; it was never parked/resumed.
@@ -67,3 +67,7 @@ feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696d
 
 Done: committed claude-code worktree branch `bean/isaac-izc1` at 7a5c429; agent branch committed, rebased and `bb ci` green (1864 specs, 843 features), squash committed on agent main as 2eb199706f7b1e89b9db54dd76f130e498c83cb4 (not pushed). Claude-code `bb ci` was green against agent branch before rebasing/landing; `bb bean-gate verify isaac-izc1 --dir isaac-claude-code=../isaac-claude-code-izc1 --dir isaac-agent=../isaac-agent-izc1` returned PASS.
 Next: STOP, planner must reconcile the frozen claude_driver.feature with newly landed isaac-o13p behavior. After agent rebase onto origin/main 9ff7add, clean claude-code branch's `clojure -Sdeps '{:aliases {:features {:override-deps {io.github.slagyr/isaac-agent {:local/root "../isaac-agent-izc1"} io.github.slagyr/isaac-agent-spec {:local/root "../isaac-agent-izc1/spec"}}}}}' -M:features` is RED: 59 examples, 4 failures in `features/llm/api/claude_driver.feature:52, :353, :575, :627`. Frozen assertions expect `last-input-tokens` 260 and 22378 (first-cycle gauge); new agent code `../isaac-agent-izc1/src/isaac/agent/drive/turn.clj:295-313` (isaac-o13p) explicitly makes valid FINAL cycle report win over first-cycle gauge; actual 320, 370, 320, 39765. This is a contract conflict, not safe to change .feature text or reverse unrelated upstream semantics. Await planner re-baseline or explicit direction. Agent main squash is LOCAL ONLY, not pushed; branch retained.
+
+feature-baseline: isaac-claude-code 82be2e017f6621e01930957ce3c5f342faab5643
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 48583d1f430435a42781cffd29fdb7a3d942fbc4
+feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696dc93f07227534c05beecd3c146456
