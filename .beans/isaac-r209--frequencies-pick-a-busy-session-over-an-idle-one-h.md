@@ -22,3 +22,13 @@ When several sessions match a frequencies map, prefer a session with no running 
 ## Decision (Micah, 2026-10-02)
 
 Separate hails queue; they never merge into a running turn.
+
+## Root cause (planner, 2026-10-02, from code + zanebot log)
+
+Agent does try to prefer idle sessions: the queue wake path (`turn/worker.clj` `wake-charge`) resolves a hail's frequencies with `busy = (store/in-flight-sessions ss)` and `frequencies.clj` drops busy matches before `pick-by-prefer`. But "in-flight" is the session store's in-memory `in-flight*` atom, which a session joins only when the drive accepts the turn — not when the queue claims a record for it. Since isaac-e9jl the tick claims a record and starts it on its own thread, so there is a window between claim and drive-accept where the chosen session still looks idle.
+
+Zanebot timeline: izc1 hail 3e07a1fb claimed/started 14:33:32.618 on isaac-work-1; its `drive/turn-accepted` came at 14:33:33.141. Hail 9ab65a0a was resolved at 14:33:33.133 (inside the window) → isaac-work-1; 41d3f148 at 14:33:33.150 (just after accept) → isaac-work-1 too. Both then hit the busy session → `turn/waiting` → coalesced into the running turn (merge, not queue).
+
+## Fix direction
+- A session claimed by the queue counts as busy from the moment of the claim (reserve it in the same in-flight set, or have wake consult claimed/running records in the turn store), so the next resolution in the same tick or seconds later picks an idle match.
+- Separate hails never merge into a running turn (decision above; isaac-e3f4 generalizes as a sender choice).
