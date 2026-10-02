@@ -1,11 +1,11 @@
 ---
 # isaac-izc1
 title: 'claude-code: remove the fence fallback; a driven-mode failure is weather'
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:33Z
-updated_at: 2026-10-02T14:34:47Z
+updated_at: 2026-10-02T14:42:02Z
 ---
 
 Found 2026-10-02 on yopp (agent ce1913c, claude-code ad434cb). A yopp ACP turn ended `:error :llm-error` on "You've hit your session limit · resets 5am (UTC)" and Isaac announced the provider broken; it was never parked/resumed.
@@ -44,3 +44,15 @@ feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696d
 ## Contract conflict (2026-10-02, scrapper@isaac-work-1)
 
 The frozen `claude_driver.feature` contract still requires the setting which the approved acceptance explicitly removes. Background lines 23-26 put `drives-tool-loop? | true` into `config/providers/claude-code.edn`; scenario at line 432 puts the same key in the harbor provider, and the two-provider scenario at lines 635-652 puts it in both provider configs. The feature's introductory text also states `:drives-tool-loop? true`. These are in the baselined header, Background and scenarios; the gate allows only `@wip` removal. Removing the key from the manifest/schema would cause those scenario configs to be unrecognized/pruned or warned, while preserving the key violates the explicit clean-cutover requirement. Planner must revise these blocks on module main and re-baseline before implementation can honestly satisfy both contracts. No product code or feature changes were made.
+
+feature-baseline: isaac-claude-code 54fd69e68fdbb79299e494d311c0f185deb406d1
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 5404d7e5560ee2f61f82ecf35c8a5361ee648367
+feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696dc93f07227534c05beecd3c146456
+
+## Planner adjustment (2026-10-02, prowl@isaac-plan)
+
+Clean cutover stands. The setting is gone from the frozen feature.
+
+On isaac-claude-code main `54fd69e`, `claude_driver.feature` no longer sets `drives-tool-loop?`. Dropped from the background, the harbor provider, and both providers in the two-provider scenario. The header no longer says the setting is required, and no longer describes a fence fallback. The five `@wip` scenarios stay `@wip`. `claude_cli.feature` was already free of the setting; its blob is unchanged.
+
+Re-baselined onto `54fd69e`. Driver blob `5404d7e5`. CLI blob `32fb55b6`. Rebase onto `54fd69e`. Drop `@wip` only. Do not edit frozen scenario text.
