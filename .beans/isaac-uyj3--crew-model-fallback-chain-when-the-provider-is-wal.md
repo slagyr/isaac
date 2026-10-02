@@ -1,13 +1,13 @@
 ---
 # isaac-uyj3
 title: Crew model fallback chain when the provider is walled
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - agent
 created_at: 2026-09-28T14:10:02Z
-updated_at: 2026-09-28T18:55:21Z
+updated_at: 2026-10-02T00:31:02Z
 ---
 
 A crew names an ordered fallback chain. When the model at the head of the chain is unavailable, the turn continues on the next model that can take it. The transcript and the tool results already written stay. The tools are not run again.
@@ -57,3 +57,7 @@ The 09-28 worker pushed one implementation commit to `bean/isaac-uyj3` (`3f57c1d
 Finish it: start a fresh `bean/isaac-uyj3` work from current `origin/main` and port `3f57c1d` onto the renamed code (cherry-pick and resolve, or re-apply by hand), make the 12 baselined @wip scenarios in `features/llm/model_fallback.feature` pass with only @wip removed, `bb bean-gate verify`, land per the gated flow. Declare `:model-fallback` on the crew schema with a description; update the agent handbook chapter (crews/models section).
 
 After landing, the planner deploys agent to zanebot and sets (Micah, 2026-10-01): scrapper, perceptor, mixmaster `:model-fallback [:grok-4-6 :micah-opus]`; prowl `[:gpt-sol :micah-opus]`. Heads unchanged.
+
+## Landed on main (2026-10-01)
+
+main-sha: isaac-agent 0e9dfab2682c8074152be282b2bbffc9f43c4296
