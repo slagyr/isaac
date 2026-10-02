@@ -16,3 +16,8 @@ isaac-agent compaction.clj `should-compact?` (116-118) only sees `compaction/con
 Feed the compaction trigger from the provider's last reported prompt tokens when available (already captured in `:turn/request-measured`), or correct the estimate by the observed ratio.
 ## Acceptance (scenarios TBD)
 - A session whose provider-reported usage crosses 80% of the context window compacts on the next turn even when the local estimate is lower.
+
+## Acceptance (Micah approved 2026-10-02; gated)
+- Add `usage.gauge_prompt_tokens` to Grover's queued responses (driven-loop path) so a response can declare a first-cycle gauge separate from its reported usage; the "driven loop's declared gauge must not outrank its own reported prompt tokens" scenario then goes red, and the fix (reported usage wins over the declared first-cycle gauge for the compaction stamp) turns it green.
+- All @wip scenarios in isaac-agent `features/session/compaction_trusts_reported_tokens.feature` pass with @wip removed (feature-level tag).
+- `bb ci` + jvm-spec/jvm-features green.

@@ -1,7 +1,7 @@
 ---
 # isaac-izc1
 title: 'claude-code: remove the fence fallback; a driven-mode failure is weather'
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:33Z
@@ -30,3 +30,13 @@ New intent:
 - Tool-less completions (episode gists/summaries on a claude-code model) keep working as plain completions without MCP.
 
 Scenarios to be redrafted to this scope before baseline.
+
+## Acceptance (Micah approved 2026-10-02; gated)
+- The 5 @wip scenarios in isaac-claude-code `features/llm/api/claude_driver.feature` (MCP failure is weather :mcp-unavailable; resume in driven mode; weekly limit is :wall; repeated MCP failure raises attention; tool-less completion runs without --mcp-config) pass with @wip removed.
+- The 18 @wip plain-completion scenarios in `features/llm/api/claude_cli.feature` (background no longer sets drives-tool-loop? false) pass with @wip removed, on the tool-less path.
+- Planner retired 13 fence-mode scenarios in the planning commit (8154947): 4 fallback scenarios in claude_driver.feature, 9 text-protocol scenarios in claude_cli.feature.
+- Remove fail-mcp-init?*, fence-fallback!, the fence retry, driven? conditionals, the textual tool-call contract + parser, and the :drives-tool-loop? setting (manifest/schema). Handbook chapter updated. `bb ci` + jvm-spec/jvm-features green.
+
+feature-baseline: isaac-claude-code 815494789d835a84cdbb431b8359b65b815dff70
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature a8aceb512ef4142282ec3c36f2dc63a62ac25ea9
+feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696dc93f07227534c05beecd3c146456
