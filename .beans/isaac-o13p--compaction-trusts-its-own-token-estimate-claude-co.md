@@ -26,5 +26,11 @@ Feed the compaction trigger from the provider's last reported prompt tokens when
 
 Done: Grover driven-loop gauge separated from reported usage; negative acceptance test failed 85 vs 20 with old priority, then passed with final reported prompt prioritized. @wip removed. `bb ci` green (1863 specs/843 scenarios; one pre-existing pending), `bb jvm-spec` green (1863), focused `bb jvm-features features/session/compaction_trusts_reported_tokens.feature` green (3). Gate PASS against bean branch 6fec114; branch pushed and rebased onto origin/main. Full `bb jvm-features` was RED in two unrelated turn-store scenarios (features/turn/turn_store.feature:161,173), native suite green. Next: retry full JVM features with `ISAAC_TEST_TIMEOUT_MS=600000 bb jvm-features`, isolate any persistent failures, re-run gate, land on main and mark completed if green. Resume at features/turn/turn_store.feature:161.
 
+## Landed on main (2026-10-02)
+
+main-sha: isaac-agent 993a5c8509bbed53e14476f99697ae4abc87b7bc
+
+Verification: `bb ci` 1863 specs/843 features, 0 failures (one existing pending); `bb jvm-spec` 1863/0; `ISAAC_TEST_TIMEOUT_MS=600000 bb jvm-features` 843/0 (one existing pending); `bb bean-gate verify isaac-o13p --dir isaac-agent=../isaac-agent-jarr` PASS on landed main. JVM runner fixture now reads this checkout's manifest, rather than the foundation dependency's `isaac-manifest.edn` shadowing it.
+
 feature-baseline: isaac-agent 3d99cf35f0255064bcbb5aa0efc1e50caa4e9528
 feature-blob: isaac-agent features/session/compaction_trusts_reported_tokens.feature 75edf973c9612ecdaabe9629880cf460abf268cd 27,45,83
