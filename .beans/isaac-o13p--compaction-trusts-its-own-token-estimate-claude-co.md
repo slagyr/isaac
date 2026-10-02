@@ -1,11 +1,11 @@
 ---
 # isaac-o13p
 title: Compaction trusts its own token estimate; claude-code context reached ~1M tokens
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:34Z
-updated_at: 2026-10-02T14:35:41Z
+updated_at: 2026-10-02T15:16:20Z
 ---
 
 Found 2026-10-02 on yopp, ACP session acp-2026-09-29-1639-540a (model claude-sonnet → claude-sonnet-5 via :claude-code, :context-window 1000000, :context-mode :full, rubberband, threshold 0.8). Every cycle `:turn/request-measured` showed estimated ~311K vs provider-reported ~500K (ratio ~1.61), while `:session/compaction-check` sat at ~502K (under the 800K trigger). The 04:24:08Z request reported prompt-tokens 1,004,210 (cache-write 929,288 — a cache miss). Likely also why the Claude subscription limit was hit.
