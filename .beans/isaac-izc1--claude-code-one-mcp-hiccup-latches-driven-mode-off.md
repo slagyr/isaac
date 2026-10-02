@@ -40,3 +40,7 @@ Scenarios to be redrafted to this scope before baseline.
 feature-baseline: isaac-claude-code 815494789d835a84cdbb431b8359b65b815dff70
 feature-blob: isaac-claude-code features/llm/api/claude_driver.feature a8aceb512ef4142282ec3c36f2dc63a62ac25ea9
 feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696dc93f07227534c05beecd3c146456
+
+## Contract conflict (2026-10-02, scrapper@isaac-work-1)
+
+The frozen `claude_driver.feature` contract still requires the setting which the approved acceptance explicitly removes. Background lines 23-26 put `drives-tool-loop? | true` into `config/providers/claude-code.edn`; scenario at line 432 puts the same key in the harbor provider, and the two-provider scenario at lines 635-652 puts it in both provider configs. The feature's introductory text also states `:drives-tool-loop? true`. These are in the baselined header, Background and scenarios; the gate allows only `@wip` removal. Removing the key from the manifest/schema would cause those scenario configs to be unrecognized/pruned or warned, while preserving the key violates the explicit clean-cutover requirement. Planner must revise these blocks on module main and re-baseline before implementation can honestly satisfy both contracts. No product code or feature changes were made.
