@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:33Z
-updated_at: 2026-10-02T14:42:02Z
+updated_at: 2026-10-02T14:42:16Z
 ---
 
 Found 2026-10-02 on yopp (agent ce1913c, claude-code ad434cb). A yopp ACP turn ended `:error :llm-error` on "You've hit your session limit · resets 5am (UTC)" and Isaac announced the provider broken; it was never parked/resumed.
@@ -56,3 +56,9 @@ Clean cutover stands. The setting is gone from the frozen feature.
 On isaac-claude-code main `54fd69e`, `claude_driver.feature` no longer sets `drives-tool-loop?`. Dropped from the background, the harbor provider, and both providers in the two-provider scenario. The header no longer says the setting is required, and no longer describes a fence fallback. The five `@wip` scenarios stay `@wip`. `claude_cli.feature` was already free of the setting; its blob is unchanged.
 
 Re-baselined onto `54fd69e`. Driver blob `5404d7e5`. CLI blob `32fb55b6`. Rebase onto `54fd69e`. Drop `@wip` only. Do not edit frozen scenario text.
+
+Contract fix (planner, 2026-10-02): the frozen claude_driver.feature still set `drives-tool-loop? true` (background + 3 scenarios + description) while acceptance removes the setting — the worker rightly handed off. Planner removed those rows on main (driven is the only mode); re-baselined below.
+
+feature-baseline: isaac-claude-code 54fd69e68fdbb79299e494d311c0f185deb406d1
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 5404d7e5560ee2f61f82ecf35c8a5361ee648367
+feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696dc93f07227534c05beecd3c146456
