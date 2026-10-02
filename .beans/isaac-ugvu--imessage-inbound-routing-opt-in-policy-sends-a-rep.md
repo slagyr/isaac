@@ -3,8 +3,9 @@
 title: 'iMessage inbound routing: opt-in policy sends a reply to the crew that texted, or to an @crew prefix'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-10-02T15:28:05Z
-updated_at: 2026-10-02T15:28:05Z
+updated_at: 2026-10-02T15:44:12Z
 blocked_by:
     - isaac-qn4o
 ---
@@ -58,3 +59,9 @@ Policy on the iMessage comm slot, **off by default**:
    Alert's terse soul) get a reply-mode hint, or is the trusted block enough?
 
 Scenarios to be written after these are settled.
+
+## Decisions (2026-10-02, Micah)
+
+1. TTL is 15 minutes (`:ttl-seconds 900`). The last sender wins.
+2. An unknown `@name` is ordinary text: nothing is stripped, and the message goes to the default frequencies exactly as today.
+3. Reply-mode hint: pending. Planner recommends scoping Red Alert's soul instead of adding a mechanism (see chat).
