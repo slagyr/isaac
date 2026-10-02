@@ -1,11 +1,11 @@
 ---
 # isaac-ixcm
 title: gchat ignores the generic :target, so attention notices to a Chat space dead-letter
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:34Z
-updated_at: 2026-10-02T04:41:34Z
+updated_at: 2026-10-02T14:35:44Z
 ---
 
 Found 2026-10-02 on yopp. yopp's `:attention {:notify {:comm "gchat" :target "spaces/26gscqAAAAE"}}` (Micah's DM space, correctly configured). The "provider is broken" notice logged `:gchat.send/missing-target` then `:comm.delivery/dead-lettered :reason :permanent`, attempts 0.
