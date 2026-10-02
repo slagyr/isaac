@@ -9,7 +9,7 @@ tags:
     - comm
     - imessage
 created_at: 2026-10-02T14:19:22Z
-updated_at: 2026-10-02T14:19:22Z
+updated_at: 2026-10-02T15:28:05Z
 ---
 
 # Status
@@ -240,3 +240,10 @@ Do not grant `comm_recent` to every crew by default — it's a cross-crew window
 - Locking, CRDT, or query language on the blackboard.
 - Changing Discord/gchat inbound routing.
 - A second berth for "blackboard backends." The blackboard *module* is the plug.
+
+## Review outcome (2026-10-02, Micah + planner)
+
+- Listener/observer berths and the ledger module: **deferred**, no immediate need.
+- Outbound crew/session stamping: beaned as isaac-qn4o (todo, baselined).
+- iMessage routing: beaned as isaac-ugvu (draft, opt-in, off by default, blocked by qn4o).
+- Facts: Red Alert restructured without a blackboard module — bin/redalert keeps alerts.json (statuses open/handled/snoozed), ALERTS.md publishes the contract, zane's soul points at `redalert ack`.
