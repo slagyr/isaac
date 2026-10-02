@@ -1,11 +1,11 @@
 ---
 # isaac-izc1
 title: 'claude-code: remove the fence fallback; a driven-mode failure is weather'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:33Z
-updated_at: 2026-10-02T15:27:40Z
+updated_at: 2026-10-02T15:29:20Z
 ---
 
 Found 2026-10-02 on yopp (agent ce1913c, claude-code ad434cb). A yopp ACP turn ended `:error :llm-error` on "You've hit your session limit · resets 5am (UTC)" and Isaac announced the provider broken; it was never parked/resumed.
