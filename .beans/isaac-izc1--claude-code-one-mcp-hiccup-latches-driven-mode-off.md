@@ -1,11 +1,11 @@
 ---
 # isaac-izc1
 title: 'claude-code: remove the fence fallback; a driven-mode failure is weather'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:33Z
-updated_at: 2026-10-02T15:29:20Z
+updated_at: 2026-10-02T15:42:39Z
 ---
 
 Found 2026-10-02 on yopp (agent ce1913c, claude-code ad434cb). A yopp ACP turn ended `:error :llm-error` on "You've hit your session limit · resets 5am (UTC)" and Isaac announced the provider broken; it was never parked/resumed.
@@ -86,3 +86,10 @@ On isaac-claude-code main 82be2e0, four session rows now expect the final cycle:
 The provider result may still name the first cycle as gauge-prompt-tokens. Agent, not the feature, decides the session stamp. No unit spec was frozen by this bean, and none was changed.
 
 Re-baselined onto 82be2e0. Driver blob 48583d1f. CLI blob 32fb55b6 unchanged. Rebase onto 82be2e0. Drop @wip only. Do not edit frozen scenario text. Do not push the local agent squash.
+
+## Landed on main (2026-10-02)
+
+main-sha: isaac-agent 9b2dcd5e7452952ba00ec926ada4b5c08a1e3d69
+main-sha: isaac-claude-code 416e92eea9fd61d3ff76ebc3f4d769575ea31d5c
+
+Agent `bb ci`: 1864 specs, 843 features (one unrelated pending); JVM spec/features green. Claude-code `bb ci`: 75 specs, 59 features (three opt-in real pending). The first agent CI run hit a nondeterministic turn-queue ordering failure; isolated scenario and full rerun passed. Gate PASS on both landed commits. Claude-code pins the landed agent SHA in deps.edn and bb.edn.
