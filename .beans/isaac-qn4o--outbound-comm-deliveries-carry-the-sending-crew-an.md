@@ -1,11 +1,11 @@
 ---
 # isaac-qn4o
 title: Outbound comm deliveries carry the sending crew and session, on the record and in the log
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-02T15:27:37Z
-updated_at: 2026-10-02T15:27:44Z
+updated_at: 2026-10-02T15:45:08Z
 ---
 
 Likely repo: **isaac-agent**. From the isaac-1hfe review, 2026-10-02 (Micah: "good hygiene, we want it anyway").
