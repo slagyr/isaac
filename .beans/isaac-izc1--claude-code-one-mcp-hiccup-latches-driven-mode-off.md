@@ -71,3 +71,18 @@ Next: STOP, planner must reconcile the frozen claude_driver.feature with newly l
 feature-baseline: isaac-claude-code 82be2e017f6621e01930957ce3c5f342faab5643
 feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 48583d1f430435a42781cffd29fdb7a3d942fbc4
 feature-blob: isaac-claude-code features/llm/api/claude_cli.feature 32fb55b6696dc93f07227534c05beecd3c146456
+
+## Planner adjustment (2026-10-02, prowl@isaac-plan, gauge)
+
+isaac-o13p stands. A valid final cycle report wins over the first-cycle gauge. The result total is still never the gauge.
+
+On isaac-claude-code main 82be2e0, four session rows now expect the final cycle:
+
+- line 54: last-input-tokens 320 (was 260). Turn spend stays 580.
+- line 357: 370 (was 260). Turn spend stays 950.
+- line 579: 320 (was 260). The last provider response stays 320. Turn spend stays 580.
+- line 630: 39765 (was 22378). Turn spend stays 92754.
+
+The provider result may still name the first cycle as gauge-prompt-tokens. Agent, not the feature, decides the session stamp. No unit spec was frozen by this bean, and none was changed.
+
+Re-baselined onto 82be2e0. Driver blob 48583d1f. CLI blob 32fb55b6 unchanged. Rebase onto 82be2e0. Drop @wip only. Do not edit frozen scenario text. Do not push the local agent squash.
