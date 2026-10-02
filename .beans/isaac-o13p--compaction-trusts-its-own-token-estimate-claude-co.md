@@ -1,7 +1,7 @@
 ---
 # isaac-o13p
 title: Compaction trusts its own token estimate; claude-code context reached ~1M tokens
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-02T04:41:34Z
@@ -21,3 +21,6 @@ Feed the compaction trigger from the provider's last reported prompt tokens when
 - Add `usage.gauge_prompt_tokens` to Grover's queued responses (driven-loop path) so a response can declare a first-cycle gauge separate from its reported usage; the "driven loop's declared gauge must not outrank its own reported prompt tokens" scenario then goes red, and the fix (reported usage wins over the declared first-cycle gauge for the compaction stamp) turns it green.
 - All @wip scenarios in isaac-agent `features/session/compaction_trusts_reported_tokens.feature` pass with @wip removed (feature-level tag).
 - `bb ci` + jvm-spec/jvm-features green.
+
+feature-baseline: isaac-agent 3d99cf35f0255064bcbb5aa0efc1e50caa4e9528
+feature-blob: isaac-agent features/session/compaction_trusts_reported_tokens.feature 75edf973c9612ecdaabe9629880cf460abf268cd 27,45,83
