@@ -42,3 +42,7 @@ deferred (isaac-1hfe).
 feature-baseline: isaac-agent 4881de6e644f8e3a2829cb84b2e28f8cc65bee97
 feature-blob: isaac-agent features/tool/comm_send.feature 01452e32378a4d6e0b0dc5f0e13ab0e29448e7a1 71
 feature-blob: isaac-agent features/comm/delivery/queue.feature ef4bd393d2636a0fc1e2e08a31a22ecc6a7c763d 114
+
+## Landed on main (2026-10-02)
+
+main-sha: isaac-agent 39f7b78325aba1c3a4c586dbfb75f7a9107883ec
