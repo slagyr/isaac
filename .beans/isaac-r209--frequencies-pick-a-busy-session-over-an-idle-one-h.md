@@ -32,3 +32,14 @@ Zanebot timeline: izc1 hail 3e07a1fb claimed/started 14:33:32.618 on isaac-work-
 ## Fix direction
 - A session claimed by the queue counts as busy from the moment of the claim (reserve it in the same in-flight set, or have wake consult claimed/running records in the turn store), so the next resolution in the same tick or seconds later picks an idle match.
 - Separate hails never merge into a running turn (decision above; isaac-e3f4 generalizes as a sender choice).
+
+## Design (Micah + planner, 2026-10-02) — supersedes the fix directions above
+
+Sessions are NOT resource pools (explored and rejected: sessions are identities, not interchangeable units; membership is derived from frequencies, can be empty and can grow via :create; a session "pool" object would hold no state of its own). What sessions and resource pools share is the admission step:
+
+- **One synchronous admission step at claim time.** When agent's queue claims a charge it acquires, as one all-or-nothing step, a session from the charge's frequencies (a free matching session, by the usual :prefer) plus its resource-pool leases. If anything is busy it releases what it got and the charge waits in agent's queue. The chosen session is reserved from the moment of the claim (closing today's claim-to-accept race).
+- **Membership is computed at admission time** from the frequencies (current sessions only).
+- **Empty match never waits:** `:create :if-missing` creates a session; `:create :never` fails immediately with "no session matches".
+- **All matching sessions busy:** the charge waits in agent's queue (held) and is retried when any session or pool lease is released (existing wake hook).
+- **Hails never merge** into a running turn; chat bursts to one session keep coalescing (isaac-e3f4 later makes merge/queue a sender choice).
+- Resource pools stay as they are (declared, interchangeable capacity); a future provider-token budget is one more pool in the same admission step.
