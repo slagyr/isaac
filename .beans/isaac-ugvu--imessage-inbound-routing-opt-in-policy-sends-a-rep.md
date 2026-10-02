@@ -1,11 +1,11 @@
 ---
 # isaac-ugvu
 title: 'iMessage inbound routing: opt-in policy sends a reply to the crew that texted, or to an @crew prefix'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-02T15:28:05Z
-updated_at: 2026-10-02T15:53:02Z
+updated_at: 2026-10-02T15:59:25Z
 blocked_by:
     - isaac-qn4o
 ---
@@ -69,3 +69,26 @@ Scenarios to be written after these are settled.
 3. Reply-mode hint (Micah, 2026-10-02): not needed. Cron-specific behavior belongs in the cron prompt, not a crew's soul. Red Alert's soul is now personality only (the OpenClaw-era HEARTBEAT_OK rule moved out and was dropped), so a routed reply reaches a crew that answers like itself. isaac-cron already tells cron turns that the user may not see the reply.
 
 All three open questions are settled. This is ready for scenarios.
+
+## Implementation notes
+
+- Read the clock through Isaac's clock (the features set it with "the current time is"), not System time.
+- The work item gains `:crew` when routed; the dispatch charge carries it.
+- New step: `comms.imessage.inbound-route is "<edn>"`, in the style of the other `comms.imessage.*` slice steps.
+- The guard scenario "with no routing policy, a reply goes where it always has" already passes and must stay green.
+
+## Acceptance
+
+- isaac-imessage `features/comm/imessage/inbound_route.feature` — "a reply within the TTL goes to the crew that last texted that handle"
+- isaac-imessage `features/comm/imessage/inbound_route.feature` — "after the TTL, a reply goes to the default session"
+- isaac-imessage `features/comm/imessage/inbound_route.feature` — "a leading @crew routes to that crew and is stripped from the text"
+- isaac-imessage `features/comm/imessage/inbound_route.feature` — "an unknown @name is ordinary text for the default session"
+- isaac-imessage `features/comm/imessage/inbound_route.feature` — "a routed crew is told which message it is answering"
+- The rest of the isaac-imessage features stay green, including "with no routing policy, a reply goes where it always has".
+
+feature-baseline: isaac-imessage ee2a1f6514b59eaecb40c039fc91d35d03e3763c
+feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 41
+feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 63
+feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 85
+feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 96
+feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 107
