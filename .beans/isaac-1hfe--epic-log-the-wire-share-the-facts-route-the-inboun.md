@@ -20,6 +20,10 @@ Motivating incident (2026-10-01): Red Alert pinged Micah over iMessage about Leo
 
 Conversation: zane + Micah, 2026-10-01 → 2026-10-02.
 
+# Decisions
+
+Decision (2026-10-02, Micah): Do not build the ledger or the blackboard inside isaac-agent. Agent exposes a seam — listeners for inbound and outbound comm traffic. The ledger is a **module** that implements that seam (storage, retention, query, `comm_recent` are the module's business). The blackboard is a **separate module** that only exposes tools. Agent stays a port; implementations stay swappable.
+
 # Problem
 
 Three problems got tangled. They look related because they showed up in one iMessage thread. They are not one feature.
@@ -38,12 +42,15 @@ There is no Isaac-side log of outbound+inbound with a crew column. Apple's `chat
 - **No receptionist / switchboard crew.** Every inbound would hop through a dispatcher model — extra latency, extra cost, wrong personality, single point of failure. Discord would then have two architectures. Keep comms as a port. Crews send. The bus routes.
 - **No global transcript injected into session context.** Session context is one conversation with one crew. Dumping every iMessage into every turn is noise (Red Alert's 15-minute heartbeat does not need tax chat) and still does not say who should *act*. Tools that *query* a log: yes. Auto-context: no.
 - **Do not couple the three.** A ledger does not decide who hears the reply. A blackboard is not a transcript. Routing policy must work even if nobody queries the log.
+- **Do not put storage in the agent.** A JSONL log and a state file are one implementation. The next one might be sqlite, or filtered, or off. Baking them into isaac-agent makes the first implementation the only one.
 
 # Proposed solution
 
 One line: **log the wire, share the facts, route the inbound.**
 
-## 1. The wire — a comm ledger, not a transcript
+Agent owns two fire points and a listener berth. Two modules consume that world. Routing stays on isaac-imessage.
+
+## 1. The wire — agent seam + ledger module
 
 Queryable log of what crossed a comm, with the column Apple does not have: **which crew**.
 
@@ -57,16 +64,40 @@ Queryable log of what crossed a comm, with the column Apple does not have: **whi
  :text    "Leo's birthday is in 3 days — might want to grab something!"}
 ```
 
-**Where it is written** (not the adapters, not the bridge's send path):
+### Agent: fire, don't store
 
-- **Out** — delivery worker, on successful `Comm/send!`. That is the first moment we know it actually left. Today the queue record has `:comm :target :content :id :attempts :created-at` and **no crew/session** — those must be stamped at `enqueue!` (from `comm_send` / cron origin).
-- **In** — bridge, when it accepts a comm charge. That is the first moment inbound has a crew.
+New berth `:isaac.agent/comm-listener` (name open — see questions). Map of factories, same shape as `:isaac.agent/tools`. Each contribution is a `CommListener`:
 
-`isaac-imessage` / `isaac-discord` stay pipes. They do not know crew. The bridge never sees `comm_send`. Tracking belongs in **isaac-agent's comm domain** — same neighborhood as the delivery queue, different job.
+```clojure
+(defprotocol CommListener
+  (on-outbound [listener record])  ; after successful Comm/send!
+  (on-inbound  [listener event]))  ; when the bridge accepts a comm charge
+```
 
-**How crews read it:** tool `comm_recent` (last N, filterable by comm / target / dir / crew). On demand. Not in the system prompt.
+**Do not overload `isaac.comm.protocol/Comm`.** Those callbacks are per-surface turn events (typing, chunks, tool-calls) for the comm that owns the session. This seam is bus-level: any comm, with crew, after the fact. Wrong axis.
 
-## 2. Facts — a blackboard, not memory, not hail, not the ledger
+Fire points (where crew is known):
+
+- **Out** — delivery worker, on successful `Comm/send!`. Today the queue record has `:comm :target :content :id :attempts :created-at` and **no crew/session**. Stamp those at `enqueue!` (from `comm_send` / cron origin). That stamp is **payload for listeners**, not a ledger.
+- **In** — bridge, when it accepts a comm charge. First moment inbound has a crew.
+
+Fire semantics: iterate listeners, swallow exceptions, log warn. A listener must not fail a send. Sync is fine; a module that needs network does its own queue. No listeners installed → no-op.
+
+`isaac-imessage` / `isaac-discord` stay pipes. They do not know crew. The bridge never sees `comm_send`.
+
+### Module: store, retain, query
+
+Working name **isaac-ledger**. Contributes:
+
+- one `:isaac.agent/comm-listener` (the writer)
+- `:isaac.agent/tools` `comm_recent` (the reader)
+- its own `:isaac.config/schema` if it wants retain/truncate settings
+
+Storage, retention, truncation, which comms it persists, heartbeat filtering — all the module. JSONL under `<root>/comm/ledger/` is a first implementation, not the contract. That's the flexibility. Absent from the classpath, nothing is logged.
+
+**How crews read it:** `comm_recent` (last N, filterable by comm / target / dir / crew). On demand. Not in the system prompt.
+
+## 2. Facts — a blackboard module, tools only
 
 Named documents other crews can mutate. Linda tuplespace, not a database.
 
@@ -76,9 +107,9 @@ Named documents other crews can mutate. Linda tuplespace, not a database.
 
 Red Alert owns it (convention, not a lock). Conversational crew writes `{:birthday :Leo :year 2026 :status :done}` when Micah says the gift is bought. Next heartbeat reads it and stays quiet.
 
-**Tools:** `state_get` / `state_put` on namespaced keys. Files under `<root>/state/` (today that directory holds `auth/` and almost nothing else). Whole-document put, last-write-wins, callers do their own read-modify-write. No merge, no etag, no lock — enough for an alerts list, not for accounting.
+Working name **isaac-blackboard**. **No listener. No agent seam.** Contributes `:isaac.agent/tools` `state_get` / `state_put` only — same pattern as hail's `hail-send` / `hail-get`. Whole-document put, last-write-wins, callers do their own read-modify-write. No merge, no etag, no lock — enough for an alerts list, not for accounting.
 
-The JSON heartbeat file is the exhibit that this primitive is missing, not a storage design to keep.
+Storage path and value shape are the module's. Files under `<root>/state/` (today that directory holds `auth/` and almost nothing else) is a first implementation, not the contract. The JSON heartbeat file is the exhibit that this primitive is missing, not a storage design to keep.
 
 ## 3. Routing — a separate policy, iMessage-specific
 
@@ -93,7 +124,7 @@ Ledger and blackboard do not pick the crew. For iMessage, still one of:
 
 Discord / gchat already multiplex by channel / space. Do not invent a second router there.
 
-Last-outbound can be a tiny per-target index; it does **not** require the full ledger. Do not make routing a child of the ledger.
+Last-outbound can be a tiny per-target index; it does **not** require the ledger. It *can* be a second `CommListener` that writes that index, or isaac-imessage can query the ledger module, or it can stamp its own. OPEN — see questions. Do not make routing a child of the ledger.
 
 Collaboration pattern once 1+2 exist:
 
@@ -101,44 +132,47 @@ Collaboration pattern once 1+2 exist:
 |---|---|---|
 | domain crew (Red Alert) | the document | cron / its own turns |
 | conversational crew (zane) | nothing | Micah says something that mutates a fact |
-| the bus | the ledger | every send/receive |
+| the ledger module | the wire log | every listener fire it chooses to persist |
 
 zane does not need to *be* Red Alert. He needs to update Red Alert's facts. Red Alert does not need to hear the reply. He needs the world to be true next time he wakes up.
 
 # Modules / berths
 
-**No new modules.** These are two tools and a file log, not a product surface.
+**Two new modules. One new berth. Agent does not grow a log.**
 
-- Ledger + `comm_recent` → **isaac-agent** comm domain (`isaac.comm.delivery.*`, plus a log ns). Same place we already decided comms live (isaac-6pqo).
-- Blackboard + `state_get` / `state_put` → **isaac-agent** tools, files under `<root>/state/`.
-- Routing → **isaac-imessage** inbound (`notification->work-item` / dispatch) plus, if last-outbound, a small agent-side lookup. Per-chat crew overrides are already a stretch goal in isaac-imessage's ROADMAP; this is a different axis (who, not which chat).
+| piece | home | contributes |
+|---|---|---|
+| listener berth + fire points + `:crew`/`:session` on enqueue | **isaac-agent** | berth `:isaac.agent/comm-listener` (declared; empty until a module fills it) |
+| ledger (storage, retention, `comm_recent`) | **isaac-ledger** (new) | `:isaac.agent/comm-listener`, `:isaac.agent/tools`, optional `:isaac.config/schema` |
+| blackboard (`state_get` / `state_put`) | **isaac-blackboard** (new) | `:isaac.agent/tools` only |
+| inbound routing policy | **isaac-imessage** | extra-schema on the imessage slot; maybe a second listener for last-outbound |
 
-**No new berths.**
+**Berth, not a fourth comm.** Comms stay on `:isaac.server/comm`. Adapters stay pipes; they do not grow a ledger API. If this starts looking like a comm or a crew, the design has gone wrong.
 
-- Tools already contribute on `:isaac.agent/tools`. `comm_recent`, `state_get`, `state_put` are three more entries there, next to `comm_send` and `memory_*`.
-- Comms already contribute on `:isaac.server/comm`. Adapters stay pipes; they do not grow a ledger API.
-- A pluggable ledger-backend or blackboard-store berth is YAGNI. File log, same as the delivery queue (`<root>/comm/delivery/`).
+No pluggable "ledger-backend" berth inside the ledger module. The *module* is the plug. Want a different store? Ship a different module on the same listener berth. Two listeners can coexist (ledger + last-outbound index + a test spy).
 
-If this starts looking like a fourth comm or a crew, the design has gone wrong.
+Pattern already in tree: hail contributes tools without living in the agent; `:isaac.agent/tools` / `:isaac.agent/slash-commands` are factory maps with a registry. This is that, for wire events.
 
 # Track all comms?
 
-**Recommendation: yes, at the agent seams, automatically.** Writes happen where crew is known (`send!` success, inbound charge accept). Per-comm opt-in is a footgun ("why isn't this Discord ping in the log?"). Cost of a JSONL line is tiny next to an LLM turn.
+**Agent fires all of them.** Writes happen where crew is known (`send!` success, inbound charge accept). Per-comm opt-in at the *agent* is a footgun ("why didn't my listener see this Discord ping?"). Cost of a callback is tiny next to an LLM turn.
+
+The **ledger module** decides what to persist. CLI / ACP skip, heartbeat filtering, truncation — module policy, not an agent carve-out.
 
 Still useful on Discord/gchat even though routing there is already solved: a crew *not* bound to that channel can query what was said. That's the cross-crew job.
 
-**Carve-out to decide:** CLI / ACP already have session transcripts. Logging every ACP prompt into the ledger may be noise. Lean: log origin-bearing inbound charges and queued outbound `Comm/send!` (iMessage, Discord, gchat, gmail, attention). Skip CLI. ACP: skip unless someone has a cross-crew need.
-
-Do not log attachment bytes. Truncate text. Heartbeats are chatty (Red Alert × 96/day); retention is mandatory or the log is a heartbeat dump.
+Do not persist attachment bytes. Heartbeats are chatty (Red Alert × 96/day); retention is the module's problem or the log is a heartbeat dump.
 
 # Configuration
 
-Ledger is **always on** once shipped — routing forensics and `comm_recent` both need the writes even if no crew is granted the tool. Failure to append is a warn, not a failed send.
+Ledger logging is **on when the module is installed**. Failure to persist is a warn inside the module, not a failed send. Agent has no `:comm-ledger` key.
 
 ```clojure
-;; optional agent-level (defaults shown)
+;; isaac-ledger module schema (example — the module owns this table)
 :comm-ledger {:retain-days 30
               :max-chars   2000}
+
+;; blackboard: no config. Files exist when written. Ownership is the key prefix.
 
 ;; iMessage slot — routing only; omit = today's one-session-per-chat
 :comms {:imessage {:type :imessage
@@ -147,8 +181,6 @@ Ledger is **always on** once shipped — routing forensics and `comm_recent` bot
                                             :ttl-seconds 600}}}
 ```
 
-Blackboard: **no config.** Files exist when written. Ownership is the key prefix (`state/<crew>/…`).
-
 Tool grants stay the existing crew allow-list:
 
 ```clojure
@@ -156,39 +188,49 @@ Tool grants stay the existing crew allow-list:
        :red-alert {:tools {:allow [… :state_get]}}}
 ```
 
-Do not grant `comm_recent` to every crew by default — it's a cross-crew window. Conversational crews yes; heartbeat crons probably no.
+Do not grant `comm_recent` to every crew by default — it's a cross-crew window. Conversational crews yes; heartbeat crons probably no. Tools are absent until their module is on the classpath, so an install without isaac-ledger simply has no `comm_recent` to grant.
 
 # Costs
 
 | | pay | skip and you get |
 |---|---|---|
-| **Disk** | JSONL, truncated text, 30-day retain. Heartbeat volume is the real size driver, not Micah. | unbounded log of 15-minute pings |
-| **Latency** | one file append on successful send (already async on the delivery worker) and on inbound accept | — |
+| **Disk** | whatever the ledger module stores. Heartbeat volume is the real size driver, not Micah. | unbounded log of 15-minute pings |
+| **Latency** | one listener callback on successful send (already async on the delivery worker) and on inbound accept | — |
 | **Tokens** | none unless a crew calls `comm_recent` / `state_*`. Do not auto-inject. | context pollution, the thing we refused |
-| **Queue schema** | stamp `:crew` / `:session` on enqueue; today those fields do not exist | outbound rows with no crew column — the gap the ledger exists to fill |
+| **Queue schema** | stamp `:crew` / `:session` on enqueue so listeners have the crew column | outbound events with no crew — the gap the ledger exists to fill |
 | **Races** | blackboard last-write-wins | lost updates on concurrent put; acceptable for alerts, document it |
 | **Privacy** | any crew granted `comm_recent` can read other crews' pings to that target | that's the point; be honest in the handbook |
 | **Wrong-crew turns** | routing policy | the motivating bug, paid in LLM cost + confusion every time |
-| **Complexity** | three small features. Risk is a worker bundling them. | one muddy module |
+| **Complexity** | one agent berth + two new modules + imessage routing. Risk is over-abstracting a file append. | storage baked into the agent, first implementation frozen |
 
 # Grounded in current code (2026-10-02)
 
-- `isaac.tool.comm-send/comm-send-tool` → `queue/enqueue!` → delivery worker `send!` → `queue/delete-pending!` on `:ok`. No log, no crew on the record.
+- `isaac.tool.comm-send/comm-send-tool` → `queue/enqueue!` → delivery worker `send!` → `queue/delete-pending!` on `:ok`. No log, no crew on the record, no listener.
 - `isaac-imessage` `notification->work-item` returns nil on `:is_from_me`; session key `imessage:<chat-guid>`; `dispatch-work-item!` builds a charge with origin, no crew override.
-- `memory_*` tools write `<root>/crew/<id>/memory/<date>.md` — crew-scoped, prose, wrong shape.
-- `<root>/state/` exists; contents are auth, not a blackboard.
-- `:isaac.agent/tools` berth already hosts `comm_send`. `:isaac.server/comm` is the adapter berth.
+- Charge schema already has `:crew` and `:origin` — inbound listener payload is sitting there.
+- `memory_*` tools write `<root>/crew/<id>/memory/<date>.md` — crew-scoped, prose, wrong shape. They live in the agent; the blackboard should not copy that mistake.
+- `<root>/state/` exists; contents are auth, not a blackboard. A blackboard module should not collide with `state/auth/`.
+- `:isaac.agent/tools` already hosts module-contributed tools (hail: `hail-send`, `hail-get`). Blackboard is that pattern.
+- Agent berths today: `:isaac.agent/tools`, `:llm-api`, `:slash-commands`, `:provider`, `:provider-template`. No observer/listener berth yet. Comm protocol is the wrong one to extend.
 - isaac-imessage ROADMAP stretch: "per-chat crew/model overrides via config" — related, not this.
 
 # Open questions for review
 
 1. **Routing default.** Ship `:session` (today) and make last-outbound / prefix opt-in on the imessage slot? Or ship `:both` on zanebot because the bug is live? Lean: opt-in config, enable `:both` on zanebot as the first customer.
-2. **All comms vs origin-bearing only.** Recommendation above; confirm CLI/ACP skip.
-3. **Blackboard value shape.** EDN maps (queryable, crew-readable) vs opaque strings. Lean: EDN. One document per key, not a row store.
+2. **What the agent fires vs what the ledger persists.** Lean: agent fires every origin-bearing inbound charge and every queued outbound `Comm/send!` (iMessage, Discord, gchat, gmail, attention). Skip CLI at the fire point (no queue record). ACP: fire if it went through `Comm/send!`, else skip. Ledger module may still drop heartbeats / ACP.
+3. **Blackboard value shape.** EDN maps (queryable, crew-readable) vs opaque strings. Lean: EDN. One document per key, not a row store. Module's call.
 4. **Ownership enforcement.** Convention (`state/<crew>/…`) vs tool-level write allowlist by prefix. Lean: convention first. A conversational crew *must* be able to write Red Alert's document or the gift-bought flow dies.
-5. **Retention / heartbeat noise.** 30 days / 2000 chars — fine? Filter `:dir :out` from cron sessions in `comm_recent` default view so a human query isn't 96 heartbeats?
+5. **Retention / heartbeat noise.** 30 days / 2000 chars — fine? Filter `:dir :out` from cron sessions in `comm_recent` default view so a human query isn't 96 heartbeats? Module's call.
 6. **Prefix grammar.** `@red-alert rest` vs `/crew red-alert rest`. `@` is what Micah sketched. Crew ids with hyphens. Unknown crew: drop to default session, don't 404 the text.
-7. **Implementation split.** If this stands, three child features (ledger, blackboard, imessage route), no shared milestone required. Routing can land without the other two; blackboard can land without the ledger.
+7. **Implementation split.** Four beans, not three:
+   1. isaac-agent: berth + fire points + crew/session on enqueue
+   2. isaac-ledger (blocked by 1)
+   3. isaac-blackboard (independent)
+   4. isaac-imessage routing (independent of 2 and 3; last-outbound *may* want 1)
+8. **Berth name.** `:isaac.agent/comm-listener` (literal) vs `:isaac.agent/wire` vs `:isaac.agent/comm-observer`. Lean: `comm-listener`.
+9. **Module names.** isaac-ledger / isaac-blackboard vs isaac-comm-log / isaac-state. Lean: the first pair. `isaac-state` collides with `<root>/state/auth`.
+10. **Last-outbound home.** Second `CommListener` (could live in isaac-imessage or isaac-ledger) vs imessage-internal vs query `comm_recent`. Lean: a tiny listener next to imessage, not a ledger query — routing must work if the ledger module is not installed.
+11. **Blackboard vs `state/auth`.** Module should not write under `state/auth/`. Namespace the module's tree (`state/board/…` or `board/…`) so auth stays agent-owned.
 
 # Deliberately out of scope
 
@@ -197,3 +239,4 @@ Do not grant `comm_recent` to every crew by default — it's a cross-crew window
 - A receptionist crew, hail-as-blackboard, memory-as-blackboard.
 - Locking, CRDT, or query language on the blackboard.
 - Changing Discord/gchat inbound routing.
+- A second berth for "blackboard backends." The blackboard *module* is the plug.
