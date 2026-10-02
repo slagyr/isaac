@@ -23,3 +23,7 @@ gchat's send falls back to the generic `:target` when `:gchat/space`/`:gchat/to`
 
 feature-baseline: isaac-gchat 9b9dd10825637f721f20b6eb7036f405834115a8
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature 7fb90fea21a1df67b0c4bdcfe50c7cca381e862d
+
+## Landed on main (2026-10-02)
+
+main-sha: isaac-gchat b629c2616ef43e665194420eb0e6757df0d27c5b
