@@ -22,5 +22,9 @@ Feed the compaction trigger from the provider's last reported prompt tokens when
 - All @wip scenarios in isaac-agent `features/session/compaction_trusts_reported_tokens.feature` pass with @wip removed (feature-level tag).
 - `bb ci` + jvm-spec/jvm-features green.
 
+## Checkpoint (2026-10-02, scrapper@isaac-work-2)
+
+Done: Grover driven-loop gauge separated from reported usage; negative acceptance test failed 85 vs 20 with old priority, then passed with final reported prompt prioritized. @wip removed. `bb ci` green (1863 specs/843 scenarios; one pre-existing pending), `bb jvm-spec` green (1863), focused `bb jvm-features features/session/compaction_trusts_reported_tokens.feature` green (3). Gate PASS against bean branch 6fec114; branch pushed and rebased onto origin/main. Full `bb jvm-features` was RED in two unrelated turn-store scenarios (features/turn/turn_store.feature:161,173), native suite green. Next: retry full JVM features with `ISAAC_TEST_TIMEOUT_MS=600000 bb jvm-features`, isolate any persistent failures, re-run gate, land on main and mark completed if green. Resume at features/turn/turn_store.feature:161.
+
 feature-baseline: isaac-agent 3d99cf35f0255064bcbb5aa0efc1e50caa4e9528
 feature-blob: isaac-agent features/session/compaction_trusts_reported_tokens.feature 75edf973c9612ecdaabe9629880cf460abf268cd 27,45,83
