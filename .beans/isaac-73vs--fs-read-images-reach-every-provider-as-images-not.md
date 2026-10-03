@@ -1,11 +1,11 @@
 ---
 # isaac-73vs
 title: fs__read images reach every provider as images, not just Claude Code over MCP
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-03T00:53:56Z
-updated_at: 2026-10-03T01:21:27Z
+updated_at: 2026-10-03T01:23:08Z
 ---
 
 Likely repo: **isaac-agent**. Follow-up to isaac-m4o2 (Micah, 2026-10-02: images from fs__read must reach every model, not just Claude Code over MCP).
@@ -116,3 +116,7 @@ Rebase onto `d366208`. Drop `@wip` only. Do not edit frozen scenario text. The O
 ## Worker checkpoint (2026-10-03, scrapper@isaac-work-3)
 
 Done: rebased `isaac-agent bean/isaac-73vs` onto d366208, dropped only five @wip tags, implemented provider-native image transports, :vision false, binary-safe session image fixture. Fixed Ollama continuation: simulated NDJSON omitted tool_call chunks (`src/isaac/agent/llm/http.clj:304`); fixed m4o2 MCP fixture with both root and test-state-tools paths (`spec/isaac/agent/tool/tools_steps.clj:346`). Committed/pushed eb504bb. `bb ci` green: 1880 specs/0 failures, 858 features/0 failures (1 pre-existing pending). All five image scenarios and m4o2 scenarios green. Next: run `bb bean-gate verify isaac-73vs` in isaac root, correct any violations, land on main and complete bean on gate exit 0. Resume: `isaac-agent-73vs/src/isaac/agent/llm/api/responses.clj:266` (image followup implementation).
+
+## Completion (2026-10-03, scrapper@isaac-work-3)
+
+Gated PASS on 9af9eaf after rebase onto origin/main 1c30bb8. `bb ci`: 1880 specs/0 failures; 858 features/0 failures (1 pre-existing pending); m4o2 built_in and mcp_turn_registry scenarios green. Landed isaac-agent main 9af9eaf (bean/isaac-73vs). OpenAI Responses function_call_output array image shape verified against OpenAI documentation. Provenance: Isaac-Session isaac-work-3, Isaac-Bean isaac-73vs.
