@@ -1,11 +1,11 @@
 ---
 # isaac-73vs
 title: fs__read images reach every provider as images, not just Claude Code over MCP
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-03T00:53:56Z
-updated_at: 2026-10-03T01:08:14Z
+updated_at: 2026-10-03T01:08:41Z
 ---
 
 Likely repo: **isaac-agent**. Follow-up to isaac-m4o2 (Micah, 2026-10-02: images from fs__read must reach every model, not just Claude Code over MCP).
@@ -97,3 +97,18 @@ feature-baseline: isaac-agent d366208ff592aa90c731b1946689cb414fbc508e
 feature-blob: isaac-agent features/tool/image_results.feature d950f7f1c3b31137d9e9779c2b687af3a0ae9073
 
 Correction: the first baseline attempt for re-cut 2 was refused (bean in-progress). It was briefly set to todo, re-baselined whole-file at d366208, and returned to in-progress for the worker's claim.
+
+feature-baseline: isaac-agent d366208ff592aa90c731b1946689cb414fbc508e
+feature-blob: isaac-agent features/tool/image_results.feature d950f7f1c3b31137d9e9779c2b687af3a0ae9073 27
+feature-blob: isaac-agent features/tool/image_results.feature d950f7f1c3b31137d9e9779c2b687af3a0ae9073 59
+feature-blob: isaac-agent features/tool/image_results.feature d950f7f1c3b31137d9e9779c2b687af3a0ae9073 88
+feature-blob: isaac-agent features/tool/image_results.feature d950f7f1c3b31137d9e9779c2b687af3a0ae9073 119
+feature-blob: isaac-agent features/tool/image_results.feature d950f7f1c3b31137d9e9779c2b687af3a0ae9073 149
+
+## Planner adjustment (2026-10-03, prowl@isaac-plan, grant path)
+
+Deny-all stands. The grant now sits where the ACL reads it.
+
+`defaults.tools.directories` is retired. The background grants `defaults.crew.tools.directories.allow` `[:cwd]`. That text is already on isaac-agent main `d366208`. This re-baseline scopes the five scenarios: lines 27, 59, 88, 119, and 149. Blob `d950f7f1`. All five stay `@wip`.
+
+Rebase onto `d366208`. Drop `@wip` only. Do not edit frozen scenario text. The Ollama continuation is still yours once `fs__read` is permitted.
