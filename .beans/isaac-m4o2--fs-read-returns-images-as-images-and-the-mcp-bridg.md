@@ -1,11 +1,11 @@
 ---
 # isaac-m4o2
 title: fs__read returns images as images, and the MCP bridge hands them to Claude Code as image content
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-03T00:38:18Z
-updated_at: 2026-10-03T00:40:09Z
+updated_at: 2026-10-03T00:51:04Z
 ---
 
 Likely repo: **isaac-agent**. Micah + planner, 2026-10-02.
