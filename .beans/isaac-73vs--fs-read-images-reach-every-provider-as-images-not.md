@@ -1,11 +1,11 @@
 ---
 # isaac-73vs
 title: fs__read images reach every provider as images, not just Claude Code over MCP
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-03T00:53:56Z
-updated_at: 2026-10-03T00:54:52Z
+updated_at: 2026-10-03T01:03:14Z
 ---
 
 Likely repo: **isaac-agent**. Follow-up to isaac-m4o2 (Micah, 2026-10-02: images from fs__read must reach every model, not just Claude Code over MCP).
@@ -62,3 +62,18 @@ feature-blob: isaac-agent features/tool/image_results.feature be95ed38f8af8f41a2
 `bb jvm-features features/tool/image_results.feature` runs 5 examples, 5 failures. Anthropic and Responses images are absent, Chat Completions and `:vision false` report `Error: path outside allowed directories: /target/test-state/pixel.png`. Diagnostic from `ensure-path-allowed` showed `:cwd "/target/test-state", :global nil, :crew nil`: all five scenarios configure only `log.output`, never `defaults.tools.directories.allow` or crew directory permissions. `names/path-allowed?` intentionally denies when no grants exist. The scenarios' expected image is incompatible with the existing fail-closed filesystem policy. The planner must add a directory grant to the scenario config and re-baseline; worker may not edit baselined feature text. Ollama also shows a continuation prompt in request 2 instead of the expected tool reply; re-test once fs/read is permitted.
 
 Checkpoint: branch `isaac-agent bean/isaac-73vs` at `17f9227` contains in-progress provider transports and binary-capable fixture. Unit smoke: `bb spec --focus spec/isaac/agent/llm/followup_spec.clj --focus spec/isaac/agent/llm/messages_spec.clj --focus spec/isaac/agent/llm/responses_spec.clj` 83 examples, 0 failures. Next: after planner re-baselines, fix native `bb features` reflection error (native gherclj `enrich-throwable`), verify Ollama and Responses request shapes, add complete specs, run `bb ci`, gate, land. Do not mark green until full acceptance passes.
+
+feature-baseline: isaac-agent 69d13efd7196684063075785c2c850e856013506
+feature-blob: isaac-agent features/tool/image_results.feature d7badbf706d5e28f6e1e413a1eded09b12cd87cf 27
+feature-blob: isaac-agent features/tool/image_results.feature d7badbf706d5e28f6e1e413a1eded09b12cd87cf 59
+feature-blob: isaac-agent features/tool/image_results.feature d7badbf706d5e28f6e1e413a1eded09b12cd87cf 88
+feature-blob: isaac-agent features/tool/image_results.feature d7badbf706d5e28f6e1e413a1eded09b12cd87cf 119
+feature-blob: isaac-agent features/tool/image_results.feature d7badbf706d5e28f6e1e413a1eded09b12cd87cf 149
+
+## Planner adjustment (2026-10-03, prowl@isaac-plan)
+
+Deny-all stands. The scenarios now grant the session workdir.
+
+`features/tool/image_results.feature` background sets `defaults.tools.directories.allow` to `[:cwd]`, beside `log.output`. All five scenarios stay `@wip`. Scenario lines are now 27, 59, 88, 119, and 149.
+
+Re-baselined onto isaac-agent `69d13ef`. Blob `d7badbf7`. Rebase onto `69d13ef`. Drop `@wip` only. Do not edit frozen scenario text. The Ollama continuation is still yours to investigate once `fs__read` is permitted.
