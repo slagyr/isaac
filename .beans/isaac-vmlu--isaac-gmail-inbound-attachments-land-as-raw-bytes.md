@@ -67,3 +67,9 @@ landed. Do not re-implement `write-bytes` here.
 
 feature-baseline: isaac-gmail b04884b9a2cb94a06f0d8c15e7045a61e72f4f4a
 feature-blob: isaac-gmail features/comm/gmail/gmail.feature 9092838ce32e682ac4ad777e9e7861d31a499568 287
+
+## Landed on main (2026-10-03)
+
+main-sha: isaac-gmail 90ee552ac1acf6a95f4c7b7df33adb77e4942102
+
+Verification: `bb ci` green (150 specs, 46 features); `bb lint src feature-steps` 0 errors (3 pre-existing warnings). `bb lint` across specs reports pre-existing clj-kondo Speclj macro errors (92 errors). Gate PASS on bean branch and landed main.
