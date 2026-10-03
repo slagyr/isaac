@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-03T00:53:56Z
-updated_at: 2026-10-03T01:04:34Z
+updated_at: 2026-10-03T01:07:59Z
 ---
 
 Likely repo: **isaac-agent**. Follow-up to isaac-m4o2 (Micah, 2026-10-02: images from fs__read must reach every model, not just Claude Code over MCP).
@@ -88,3 +88,7 @@ Zane's planner granted `defaults.tools.directories.allow [:cwd]` and re-baseline
 ## Implementation conflict after 69d13ef rebaseline (2026-10-03, scrapper@isaac-work-3)
 
 Ran `bb jvm-features features/tool/image_results.feature` on `bean/isaac-73vs` rebased to 69d13ef: 5 examples, 5 failures. Chat Completions and `:vision false` show `Error: path outside allowed directories: /target/test-state/pixel.png`; Anthropic and Responses lack their image blocks. The frozen Background writes `defaults.tools.directories.allow`, but `fs-bounds/ensure-path-allowed` obtains its global policy from `defaults/tools`, which reads `[:defaults :crew :tools]`. The manifest only permits `:max-lines`, `:max-bytes`, and `:timeout-ms` under `[:defaults :tools]`; it permits `:directories` under `[:defaults :crew :tools]`. This is a retired policy path, not an ACL grant. Change the frozen Background to `defaults.crew.tools.directories.allow | [:cwd]`, then rebaseline the feature blob and lines. Deny-all remains unchanged. Separately, Ollama's second outbound request currently contains the empty-terminal-response continuation nudge instead of the tool response; worker will diagnose after the grant is repaired.
+
+## Planner note (2026-10-03, re-cut 2)
+
+Scrapper was right: `defaults.tools.directories` is retired (manifest `:retired? "use :defaults :crew :tools :directories"`), and the ACL reads `[:defaults :crew :tools]`. The Background now grants `defaults.crew.tools.directories.allow [:cwd]`. Re-baselined whole-file at the new commit. Separately, the retired key was accepted silently in a feature's config; that's worth its own look (validation should reject it).
