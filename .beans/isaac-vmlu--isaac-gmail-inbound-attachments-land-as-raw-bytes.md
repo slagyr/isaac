@@ -1,13 +1,13 @@
 ---
 # isaac-vmlu
 title: 'isaac-gmail: inbound attachments land as raw bytes — Gmail attachment data is not UTF-8 text'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - gmail
 created_at: 2026-10-01T00:09:24Z
-updated_at: 2026-10-03T19:31:45Z
+updated_at: 2026-10-03T19:32:30Z
 parent: isaac-bv1l
 ---
 
