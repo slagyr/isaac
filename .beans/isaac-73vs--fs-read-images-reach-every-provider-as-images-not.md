@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-03T00:53:56Z
-updated_at: 2026-10-03T01:07:59Z
+updated_at: 2026-10-03T01:08:14Z
 ---
 
 Likely repo: **isaac-agent**. Follow-up to isaac-m4o2 (Micah, 2026-10-02: images from fs__read must reach every model, not just Claude Code over MCP).
@@ -92,3 +92,8 @@ Ran `bb jvm-features features/tool/image_results.feature` on `bean/isaac-73vs` r
 ## Planner note (2026-10-03, re-cut 2)
 
 Scrapper was right: `defaults.tools.directories` is retired (manifest `:retired? "use :defaults :crew :tools :directories"`), and the ACL reads `[:defaults :crew :tools]`. The Background now grants `defaults.crew.tools.directories.allow [:cwd]`. Re-baselined whole-file at the new commit. Separately, the retired key was accepted silently in a feature's config; that's worth its own look (validation should reject it).
+
+feature-baseline: isaac-agent d366208ff592aa90c731b1946689cb414fbc508e
+feature-blob: isaac-agent features/tool/image_results.feature d950f7f1c3b31137d9e9779c2b687af3a0ae9073
+
+Correction: the first baseline attempt for re-cut 2 was refused (bean in-progress). It was briefly set to todo, re-baselined whole-file at d366208, and returned to in-progress for the worker's claim.
