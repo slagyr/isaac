@@ -49,3 +49,11 @@ feature-baseline: isaac-agent 6ce4df99970417b8dc99a268b029e98e7e57af50
 feature-blob: isaac-agent features/tool/built_in.feature 0fb855c775fb355f61d001a30197176f2d9cb34f 76
 feature-blob: isaac-agent features/llm/mcp_turn_registry.feature 867576939ca7c66feebd90a5ba0f9095f6d4c6bd 65
 feature-blob: isaac-agent features/llm/mcp_turn_registry.feature 867576939ca7c66feebd90a5ba0f9095f6d4c6bd 82
+
+## Landed on main (2026-10-02)
+
+main-sha: isaac-agent 278d90e3f46f4152d478fcc74183f6cd55777e2c
+
+## Verification
+
+`bb ci` passed (1874 specs, 853 feature examples; one pre-existing pending). `bb bean-gate verify isaac-m4o2` passed against the landed main commit. Live Claude Code deploy check requires a running deployed crew and remains untested in this checkout.
