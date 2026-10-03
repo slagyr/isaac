@@ -1,11 +1,11 @@
 ---
 # isaac-73vs
 title: fs__read images reach every provider as images, not just Claude Code over MCP
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-03T00:53:56Z
-updated_at: 2026-10-03T01:04:14Z
+updated_at: 2026-10-03T01:04:34Z
 ---
 
 Likely repo: **isaac-agent**. Follow-up to isaac-m4o2 (Micah, 2026-10-02: images from fs__read must reach every model, not just Claude Code over MCP).
