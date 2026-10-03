@@ -1,13 +1,13 @@
 ---
 # isaac-vmlu
 title: 'isaac-gmail: inbound attachments land as raw bytes — Gmail attachment data is not UTF-8 text'
-status: draft
+status: todo
 type: bug
 priority: high
 tags:
     - gmail
 created_at: 2026-10-01T00:09:24Z
-updated_at: 2026-10-01T00:09:30Z
+updated_at: 2026-10-03T19:27:47Z
 parent: isaac-bv1l
 blocked_by:
     - isaac-ut4u
@@ -47,17 +47,25 @@ Blocked on isaac-ut4u, which lands foundation
 - **Out of scope.** Image input to the model (deferred in isaac-e2zb).
   Chat media (the GChat bean).
 
-## Acceptance
+## Acceptance (features/comm/gmail/gmail.feature:287)
 
-Draft. Scenarios after the GChat scenario plan lands and this bean's
-plan is approved.
+- [ ] Scenario "a PNG email attachment is saved byte-identical and the turn is told (isaac-vmlu)":
+  `bb features features/comm/gmail/gmail.feature:287`
+- [ ] Spec: `decode-raw` / `attachment-get!` return a `byte[]` with no
+  charset (`bb spec spec/isaac/comm/gmail/api_spec.clj` from isaac-gmail).
+- [ ] Handbook inbound-attachment troubleshooting names this UTF-8
+  replacement failure.
+- [ ] Version bump; pin isaac-gmail to the foundation sha isaac-ut4u
+  landed; `bb spec` / `bb features` / `bb lint` green.
 
-Likely home: isaac-gmail `features/comm/gmail/gmail.feature` (next to
-isaac-e2zb). Existing `returns attachment … with content "…"` /
-`the file … contains "…"` steps are ASCII-only.
+New steps: `the Gmail API returns attachment "…" of message "…" named "…" with bytes "…"`,
+`the file "…" under the session working directory has bytes "…"`.
 
 ## Likely repo scope
 
 isaac-gmail (`api.clj`, `inbound_attachment.clj`, gmail.feature,
 feature-steps, handbook). Pin foundation at the sha isaac-ut4u
 landed. Do not re-implement `write-bytes` here.
+
+feature-baseline: isaac-gmail b04884b9a2cb94a06f0d8c15e7045a61e72f4f4a
+feature-blob: isaac-gmail features/comm/gmail/gmail.feature 9092838ce32e682ac4ad777e9e7861d31a499568 287
