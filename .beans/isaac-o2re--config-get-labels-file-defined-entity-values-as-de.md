@@ -1,11 +1,11 @@
 ---
 # isaac-o2re
 title: config get labels file-defined entity values as (default), and labels maps as a whole
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-10-02T23:35:45Z
-updated_at: 2026-10-03T00:30:59Z
+updated_at: 2026-10-03T00:42:44Z
 ---
 
 Likely repo: **isaac-foundation**. Bug in isaac-dnib's `(default)` annotation. Field report 2026-10-02 (yopp).
