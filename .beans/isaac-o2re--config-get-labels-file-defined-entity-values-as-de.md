@@ -1,10 +1,11 @@
 ---
 # isaac-o2re
 title: config get labels file-defined entity values as (default), and labels maps as a whole
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-10-02T23:35:45Z
-updated_at: 2026-10-02T23:35:45Z
+updated_at: 2026-10-03T00:30:59Z
 ---
 
 Likely repo: **isaac-foundation**. Bug in isaac-dnib's `(default)` annotation. Field report 2026-10-02 (yopp).
@@ -42,3 +43,7 @@ feature-baseline: isaac-foundation a417452b5cffcc77eb80e2102fda7e4f8aaae55a
 feature-blob: isaac-foundation features/cli/config_default_labels.feature 9a965ef7b660b0491fb5b4f41fce1725244ee557 40
 feature-blob: isaac-foundation features/cli/config_default_labels.feature 9a965ef7b660b0491fb5b4f41fce1725244ee557 60
 feature-blob: isaac-foundation features/cli/config_default_labels.feature 9a965ef7b660b0491fb5b4f41fce1725244ee557 74
+
+## Landed on main (2026-10-02)
+
+main-sha: isaac-foundation e7253f0089f8a73a6907016e3ec3682ff69207f5
