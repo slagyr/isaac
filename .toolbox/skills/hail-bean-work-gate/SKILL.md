@@ -310,9 +310,14 @@ bean that contradicts the code or itself:
 1. Append what you found to the bean body (quote the gate output) and push.
 2. Hail the **plan band** (value from the data block) with a prompt override:
 
-       {"band": "<plan-band value>", "params": {"bean-id": "<bean-id>"},
+       {"band": "<plan-band value>",
+        "params": {"bean-id": "<bean-id>", "submitter-session": "<your session id>"},
         "reply_to": "<incoming hail id>",
         "prompt": "Conflict on <bean-id>: <what the gate/merge reported and why it cannot be reverted>."}
+
+   `submitter-session` is your own session id (your session identity block, or
+   `session_info`). The planner hands the bean back to exactly that session, so
+   you keep your checkout, branch and context.
 
 3. Send the ➡️ planner notification after the hail succeeds. Leave the bean
    `in-progress`; the planner adjusts and hands it back via the work band.
