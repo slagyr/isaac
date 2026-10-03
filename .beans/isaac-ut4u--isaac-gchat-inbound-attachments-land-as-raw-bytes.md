@@ -1,13 +1,13 @@
 ---
 # isaac-ut4u
 title: 'isaac-gchat: inbound attachments land as raw bytes — Chat media is not UTF-8 text'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - gchat
 created_at: 2026-10-01T00:09:20Z
-updated_at: 2026-10-01T00:14:40Z
+updated_at: 2026-10-03T19:09:56Z
 parent: isaac-bv1l
 ---
 
