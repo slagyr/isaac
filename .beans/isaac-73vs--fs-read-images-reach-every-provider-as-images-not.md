@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-10-03T00:53:56Z
-updated_at: 2026-10-03T01:03:14Z
+updated_at: 2026-10-03T01:04:14Z
 ---
 
 Likely repo: **isaac-agent**. Follow-up to isaac-m4o2 (Micah, 2026-10-02: images from fs__read must reach every model, not just Claude Code over MCP).
@@ -77,3 +77,10 @@ Deny-all stands. The scenarios now grant the session workdir.
 `features/tool/image_results.feature` background sets `defaults.tools.directories.allow` to `[:cwd]`, beside `log.output`. All five scenarios stay `@wip`. Scenario lines are now 27, 59, 88, 119, and 149.
 
 Re-baselined onto isaac-agent `69d13ef`. Blob `d7badbf7`. Rebase onto `69d13ef`. Drop `@wip` only. Do not edit frozen scenario text. The Ollama continuation is still yours to investigate once `fs__read` is permitted.
+
+feature-baseline: isaac-agent 1f0d144b8be1521d279daecccd57d68b9486b97a
+feature-blob: isaac-agent features/tool/image_results.feature d7badbf706d5e28f6e1e413a1eded09b12cd87cf
+
+## Planner note (2026-10-03)
+
+Zane's planner granted `defaults.tools.directories.allow [:cwd]` and re-baselined at 69d13ef. That's the fix. A duplicate crew-level grant from the Mac planner (30a56d7) was reverted (1f0d144); the scenario text is identical to 69d13ef. Re-baselined whole-file at 1f0d144 so the gate's window starts after that edit/revert pair. Ollama's request-2 continuation prompt is still the worker's to re-test now that fs/read is permitted.
