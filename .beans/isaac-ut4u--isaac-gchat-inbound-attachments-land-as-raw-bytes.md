@@ -95,3 +95,8 @@ Gmail waits on this bean.
 
 feature-baseline: isaac-gchat 9ebd9d728160726630b45342bc146c782944cbc7
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature 874e533f595a48c06a8cb9b3ea698c3b44592a46 702
+
+## Checkpoint (2026-10-03)
+
+Done: foundation fs/write-bytes plus mem/real specs landed on main at 03446a92b26393abc6c71a305e3f2b5f3a639693; foundation specs and features green separately (the combined `bb ci` timed out on feature runner once). GChat byte ingest, acceptance steps, handbook, version, and specs on bean/isaac-ut4u at 5576cb5; `bb ci` green against foundation worktree.
+Next: repin GChat `bb.edn:17` and `deps.edn:4` to foundation main sha, re-run `bb ci` and `bb lint`, commit branch, re-run gate, land GChat and complete bean.
