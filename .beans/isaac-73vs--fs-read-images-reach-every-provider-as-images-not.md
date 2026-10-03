@@ -56,3 +56,9 @@ feature-blob: isaac-agent features/tool/image_results.feature be95ed38f8af8f41a2
 feature-blob: isaac-agent features/tool/image_results.feature be95ed38f8af8f41a2047b087b5bc0851fef7f66 87
 feature-blob: isaac-agent features/tool/image_results.feature be95ed38f8af8f41a2047b087b5bc0851fef7f66 118
 feature-blob: isaac-agent features/tool/image_results.feature be95ed38f8af8f41a2047b087b5bc0851fef7f66 148
+
+## Implementation conflict (2026-10-03)
+
+`bb jvm-features features/tool/image_results.feature` runs 5 examples, 5 failures. Anthropic and Responses images are absent, Chat Completions and `:vision false` report `Error: path outside allowed directories: /target/test-state/pixel.png`. Diagnostic from `ensure-path-allowed` showed `:cwd "/target/test-state", :global nil, :crew nil`: all five scenarios configure only `log.output`, never `defaults.tools.directories.allow` or crew directory permissions. `names/path-allowed?` intentionally denies when no grants exist. The scenarios' expected image is incompatible with the existing fail-closed filesystem policy. The planner must add a directory grant to the scenario config and re-baseline; worker may not edit baselined feature text. Ollama also shows a continuation prompt in request 2 instead of the expected tool reply; re-test once fs/read is permitted.
+
+Checkpoint: branch `isaac-agent bean/isaac-73vs` at `17f9227` contains in-progress provider transports and binary-capable fixture. Unit smoke: `bb spec --focus spec/isaac/agent/llm/followup_spec.clj --focus spec/isaac/agent/llm/messages_spec.clj --focus spec/isaac/agent/llm/responses_spec.clj` 83 examples, 0 failures. Next: after planner re-baselines, fix native `bb features` reflection error (native gherclj `enrich-throwable`), verify Ollama and Responses request shapes, add complete specs, run `bb ci`, gate, land. Do not mark green until full acceptance passes.
