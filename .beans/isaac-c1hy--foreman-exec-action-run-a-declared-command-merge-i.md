@@ -1,10 +1,11 @@
 ---
 # isaac-c1hy
 title: 'Foreman :exec action: run a declared command, merge its output into instance data, fire <action>-failed on failure'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-10-04T19:15:31Z
-updated_at: 2026-10-04T19:15:31Z
+updated_at: 2026-10-04T20:39:04Z
 blocked_by:
     - isaac-7sfq
 ---
