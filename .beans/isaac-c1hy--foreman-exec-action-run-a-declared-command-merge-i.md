@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-04T19:15:31Z
-updated_at: 2026-10-04T20:39:04Z
+updated_at: 2026-10-04T20:43:47Z
 blocked_by:
     - isaac-7sfq
 ---
@@ -49,3 +49,8 @@ so declared commands are allowed here.
 
 feature-baseline: isaac-foreman 4ae8e8195e30b21fd1840e62450bf9c8d37a13b8
 feature-blob: isaac-foreman features/foreman/exec_action.feature 6d391ae76e2eeb971d547e2ffce4dade7f22ab5c
+
+
+## Landed on main (2026-10-04)
+
+main-sha: isaac-foreman 15cdcbb08c4ebc0ba6bccf967dfccf82c0a0b3c9
