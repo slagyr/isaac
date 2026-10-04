@@ -1,10 +1,11 @@
 ---
 # isaac-7sfq
 title: 'Foreman instance data: seeded at start, merged by events, settable by CLI, HTTP and tool, rendered into prompts'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-10-04T19:14:19Z
-updated_at: 2026-10-04T19:14:19Z
+updated_at: 2026-10-04T19:23:36Z
 ---
 
 Likely repo: **isaac-foreman**. Micah + planner, 2026-10-04. Foundation for the bean-work machine (isaac-q6fj): a machine needs data that outlives one event (bean title/summary, worksite, attempt count).
