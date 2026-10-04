@@ -1,10 +1,11 @@
 ---
 # isaac-np1m
 title: 'Foreman action berth: modules contribute action types; built-ins register through it; unknown types are config errors'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-10-04T19:16:25Z
-updated_at: 2026-10-04T19:16:25Z
+updated_at: 2026-10-04T20:45:48Z
 blocked_by:
     - isaac-7sfq
 ---
