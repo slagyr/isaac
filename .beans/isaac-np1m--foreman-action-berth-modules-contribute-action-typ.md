@@ -42,3 +42,7 @@ contribution, not a Foreman change.
 
 feature-baseline: isaac-foreman 6decfc4fe4da4efb6e65dbeada57fd40490b2f75
 feature-blob: isaac-foreman features/foreman/action_berth.feature 7822458fd6eda47ca858b13730ef26026c274ac5 19
+
+## Work checkpoint (2026-10-04)
+
+Done: action berth manifest, contributed chime fixture, action dispatch and schema validation; focused feature scenario passes. Next: fix legacy unit specs and complete bb ci, gate, land. Last run `bb ci` RED (15 failures, mostly unregistered :log/:exec in standalone core specs). Resume `src/isaac/foreman/action.clj:32`: lazy-register built-in berth entries for isolated core specs, then rerun bb ci.
