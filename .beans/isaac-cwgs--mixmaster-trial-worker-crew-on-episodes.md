@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-09-29T23:32:13Z
-updated_at: 2026-09-30T14:03:18Z
+updated_at: 2026-10-04T18:11:32Z
 blocked_by:
     - isaac-jvwr
     - isaac-3ljt
@@ -64,3 +64,11 @@ Mixmaster made **zero** recall__search / recall__scene calls across all four tur
 ## Recall live (2026-09-30 14:02Z)
 
 Episodes aa839f3 deployed (klcb + 3ljt). Smoke: a cold Pilot session stored its opening message with the recall block ahead of the prompt, and the model called recall__scene on an injected id. Mixmaster's next bean is the first real trial data point.
+
+## Findings (2026-10-04, planner)
+
+Recall now reaches Mixmaster (since isaac-klcb, 10-02 14:02Z), but the trial was starved: isaac-work-4 had no tags, so the isaac-work pool never routed to it. Three beans in two days: qn4o 32 req / 2.06M prompt (landed), m4o2 42 / 2.79M (landed), 73vs attempt 40 / 3.20M (correct conflict escalation). Scrapper over the same days: 29–68 req, 1.3–5.5M on comparable beans. Too few, too different to compare.
+
+Recall quality: each cold open injected 10 lineage scenes from his previous episode (the last bean worked, unrelated to the new one); search scored 0.0 and 0.53 because the hail prompt is band boilerplate. Gists are mostly procedural (commit, push, load skill). Zero recall__search / recall__scene calls.
+
+Changes: isaac-work-4 tagged #{:ci :isaac} (2026-10-04) so it shares pool traffic. Re-evaluate after ~10 more beans. Micah: the useful context is in the bean, not the hail; how a worker's turn carries bean content to recall belongs to the Foreman/worksite migration, not to episodes core.
