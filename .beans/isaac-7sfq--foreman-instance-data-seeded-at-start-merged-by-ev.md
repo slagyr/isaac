@@ -1,11 +1,11 @@
 ---
 # isaac-7sfq
 title: 'Foreman instance data: seeded at start, merged by events, settable by CLI, HTTP and tool, rendered into prompts'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-04T19:14:19Z
-updated_at: 2026-10-04T19:23:36Z
+updated_at: 2026-10-04T19:27:53Z
 ---
 
 Likely repo: **isaac-foreman**. Micah + planner, 2026-10-04. Foundation for the bean-work machine (isaac-q6fj): a machine needs data that outlives one event (bean title/summary, worksite, attempt count).
@@ -48,3 +48,7 @@ The instance record already carries an unused `:context {}` placeholder.
 
 feature-baseline: isaac-foreman b99f376fa554e1a1413b919b25067d613bb96e98
 feature-blob: isaac-foreman features/foreman/instance_data.feature d96cef8f7a0859787b17dcd1a1378a54f1879ec7
+
+## Landed on main (2026-10-04)
+
+main-sha: isaac-foreman 31a4566c9726b0c31263ac878bf531283752ab14
