@@ -117,3 +117,24 @@ The other six failures stay implementation work. Rebase onto `49aaf24`. Drop `@w
 
 ## Planner note (2026-10-05, Micah decision)
 `sessions list`: the POLICY column becomes CONTEXT, showing the session's resolved context mode (session override, else crew). When you remove the `:session-policy` read in `session/cli.clj`, render context mode there. The gated scenario for it lives in isaac-ka10 (agent `features/session/cli.feature`); doing it here is welcome but not required for this bean.
+
+## Acceptance contract conflict (2026-10-05, scrapper@isaac-work-2)
+
+Rebased onto 49aaf24; dropped @wip only. Pushed `bean/isaac-c52a` at 099d72d.
+
+`bb features features/session/context_mode_berth.feature features/session/session_observers.feature`: 13 examples, 2 failures, 33 assertions.
+
+Green: all 7 context-mode-berth scenarios; 4 of 6 session-observer scenarios (crew without observers, session override, failing observer + attention, unknown observer). Unit spec: a blocking observer does not delay publish.
+
+Blocked: the two logbook EDN assertions.
+
+- `features/session/session_observers.feature:34` (`events[0].event` = session-opened)
+- `features/session/session_observers.feature:89` (`events[0].event` = turn-started)
+
+The lantern logbook **does write** `{:events [{:event "session-opened" ...} ...]}` during the turn (confirmed via delivery trace: session-opened, turn-started, two message-appended, turn-ended). The Then step `the isaac file "lantern/logbook.edn" EDN contains:` uses foundation `fs_steps.clj` `get-path` (line 236), which splits on `.` and does `(get current (keyword segment))`. Path `events[0].event` becomes keyword `:events[0]`, which is not a key of `{:events [...]}`, so actual is always nil.
+
+`isaac.step-tables/get-path` already supports `events[0].event` indexes; the EDN-contains step does not use it. Worker cannot edit the frozen feature, and fixing the matcher is a cross-repo isaac-foundation change (test-support pin 98de59aa).
+
+Planner needs one of: (1) authorize a foundation `get-path` fix to use `step-tables/get-path`, re-pin agent, resume; or (2) reword the two assertions to a form the current EDN-contains step can read (no `foo[n]` segments) and re-baseline.
+
+Remaining implementation after that: delete SessionPolicy / chronicle policy / logbook policy fixture; handbook for both berths; `bb ci` and `bb jvm-spec`.
