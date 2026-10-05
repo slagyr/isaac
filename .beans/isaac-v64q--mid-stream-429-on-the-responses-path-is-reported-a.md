@@ -74,3 +74,9 @@ Acceptance:
 feature-baseline: isaac-agent e598584f5cb59cb9527a349af552e14fc918cd36
 feature-blob: isaac-agent features/bridge/weather_suspend.feature 9aba10a357adf4deeabfa017d8831d608261d03d 50
 feature-blob: isaac-agent features/bridge/weather_suspend.feature 9aba10a357adf4deeabfa017d8831d608261d03d 73
+
+## Landed on main (2026-10-05)
+
+main-sha: isaac-agent 54f78662d7467b1944f01cfd0089fb5b168912f5
+
+The Responses adapter reports an incomplete stream as `:stream-ended-early`; in-band failures retain status and retry-after for provider-wall classification. Grover can simulate a dropped partial Responses delta with optional HTTP error. Partial replies never reach the transcript. `bb ci`: 1887 specs, 871 features, zero failures (one unrelated pending). `bb bean-gate verify isaac-v64q --dir isaac-agent=../isaac-agent-v64q-land`: PASS on the landed commit.
