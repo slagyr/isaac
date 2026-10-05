@@ -1,11 +1,11 @@
 ---
 # isaac-l1b6
 title: Every streaming API treats a stream without its end marker as weather
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-05T14:29:07Z
-updated_at: 2026-10-05T14:32:57Z
+updated_at: 2026-10-05T15:49:12Z
 ---
 
 Micah, 2026-10-05. On the night of 10-04, chatgpt closed seven streams empty 1–4 s after the request (zanebot: isaac-work-1/2/4 mid-turn, tempest vault-sync cron). The responses adapter reported each as a plain `:llm-error` ("responses stream ended without response.completed"), so the drive ended the turn: no fallback (scrapper has `:model-fallback [:grok-4-6 :micah-opus]`), no suspend, no retry; the hailed beans sat claimed with no worker.
@@ -68,3 +68,14 @@ isaac-l1b6 bean-gate: FAIL (2) — isaac-agent @ HEAD 89dacd0 (branch bean/isaac
 Restoring the original wording by replacing the 85c2105 line still fails. The gate walks every consecutive pair from the first baseline onward: 85c2105's in-place edit remains a FAIL even after b808c21 puts the original text back, and b808c21 is a second FAIL because it removed the 85c2105 wording.
 
 Implementation is done at isaac-agent `89dacd0` (`bean/isaac-l1b6`). Worker cannot edit `## Acceptance` lines. The only honest fix is a planner re-baseline (`bb bean-gate baseline`) so a new `feature-baseline:` line recuts the append-only window (isaac-3rbl). Keeping every historical wording cannot un-fail 85c2105. Then hand back.
+
+feature-baseline: isaac-agent 4153a79c2c5ff9530b2aa85454a9388abf34917d
+feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb473208480ce6a9940c15a5456a75a62ed4e55
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan, recut)
+
+Re-baselined onto isaac-agent `4153a79`. Blob `4eb47320`, line-less. The new baseline recuts the append-only window, so the earlier acceptance edits no longer fail the gate.
+
+The exception stands. `comm_send_spec.clj:123` may be the only JVM failure. Do not edit that spec. The original line `bb ci` and `bb jvm-spec` green is still in the acceptance heading, with the exception as an extra line.
+
+Rebase onto `4153a79` if needed. Drop `@wip` only. Land when the gate is green.
