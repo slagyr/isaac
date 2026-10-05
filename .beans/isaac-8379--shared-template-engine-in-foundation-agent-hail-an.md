@@ -1,10 +1,11 @@
 ---
 # isaac-8379
 title: Shared template engine in foundation; Agent, Hail and Foreman render through it
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-10-05T15:57:06Z
-updated_at: 2026-10-05T15:57:06Z
+updated_at: 2026-10-05T17:33:23Z
 ---
 
 Likely repos: **isaac-foundation** (engine), then **isaac-agent**, **isaac-hail**, **isaac-foreman** (move onto it). Micah + planner, 2026-10-05.
