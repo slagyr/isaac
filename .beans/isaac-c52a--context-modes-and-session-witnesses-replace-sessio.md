@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T02:16:02Z
+updated_at: 2026-10-05T02:27:00Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -51,3 +51,8 @@ Name: session observer (berth `:isaac.agent/session-observer`, config `:observer
 feature-baseline: isaac-agent c526ccbfde0e742c716b862943036352abab7020
 feature-blob: isaac-agent features/session/session_observers.feature 67a9d4b2dc4c5f60ce50a707327bc7f30b232405
 feature-blob: isaac-agent features/session/context_mode_berth.feature 899c855d0321d316fd36dcb0df7f41386e6e53f5
+
+
+## Work checkpoint (2026-10-05)
+
+Done: context-mode and session-observer registries started; SessionStore direct-call migration in progress. `bb spec` green (1878 examples). Next: fix 12 failing acceptance scenarios (13 examples) and remove remaining policy fixtures/references. Resume at src/isaac/agent/bridge/core.clj:323 (session observer selection is lost before charge/build); inspect /tmp/c52a-features.out. Last test: `bb features features/session/context_mode_berth.feature features/session/session_observers.feature` RED — 12 failures. Implementation edits remain uncommitted while red.
