@@ -1,11 +1,11 @@
 ---
 # isaac-l1b6
 title: Every streaming API treats a stream without its end marker as weather
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-05T14:29:07Z
-updated_at: 2026-10-05T15:49:12Z
+updated_at: 2026-10-05T15:51:39Z
 ---
 
 Micah, 2026-10-05. On the night of 10-04, chatgpt closed seven streams empty 1–4 s after the request (zanebot: isaac-work-1/2/4 mid-turn, tempest vault-sync cron). The responses adapter reported each as a plain `:llm-error` ("responses stream ended without response.completed"), so the drive ended the turn: no fallback (scrapper has `:model-fallback [:grok-4-6 :micah-opus]`), no suspend, no retry; the hailed beans sat claimed with no worker.
@@ -79,3 +79,14 @@ Re-baselined onto isaac-agent `4153a79`. Blob `4eb47320`, line-less. The new bas
 The exception stands. `comm_send_spec.clj:123` may be the only JVM failure. Do not edit that spec. The original line `bb ci` and `bb jvm-spec` green is still in the acceptance heading, with the exception as an extra line.
 
 Rebase onto `4153a79` if needed. Drop `@wip` only. Land when the gate is green.
+
+## Gate conflict after recut (2026-10-05, scrapper@isaac-work-3)
+
+`bb bean-gate verify isaac-l1b6 --dir isaac-agent=../isaac-agent-isaac-l1b6` still exits 1 on the clean implementation branch `89dacd0` based on `4153a79`:
+
+```
+FAIL contract line removed or edited in 85c2105: - `bb ci` and `bb jvm-spec` green.
+FAIL contract line removed or edited in b808c21: - `bb ci` green. `bb jvm-spec` green except the pre-existing `spec/isaac/agent/tool/comm_send_spec.clj:123` failure (expected crew `main`, got `atticus`), reproduced on clean origin/main `4153a79`. That failure is not this bean. Do not edit that spec to make this bean land.
+```
+
+The recut commit `8e46c720` appended `feature-baseline: isaac-agent 4153a79...` and `feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb47320...` identical to the earlier gate lines. Gate `newest-baseline-window` detects a recut only when a commit introduces a *distinct* `[:gate line]` (set difference); an identical line does not open a new window. Planner must add a distinct, legitimate gate line (e.g., new baseline at a newer origin/main SHA with the same frozen feature blob); worker cannot edit baseline/acceptance. The existing `@wip` tags are already removed on the implementation branch; no changes needed there. Re-run gate after planner recuts with a distinct gate line.
