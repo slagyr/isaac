@@ -1,11 +1,11 @@
 ---
 # isaac-mwqs
 title: New episode in a session carries where the conversation left off
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-10-04T23:30:27Z
-updated_at: 2026-10-04T23:30:27Z
+updated_at: 2026-10-05T01:00:46Z
 ---
 
 Micah, 2026-10-04. In an episode session the agent offers to do something; Micah walks away for hours; on return he answers "Yeah please do it." The old episode has gone cold, a new episode opens, and the reply has no context: the agent calls recall, gets unrelated scenes, and there is no continuity.
