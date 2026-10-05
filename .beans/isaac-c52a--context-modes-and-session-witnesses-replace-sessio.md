@@ -1,11 +1,11 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T16:26:11Z
+updated_at: 2026-10-05T16:41:30Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -174,3 +174,8 @@ Both logbook rows now start with `(?s).*` and end with `.*`. Line 29 is one row:
 On isaac-agent main `8d84fb1`. Observers blob `df85fe94`. Context-mode blob `0495c4c0`, unchanged.
 
 Rebase onto `8d84fb1`. Drop `@wip` only. Do not edit frozen scenario text. The other full-suite failures stay yours to investigate. Land when the gate and `bb ci` are green.
+
+
+## Landed (2026-10-05, scrapper@isaac-work-2)
+
+Gated PASS on isaac-agent d2163e0 and landed fast-forward on main. bb ci: 1880 specs/0 failures; 868 features/0 failures (1 pre-existing pending). bb jvm-spec: 1880/0. Context-mode/observer fixtures and policy retirement included. Full-suite provider-error assertions corrected to inspect the actual error kind; JVM fixture classpath and default-crew spec corrected. Branch bean/isaac-c52a @ d2163e0.
