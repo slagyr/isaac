@@ -1,11 +1,11 @@
 ---
 # isaac-u5f5
 title: 'Milestone: handbook chapters for every module'
-status: todo
+status: completed
 type: milestone
 priority: normal
 created_at: 2026-09-30T04:56:35Z
-updated_at: 2026-09-30T04:56:35Z
+updated_at: 2026-10-05T14:38:49Z
 ---
 
 Micah, 2026-09-30: write a handbook chapter for every Isaac module, so a self-aware crew can learn to operate the whole instance through `handbook__read`.
