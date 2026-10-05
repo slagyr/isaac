@@ -31,3 +31,5 @@ Likely repo scope: isaac-episodes (+ zanebot/yopp config at deploy).
 
 ## Baseline plan (2026-10-04)
 Scenarios signed off (draft: features/episodes/context_mode_and_observer.feature, 5 scenarios). Baseline waits for isaac-mwqs to complete: its baselined continuation.feature carries a `session-policy` Background row. At baseline, the planner also rewrites the `session-policy` rows in the 11 other episodes feature files (~75 scenarios; layout.feature asserts the index field itself) to `:context-mode :episodes` + `:observers [:episodes]`, marks the touched scenarios @wip, and includes them in the baseline.
+
+Storage check (2026-10-04): live episodes do not hold transcripts. episode.edn + scenes/ (start-id/end-id ranges into the session transcript, plus a scene text copy for recall); the session transcript is written once. The 25 episodes/<cid>/current.ednl on zanebot are b6w0 migration leftovers. So episodes are already ranges; the only on-path work (warm/cold decision + recall injection at append) moves to the episodes context mode at turn prep. layout.feature description line about episodes/<cid>/current.ednl is stale; fix at baseline.
