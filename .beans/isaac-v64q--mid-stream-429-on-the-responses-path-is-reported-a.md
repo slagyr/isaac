@@ -1,6 +1,6 @@
 ---
 # isaac-v64q
-title: Mid-stream 429/401 on the Responses path must classify as provider weather (:unavailable?) so the turn SUSPENDS (isaac-nqeq) instead of ending in :llm-error
+title: A Responses stream that drops or walls mid-response suspends the turn as weather instead of ending it in :llm-error
 status: todo
 type: bug
 priority: high
@@ -9,7 +9,7 @@ tags:
     - provider
     - durability
 created_at: 2026-09-18T06:18:36Z
-updated_at: 2026-09-19T01:42:35Z
+updated_at: 2026-10-05T18:53:56Z
 parent: isaac-ugpq
 ---
 
@@ -57,3 +57,20 @@ Related: isaac-ugpq (turn-level suspend/resume) depends on this classification �
 ## Re-scoped (2026-09-18, Micah): hail retries are gone; this is now about suspend
 
 With isaac-ugpq/nqeq the drive suspends a turn on weather and hail no longer retries — so "burns hail attempts" is moot. What remains: a 429 (or 401/403/5xx) that lands MID-STREAM is returned by `responses.clj:187` as `{:error :llm-error "stream ended without response.completed"}` with the HTTP status dropped, so `provider-wall/classify` never sees a wall and the drive ENDS the turn in error instead of suspending it. nqeq's scenarios only cover pre-stream walls. Fix stays as written (keep `:status`/`retry-after` on a truncated stream; normalize through the same wall seam); acceptance scenario changes to: a 429 arriving mid-stream on the Responses path yields a SUSPENDED turn (`:turn/suspended :reason :wall`), same assertions as weather_suspend.feature :29. Drop the hail scenario (4) and the hail acceptance line. Child of isaac-ugpq.
+
+## Re-scope (2026-10-05, planner; supersedes the Scenarios and Acceptance above)
+
+Field: four turns this week (Mixmaster x2, a worker, the verifier) ended in `:llm-error` with "responses stream ended without response.completed" and stranded their beans until someone re-sent the hail. Most had **no HTTP status at all**: the stream simply stopped. The drive already has a `:stream-ended-early` weather reason (`drive/weather.clj`); the Responses path never reports it.
+
+Design:
+- `responses.clj`: a stream that ends without `response.completed` returns `{:unavailable? true :reason :stream-ended-early}` (keep any partial text out of the transcript). If the truncated stream carried an HTTP status, classify it through the existing wall seam instead (429 → `:wall` with retry-after, 401/403 → `:auth`).
+- The drive then suspends as for any weather; the resume sweep re-drives it from the transcript.
+- grover:chatgpt gains a `stream-dropped` response type (a partial delta, then close without `response.completed`; optional `status`/`retry-after`).
+
+Acceptance:
+- isaac-agent `features/bridge/weather_suspend.feature` — "a Responses stream that ends without response.completed suspends the turn (isaac-v64q)" and "a 429 that arrives mid-stream on the Responses path suspends as a wall (isaac-v64q)".
+- The rest of weather_suspend.feature and the provider features stay green.
+
+feature-baseline: isaac-agent e598584f5cb59cb9527a349af552e14fc918cd36
+feature-blob: isaac-agent features/bridge/weather_suspend.feature 9aba10a357adf4deeabfa017d8831d608261d03d 50
+feature-blob: isaac-agent features/bridge/weather_suspend.feature 9aba10a357adf4deeabfa017d8831d608261d03d 73
