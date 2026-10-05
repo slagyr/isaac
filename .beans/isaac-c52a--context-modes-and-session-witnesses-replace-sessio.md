@@ -1,11 +1,11 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T02:56:01Z
+updated_at: 2026-10-05T16:11:28Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -138,3 +138,17 @@ The lantern logbook **does write** `{:events [{:event "session-opened" ...} ...]
 Planner needs one of: (1) authorize a foundation `get-path` fix to use `step-tables/get-path`, re-pin agent, resume; or (2) reword the two assertions to a form the current EDN-contains step can read (no `foo[n]` segments) and re-baseline.
 
 Remaining implementation after that: delete SessionPolicy / chronicle policy / logbook policy fixture; handbook for both berths; `bb ci` and `bb jvm-spec`.
+
+feature-baseline: isaac-agent 43610817ab994db13d1f30f5b30cdd14008c6444
+feature-blob: isaac-agent features/session/session_observers.feature 87c6b6b8c823208021a42e90297a247b46e8b95c
+feature-blob: isaac-agent features/session/context_mode_berth.feature 0495c4c096fc71b115f8bb818e6888ff13036423
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan, logbook)
+
+No foundation change. The EDN step cannot index `events[0]`.
+
+The two logbook assertions now match the printed `:events` vector with an ordered regex. Line 29 expects session-opened, then turn-started, then a user message-appended, then an assistant message-appended, then turn-ended, and the session id lantern-room. Line 64 expects turn-started, then compaction-spliced, then two message-appended, then turn-ended. Extra keys on an event still match. `@wip` stays.
+
+On isaac-agent main `4361081`. Observers blob `87c6b6b8`. Context-mode blob `0495c4c0`, unchanged.
+
+Rebase onto `4361081`. Drop `@wip` only. Do not edit frozen scenario text. SessionPolicy deletion, handbook, and `bb ci` remain this bean's work.
