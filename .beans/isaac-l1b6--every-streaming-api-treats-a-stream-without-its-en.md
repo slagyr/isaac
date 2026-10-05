@@ -1,11 +1,11 @@
 ---
 # isaac-l1b6
 title: Every streaming API treats a stream without its end marker as weather
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-05T14:29:07Z
-updated_at: 2026-10-05T15:53:02Z
+updated_at: 2026-10-05T15:54:27Z
 ---
 
 Micah, 2026-10-05. On the night of 10-04, chatgpt closed seven streams empty 1–4 s after the request (zanebot: isaac-work-1/2/4 mid-turn, tempest vault-sync cron). The responses adapter reported each as a plain `:llm-error` ("responses stream ended without response.completed"), so the drive ended the turn: no fallback (scrapper has `:model-fallback [:grok-4-6 :micah-opus]`), no suspend, no retry; the hailed beans sat claimed with no worker.
