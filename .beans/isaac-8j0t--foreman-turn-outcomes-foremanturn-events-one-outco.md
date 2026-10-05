@@ -52,3 +52,7 @@ feature-blob: isaac-foreman features/foreman/turn_outcomes.feature d13fac83f39eb
 feature-blob: isaac-foreman features/foreman/events.feature 7bef66db88b79279dd37d8c56e667124630f84e8
 feature-blob: isaac-foreman features/foreman/turn_action.feature f180843b6d21add4270099632365ef261cdb3de6
 feature-blob: isaac-foreman features/foreman/exec_action.feature d61d63eda9c5dba8d43ff52658d3e9e2c420d391
+
+## Work checkpoint (2026-10-05)
+
+Done: Foreman observer names, signal suppression and reply output, reserved namespace, :output cutover implemented; agent request-id propagation in sibling isaac-agent bean branch. Focused turn_outcomes and agent turn specs green. Next: investigate red `clojure -M:dev-local:features features/foreman/turn_action.feature:54` (3 assertions, failure Expected truthy nil), likely held-turn/queue list; resume at `features/foreman/turn_action.feature:74`. Then full feature suite, CI, gate and landing.
