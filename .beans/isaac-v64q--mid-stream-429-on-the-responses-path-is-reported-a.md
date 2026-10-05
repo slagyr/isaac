@@ -1,7 +1,7 @@
 ---
 # isaac-v64q
 title: A Responses stream that drops or walls mid-response suspends the turn as weather instead of ending it in :llm-error
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
@@ -9,7 +9,7 @@ tags:
     - provider
     - durability
 created_at: 2026-09-18T06:18:36Z
-updated_at: 2026-10-05T18:53:56Z
+updated_at: 2026-10-05T19:06:48Z
 parent: isaac-ugpq
 ---
 
