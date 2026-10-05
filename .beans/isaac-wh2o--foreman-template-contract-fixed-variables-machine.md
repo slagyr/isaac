@@ -1,11 +1,11 @@
 ---
 # isaac-wh2o
 title: 'Foreman template contract: fixed variables (machine, instance, state, event, data), every action string templated, unknown variables rejected'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-05T15:57:06Z
-updated_at: 2026-10-05T22:31:21Z
+updated_at: 2026-10-05T22:36:38Z
 blocked_by:
     - isaac-8379
 ---
@@ -39,3 +39,9 @@ feature-baseline: isaac-foreman fd10540e04757950e71bf67de21fa96606c72b53
 feature-blob: isaac-foreman features/foreman/template_contract.feature d75ca4fcb63916ab14fdde9defd6716c51ca33a9 16
 feature-blob: isaac-foreman features/foreman/template_contract.feature d75ca4fcb63916ab14fdde9defd6716c51ca33a9 29
 feature-blob: isaac-foreman features/foreman/template_contract.feature d75ca4fcb63916ab14fdde9defd6716c51ca33a9 41
+
+## Landed on main (2026-10-05)
+
+main-sha: isaac-foreman e912e3c823084f217fb2a9ca6be9a67bef9e4f48
+
+Foreman renders all action string leaves at firing time against the current instance data, entered state and triggering event; turn requests persist their rendered fields for retry. Config checks reject unknown variables in local and shared actions. The handbook documents the contract. `bb ci`: 101 specs, 52 features, zero failures; `bb bean-gate verify isaac-wh2o`: PASS on the main squash commit.
