@@ -1,11 +1,11 @@
 ---
 # isaac-l1b6
 title: Every streaming API treats a stream without its end marker as weather
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-05T14:29:07Z
-updated_at: 2026-10-05T15:54:27Z
+updated_at: 2026-10-05T15:58:33Z
 ---
 
 Micah, 2026-10-05. On the night of 10-04, chatgpt closed seven streams empty 1–4 s after the request (zanebot: isaac-work-1/2/4 mid-turn, tempest vault-sync cron). The responses adapter reported each as a plain `:llm-error` ("responses stream ended without response.completed"), so the drive ended the turn: no fallback (scrapper has `:model-fallback [:grok-4-6 :micah-opus]`), no suspend, no retry; the hailed beans sat claimed with no worker.
@@ -101,3 +101,9 @@ The previous recut repeated the same baseline line, so the gate did not open a n
 Re-baselined onto isaac-agent `2346f1c`. Blob `4eb47320` is unchanged and still `@wip`. The new baseline line is distinct, so the append-only window starts here.
 
 The exception stands. `comm_send_spec.clj:123` may be the only JVM failure. Do not edit that spec. Rebase onto `2346f1c` if needed. Drop `@wip` only. Land when the gate is green.
+
+## Landed on main (2026-10-05)
+
+main-sha: isaac-agent 2db0f1e1ad382e18da43ea5f9f18379c22a47ab8
+
+Validation: `bb ci` passed (1887 specs, 855 features); `bb jvm-spec` had exactly the permitted pre-existing failure in `spec/isaac/agent/tool/comm_send_spec.clj:123` (1/1887). `bb bean-gate verify isaac-l1b6 --dir isaac-agent=../isaac-agent-isaac-l1b6-landing` passed on the squash commit.
