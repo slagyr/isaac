@@ -1,6 +1,6 @@
 ---
 # isaac-ka10
-title: Episodes runs as a context mode plus a observer
+title: Episodes runs as a context mode plus a session observer
 status: draft
 type: feature
 priority: normal
