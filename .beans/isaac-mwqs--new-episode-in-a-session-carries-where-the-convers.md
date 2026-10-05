@@ -1,7 +1,7 @@
 ---
 # isaac-mwqs
 title: New episode in a session carries where the conversation left off
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-10-04T23:30:27Z
@@ -25,3 +25,12 @@ Every new episode in the same session is seeded with **where the conversation le
 - A chained episode behaves the same (the continuation block is present alongside lineage gists).
 - The continuation is capped (a very long last reply is truncated with a marker).
 - A session's first-ever episode has no continuation block.
+
+## Decision + Acceptance (Micah approved 2026-10-04; gated)
+Wording: header `Where this conversation left off (it may still be open):`; framing line (free to change) "What follows is the end of the previous episode. If it left something open — a question, an offer — you may continue it now."; truncation marker `[truncated]`; new config `:episodes :recall :continuation :max-chars` (default ~2000, declared in the episodes schema with a description).
+- The 5 @wip scenarios in isaac-episodes `features/recall/continuation.feature` pass with @wip removed.
+- Handbook chapter (episodes) documents the continuation seed and the setting.
+- `bb ci` green.
+
+feature-baseline: isaac-episodes 9f58c27b2ab5e4294835a468f032a8b896384e4f
+feature-blob: isaac-episodes features/recall/continuation.feature 4f8d033a03bf1eba48fba4fb414fd165d26419f1
