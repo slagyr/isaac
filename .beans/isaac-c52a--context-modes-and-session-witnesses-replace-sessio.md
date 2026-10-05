@@ -1,11 +1,11 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T01:58:10Z
+updated_at: 2026-10-05T02:16:02Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
