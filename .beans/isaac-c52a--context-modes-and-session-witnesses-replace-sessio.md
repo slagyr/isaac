@@ -1,11 +1,11 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T02:36:58Z
+updated_at: 2026-10-05T02:46:38Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -86,3 +86,10 @@ Escalated to human by **prowl**@isaac-plan. Blocking: a module id with dots cann
 ## CI note (2026-10-05, prowl@isaac-plan)
 
 isaac-agent CI `37255935709` on planner commit `ec77072` failed `features/session/waiting.feature:20` (isaac-xoqn): the step that sends "two" on session "dm" without waiting timed out after 30s. Specs 1882/0. Features 847/1. That commit only rewrote the two c52a background cells. The waiting failure is not this bean's contract and not this bean's code. No repair commissioned. The bean stays held for the dotted module-id writer.
+
+feature-baseline: isaac-agent 6e4cac938cb3d734e0abed0d37fb02c61a579b86
+feature-blob: isaac-agent features/session/session_observers.feature 8c954a8731ae6e5855ffc0e3e32922b9cb5b98fc
+feature-blob: isaac-agent features/session/context_mode_berth.feature 07353ff67a9e186a3a0e1fd1dfbd15e6c6034157
+
+## Planner note (2026-10-04)
+Module-id write fixed in agent 6e4cac9: Background writes `modules` as one EDN map value (`{:isaac.session.lantern {:local/root …}}`) — no dotted path, no pointer. Supersedes ec77072. Re-baselined; resume on the existing `bean/isaac-c52a` branch. The waiting.feature:20 CI timeout is unrelated to this bean.
