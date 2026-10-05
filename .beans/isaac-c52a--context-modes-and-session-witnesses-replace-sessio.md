@@ -1,11 +1,11 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T16:24:39Z
+updated_at: 2026-10-05T16:26:11Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -160,3 +160,17 @@ Rebased implementation onto agent main 4361081. Deleted SessionPolicy, chronicle
 The two frozen logbook assertions at session_observers.feature:34 and :84 still cannot match. Foundation fs_steps/isaac-file-edn-contains calls step-tables/match-value on actual :events vector; step_tables.clj :regex uses `re-matches` against `(str actual)`, **not** `re-find`. The vector string begins `[{:event "session-opened"`, not `session-opened`; second begins `[{:event "turn-started"`, not `turn-started`. Both regexes start at the bare event name and end at `turn-ended`, but the vector has wrapping brackets/maps and trailing session-id. Even the first `#"session-opened"` row cannot match the vector. Confirmed on focused run: actual events exist in correct order, all other 11 gated scenarios pass. Planner must add `(?s).*` at start and `.*` at end of each regex row to match entire printed vector (including session-id row); re-baseline. Do not change matcher or frozen text in worker.
 
 Separate full-suite failures: model_fallback.feature:83 and provider_attention.feature:39,168 expect `api-error` but get `error`. Investigating after acceptance adjustment; do not land until `bb ci` and `bb jvm-spec` green. Gate was run and passed, but does not execute acceptance tests.
+
+feature-baseline: isaac-agent 8d84fb10ba257f7f43ef295b3d332d0debe6755d
+feature-blob: isaac-agent features/session/session_observers.feature df85fe949129a2a675f569b1d8920ea5a04cae21
+feature-blob: isaac-agent features/session/context_mode_berth.feature 0495c4c096fc71b115f8bb818e6888ff13036423
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan, regex anchors)
+
+The matcher is `re-matches` on the whole printed vector, not `re-find`.
+
+Both logbook rows now start with `(?s).*` and end with `.*`. Line 29 is one row: session-opened, lantern-room, turn-started, user message-appended, assistant message-appended, turn-ended. Line 62 is one row: turn-started, compaction-spliced, two message-appended, turn-ended. `@wip` stays.
+
+On isaac-agent main `8d84fb1`. Observers blob `df85fe94`. Context-mode blob `0495c4c0`, unchanged.
+
+Rebase onto `8d84fb1`. Drop `@wip` only. Do not edit frozen scenario text. The other full-suite failures stay yours to investigate. Land when the gate and `bb ci` are green.
