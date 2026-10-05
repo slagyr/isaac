@@ -1,11 +1,11 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T02:32:07Z
+updated_at: 2026-10-05T02:34:29Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -61,3 +61,15 @@ Done: context-mode and session-observer registries started; SessionStore direct-
 ## Acceptance contract conflict (2026-10-05)
 
 Both baselined feature Backgrounds use `modules.isaac.session.lantern` as a dotted table path. The shared config step parser splits dotted paths into segments (foundation `config_steps.clj:158-162`), so this writes `:modules {:isaac {:session {:lantern {:local/root ...}}}}`, not the required `:modules {:isaac.session.lantern {:local/root ...}}`. Confirmed by running `bb features features/session/context_mode_berth.feature:37`: `C52A DEBUG {:modules {:isaac {:session {:lantern #:local{:root "modules/isaac.session.lantern"}}}} ...}`; dispatch error is `unknown context mode :porthole`. The module never discovers/registers. All 13 baselined scenarios inherit this broken Background. The contracted feature cannot be edited by worker except @wip removal; simulating a module in test helpers would violate acceptance. Planner must change both Background path cells to the supported literal JSON-pointer form `/modules/isaac.session.lantern` (or another verified literal-key syntax) and re-baseline before this bean can pass. Latest run: `bb features features/session/context_mode_berth.feature:37` RED (1 failure); `bb spec` previously green (1878 examples). Resume after planner return at features/session/context_mode_berth.feature:20 and features/session/session_observers.feature:21. Branch bean/isaac-c52a has a green checkpoint pushed (92cba1e); subsequent red implementation is uncommitted and retained in the worktree.
+
+feature-baseline: isaac-agent ec7707226548ffd1f0de9e29187cd9e65883a0c3
+feature-blob: isaac-agent features/session/session_observers.feature b0ab5a9c7b921fb5fef65f9b2c59da108be343b6
+feature-blob: isaac-agent features/session/context_mode_berth.feature 483225e58dd6cdc53e479535881eef99c573d341
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan)
+
+The module id is one key. Both backgrounds now write `/modules/isaac.session.lantern`, the JSON pointer form, so the step does not split on the dots. The local/root value is unchanged. `@wip` stays.
+
+On isaac-agent main `ec77072`. Observers blob `b0ab5a9c`. Context-mode blob `483225e5`. Both files are line-less: every `@wip` scenario in them is this bean's.
+
+Rebase onto `ec77072`. Drop `@wip` only. Do not edit frozen scenario text. The pointer form is what the read path already accepts; the write path must honor the same form, or the cell still nests. If the write path ignores a leading slash, say so and stop — do not invent another key syntax.
