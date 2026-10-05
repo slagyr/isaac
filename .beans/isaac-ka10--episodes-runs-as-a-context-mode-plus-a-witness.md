@@ -1,11 +1,11 @@
 ---
 # isaac-ka10
 title: Episodes runs as a context mode plus a session observer
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T16:44:10Z
+updated_at: 2026-10-05T17:45:05Z
 blocked_by:
     - isaac-c52a
 ---
@@ -84,3 +84,23 @@ Next (resume here):
 4. Agent `features/session/cli.feature` CONTEXT scenario — implementation already on c52a; confirm green.
 
 Resume: `src/isaac/session/episodes/context.clj` (prepare/select/wrap-reset) and `src/isaac/session/episodes/observer.clj` (compaction stamp); agent `src/isaac/agent/session/context.clj` create-with-resolved-behavior! persist.
+
+feature-baseline: isaac-episodes b3614595127a0a2fd63aa2806788d3c3bc48db8b
+feature-baseline: isaac-agent b7ee4ca7d3728504ee428738665dde37a548496e
+feature-blob: isaac-episodes features/episodes/context_mode_and_observer.feature d5d208018130e80fced901848712869c7c3ef0af
+feature-blob: isaac-episodes features/episodes/idle_seal.feature e38d19c1520213796283b08eda7c2aec06dbe109
+feature-blob: isaac-episodes features/episodes/layout.feature 7d5737bca77c26637d4f1e7cea30304b5dc7d81d
+feature-blob: isaac-episodes features/episodes/live.feature 3cd76ea7e910caff044e4e87970db2279672830e
+feature-blob: isaac-episodes features/episodes/migrate_session.feature eede1eac1a4de200573194e4191117dba695c2ca
+feature-blob: isaac-episodes features/episodes/provider_attention.feature 2ea70661da61a86fafb54ee116d170d6fdb1789a
+feature-blob: isaac-episodes features/episodes/recall_logging.feature 91357700a8d3dd675a420e9ed02e76a3934276d4
+feature-blob: isaac-episodes features/episodes/session_naming.feature 88f4deb1c806f6b459ae1d616ed646064fb1adc4
+feature-blob: isaac-episodes features/recall/continuation.feature 30b3ce5021b305d9321db543785821b33dcbea3c
+feature-blob: isaac-episodes features/recall/embedding.feature a74d8f6e42f86223104e151a5b22baabfc5a0507
+feature-blob: isaac-episodes features/recall/implicit_tools.feature f454fe00a3f7d15d8fb87c91f7ec156e09c996c9
+feature-blob: isaac-episodes features/recall/ledger.feature db0415c7b9217e8dd4406698a641a5b930213670
+feature-blob: isaac-episodes features/recall/live_tools.feature dde1e695b8a37665faec494bf4dc5dccd523a940
+feature-blob: isaac-agent features/session/cli.feature 18c75424e758019aed10554e5729a726aef9f55e
+
+## Planner adjustment (2026-10-05, layout session.edn)
+My rewrite wrongly turned two removed `:session-policy` stamp rows into `context-mode`/`observers` assertions on `session.edn` (layout cold-open and compaction-successor scenarios). Removed in isaac-episodes `b361459`: the session record carries identity and overrides only, never the crew's context settings. That clears the "keyword :episodes vs string" red. Re-baselined. Rebase onto episodes main; drop `@wip` only. Resume per the checkpoint above.
