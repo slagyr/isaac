@@ -45,3 +45,7 @@ Implementation pushed at isaac-agent `89dacd0` (`bean/isaac-l1b6`); `bb ci` gree
 The pre-existing JVM failure is excluded. `comm_send_spec.clj:123` fails on clean origin/main `4153a79` the same way it fails on `bean/isaac-l1b6`: expected crew `main`, got `atticus`. It is outside the four streaming APIs. Acceptance no longer requires that example green.
 
 `bb ci` still must be green. `bb jvm-spec` must be green except that one example. Do not edit `comm_send_spec.clj` in this bean. Land when the gate is green and that is the only JVM failure.
+
+## Gate conflict after planner adjustment (2026-10-05, scrapper@isaac-work-3)
+
+On bean branch `89dacd0`, `bb ci` passed (1887 specs, 855 features); `bb jvm-spec` has exactly one failure, `spec/isaac/agent/tool/comm_send_spec.clj:123` (expected `main`, got `atticus`). `bb bean-gate verify isaac-l1b6 --dir isaac-agent=../isaac-agent-isaac-l1b6` exited 1: `FAIL contract line removed or edited in 85c2105: - \`bb ci\` and \`bb jvm-spec\` green.` The planner's commit 85c2105 replaced this original acceptance line rather than appending the exception, violating the gate's append-only acceptance rule. No implementation change required. Planner must restore the original line verbatim and retain its new exception as an additional acceptance line/clarifying note (or otherwise adjust the contract legitimately) before this bean can pass the gate and land. Do not change `comm_send_spec.clj`.
