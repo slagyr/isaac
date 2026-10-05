@@ -27,7 +27,7 @@ Likely repo scope: isaac-agent.
 ## Acceptance (Micah signed off 2026-10-05; gated)
 - The @wip scenarios in isaac-agent `features/llm/stream_ended_early.feature` (3 outlines x 4 APIs + 1 scenario) pass with @wip removed.
 - Grover sends each API's real end marker on complete responses; existing API features stay green.
-- `bb ci` and `bb jvm-spec` green.
+- `bb ci` green. `bb jvm-spec` green except the pre-existing `spec/isaac/agent/tool/comm_send_spec.clj:123` failure (expected crew `main`, got `atticus`), reproduced on clean origin/main `4153a79`. That failure is not this bean. Do not edit that spec to make this bean land.
 
 feature-baseline: isaac-agent 4153a79c2c5ff9530b2aa85454a9388abf34917d
 feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb473208480ce6a9940c15a5456a75a62ed4e55
@@ -39,3 +39,9 @@ Done: adapters reject missing end markers, Grover cut-off and end markers, provi
 ## Acceptance conflict (2026-10-05)
 
 Implementation pushed at isaac-agent `89dacd0` (`bean/isaac-l1b6`); `bb ci` green (1882 specs, 855 features), focused JVM LLM/provider-wall specs green (494). `bb bean-gate verify isaac-l1b6 --dir isaac-agent=../isaac-agent-isaac-l1b6` reports `PASS (isaac-agent @ HEAD 89dacd0 (branch bean/isaac-l1b6))`. Full `bb jvm-spec` remains red (1/1887 failures) on unrelated `spec/isaac/agent/tool/comm_send_spec.clj:123`: expected `{:crew "main" :session "dawn-watch"}`, got `{:crew "atticus" :session "dawn-watch"}`. Verified *the same failure* on clean isaac-agent `origin/main` at `4153a79` in a detached temporary worktree, `bb jvm-spec spec/isaac/agent/tool/comm_send_spec.clj` (1/18 failures). This is outside the bean's four streaming APIs/Grover/drive scope. Request planner decide whether acceptance may exclude this pre-existing JVM failure or coordinate separate repair; cannot honestly claim full `bb jvm-spec` green without unrelated change. Next: resume at `spec/isaac/agent/tool/comm_send_spec.clj:123` after planner resolution, rerun full suites and land when acceptance truly met.
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan)
+
+The pre-existing JVM failure is excluded. `comm_send_spec.clj:123` fails on clean origin/main `4153a79` the same way it fails on `bean/isaac-l1b6`: expected crew `main`, got `atticus`. It is outside the four streaming APIs. Acceptance no longer requires that example green.
+
+`bb ci` still must be green. `bb jvm-spec` must be green except that one example. Do not edit `comm_send_spec.clj` in this bean. Land when the gate is green and that is the only JVM failure.
