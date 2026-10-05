@@ -1,7 +1,7 @@
 ---
 # isaac-l1b6
 title: Every streaming API treats a stream without its end marker as weather
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-05T14:29:07Z
@@ -23,3 +23,11 @@ Audit of the streaming adapters (isaac-agent `llm/api/`):
 - Out of scope: the claude-code CLI provider (not a streaming HTTP adapter).
 
 Likely repo scope: isaac-agent.
+
+## Acceptance (Micah signed off 2026-10-05; gated)
+- The @wip scenarios in isaac-agent `features/llm/stream_ended_early.feature` (3 outlines x 4 APIs + 1 scenario) pass with @wip removed.
+- Grover sends each API's real end marker on complete responses; existing API features stay green.
+- `bb ci` and `bb jvm-spec` green.
+
+feature-baseline: isaac-agent 4153a79c2c5ff9530b2aa85454a9388abf34917d
+feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb473208480ce6a9940c15a5456a75a62ed4e55
