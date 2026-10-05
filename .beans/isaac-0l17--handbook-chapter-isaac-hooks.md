@@ -1,13 +1,11 @@
 ---
 # isaac-0l17
 title: 'Handbook chapter: isaac-hooks'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T05:34:45Z
+updated_at: 2026-10-05T14:38:33Z
 parent: isaac-u5f5
 ---
 

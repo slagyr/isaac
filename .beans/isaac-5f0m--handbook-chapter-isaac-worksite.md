@@ -1,13 +1,11 @@
 ---
 # isaac-5f0m
 title: 'Handbook chapter: isaac-worksite'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-30T04:56:36Z
-updated_at: 2026-09-30T06:33:42Z
+updated_at: 2026-10-05T14:38:33Z
 parent: isaac-u5f5
 ---
 
