@@ -1,10 +1,11 @@
 ---
 # isaac-wh2o
 title: 'Foreman template contract: fixed variables (machine, instance, state, event, data), every action string templated, unknown variables rejected'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-10-05T15:57:06Z
-updated_at: 2026-10-05T15:57:06Z
+updated_at: 2026-10-05T22:31:21Z
 blocked_by:
     - isaac-8379
 ---
