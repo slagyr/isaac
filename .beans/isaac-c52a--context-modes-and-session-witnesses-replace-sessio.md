@@ -93,3 +93,12 @@ feature-blob: isaac-agent features/session/context_mode_berth.feature 07353ff67a
 
 ## Planner note (2026-10-04)
 Module-id write fixed in agent 6e4cac9: Background writes `modules` as one EDN map value (`{:isaac.session.lantern {:local/root …}}`) — no dotted path, no pointer. Supersedes ec77072. Re-baselined; resume on the existing `bean/isaac-c52a` branch. The waiting.feature:20 CI timeout is unrelated to this bean.
+
+## Acceptance contract conflict (2026-10-05, work-2 after 6e4cac9)
+
+Rebased existing branch onto agent 6e4cac9; removed only @wip. Ran `bb features features/session/context_mode_berth.feature features/session/session_observers.feature`: 13 examples, 6 failures. Two current assertions contradict the fixture/shape, independent of the module-id fix:
+
+- `features/session/context_mode_berth.feature:54`: porthole explicitly contains soul + last assistant reply + current message. The fixture `isaac.session.lantern/porthole` returns `[previous current]`; prompt builder places soul at `messages[0]`, reply at `messages[1]`, current at `messages[2]` when the prior assistant exists. However the scenario 'a session's context mode overrides the crew's' runs with a session-level :context-mode, and got `messages[2].content: Expected "Check the oil", got: nil`. This requires diagnosis whether the session override is lost or the prompt factory only produced one message.
+- `features/session/context_mode_berth.feature:75`: scenario 'a turn fails when its session lacks the observer its context mode requires' asserts exactly **2 transcript entries** after a failed turn. Background already appends two messages to an opened session, and the store counts its required session header as an entry: **3 entries before any turn**. The actual is 3, consistent with refusal before appending. No implementation can preserve both the required header+two background messages and the assertion 2. Planner must change this count (likely 3) and re-baseline; worker cannot edit frozen scenario.
+
+Other current failures (implementation still incomplete): `session_observers.feature:34` missing session-opened, `:62` session override prompt exits 1, `:89` missing turn-started, `:107` failing observer turn result nil. A partially wired observer factory and logbook fixture remain uncommitted on bean/isaac-c52a; no green run has occurred after resumed edits. Resume at `src/isaac/agent/bridge/core.clj:324` and `src/isaac/agent/session/session_observer.clj:23`. The green checkpoint on the rebased branch remains; do not land until planner adjusts the count.
