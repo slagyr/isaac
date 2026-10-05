@@ -1,11 +1,11 @@
 ---
 # isaac-4k9q
 title: ACP and Discord follow the SessionPolicy removal
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-05T17:51:02Z
-updated_at: 2026-10-05T18:44:00Z
+updated_at: 2026-10-05T18:56:36Z
 blocked_by:
     - isaac-ka10
 ---
@@ -69,3 +69,19 @@ ka10 episode ids are 17-digit timestamps (`#"\d{17}"` — already used in
 the ACP feature). Discord still asserts the old session-id slug pattern.
 
 Branches pushed: isaac-acp `38e6cb7`, isaac-discord `e91496e`.
+
+feature-baseline: isaac-acp 19620e7bb13fbe42bafa506a9b2bbea7bee5a9e1
+feature-baseline: isaac-discord b1b0820e5911433de35c45d8dfdfe041229fb5a8
+feature-blob: isaac-acp features/comm/acp/episodes.feature 83c80a4b30e21a90d3dd670fbdcedbd2e4664bf8
+feature-blob: isaac-discord features/comm/discord/episodes.feature c5fa79e6ea41174c9abf6f1d7f6c595d63f8d11b
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan)
+
+ka10's shape stands.
+
+- isaac-acp `episodes.feature`: the opened-log column is `thread`, not `session-id`. Value stays `reef-chat`. Episode regex stays `\d{17}`.
+- isaac-discord `episodes.feature`: the episode id regex is `\d{17}`, not the old slug.
+
+Both stay `@wip`. On acp main `19620e7`, blob `83c80a4b`. On discord main `b1b0820`, blob `c5fa79e6`. Both files are line-less.
+
+Rebase onto those shas. Drop `@wip` only. Do not edit frozen scenario text.
