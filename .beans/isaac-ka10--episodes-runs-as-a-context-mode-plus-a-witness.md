@@ -104,3 +104,21 @@ feature-blob: isaac-agent features/session/cli.feature 18c75424e758019aed10554e5
 
 ## Planner adjustment (2026-10-05, layout session.edn)
 My rewrite wrongly turned two removed `:session-policy` stamp rows into `context-mode`/`observers` assertions on `session.edn` (layout cold-open and compaction-successor scenarios). Removed in isaac-episodes `b361459`: the session record carries identity and overrides only, never the crew's context settings. That clears the "keyword :episodes vs string" red. Re-baselined. Rebase onto episodes main; drop `@wip` only. Resume per the checkpoint above.
+
+## Checkpoint (2026-10-05 later, scrapper@isaac-work-2)
+
+Done:
+- Rebased both bean branches onto origin/main (planner layout baseline).
+- `--with-context-mode full`: charge now keeps `:context-mode-override`; dispatch prefers it over a session stamp.
+- `:reset` wrap-input survives berth re-registration (`context-mode/register!` merges).
+- Continuation last-exchange walks transcript order (UUID ids are not chronological).
+- isaac-episodes `bb ci` green: 235 spec, 104 features.
+- Do not stamp crew `:context-mode`/`:observers` onto a new session (broke funnel re-cascade and observer override).
+
+Still red:
+1. Agent `features/session/cli.feature:126` CONTEXT column — stdout regex does not match. Older list scenario (`cli.feature:90`) is green. Capture `sessions list` stdout and fix the CONTEXT column/regex alignment.
+2. Episodes `layout.feature:149` listing — `the user sends` without crew uses `unique-observer-crew-id` (cordelia) so `sessions/main/harbor-log/session.edn` is missing. Skipping unique-observer when defaults.crew is set fixes listing but breaks c52a observer features that rely on it. Planner conflict vs helper convention.
+
+Worktrees: `isaac-episodes-ka10` @ `59c6d48`, `isaac-agent-ka10` @ `ec0fd46`. Episodes still `:local/root ../isaac-agent-ka10`.
+
+Resume: agent `src/isaac/agent/session/cli.clj` `print-session-table` / CONTEXT regex; then decide listing helper vs planner hail. Pin episodes to landed agent main sha only at landing.
