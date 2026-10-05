@@ -1,10 +1,11 @@
 ---
 # isaac-8j0t
 title: 'Foreman turn outcomes: :foreman/turn-* events, one outcome per turn, one :output key'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-10-05T01:28:15Z
-updated_at: 2026-10-05T01:28:15Z
+updated_at: 2026-10-05T01:31:18Z
 ---
 
 Likely repo: **isaac-foreman**. Micah + planner, 2026-10-04. Part of the Foreman/worksite migration (bean-work machine, isaac-q6fj).
