@@ -1,11 +1,11 @@
 ---
 # isaac-ut5n
 title: Every Foreman turn's preamble names its machine, instance and state
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-05T14:46:30Z
-updated_at: 2026-10-05T14:48:00Z
+updated_at: 2026-10-05T14:54:47Z
 ---
 
 Likely repo: **isaac-foreman**. Micah + planner, 2026-10-05.
@@ -36,3 +36,7 @@ its machine and instance can pull the instance's data with `foreman__data`
 
 feature-baseline: isaac-foreman 0ae7b5ff806d8c75a72670510ae30e7d0ebba3b3
 feature-blob: isaac-foreman features/foreman/turn_preamble.feature 65f8e1aba4335f9a23832707e39d27cb36006516
+
+## Landed on main (2026-10-05)
+
+main-sha: isaac-foreman 20d96c4b6b0a8967dc9d63fa3c79d02b1e3dfff8
