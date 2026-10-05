@@ -1,10 +1,11 @@
 ---
 # isaac-79t1
 title: 'Foreman :output :event: a turn''s last reply line names its event; Foreman lists the valid events in the preamble'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-10-05T01:29:09Z
-updated_at: 2026-10-05T01:29:09Z
+updated_at: 2026-10-05T01:54:14Z
 blocked_by:
     - isaac-8j0t
 ---
