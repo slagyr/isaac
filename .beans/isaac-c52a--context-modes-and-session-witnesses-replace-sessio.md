@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T02:27:00Z
+updated_at: 2026-10-05T02:32:07Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -56,3 +56,8 @@ feature-blob: isaac-agent features/session/context_mode_berth.feature 899c855d03
 ## Work checkpoint (2026-10-05)
 
 Done: context-mode and session-observer registries started; SessionStore direct-call migration in progress. `bb spec` green (1878 examples). Next: fix 12 failing acceptance scenarios (13 examples) and remove remaining policy fixtures/references. Resume at src/isaac/agent/bridge/core.clj:323 (session observer selection is lost before charge/build); inspect /tmp/c52a-features.out. Last test: `bb features features/session/context_mode_berth.feature features/session/session_observers.feature` RED — 12 failures. Implementation edits remain uncommitted while red.
+
+
+## Acceptance contract conflict (2026-10-05)
+
+Both baselined feature Backgrounds use `modules.isaac.session.lantern` as a dotted table path. The shared config step parser splits dotted paths into segments (foundation `config_steps.clj:158-162`), so this writes `:modules {:isaac {:session {:lantern {:local/root ...}}}}`, not the required `:modules {:isaac.session.lantern {:local/root ...}}`. Confirmed by running `bb features features/session/context_mode_berth.feature:37`: `C52A DEBUG {:modules {:isaac {:session {:lantern #:local{:root "modules/isaac.session.lantern"}}}} ...}`; dispatch error is `unknown context mode :porthole`. The module never discovers/registers. All 13 baselined scenarios inherit this broken Background. The contracted feature cannot be edited by worker except @wip removal; simulating a module in test helpers would violate acceptance. Planner must change both Background path cells to the supported literal JSON-pointer form `/modules/isaac.session.lantern` (or another verified literal-key syntax) and re-baseline before this bean can pass. Latest run: `bb features features/session/context_mode_berth.feature:37` RED (1 failure); `bb spec` previously green (1878 examples). Resume after planner return at features/session/context_mode_berth.feature:20 and features/session/session_observers.feature:21. Branch bean/isaac-c52a has a green checkpoint pushed (92cba1e); subsequent red implementation is uncommitted and retained in the worktree.
