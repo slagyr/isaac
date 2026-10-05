@@ -1,11 +1,11 @@
 ---
 # isaac-4k9q
 title: ACP and Discord follow the SessionPolicy removal
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-05T17:51:02Z
-updated_at: 2026-10-05T17:51:02Z
+updated_at: 2026-10-05T18:44:00Z
 blocked_by:
     - isaac-ka10
 ---
