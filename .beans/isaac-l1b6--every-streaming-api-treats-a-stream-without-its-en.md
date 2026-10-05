@@ -1,11 +1,11 @@
 ---
 # isaac-l1b6
 title: Every streaming API treats a stream without its end marker as weather
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-05T14:29:07Z
-updated_at: 2026-10-05T15:51:39Z
+updated_at: 2026-10-05T15:53:02Z
 ---
 
 Micah, 2026-10-05. On the night of 10-04, chatgpt closed seven streams empty 1–4 s after the request (zanebot: isaac-work-1/2/4 mid-turn, tempest vault-sync cron). The responses adapter reported each as a plain `:llm-error` ("responses stream ended without response.completed"), so the drive ended the turn: no fallback (scrapper has `:model-fallback [:grok-4-6 :micah-opus]`), no suspend, no retry; the hailed beans sat claimed with no worker.
@@ -90,3 +90,14 @@ FAIL contract line removed or edited in b808c21: - `bb ci` green. `bb jvm-spec` 
 ```
 
 The recut commit `8e46c720` appended `feature-baseline: isaac-agent 4153a79...` and `feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb47320...` identical to the earlier gate lines. Gate `newest-baseline-window` detects a recut only when a commit introduces a *distinct* `[:gate line]` (set difference); an identical line does not open a new window. Planner must add a distinct, legitimate gate line (e.g., new baseline at a newer origin/main SHA with the same frozen feature blob); worker cannot edit baseline/acceptance. The existing `@wip` tags are already removed on the implementation branch; no changes needed there. Re-run gate after planner recuts with a distinct gate line.
+
+feature-baseline: isaac-agent 2346f1cd3917937b9c8eb7fe20311178d0ab4fba
+feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb473208480ce6a9940c15a5456a75a62ed4e55
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan, distinct recut)
+
+The previous recut repeated the same baseline line, so the gate did not open a new window. This one is a new sha.
+
+Re-baselined onto isaac-agent `2346f1c`. Blob `4eb47320` is unchanged and still `@wip`. The new baseline line is distinct, so the append-only window starts here.
+
+The exception stands. `comm_send_spec.clj:123` may be the only JVM failure. Do not edit that spec. Rebase onto `2346f1c` if needed. Drop `@wip` only. Land when the gate is green.
