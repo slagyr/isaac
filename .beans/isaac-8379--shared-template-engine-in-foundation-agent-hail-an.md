@@ -4,8 +4,10 @@ title: Shared template engine in foundation; Agent, Hail and Foreman render thro
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-10-05T15:57:06Z
-updated_at: 2026-10-05T17:33:23Z
+updated_at: 2026-10-05T17:47:01Z
 ---
 
 Likely repos: **isaac-foundation** (engine), then **isaac-agent**, **isaac-hail**, **isaac-foreman** (move onto it). Micah + planner, 2026-10-05.
@@ -43,3 +45,10 @@ The engine belongs in the lowest layer; the *variables* belong to each caller.
 - No behavior change: isaac-agent (prompt catalog, hooks paths), isaac-hooks,
   isaac-hail and isaac-foreman feature suites stay green on the new engine.
 - `git grep -n "str/replace.*{{"` in agent/hail/foreman src finds no private engine left (one-time check).
+
+
+## Implementation handoff (2026-10-05)
+
+Shared renderer committed on isaac-foundation bean/isaac-8379 (fc05126); Agent (94f81b5), Hail (57b354f), and Foreman (92e2aac) delegate on corresponding branches. Foundation `bb ci` passes (361 feature examples); Agent features with local Foundation pass (858 examples), native Agent specs with local Foundation pass (1882 examples); Hail native specs and features with local Foundation pass (67 / 104 examples); Foreman JVM specs and JVM features with `:dev-local` pass (97 / 48 examples); Hooks `:dev-local` specs and features pass (36 / 20 examples). `rg -n "str/replace.*\\{\\{" ../isaac-{agent,hail,foreman}/src` reports no private render engine.
+
+Verifier: land Foundation upstream first, then update all Foundation pins in Agent, Hail, Foreman deps.edn and bb.edn to its landed main SHA before their final tests/landing; Hail and Foreman also depend on Agent. No bean-branch SHA pins were written while in flight. Foreman bb spec / bb features without local overrides cannot load the new Foundation namespace until repinned. One unrelated existing JVM Agent spec `tool/comm_send_spec.clj:123` expects crew main but gets atticus on repeated isolated run; native Agent spec suite passes. Hail features with local Agent checkout (rather than its pinned Agent) report 2 queue-status failures (:held vs :queued); with pinned Agent and local Foundation, all 104 pass.
