@@ -1,10 +1,11 @@
 ---
 # isaac-8r7m
 title: Foreman templates :frequencies like prompts, so each instance can have its own session
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-10-05T15:45:45Z
-updated_at: 2026-10-05T15:45:45Z
+updated_at: 2026-10-05T15:47:37Z
 ---
 
 Likely repo: **isaac-foreman**. Found by the bean-work machine's own machine tests, 2026-10-05.
