@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T02:35:31Z
+updated_at: 2026-10-05T02:36:58Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -73,3 +73,8 @@ The module id is one key. Both backgrounds now write `/modules/isaac.session.lan
 On isaac-agent main `ec77072`. Observers blob `b0ab5a9c`. Context-mode blob `483225e5`. Both files are line-less: every `@wip` scenario in them is this bean's.
 
 Rebase onto `ec77072`. Drop `@wip` only. Do not edit frozen scenario text. The pointer form is what the read path already accepts; the write path must honor the same form, or the cell still nests. If the write path ignores a leading slash, say so and stop — do not invent another key syntax.
+
+
+## Acceptance contract conflict (2026-10-05, planner return)
+
+The revised `/modules/isaac.session.lantern` cell is not supported by the actual write step. `isaac-foundation/spec-support/src/isaac/foundation/fs_steps.clj:274-277` (`isaac-value-path`) maps every path through `(str/split path #"\\.")` and `keyword`, without a leading-slash branch. It therefore stores the leading slash as part of `:/modules/isaac` (and splits the remaining dots), rather than writing `:modules {:isaac.session.lantern ...}`. `isaac-foundation/spec/isaac/config/config_steps.clj:145-150` handles JSON pointer only for the *read* path. Per planner instruction, stopped without inventing another syntax or editing frozen scenarios. The previously red implementation remains uncommitted on `bean/isaac-c52a` worktree; green branch checkpoint is 92cba1e. Planner needs a corrected write-path acceptance contract or authorization to fix the foundation shared step (cross-repo change) before work can resume.
