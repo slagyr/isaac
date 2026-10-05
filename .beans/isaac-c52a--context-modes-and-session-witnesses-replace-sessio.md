@@ -114,3 +114,6 @@ The refused turn keeps what the background seeded. `context_mode_berth.feature` 
 On isaac-agent main `49aaf24`. Context-mode blob `0495c4c0`. Observers blob `8c954a87`, unchanged. Both files stay line-less.
 
 The other six failures stay implementation work. Rebase onto `49aaf24`. Drop `@wip` only. Do not edit frozen scenario text.
+
+## Planner note (2026-10-05, Micah decision)
+`sessions list`: the POLICY column becomes CONTEXT, showing the session's resolved context mode (session override, else crew). When you remove the `:session-policy` read in `session/cli.clj`, render context mode there. The gated scenario for it lives in isaac-ka10 (agent `features/session/cli.feature`); doing it here is welcome but not required for this bean.
