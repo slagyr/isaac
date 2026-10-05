@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T16:15:13Z
+updated_at: 2026-10-05T16:24:39Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -152,3 +152,11 @@ The two logbook assertions now match the printed `:events` vector with an ordere
 On isaac-agent main `4361081`. Observers blob `87c6b6b8`. Context-mode blob `0495c4c0`, unchanged.
 
 Rebase onto `4361081`. Drop `@wip` only. Do not edit frozen scenario text. SessionPolicy deletion, handbook, and `bb ci` remain this bean's work.
+
+## Acceptance contract conflict (2026-10-05, after regex adjustment)
+
+Rebased implementation onto agent main 4361081. Deleted SessionPolicy, chronicle and logbook policy fixtures; updated handbook and CONTEXT column; `bb spec` green (1879/0). Branch bean/isaac-c52a at 44bd0f2. `bb bean-gate verify isaac-c52a --dir isaac-agent=../isaac-agent-c52a` exit 0, but `bb features` fails 5/868 and `bb ci` is not green.
+
+The two frozen logbook assertions at session_observers.feature:34 and :84 still cannot match. Foundation fs_steps/isaac-file-edn-contains calls step-tables/match-value on actual :events vector; step_tables.clj :regex uses `re-matches` against `(str actual)`, **not** `re-find`. The vector string begins `[{:event "session-opened"`, not `session-opened`; second begins `[{:event "turn-started"`, not `turn-started`. Both regexes start at the bare event name and end at `turn-ended`, but the vector has wrapping brackets/maps and trailing session-id. Even the first `#"session-opened"` row cannot match the vector. Confirmed on focused run: actual events exist in correct order, all other 11 gated scenarios pass. Planner must add `(?s).*` at start and `.*` at end of each regex row to match entire printed vector (including session-id row); re-baseline. Do not change matcher or frozen text in worker.
+
+Separate full-suite failures: model_fallback.feature:83 and provider_attention.feature:39,168 expect `api-error` but get `error`. Investigating after acceptance adjustment; do not land until `bb ci` and `bb jvm-spec` green. Gate was run and passed, but does not execute acceptance tests.
