@@ -1,10 +1,11 @@
 ---
 # isaac-ut5n
 title: Every Foreman turn's preamble names its machine, instance and state
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-10-05T14:46:30Z
-updated_at: 2026-10-05T14:46:30Z
+updated_at: 2026-10-05T14:48:00Z
 ---
 
 Likely repo: **isaac-foreman**. Micah + planner, 2026-10-05.
