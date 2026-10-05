@@ -1,11 +1,11 @@
 ---
 # isaac-ka10
 title: Episodes runs as a context mode plus a session observer
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T18:21:52Z
+updated_at: 2026-10-05T18:22:57Z
 blocked_by:
     - isaac-c52a
 ---
