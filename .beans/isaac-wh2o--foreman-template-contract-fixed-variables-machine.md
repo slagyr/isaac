@@ -33,3 +33,8 @@ Foreman templating grew field by field (prompt, then exec :command/:cwd, then
 
 - isaac-foreman `features/foreman/template_contract.feature` — "state and event are template variables", "a log message reads the instance data like any other string", "an unknown template variable is a config error".
 - "an absent data key is not a config error" (already green) and the rest of the isaac-foreman features stay green.
+
+feature-baseline: isaac-foreman fd10540e04757950e71bf67de21fa96606c72b53
+feature-blob: isaac-foreman features/foreman/template_contract.feature d75ca4fcb63916ab14fdde9defd6716c51ca33a9 16
+feature-blob: isaac-foreman features/foreman/template_contract.feature d75ca4fcb63916ab14fdde9defd6716c51ca33a9 29
+feature-blob: isaac-foreman features/foreman/template_contract.feature d75ca4fcb63916ab14fdde9defd6716c51ca33a9 41
