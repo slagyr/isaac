@@ -1,11 +1,11 @@
 ---
 # isaac-ka10
 title: Episodes runs as a context mode plus a session observer
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T17:46:06Z
+updated_at: 2026-10-05T18:21:52Z
 blocked_by:
     - isaac-c52a
 ---
@@ -122,3 +122,23 @@ Still red:
 Worktrees: `isaac-episodes-ka10` @ `59c6d48`, `isaac-agent-ka10` @ `ec0fd46`. Episodes still `:local/root ../isaac-agent-ka10`.
 
 Resume: agent `src/isaac/agent/session/cli.clj` `print-session-table` / CONTEXT regex; then decide listing helper vs planner hail. Pin episodes to landed agent main sha only at landing.
+
+feature-baseline: isaac-episodes 1dc26777a31ffe6fdea9b63d98c185caa0e2c61a
+feature-baseline: isaac-agent b7ee4ca7d3728504ee428738665dde37a548496e
+feature-blob: isaac-episodes features/episodes/context_mode_and_observer.feature d5d208018130e80fced901848712869c7c3ef0af
+feature-blob: isaac-episodes features/episodes/idle_seal.feature e38d19c1520213796283b08eda7c2aec06dbe109
+feature-blob: isaac-episodes features/episodes/layout.feature 7a8ab55a808db14b38af7e1d746792503a7610e9
+feature-blob: isaac-episodes features/episodes/live.feature 3cd76ea7e910caff044e4e87970db2279672830e
+feature-blob: isaac-episodes features/episodes/migrate_session.feature eede1eac1a4de200573194e4191117dba695c2ca
+feature-blob: isaac-episodes features/episodes/provider_attention.feature 2ea70661da61a86fafb54ee116d170d6fdb1789a
+feature-blob: isaac-episodes features/episodes/recall_logging.feature 91357700a8d3dd675a420e9ed02e76a3934276d4
+feature-blob: isaac-episodes features/episodes/session_naming.feature 88f4deb1c806f6b459ae1d616ed646064fb1adc4
+feature-blob: isaac-episodes features/recall/continuation.feature 30b3ce5021b305d9321db543785821b33dcbea3c
+feature-blob: isaac-episodes features/recall/embedding.feature a74d8f6e42f86223104e151a5b22baabfc5a0507
+feature-blob: isaac-episodes features/recall/implicit_tools.feature f454fe00a3f7d15d8fb87c91f7ec156e09c996c9
+feature-blob: isaac-episodes features/recall/ledger.feature db0415c7b9217e8dd4406698a641a5b930213670
+feature-blob: isaac-episodes features/recall/live_tools.feature dde1e695b8a37665faec494bf4dc5dccd523a940
+feature-blob: isaac-agent features/session/cli.feature 18c75424e758019aed10554e5729a726aef9f55e
+
+## Planner adjustment (2026-10-05, listing crew)
+Layout listing scenario: `When the user sends "Status?" on session "harbor-log" as crew "main"` (isaac-episodes main). The c52a harness resolves a crew-less send to the unique observer crew; keep that convention, do not change the helper. Re-baselined. The agent CONTEXT-column scenario stays as written: capture the real `sessions list` output and make the column render to match. Rebase; drop `@wip` only.
