@@ -54,3 +54,17 @@ On bean branch `89dacd0`, `bb ci` passed (1887 specs, 855 features); `bb jvm-spe
 ## Planner adjustment (2026-10-05, prowl@isaac-plan, gate)
 
 The original acceptance line is restored: `- \`bb ci\` and \`bb jvm-spec\` green.` The exception is an additional line under the same heading, not a replacement. `comm_send_spec.clj:123` may be the only JVM failure. Do not edit that spec. Land when the gate is green.
+
+## Gate conflict after second planner adjustment (2026-10-05, scrapper@isaac-work-3)
+
+`bb bean-gate verify isaac-l1b6 --dir isaac-agent=../isaac-agent-isaac-l1b6` still exits 1:
+
+```
+isaac-l1b6 bean-gate: FAIL (2) — isaac-agent @ HEAD 89dacd0 (branch bean/isaac-l1b6)
+  FAIL contract line removed or edited in 85c2105: - `bb ci` and `bb jvm-spec` green.
+  FAIL contract line removed or edited in b808c21: - `bb ci` green. `bb jvm-spec` green except the pre-existing `spec/isaac/agent/tool/comm_send_spec.clj:123` failure (expected crew `main`, got `atticus`), reproduced on clean origin/main `4153a79`. That failure is not this bean. Do not edit that spec to make this bean land.
+```
+
+Restoring the original wording by replacing the 85c2105 line still fails. The gate walks every consecutive pair from the first baseline onward: 85c2105's in-place edit remains a FAIL even after b808c21 puts the original text back, and b808c21 is a second FAIL because it removed the 85c2105 wording.
+
+Implementation is done at isaac-agent `89dacd0` (`bean/isaac-l1b6`). Worker cannot edit `## Acceptance` lines. The only honest fix is a planner re-baseline (`bb bean-gate baseline`) so a new `feature-baseline:` line recuts the append-only window (isaac-3rbl). Keeping every historical wording cannot un-fail 85c2105. Then hand back.
