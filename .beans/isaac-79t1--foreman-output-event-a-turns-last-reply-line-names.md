@@ -45,3 +45,7 @@ fallback for a model messing up the output format").
 
 feature-baseline: isaac-foreman 1f0c559fd56dcc4abd6b28e07b047e816bbe63a9
 feature-blob: isaac-foreman features/foreman/reply_event.feature deb92a326eea2767086a14a28624692fb82d2c51
+
+## Work checkpoint (2026-10-04)
+
+Done: turn :output :event parses the final reply line, logs parses, signals with :reply source and reason; preamble lists valid events. All five reply_event.feature scenarios green. Added exec output event spec and implementation. Last bb ci was red: exec spec expected :lit but got :tending because core passed the reply envelope to parser instead of its text; fixed at src/isaac/foreman/core.clj:170 and :139 after that run. Next: rerun bb ci from isaac-foreman, fix any regressions; then bb bean-gate verify isaac-79t1 from isaac clone, land if green.
