@@ -36,3 +36,7 @@ The bean-work machine gives each bean its own sessions:
 
 feature-baseline: isaac-foreman 4c40afb670f605d20be629b0987486d825ef48da
 feature-blob: isaac-foreman features/foreman/templated_frequencies.feature 778b73fb2d74272c7930036b1d90ccbc3078b5d5
+
+## Landed on main (2026-10-05)
+
+main-sha: isaac-foreman 17fa14a38eacdb8f9700203773291e121678ed77
