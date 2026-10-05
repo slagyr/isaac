@@ -61,3 +61,26 @@ feature-blob: isaac-episodes features/recall/implicit_tools.feature f454fe00a3f7
 feature-blob: isaac-episodes features/recall/ledger.feature db0415c7b9217e8dd4406698a641a5b930213670
 feature-blob: isaac-episodes features/recall/live_tools.feature dde1e695b8a37665faec494bf4dc5dccd523a940
 feature-blob: isaac-agent features/session/cli.feature 18c75424e758019aed10554e5729a726aef9f55e
+
+## Checkpoint (2026-10-05, scrapper@isaac-work-2)
+
+Done:
+- Deleted SessionPolicy (`policy.clj`) and `migrate-layout` (cli + `layout.clj` + spec).
+- Episodes contributes `:isaac.agent/context-mode :episodes` (requires observer, wait-for, prepare) and `:isaac.agent/session-observer :episodes`.
+- Observer: resolve-thread / maybe-seal / chain-on-compaction. Context mode: slice + recall prefix on the model-facing transcript; session transcript is not rotated on TTL.
+- Handbook rewritten for the two settings. `bb spec` was 234 green before the last-input-tokens tweak; observer_spec compaction stamp is the remaining unit red.
+- `@wip` stripped on the 13 episodes feature files + agent `features/session/cli.feature`.
+- Worktrees: `isaac-episodes-ka10`, `isaac-agent-ka10` on `bean/isaac-ka10`. Episodes deps currently `:local/root ../isaac-agent-ka10`.
+
+Next (resume here):
+1. `bb spec` — fix `observer_spec.clj:114` closed episode last-input-tokens (got 0, want 85).
+2. `bb features features/episodes/context_mode_and_observer.feature features/episodes/layout.feature features/episodes/live.feature:383` — remaining reds:
+   - `--with-context-mode full` still contains "Where this conversation left off" (override vs episodes select/prepare).
+   - reset-mode crew recall not on the prompt (`live.feature` ~383; wrap-input/:reset prepare).
+   - layout session.edn `context-mode` keyword `:episodes` vs table string `"episodes"` (`fs_steps` parse-isaac-value).
+   - layout compaction successor last-input-tokens 16 vs 85.
+   - layout listing `sessions/main/harbor-log/session.edn` missing.
+3. Full `bb features` then `bb ci` in both repos. Pin episodes to landed agent main sha only at landing. Remove `:local/root` before squash.
+4. Agent `features/session/cli.feature` CONTEXT scenario — implementation already on c52a; confirm green.
+
+Resume: `src/isaac/session/episodes/context.clj` (prepare/select/wrap-reset) and `src/isaac/session/episodes/observer.clj` (compaction stamp); agent `src/isaac/agent/session/context.clj` create-with-resolved-behavior! persist.
