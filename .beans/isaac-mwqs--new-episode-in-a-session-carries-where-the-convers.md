@@ -1,11 +1,11 @@
 ---
 # isaac-mwqs
 title: New episode in a session carries where the conversation left off
-status: todo
+status: completed
 type: feature
 priority: high
 created_at: 2026-10-04T23:30:27Z
-updated_at: 2026-10-05T04:34:57Z
+updated_at: 2026-10-05T14:51:58Z
 ---
 
 Micah, 2026-10-04. In an episode session the agent offers to do something; Micah walks away for hours; on return he answers "Yeah please do it." The old episode has gone cold, a new episode opens, and the reply has no context: the agent calls recall, gets unrelated scenes, and there is no continuity.
@@ -52,3 +52,10 @@ Both stay `@wip`. Continuation.feature is unchanged and still this bean's.
 On isaac-episodes main `bf507fa`. Continuation blob `4f8d033a`. Live blob `a4a86ad7`, lines 112 and 504.
 
 Rebase onto `bf507fa`. Drop `@wip` only. Do not edit frozen scenario text.
+
+## Landed on main (2026-10-05)
+
+main-sha: isaac-episodes 023a7f0410c401d8be37476d161d4e5385761366
+main-sha: isaac-episodes 81e27393ed091a2ca7154b443554895c4581ec4b
+
+The follow-up preserves the previous user message across cold transcript rotation before injecting the continuation. `bb ci` green (247 specs, 103 features); gate PASS on the squash commit.
