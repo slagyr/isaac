@@ -1,11 +1,11 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T02:47:42Z
+updated_at: 2026-10-05T02:55:02Z
 ---
 
 Micah, 2026-10-04 design session. Replaces SessionPolicy with two narrow berths.
@@ -102,3 +102,15 @@ Rebased existing branch onto agent 6e4cac9; removed only @wip. Ran `bb features 
 - `features/session/context_mode_berth.feature:75`: scenario 'a turn fails when its session lacks the observer its context mode requires' asserts exactly **2 transcript entries** after a failed turn. Background already appends two messages to an opened session, and the store counts its required session header as an entry: **3 entries before any turn**. The actual is 3, consistent with refusal before appending. No implementation can preserve both the required header+two background messages and the assertion 2. Planner must change this count (likely 3) and re-baseline; worker cannot edit frozen scenario.
 
 Other current failures (implementation still incomplete): `session_observers.feature:34` missing session-opened, `:62` session override prompt exits 1, `:89` missing turn-started, `:107` failing observer turn result nil. A partially wired observer factory and logbook fixture remain uncommitted on bean/isaac-c52a; no green run has occurred after resumed edits. Resume at `src/isaac/agent/bridge/core.clj:324` and `src/isaac/agent/session/session_observer.clj:23`. The green checkpoint on the rebased branch remains; do not land until planner adjusts the count.
+
+feature-baseline: isaac-agent 49aaf24058a4df201bed36ba53d32b120b010fc1
+feature-blob: isaac-agent features/session/session_observers.feature 8c954a8731ae6e5855ffc0e3e32922b9cb5b98fc
+feature-blob: isaac-agent features/session/context_mode_berth.feature 0495c4c096fc71b115f8bb818e6888ff13036423
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan, count)
+
+The refused turn keeps what the background seeded. `context_mode_berth.feature` line 79 now expects 3 transcript entries, not 2: the session header plus the two background messages. A refusal appends nothing. `@wip` stays.
+
+On isaac-agent main `49aaf24`. Context-mode blob `0495c4c0`. Observers blob `8c954a87`, unchanged. Both files stay line-less.
+
+The other six failures stay implementation work. Rebase onto `49aaf24`. Drop `@wip` only. Do not edit frozen scenario text.
