@@ -31,3 +31,7 @@ Likely repo scope: isaac-agent.
 
 feature-baseline: isaac-agent 4153a79c2c5ff9530b2aa85454a9388abf34917d
 feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb473208480ce6a9940c15a5456a75a62ed4e55
+
+## Worker checkpoint (2026-10-05)
+
+Done: adapters reject missing end markers, Grover cut-off and end markers, provider-weather fallback; 13 acceptance examples pass, `bb ci` passed (1882 specs / 855 features). Focused native/JVM adapter specs pass (494 examples). Next: resolve `bb jvm-spec` red on unrelated `spec/isaac/agent/tool/comm_send_spec.clj:123` (expects default crew "main", gets "atticus" even when run alone); check whether current upstream main has same failure before touching out-of-scope files. Then rerun `bb ci`, `bb jvm-spec`, gate and land. Latest test run `bb jvm-spec spec/isaac/agent/tool/comm_send_spec.clj` red: 1 failure / 18 examples. Implementation changes remain uncommitted until full acceptance green.
