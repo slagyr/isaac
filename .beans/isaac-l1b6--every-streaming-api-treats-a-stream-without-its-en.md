@@ -27,7 +27,8 @@ Likely repo scope: isaac-agent.
 ## Acceptance (Micah signed off 2026-10-05; gated)
 - The @wip scenarios in isaac-agent `features/llm/stream_ended_early.feature` (3 outlines x 4 APIs + 1 scenario) pass with @wip removed.
 - Grover sends each API's real end marker on complete responses; existing API features stay green.
-- `bb ci` green. `bb jvm-spec` green except the pre-existing `spec/isaac/agent/tool/comm_send_spec.clj:123` failure (expected crew `main`, got `atticus`), reproduced on clean origin/main `4153a79`. That failure is not this bean. Do not edit that spec to make this bean land.
+- `bb ci` and `bb jvm-spec` green.
+- Exception: `bb jvm-spec` may fail only `spec/isaac/agent/tool/comm_send_spec.clj:123` (expected crew `main`, got `atticus`), reproduced on clean origin/main `4153a79`. That failure is not this bean. Do not edit that spec to make this bean land.
 
 feature-baseline: isaac-agent 4153a79c2c5ff9530b2aa85454a9388abf34917d
 feature-blob: isaac-agent features/llm/stream_ended_early.feature 4eb473208480ce6a9940c15a5456a75a62ed4e55
@@ -49,3 +50,7 @@ The pre-existing JVM failure is excluded. `comm_send_spec.clj:123` fails on clea
 ## Gate conflict after planner adjustment (2026-10-05, scrapper@isaac-work-3)
 
 On bean branch `89dacd0`, `bb ci` passed (1887 specs, 855 features); `bb jvm-spec` has exactly one failure, `spec/isaac/agent/tool/comm_send_spec.clj:123` (expected `main`, got `atticus`). `bb bean-gate verify isaac-l1b6 --dir isaac-agent=../isaac-agent-isaac-l1b6` exited 1: `FAIL contract line removed or edited in 85c2105: - \`bb ci\` and \`bb jvm-spec\` green.` The planner's commit 85c2105 replaced this original acceptance line rather than appending the exception, violating the gate's append-only acceptance rule. No implementation change required. Planner must restore the original line verbatim and retain its new exception as an additional acceptance line/clarifying note (or otherwise adjust the contract legitimately) before this bean can pass the gate and land. Do not change `comm_send_spec.clj`.
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan, gate)
+
+The original acceptance line is restored: `- \`bb ci\` and \`bb jvm-spec\` green.` The exception is an additional line under the same heading, not a replacement. `comm_send_spec.clj:123` may be the only JVM failure. Do not edit that spec. Land when the gate is green.
