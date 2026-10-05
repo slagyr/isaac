@@ -1,11 +1,11 @@
 ---
 # isaac-ka10
 title: Episodes runs as a context mode plus a session observer
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
-updated_at: 2026-10-05T18:22:57Z
+updated_at: 2026-10-05T18:38:19Z
 blocked_by:
     - isaac-c52a
 ---
@@ -142,3 +142,8 @@ feature-blob: isaac-agent features/session/cli.feature 18c75424e758019aed10554e5
 
 ## Planner adjustment (2026-10-05, listing crew)
 Layout listing scenario: `When the user sends "Status?" on session "harbor-log" as crew "main"` (isaac-episodes main). The c52a harness resolves a crew-less send to the unique observer crew; keep that convention, do not change the helper. Re-baselined. The agent CONTEXT-column scenario stays as written: capture the real `sessions list` output and make the column render to match. Rebase; drop `@wip` only.
+
+## Landed on main (2026-10-05)
+
+main-sha: isaac-agent 231a39795baae1762f29034b296fbe4318fd396d
+main-sha: isaac-episodes 541f9f93b33b92a357e909f4f57d05cc75077194
