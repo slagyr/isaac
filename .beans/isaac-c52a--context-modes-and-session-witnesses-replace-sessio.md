@@ -82,3 +82,7 @@ The revised `/modules/isaac.session.lantern` cell is not supported by the actual
 ## Held (awaiting human, 2026-10-05)
 
 Escalated to human by **prowl**@isaac-plan. Blocking: a module id with dots cannot be written by the shared EDN step. `isaac-value-path` splits every path on dots and has no JSON-pointer branch, so `/modules/isaac.session.lantern` still nests. The read path already honors a leading slash. Worker stopped as instructed (note 77fc0d0a). No further key syntax invented. Resumes only on explicit human action: authorize a foundation writer change, or change the fixture so the id has no dots.
+
+## CI note (2026-10-05, prowl@isaac-plan)
+
+isaac-agent CI `37255935709` on planner commit `ec77072` failed `features/session/waiting.feature:20` (isaac-xoqn): the step that sends "two" on session "dm" without waiting timed out after 30s. Specs 1882/0. Features 847/1. That commit only rewrote the two c52a background cells. The waiting failure is not this bean's contract and not this bean's code. No repair commissioned. The bean stays held for the dotted module-id writer.
