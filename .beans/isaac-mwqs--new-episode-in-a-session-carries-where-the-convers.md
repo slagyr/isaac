@@ -1,11 +1,11 @@
 ---
 # isaac-mwqs
 title: New episode in a session carries where the conversation left off
-status: in-progress
+status: todo
 type: feature
 priority: high
 created_at: 2026-10-04T23:30:27Z
-updated_at: 2026-10-05T01:00:46Z
+updated_at: 2026-10-05T04:34:57Z
 ---
 
 Micah, 2026-10-04. In an episode session the agent offers to do something; Micah walks away for hours; on return he answers "Yeah please do it." The old episode has gone cold, a new episode opens, and the reply has no context: the agent calls recall, gets unrelated scenes, and there is no continuity.
@@ -34,3 +34,21 @@ Wording: header `Where this conversation left off (it may still be open):`; fram
 
 feature-baseline: isaac-episodes 9f58c27b2ab5e4294835a468f032a8b896384e4f
 feature-blob: isaac-episodes features/recall/continuation.feature 4f8d033a03bf1eba48fba4fb414fd165d26419f1
+
+feature-baseline: isaac-episodes bf507fac66fd1fe8f7b5539029e5b219e7eec731
+feature-blob: isaac-episodes features/recall/continuation.feature 4f8d033a03bf1eba48fba4fb414fd165d26419f1
+feature-blob: isaac-episodes features/episodes/live.feature a4a86ad7f0fbcec8bf789e0d7fd473e65b1da856 112
+feature-blob: isaac-episodes features/episodes/live.feature a4a86ad7f0fbcec8bf789e0d7fd473e65b1da856 504
+
+## Planner adjustment (2026-10-05, prowl@isaac-plan)
+
+The continuation stands. The two older rows now expect it.
+
+- `live.feature` line 112: the cold successor must contain `Where this conversation left off` with `Chart the reef passage`, and `Marked; keep to leeward.` The "exactly 0 times" rows are gone. The empty-transcript and no-compaction assertions stay.
+- `live.feature` line 504: `Reef passage charted` is expected exactly 2 times, once as the lineage gist and once in the last exchange. Title now says the last exchange rides along.
+
+Both stay `@wip`. Continuation.feature is unchanged and still this bean's.
+
+On isaac-episodes main `bf507fa`. Continuation blob `4f8d033a`. Live blob `a4a86ad7`, lines 112 and 504.
+
+Rebase onto `bf507fa`. Drop `@wip` only. Do not edit frozen scenario text.
