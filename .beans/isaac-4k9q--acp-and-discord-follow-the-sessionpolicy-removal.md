@@ -1,11 +1,11 @@
 ---
 # isaac-4k9q
 title: ACP and Discord follow the SessionPolicy removal
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-05T17:51:02Z
-updated_at: 2026-10-05T18:57:39Z
+updated_at: 2026-10-05T19:01:49Z
 blocked_by:
     - isaac-ka10
 ---
@@ -85,3 +85,10 @@ ka10's shape stands.
 Both stay `@wip`. On acp main `19620e7`, blob `83c80a4b`. On discord main `b1b0820`, blob `c5fa79e6`. Both files are line-less.
 
 Rebase onto those shas. Drop `@wip` only. Do not edit frozen scenario text.
+
+## Landed on main (2026-10-05)
+
+Rebased onto planner-adjusted baselines; removed only `@wip` from frozen features. `ISAAC_GIT=1 bb ci` green in both repos (ACP 81 specs / 70 features; Discord 109 specs / 68 features). `bb bean-gate verify isaac-4k9q` PASS on squash commits.
+
+main-sha: isaac-acp 3fdae54b60c8ca3e2bb5dcf79acb78ad722b262d
+main-sha: isaac-discord 25fcf706a6efeea48d732818bd65077ce2854dda
