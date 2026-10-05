@@ -28,3 +28,6 @@ Micah, 2026-10-04. Follows the context-mode + observer berths bean. Moves episod
 - `bb ci` green; pins coherent with the agent bean's sha.
 
 Likely repo scope: isaac-episodes (+ zanebot/yopp config at deploy).
+
+## Baseline plan (2026-10-04)
+Scenarios signed off (draft: features/episodes/context_mode_and_observer.feature, 5 scenarios). Baseline waits for isaac-mwqs to complete: its baselined continuation.feature carries a `session-policy` Background row. At baseline, the planner also rewrites the `session-policy` rows in the 11 other episodes feature files (~75 scenarios; layout.feature asserts the index field itself) to `:context-mode :episodes` + `:observers [:episodes]`, marks the touched scenarios @wip, and includes them in the baseline.
