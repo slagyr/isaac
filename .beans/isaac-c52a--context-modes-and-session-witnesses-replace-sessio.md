@@ -1,7 +1,7 @@
 ---
 # isaac-c52a
 title: Context modes and session observers replace SessionPolicy
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-05T01:58:10Z
@@ -37,3 +37,17 @@ The session store is the record for every session and becomes the only session A
 - `bb ci` and `bb jvm-spec` green.
 
 Likely repo scope: isaac-agent. Lands together with its follow-up (episodes port), which must re-pin to this.
+
+## Decision + Acceptance (Micah signed off 2026-10-04; gated)
+Name: session observer (berth `:isaac.agent/session-observer`, config `:observers`), not "witness". Scenarios are config-driven: the lantern fixture module (`modules/isaac.session.lantern`) contributes the `logbook` observer (writes `lantern/logbook.edn` as `{:events [...]}`; `:lantern {:logbook {:fail true}}` makes it throw) and the `porthole` context mode (soul + last assistant reply + current message; `:requires {:observers #{:logbook}}`). Its old session-policy contribution goes away.
+- The 6 @wip scenarios in isaac-agent `features/session/session_observers.feature` and the 7 in `features/session/context_mode_berth.feature` pass with @wip removed.
+- Test harness drains observer queues inside its existing turn await (no new steps).
+- Unit spec: an observer that blocks does not delay the turn's reply.
+- One-time: no `SessionPolicy`, `session-policy`, `register-factory!` policy or chronicle-policy references remain in isaac-agent src/spec; the `logbook` policy fixture and its steps are deleted.
+- Retired ahead of this bean (agent c38d19d): session_policy.feature, policy_mismatch.feature, the two lantern session-policy validate scenarios (config/cli.feature), the enum "Unknown :context-mode" scenario (context_mode.feature), and the "through the session's crew policy" scenarios in resume_repair.feature and bridge/commands.feature.
+- Handbook (agent) documents both berths and the `:requires` check.
+- `bb ci` and `bb jvm-spec` green.
+
+feature-baseline: isaac-agent c526ccbfde0e742c716b862943036352abab7020
+feature-blob: isaac-agent features/session/session_observers.feature 67a9d4b2dc4c5f60ce50a707327bc7f30b232405
+feature-blob: isaac-agent features/session/context_mode_berth.feature 899c855d0321d316fd36dcb0df7f41386e6e53f5
