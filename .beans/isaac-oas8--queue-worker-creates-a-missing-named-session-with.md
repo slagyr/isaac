@@ -53,3 +53,9 @@ The pre-existing suite failure is excluded. `session_steps_spec.clj:71` fails on
 `bb features` and the gate must be green. Native `bb ci` may fail only that one example. Do not edit `session_steps_spec.clj` here. Land when the gate is green and that is the only suite failure.
 
 Filed as the same class as draft isaac-7ev2. A suite repair belongs on its own bean, not this one.
+
+## Landed on main (2026-10-06)
+
+main-sha: isaac-agent e05614ac84273ac3f3865643ab883153c182dd62
+
+Re-ran `bb ci` on the rebased bean branch: 1888 specs and 876 features passed (one pre-existing pending); squash gate passed on `main` prior to push. The order-dependent full-suite failure noted above did not reproduce on the final run.
