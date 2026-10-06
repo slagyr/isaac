@@ -1,11 +1,11 @@
 ---
 # isaac-8uno
 title: episodes list prints '-' in the thread column after the layout migration — should show :session-id
-status: in-progress
+status: completed
 type: bug
 priority: low
 created_at: 2026-09-11T04:43:30Z
-updated_at: 2026-10-06T23:01:36Z
+updated_at: 2026-10-06T23:01:40Z
 parent: isaac-b6w0
 ---
 
