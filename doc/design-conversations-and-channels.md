@@ -1,7 +1,6 @@
 # Conversations and channels
 
-Design note, Micah 2026-10-06. Status: agreed in principle; not yet beaned
-beyond isaac-mve9.
+Design note, Micah 2026-10-06. Status: agreed (Micah 2026-10-06); beaned (see Work).
 
 ## The problem
 
@@ -78,11 +77,11 @@ A failed send records nothing.
 | Piece | Bean | State |
 |---|---|---|
 | Owned channel: marked note in the owner's session; `:channels` + `:channel` (agent, gchat) | isaac-mve9 | in progress |
-| Discord records `:channels`, reports `:channel` | isaac-rjeg | draft; scenarios drafted |
-| iMessage records `:channels`, reports `:channel` (key by chat id; a send addressed to a handle reports the chat it landed in) | isaac-9khs | draft |
-| Unowned channel: the send opens a session on the sender's crew | — | to bean |
-| Address a session: send on its most recent channel, record there | — | to bean |
-| Retire opt-in reply routing | isaac-ugvu | scrap |
+| Discord records `:channels`, reports `:channel` | isaac-rjeg | baselined; after mve9 |
+| iMessage records `:channels`, reports `:channel` (key by chat id; a send addressed to a handle reports the chat it landed in) | isaac-9khs | baselined; after mve9 |
+| Unowned channel: the send opens a session on the sender's crew | isaac-4vj9 | draft |
+| Address a session: send on its most recent channel, record there | isaac-ros0 | draft |
+| Retire opt-in reply routing | isaac-ugvu | scrapped |
 
 ## Open details
 
