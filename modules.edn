@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "eb9dfeee50c924b5cc575768aa995180bedf410b"}
+                                      :git/sha "dc42dfe8a03df0a52dd331e2ae43a308bffe0120"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "541f9f93b33b92a357e909f4f57d05cc75077194"}
@@ -35,16 +35,16 @@
                                       :git/sha "342da242baf29256d5ef8636ad1ae85a90a9b44d"}
                               :desc  "Shared Google Workspace plumbing — OAuth for the Google user, the Pub/Sub push door and durable inbox, registrations and renewal, health."}
  :isaac.comm.gchat           {:coord {:git/url "https://github.com/slagyr/isaac-gchat.git"
-                                      :git/sha "e3dcbefa15af67627d9a9329019bcdf422d74519"}
+                                      :git/sha "d536c44b2abd55d087f4b9f54d426ea793d4bfd3"}
                               :desc  "Google Chat comm — inbound gate, routing and dispatch for spaces and DMs; outbound replies and sends. Built on isaac-google."}
  :isaac.comm.gmail           {:coord {:git/url "https://github.com/slagyr/isaac-gmail.git"
                                       :git/sha "d3d849b644e8373628a4a928c269f3f9178ac6ba"}
                               :desc  "Gmail comm — watch on INBOX, history walk, thread-as-session routing; replies on thread. Built on isaac-google."}
  :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                                      :git/sha "56bf52d31d2281e7fd335b893b5f2f8067c5d245"}
+                                      :git/sha "e820a974d476e83662bf575061deac5f681320db"}
                               :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage        {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
-                                      :git/sha "c1af265cdfa08528b4f2091f3bdf91edb8450c49"}
+                                      :git/sha "4391aaa8f6552855187334eeffa722299e0abcad"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
                                       :git/sha "b7570065eb29c27db5c0f958cbae8f82371fbe77"}
