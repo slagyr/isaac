@@ -4,8 +4,10 @@ title: A worksite acquisition that fails leaves its lock behind; one Foreman tur
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-10-06T20:23:24Z
-updated_at: 2026-10-06T20:29:31Z
+updated_at: 2026-10-06T20:42:35Z
 ---
 
 Likely repos: **isaac-agent** (turn worker) and/or **isaac-worksite** (lock guard). Found by
@@ -48,3 +50,7 @@ are still on disk (`~/.isaac/worksites/*.lock`, holder `bean-isaac-8uno`). A res
 
 Done: RealFs failed-write regression and cleanup/warn implemented in isaac-worksite (d98a5d3); queue claim/admit lease release regressions implemented in isaac-agent (5e2ec86). Both focused specs green; worksite `bb ci` green. Branches pushed.
 Next: run agent `bb ci`, inspect failures, refine RealFs guard cleanup (especially release exceptions), then gate and ungated verify handoff. Resume at `isaac-agent/src/isaac/agent/turn/worker.clj:249` and `isaac-worksite/src/isaac/worksite/lock.clj:110`.
+
+## Verification handoff (2026-10-06)
+
+Worksite `bb ci` green (23 specs, 8 feature examples). Agent focused worker specs green (23 examples) and `bb features` green (875 examples, 1 pre-existing pending). Agent `bb ci` stops in `bb spec`: `session_steps_spec.clj:71` raises "no filesystem available"; reproduced identically on clean agent `origin/main` (25a2fef) in a detached worktree. No changes to unrelated test. `bb bean-gate verify isaac-x3g4` exited 2: no feature-baseline. Branches: isaac-worksite d98a5d3; isaac-agent 5e2ec86. Next: verifier review and landing; baseline suite failure needs a separate repair.
