@@ -1,11 +1,11 @@
 ---
 # isaac-9khs
 title: iMessage records :channels on inbound and reports :channel on send (mve9 follow-up)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-06T20:02:38Z
-updated_at: 2026-10-06T20:02:38Z
+updated_at: 2026-10-06T20:46:34Z
 blocked_by:
     - isaac-mve9
 ---
