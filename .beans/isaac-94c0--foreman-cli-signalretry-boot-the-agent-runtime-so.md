@@ -36,3 +36,7 @@ CLI process (`host/ensure-runtime!` → `runtime/install!`, see `isaac-hail/src/
 
 feature-baseline: isaac-foreman b2572e6e9b0ed2fd2719c5c0e92fc594f256a5a2
 feature-blob: isaac-foreman features/foreman/turn_action.feature 131acccb92ac60785b3bcfd1c8da00bdd1ac5a65 158
+
+## Landed on main (2026-10-06)
+
+main-sha: isaac-foreman 01d46c1328a5b9a435dcdd33b857db614be83e08
