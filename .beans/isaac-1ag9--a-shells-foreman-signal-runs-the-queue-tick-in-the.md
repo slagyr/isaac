@@ -45,3 +45,21 @@ Turn `a461ac71` (orphaned `:running`) can then be dropped from a shell safely â€
 
 feature-baseline: isaac-foreman 65c002d182e927f2bae82e24b72eac9a9fa7ec27
 feature-blob: isaac-foreman features/foreman/turn_action.feature e96ba4e70df499d46bdb2a4cb40d3014b40c4201 175
+
+## Contract conflict (2026-10-06)
+
+The baselined `features/foreman/turn_action.feature:191-192` has a Gherkin table cell
+`lamp-room\s.*\s(queued|held)` containing an unescaped `|`. The table parser splits
+that regex into `lamp-room\s.*\s(queued`, so the acceptance scenario throws
+`java.util.regex.PatternSyntaxException: Unclosed group near index 22` at
+`isaac.foundation.cli-steps/stdout-matches` before the queue tick. This cannot
+be fixed by changing product code or step logic honestly; the planner must escape
+the pipe in the scenario and re-baseline. `bb features features/foreman/turn_action.feature:174`
+reproduced the error with the local isaac-agent worktree dependency. Agent wake lifecycle
+is implemented and `bb ci` green on `bean/isaac-1ag9` at fad6d1d; Foreman's
+`worker/wake!` and `@wip` removal are in the foreman worktree, not yet committed.
+The first gate invocation, before committing the feature, reported:
+`FAIL isaac-foreman features/foreman/turn_action.feature: scenario "Scenario: a signal from a fresh shell only queues the turn; the server's queue runs it (isaac-1ag9)" still carries @wip`
+(the gate checks HEAD, not working-tree edits). After planner repairs the table and
+re-baselines, resume at `features/foreman/turn_action.feature:191`, then run the
+focused feature, `bb ci`, and the gate against the worktree branch.
