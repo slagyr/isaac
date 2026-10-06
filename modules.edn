@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "f05a1fe3c56e2c67d4b981148e891d7ed8466516"}
+                                      :git/sha "5da7d453ffe52bc28e06863392fc7c2896258fe1"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "541f9f93b33b92a357e909f4f57d05cc75077194"}
@@ -20,10 +20,10 @@
                                       :git/sha "3fdae54b60c8ca3e2bb5dcf79acb78ad722b262d"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
-                                      :git/sha "d8f383194a624668c0dcd20a067c4ee2f8d74343"}
+                                      :git/sha "83cbe2f262f494c0cf82510f6bef9dc52d9dc30e"}
                               :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
-                                      :git/sha "b3b6f133c05e67f99f35da0fcd044f1462535ce4"}
+                                      :git/sha "0c60c2bc30a2222fcb7ba18af03154e558dc9c87"}
                               :desc  "Cross-session hail messaging — tool and CLI."}
  :isaac.hooks                {:coord {:git/url "https://github.com/slagyr/isaac-hooks.git"
                                       :git/sha "c54989825c39462c23d7dcbf3c6f5217a32b01eb"}
@@ -47,7 +47,7 @@
                                       :git/sha "c6adcd640bcdce7dc00ca0edefce0297adb7bb52"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
-                                      :git/sha "eb0e5b34a6f8ae3c749b0fa6fb9fa1fa580ec6c3"}
+                                      :git/sha "e912e3c823084f217fb2a9ca6be9a67bef9e4f48"}
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
                                       :git/sha "9e6a0dff94776850147f552e50ed05f9d5c3efca"}
