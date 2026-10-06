@@ -1,11 +1,11 @@
 ---
 # isaac-j0x5
 title: 'Say comms, not channels: :comms/:target, and delete the dead session channel fields'
-status: in-progress
+status: completed
 type: task
 priority: high
 created_at: 2026-10-06T21:47:23Z
-updated_at: 2026-10-06T22:08:14Z
+updated_at: 2026-10-06T22:08:47Z
 ---
 
 Micah, 2026-10-06. Isaac says **comms** and **targets**, never "channel" (ISAAC.md: "comm" was chosen so "channel" stays Discord's word). isaac-mve9/rjeg/9khs shipped with `:channels` on sessions and `:channel` on send results; and the session record still carries three dead "channel" fields. Design: isaac/doc/design-conversations-and-comms.md.
