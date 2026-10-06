@@ -1,11 +1,11 @@
 ---
 # isaac-ugvu
 title: 'iMessage inbound routing: opt-in policy sends a reply to the crew that texted, or to an @crew prefix'
-status: todo
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-10-02T15:28:05Z
-updated_at: 2026-10-02T15:59:25Z
+updated_at: 2026-10-06T20:22:53Z
 blocked_by:
     - isaac-qn4o
 ---
@@ -92,3 +92,6 @@ feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a73786
 feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 85
 feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 96
 feature-blob: isaac-imessage features/comm/imessage/inbound_route.feature a7378675bd420b51a24423f39df2136ef7c45b98 107
+
+## Scrapped (Micah 2026-10-06)
+Superseded by isaac/doc/design-conversations-and-channels.md: replies route to whoever owns the conversation (the opener of a new channel, the existing owner of an old one); other crews' sends into an owned channel land there as marked notes (isaac-mve9, iMessage part isaac-9khs). Its @wip scenarios were retired in isaac-imessage; the no-policy scenario stays as current behavior.
