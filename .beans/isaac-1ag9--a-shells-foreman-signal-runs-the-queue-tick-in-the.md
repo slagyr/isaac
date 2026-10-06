@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-06T22:43:19Z
-updated_at: 2026-10-06T22:44:29Z
+updated_at: 2026-10-06T22:53:13Z
 ---
 
 Likely repos: **isaac-agent** (`wake!`) + **isaac-foreman** (call it). Found by Foreman pilot 1, second run, 2026-10-06.
@@ -63,3 +63,12 @@ The first gate invocation, before committing the feature, reported:
 (the gate checks HEAD, not working-tree edits). After planner repairs the table and
 re-baselines, resume at `features/foreman/turn_action.feature:191`, then run the
 focused feature, `bb ci`, and the gate against the worktree branch.
+
+feature-baseline: isaac-foreman 0f56ced05c086fab60632b2a031cb5f867834825
+feature-blob: isaac-foreman features/foreman/turn_action.feature 1cf41bc99964a08aeb83f99154faad78a0411601 175
+
+## Planner re-cut (2026-10-06)
+
+Contract conflict accepted — my table cell had an unescaped `|`. isaac-foreman 0f56ced: the cell is
+now `lamp-room\s.*\squeued` (a shell-submitted turn is never ticked, so it stays queued).
+Re-baselined above. Resume per the conflict note.
