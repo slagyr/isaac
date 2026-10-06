@@ -22,3 +22,7 @@ Likely repo scope: isaac-gchat. Host: yopp (deploy when Micah asks).
 
 feature-baseline: isaac-gchat dff11603900bd0875e1fa1e3363cd2663abe129e
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature a4e3d4970dfe744ae379705eb28f953b51634a09
+
+## Landed on main (2026-10-06)
+
+main-sha: isaac-gchat 1b005b0a30975fb654c4bc0f8b74141abc8ac2d6
