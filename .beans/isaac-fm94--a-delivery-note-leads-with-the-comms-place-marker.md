@@ -1,11 +1,11 @@
 ---
 # isaac-fm94
 title: A delivery note leads with the comm's place marker (gchat thread)
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-06T23:09:43Z
-updated_at: 2026-10-06T23:10:36Z
+updated_at: 2026-10-06T23:25:05Z
 ---
 
 Micah, 2026-10-06, from the live continuity test on yopp. The delivery note landed in the DM session (isaac-mve9/j0x5 work), but with no thread: a gchat post with no `gchat/thread` starts a new thread, and inbound lines carry a `[thread:xxxxxxxx]` marker (canon/thread-marker) that the note lacked. Yopp could not tie the note to the thread Micah answered in, the same misread risk the work was meant to remove.
