@@ -4,10 +4,8 @@ title: A worksite acquisition that fails leaves its lock behind; one Foreman tur
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-10-06T20:23:24Z
-updated_at: 2026-10-06T20:42:35Z
+updated_at: 2026-10-06T20:47:44Z
 ---
 
 Likely repos: **isaac-agent** (turn worker) and/or **isaac-worksite** (lock guard). Found by
@@ -54,3 +52,12 @@ Next: run agent `bb ci`, inspect failures, refine RealFs guard cleanup (especial
 ## Verification handoff (2026-10-06)
 
 Worksite `bb ci` green (23 specs, 8 feature examples). Agent focused worker specs green (23 examples) and `bb features` green (875 examples, 1 pre-existing pending). Agent `bb ci` stops in `bb spec`: `session_steps_spec.clj:71` raises "no filesystem available"; reproduced identically on clean agent `origin/main` (25a2fef) in a detached worktree. No changes to unrelated test. `bb bean-gate verify isaac-x3g4` exited 2: no feature-baseline. Branches: isaac-worksite d98a5d3; isaac-agent 5e2ec86. Next: verifier review and landing; baseline suite failure needs a separate repair.
+
+
+
+## Verify fail (attempt 1, 2026-10-06): a partial write still leaves a real-filesystem lock after failed acquisition
+
+HEAD: isaac-worksite d98a5d3; isaac-agent 5e2ec86 (both origin/bean/isaac-x3g4).
+Working trees: clean detached verification worktrees.
+
+Reproduction on worksite branch: `bb -e '(require (quote [isaac.foundation.fs :as fs]) (quote [isaac.foundation.nexus :as nexus]) (quote [isaac.worksite.lock :as lock])) (let [root (str (java.nio.file.Files/createTempDirectory "x3g4-partial-" (make-array java.nio.file.attribute.FileAttribute 0))) spit* fs/spit] (nexus/-with-nexus {:fs (fs/real-fs) :root root} (let [result (with-redefs [fs/spit (fn [f p _] (spit* f p "{:kind :turn") (throw (ex-info "disk interrupted" {})))] (lock/acquire-turn! root "room" {:session-key "harbor"}))] (println result (fs/exists? (fs/real-fs) (lock/lock-path root "room"))))))'` prints `{:error :already-locked} true`. `undo-written-lock!` at lock.clj:103-106 skips partial/unparseable locks because `read-lock` returns nil. The newly added spec writes the complete valid record before throwing, so it misses this failure. Fix cleanup to remove only the lock written by this acquisition, including partial/corrupt writes, without deleting a pre-existing lock; add real-fs regression for partial write and verify lock-path absence. Branch `bb ci` otherwise green: worksite 23 specs / 8 features, agent 1889 specs / 875 features (1 existing pending). No feature-file edits. Not landed on main.
