@@ -56,3 +56,11 @@ The digest is the second post. The inbound reply posts first.
 On gchat main `6416409`. Outbound blob `842feada`, line-less. Agent continuity blob `492199d4` is unchanged, re-stated on agent `7d57b3e`.
 
 Rebase onto `6416409`. Drop `@wip` only. Do not edit frozen scenario text. The native `fs/instance` failure in `session_steps_spec.clj:71` is pre-existing and not this bean. Do not edit that spec here.
+
+## Landed on main (2026-10-06)
+
+main-sha: isaac-agent c00aff6e0eca08d7ad87880daa6f1c86495ede8c
+main-sha: isaac-agent 25a2fef858d2d0645d1f1bc69060a60720a59fb5
+main-sha: isaac-gchat e3dcbefa15af67627d9a9329019bcdf422d74519
+
+The second agent main-sha fixes the shared feature tick nexus so the gchat end-to-end scenario sees the marked note. Gchat pins that agent sha; foundation pins align with it. Agent native bb ci has the pre-existing intermittent session_steps_spec.clj:71 fs/instance failure; bb jvm-spec 1887/0, agent feature 875/0, gchat bb ci 206/0 + 68/0, gate PASS.
