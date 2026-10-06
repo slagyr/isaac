@@ -71,5 +71,9 @@ feature-steps): `the worksite locks live on the real filesystem` and
 verifier's repro above). Rebase bean/isaac-x3g4 on worksite main to pick it up. With the
 baseline, gate exit 0 lands it; no verify hail.
 
+## Work checkpoint (2026-10-06, isaac-work-2)
+
+Done: rebased worksite branch onto baselined main; added real-FS partial-write regression (red then green) and raw-content guard cleanup. Implemented initial real-FS feature steps, removed only `@wip`. Latest `bb features features/worksite/lock.feature:144` is RED: session fixture still points at `/target/test-state/sessions/harbor/current.ednl` while real FS fixture is elsewhere. Next: align feature root and session store without losing Background data; run focused feature, both `bb ci`, then gate and landing. Resume at `isaac-worksite-x3g4/feature-steps/isaac/worksite/worksite_steps.clj:56`.
+
 feature-baseline: isaac-worksite 8dd8e12526c6ab2f6a68829bc2c747e10449d17f
 feature-blob: isaac-worksite features/worksite/lock.feature 96ee6ee2e4d21daedb0ee883911c576fdec9a6a8 145
