@@ -40,3 +40,7 @@ never ran.
 
 feature-baseline: isaac-agent 45b19b48ccb55fd91fe609654907c8f818555b65
 feature-blob: isaac-agent features/turn/session_selection.feature 4e9f86bb5467d3695e021cee2cf65a9ca5154e5d 193
+
+## Implementation blocked (2026-10-06)
+
+`bean/isaac-oas8` in isaac-agent at `0c02abb` implements the named-session create path and the table step; `bb features` passes (876 examples, 0 failures, 1 existing pending); focused worker specs pass (22 examples, 0 failures); `bb bean-gate verify isaac-oas8 --dir isaac-agent=../isaac-agent-oas8` passes on this branch. Landing requires a green rebase `bb ci`, but full `bb spec` consistently fails on the unrelated `session feature steps a parked send that completes during admission does not await the running turn` example (`isaac.foundation.fs/instance: no filesystem available`). Reproduced on clean `origin/main` in a separate detached worktree: `bb spec` has the same failure (1887 examples, 1 failure), whereas the same test focused with `bb spec --focus spec/isaac/agent/session/session_steps_spec.clj:71` passes on both trees. This is an existing order-dependent suite failure outside this bean's scope. No edits to that unrelated spec were made. Need planner guidance / a separate fix on main before the required green `bb ci` landing step.
