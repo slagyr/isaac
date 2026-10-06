@@ -1,11 +1,11 @@
 ---
 # isaac-x3g4
 title: A worksite acquisition that fails leaves its lock behind; one Foreman turn leased all four members
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-06T20:23:24Z
-updated_at: 2026-10-06T21:26:42Z
+updated_at: 2026-10-06T21:28:00Z
 ---
 
 Likely repos: **isaac-agent** (turn worker) and/or **isaac-worksite** (lock guard). Found by
