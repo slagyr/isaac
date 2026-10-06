@@ -27,3 +27,8 @@ feature-baseline: isaac-agent a2e4dde57e45d0a35acb03558aa33dedcbe48d2e
 feature-baseline: isaac-gchat c2928c0c12ac8c7cd6b112488cfc2218f5bbc4d6
 feature-blob: isaac-agent features/comm/delivery/comm_continuity.feature 23cd72467b275b57ef8b1fafcb58b3d6bd55e516
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature 24ec05af92876beea51770a69036e920b4bc490f
+
+## Checkpoint (2026-10-06)
+
+Done: agent note prefix and gchat send marker, fixture, specs, handbook, removed @wip; agent `bb ci` and `bb jvm-spec` green; gate PASS on both worktrees. Branches pushed: agent 020071c, gchat 839b8d1.
+Next: gchat focused feature is red because `deps.edn` pins old agent SHA; land agent then repin gchat to landed SHA and re-run `bb ci` / focused feature. Resume at `isaac-gchat-isaac-fm94/deps.edn:6` (agent pin), after landing agent. Gate last verified via `bb bean-gate verify isaac-fm94 --dir isaac-agent=../isaac-agent-isaac-fm94 --dir isaac-gchat=../isaac-gchat-isaac-fm94`.
