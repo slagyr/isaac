@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: high
 created_at: 2026-10-06T21:47:23Z
-updated_at: 2026-10-06T21:48:31Z
+updated_at: 2026-10-06T22:00:28Z
 ---
 
 Micah, 2026-10-06. Isaac says **comms** and **targets**, never "channel" (ISAAC.md: "comm" was chosen so "channel" stays Discord's word). isaac-mve9/rjeg/9khs shipped with `:channels` on sessions and `:channel` on send results; and the session record still carries three dead "channel" fields. Design: isaac/doc/design-conversations-and-comms.md.
@@ -37,3 +37,8 @@ feature-blob: isaac-agent features/comm/delivery/comm_continuity.feature a9b899e
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature 84834e4a2ff101fcc95ce9193f0d4e0cc3d8c90b
 feature-blob: isaac-discord features/comm/discord/comm_continuity.feature 81c284226ac744b86744b2f39d77cdbc268169ae
 feature-blob: isaac-imessage features/comm/imessage/comm_continuity.feature d820fda9b1b1b891a9331630dbc1aeda463d7875
+
+
+## Worker checkpoint (2026-10-06)
+Done: session :comms/:target cutover, removed dead metadata, @wip lifted; bb ci green in four repos, agent bb jvm-spec green, gate PASS on worktrees. Work committed/pushed to bean/isaac-j0x5 in all four.
+Next: land agent first, then repin downstream to agent main SHA and land in order. Resume at isaac-agent-isaac-j0x5/src/isaac/agent/comm/delivery/worker.clj:84; run git fetch/rebase and bb ci before squash. Deployment: manually strip :channels, :channel, :last-channel, :last-to from session.edn on zanebot and yopp.
