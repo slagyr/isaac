@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: low
 created_at: 2026-09-11T04:43:30Z
-updated_at: 2026-10-06T22:57:48Z
+updated_at: 2026-10-06T23:01:36Z
 parent: isaac-b6w0
 ---
 
@@ -22,3 +22,10 @@ The code moved: it is now **isaac-episodes** `src/isaac/session/episodes/cli.clj
 
 feature-baseline: isaac-episodes c4c399a8d60318aec9dfc445caa4d5d81279c4e2
 feature-blob: isaac-episodes features/episodes/live.feature 1739f9aeab5a6307191f80f6211e64b6163b0cd8 351
+
+
+## Landed on main (2026-10-06)
+
+main-sha: isaac-episodes ac0f1b510f146d4be0128b199ee200d06e3ee61e
+
+Verified: bb ci (235 specs, 105 feature examples); bb bean-gate verify isaac-8uno PASS.
