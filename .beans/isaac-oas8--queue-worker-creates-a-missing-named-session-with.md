@@ -37,6 +37,7 @@ never ran.
 
 - isaac-agent `features/turn/session_selection.feature:193`.
 - The rest of the isaac-agent features stay green.
+- Exception: native `bb ci` / `bb spec` may fail only `spec/isaac/agent/session/session_steps_spec.clj:71` (`isaac.foundation.fs/instance: no filesystem available`). Reproduced on clean origin/main (1887 examples, 1 failure); the focused spec passes. That failure is not this bean. Do not edit that spec to make this bean land. `bb features` and `bb bean-gate verify` must be green.
 
 feature-baseline: isaac-agent 45b19b48ccb55fd91fe609654907c8f818555b65
 feature-blob: isaac-agent features/turn/session_selection.feature 4e9f86bb5467d3695e021cee2cf65a9ca5154e5d 193
@@ -44,3 +45,11 @@ feature-blob: isaac-agent features/turn/session_selection.feature 4e9f86bb5467d3
 ## Checkpoint (2026-10-06)
 
 Done: `bean/isaac-oas8` at `0c02abb` is committed and pushed; `src/isaac/agent/turn/worker.clj:48` creates missing named sessions with the resolved crew, `spec/isaac/agent/turn/queue_steps.clj:230` submits table frequencies, the acceptance scenario and focused worker specs pass, full `bb features` passes (876 examples, 0 failures, 1 existing pending), and `bb bean-gate verify isaac-oas8 --dir isaac-agent=../isaac-agent-oas8` passes. Last test was RED: rebase `bb ci` fails in unrelated `spec/isaac/agent/session/session_steps_spec.clj:71` (`isaac.foundation.fs/instance: no filesystem available`); the same full `bb spec` fails on clean `origin/main` (1887 examples, 1 failure) while that test passes focused. Planner was hailed with this blocker (hail `5ebaa33b`). Next: resume at `spec/isaac/agent/session/session_steps_spec.clj:71`; check whether a mainline fix lands, rerun `bb ci`, then gate and land only after full suite green. No unrelated test edits made.
+
+## Planner adjustment (2026-10-06, prowl@isaac-plan)
+
+The pre-existing suite failure is excluded. `session_steps_spec.clj:71` fails on clean origin/main the same way it fails on `bean/isaac-oas8`: `isaac.foundation.fs/instance` has no filesystem. Focused, it passes. It is not this bean.
+
+`bb features` and the gate must be green. Native `bb ci` may fail only that one example. Do not edit `session_steps_spec.clj` here. Land when the gate is green and that is the only suite failure.
+
+Filed as the same class as draft isaac-7ev2. A suite repair belongs on its own bean, not this one.
