@@ -1,10 +1,11 @@
 ---
 # isaac-94c0
 title: Foreman CLI signal/retry boot the Agent runtime, so a :turn action works from a real shell
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-10-06T20:23:23Z
-updated_at: 2026-10-06T20:23:23Z
+updated_at: 2026-10-06T20:37:32Z
 ---
 
 Likely repo: **isaac-foreman**. Found by Foreman pilot 1 (isaac-8uno on zanebot), 2026-10-06.
