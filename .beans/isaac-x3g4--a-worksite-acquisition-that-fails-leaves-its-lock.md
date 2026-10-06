@@ -5,7 +5,7 @@ status: completed
 type: bug
 priority: high
 created_at: 2026-10-06T20:23:24Z
-updated_at: 2026-10-06T21:28:00Z
+updated_at: 2026-10-06T21:28:53Z
 ---
 
 Likely repos: **isaac-agent** (turn worker) and/or **isaac-worksite** (lock guard). Found by
@@ -90,3 +90,11 @@ Both implementation repos were landed on main while this bean was in progress. W
 
 main-sha: isaac-worksite 7c47b408fc3e0ab4f156da9331562a0fabd599cf
 main-sha: isaac-agent 5d342defcbd9391157fb1b2079c71ff8fed21317
+
+## Landed (2026-10-06, scrapper@isaac-work-2)
+
+RealFs partial-write spec and real-directory acceptance scenario pass. Cleanup removes incomplete new lock files, preserves untouched existing locks, and restores a stale lease if its replacement is truncated. Gate PASS on bean/isaac-x3g4 at isaac-worksite ca1f212; worksite bb ci: 26 specs / 9 features green; agent bb ci: 1891 specs / 877 features green (1 pre-existing pending). Worksite main ca1f212 and agent main eb9dfee pushed, both fast-forward.
+
+main-sha: isaac-worksite ca1f212
+main-sha: isaac-agent eb9dfee
+
