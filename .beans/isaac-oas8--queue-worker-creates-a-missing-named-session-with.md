@@ -1,11 +1,11 @@
 ---
 # isaac-oas8
 title: Queue worker creates a missing named session with the crew its frequencies name
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-06T20:23:23Z
-updated_at: 2026-10-06T20:28:57Z
+updated_at: 2026-10-06T20:45:15Z
 ---
 
 Likely repo: **isaac-agent**. Found by Foreman pilot 1 (isaac-8uno on zanebot), 2026-10-06.
