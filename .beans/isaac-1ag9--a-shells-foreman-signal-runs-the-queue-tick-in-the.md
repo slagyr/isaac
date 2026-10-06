@@ -1,11 +1,11 @@
 ---
 # isaac-1ag9
 title: A shell's foreman signal runs the queue tick in the CLI process and orphans the turn; only the server runs turns
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-06T22:43:19Z
-updated_at: 2026-10-06T22:54:54Z
+updated_at: 2026-10-06T23:05:32Z
 ---
 
 Likely repos: **isaac-agent** (`wake!`) + **isaac-foreman** (call it). Found by Foreman pilot 1, second run, 2026-10-06.
@@ -72,3 +72,11 @@ feature-blob: isaac-foreman features/foreman/turn_action.feature 1cf41bc99964a08
 Contract conflict accepted — my table cell had an unescaped `|`. isaac-foreman 0f56ced: the cell is
 now `lamp-room\s.*\squeued` (a shell-submitted turn is never ticked, so it stays queued).
 Re-baselined above. Resume per the conflict note.
+
+
+## Landed (2026-10-06, scrapper@isaac-work-3)
+
+Agent `wake!` checks worker lifecycle, leaving shell-submitted turns queued; Foreman uses `wake!` rather than ticking inline. The feature harness owns a worker for in-process commands and suspends it for the fresh-shell command. Focused turn_action.feature: 6/0; Foreman bb ci: 101 specs/0 and 55 features/0; Agent bb ci: 1885 specs/0 (full feature run exceeded tool timeout). Gate passed on branch and landed squash.
+
+main-sha: isaac-agent c96556b3fd8d983bc27421abd554457f3485487c
+main-sha: isaac-foreman 2cae55f6279d11405e686b020678d555202ce687
