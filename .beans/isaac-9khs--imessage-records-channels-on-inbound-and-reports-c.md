@@ -21,3 +21,7 @@ Design: isaac/doc/design-conversations-and-channels.md. Supersedes the scrapped 
 
 feature-baseline: isaac-imessage 90f9e832066ea59153b7e6dc5f64a57feb502b04
 feature-blob: isaac-imessage features/comm/imessage/channel_continuity.feature 67835d0a66b3e6b6488dd94ffdc7a68b3418c0ef
+
+## Work checkpoint (2026-10-06)
+Done: bean claimed; isaac-imessage bean branch pushed with unit-tested inbound :channels and outbound imsg send result :channel. Removed @wip; updated agent/foundation pins and feature fake RPC response locally.
+Next: focused feature is RED (`bb jvm-features features/comm/imessage/channel_continuity.feature`): expected 4 transcript entries, got 5. Inspect preexisting outbound reply enqueue at `src/isaac/comm/imessage.clj:260` and fixture at `spec/isaac/comm/imessage/imessage_steps.clj:142` to avoid double-append of owning session reply; then run bb ci, gate, land.
