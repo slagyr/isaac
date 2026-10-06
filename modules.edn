@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "dc42dfe8a03df0a52dd331e2ae43a308bffe0120"}
+                                      :git/sha "c96556b3fd8d983bc27421abd554457f3485487c"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "541f9f93b33b92a357e909f4f57d05cc75077194"}
@@ -47,7 +47,7 @@
                                       :git/sha "4391aaa8f6552855187334eeffa722299e0abcad"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
-                                      :git/sha "b7570065eb29c27db5c0f958cbae8f82371fbe77"}
+                                      :git/sha "2cae55f6279d11405e686b020678d555202ce687"}
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
                                       :git/sha "ca1f21260b7bec1d893ac514fe4562be3dd8beb7"}
