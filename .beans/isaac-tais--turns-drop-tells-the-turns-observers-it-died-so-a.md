@@ -1,10 +1,11 @@
 ---
 # isaac-tais
 title: turns drop tells the turn's observers it died, so a dropped Foreman turn stalls its machine
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-10-06T20:23:24Z
-updated_at: 2026-10-06T20:23:24Z
+updated_at: 2026-10-06T20:46:58Z
 ---
 
 Likely repos: **isaac-agent** (drop) + **isaac-foreman** (scenario). Found by Foreman pilot 1, 2026-10-06.
