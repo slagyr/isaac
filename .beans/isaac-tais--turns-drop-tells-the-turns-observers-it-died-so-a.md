@@ -39,4 +39,9 @@ feature-blob: isaac-foreman features/foreman/turn_outcomes.feature a149d861d865e
 
 ## Work checkpoint (2026-10-06)
 
-Done: agent drop notifies resolved observers; Agent feature and Foreman scenario pass with local Agent checkout; both bean branches committed and pushed. Gate PASS with explicit worktree dirs. Next: finish rebase suites, land Agent then repin/run Foreman suite and land. Last test red: `bb ci` in isaac-agent-tais, pre-existing asynchronous nexus/fs failure in `spec/isaac/agent/session/session_steps_spec.clj:71` (also fails focused); prior full `bb ci` passed. Resume by checking that spec and rerunning `bb ci` at ../isaac-agent-tais, then gate and landing.
+Done: agent drop notifies resolved observers; Agent feature and Foreman scenario pass. Gate PASS on both squashes. Rebase validation: Agent `bb jvm-spec` and `bb features` green; native `bb ci` intermittent unrelated nexus/fs failure in `spec/isaac/agent/session/session_steps_spec.clj:71` (focused test green). Foreman `bb ci` green after repin. Both squashes were pushed to main.
+
+## Landed on main (2026-10-06)
+
+main-sha: isaac-agent bd432ec28c25f1fddbcd2d5999211a019ff02e13
+main-sha: isaac-foreman b7570065eb29c27db5c0f958cbae8f82371fbe77
