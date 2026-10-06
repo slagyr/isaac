@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-06T20:23:24Z
-updated_at: 2026-10-06T20:56:35Z
+updated_at: 2026-10-06T21:26:42Z
 ---
 
 Likely repos: **isaac-agent** (turn worker) and/or **isaac-worksite** (lock guard). Found by
@@ -77,3 +77,16 @@ Done: rebased worksite branch onto baselined main; added real-FS partial-write r
 
 feature-baseline: isaac-worksite 8dd8e12526c6ab2f6a68829bc2c747e10449d17f
 feature-blob: isaac-worksite features/worksite/lock.feature 96ee6ee2e4d21daedb0ee883911c576fdec9a6a8 145
+
+## Work checkpoint (2026-10-06, partial-write follow-up)
+
+Done: rebased worksite branch onto planner's scenario; added real-fs partial-write and pre-existing-corrupt-lock specs (RED then GREEN), changed guard cleanup to delete only when no file existed before the guarded attempt. Focused lock specs green (11 examples). Added scenario steps for real directory and injected partial write. Latest focused feature RED: expected galley cwd, got chart-room. Next: repair feature fixture injection/root binding at `feature-steps/isaac/worksite/worksite_steps.clj:64` (lock path from pool uses installed nexus root), rerun `bb jvm-features features/worksite/lock.feature:144`; then `bb ci` in both repos and `bb bean-gate verify isaac-x3g4` from isaac-x3g4. Agent branch remains 5e2ec86.
+
+
+
+## Landed on main (2026-10-06)
+
+Both implementation repos were landed on main while this bean was in progress. Worksite bb ci: 25 specs, 9 feature examples; agent bb ci: 1891 specs, 877 feature examples (1 existing pending). bb bean-gate verify isaac-x3g4: PASS at isaac-worksite origin/main.
+
+main-sha: isaac-worksite 7c47b408fc3e0ab4f156da9331562a0fabd599cf
+main-sha: isaac-agent 5d342defcbd9391157fb1b2079c71ff8fed21317
