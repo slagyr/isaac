@@ -43,3 +43,8 @@ are still on disk (`~/.isaac/worksites/*.lock`, holder `bean-isaac-8uno`). A res
 - Anything that throws between lease acquisition and the turn claim in the queue worker releases
   the leases it took (`claim-and-start!` / `admit!`).
 - isaac-worksite and isaac-agent features stay green.
+
+## Work checkpoint (2026-10-06)
+
+Done: RealFs failed-write regression and cleanup/warn implemented in isaac-worksite (d98a5d3); queue claim/admit lease release regressions implemented in isaac-agent (5e2ec86). Both focused specs green; worksite `bb ci` green. Branches pushed.
+Next: run agent `bb ci`, inspect failures, refine RealFs guard cleanup (especially release exceptions), then gate and ungated verify handoff. Resume at `isaac-agent/src/isaac/agent/turn/worker.clj:249` and `isaac-worksite/src/isaac/worksite/lock.clj:110`.
