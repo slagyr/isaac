@@ -1,11 +1,11 @@
 ---
 # isaac-1ag9
 title: A shell's foreman signal runs the queue tick in the CLI process and orphans the turn; only the server runs turns
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-06T22:43:19Z
-updated_at: 2026-10-06T22:53:13Z
+updated_at: 2026-10-06T22:53:38Z
 ---
 
 Likely repos: **isaac-agent** (`wake!`) + **isaac-foreman** (call it). Found by Foreman pilot 1, second run, 2026-10-06.
