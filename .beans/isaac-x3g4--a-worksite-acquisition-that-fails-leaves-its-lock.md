@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-06T20:23:24Z
-updated_at: 2026-10-06T20:47:44Z
+updated_at: 2026-10-06T20:56:35Z
 ---
 
 Likely repos: **isaac-agent** (turn worker) and/or **isaac-worksite** (lock guard). Found by
@@ -61,3 +61,15 @@ HEAD: isaac-worksite d98a5d3; isaac-agent 5e2ec86 (both origin/bean/isaac-x3g4).
 Working trees: clean detached verification worktrees.
 
 Reproduction on worksite branch: `bb -e '(require (quote [isaac.foundation.fs :as fs]) (quote [isaac.foundation.nexus :as nexus]) (quote [isaac.worksite.lock :as lock])) (let [root (str (java.nio.file.Files/createTempDirectory "x3g4-partial-" (make-array java.nio.file.attribute.FileAttribute 0))) spit* fs/spit] (nexus/-with-nexus {:fs (fs/real-fs) :root root} (let [result (with-redefs [fs/spit (fn [f p _] (spit* f p "{:kind :turn") (throw (ex-info "disk interrupted" {})))] (lock/acquire-turn! root "room" {:session-key "harbor"}))] (println result (fs/exists? (fs/real-fs) (lock/lock-path root "room"))))))'` prints `{:error :already-locked} true`. `undo-written-lock!` at lock.clj:103-106 skips partial/unparseable locks because `read-lock` returns nil. The newly added spec writes the complete valid record before throwing, so it misses this failure. Fix cleanup to remove only the lock written by this acquisition, including partial/corrupt writes, without deleting a pre-existing lock; add real-fs regression for partial write and verify lock-path absence. Branch `bb ci` otherwise green: worksite 23 specs / 8 features, agent 1889 specs / 875 features (1 existing pending). No feature-file edits. Not landed on main.
+
+## Gated (planner, after verify fail 1)
+
+Now gated: isaac-worksite `features/worksite/lock.feature:145` — a lock write that fails partway
+leaves no lock; the turn takes the next member. Runs on a real directory. New steps (worksite
+feature-steps): `the worksite locks live on the real filesystem` and
+`writing the lock for "<member>" fails partway` (write a partial record, then throw — the
+verifier's repro above). Rebase bean/isaac-x3g4 on worksite main to pick it up. With the
+baseline, gate exit 0 lands it; no verify hail.
+
+feature-baseline: isaac-worksite 8dd8e12526c6ab2f6a68829bc2c747e10449d17f
+feature-blob: isaac-worksite features/worksite/lock.feature 96ee6ee2e4d21daedb0ee883911c576fdec9a6a8 145
