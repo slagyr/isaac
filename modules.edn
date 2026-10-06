@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "e05614ac84273ac3f3865643ab883153c182dd62"}
+                                      :git/sha "eb9dfeee50c924b5cc575768aa995180bedf410b"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "541f9f93b33b92a357e909f4f57d05cc75077194"}
@@ -47,10 +47,10 @@
                                       :git/sha "c1af265cdfa08528b4f2091f3bdf91edb8450c49"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
-                                      :git/sha "e912e3c823084f217fb2a9ca6be9a67bef9e4f48"}
+                                      :git/sha "b7570065eb29c27db5c0f958cbae8f82371fbe77"}
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
-                                      :git/sha "9e6a0dff94776850147f552e50ed05f9d5c3efca"}
+                                      :git/sha "ca1f21260b7bec1d893ac514fe4562be3dd8beb7"}
                               :desc  "Worksite registry, locks, and pools — named working directories for crews."}
  :isaac.handbook             {:coord {:git/url "https://github.com/slagyr/isaac-handbook.git"
                                       :git/sha "46f0b0dbcc5bd5350e4886dcefe351d63d64804b"}
