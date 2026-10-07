@@ -1,11 +1,11 @@
 ---
 # isaac-9qv9
 title: Responses tool calls take arguments from the done events; ChatGPT skips deltas for parallel calls
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-07T14:12:58Z
-updated_at: 2026-10-07T16:04:21Z
+updated_at: 2026-10-07T16:18:21Z
 ---
 
 Likely repo: **isaac-agent**. Found by Foreman pilot 1, 2026-10-06; probed 2026-10-07.
