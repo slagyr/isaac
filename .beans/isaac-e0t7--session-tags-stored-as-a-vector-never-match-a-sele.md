@@ -102,3 +102,20 @@ feature-blob: isaac-agent features/tagging/session_tags.feature 46d6f79d58fdb462
 feature-blob: isaac-agent features/session/mutation.feature cfaac0c8ca0d357c3eb257be29fd853bb63c2d39 191
 feature-blob: isaac-agent features/bridge/cli-prompt.feature e9fac3d41e767626f10d9ab4c728a68a2a7115f5 192
 feature-blob: isaac-hail features/session-create.feature f096166534831d722b604cd630c8db25fea724b0 122
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-agent db59ff72c65a4f823203c37e4e926bb9960a07e0
+main-sha: isaac-hail 58d9d4e5e34f2d895561aa3e26542d4f93194bbe
+
+Pinning hail to current agent main also ran the in-flight scenarios
+(`features/session-create.feature` "only matching session is in flight" and
+`features/handoff.feature` "a busy target waits"). They expected `:held` and
+got `:queued`: admission returned held without writing the record, so a turn
+submitted `:queued` stayed `:queued`. That failed on agent `4e235ae` as well
+as on the tags commit. `admit!` now writes `:state :held` for a busy session,
+the same write the resource-pool hold path already did. `bb ci` is green in
+both repos at these shas.
+
+Skipped the post-landing `sessions list` on zanebot and yopp: no access to
+those hosts. No code change is required for them.
