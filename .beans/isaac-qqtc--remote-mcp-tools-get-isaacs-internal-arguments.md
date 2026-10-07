@@ -57,3 +57,7 @@ Repo corrected from isaac-agent to isaac-mcp after reading `mcp-arguments` on ma
 
 feature-baseline: isaac-mcp 51beffd932807239d088e0e59423325272201f3b
 feature-blob: isaac-mcp features/turn.feature df5844240af0cee31db926671fe80e6ee5e3eb93 80
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-mcp a8e1e546e99d27c82b48413b14386738b3c7f7ad
