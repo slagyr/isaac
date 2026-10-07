@@ -2,7 +2,7 @@
                                       :git/sha "5b9a667da3593e8de6850af4226991e4e03daa56"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
-                                      :git/sha "541f9f93b33b92a357e909f4f57d05cc75077194"}
+                                      :git/sha "4f91100230a95f2047b50cb2eb2838211fcada51"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
                                       :git/sha "416e92eea9fd61d3ff76ebc3f4d769575ea31d5c"}
@@ -29,7 +29,7 @@
                                       :git/sha "c54989825c39462c23d7dcbf3c6f5217a32b01eb"}
                               :desc  "Event hooks and inbound webhook routing."}
  :isaac.tool.mcp             {:coord {:git/url "https://github.com/slagyr/isaac-mcp.git"
-                                      :git/sha "a7c301e9cf9c462843b789db83b668b14edc7744"}
+                                      :git/sha "a8e1e546e99d27c82b48413b14386738b3c7f7ad"}
                               :desc  "MCP client — config-declared servers, tool discovery, register into the agent tool loop."}
  :isaac.google               {:coord {:git/url "https://github.com/slagyr/isaac-google.git"
                                       :git/sha "342da242baf29256d5ef8636ad1ae85a90a9b44d"}
