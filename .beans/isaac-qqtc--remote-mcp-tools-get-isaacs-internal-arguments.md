@@ -1,11 +1,11 @@
 ---
 # isaac-qqtc
 title: Remote MCP tools get Isaac's internal arguments
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-07T15:25:46Z
-updated_at: 2026-10-07T16:14:09Z
+updated_at: 2026-10-07T16:20:45Z
 ---
 
 Likely repo: **isaac-agent**. Reported by Micah, 2026-10-06. Re-checked against installed library `3031edd` (installed Oct 6, 23:28).
