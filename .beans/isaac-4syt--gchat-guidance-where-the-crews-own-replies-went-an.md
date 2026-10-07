@@ -25,3 +25,7 @@ Likely repo scope: isaac-gchat. Deploy: yopp.
 
 feature-baseline: isaac-gchat 8a75871af48bcf045f4f10a45cf5fd98c745366d
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature 56e2001e60dface1f985dcd5344e7071a0cd5ec2
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-gchat 75e4e95ef4991a791947c509860249b0c59b21e5
