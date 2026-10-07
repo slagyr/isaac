@@ -1,11 +1,11 @@
 ---
 # isaac-cd7e
 title: Tools read the turn's one cwd (lease binding else session), so worksite turns run tools in their leased directory
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-07T14:12:58Z
-updated_at: 2026-10-07T16:05:00Z
+updated_at: 2026-10-07T16:22:22Z
 ---
 
 Likely repo: **isaac-agent**. Found by Foreman pilot 1 (isaac-8uno), 2026-10-06.
@@ -46,3 +46,7 @@ feature-blob: isaac-agent features/turn/resource_pool_receipts.feature c6257039a
 
 Done: feature :104 enabled and green; bb ci green (1890 specs, 878 features, 1 pre-existing pending); bean gate PASS on bda12ab. Implementation committed and pushed as isaac-agent bean/isaac-cd7e bda12ab.
 Next: review single-source cwd design at isaac-agent/src/isaac/agent/tool/fs_bounds.clj:71 (standalone tool fallback), then land the green rebased branch on main and record main-sha.
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-agent 5b9a667da3593e8de6850af4226991e4e03daa56
