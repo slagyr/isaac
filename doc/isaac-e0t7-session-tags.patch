@@ -1,0 +1,395 @@
+From 777dae9e1df74a77d1878b173b9eddfcf89f392f Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Wed, 7 Oct 2026 16:54:17 +0000
+Subject: [PATCH] isaac-e0t7: session tags stored as a vector match selectors
+
+contains? on a vector is an index lookup, so [:ops] never matched a tag
+selector. tags-of, open-session!, update-session!, sessions set, and the
+feature session table now coerce a vector or list of keywords (or their
+names) to a set. A session.edn that still holds a vector is selected
+without rewriting the file.
+---
+ features/session/mutation.feature             | 14 ++++++
+ features/tagging/session_tags.feature         | 17 ++++++++
+ resources/isaac/agent/handbook.md             |  6 +++
+ spec/isaac/agent/frequencies_spec.clj         |  5 +++
+ spec/isaac/agent/session/cli_spec.clj         | 13 ++++++
+ spec/isaac/agent/session/schema_spec.clj      |  9 ++++
+ spec/isaac/agent/session/session_steps.clj    |  2 +-
+ spec/isaac/agent/session/store_spec.clj       | 43 ++++++++++++++++++-
+ src/isaac/agent/bridge/status.clj             |  2 +-
+ src/isaac/agent/session/cli.clj               |  4 +-
+ src/isaac/agent/session/schema.clj            |  7 ++-
+ src/isaac/agent/session/store/impl_common.clj | 10 +++--
+ src/isaac/agent/session/store/memory.clj      | 11 +++--
+ src/isaac/agent/session/store/spi.clj         | 19 +++++++-
+ 14 files changed, 146 insertions(+), 16 deletions(-)
+
+diff --git a/features/session/mutation.feature b/features/session/mutation.feature
+index ab743ab..5cd5bd9 100644
+--- a/features/session/mutation.feature
++++ b/features/session/mutation.feature
+@@ -148,6 +148,20 @@ Feature: Session mutation
+       | path | value           |
+       | tags | ["ci", "isaac"] |
+ 
++  Scenario: isaac sessions set <id>.tags stores a vector of keywords as a set
++    Given default Grover setup
++    And the following sessions exist:
++      | name     | crew | tags |
++      | ops-room | main | #{}  |
++    When isaac is run with "sessions set ops-room.tags [:ops]"
++    Then the exit code is 0
++    When isaac is run with "sessions show ops-room --edn"
++    Then the stdout contains "#{:ops}"
++    And the exit code is 0
++    When isaac is run with "sessions list --tag ops"
++    Then the stdout contains "ops-room"
++    And the exit code is 0
++
+   Scenario: isaac sessions set <id>.tags explains the set and member forms on bad input
+     Given default Grover setup
+     And the following sessions exist:
+diff --git a/features/tagging/session_tags.feature b/features/tagging/session_tags.feature
+index 3443156..4b41afd 100644
+--- a/features/tagging/session_tags.feature
++++ b/features/tagging/session_tags.feature
+@@ -97,6 +97,23 @@ Feature: Session tags
+     And the stdout does not contain "sue"
+     And the exit code is 0
+ 
++  Scenario: a session created with vector tags is selected by --tag
++    A vector (`[:ops]`) and a set (`#{:ops}`) are the same tags. The session
++    table, `sessions set`, and a hand-edited sidecar have all written the
++    vector, and `--tag` (and every other selector) has to see it.
++    Given default Grover setup
++    And the following sessions exist:
++      | name     | crew | tags   |
++      | ops-room | main | [:ops] |
++      | sue      | main | #{:project/poker} |
++    When isaac is run with "sessions list --tag ops"
++    Then the stdout contains "ops-room"
++    And the stdout does not contain "sue"
++    And the exit code is 0
++    When isaac is run with "sessions show ops-room --edn"
++    Then the stdout contains "#{:ops}"
++    And the exit code is 0
++
+   Scenario: isaac sessions list --tag composes with --not-in-flight
+     Given default Grover setup
+     And the following sessions exist:
+diff --git a/resources/isaac/agent/handbook.md b/resources/isaac/agent/handbook.md
+index 5b6a59d..76d0a09 100644
+--- a/resources/isaac/agent/handbook.md
++++ b/resources/isaac/agent/handbook.md
+@@ -206,6 +206,12 @@ in-progress turn marker, fire-and-forget).
+   creation when a real match exists and isn't itself busy; if you need to
+   always land on one session, name it explicitly with `session`. See
+   Frequencies, below, for the full picture.
++- **A tagged session is missed by `sessions list --tag`, a hail, or a
++  space's `session-tags`.** Tags are a set of keywords. A vector in
++  `session.edn` or in a session table (`[:ops]`) is the same set as
++  `#{:ops}` — Isaac reads them as a set, and `sessions set <id>.tags
++  [:ops]` stores `#{:ops}`. A session written the old way is selected
++  without rewriting the file.
+ - **`history-retention` doesn't seem to match what I just set on the
+   crew.** It's resolved once, at session creation, and locked — changing
+   the crew's default afterward doesn't retroactively change existing
+diff --git a/spec/isaac/agent/frequencies_spec.clj b/spec/isaac/agent/frequencies_spec.clj
+index ac41ee3..aa76490 100644
+--- a/spec/isaac/agent/frequencies_spec.clj
++++ b/spec/isaac/agent/frequencies_spec.clj
+@@ -65,6 +65,11 @@
+                                             (helper/list-sessions "/test"))]
+         (should= ["tagged"] (mapv :id matches))))
+ 
++    (it "matches a session whose stored tags are a vector"
++      (let [matches (sut/matching-sessions {:session-tags #{:ops}}
++                                            [{:id "ops-room" :crew "main" :tags [:ops]}])]
++        (should= ["ops-room"] (mapv :id matches))))
++
+     (it "matches an explicit session id"
+       (helper/create-session! "/test" "bridge" {:crew "main"})
+       (let [matches (sut/matching-sessions {:session ["bridge"]} (helper/list-sessions "/test"))]
+diff --git a/spec/isaac/agent/session/cli_spec.clj b/spec/isaac/agent/session/cli_spec.clj
+index 46219c0..1ebe070 100644
+--- a/spec/isaac/agent/session/cli_spec.clj
++++ b/spec/isaac/agent/session/cli_spec.clj
+@@ -135,6 +135,19 @@
+     (should= #{:isaac :ci}
+              (:tags (helper/get-session "/test/sessions" "joe"))))
+ 
++  (it "stores a vector of keywords from sessions set as a set"
++    (helper/create-session! "/test/sessions" "ops-room" {:crew "main" :tags #{}})
++    (should= 0 (sut/run-fn {:home "/test" :_raw-args ["set" "ops-room.tags" "[:ops]"]}))
++    (should= #{:ops}
++             (:tags (helper/get-session "/test/sessions" "ops-room"))))
++
++  (it "lists a session created with vector tags"
++    (helper/create-session! "/test/sessions" "ops-room" {:crew "main" :tags [:ops]})
++    (helper/create-session! "/test/sessions" "sue" {:crew "main" :tags #{:project/poker}})
++    (let [output (with-out-str (should= 0 (sut/run-fn {:home "/test" :_raw-args ["list" "--tag" "ops"]})))]
++      (should-contain "ops-room" output)
++      (should-not-contain "sue" output)))
++
+   (it "explains both supported forms when tags are not a keyword set"
+     (helper/create-session! "/test/sessions" "joe" {:crew "main" :tags #{:project/x}})
+     (let [err (binding [*err* (java.io.StringWriter.)]
+diff --git a/spec/isaac/agent/session/schema_spec.clj b/spec/isaac/agent/session/schema_spec.clj
+index a4a1a50..6a69ac9 100644
+--- a/spec/isaac/agent/session/schema_spec.clj
++++ b/spec/isaac/agent/session/schema_spec.clj
+@@ -70,6 +70,15 @@
+     (let [conformed (sut/conform-read {:id "alpha" :name "Alpha"})]
+       (should= #{} (:tags conformed))))
+ 
++  (it "reads vector tags as a set of keywords"
++    (let [conformed (sut/conform-read {:id "ops-room" :name "ops-room" :tags [:ops "role/worker"]})]
++      (should-not (schema/error? conformed))
++      (should= #{:ops :role/worker} (:tags conformed))))
++
++  (it "still rejects a tags value that is not a collection of keywords"
++    (let [conformed (sut/conform-read {:id "ops-room" :name "ops-room" :tags "not-a-set"})]
++      (should (schema/error? conformed))))
++
+   (it "returns readable schema errors for invalid read data"
+     (let [result (sut/conform-read {:id "alpha" :name nil})]
+       (should (schema/error? result))
+diff --git a/spec/isaac/agent/session/session_steps.clj b/spec/isaac/agent/session/session_steps.clj
+index a6e921a..bc9bd2b 100644
+--- a/spec/isaac/agent/session/session_steps.clj
++++ b/spec/isaac/agent/session/session_steps.clj
+@@ -892,7 +892,7 @@
+                           (cond-> {:kind origin-kind}
+                             origin-name (assoc :name origin-name)))
+             history-retention (some-> (get row-map "history-retention") keyword)
+-            tags        (some-> (get row-map "tags") edn/read-string)
++            tags        (some-> (get row-map "tags") edn/read-string store/normalize-tags)
+             comms       (some-> (get row-map "comms") (str/split #"\s*,\s*") set)
+             entry       (or (open-session name)
+                             (with-current-time
+diff --git a/spec/isaac/agent/session/store_spec.clj b/spec/isaac/agent/session/store_spec.clj
+index 6bc7c17..0aadc7f 100644
+--- a/spec/isaac/agent/session/store_spec.clj
++++ b/spec/isaac/agent/session/store_spec.clj
+@@ -90,6 +90,19 @@
+     (it "returns tags for a session"
+       (should= #{:project/chess} (store/tags-of {:tags #{:project/chess}})))
+ 
++    (it "reads a vector of keywords as the same set"
++      (should= #{:ops} (store/tags-of {:tags [:ops]}))
++      (should (store/has-tag? {:tags [:ops]} :ops))
++      (should-not (store/has-tag? {:tags [:ops]} :cook)))
++
++    (it "reads a vector of tag names as keywords"
++      (should= #{:ops :role/worker} (store/tags-of {:tags ["ops" "role/worker"]}))
++      (should (store/has-tag? {:tags ["role/worker"]} :role/worker)))
++
++    (it "returns an empty set when tags are missing"
++      (should= #{} (store/tags-of {}))
++      (should= #{} (store/tags-of {:tags nil})))
++
+     (it "returns true when a session has a tag"
+       (should (store/has-tag? {:tags #{:project/chess}} :project/chess)))
+ 
+@@ -98,7 +111,35 @@
+         (store/open-session! s "joe" {:crew "main" :tags #{:role/worker :project/chess}})
+         (store/open-session! s "sue" {:crew "main" :tags #{:role/worker}})
+         (should= ["joe"]
+-                 (mapv :id (store/by-tags s #{:role/worker :project/chess}))))))
++                 (mapv :id (store/by-tags s #{:role/worker :project/chess})))))
++
++    (it "stores tags passed as a vector as a set of keywords"
++      (let [s (memory/create-store)]
++        (store/open-session! s "ops-room" {:crew "main" :tags [:ops]})
++        (should= #{:ops} (:tags (store/get-session s "ops-room")))
++        (should= ["ops-room"] (mapv :id (store/by-tags s #{:ops})))))
++
++    (it "rewrites a vector of tags on update as a set"
++      (let [s (memory/create-store)]
++        (store/open-session! s "ops-room" {:crew "main"})
++        (store/update-session! s "ops-room" {:tags [:ops :role/worker]})
++        (should= #{:ops :role/worker} (:tags (store/get-session s "ops-room")))))
++
++    (it "selects a session whose on-disk tags are still a vector"
++      (let [root "/tags-disk"
++            dir  (str root "/sessions/main/ops-room")]
++        (fs/mkdirs (nexus/get :fs) dir)
++        (fs/spit (nexus/get :fs) (str dir "/session.edn")
++                 (pr-str {:id         "ops-room"
++                          :key        "ops-room"
++                          :name       "ops-room"
++                          :crew       "main"
++                          :tags       [:ops]
++                          :created-at "2026-09-20T00:00:00"
++                          :updated-at "2026-09-20T00:00:00"}))
++        (let [s (memory/create-store root)]
++          (should (store/has-tag? (store/get-session s "ops-room") :ops))
++          (should= ["ops-room"] (mapv :id (store/by-tags s #{:ops})))))))
+ 
+   (describe "rename-session!"
+ 
+diff --git a/src/isaac/agent/bridge/status.clj b/src/isaac/agent/bridge/status.clj
+index ada4b3f..89cbcb0 100644
+--- a/src/isaac/agent/bridge/status.clj
++++ b/src/isaac/agent/bridge/status.clj
+@@ -110,7 +110,7 @@
+      :model          (or (get-in ctx [:model-cfg :model])
+                          (:model ctx))
+      :provider       (ctx-provider-name ctx)
+-     :tags           (or (:tags entry) #{})
++     :tags           (store/tags-of entry)
+      :session-key    session-key
+      :session-file   (when (:id entry) (str (:id entry) "/current.ednl"))
+      :turns          turns
+diff --git a/src/isaac/agent/session/cli.clj b/src/isaac/agent/session/cli.clj
+index ef32ce1..3742787 100644
+--- a/src/isaac/agent/session/cli.clj
++++ b/src/isaac/agent/session/cli.clj
+@@ -194,7 +194,7 @@
+      :pct    pct
+      :crew   (:crew entry)
+      :context (clojure.core/name context)
+-     :tags   (text-tags (:tags entry))}))
++     :tags   (text-tags (store/tags-of entry))}))
+ 
+ (defn- effective-color? [options]
+   (cond
+@@ -213,7 +213,7 @@
+ (defn- session->payload [entry]
+   (-> entry
+       (assoc :name (or (:key entry) (:id entry)))
+-      (update :tags #(or % #{}))))
++      (assoc :tags (store/tags-of entry))))
+ 
+ (defn list-all
+   "Returns a vector of sessions sorted alphabetically by name. When
+diff --git a/src/isaac/agent/session/schema.clj b/src/isaac/agent/session/schema.clj
+index 23eab76..966e038 100644
+--- a/src/isaac/agent/session/schema.clj
++++ b/src/isaac/agent/session/schema.clj
+@@ -1,6 +1,7 @@
+ (ns isaac.agent.session.schema
+   (:require
+-    [c3kit.apron.schema :as schema]))
++    [c3kit.apron.schema :as schema]
++    [isaac.agent.session.store.spi :as store]))
+ 
+ (def ^:dynamic *config*
+   "Config bound around session conform so crew validation resolves the known
+@@ -98,7 +99,9 @@
+             :cache-write         (system-managed {:type :int})}})
+ 
+ (defn conform-read [entry]
+-  (let [result (schema/conform Session (kebabize-legacy-keys entry))]
++  (let [prepared (cond-> (kebabize-legacy-keys entry)
++                   (contains? entry :tags) (update :tags store/normalize-tags))
++        result   (schema/conform Session prepared)]
+     (if (schema/error? result)
+       result
+       (update result :tags #(or % #{})))))
+diff --git a/src/isaac/agent/session/store/impl_common.clj b/src/isaac/agent/session/store/impl_common.clj
+index 238b838..c4bfebf 100644
+--- a/src/isaac/agent/session/store/impl_common.clj
++++ b/src/isaac/agent/session/store/impl_common.clj
+@@ -691,7 +691,7 @@
+           (update :cwd #(or % (System/getProperty "user.dir")))
+           (update :created-at #(some-> % normalize-ts-fn))
+           (update :updated-at #(or (some-> % normalize-ts-fn) (now-fn)))
+-          (update :tags #(or % #{}))
++          (update :tags session-store/normalize-tags)
+           (update :compaction-count #(or % 0))
+           (update :segment #(or % 0))
+           (update :input-tokens #(or % 0))
+@@ -929,7 +929,7 @@
+                                      :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
+                                      :crew              crew
+                                      
+-                                     :tags              (:tags opts)
++                                     :tags              (session-store/normalize-tags (:tags opts))
+                                      :chat-type         (or (:chat-type opts) (:chatType opts))
+                                      :compaction-count  0
+                                      :segment           0
+@@ -1088,7 +1088,9 @@
+           (count removed-ids))))))
+ 
+ (defn update-session! [update-entry-fn normalize-ts-fn root identifier updates fs]
+-  (update-entry-fn root identifier
++  (let [updates (cond-> updates
++                  (contains? updates :tags) (update :tags session-store/normalize-tags))]
++    (update-entry-fn root identifier
+                    (fn [entry]
+                      (let [updates (if-let [compaction (:compaction updates)]
+                                      (assoc updates :compaction (merge (or (:compaction entry) {}) compaction))
+@@ -1097,7 +1099,7 @@
+                            (assoc :key (:id entry))
+                            (dissoc :session-file :effective-history-offset)
+                            (update :updated-at normalize-ts-fn))))
+-                   fs))
++                   fs)))
+ 
+ (defn append-message! [get-session-fn update-entry-fn now-fn root identifier message fs]
+   (let [entry            (get-session-fn root identifier fs)
+diff --git a/src/isaac/agent/session/store/memory.clj b/src/isaac/agent/session/store/memory.clj
+index b0aad2a..d0ff90a 100644
+--- a/src/isaac/agent/session/store/memory.clj
++++ b/src/isaac/agent/session/store/memory.clj
+@@ -153,7 +153,7 @@
+                             :updated-at        now
+                             :crew              (:crew opts)
+                             
+-                            :tags              (or (:tags opts) #{})
++                            :tags              (store/normalize-tags (:tags opts))
+                             :chat-type         (:chat-type opts)
+                             :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
+                             :origin            (or (:origin opts) {:kind :cli})
+@@ -285,9 +285,12 @@
+                (let [updates (-> updates
+                                  session-schema/kebabize-legacy-keys
+                                  (as-> u
+-                                   (if-let [compaction (:compaction u)]
+-                                     (assoc u :compaction (merge (or (:compaction entry) {}) compaction))
+-                                     u)))]
++                                   (let [u (if (contains? u :tags)
++                                             (update u :tags store/normalize-tags)
++                                             u)]
++                                     (if-let [compaction (:compaction u)]
++                                       (assoc u :compaction (merge (or (:compaction entry) {}) compaction))
++                                       u))))]
+                  (merge entry updates))))
+       (let [updated (get-in @state [:sessions id])]
+         (when root
+diff --git a/src/isaac/agent/session/store/spi.clj b/src/isaac/agent/session/store/spi.clj
+index 2a99550..069e0ce 100644
+--- a/src/isaac/agent/session/store/spi.clj
++++ b/src/isaac/agent/session/store/spi.clj
+@@ -88,8 +88,25 @@
+ (defn can-dispatch? [store session-id]
+   (not (in-flight? store session-id)))
+ 
++(defn- tag-keyword [tag]
++  (cond
++    (keyword? tag) tag
++    (symbol? tag)  (keyword tag)
++    (string? tag)  (when-not (str/blank? tag) (keyword tag))))
++
++(defn normalize-tags
++  "Tags are a set of keywords. nil, a set, or a sequential collection — a
++   vector or list of keywords or their names — all become that set. Anything
++   else is returned unchanged so schema can reject it (`\"not-a-set\"`)."
++  [tags]
++  (cond
++    (nil? tags) #{}
++    (or (set? tags) (sequential? tags)) (into #{} (keep tag-keyword) tags)
++    :else tags))
++
+ (defn tags-of [session]
+-  (or (:tags session) #{}))
++  (let [tags (normalize-tags (:tags session))]
++    (if (set? tags) tags #{})))
+ 
+ (defn has-tag? [session tag]
+   (contains? (tags-of session) tag))
+-- 
+2.43.0
+
