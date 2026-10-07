@@ -35,3 +35,9 @@ leased only misleads.
 
 feature-baseline: isaac-worksite 1564db8a4026c44c910a0b1742c69db419986105
 feature-blob: isaac-worksite features/worksite/lock.feature 8787d9aecb04f40cb642064077e7c60b66c8039a 167
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-worksite 86210d9c3957d03044c72e823a8516ab33187c1e
+
+The stale-lock fixture had encoded the quoted step argument into the path, so the old stolen-lease scenario could succeed without exercising a planted lock. The fixture now writes to the member path used by the CLI; the new assertion checks that file before listing. `bb ci` passed (27 specs, 10 feature scenarios).
