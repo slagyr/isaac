@@ -1,11 +1,11 @@
 ---
 # isaac-uaxj
 title: A lease whose owner process is dead lists as free
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-10-07T14:12:58Z
-updated_at: 2026-10-07T16:04:17Z
+updated_at: 2026-10-07T16:10:38Z
 ---
 
 Likely repo: **isaac-worksite**. Found after Foreman pilot 1, 2026-10-06.
