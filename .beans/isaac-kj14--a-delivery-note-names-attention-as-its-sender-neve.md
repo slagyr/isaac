@@ -1,11 +1,11 @@
 ---
 # isaac-kj14
 title: A delivery note names attention as its sender, never an empty crew/session
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-10-07T13:58:05Z
-updated_at: 2026-10-07T13:58:05Z
+updated_at: 2026-10-07T15:00:50Z
 ---
 
 Yopp, 2026-10-07: an attention notice landed in Micah's DM session as `[thread:objr0dvo] [sent here by crew  from session ] Session observer :episodes failed…`. Attention deliveries carry no `:crew` / `:session` (agent `attention.clj` enqueues only comm, target, content), so the isaac-mve9 note printed blanks.
