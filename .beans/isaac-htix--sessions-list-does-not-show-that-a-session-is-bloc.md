@@ -1,11 +1,11 @@
 ---
 # isaac-htix
 title: sessions list does not show that a session is blocked
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-09-21T22:17:56Z
-updated_at: 2026-09-30T14:05:33Z
+updated_at: 2026-10-07T17:25:52Z
 ---
 
 Repo: **isaac-foundation** (the `sessions` CLI).
@@ -58,3 +58,9 @@ Repo correction: the sessions CLI lives in **isaac-agent** (src/isaac/session/cl
 
 feature-baseline: isaac-agent a80984537588c7ef6c5d7cfa7d4d04ccdb6a608a
 feature-blob: isaac-agent features/session/cli.feature 17aeaf3b6ed9bfc2d10389738e8ee49424882422 414
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-agent 2dfb0120b2b252256abd0e36ca9df869524ae0cf
+
+Implemented conditional BLOCKED list column and blocked reason/timestamp in show; feature harness supports block.reason/block.at with blanks meaning no block. Focused acceptance and `bb ci` green (1893 specs; 880 features, one pre-existing pending). No-block list checked by CLI spec. Gate PASS on branch and squash commit.
