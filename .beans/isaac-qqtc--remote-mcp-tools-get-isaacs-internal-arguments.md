@@ -1,7 +1,7 @@
 ---
 # isaac-qqtc
 title: Remote MCP tools get Isaac's internal arguments
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-07T15:25:46Z
@@ -39,4 +39,21 @@ Micah's sketch was truncated at `get-in tool [:parameters :`. The intended shape
 
 ## Acceptance
 
-Draft until scenarios are written. Likely: a remote tool whose schema does not declare `request_id` is called without that key, and a built-in tool still receives `session_key` and `request_id`.
+`bb features features/turn.feature:80` in isaac-mcp.
+
+The scenario is on isaac-mcp main `51beffd`, `features/turn.feature` line 80. Lens catalog declares only `query`. A turn calls `lens__catalog` with `{"query":"keys"}`. The drive injects `session_key`, `caller_crew`, `request_id`, and `:progress!` on the way in. The tool result text must be exactly `query`.
+
+## Fix (2026-10-07, Micah, corrected)
+
+The leak is in **isaac-mcp**, not isaac-agent. `isaac.tool.mcp.runtime/mcp-arguments` is the gate in front of a remote server. It drops `session_key`, `state_dir`, `caller_crew`, and any function. It forwards `request_id` and `session_store`. Linear's schema sets `additionalProperties: false` and rejects `request_id`.
+
+Keep the allowlist Micah asked for, but put it in `mcp-arguments`: keep only the keys of the tool's own `:parameters` `:properties` (`inputSchema` as registered). Drop everything else, including a key the model invented. A tool whose schema declares no properties is called with no arguments.
+
+Do not change `handler-arguments` in isaac-agent. Built-in tools, and isaac-mcp itself, read the injected keys before that gate. `fs_bounds` reads `caller_crew` and `session_store`. A built-in still receives `session_key` and `request_id`.
+
+## Planner note (2026-10-07)
+
+Repo corrected from isaac-agent to isaac-mcp after reading `mcp-arguments` on main `a7c301e`. Same class of bug as isaac-r5j4, which added `caller_crew` to that denylist. The denylist is the bug. The scenario reuses the lens fixture: `query` of `keys` makes `lens_mcp.bb` reply with the sorted argument keys it received. No new step.
+
+feature-baseline: isaac-mcp 51beffd932807239d088e0e59423325272201f3b
+feature-blob: isaac-mcp features/turn.feature df5844240af0cee31db926671fe80e6ee5e3eb93 80
