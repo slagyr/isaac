@@ -407,4 +407,6 @@ This checkout is the Isaac coordination repo. The program it runs is the bean ga
 - `bb hooks:install` — once per checkout, points git at `.githooks` (pre-push runs `bb ci` when Clojure or edn files changed)
 - `beans list --ready`, `beans show <id>`, `beans prime` — the issue tracker over `.beans/`
 
-`bb lint` and `bb features` are tasks in the module repositories (`isaac-foundation`, `isaac-agent`, and the others). They are not defined in this repo's `bb.edn`. Bean-gate looks for a module checkout at `../<repo>` only when it verifies a gated bean.
+`bb lint` and `bb features` are tasks in the module repositories. They are not defined in this repo's `bb.edn`.
+
+The install checks out the other 20 Isaac repositories beside this one (`../<repo>`), each on `main`. Together with this checkout that is the 21-repo set: `isaac-acp`, `isaac-agent`, `isaac-claude-code`, `isaac-cli-proxy`, `isaac-cli-server`, `isaac-cron`, `isaac-discord`, `isaac-episodes`, `isaac-foreman`, `isaac-foundation`, `isaac-gchat`, `isaac-gmail`, `isaac-google`, `isaac-hail`, `isaac-handbook`, `isaac-hooks`, `isaac-http`, `isaac-imessage`, `isaac-mcp`, and `isaac-worksite`. Bean-gate looks for a module checkout at `../<repo>`. `isaac-episodes` has a non-`main` GitHub default branch; the checkout is still `main`.
