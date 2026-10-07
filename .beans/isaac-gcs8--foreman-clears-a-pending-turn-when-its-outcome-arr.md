@@ -1,11 +1,11 @@
 ---
 # isaac-gcs8
 title: Foreman clears a pending turn when its outcome arrives; turn-started is history, not unhandled
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-10-07T17:57:50Z
-updated_at: 2026-10-07T23:35:37Z
+updated_at: 2026-10-07T23:39:57Z
 ---
 
 Likely repo: **isaac-foreman**. Found by Foreman pilots 1 and 2, 2026-10-06/07. Design approved by Micah 2026-10-07.
@@ -49,3 +49,9 @@ Re-cuts of existing scenarios (now @wip):
 feature-baseline: isaac-foreman 8437a365c4ff8309f66da9e1aadcea17545697d6
 feature-blob: isaac-foreman features/foreman/turn_action.feature d90c3e3e47ff8a69c755e978d3e726ffbd88977e 35,92
 feature-blob: isaac-foreman features/foreman/events.feature da1d0d768d1c19453a2b21cd77898d000e3c76f5 114
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-foreman e7f20a7f5ba1527ef69bbfd82a67b799901afa55
+
+Implementation: matching request-id outcomes retire only their pending turn; unmatched turn-started is history, while configured rows still transition. `bb ci`: 106 specs / 55 features green; `bb bean-gate verify isaac-gcs8`: PASS on landed main.
