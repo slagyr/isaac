@@ -1,11 +1,11 @@
 ---
 # isaac-e0t7
 title: 'Session tags stored as a vector never match a selector: tags-of + contains? is index lookup'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-20T07:21:23Z
-updated_at: 2026-10-07T18:37:39Z
+updated_at: 2026-10-07T18:58:47Z
 ---
 
 `isaac.session.store.spi/tags-of` returns whatever is on the session and
