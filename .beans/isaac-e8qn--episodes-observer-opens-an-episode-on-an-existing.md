@@ -1,11 +1,11 @@
 ---
 # isaac-e8qn
 title: Episodes observer opens an episode on an existing session without re-creating it
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-07T13:58:04Z
-updated_at: 2026-10-07T13:58:04Z
+updated_at: 2026-10-07T13:59:00Z
 ---
 
 Yopp, 2026-10-07 11:00Z: `:session/observer-error :observer "episodes" :error "session already exists: roving-sextant"`, delivered to Micah as an attention notice. Regression from the isaac-ka10 port.
