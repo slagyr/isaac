@@ -1,11 +1,11 @@
 ---
 # isaac-i2i4
 title: Overloaded providers and dropped connections are weather, not turn-ending errors
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-07T17:22:58Z
-updated_at: 2026-10-07T17:23:39Z
+updated_at: 2026-10-07T17:38:14Z
 ---
 
 Micah, 2026-10-07. On zanebot, chatgpt answered two worker turns (isaac-kj14 twice) mid-stream with "Our servers are currently overloaded. Please try again later." and reset a third ("Connection reset", 15:43Z). The overload came back as `:api-error` (Responses `response.failed` with no status; `responses.clj` maps it to `:api-error`), the reset as `:unknown` (`llm/http.clj` catch-all), so each ended its turn with no fallback and no suspend. Three failures among hundreds of requests; OpenAI showed no Codex incident. Same class as isaac-l1b6 (dropped streams).
@@ -28,3 +28,7 @@ Likely repo scope: isaac-agent. Deploy: zanebot and yopp (agent pin).
 
 feature-baseline: isaac-agent ae72874307b611a50e0c1bb7e0d5dc5111f9ec1b
 feature-blob: isaac-agent features/llm/provider_overload.feature da079b4a7ad286d803a96691b33994e4ff32f7a2
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-agent 67e2b5a49cb095d309d673ef89af3f044e9d5ae5
