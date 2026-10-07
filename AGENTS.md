@@ -397,3 +397,14 @@ beans update <id> --tag=unverified     # Hand off to /verify; keep status=in-pro
 - If a new user message might replace the current task, ask for clarification instead of assuming.
 - Before starting substantial new work after a context shift, restate the current active task and whether it has changed.
 - When asked about prior requests or task history, read from the transcript or repo instructions directly instead of reconstructing from memory.
+
+## Cursor Cloud specific instructions
+
+This checkout is the Isaac coordination repo. The program it runs is the bean gate. The environment install puts Java 21 (already on the base image), Babashka, the Clojure CLI, and the `beans` CLI on `/usr/local/bin`. Nothing here is a long-running server, so there is no boot process to start.
+
+- `bb bean-gate --help` — baseline, ready, verify, and ci-scan
+- `bb spec` — the speclj suite; `bb ci` runs that same suite
+- `bb hooks:install` — once per checkout, points git at `.githooks` (pre-push runs `bb ci` when Clojure or edn files changed)
+- `beans list --ready`, `beans show <id>`, `beans prime` — the issue tracker over `.beans/`
+
+`bb lint` and `bb features` are tasks in the module repositories (`isaac-foundation`, `isaac-agent`, and the others). They are not defined in this repo's `bb.edn`. Bean-gate looks for a module checkout at `../<repo>` only when it verifies a gated bean.
