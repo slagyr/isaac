@@ -48,3 +48,7 @@ OpenAI's Codex client (`codex-rs/codex-api/src/sse/responses.rs`) logs
 
 feature-baseline: isaac-agent 08174d7db3835f4711b6675983943b3ce345445e
 feature-blob: isaac-agent features/llm/api/responses/tool_calls.feature 99fa55b924c0cc2cbde0074fb1ab570f075bea40
+
+## Worker checkpoint (2026-10-07)
+
+Done: claimed; wrote red-first Responses SSE specs and implemented done-event parsing, plus Grover next-stream fixture and untagged baselined scenario. Focused Responses specs green (52 examples). Next: focused feature is red: second tool call arguments matcher sees first call (`bb features features/llm/api/responses/tool_calls.feature`). Resume at `spec/isaac/agent/session/session_steps.clj:1597` transcript-match-entry: expose each tool call individually to matcher without changing feature contract. Then full bb ci, gate, land.
