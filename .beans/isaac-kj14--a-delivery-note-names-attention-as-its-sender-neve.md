@@ -23,3 +23,7 @@ Likely repo scope: isaac-agent. Deploy: zanebot and yopp (agent pin).
 
 feature-baseline: isaac-agent ed90b0e6c3a59962ff577c6b67c0cf1240cea3e1
 feature-blob: isaac-agent features/comm/delivery/comm_continuity.feature a9a8f9b4d68cfcd83d6e85f11ef82b9a7d60ac42
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-agent 4063ce9b6a3e325cf15229f8db0979393ccdfd82
