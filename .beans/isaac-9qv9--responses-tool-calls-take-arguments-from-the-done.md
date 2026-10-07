@@ -52,3 +52,9 @@ feature-blob: isaac-agent features/llm/api/responses/tool_calls.feature 99fa55b9
 ## Worker checkpoint (2026-10-07)
 
 Done: claimed; wrote red-first Responses SSE specs and implemented done-event parsing, plus Grover next-stream fixture and untagged baselined scenario. Focused Responses specs green (52 examples). Next: focused feature is red: second tool call arguments matcher sees first call (`bb features features/llm/api/responses/tool_calls.feature`). Resume at `spec/isaac/agent/session/session_steps.clj:1597` transcript-match-entry: expose each tool call individually to matcher without changing feature contract. Then full bb ci, gate, land.
+
+## Landed on main (2026-10-07)
+
+main-sha: isaac-agent d9ba115263ea3045fcd29018cd33c52613bcd8f2
+
+Validation: `bb ci` after rebase — 1891 specs, 878 features, zero failures (one pre-existing pending); `bb bean-gate verify isaac-9qv9 --dir isaac-agent=../isaac-agent-izc1` PASS on main squash.
