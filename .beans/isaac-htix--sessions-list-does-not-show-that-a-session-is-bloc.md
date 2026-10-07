@@ -1,11 +1,11 @@
 ---
 # isaac-htix
 title: sessions list does not show that a session is blocked
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-09-21T22:17:56Z
-updated_at: 2026-10-07T17:25:52Z
+updated_at: 2026-10-07T17:32:37Z
 ---
 
 Repo: **isaac-foundation** (the `sessions` CLI).
