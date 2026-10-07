@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "3031edd4fc2747a48bd842164cfcbfca361fafff"}
+                                      :git/sha "5b9a667da3593e8de6850af4226991e4e03daa56"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "541f9f93b33b92a357e909f4f57d05cc75077194"}
@@ -50,7 +50,7 @@
                                       :git/sha "2cae55f6279d11405e686b020678d555202ce687"}
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
-                                      :git/sha "ca1f21260b7bec1d893ac514fe4562be3dd8beb7"}
+                                      :git/sha "86210d9c3957d03044c72e823a8516ab33187c1e"}
                               :desc  "Worksite registry, locks, and pools — named working directories for crews."}
  :isaac.handbook             {:coord {:git/url "https://github.com/slagyr/isaac-handbook.git"
                                       :git/sha "46f0b0dbcc5bd5350e4886dcefe351d63d64804b"}
