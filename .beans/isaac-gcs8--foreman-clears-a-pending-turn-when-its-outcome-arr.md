@@ -1,10 +1,11 @@
 ---
 # isaac-gcs8
 title: Foreman clears a pending turn when its outcome arrives; turn-started is history, not unhandled
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-10-07T17:57:50Z
-updated_at: 2026-10-07T17:57:50Z
+updated_at: 2026-10-07T23:35:37Z
 ---
 
 Likely repo: **isaac-foreman**. Found by Foreman pilots 1 and 2, 2026-10-06/07. Design approved by Micah 2026-10-07.
