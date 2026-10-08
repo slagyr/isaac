@@ -1,11 +1,11 @@
 ---
 # isaac-quji
 title: 'isaac-agent: slash-command berth becomes providers that can reply or start a turn'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
-updated_at: 2026-10-08T20:38:14Z
+updated_at: 2026-10-08T21:37:06Z
 parent: isaac-pcm3
 ---
 
@@ -90,3 +90,7 @@ cd isaac-agent && bb features features/module/slash_provider.feature && bb featu
 
 feature-baseline: isaac-agent 24ce347a040269e0d24a74947b33944c03317fe3
 feature-blob: isaac-agent features/module/slash_provider.feature eff8770f7ea0bc0d2ff84fe68c346b142220b908
+
+## Landed on main (2026-10-08)
+
+main-sha: isaac-agent 2311a74558362776acc46534f3e46aa4f3897de6
