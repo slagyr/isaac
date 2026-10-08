@@ -90,6 +90,10 @@ Added from Micah's other dreaming conversation the same day. Proposed revisions;
 - **The soul is out of reach.** Dreaming produces habits only. At most the digest may suggest a soul change for a person to make by hand. Separately, `handbook__configure` can rewrite a crew's soul today with no review; check which crews hold that tool.
 - **Strength scoring.** Hermes-style weighted scores are easy to cargo-cult. With a person approving, start with a count of reinforcing dreams and a last-reinforced date; add decay when there is data.
 
+### Handbook (Micah, 2026-10-08)
+
+The dream module's chapter must say which grants a dreaming crew needs (`session__list`, `session__read`, the propose tool) and what a dream looks like when one is missing, so a model can tell the operator why dreaming is broken instead of failing quietly.
+
 ### Borrowed from Hermes (NousResearch/hermes-agent#25309)
 
 Stage then promote; a diary; a run gate with a lock; supersession instead of accumulation. Not borrowed: a capped flat memory file, and pausing the gateway to dream.
