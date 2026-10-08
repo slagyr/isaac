@@ -1,11 +1,11 @@
 ---
 # isaac-3dnw
 title: 'isaac-agent: system-section berth — modules contribute ordered sections of the system prompt'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
-updated_at: 2026-10-08T20:38:14Z
+updated_at: 2026-10-08T21:36:33Z
 parent: isaac-pcm3
 ---
 
