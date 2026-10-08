@@ -105,8 +105,8 @@ feature-blob: isaac-hail features/session-create.feature f096166534831d722b604cd
 
 ## Landed on main (2026-10-07)
 
-main-sha: isaac-agent db59ff72c65a4f823203c37e4e926bb9960a07e0
-main-sha: isaac-hail 58d9d4e5e34f2d895561aa3e26542d4f93194bbe
+main-sha: isaac-agent 9c325bc5fdb08a5d3a136090176b1e4730741d40
+main-sha: isaac-hail 498cb3516d2f6de4cd58403231f08c1d39b93e89
 
 Pinning hail to current agent main also ran the in-flight scenarios
 (`features/session-create.feature` "only matching session is in flight" and
@@ -119,3 +119,9 @@ both repos at these shas.
 
 Skipped the post-landing `sessions list` on zanebot and yopp: no access to
 those hosts. No code change is required for them.
+
+## Authorship rewrite (planner, 2026-10-07)
+
+Micah asked to drop the Cursor Agent identity. The two isaac-agent commits and the one
+isaac-hail commit were rewritten to Zane (identical trees; hail re-pinned to the new agent
+sha) and force-pushed with a lease. Old shas: agent 9641d7f/db59ff7, hail 58d9d4e.
