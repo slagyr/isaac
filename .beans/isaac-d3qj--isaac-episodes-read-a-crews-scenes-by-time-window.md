@@ -1,11 +1,11 @@
 ---
 # isaac-d3qj
 title: 'isaac-agent: a crew reads its conversations by time window'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-08T21:49:44Z
+updated_at: 2026-10-08T22:09:47Z
 parent: isaac-pcm3
 blocking:
     - isaac-b1ir
