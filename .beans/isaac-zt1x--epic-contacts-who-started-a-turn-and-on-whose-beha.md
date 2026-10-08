@@ -37,11 +37,13 @@ Comms and contacts do not depend on each other; both depend only on `isaac-agent
 
 ## Children
 
-1. `isaac-agent`: `:from` and `:for` on every turn, the handle shape, inheritance, and a resolver berth.
-2. `isaac-contacts`: the module. A contacts table, handle resolution.
-3. `isaac-gchat`: supply the handle. First comm to adopt; Gmail, Discord and iMessage follow as their own beans.
+1. isaac-v403 — `isaac-agent`: `:from` and `:for` on the turn record. The fields only.
+2. isaac-s715 — `isaac-agent`: the resolver berth.
+3. isaac-4615 — crew-started turns inherit `:for` (`isaac-agent`, then `isaac-hail`).
+4. isaac-o7tm — `isaac-contacts`: the module. Needs 1 and 2.
+5. isaac-dlw5 — `isaac-gchat`: supply the handle. Needs 1. Gmail, Discord and iMessage follow as their own beans.
 
-Order: 1 first. 2 and 3 are independent of each other and both need 1.
+Order: 1 first. 2, 3 and 5 are independent of each other.
 
 ## Later, not beaned
 
