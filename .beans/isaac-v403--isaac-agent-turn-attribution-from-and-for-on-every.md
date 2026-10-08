@@ -70,3 +70,7 @@ Run from `isaac-agent`, with `@wip` removed from the feature file:
 
 feature-baseline: isaac-agent e941bd2aeb79a9f8a1e3238a23213b3df734e7c1
 feature-blob: isaac-agent features/turn/attribution.feature 11a447b9739175f07bb1e143439a5dfb815c5a33
+
+## Landed on main (2026-10-08)
+
+main-sha: isaac-agent 4d51451be1af9dd3324fa8a9ec91b77ed6f5894c
