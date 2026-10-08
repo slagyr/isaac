@@ -61,3 +61,7 @@ Run from `isaac-agent`, with `@wip` removed from the feature file and from the C
 feature-baseline: isaac-agent 2bcf03b12ec315bdfff6df4d532057dd7c193d24
 feature-blob: isaac-agent features/tool/session_history.feature 7da784ae7a6dd95d7195a130df8efe5885ccb0c5
 feature-blob: isaac-agent features/session/cli.feature 857fed1619c416a3215203dec61b716a18848fe2 437
+
+## Worker checkpoint (2026-10-08)
+
+Done: claimed; removed @wip; implemented initial crew-scoped session history tools, CLI time filters, timestamped feature fixture; CLI feature and focused session spec green. Next: fix paging in isaac-agent/src/isaac/agent/tool/session.clj:165 (current `bb features features/tool/session_history.feature` is red: page prints all three messages rather than two plus offset); add handbook documentation; run full bb verify, bb jvm-spec, gate and land.
