@@ -1,7 +1,7 @@
 ---
 # isaac-3dnw
 title: 'isaac-agent: system-section berth — modules contribute ordered sections of the system prompt'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
@@ -9,7 +9,7 @@ updated_at: 2026-10-08T20:38:14Z
 parent: isaac-pcm3
 ---
 
-DRAFT. Needs scenarios before it is todo. Part of the prompts-and-habits epic.
+Part of the prompts-and-habits epic (isaac-pcm3). Design and scenarios approved by Micah 2026-10-08.
 
 ## Problem
 
@@ -42,3 +42,60 @@ Convert the existing three sections (boot files, rules, skill menu) to in-agent 
 ## Likely repo scope
 
 `isaac-agent`.
+
+## Approved design (Micah, 2026-10-08)
+
+- Berth: `:isaac.agent/system-sections`. Manifest entry: `{<section-id> {:factory <sym> :order <int>}}`.
+- The contributor is called once per turn with the turn's facts (crew id, session cwd, config, root, fs) and returns `{:text "..." :tools #{"name" ...}}`, or nil for nothing.
+- `:order` is a position, not a priority. Nothing is dropped. Sections are sorted ascending by `:order`, section id breaking ties, and joined with blank lines after the soul.
+- The number belongs to the section. A contributor orders its own content (rules stay global-before-project, then by name).
+- Built-ins take 100 (boot files), 200 (rules), 300 (skill menu). A module's section defaults to 500. Dreamed habits will take 900.
+- The soul has no number; it is always first and stays in the agent. The agent's trailing framing (session identity, nonce, tool-batching hint) is not part of the berth.
+- Tokens are logged per section as `<section-id>-tokens` on `:turn/request-sent`. The existing `boot-files-tokens`, `rules-tokens` and `skill-menu-tokens` keys are unchanged.
+- A contributor that throws is skipped; the turn runs. Logged at warn as `:system-section/failed` with `:section` and `:module`.
+
+## Scenarios (committed `@wip` on isaac-agent main f771ca6, `features/module/system_section_extension.feature`)
+
+1. a module's section appears in the cached system prompt, built from the turn's crew (line 39)
+2. sections render in their declared order, after the soul (line 45)
+3. a section can grant tools for the turn (line 58)
+4. a contributor that throws is skipped and the turn still runs (line 66)
+5. each section's tokens are reported separately (line 87)
+6. activating the module registers its section (line 101)
+
+## Step ledger
+
+| Step | Status |
+|---|---|
+| `an Isaac root at "…"` | existing |
+| `the isaac file "…" exists with:` | existing |
+| `the isaac EDN file "…" exists with:` | existing |
+| `the following sessions exist:` | existing |
+| `the following model responses are queued:` | existing |
+| `the user sends "…" on session "…"` | existing |
+| `manifest berths are processed for the loaded config` | existing |
+| `the prompt "…" on session "…" matches:` | existing |
+| `the prompt has tools:` | existing |
+| `session "…" has transcript matching:` | existing |
+| `the log has entries matching:` | existing |
+
+No new steps. New test code is two fixture modules under `isaac-agent/modules/`, alongside `isaac.slash.echo`:
+
+- `isaac.section.beacon`: section `:beacon` (default order) with text `Beacon lit for <crew id>.`, granting the tool `beacon__ping`, which the module also contributes through the tools berth.
+- `isaac.section.squall`: section `:squall` whose contributor always throws.
+
+## Acceptance
+
+- `@wip` is removed from `features/module/system_section_extension.feature` and all six scenarios pass.
+- No behavior change for the built-in sections: these features pass with no edits to their scenarios: `features/prompts/rules.feature`, `features/prompts/skill_activation.feature`, `features/prompts/prompt_tools.feature`, `features/prompts/session-identity.feature`, `features/session/request_accounting.feature`.
+- `build-system-text` no longer takes boot files, rules text and skill menu text as separate positional arguments; `drive/turn.clj` no longer calls the prompt catalog to build the system text.
+- The berth is declared in `resources/isaac-manifest.edn` with a description, and the agent handbook chapter mentions it.
+- The contributor contract uses the extend-plus-defaults pattern if it is a protocol; `bb jvm-spec` passes.
+
+```
+cd isaac-agent && bb features features/module/system_section_extension.feature && bb features features/prompts features/session/request_accounting.feature && bb ci && bb jvm-spec
+```
+
+
+feature-baseline: isaac-agent f771ca6c9ab7600cb803f24200470ae7d476d956
+feature-blob: isaac-agent features/module/system_section_extension.feature 951bc96340bd73ed0ff26b46a89c86b7949c398b
