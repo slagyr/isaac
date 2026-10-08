@@ -76,7 +76,7 @@ Added from Micah's other dreaming conversation the same day. Proposed revisions;
 ### Answers proposed for the open questions
 
 - **Trigger:** a cron job in a fresh session. Cron already defaults to a new session per fire and can set the model with `with-model`, which answers "which model, whose budget" in config. The dream prompt ships with the module; if it is offered as a `/dream` command, that needs the slash-provider reshape (isaac-quji) as well.
-- **Episodes:** the dream reads sealed scenes by time window (isaac-d3qj). Recall stays what it is: lookup on a cue. Dreaming is the pass that needs no cue.
+- **Episodes:** not required. The dream reads transcripts by time window through isaac-agent (isaac-d3qj), so chronicle and episodes crews both dream. Scenes drop who said each line; transcripts keep it. Recall stays what it is: lookup on a cue. Dreaming is the pass that needs no cue.
 
 ### Concerns
 

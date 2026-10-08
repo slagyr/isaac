@@ -1,10 +1,11 @@
 ---
 # isaac-d3qj
-title: 'isaac-episodes: read a crew''s scenes by time window'
+title: 'isaac-agent: a crew reads its conversations by time window'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-08T20:41:16Z
+updated_at: 2026-10-08T21:19:22Z
 parent: isaac-pcm3
 blocking:
     - isaac-b1ir
@@ -12,23 +13,35 @@ blocking:
 
 DRAFT. Needs scenarios before it is todo. Part of the prompts-and-habits epic; dreaming (isaac-b1ir) needs it.
 
+Re-scoped 2026-10-08 from `isaac-episodes` to `isaac-agent` after Micah's question: chronicle crews must be dreamable too, and episodes add nothing but gists.
+
 ## Problem
 
-A crew cannot read its own history by time. `recall__search` takes only a query and returns at most eight gists; `recall__scene` needs a scene id. There is no tool and no CLI flag for "everything since Tuesday". A dream has to read all activity since the last dream, across every session of the crew.
+A crew cannot read its own history by time. There is no tool and no CLI flag for "everything since Tuesday", in either context mode. A dream has to read all activity since the last dream, across every session of the crew.
 
-The Clojure API already has the data: `store/list-episodes` returns a crew's episodes across sessions sorted by timestamp id, and scene frontmatter carries `started-at` and `ended-at`.
+## Why isaac-agent, once
+
+The transcript is the same thing in both modes. Every session, chronicle or episodes, has one append-only EDNL transcript in the session store; each entry has a timestamp and a role. The store SPI already exposes the full record (`chronicle-transcript`) and a crew's sessions (`list-sessions-by-agent`). An episode's scenes are spans over that same transcript (`start-id`..`end-id`) plus a gist; scene text is the message texts joined verbatim, with the roles thrown away (`isaac.session.episodes.segment/seal-scenes`, checked on isaac-episodes beedc19).
+
+So a reader over transcripts serves both kinds of crew, and it keeps what scenes lose: who said each line. Nothing in `isaac-episodes` has to change for dreaming.
 
 ## Proposal
 
-- A crew tool, working name `recall__window`: `since`, optional `until`, optional paging. Returns the calling crew's sealed scenes in time order: scene id, session, times and gist. The body is fetched with the existing `recall__scene`.
-- `isaac episodes list --since/--until` for operators.
+Two crew tools, working names:
+
+- list the calling crew's sessions that have activity in a window (`since`, optional `until`): session id, origin, first and last message time, message count;
+- read one session's messages inside the window, paged, as labelled lines: time, role, and the turn's `:from` once attribution (isaac-v403) lands. Tool results are dropped and tool calls shown as short markers, as the episodes distiller does today.
+
+Plus `isaac sessions list --since/--until` for operators.
 
 ## To settle
 
-- **Attribution.** Checked on isaac-episodes beedc19: scene text is not a summary. `segment/seal-scenes` joins the message texts verbatim with newlines (tool results dropped, tool calls as markers). `distill-entry` keeps each message's `:role`, but the join discards it, so a scene has no speaker labels at all: a reader cannot tell the crew's lines from the person's. Google Chat scenes happen to survive, because gchat writes `Name <email>:` into the user text. Other comms do not. A dream needs at least role labels in what it reads, and the `:from` reference per message once isaac-agent attribution (isaac-v403) lands. Decide whether the window tool renders labelled lines from the transcript span (`start-id`..`end-id`) or the stored scene text gains labels.
-- Routine scenes (gist prefixed `~`) are skipped by the index. Whether a window includes them.
-- Unsealed tails: a conversation still open when the dream runs. Skip and pick up next time, by watermark on `ended-at`.
+- **Size.** A day of raw conversation is far larger than a day of gists. Paging and a per-call budget are required; the two-step shape lets the dream skip sessions that are plainly routine.
+- **The message renderer.** Dropping tool results and summarizing tool calls is `isaac.session.episodes.distill` today. Either the agent grows the same rendering, or that function moves down into the agent and episodes calls it.
+- **Pruned history.** With `history-retention :prune`, compaction drops the old prefix and it cannot be dreamed over. `:retain` is the default. Say so in the handbook; do not work around it.
+- **Open conversations.** The watermark is a message timestamp, so a conversation still in progress is read up to now and picked up from there next time.
+- **Later, optional:** when the crew runs episodes, gists could serve as a cheap table of contents for the listing step. Not needed to start.
 
 ## Likely repo scope
 
-`isaac-episodes`.
+`isaac-agent`.
