@@ -71,3 +71,9 @@ Done: claimed; removed @wip; implemented initial crew-scoped session history too
 main-sha: isaac-agent eadfca536a2b204ab7aa8f99e8304dc359896511
 
 Implemented crew-scoped session__list / session__read with full retained transcript, whole-message paging and explicit permission grants; CLI updated-at window filtering; handbook documentation. Acceptance: bb features features/tool/session_history.feature, bb features features/session/cli.feature, bb verify, bb jvm-spec, rebased bb ci and bb bean-gate verify all passed.
+
+## CI regression checkpoint (2026-10-08)
+
+Done: inspected failed main CI run 37851652724. `bb ci` failed in unrelated `features/session/waiting.feature:28`: racing second send logged `:turn.queue/held` but not `:turn/waiting`. The busy-session feature now explicitly waits for Grover's first delayed request before sending the next message, using an asserted step in `spec/isaac/agent/session/session_steps.clj:2364`. Local `bb features features/session/waiting.feature` and `bb ci` green (909 examples, 0 failures, 2230 assertions, 1 preexisting pending); repair committed and pushed on `isaac-agent` branch `fix/isaac-d3qj-ci-waiting` at `afd1771`.
+
+Next: verify repeated focused runs and `bb bean-gate verify isaac-d3qj` from the isaac clone, then land fix on main and confirm CI. Resume at `isaac-agent/features/session/waiting.feature:20`.
