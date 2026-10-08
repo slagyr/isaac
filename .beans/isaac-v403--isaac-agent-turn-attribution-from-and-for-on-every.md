@@ -1,11 +1,11 @@
 ---
 # isaac-v403
 title: 'isaac-agent: turn attribution — :from and :for on the turn record'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-08T22:16:47Z
+updated_at: 2026-10-08T22:24:59Z
 parent: isaac-zt1x
 ---
 
