@@ -99,3 +99,9 @@ cd isaac-agent && bb features features/module/system_section_extension.feature &
 
 feature-baseline: isaac-agent f771ca6c9ab7600cb803f24200470ae7d476d956
 feature-blob: isaac-agent features/module/system_section_extension.feature 951bc96340bd73ed0ff26b46a89c86b7949c398b
+
+## Worker checkpoint (2026-10-08)
+
+Done: implemented ordered system-section berth on `isaac-agent` branch `bean/isaac-3dnw` (c1ef3cb, pushed); six new scenarios, prompt regression features, `bb ci` (1925 specs; 896 features, one preexisting pending), and `bb jvm-spec` passed. `bb bean-gate verify isaac-3dnw --dir isaac-agent=../isaac-agent-isaac-3dnw` returned PASS before landing. Rebasing on `origin/main` at 2bcf03b and rerunning `bb ci` passed.
+
+Next: landing blocked by `git merge --squash bean/isaac-3dnw` against `isaac-agent` main 2311a74; conflict in `bb.edn` because isaac-quji added `isaac.slash.semaphore` to the same dependency map where this branch adds both `isaac.section` fixtures. Aborted the squash with `git reset --hard origin/main` in the dedicated main worktree; bean branch remains clean and pushed. Per gated landing protocol, do not resolve the conflict blind; planner must direct/adjust handoff. Resume at `isaac-agent-izc1/bb.edn:29` after planner response; rebase `isaac-agent-isaac-3dnw` against current `origin/main`, then rerun suite and gate before landing.
