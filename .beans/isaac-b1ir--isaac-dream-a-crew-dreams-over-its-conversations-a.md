@@ -53,3 +53,39 @@ Each dream can reinforce, merge or retire habits. The system section is the stro
 ## Likely repo scope
 
 A new `isaac-dream` module. Needs nothing from `isaac-agent` beyond the system-section berth.
+
+## Reconciliation with the second dreaming thread (planner, 2026-10-08)
+
+Added from Micah's other dreaming conversation the same day. Proposed revisions; the sections above are unchanged.
+
+### Rulings from that thread (Micah)
+
+- **Approval first.** Micah approves every change until he trusts the process; automation comes later. So a habit has a state: proposed, active, rejected, retired. Only active habits reach the model. Approval is an operator action the crew cannot perform on itself (CLI first). Reinforcing an active habit needs no approval; new habits, rewording and merges do.
+- **Everyone who talks to the crew can teach it**, weighted by who they are. The weight comes from the contact when `isaac-contacts` is installed (isaac-zt1x).
+- **Works with or without contacts.** With attribution (isaac-v403) evidence names who said it and a habit may be scoped to one contact. Without it every habit is global and evidence is just the scene.
+- **Dreaming is a module plus a prompt.** The prompt holds the judgment: what is a lesson, themes, where it belongs, what it supersedes. The module holds what must be deterministic or out of the crew's reach.
+
+### What the module owns beyond the habit records
+
+- The watermark, a run gate (enough time and enough new activity since the last dream) and a lock against double runs.
+- A `dream__propose` style tool: the dreaming turn submits habits with evidence; the module validates and stores them as proposed.
+- Approve / reject / retire / wipe for the operator.
+- A diary: one entry per dream saying what was read, proposed, reinforced and retired.
+- A digest to the operator after each dream, over the attention comm.
+
+### Answers proposed for the open questions
+
+- **Trigger:** a cron job in a fresh session. Cron already defaults to a new session per fire and can set the model with `with-model`, which answers "which model, whose budget" in config. The dream prompt ships with the module; if it is offered as a `/dream` command, that needs the slash-provider reshape (isaac-quji) as well.
+- **Episodes:** the dream reads sealed scenes by time window (isaac-d3qj). Recall stays what it is: lookup on a cue. Dreaming is the pass that needs no cue.
+
+### Concerns
+
+- **Cache.** The system text precedes the transcript, so any change to it re-bills the whole conversation. A habits section that changes once a day at approval time is fine. A section that varies per turn is not: showing narrow habits "only when relevant", or one person's habits when that person speaks, would bust the cache on every change of topic or speaker in a shared space. Those belong on the per-turn guidance block attached to the current user message, not in the system section. So the module needs two placements: a stable system section for global habits, and a per-turn contribution for triggered and per-contact habits. The second is not covered by isaac-3dnw as written.
+- **Crew-to-crew teaching.** An instruction from another crew member carries no weight on its own, only through the contact it is acting for (`:for`). Otherwise agents grow habits with no human behind them.
+- **Untrusted handles.** Weight follows the handle's authenticated flag, not the name on it. A forged From line must not speak with an executive's weight.
+- **The soul is out of reach.** Dreaming produces habits only. At most the digest may suggest a soul change for a person to make by hand. Separately, `handbook__configure` can rewrite a crew's soul today with no review; check which crews hold that tool.
+- **Strength scoring.** Hermes-style weighted scores are easy to cargo-cult. With a person approving, start with a count of reinforcing dreams and a last-reinforced date; add decay when there is data.
+
+### Borrowed from Hermes (NousResearch/hermes-agent#25309)
+
+Stage then promote; a diary; a run gate with a lock; supersession instead of accumulation. Not borrowed: a capped flat memory file, and pausing the gateway to dream.
