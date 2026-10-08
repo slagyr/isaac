@@ -65,3 +65,9 @@ feature-blob: isaac-agent features/session/cli.feature 857fed1619c416a3215203dec
 ## Worker checkpoint (2026-10-08)
 
 Done: claimed; removed @wip; implemented initial crew-scoped session history tools, CLI time filters, timestamped feature fixture; CLI feature and focused session spec green. Next: fix paging in isaac-agent/src/isaac/agent/tool/session.clj:165 (current `bb features features/tool/session_history.feature` is red: page prints all three messages rather than two plus offset); add handbook documentation; run full bb verify, bb jvm-spec, gate and land.
+
+## Landed on main (2026-10-08)
+
+main-sha: isaac-agent eadfca536a2b204ab7aa8f99e8304dc359896511
+
+Implemented crew-scoped session__list / session__read with full retained transcript, whole-message paging and explicit permission grants; CLI updated-at window filtering; handbook documentation. Acceptance: bb features features/tool/session_history.feature, bb features features/session/cli.feature, bb verify, bb jvm-spec, rebased bb ci and bb bean-gate verify all passed.
