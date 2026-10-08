@@ -1,53 +1,72 @@
 ---
 # isaac-v403
-title: 'isaac-agent: turn attribution — :from and :for on every turn, with a resolver berth'
-status: draft
+title: 'isaac-agent: turn attribution — :from and :for on the turn record'
+status: todo
 type: feature
+priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-08T20:41:16Z
+updated_at: 2026-10-08T22:03:41Z
 parent: isaac-zt1x
 ---
 
-DRAFT. Needs scenarios before it is todo. First step of the contacts epic.
+First step of the contacts epic (isaac-zt1x). Planned with Micah 2026-10-08. Split in three the same day: this bean is the fields; the resolver berth and inheritance are their own beans.
 
 ## Problem
 
-A turn does not record who started it. `charge-schema` (`isaac.agent.charge`) has `:origin`, an untyped map each comm fills its own way, and the turn record (`<root>/turns/<id>.edn`) copies it. Nothing downstream can ask "who said this" without parsing comm-specific shapes or the message text.
+A turn does not record who started it in a form anyone can rely on. The turn record has `:origin`, documented as opaque: the submitter supplies it and the agent stores it without interpreting it. Each comm fills it its own way. Nothing downstream can ask "who said this" without knowing comm-specific shapes or parsing message text.
 
-## Proposal
+## What to build
 
-Two fields on the charge and the turn record:
+Two top-level fields on the turn record, beside `:origin` (ruled by Micah: top-level, not inside origin):
 
-- `:from` — who started the turn.
-- `:for` — on whose behalf; absent when nobody.
+- `:from` — who started the turn. Always present.
+- `:for` — the outside party it is done for. Absent when nobody.
 
-Each is a small opaque reference with a kind and an id. Working shapes:
+Each is a map with a `:kind`:
 
-- outside handle: the comm type, the comm's own id for the sender, and optional `:email` and `:name`;
-- crew: the crew id;
-- schedule: the cron job name;
-- CLI / HTTP principal.
+```clojure
+{:kind :handle :comm :gchat :id "users/123" :name "…" :email "…" :authenticated true}
+{:kind :crew :id "yopp"}
+{:kind :cron :id "nightly-dream"}
+{:kind :cli}
+{:kind :http :id "<principal>"}
+```
 
-The submitter sets `:from`. For an outside handle, `:for` defaults to the same party.
+A handle is an outside sender exactly as the comm knows them. `:comm` and `:id` are required on a handle; `:name` and `:email` are optional; `:authenticated` is the comm's own claim about whether the identity is verified.
 
-**Trust rides on the handle.** The comm states whether the sender identity is authenticated (Google Chat: yes; an email From line: no). The agent stores the flag and does not interpret it.
+Rules:
 
-**Inheritance.** When a crew member starts a turn from inside a turn (`hail__send`, `comm__send` to another crew, foreman `:turn` actions), the new turn's `:from` is that crew member and its `:for` is copied from the current turn. Cron turns have no `:for` unless the job names one.
+- Both submit paths accept them: `isaac.agent.turn.submit/submit!` and the charge used by direct dispatch (`charge-schema` gains `:from` and `:for`).
+- When `:from` is a handle and the submitter names no `:for`, `:for` is that same handle.
+- When the submitter names no `:from`, the entry point supplies its own: `isaac prompt` records `{:kind :cli}`. A turn never has a nil `:from`.
+- The agent stores and shows the maps and does not interpret them beyond the default above.
+- `isaac turns show <id>` prints them as `from.<key>` and `for.<key>`, the way it prints `origin.<key>`. `turn__get` returns them with the record.
 
-**Resolver berth.** A module may register a resolver that is handed an outside handle and returns a replacement reference (a named contact) or nil. Applied once, before the turn record is written. A resolver that throws or is slow is skipped and logged; the raw handle is stored. No resolver installed means raw handles, and everything still works.
+## Not this bean
 
-## Constraints
+- Resolving a handle to a named contact (the resolver berth bean).
+- Copying `:for` onto turns a crew member starts (the inheritance bean).
+- Comms supplying real handles (isaac-dlw5 for Google Chat).
+- Cron and HTTP entry points live in other modules; they adopt `:from` in their own beans. Until then their turns carry whatever default the agent's submit path gives a submitter that names none — state that default in the handbook.
+- Migrating readers off `:origin`, or hail's `origin.from`.
 
-- The agent never learns what a contact is. It stores, displays and copies references.
-- `:origin` stays for now; comms keep whatever else they put there. Migrating readers off `:origin` is not this bean.
-- Hail's existing `:from` values (`:crew/<id>`, `:cli`, `:http`) should land in the new field without a second vocabulary.
-- Visible to operators: `turn__get`, `isaac sessions` output and the turn record show `:from` and `:for`.
+## Notes for the implementer
 
-## To settle
-
-- Whether the transcript entry for the user message also carries `:from`, so a reader of one session's transcript can attribute each message without joining to turn records. Dreaming and scene distillation would both use it.
-- How much plumbing inheritance needs in `isaac-hail` and the delivery queue. Not yet measured.
+- New step: `a turn is submitted with:` — a key/value table naming `id`, `input`, `session` and dotted `from.*` / `for.*` keys, calling `submit!`. The existing submit steps cannot name the turn id or the sender.
+- `:authenticated` parses as a boolean in the step table.
 
 ## Likely repo scope
 
-`isaac-agent`; a small follow-on in `isaac-hail` for inheritance.
+`isaac-agent`.
+
+## Acceptance
+
+Run from `isaac-agent`, with `@wip` removed from the feature file:
+
+- `bb features features/turn/attribution.feature`
+- `bb features features/turn/turn_inspection.feature` still green.
+- `bb verify` and `bb jvm-spec` green.
+- The agent handbook chapter documents `:from` and `:for`: the kinds, the handle fields, the for-defaults-to-from rule, and how `turns show` prints them.
+
+feature-baseline: isaac-agent e941bd2aeb79a9f8a1e3238a23213b3df734e7c1
+feature-blob: isaac-agent features/turn/attribution.feature 11a447b9739175f07bb1e143439a5dfb815c5a33

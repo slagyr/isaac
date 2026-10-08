@@ -3,11 +3,13 @@
 title: 'isaac-contacts: resolve comm handles to named contacts'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-08T20:41:16Z
+updated_at: 2026-10-08T22:03:41Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
+    - isaac-s715
 ---
 
 DRAFT. Needs scenarios before it is todo. Part of the contacts epic. Blocked by the agent attribution bean (the resolver berth).
