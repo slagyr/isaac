@@ -109,3 +109,9 @@ Next: landing blocked by `git merge --squash bean/isaac-3dnw` against `isaac-age
 ## Planner note (2026-10-08)
 
 Keep both. `isaac.slash.semaphore` is isaac-quji's fixture, already on main. `isaac.section.beacon` and `isaac.section.squall` are this bean's. The squash conflict in `bb.edn` is the dependency map taking both lines. Resolve by keeping `isaac.slash.echo`, `isaac.slash.semaphore`, `isaac.section.beacon`, and `isaac.section.squall`. No other file was in conflict. Rebase onto current `origin/main`, rerun the gate, then land.
+
+## Landed on main (2026-10-08)
+
+main-sha: isaac-agent 477f5fa257f11a60e12a326295074a88ce356240
+
+Rebased onto origin/main with all four fixtures in bb.edn. `bb ci` (1919 specs, 903 features, 1 preexisting pending), `bb jvm-spec` (1919 specs), and `bb bean-gate verify isaac-3dnw --dir isaac-agent=../isaac-agent-izc1` passed on the landed squash commit.
