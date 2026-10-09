@@ -1,45 +1,66 @@
 ---
 # isaac-onzi
-title: 'Queued turns drop :with-context-mode: isaac.turn.worker/wake-charge never forwards it'
+title: 'Queued turns drop :with-context-mode: isaac.agent.turn.worker/wake-charge never forwards it'
 status: todo
 type: bug
 priority: normal
 tags:
     - hail
 created_at: 2026-09-22T21:27:18Z
-updated_at: 2026-09-30T14:05:33Z
+updated_at: 2026-10-09T17:53:36Z
 blocked_by:
     - isaac-zdnx
 ---
 
 ## Problem
 
-`isaac.hail.delivery-worker/delivery-charge` (isaac-hail
-`src/isaac/hail/delivery_worker.clj` ~L516) builds the turn's charge from the
-delivery's behavioral override with `:crew` and `:model-override` only. The
-override map already carries `:context-mode` when a band or hail sets
-`:with-context-mode` (`session.frequencies/behavioral-override`, router.clj
-L192), but it is dropped here, so a band-level context mode never reaches the
-turn. Same gap the CLI had in isaac-zdnx.
+A turn submitted by frequencies (a hail, cron, any queue producer) can carry `:with-context-mode` to choose how that one turn's context is built. It never reaches the turn. `isaac.agent.turn.worker/wake-charge` (`isaac-agent/src/isaac/agent/turn/worker.clj`) builds the request for `charge/build` from the queued record and forwards `:with-crew` and `:with-model` from `:frequencies`, but not `:with-context-mode`. So a band-level or per-hail context mode is silently ignored.
+
+The CLI had the same gap and was fixed in isaac-zdnx: `charge/build` accepts `:context-mode-override`, and `bridge/prompt_cli.clj` maps `--with-context-mode` onto it.
 
 ## Change
 
-Pass `:context-mode-override (:context-mode override)` to `charge/build` —
-the key isaac-zdnx adds to `isaac.charge/build` (agent main after PR #4).
-Needs isaac-hail's agent pin bumped to a main sha that carries it.
+In `wake-charge`, forward `(get-in record [:frequencies :with-context-mode])` as `:context-mode-override`, beside the existing `:with-crew` and `:with-model` lines. Nothing else.
+
+The frequencies schema types `:with-context-mode` as a keyword, and a hail over HTTP delivers it as a string. Make sure the value that reaches `charge/build` is a keyword either way.
+
+## Scenarios (committed `@wip` on isaac-agent main 4e9741c, `features/turn/queued_context_mode.feature`)
+
+1. `:with-context-mode full` replays history for a crew set to reset
+2. `:with-context-mode reset` drops history for a crew left at full
+
+## Step ledger
+
+| Step | Status |
+|---|---|
+| `default Grover setup` | existing |
+| `the isaac EDN file "…" exists with:` | existing |
+| `the following sessions exist:` | existing |
+| `session "…" has transcript:` | existing |
+| `the following model responses are queued:` | existing |
+| `a turn with input "…" is submitted with frequencies:` | existing |
+| `the turn queue ticks at "…"` | existing |
+| `the last LLM request matches:` | existing |
+
+No new steps. `a turn with input "…" is submitted with frequencies:` passes every value except `create` through as a string (`spec/isaac/agent/turn/queue_steps.clj`); if the keyword coercion belongs in the step rather than in production, change the step, not the feature.
 
 ## Acceptance
 
-- Scenario in isaac-hail (hail features, Marigold): a band with
-  `:with-context-mode :reset` delivering to a session whose crew has no
-  context-mode → the turn resolves `:context-mode :reset`; and a hail with
-  `:with-context-mode :full` beats a band's `:reset`.
-- `bb spec` / `bb features` / `bb ci` green in isaac-hail with the bumped pin.
+- `@wip` is removed from `features/turn/queued_context_mode.feature` and both scenarios pass.
+- `features/session/context_mode.feature`, `features/session/context_mode_berth.feature` and `features/turn/session_selection.feature` pass with no edits to their scenarios.
+- A unit spec covers `wake-charge` forwarding the override.
 
-## Related
+```
+cd isaac-agent && bb features features/turn/queued_context_mode.feature && bb features features/session/context_mode.feature features/session/context_mode_berth.feature features/turn/session_selection.feature && bb ci && bb jvm-spec
+```
 
-isaac-zdnx (CLI side, blocks this), isaac-dgod trial notes (2026-09-22).
+## Likely repo scope
 
-## Triage update (2026-09-30, planner, approved by Micah)
+`isaac-agent` only.
 
-Likely repo is now **isaac-agent**. isaac-hail's delivery_worker.clj is gone; hail carries :with-context-mode in :frequencies to Agent's TurnStore, but isaac.turn.worker/wake-charge forwards only :with-crew and :with-model into charge/build. The target shape already exists: charge/build accepts :context-mode-override, and bridge/prompt_cli.clj:267 maps it for the CLI (isaac-zdnx). The fix is the same one-line mapping in wake-charge; scenarios should move to isaac-agent's turn queue features.
+## History
+
+Filed 2026-09-22 against isaac-hail's `delivery_worker.clj`, which built the charge at the time. Re-triaged 2026-09-30 (planner, approved by Micah): that file is gone, hail now hands `:with-context-mode` to Agent's turn store inside `:frequencies`, and the drop moved to `wake-charge`. Blocker isaac-zdnx (the CLI side) is completed. Related: isaac-dgod trial notes (2026-09-22).
+
+feature-baseline: isaac-agent 4e9741cc6d0846939538dcb94169521071c45391
+feature-blob: isaac-agent features/turn/queued_context_mode.feature 3ccedf0d3d91b2f0de1316eeee2d8ab0d73eef92
