@@ -1,13 +1,13 @@
 ---
 # isaac-onzi
 title: 'Queued turns drop :with-context-mode: isaac.agent.turn.worker/wake-charge never forwards it'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - hail
 created_at: 2026-09-22T21:27:18Z
-updated_at: 2026-10-09T17:53:36Z
+updated_at: 2026-10-09T18:01:57Z
 blocked_by:
     - isaac-zdnx
 ---
