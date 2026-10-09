@@ -46,3 +46,13 @@ Leave alone: decision attributions in comments and feature headers of the form "
 ## Worker conflict (2026-10-09)
 
 Scope requires changing tracked `.feature` prose: `features/cli/config_default_labels.feature:5` contains “yopp”. The hail-bean-work-gate worker rule allows only removing `@wip` in any `.feature` file. This bean has no feature-baseline and no `@wip` to remove. Planner must reconcile the feature-file ownership rule with this required scrub (for example, edit that feature on module main or explicitly authorize the mechanical change). No implementation files have been edited. Gate has not been run yet.
+
+## Ungated
+
+No feature runner contract to baseline. The features are the examples being scrubbed, not a frozen behavior contract. `bb bean-gate verify` will exit 2. That is expected.
+
+## Planner note (2026-10-09)
+
+The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Scrub identifiers in the feature files the acceptance names, including `features/cli/config_default_labels.feature:5`. Do not add, delete, or reword a scenario. Close ungated: `beans update isaac-0rg9 --tag=unverified`, stay `in-progress`, hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
+
+`LICENSE` is a copyright notice, not an example. Leave it. The micah grep may also print that one copyright line. Everything else named Micah is either a decision attribution or gets scrubbed.
