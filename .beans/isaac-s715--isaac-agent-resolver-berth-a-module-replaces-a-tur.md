@@ -1,11 +1,11 @@
 ---
 # isaac-s715
 title: 'isaac-agent: identifiers berth — a module names the party behind a handle'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-08T22:03:41Z
-updated_at: 2026-10-09T17:52:32Z
+updated_at: 2026-10-09T18:09:08Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
