@@ -42,3 +42,7 @@ Error messages and manifest descriptions that tests assert on must change togeth
 ## Likely repo scope
 
 `isaac-google`.
+
+## Worker conflict (2026-10-09)
+
+The scope requires rewriting example data in `features/*.feature` (for example `features/people.feature:17` and `features/health.feature:15`), while the assigned `hail-bean-work-gate` skill forbids any `.feature` edit except removing `@wip`. These are not `@wip` features and the bean carries no feature baseline. Cannot satisfy both instructions without planner clarification of this scrub exception. Separately `LICENSE:3` has a legal copyright attribution to Micah Martin; replacing legal ownership is not a fixture scrub, but the literal grep acceptance allows only decision attributions. Please explicitly rule on the license exception or authorize changing the legal attribution. No implementation edits made pending planner resolution.
