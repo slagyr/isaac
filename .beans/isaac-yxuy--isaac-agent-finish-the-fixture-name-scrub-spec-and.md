@@ -1,11 +1,11 @@
 ---
 # isaac-yxuy
 title: 'isaac-agent: finish the fixture name scrub — spec and handbook'
-status: todo
+status: in-progress
 type: task
 priority: critical
 created_at: 2026-10-09T17:55:53Z
-updated_at: 2026-10-09T17:55:53Z
+updated_at: 2026-10-09T17:57:30Z
 ---
 
 URGENT (Micah, 2026-10-09). Finish replacing a real deployment's crew name in `isaac-agent` examples with the Marigold cast. Mechanical; no behavior change. The planner has already changed the feature files on main.
@@ -35,3 +35,9 @@ Run from `isaac-agent`, with `@wip` removed from the scenario:
 
 feature-baseline: isaac-agent cec84c824b54da5c93a5513b12ebeb80d8b23dcb
 feature-blob: isaac-agent features/bridge/unknown_crew.feature 570745b0c60c6d6224bc46b7519ada2ab89cc126 59
+
+## Landed on main (2026-10-09)
+
+main-sha: isaac-agent 31c1afc28aa2dcae3ab2bfdc512af6ddb397558f
+
+Acceptance: `bb features features/bridge/unknown_crew.feature` (4 examples), `bb spec spec/isaac/agent/session/default_crew_steps_spec.clj` (3 examples), `bb verify` (1929 specs; 911 features, one pre-existing pending), `bb jvm-spec` (1929 examples), and `git grep -i yopp` (no matches). Gate PASS on squash commit.
