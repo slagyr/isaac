@@ -52,3 +52,12 @@ Run from `isaac-gchat`, with `@wip` removed from the scenario:
 
 feature-baseline: isaac-gchat c32e8e91ba34917ddea93d59d6615ba96b0fa742
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature e44993e0a674d702ec01e511836a99c7e3076862 271
+
+## Landed on main (2026-10-09)
+
+main-sha: isaac-gchat fb171478499389f62b3f23dcb93db0d7847ca180
+
+## Done / next (2026-10-09)
+
+Done: gchat sender handle dispatch, persisted-turn feature step, optional-field spec, isaac-agent v403 pin and handbook; inbound feature and `bb ci` green; bean gate PASS on main squash.
+Next: delete the bean branch and complete the bean. Resume at `git worktree remove ../isaac-gchat-dlw5` in the isaac-gchat checkout, then `beans update isaac-dlw5 --status=completed` here.
