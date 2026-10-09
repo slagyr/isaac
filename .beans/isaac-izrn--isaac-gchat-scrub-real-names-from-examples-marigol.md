@@ -42,3 +42,7 @@ The README session-name examples and the DM session names in features change tog
 ## Likely repo scope
 
 `isaac-gchat`.
+
+## Conflict (2026-10-09)
+
+The acceptance requires scrubbing `features/comm/gchat/*.feature` (numerous real company/person identifiers), but the worker's `hail-bean-work-gate` contract states: "Removing `@wip` is the only edit you make to any `.feature` file." This bean has no `feature-baseline:` and is a fixture-scrub task, not a behavior change; nevertheless its required feature edits violate the explicit worker restriction. No implementation files edited. Planner must clarify/adjust the work contract for this bean before implementation can proceed.
