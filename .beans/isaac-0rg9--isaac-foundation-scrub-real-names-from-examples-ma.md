@@ -4,8 +4,10 @@ title: 'isaac-foundation: scrub real names from examples — Marigold fixtures o
 status: in-progress
 type: task
 priority: critical
+tags:
+    - unverified
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T17:03:07Z
+updated_at: 2026-10-09T17:17:04Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -56,3 +58,11 @@ No feature runner contract to baseline. The features are the examples being scru
 The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Scrub identifiers in the feature files the acceptance names, including `features/cli/config_default_labels.feature:5`. Do not add, delete, or reword a scenario. Close ungated: `beans update isaac-0rg9 --tag=unverified`, stay `in-progress`, hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
 
 `LICENSE` is a copyright notice, not an example. Leave it. The micah grep may also print that one copyright line. Everything else named Micah is either a decision attribution or gets scrubbed.
+
+## Worker handoff (2026-10-09)
+
+branch: bean/isaac-0rg9 @ 1f66e3222190ffc809cf98be828db411b69d5b9d (base origin/main@edc18481808a050f8c2fd657f2e966e6040fcfc3)
+
+Mechanical fixture-only replacement in three files: yopp → isaac (feature prose and spec label), tonotop.com → marigold.example (spec sample addresses). LICENSE and decision attributions unchanged; no scenarios added/deleted/reworded. No pin, dependency, or behavior change. `git grep -i tonotop` and `git grep -i yopp` empty; `git grep -i micah` only decision attributions and LICENSE; no long numeric users ids.
+
+Validation: `ISAAC_TEST_TIMEOUT_MS=240000 bb ci` passed (1348 specs; 361 features, 2 pre-existing pending). Default `bb ci` timed out during features at 60s; rerun with expanded timeout passed. `bb jvm-spec` fails 9 unrelated existing tests (gitlibs directory/environment assumptions and lifecycle exception); `bb jvm-features` fails 1 unrelated gitlibs cache directory expectation in `cli/modules_pins.feature:143`. `bb bean-gate verify isaac-0rg9` exits 2 (ungated, as planned).
