@@ -1,11 +1,11 @@
 ---
 # isaac-dlw5
 title: 'isaac-gchat: supply the sender as the turn''s :from handle'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-09T17:52:58Z
+updated_at: 2026-10-09T18:01:35Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
