@@ -1,11 +1,11 @@
 ---
 # isaac-xklq
 title: 'isaac-handbook: scrub real names from examples — Marigold fixtures only'
-status: todo
+status: in-progress
 type: task
 priority: critical
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T16:58:58Z
+updated_at: 2026-10-09T17:03:04Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
