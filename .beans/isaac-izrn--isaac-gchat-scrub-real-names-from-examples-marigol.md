@@ -1,13 +1,11 @@
 ---
 # isaac-izrn
 title: 'isaac-gchat: scrub real names from examples — Marigold fixtures only'
-status: in-progress
+status: completed
 type: task
 priority: critical
-tags:
-    - unverified
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T17:07:45Z
+updated_at: 2026-10-09T17:10:04Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -63,3 +61,9 @@ Identifier swaps inside an existing step are in scope. Do not add, delete, or re
 ## Implementation (2026-10-09)
 
 branch: bean/isaac-izrn @ 4f46520 (base origin/main@75e4e95) in isaac-gchat. Mechanical identifier replacements across 28 tracked files, including four feature files; no scenario names/counts changed. Long user IDs map independently to users/100000000000000000001 and users/100000000000000000002; domainId 0ivzlyj to 0marigold. No dependencies or pins edited. `git grep -i` for tonotop/yopp/micah is empty; long users IDs only replacements. `bb ci` green (208 spec examples, 71 feature examples); `bb jvm-spec` green (208 examples). `bb bean-gate verify isaac-izrn` exits 2 (no baseline). This repo has no `bb verify` task; `bb ci` is its full verification task.
+
+
+
+## Landed on main (2026-10-09)
+
+main-sha: isaac-gchat cf498daace3c9f2bcf557d48ca6930aa6bb03fc8
