@@ -1,33 +1,54 @@
 ---
 # isaac-dlw5
 title: 'isaac-gchat: supply the sender as the turn''s :from handle'
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-08T20:41:16Z
+updated_at: 2026-10-09T17:52:13Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
 ---
 
-DRAFT. Needs scenarios before it is todo. Part of the contacts epic. Blocked by the agent attribution bean.
+Part of the contacts epic (isaac-zt1x). Planned with Micah 2026-10-08/09. The attribution fields it needed (isaac-v403) have landed.
 
 ## Problem
 
-Google Chat knows exactly who sent each message and tells the model only through text: the user message is rendered `[thread:xxxx] Name <email>: text` (`isaac.comm.gchat.canon`), and the origin map carries `:user users/<id>`, `:display-name` and `:email` in a shape only gchat understands.
+Google Chat knows exactly who sent each message and tells the agent only through free-form data: the user message is rendered `[thread:xxxx] Name <email>: text`, and the origin map carries `:user`, `:display-name` and `:email` in a shape only gchat understands. The turn record's `:from` does not say who spoke.
 
-## Proposal
+## What to build
 
-When gchat submits a turn it sets `:from` to an outside handle: comm `gchat`, the Google `users/<id>`, the email and display name it already resolves through `isaac.google.people`, and authenticated true (Google vouches for the sender).
+When gchat dispatches a turn it sets `:from` to a handle:
 
-The rendered message text and the origin map do not change in this bean.
+```clojure
+{:kind :handle :comm :gchat :id "users/<id>" :name "<display name>" :email "<email>" :authenticated true}
+```
 
-## Notes
+- `:id` is the Google `users/<id>`, the same value origin's `:user` carries.
+- `:name` and `:email` are included when gchat has them (it already resolves them through `isaac.google.people`); they are left out, not blank, when it does not.
+- `:authenticated` is always true: Google vouches for a Chat sender.
+- `:comm` is the comm type `:gchat`, not the config slot id. Google user ids are global across tenants.
 
-- Including the email lets `isaac-contacts` match the same person across Chat and Gmail without calling Google.
-- gchat does not depend on `isaac-contacts`.
-- Gmail, Discord and iMessage get their own adoption beans. Gmail marks its handle unauthenticated.
+Nothing else changes: the rendered message text, the origin map and the allow-list gate stay as they are. gchat does not depend on `isaac-contacts`.
+
+## Notes for the implementer
+
+- New step: `the latest turn on session "<name>" has from:` — a key/value table matched against the `:from` of the newest turn record for that session. Put it beside the existing `session "..." has origin:` in `feature-steps/isaac/comm/gchat/gchat_steps.clj`. A comm-started turn has a generated id, so the scenario cannot name the turn.
+- The agent already carries `:from` on the direct dispatch path (`isaac.agent.bridge.core`). Bump the `isaac-agent` pin to a main sha that has isaac-v403 if the current pin predates it.
+- Fixtures use the Marigold cast only.
 
 ## Likely repo scope
 
 `isaac-gchat`.
+
+## Acceptance
+
+Run from `isaac-gchat`, with `@wip` removed from the scenario:
+
+- `bb features features/comm/gchat/inbound.feature`
+- The repo's full verification green.
+- The gchat handbook chapter says the turn's `:from` is a handle, lists its fields, and says a Chat sender is always authenticated.
+
+feature-baseline: isaac-gchat c32e8e91ba34917ddea93d59d6615ba96b0fa742
+feature-blob: isaac-gchat features/comm/gchat/inbound.feature e44993e0a674d702ec01e511836a99c7e3076862 271
