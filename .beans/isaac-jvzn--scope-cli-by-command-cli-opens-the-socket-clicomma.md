@@ -11,7 +11,7 @@ updated_at: 2026-09-26T03:06:43Z
 parent: isaac-gym1
 ---
 
-`GET /cli` declares no `:scope`. A route with no scope requires `:*`, so any token that can open the remote CLI is an admin token for every other route. Yopp and Zanebot publish that listener through Tailscale Funnel.
+`GET /cli` declares no `:scope`. A route with no scope requires `:*`, so any token that can open the remote CLI is an admin token for every other route. Skiff and Zanebot publish that listener through Tailscale Funnel.
 
 On main, `GET /cli` already declares `:scope :cli`, and the command filter allows `:*`, `:cli`, and `:cli/read` when the command is marked read-only. The step `the /cli client is principal {name} with scopes {scopes}` already exists. The four live cli/read scenarios were removed in isaac-cli-server 7d0e966. Do not put them back. No new steps.
 
@@ -54,7 +54,7 @@ Land the `isaac-http` door rule first, then the route scope. `:*` keeps working 
 
 ## Out of scope
 
-Minting a Yopp or Zanebot principal, installing `isaac.cli-server` on Yopp, and rotating the live admin token. isaac-x5kx lists route-declared scopes; once this lands, that catalog also has to name `cli/<command>` for each hosted command, or mint's typo check will refuse a legitimate laptop token.
+Minting a Skiff or Zanebot principal, installing `isaac.cli-server` on Skiff, and rotating the live admin token. isaac-x5kx lists route-declared scopes; once this lands, that catalog also has to name `cli/<command>` for each hosted command, or mint's typo check will refuse a legitimate laptop token.
 
 ## Scenario plan (not yet written)
 

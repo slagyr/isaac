@@ -14,7 +14,7 @@ Repo: **isaac-agent**, plus every turn consumer that builds a frequencies map (p
 
 isaac-4e4b (2026-06-26) unified session selection and left one case open: what a turn targets when no filter is given. The note said keep the named session `prompt-default` as the predictable default, and settle it later. It was never settled. `resolve-session-targets` and `build-frequencies` still hardcode `:default-session-key "prompt-default"`. `isaac prompt` with no session name takes that path, so the session id is the literal string `prompt-default`.
 
-`:defaults :frequencies` is already the config for that choice (`isaac.config.defaults/frequencies-template`). Nothing merges it in. On Yopp the map is `{:crew :yopp}`, which would have selected a yopp session. The prompt command used it only as the crew, and kept `prompt-default` as the session. `prompt_cli/resolve-target` also special-cases an explicit `--crew` into `policy/default-session` and skips the frequencies resolver.
+`:defaults :frequencies` is already the config for that choice (`isaac.config.defaults/frequencies-template`). Nothing merges it in. On Skiff the map is `{:crew :skiff}`, which would have selected a skiff session. The prompt command used it only as the crew, and kept `prompt-default` as the session. `prompt_cli/resolve-target` also special-cases an explicit `--crew` into `policy/default-session` and skips the frequencies resolver.
 
 ## Decision (2026-09-27, Micah)
 

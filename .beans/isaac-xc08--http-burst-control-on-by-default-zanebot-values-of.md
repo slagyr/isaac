@@ -14,7 +14,7 @@ updated_at: 2026-09-19T01:56:30Z
 Micah (2026-09-18): "HTTP throttling burst control should be on by default, with a way to turn it off." The earlier conversation left no bean; this is it.
 
 ## Today
-isaac-udnm shipped burst control opt-in: `:http :burst` absent ⇒ `wrap-burst` is a pass-through (http.clj `wrap-burst`, manifest "Absent group = off"). zanebot has it configured explicitly (`{:threshold 30 :window-ms 60000 :cooldown-ms 600000 :throttle? true}`); yopp and any fresh install have none. A public server should never run without it.
+isaac-udnm shipped burst control opt-in: `:http :burst` absent ⇒ `wrap-burst` is a pass-through (http.clj `wrap-burst`, manifest "Absent group = off"). zanebot has it configured explicitly (`{:threshold 30 :window-ms 60000 :cooldown-ms 600000 :throttle? true}`); skiff and any fresh install have none. A public server should never run without it.
 
 ## Decision
 - **Default ON**: `{:enabled true :threshold 10 :window-ms 60000 :cooldown-ms 600000 :throttle? true :notify? true}`. (Micah 2026-09-18: 30 is too loose; only REFUSED requests — 401/403 — count, so a legitimate client never gets near 10 in a minute while a scanner is cut off after its first ten probes.) zanebot's explicit 30 is overridden by deleting its block or setting 10.
@@ -48,7 +48,7 @@ One new step (a fixture-route variant). Note `the directory … has exactly 0 fi
 ```
 cd isaac-server && bb features features/server/burst_default.feature features/server/burst.feature && bb ci
 ```
-burst.feature's "config schema lists the burst knobs" gains `enabled`. Version bump; rides the http train. Field: zanebot's explicit `:burst` block can then be deleted (one-time) and `config get http.burst` still shows it on; yopp gets burst control on its next http upgrade with no config change.
+burst.feature's "config schema lists the burst knobs" gains `enabled`. Version bump; rides the http train. Field: zanebot's explicit `:burst` block can then be deleted (one-time) and `config get http.burst` still shows it on; skiff gets burst control on its next http upgrade with no config change.
 
 
 ## Handoff (scrapper@isaac-work-1)

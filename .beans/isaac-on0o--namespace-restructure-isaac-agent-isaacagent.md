@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -55,7 +55,7 @@ main-sha: isaac-agent 123d71850b480dc0859886e1a4fa53e082c258f1
 - `resources/isaac/agent/handbook.md` mentions `isaac.session.episodes` (isaac-episodes' own future namespace, not agent's) as a factual pointer — reverted that one mention; the `isaac.session.frequencies` → `isaac.agent.frequencies` mention (Frequencies section) is correctly renamed.
 - `AGENTS.md`'s testing-discipline section references `isaac.spec-helper` in prose — updated to `isaac.agent.spec-helper` (legitimate factual pointer, not a rename miss).
 
-**Live-config greps (read-only, no edits made).** zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config` both only match module-id keywords already declared in the bean's own mapping table (`:isaac.comm.acp`, `:isaac.comm.discord`, `:isaac.comm.imessage`, `:isaac.comm.gchat`, `:isaac.comm.gmail`, `:isaac.session.episodes`, `:isaac.tool.mcp`) — none are isaac-agent's own internal code namespaces. No config edits required on either host.
+**Live-config greps (read-only, no edits made).** zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config` both only match module-id keywords already declared in the bean's own mapping table (`:isaac.comm.acp`, `:isaac.comm.discord`, `:isaac.comm.imessage`, `:isaac.comm.gchat`, `:isaac.comm.gmail`, `:isaac.session.episodes`, `:isaac.tool.mcp`) — none are isaac-agent's own internal code namespaces. No config edits required on either host.
 
 **Test results.** `bb ci` (config-bypass-lint + lint-cli-host + `bb spec` + `bb features`): green. `bb spec`: 1835/1835. `bb features`: 818/818, 1 pending (pre-existing `Mid-turn compaction keeps the request in flight...` — same pending scenario as before the rename). `bb jvm-spec` (real JVM via `clojure -M:spec`): 1835/1835. The known-flaky `turn_store.feature:130` scenario passed in this run. All runs isolated via `HOME=/tmp/isaac_scratch_home` per isaac-davq's test-isolation note. `bb lint` shows the same ~535 pre-existing clj-kondo `Unresolved symbol` errors (speclj macros unresolved without a warmed `.clj-kondo` cache) on **both** this branch and pristine pre-change `main` — confirmed identical, not a rename regression.
 

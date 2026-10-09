@@ -13,7 +13,7 @@ updated_at: 2026-09-19T01:02:27Z
 
 ## Bug
 
-`isaac config set crew.yopp.tags jackalope` on yopp (2026-09-18T23:59Z) exited 0, logged `:config/set` at info, and wrote `:tags "jackalope"` into `config/crew/yopp.edn`. `isaac config validate` immediately afterwards reports `crew.yopp.tags - must be a set of keywords`. A mutation must never persist a value the schema's validators reject.
+`isaac config set crew.skiff.tags jackalope` on skiff (2026-09-18T23:59Z) exited 0, logged `:config/set` at info, and wrote `:tags "jackalope"` into `config/crew/skiff.edn`. `isaac config validate` immediately afterwards reports `crew.skiff.tags - must be a set of keywords`. A mutation must never persist a value the schema's validators reject.
 
 ## Root cause (isaac-foundation)
 

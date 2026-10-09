@@ -12,7 +12,7 @@ updated_at: 2026-09-23T00:58:21Z
 
 ## Why
 
-isaac-an14 moved the tick to hourly. The scheduler's :interval trigger fires after a full period (scheduler/runtime next-time = now + ms), so after a restart the first reconcile and the first heartbeat come an hour later. On the yopp train that means the old per-space subscriptions stay for an hour before spaces/- replaces them.
+isaac-an14 moved the tick to hourly. The scheduler's :interval trigger fires after a full period (scheduler/runtime next-time = now + ms), so after a restart the first reconcile and the first heartbeat come an hour later. On the skiff train that means the old per-space subscriptions stay for an hour before spaces/- replaces them.
 
 ## Change
 

@@ -12,7 +12,7 @@ updated_at: 2026-09-25T16:47:02Z
 
 We cannot tell whether episode recall finds the right prior topic: the
 server log records only `:query-chars`, `:top` and scene ids. One sampled
-recall on yopp ("what tools did you use to answer that question?") surfaced
+recall on skiff ("what tools did you use to answer that question?") surfaced
 three cross-session scenes about jokes and tools at ~0.60 — plausible vibe,
 not the topic. Micah: keep a research log of recalls **inside the crew**, not
 the regular logs, and make it a configuration that can be turned on and off.

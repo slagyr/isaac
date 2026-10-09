@@ -26,7 +26,7 @@ Compaction is the only way a session grown under a 1M-window model (Codex) becom
 
 ## Suspected seam
 
-The compaction chat (`compaction-tools-opts` → `dispatch/dispatch-chat-with-tools`) goes through the claude-cli adapter in a mode where the LoopDriver's stream-json is not parsed into a `{:content …}` response (the driver only decodes when it "drives the tool loop"?), so the raw text lands in `:error`. Compare with the title side-call path, which does parse. See also isaac-jkx7 (opus drifts) and the yopp `provider-contract-violated {:reasoning {:summary "is required"}}` on the haiku title side-call — likely the same adapter contract gap.
+The compaction chat (`compaction-tools-opts` → `dispatch/dispatch-chat-with-tools`) goes through the claude-cli adapter in a mode where the LoopDriver's stream-json is not parsed into a `{:content …}` response (the driver only decodes when it "drives the tool loop"?), so the raw text lands in `:error`. Compare with the title side-call path, which does parse. See also isaac-jkx7 (opus drifts) and the skiff `provider-contract-violated {:reasoning {:summary "is required"}}` on the haiku title side-call — likely the same adapter contract gap.
 
 ## Scenarios to draft
 
@@ -50,7 +50,7 @@ Origin/main `459a236` ("clip claude CLI error text") only shortens the message.
 
 ## Fix landed on branch (2026-09-18, plan)
 
-isaac-claude-code `bean/isaac-t098` @ **e61df08** (Release 0.1.12). `failed?` = nonzero exit ∨ result event `is_error` ∨ auth signature in the CLI's own text (stderr, result error text, or bare stdout when no structured result). Model content never consulted. Specs: 70/0 native (3 new: json success mentioning Unauthorized; stream-json success mentioning Unauthorized; is_error result carrying "OAuth session expired" → :auth). Deploying to zanebot + yopp by direct isaac.edn pin at Micah's request; registry pin follows verify.
+isaac-claude-code `bean/isaac-t098` @ **e61df08** (Release 0.1.12). `failed?` = nonzero exit ∨ result event `is_error` ∨ auth signature in the CLI's own text (stderr, result error text, or bare stdout when no structured result). Model content never consulted. Specs: 70/0 native (3 new: json success mentioning Unauthorized; stream-json success mentioning Unauthorized; is_error result carrying "OAuth session expired" → :auth). Deploying to zanebot + skiff by direct isaac.edn pin at Micah's request; registry pin follows verify.
 
 ## Second cause, same class (2026-09-18 15:26Z) — fixed in 53aa2bf
 
@@ -59,7 +59,7 @@ isaac-work-3's first Claude Code compaction (on e61df08) returned its summary, b
 - `parse-tool-calls` skips a fence whose payload is not a JSON object with `:name`.
 Specs: 72/0 native. Branch `bean/isaac-t098` @ **53aa2bf** (two commits, both under Release 0.1.12).
 
-Deploy state: yopp on 53aa2bf (restart 15:49Z, clean). zanebot on e61df08 (restart 15:12Z); 53aa2bf goes on once isaac-work-3's in-flight compaction finishes. isaac-work-2 compacted on Claude Code with e61df08: 753k → 51k tokens (15:43Z, ~30 min).
+Deploy state: skiff on 53aa2bf (restart 15:49Z, clean). zanebot on e61df08 (restart 15:12Z); 53aa2bf goes on once isaac-work-3's in-flight compaction finishes. isaac-work-2 compacted on Claude Code with e61df08: 753k → 51k tokens (15:43Z, ~30 min).
 
 zanebot on 53aa2bf too (restart 16:06Z, resume requeued 2, clean). Both hosts now carry both fixes; isaac-work-3 compaction rerun launched 16:07Z on claude-opus.
 
@@ -110,4 +110,4 @@ main-sha: isaac-claude-code f058b2cf9848af50c820d96876fcd783ce56eacc
 
 ## Hosts on squashed main (2026-09-18 17:0xZ, plan watch)
 
-yopp and zanebot re-pinned isaac.provider.claude-code 53aa2bf → **f058b2c** (main). yopp restart 17:00Z clean; zanebot restart 17:01Z clean (runner 8, resume requeued 2, no stale deliveries). Registry modules.edn still pins ff7df5f — advancing it is the zanebot train step for Micah.
+skiff and zanebot re-pinned isaac.provider.claude-code 53aa2bf → **f058b2c** (main). skiff restart 17:00Z clean; zanebot restart 17:01Z clean (runner 8, resume requeued 2, no stale deliveries). Registry modules.edn still pins ff7df5f — advancing it is the zanebot train step for Micah.

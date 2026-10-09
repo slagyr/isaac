@@ -20,7 +20,7 @@ about a failed delivery:
    :target (:target record)})
 ```
 
-Two defects, both hit while diagnosing a dead delivery on yopp 2026-09-24:
+Two defects, both hit while diagnosing a dead delivery on skiff 2026-09-24:
 
 1. **The error is dropped.** `send!` returns `{:ok false :transient? ... :error
    <text>}` and the worker throws `:error` away. Five `:comm.delivery/

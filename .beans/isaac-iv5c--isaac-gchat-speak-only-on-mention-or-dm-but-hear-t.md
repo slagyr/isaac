@@ -14,7 +14,7 @@ blocked_by:
     - isaac-bklu
 ---
 
-Micah, 2026-09-19: Yopp should not answer every message in a space (default :mentions stands; :all was a test setting), but when mentioned he should know what was said. Today a mention turn's input is just "<sender> <text>" of the mentioning message.
+Micah, 2026-09-19: Skiff should not answer every message in a space (default :mentions stands; :all was a test setting), but when mentioned he should know what was said. Today a mention turn's input is just "<sender> <text>" of the mentioning message.
 
 Do:
 1. Listen without speaking: non-mention events in a subscribed space are not dropped on the floor — the handler appends them (sender, thread, time, text) to a per-space rolling log under <root>/google/chat/<space>.ednl (bounded, no LLM, no turn). Gate reason :no-mention becomes :logged.

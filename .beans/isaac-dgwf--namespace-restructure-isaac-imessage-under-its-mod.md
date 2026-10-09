@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -44,7 +44,7 @@ isaac.api→isaac.agent.api; isaac.charge→isaac.agent.charge; isaac.comm.deliv
 
 **Docstring-only pointers fixed to match** (not blind substitution — read for intent first): `handbook_chapter_spec.clj`'s two prose mentions of `isaac.module.lifecycle`/`isaac.module.berths` (foundation internals it references as fact) and one of `isaac.module.discovery`; `bb.edn`'s `config-bypass-lint` doc string ("outside isaac.config.*") corrected to "isaac.foundation.config.*" to match the lint's actual `allowed-ns-prefixes` (the same trap isaac-davq found and fixed in foundation's own bb.edn); `PLAN.md`'s "Reuses message construction from `isaac.util.jsonrpc`" → `isaac.agent.util.jsonrpc`. Left alone (already correct): the handbook chapter's `isaac.agent`/`isaac.foundation` prose mentions (already the real new module prefixes), `imessage_steps.clj`'s docstring mention of `isaac.agent.module-steps` (already correct), the `:isaac.agent/comm` berth keyword and `:isaac.comm.imessage` module-id keyword throughout (data contracts, unchanged per the bean), and `isaac.comm.telly` in `deps.edn`'s `:features` alias (isaac-agent's own fixture-module id, not a code namespace).
 
-**Live-config greps (read-only, no edits made).** Both zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config` — grepped for every old upstream namespace token this repo used (isaac.api, isaac.comm.*, isaac.component.*, isaac.config.*, isaac.fs, isaac.logger, isaac.module.*, isaac.nexus, isaac.reconfigurable, isaac.scheduler.runtime, isaac.session.store.*, isaac.spec-helper, isaac.util.jsonrpc, isaac.step-tables, isaac.configurator-steps) — zero hits on either host. No config edits required.
+**Live-config greps (read-only, no edits made).** Both zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config` — grepped for every old upstream namespace token this repo used (isaac.api, isaac.comm.*, isaac.component.*, isaac.config.*, isaac.fs, isaac.logger, isaac.module.*, isaac.nexus, isaac.reconfigurable, isaac.scheduler.runtime, isaac.session.store.*, isaac.spec-helper, isaac.util.jsonrpc, isaac.step-tables, isaac.configurator-steps) — zero hits on either host. No config edits required.
 
 **Test results.** No `bb pins` task exists in this repo (git/sha literals in bb.edn/deps.edn are the pin sites, same as isaac-agent). `bb config-bypass-lint`: ok. `bb spec`: 67/67. `bb jvm-spec` (real JVM via `clojure -M:spec`, honors the `:spec` alias's now-corrected file list including the renamed `http_app_spec.clj`): 76/76. `bb jvm-features` (`clojure -M:features`): 23/23. All runs isolated via a scratch `HOME` per the isaac-davq/on0o precedent. No pre-existing failures encountered; nothing needed reproducing against pre-change main.
 

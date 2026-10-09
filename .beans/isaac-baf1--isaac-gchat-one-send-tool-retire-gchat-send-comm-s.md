@@ -10,7 +10,7 @@ updated_at: 2026-09-25T05:06:38Z
 
 ## Why (Micah, 2026-09-25)
 
-Three send tools overlapped on a yopp turn: comm__send (generic, queue-first,
+Three send tools overlapped on a skiff turn: comm__send (generic, queue-first,
 retries, per-comm send-schema), gchat__send (a second, direct-API path to the
 same post) and gmail__send. The model guessed, posted its answer with the tool,
 and the comm posted the answer again. Ruling: **agents keep all their tools;

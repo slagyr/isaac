@@ -8,7 +8,7 @@ created_at: 2026-09-30T00:46:06Z
 updated_at: 2026-09-30T00:46:06Z
 ---
 
-Follow-up from isaac-6ef2 (2026-09-29). Per-turn token totals on the claude-code provider are inflated several times over: yopp 2026-09-28 17:21Z reported turn prompt-tokens 27,817,085 while the CLI's own turn total was 4,757,749.
+Follow-up from isaac-6ef2 (2026-09-29). Per-turn token totals on the claude-code provider are inflated several times over: skiff 2026-09-28 17:21Z reported turn prompt-tokens 27,817,085 while the CLI's own turn total was 4,757,749.
 
 ## Cause (planner's reading)
 

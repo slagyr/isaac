@@ -11,7 +11,7 @@ updated_at: 2026-09-24T14:00:15Z
 Repo: **isaac-foundation** (`src/isaac/config/tree.clj`, and whatever path
 `config get` takes that `config validate` does not).
 
-Found on yopp while migrating it onto isaac-49zp's config layout.
+Found on skiff while migrating it onto isaac-49zp's config layout.
 
 ## Two defects, the second worse than the first
 
@@ -23,7 +23,7 @@ a `.md` file, or **a directory** — and nothing filters hidden names:
     (parse/dir?* (str dir "/" child)) [child :dir]
 
 Under isaac-49zp a directory *is* a key, so any subdirectory becomes a key or
-entity regardless of its name. On yopp, `config/crew/.removed-20260915/` — a
+entity regardless of its name. On skiff, `config/crew/.removed-20260915/` — a
 backup of a retired `claude` crew, stashed on 2026-09-15 and invisible to the
 old loader — was promoted to an entity, its `claude.edn` read as a field:
 
@@ -41,14 +41,14 @@ silently promoted it to configuration.
 
 ### 2. `config validate` passes a tree that `config get` cannot read
 
-Same tree, same loader, on yopp before the directory was moved:
+Same tree, same loader, on skiff before the directory was moved:
 
     $ isaac config validate
     OK - config is valid
 
     $ isaac config get defaults
     Type:     java.io.FileNotFoundException
-    Message:  /home/yopp/.isaac/config/crew/.removed-20260915 (Is a directory)
+    Message:  /home/skiff/.isaac/config/crew/.removed-20260915 (Is a directory)
     Location: src/isaac/main.clj:202:23
 
 Whatever path `get` takes tries to read the entity as a file; `validate` does
@@ -58,7 +58,7 @@ certified a tree that could not be read. An operator who validates before
 restarting — the discipline that has saved two live hosts this week — would
 have been told everything was fine.
 
-Fixing defect 1 hides this symptom on yopp but does not fix the divergence.
+Fixing defect 1 hides this symptom on skiff but does not fix the divergence.
 Both paths must agree on what the config tree is.
 
 ## Acceptance
@@ -81,9 +81,9 @@ agrees with itself.
 
 ## Live state
 
-yopp's stray directory was moved to `~/isaac-config-attic/crew-removed-20260915`
-rather than deleted, and yopp then loaded clean. No other dot-entry exists under
-`config/` on yopp; zanebot has none.
+skiff's stray directory was moved to `~/isaac-config-attic/crew-removed-20260915`
+rather than deleted, and skiff then loaded clean. No other dot-entry exists under
+`config/` on skiff; zanebot has none.
 
 ## Landed on main (2026-09-24)
 
@@ -115,7 +115,7 @@ form — reproduces the same crash:
     $ bb isaac --root <fx2> config get        → FileNotFoundException: …/config/crew/keaton (Is a directory)
 
 So `config get` was broken for *every* entity-directory tree, not only for the
-stray backup on yopp. Both fixtures now behave: no spurious key, no crash.
+stray backup on skiff. Both fixtures now behave: no spurious key, no crash.
 
 ### Root causes
 
@@ -199,7 +199,7 @@ I filed this as "a hidden backup directory got read as config." The worker's
 second fixture showed defect 2 has **nothing to do with hidden names**: an
 ordinary visible entity directory — `config/crew/keaton/_.edn`, isaac-49zp's
 flagship form — reproduces the same crash. So `isaac config get` has been broken
-on **every** tree using an entity directory since 49zp landed, and yopp's stray
+on **every** tree using an entity directory since 49zp landed, and skiff's stray
 backup was merely the first thing to expose it.
 
 Cause: the CLI resolves config once and threads it (isaac-v1la), and `config
@@ -222,8 +222,8 @@ threaded spec would have passed. `common_spec` now has a `like-real-fs` double.
 
 ### Live exposure
 
-Neither host is affected: checked both, and neither zanebot nor yopp has any
-entity directory (yopp's hidden one was moved to `~/isaac-config-attic/`). The
+Neither host is affected: checked both, and neither zanebot nor skiff has any
+entity directory (skiff's hidden one was moved to `~/isaac-config-attic/`). The
 fix matters for anyone adopting the entity-directory form, which is the form
 49zp exists to enable.
 
@@ -232,4 +232,4 @@ fix matters for anyone adopting the entity-directory form, which is the form
 Not required for correctness — the change adds one public fn and otherwise
 touches private fns; no sibling module references the changed surface. Needed
 only to ship. Hosts pick it up from their foundation install (brew keg on
-zanebot, source checkout on yopp), so shipping needs no module repins at all.
+zanebot, source checkout on skiff), so shipping needs no module repins at all.

@@ -11,10 +11,10 @@ updated_at: 2026-10-03T19:24:22Z
 parent: isaac-bv1l
 ---
 
-## Symptom (yopp, 2026-09-29)
+## Symptom (skiff, 2026-09-29)
 
-Micah sent Yopp a PNG over Google Chat. The file landed (~171KB, no
-`download failed` flag). Yopp opened it at the byte level: a valid PNG
+Micah sent Skiff a PNG over Google Chat. The file landed (~171KB, no
+`download failed` flag). Skiff opened it at the byte level: a valid PNG
 starts `0x89`; this file starts `EF BF BD` (UTF-8 for U+FFFD). ~37,790 of
 those replacement sequences were spread through the file. The payload
 cannot be reconstructed. JPEG would fail the same way — the codec is

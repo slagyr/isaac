@@ -35,7 +35,7 @@ The Pub/Sub push identity source accepts a bearer as Google when `aud` = `:googl
 ```
 cd isaac-google && bb features features/push_door.feature && bb ci
 ```
-Field: on yopp with Funnel on, a hand-crafted unsigned JWT with the right aud/email → 401; a real Pub/Sub push → 204 and `:google/push-received`.
+Field: on skiff with Funnel on, a hand-crafted unsigned JWT with the right aud/email → 401; a real Pub/Sub push → 204 and `:google/push-received`.
 
 
 ## Re-scoped (2026-09-18, Micah): use the generic verifier

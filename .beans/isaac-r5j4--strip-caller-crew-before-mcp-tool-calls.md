@@ -30,4 +30,4 @@ Extend `isaac-mcp/spec/isaac/mcp/runtime_spec.clj`, the example "strips injected
 
 ## Outcome
 
-Landed in isaac-mcp 9422702. `mcp-arguments` drops `caller_crew` with `session_key` and `state_dir`. The runtime spec records the map the fake server receives and expects only `query`. `bb spec` for that file: 29 examples, 0 failures. Yopp's pin is that sha and the server was restarted onto it.
+Landed in isaac-mcp 9422702. `mcp-arguments` drops `caller_crew` with `session_key` and `state_dir`. The runtime spec records the map the fake server receives and expects only `query`. `bb spec` for that file: 29 examples, 0 failures. Skiff's pin is that sha and the server was restarted onto it.

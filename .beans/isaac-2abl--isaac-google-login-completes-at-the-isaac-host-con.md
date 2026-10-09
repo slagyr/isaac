@@ -35,11 +35,11 @@ The redirect URI must be registered on the OAuth client in the GCP project (APIs
 
 ## Acceptance
 
-bb spec / bb features / bb ci green in isaac-google (and isaac-http if the route registration needs a berth change); one-time on yopp: `isaac google login` ends with the browser at the Isaac host and the token stored, no --code.
+bb spec / bb features / bb ci green in isaac-google (and isaac-http if the route registration needs a berth change); one-time on skiff: `isaac google login` ends with the browser at the Isaac host and the token stored, no --code.
 
 ## Related
 
-isaac-x37l (OIDC verification in isaac-http), isaac-q1iu (trust rules from config), the yopp rollout record (three re-logins on 2026-09-22/23).
+isaac-x37l (OIDC verification in isaac-http), isaac-q1iu (trust rules from config), the skiff rollout record (three re-logins on 2026-09-22/23).
 
 ## Handoff (worker, 2026-09-23)
 
@@ -131,7 +131,7 @@ public name than the push endpoint.
 
 ### Needs the live host
 
-- One real `isaac google login` on yopp against a Web OAuth client with the
+- One real `isaac google login` on skiff against a Web OAuth client with the
   redirect URI registered: the browser should land on the Isaac host and the
   terminal print `Signed in for organization <org>` with no `--code`. Nothing
   here has talked to Google.
@@ -145,8 +145,8 @@ public name than the push endpoint.
 
 main-sha: isaac-google 036025c (0.1.11)
 
-Planner check 2026-09-23: `bb spec` 250/0, `bb features` 36/0 on 036025c. Fast-forwarded to main; registry repinned. Prerequisite found by the worker: the redirect URI can only be registered on a Web application OAuth client; yopp uses a Desktop client, so a new Web client (id + secret into google.marigold.oauth) is needed before the flow works there. Edge left open: --code still exchanges against http://localhost:1/, so a code copied from the NEW consent screen on a host with a public base would mismatch — follow-up if it bites.
+Planner check 2026-09-23: `bb spec` 250/0, `bb features` 36/0 on 036025c. Fast-forwarded to main; registry repinned. Prerequisite found by the worker: the redirect URI can only be registered on a Web application OAuth client; skiff uses a Desktop client, so a new Web client (id + secret into google.marigold.oauth) is needed before the flow works there. Edge left open: --code still exchanges against http://localhost:1/, so a code copied from the NEW consent screen on a host with a public base would mismatch — follow-up if it bites.
 
 ## Amended 2026-09-23 (Micah): both client types must work
 
-The callback flow is opt-in: only `google.<org>.oauth.redirect-base` selects it; nothing is derived from the push endpoint any more, because a Desktop OAuth client cannot carry a redirect URI and a host on one must keep the paste-a-code login. google 0.1.12 (0b6bcc5). To use the callback on yopp: create a Web-application client with redirect URI https://<host>/google/oauth/callback, put its id/secret under google.marigold.oauth, set oauth.redirect-base to https://<host>.
+The callback flow is opt-in: only `google.<org>.oauth.redirect-base` selects it; nothing is derived from the push endpoint any more, because a Desktop OAuth client cannot carry a redirect URI and a host on one must keep the paste-a-code login. google 0.1.12 (0b6bcc5). To use the callback on skiff: create a Web-application client with redirect URI https://<host>/google/oauth/callback, put its id/secret under google.marigold.oauth, set oauth.redirect-base to https://<host>.

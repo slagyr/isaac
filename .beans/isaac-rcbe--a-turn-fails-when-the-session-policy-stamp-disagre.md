@@ -8,7 +8,7 @@ created_at: 2026-09-27T00:45:22Z
 updated_at: 2026-09-27T01:27:06Z
 ---
 
-Repo: **isaac-agent**. The turn chooses the session policy from the crew (`policy/for-request` reads `:crew <id> :session-policy`). The session record stores the policy it was created under, and that field is immutable, so the sessions index can list it. Those two are allowed to diverge, and when they do the turn still runs the crew policy. An episodes crew therefore opens episode containers and injects recall on a session whose record still says chronicle. Seen on Yopp `prompt-default` (created 2026-09-14, stamped chronicle, crew set to episodes on 2026-09-17): the 2026-09-26 turn opened episode `20260926233010390` on it.
+Repo: **isaac-agent**. The turn chooses the session policy from the crew (`policy/for-request` reads `:crew <id> :session-policy`). The session record stores the policy it was created under, and that field is immutable, so the sessions index can list it. Those two are allowed to diverge, and when they do the turn still runs the crew policy. An episodes crew therefore opens episode containers and injects recall on a session whose record still says chronicle. Seen on Skiff `prompt-default` (created 2026-09-14, stamped chronicle, crew set to episodes on 2026-09-17): the 2026-09-26 turn opened episode `20260926233010390` on it.
 
 ## Decision (2026-09-27, Micah)
 

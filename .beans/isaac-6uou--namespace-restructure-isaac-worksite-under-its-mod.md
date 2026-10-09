@@ -24,11 +24,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -41,7 +41,7 @@ merged to main — CI is red for a reason outside this repo; see below).
 
 **Mapping.** 11 files touched. This repo's own namespaces were already `isaac.worksite.*` except one flat outlier: `feature-steps/isaac/worksite_steps.clj` (ns `isaac.worksite-steps`) → moved to `feature-steps/isaac/worksite/worksite_steps.clj` (ns `isaac.worksite.worksite-steps` — kept the `worksite-steps` tail, matching the isaac-cron precedent, since gherclj's `isaac.**-steps` glob requires the last segment to literally end `-steps`; `isaac.worksite.steps` would silently stop matching and drop the step defs). Every foundation require got the module prefix: `isaac.cli.{api,host,registry}`, `isaac.config.{api,loader,root,schema-compose,schema.resolve,config-steps}`, `isaac.fs` (plus the `isaac.fs.RealFs` compiled-class check in `lock.clj`, the same class-name trap isaac-davq/isaac-on0o hit), `isaac.logger`, `isaac.module.{protocol,discovery,berths}`, `isaac.nexus` → `isaac.foundation.*`; `isaac.resource-pool` → `isaac.agent.resource-pool`. `resources/isaac-manifest.edn`'s `:factory isaac.module.protocol/module` → `isaac.foundation.module.protocol/module`; `bb.edn`'s `config-bypass-lint` doc string corrected to name `isaac.foundation.config.*` (the isaac-davq/on0o/isaac-hail precedent). Two prose-only docstring fixes in `spec/isaac/worksite/handbook_chapter_spec.clj` (`isaac.module.discovery`, `isaac.module.berths` → `isaac.foundation.*`). `:isaac.agent/resource-pool-types`, `:isaac/cli`, `:isaac.config/check` left alone (berth/config keywords, data contracts). `resources/isaac/worksite/handbook.md` needed no edits — its `isaac.agent`/`isaac.foundation` chapter cross-references already named the real post-rename module ids.
 
-**Live-config greps (read-only, no edits needed).** zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config`: zero hits for `isaac.(cli|config|fs|module|nexus|resource-pool|logger|worksite-steps).` on either host. No config edits required.
+**Live-config greps (read-only, no edits needed).** zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config`: zero hits for `isaac.(cli|config|fs|module|nexus|resource-pool|logger|worksite-steps).` on either host. No config edits required.
 
 **Test results.** `bb spec`: 21/21. `bb jvm-spec` (real JVM via `clojure -M:spec`): 21/21. `bb ci`/`bb jvm-features`: **1 of 8 examples fails, reproducibly**, in `features/worksite/lock.feature`'s "two members run two turns; a third waits and takes the first member released" — `session "harbor" has transcript matching:` times out after 30s (`isaac.agent.session.session-steps/await-turn!`). Confirmed **not pre-existing**: the identical scenario passes clean (8/8, ~3.6s) against pre-change main (old pins, old namespaces).
 

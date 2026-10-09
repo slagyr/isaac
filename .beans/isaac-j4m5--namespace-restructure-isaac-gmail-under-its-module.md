@@ -24,11 +24,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -90,8 +90,8 @@ green on pre-change main with old pins):**
    glob either (flagged in the parent brief).
 
 **Live config**: read-only grep of `~/.isaac/config` on zanebot (no gmail
-config present) and yopp (`gmail-routes/micah.edn`, `isaac.edn`) for every
-renamed namespace — no hits. yopp's `isaac.edn` only names the `:isaac.comm.gmail`
+config present) and skiff (`gmail-routes/micah.edn`, `isaac.edn`) for every
+renamed namespace — no hits. skiff's `isaac.edn` only names the `:isaac.comm.gmail`
 module id and the `:gmail` comm-type keyword, both unchanged data contracts.
 No config edits needed on either host.
 

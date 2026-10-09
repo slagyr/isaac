@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -61,7 +61,7 @@ No isaac-agent namespace was referenced anywhere in this repo (agent is only a `
 
 **No non-obvious/hand-fix traps found** (no class-name strings, no escaped-dot regexes, no lint-allowlist file paths, no keyword-mirrors-namespace cases) — this repo's foundation usage is all plain `:require` symbols and a couple of doc-comment prose mentions.
 
-**Live-config greps (read-only, no edits needed).** zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config`: no hits for `isaac.handbook`, `isaac.config.mutate`, `isaac.module.protocol`, `isaac.cli.host`, `isaac.fs`, `isaac.logger`, or `isaac.nexus` on either host. No config edits required.
+**Live-config greps (read-only, no edits needed).** zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config`: no hits for `isaac.handbook`, `isaac.config.mutate`, `isaac.module.protocol`, `isaac.cli.host`, `isaac.fs`, `isaac.logger`, or `isaac.nexus` on either host. No config edits required.
 
 **Test results.** `bb lint-cli-host`: ok. `bb spec`: 42/42, 0 failures. `bb features`: 22/22, 0 failures. `bb ci` (lint-cli-host + spec + features, using the real pinned git shas fetched fresh, not `:dev-local`): all green. No `bb jvm-spec` task exists in this repo.
 

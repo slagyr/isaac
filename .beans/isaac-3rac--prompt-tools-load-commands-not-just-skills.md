@@ -23,7 +23,7 @@ Expand the prompt tools so a crew can list and load commands the same way it loa
 
 One merged tool family replaces the skill tools (clean cutover, no aliases): `prompt__list` (every catalog entry with its kind: skill, command, rule; line format `- <name> (<kind>): <description>`, sorted) and `prompt__load` (`name`, optional `kind`, optional `resource` for skill bundles; a command renders with its declared skills via the catalog's command renderer; unknown → error "unknown prompt: <name>"). Grant `:prompt/*` replaces `:skill/*`.
 - The @wip scenarios in isaac-agent `features/prompts/prompt_tools.feature`, plus the moved scenarios in `skill_activation.feature`, `skill_resources.feature`, `tool/permissions.feature`, `tool/window_cache.feature`, pass with @wip removed.
-- Update every mention of skill__list/skill__load/list_skills/load_skill in agent src, handbook chapter, README, and isaac/.toolbox skills/commands (grep). List in the bean any zanebot/yopp crew configs that grant `:skill/*` (read-only grep); the planner edits hosts.
+- Update every mention of skill__list/skill__load/list_skills/load_skill in agent src, handbook chapter, README, and isaac/.toolbox skills/commands (grep). List in the bean any zanebot/skiff crew configs that grant `:skill/*` (read-only grep); the planner edits hosts.
 - `bb ci`, `bb jvm-spec`, `bb jvm-features` green.
 
 feature-baseline: isaac-agent fead24a5574b7260b74a99b3453abfbe5168013b
@@ -52,7 +52,7 @@ feature-blob: isaac-agent features/tool/window_cache.feature cc9e28553b9758b7dc6
     `bebop.edn`, `keaton.edn`, `perceptor.edn`, `zane.edn`,
     `rocksteady.edn`, `qwen.edn`, `mixmaster.edn`, `ratchet.edn` all grant
     `:skill/*`.
-  - **yopp** (`~/.isaac/config`): no `:skill/` grants found.
+  - **skiff** (`~/.isaac/config`): no `:skill/` grants found.
 - `bb ci` and `bb jvm-spec` green. `bb jvm-features` (HOME isolated,
   `ISAAC_TEST_TIMEOUT_MS=600000` — the shared 60s helper timeout is too
   short for this suite, same as the native `features` task's documented

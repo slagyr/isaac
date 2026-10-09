@@ -14,7 +14,7 @@ Repo: **isaac-google** (`src/isaac/google/oauth.clj`, `src/isaac/google/token.cl
 
 ### 1. A refresh token dies in ~15 hours
 
-yopp's Google login history and the first failure that followed it:
+skiff's Google login history and the first failure that followed it:
 
     2026-09-23T15:05Z  google/login-completed  (tenant :marigold)
     2026-09-24T05:55Z  invalid_grant           — 14h50m later
@@ -24,7 +24,7 @@ A refresh token should persist indefinitely — until revoked, unused for six
 months, or capped by a publishing-status policy. None of those applies here
 (see below). It lasted under fifteen hours.
 
-While it was dead, yopp could neither fetch nor send: `gchat/fetch-failed`,
+While it was dead, skiff could neither fetch nor send: `gchat/fetch-failed`,
 five `gchat.send/failed` and a `comm.delivery/dead-lettered` on a reply to
 `spaces/26gscq…`. A DM sent to it was never seen. `systemctl is-active` said
 `active` and `isaac config validate` said `OK` throughout.
@@ -58,7 +58,7 @@ by another consent against the same client.
 Unconditional. Every `invalid_grant` is reported as a Testing-mode expiry
 regardless of the project's actual publishing status.
 
-**For this project that is impossible.** The `marigold-yopp` consent screen is
+**For this project that is impossible.** The `marigold-skiff` consent screen is
 **User type: Internal**. Internal apps have no Testing publishing state and no
 7-day refresh-token cap. The message named a cause that cannot occur in this
 deployment, sent the operator to a console page with nothing to change, and
@@ -83,13 +83,13 @@ when a 7-day token was actually observed at login.
   documented as impossible, with reasoning).
 - `invalid-grant-message` states no cause it has not detected. Spec coverage for
   the detected-7-day-token case and the unknown-cause case.
-- yopp survives more than 24 hours without re-login. That is the real proof and
+- skiff survives more than 24 hours without re-login. That is the real proof and
   cannot be met from the suite.
 
 ## Evidence trail
 
 Both hosts run isaac.google `48625f2`. zanebot configures no Google tenant, so
-this is yopp-only today. yopp's `auth.json` stores `expires` = the *access*
+this is skiff-only today. skiff's `auth.json` stores `expires` = the *access*
 token's 1-hour expiry; nothing on disk records the refresh token's intended
 lifetime, which is part of why this is hard to observe.
 
@@ -117,7 +117,7 @@ is benign for this client on the evidence available, so **the ~15h cause
 remains unidentified.**
 
 (The fingerprint is a truncated sha256, never the token. Probe kept at
-`/tmp/tokfp.sh` on yopp.)
+`/tmp/tokfp.sh` on skiff.)
 
 ## Next hypothesis to test first: a Workspace session-control policy
 
@@ -145,7 +145,7 @@ before more code is written against defect 1.
   body carries no `expires_in`, and the login-time observation at `cli.clj:189`
   is not persisted. Making the hint fire for real means changing the auth.json
   entry shape in isaac-agent — out of scope here.
-- yopp survives >24h without re-login — **open, and now the only real proof.**
+- skiff survives >24h without re-login — **open, and now the only real proof.**
   Re-fingerprint after 2026-09-25T16:00Z.
 
 ## ROOT CAUSE FOUND 2026-09-24 — the pubsub scope drags the grant under a Cloud reauth policy
@@ -165,7 +165,7 @@ configured. That page states, verbatim:
 > The reauthentication policy above also applies to **non-Google apps**
 > requiring Cloud Platform scope.
 
-`auth/pubsub` is a Cloud Platform scope, so yopp's grant is in policy, and the
+`auth/pubsub` is a Cloud Platform scope, so skiff's grant is in policy, and the
 reauthentication frequency — default **16 hours** — expires it. Measured
 interval was **14h50m**. That matches, and it explains every property that made
 this confusing:
@@ -203,12 +203,12 @@ Immediate unblocks available to the operator, in preference order:
   **not** the cause; keep it, do not credit it.
 - Defect 1 — **cause identified as an external Workspace policy.** The code
   change that follows is removing the Cloud scope from the user grant.
-- "yopp survives >24h" — still the proof, but now predictable: it will fail
+- "skiff survives >24h" — still the proof, but now predictable: it will fail
   again around 2026-09-25T06:30Z unless option 1 or 2 is applied first.
 
 ## Status 2026-09-24 22:5x — the fix is deployed; one observation remains
 
-Deployed to yopp: isaac-google `5cdf807`, which carries this bean's
+Deployed to skiff: isaac-google `5cdf807`, which carries this bean's
 `invalid-grant-message` fix, isaac-286x's scope removal, and isaac-clly. The
 operator re-ran `isaac google login --tenant marigold` after the scope was
 removed, so the live grant no longer carries `auth/pubsub`.
@@ -221,12 +221,12 @@ With the scope gone the policy should no longer apply.
 - Re-login after the scope removal: 2026-09-24, evening
 - **If nothing fails by roughly 2026-09-25T15:00Z, the fix is confirmed.**
 
-What to look for on yopp: `invalid_grant`, `gchat/fetch-failed`,
+What to look for on skiff: `invalid_grant`, `gchat/fetch-failed`,
 `gchat.send/failed`, or a `comm.delivery/dead-lettered` on a Chat reply. The
 failure is silent in every other respect — `systemctl is-active` says active
 and `isaac config validate` says OK throughout, which is what made it hard.
 
-A refresh-token fingerprint probe is at `/tmp/tokfp.sh` on yopp; it prints a
+A refresh-token fingerprint probe is at `/tmp/tokfp.sh` on skiff; it prints a
 truncated sha256 only, never the token. An unchanged fingerprint alongside an
 `invalid_grant` means server-side revocation (policy), not a token Isaac
 mishandled.

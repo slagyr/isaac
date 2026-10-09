@@ -12,7 +12,7 @@ updated_at: 2026-09-19T21:03:52Z
 parent: isaac-gym1
 ---
 
-Design note (Micah, 2026-09-19), parked. Prompted by watching Google's refresh/access split keep yopp signed in unattended.
+Design note (Micah, 2026-09-19), parked. Prompted by watching Google's refresh/access split keep skiff signed in unattended.
 
 Today every Isaac principal is a long-lived bearer secret (hashed in config, scoped, :expires, mint/rotate/revoke, burst-guarded). OIDC (isaac-4sqh) lets Isaac VERIFY short-lived tokens others issue; Isaac never ISSUES one. A leaked bearer is good until someone notices.
 

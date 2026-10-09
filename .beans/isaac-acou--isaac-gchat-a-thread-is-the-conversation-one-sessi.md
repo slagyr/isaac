@@ -1,6 +1,6 @@
 ---
 # isaac-acou
-title: 'isaac-gchat: thread-aware replies inside the space session — every message carries its thread, and the comm''s guidance tells Yopp to build context from the thread it is answering'
+title: 'isaac-gchat: thread-aware replies inside the space session — every message carries its thread, and the comm''s guidance tells Skiff to build context from the thread it is answering'
 status: completed
 type: feature
 priority: high
@@ -14,10 +14,10 @@ updated_at: 2026-09-23T16:44:47Z
 ## Decision (Micah, 2026-09-23)
 
 A Chat thread is a conversation. Today the session is per space (isaac-ihuc), so
-every thread in a DM or a room shares one transcript and Yopp's reply to a
+every thread in a DM or a room shares one transcript and Skiff's reply to a
 thread is informed by every other thread in the space. Threads then offer no
 value. Segregate them: the thread is the session, and replying in-thread —
-which Yopp already does — becomes exactly right. This supersedes isaac-1nlj
+which Skiff already does — becomes exactly right. This supersedes isaac-1nlj
 (DM replies as plain messages): a plain DM message opens a new thread, and
 that is a new conversation.
 
@@ -33,7 +33,7 @@ that is a new conversation.
 - Mention-only rooms: a mention starts or continues the thread's session, and
   the turn's context is that thread only. If the thread has history before
   the first mention, seed the session with the thread's earlier messages
-  (`messages.list` filtered by thread, once) so Yopp knows what it was pulled
+  (`messages.list` filtered by thread, once) so Skiff knows what it was pulled
   into.
 - DMs: `:respond :all` per thread; the reply goes in-thread.
 - Rename follows the space; thread sessions carry the space's current name.
@@ -51,8 +51,8 @@ that is a new conversation.
 
 ## Acceptance
 
-bb spec / bb features / bb ci green in isaac-gchat; one-time on yopp: two
-parallel DM threads with Yopp stay separate.
+bb spec / bb features / bb ci green in isaac-gchat; one-time on skiff: two
+parallel DM threads with Skiff stay separate.
 
 ## Related
 
@@ -60,26 +60,26 @@ isaac-ihuc, isaac-xy2i (canon), isaac-1nlj (superseded), isaac-qry7.
 
 ## Revised (Micah, 2026-09-23): keep the session per space
 
-"We do not want to create a new session for each thread. Keep the session-per-space mapping. But it would be good to track which messages belong to which threads. The gchat comm should add extra system prompt to tell Yopp that it needs to group messages by thread to build thread context before replying."
+"We do not want to create a new session for each thread. Keep the session-per-space mapping. But it would be good to track which messages belong to which threads. The gchat comm should add extra system prompt to tell Skiff that it needs to group messages by thread to build thread context before replying."
 
 The session-per-thread design above is withdrawn. What stands:
 
-- **Session per space** (isaac-ihuc canon), unchanged. One transcript holds every thread in the space, which is what lets Yopp hear a whole room while speaking only when spoken to (isaac-iv5c).
-- **Every inbound message names its thread.** The transcript entry the gchat comm writes for a Chat message carries the thread id in a stable, visible form — e.g. a leading marker `[thread:mtEwy7PEiSs]` before `Micah Martin: …` in the rendered user text, and `:thread` on the entry metadata. Yopp's own replies carry the same marker for the thread they went to. Thread ids are opaque; a short stable form (last 8–10 chars) is fine as long as it is unique within the space.
+- **Session per space** (isaac-ihuc canon), unchanged. One transcript holds every thread in the space, which is what lets Skiff hear a whole room while speaking only when spoken to (isaac-iv5c).
+- **Every inbound message names its thread.** The transcript entry the gchat comm writes for a Chat message carries the thread id in a stable, visible form — e.g. a leading marker `[thread:mtEwy7PEiSs]` before `Micah Martin: …` in the rendered user text, and `:thread` on the entry metadata. Skiff's own replies carry the same marker for the thread they went to. Thread ids are opaque; a short stable form (last 8–10 chars) is fine as long as it is unique within the space.
 - **Comm guidance.** gchat passes `:guidance` on the charge (the seam hail uses for its metadata preamble) with a short standing instruction: messages are grouped by thread markers; the message that addressed you names the thread you are answering; build your context from that thread first — other threads in this space are separate conversations, use them only if the current thread refers to them; reply in the addressed thread. Wording lives in one place (a gchat namespace), not in the crew soul.
-- **Reply target** unchanged: in-thread for the message that triggered the turn. A plain new DM message opens a new thread and Yopp replies in it — that is the correct shape, so isaac-1nlj stays scrapped.
+- **Reply target** unchanged: in-thread for the message that triggered the turn. A plain new DM message opens a new thread and Skiff replies in it — that is the correct shape, so isaac-1nlj stays scrapped.
 - **Mention-only rooms**: because the comm already hears every message in a joined space, the thread's earlier messages are already in the transcript when a mention arrives; no seeding needed. A message that arrived before the space was joined is simply absent (acceptable).
 
 ## Scenarios (inbound.feature / outbound.feature, Marigold)
 
-- two threads in one DM, interleaved; Yopp is addressed in thread B → the request's system text carries the thread guidance; both threads' messages are in the transcript, each with its marker; the reply goes to thread B.
+- two threads in one DM, interleaved; Skiff is addressed in thread B → the request's system text carries the thread guidance; both threads' messages are in the transcript, each with its marker; the reply goes to thread B.
 - a room with a mention in thread A after three earlier A messages and two B messages → transcript entries carry the right markers; reply in A.
-- Yopp's reply entry carries the marker of the thread it went to.
+- Skiff's reply entry carries the marker of the thread it went to.
 - the guidance text is present exactly once in the system prompt of a gchat-originated turn and absent from a non-gchat turn.
 
 ## Acceptance
 
-bb spec / bb features / bb ci green in isaac-gchat; one-time on yopp: two DM threads answered in the right threads with answers that stay on their own topic.
+bb spec / bb features / bb ci green in isaac-gchat; one-time on skiff: two DM threads answered in the right threads with answers that stay on their own topic.
 
 ## Handoff (worker, 2026-09-23)
 
@@ -102,7 +102,7 @@ triggering message and merely-heard messages already carried `:thread` on
 the `transcript/entry` map (gate.clj's decision already had it) — only the
 *rendered text* needed the marker.
 
-**Yopp's own reply marker (`isaac.comm.gchat`).** `on-reply*` (now
+**Skiff's own reply marker (`isaac.comm.gchat`).** `on-reply*` (now
 `reply!`/`divert-reply!`/`note-own-reply!` post isaac-qry7) calls
 `note-own-reply!` only on a *successful* post: it appends a `:self? true`
 entry to the space's local transcript buffer (`isaac.comm.gchat.transcript`)
@@ -154,4 +154,4 @@ own origin_framing.feature).
 
 main-sha: isaac-gchat dac0e9b (0.2.8)
 
-Planner check 2026-09-23: bb spec 142/0, bb features 42/0. Fast-forwarded. Not yet deployed — rides with isaac-h5v8 in one yopp upgrade.
+Planner check 2026-09-23: bb spec 142/0, bb features 42/0. Fast-forwarded. Not yet deployed — rides with isaac-h5v8 in one skiff upgrade.

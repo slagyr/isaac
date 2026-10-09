@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -62,7 +62,7 @@ mentioned in a string), `isaac.cron`/`isaac.episodes` (other modules' ids,
 mentioned in a comment), `:isaac.agent/tools` and other `:isaac.config/*`
 berth keywords (data contracts, per the bean).
 
-**Live-config greps (read-only, no edits needed).** zanebot and yopp
+**Live-config greps (read-only, no edits needed).** zanebot and skiff
 `~/.isaac/config`: no hits for any of the renamed namespace tokens on either
 host.
 
@@ -143,7 +143,7 @@ isaac-http landed its own migration (isaac-fkqz, main `56998543b3e5c40593d2a3ea9
 
 Full grep of the tracked tree for any remaining pre-rename namespace token (foundation/agent/http) outside the justified exceptions in the prior note: 0 hits.
 
-No live-config edits were needed (checked before landing, see above — no hits on zanebot or yopp for any renamed namespace token).
+No live-config edits were needed (checked before landing, see above — no hits on zanebot or skiff for any renamed namespace token).
 
 **For isaac-gchat / isaac-gmail:** pin isaac-google to `c9c92f868db5bcd03510be70772e29c2c4003adb`.
 

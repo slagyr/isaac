@@ -20,7 +20,7 @@ Repo: **isaac-http**. Blocked by the strategy chain bean (auth strategies). Mica
 
 `wrap-auth` computes `auth-on?` from whether config mentions principals, a token or an identity verifier. "Never configured" and "deliberately open" are therefore indistinguishable, so losing the config silently converts a locked server into an open one. That happened on zanebot the same evening: a module upgrade rewrote `isaac.edn`, the retired `:server :auth :token` went with it, and the server — public through Tailscale Funnel — served every route unauthenticated for about twenty minutes. Nothing warned, because that is a valid configuration today.
 
-Inferring safety from the bind address does not work: yopp binds 127.0.0.1 and is still reachable across the tailnet because Tailscale serve proxies to it. The server cannot see what sits in front of it.
+Inferring safety from the bind address does not work: skiff binds 127.0.0.1 and is still reachable across the tailnet because Tailscale serve proxies to it. The server cannot see what sits in front of it.
 
 ## Change
 

@@ -50,7 +50,7 @@ Pub/Sub binding or a dead Funnel all look like nobody talking.
 ## Acceptance
 
 - Suites green in isaac-google; `bb ci`.
-- One-time on yopp after deploy: server.log shows at most one silence line per
+- One-time on skiff after deploy: server.log shows at most one silence line per
   transition per tenant, and one heartbeat line per hour at debug.
 
 ## Related

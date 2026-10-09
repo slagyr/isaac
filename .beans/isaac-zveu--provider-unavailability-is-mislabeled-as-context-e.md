@@ -30,7 +30,7 @@ Ordering note: `(:error result)` is matched first (line 455), so this only bites
 
 ## Field evidence (2026-09-17)
 
-While yopp's `claude-code` provider was returning HTTP 429
+While skiff's `claude-code` provider was returning HTTP 429
 (`"You've hit your session limit · resets 6:40pm (UTC)"`), the turn path surfaced
 context exhaustion. That label is what led me to misdiagnose the incident as a context
 problem before reading the raw provider payload. The wrong label cost real diagnosis

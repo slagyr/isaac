@@ -21,7 +21,7 @@ field of `:google` as an unknown key:
     warning: :google.push.service-account  - unknown key
     OK - config is valid
 
-Nothing is actually dropped — verified on yopp 2026-09-21: `isaac config get
+Nothing is actually dropped — verified on skiff 2026-09-21: `isaac config get
 google` returns both maps whole, `isaac google login` builds a correct consent
 URL with the client id, and the push door's trust rule resolves its audience
 from `[:google :push :endpoint]`. The validator is wrong, not the loader.

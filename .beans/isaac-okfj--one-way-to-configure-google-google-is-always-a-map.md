@@ -12,7 +12,7 @@ parent: isaac-bv1l
 Micah, 2026-09-21: "I find that offering two ways to configure the same thing
 is confusing. It's kind of ambiguous. It makes you wonder which way you should
 do it, which way is the right way, and which way is the wrong way. I would be
-inclined to change our Yopp config to the tenant structure and just not support
+inclined to change our Skiff config to the tenant structure and just not support
 a default tenant."
 
 isaac-1zkz shipped `:google` as two shapes: the flat map a one-organization
@@ -31,8 +31,8 @@ spends five lines claiming it is broken.
 One shape. `:google` is a map of organization id to that organization's
 config. There is no default tenant and no flat form.
 
-    :google {:marigold {:project "marigold-yopp"
-                       :topic   "projects/marigold-yopp/topics/isaac"
+    :google {:marigold {:project "marigold-skiff"
+                       :topic   "projects/marigold-skiff/topics/isaac"
                        :oauth   {...}
                        :push    {...}}}
 
@@ -51,7 +51,7 @@ config. There is no default tenant and no flat form.
   exactly one organization — that is a default *value*, not a second config
   shape, and it stays.
 
-## Migrating a host (yopp is the only one)
+## Migrating a host (skiff is the only one)
 
 1. rewrite `:google` as `{<id> {...}}`;
 2. move the credential entry in `~/.isaac/auth.json` from `"google"` to
@@ -103,7 +103,7 @@ gchat, then gmail.
 Suites: isaac-google 143 specs / 28 features; isaac-gchat 84 / 27;
 isaac-gmail 48 / 13 — 0 failures.
 
-Host migration (yopp) is still the human step in "Migrating a host" above:
+Host migration (skiff) is still the human step in "Migrating a host" above:
 rewrite `:google` nested, move the `auth.json` entry from `"google"` to
 `"google/<id>"`, restart.
 
@@ -139,4 +139,4 @@ main-sha: isaac-google dfc7f5dd28bef7384400447bae11e1efd02e53af
 main-sha: isaac-gchat e09bf38e6cf158b89c6eefa15aaa2f1379aca9d2
 main-sha: isaac-gmail 49d848553da336596d855c05d1bba6b781cb421f
 
-Host migration (yopp) remains the human step in "Migrating a host" above: rewrite `:google` nested, move the `~/.isaac/auth.json` entry from `"google"` to `"google/<id>"`, restart.
+Host migration (skiff) remains the human step in "Migrating a host" above: rewrite `:google` nested, move the `~/.isaac/auth.json` entry from `"google"` to `"google/<id>"`, restart.

@@ -13,7 +13,7 @@ Ruling: Micah, 2026-09-30. Drop the "siblings are all files" placement rule that
 - **Existing entry:** written where it already lives. An entity file never becomes inline, and an inline entry never becomes a file.
 - **New entry:** its own entity file if `:prefer-entity-files` is true, otherwise inline in `isaac.edn`.
 
-Both live instances (yopp, zanebot) set `:prefer-entity-files true`, so crews/cron jobs created there (including via `handbook__configure`) still land as files.
+Both live instances (skiff, zanebot) set `:prefer-entity-files true`, so crews/cron jobs created there (including via `handbook__configure`) still land as files.
 
 ## Wanted
 

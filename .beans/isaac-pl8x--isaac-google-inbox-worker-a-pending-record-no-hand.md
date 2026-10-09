@@ -11,7 +11,7 @@ created_at: 2026-09-23T13:23:51Z
 updated_at: 2026-09-23T16:07:03Z
 ---
 
-## Observed (yopp, 2026-09-23 03:00–03:22Z)
+## Observed (skiff, 2026-09-23 03:00–03:22Z)
 
 `isaac google smoke --send-live` published probe 20295779321476340 (type isaac.google.smoke/probe). The door accepted it into inbox/pending and the smoke reported PASS. From then on the inbox worker (2 s cadence) logged `:google/handler-missing` for that record on every tick — about 1,800 warnings an hour — because no handler claims that type and an unhandled record stays pending. Stopped by hand: the record was moved to google/inbox/unhandled/.
 
@@ -28,7 +28,7 @@ updated_at: 2026-09-23T16:07:03Z
 
 ## Acceptance
 
-bb spec / bb features / bb ci green in isaac-google; one-time on yopp: run the smoke with --send-live and confirm the log stays quiet afterwards.
+bb spec / bb features / bb ci green in isaac-google; one-time on skiff: run the smoke with --send-live and confirm the log stays quiet afterwards.
 
 ## Handoff (worker, 2026-09-23)
 
@@ -86,7 +86,7 @@ Test commands and counts (from the isaac-google worktree):
   like `tools_spec.clj`; not something introduced here)
 
 Not done (out of scope / needs a live host, per bean acceptance): the
-one-time yopp check — run `isaac google smoke --send-live` and confirm the
+one-time skiff check — run `isaac google smoke --send-live` and confirm the
 log stays quiet afterward. No real Google calls were made from the
 worktree.
 

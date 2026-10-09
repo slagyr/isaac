@@ -21,7 +21,7 @@ Child 4 of isaac-ugpq. Open: one-line notice on suspend or silence until the rep
 
 - On a turn that ends in an error, gchat posts a short in-thread notice naming the failure class (provider error, tool failure, delivery failure), never a stack trace, never a raw CLI payload.
 - On provider weather (the drive parks the turn: rate-limited, auth, stall), gchat posts one notice with the reason and the retry time when known ("Out of tokens until 4:40pm; I will answer then"), and one when the turn resumes only if the reply itself is not the next message.
-- The attention comm (system-scoped, yopp: Micah's DM) still gets the operator alert; the originator notice is in addition, not instead.
+- The attention comm (system-scoped, skiff: Micah's DM) still gets the operator alert; the originator notice is in addition, not instead.
 - Same seam for gmail later.
 
 Scenarios in gchat outbound.feature + agent features for the on-turn-end result shape. Status → todo, high.

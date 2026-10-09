@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -101,10 +101,10 @@ only as a string literal in a negative-dependency test); `isaac.edn`
 (config filename mentions).
 
 **Live-config greps (read-only, no edits needed).** zanebot
-(`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`)
+(`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`)
 `~/.isaac/config`: only `:isaac.hooks` module-id keyword hits on zanebot
 (`modules.edn` and two dated backup snapshots of `isaac.edn`), no hits at
-all on yopp. Checked every hook entity file under zanebot's
+all on skiff. Checked every hook entity file under zanebot's
 `~/.isaac/config/hooks/*.md` for a `:factory` frontmatter field (the one
 way a live hook config could name a code symbol) — none set one. No
 config edits required on either host.

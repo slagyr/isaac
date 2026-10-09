@@ -12,7 +12,7 @@ updated_at: 2026-09-22T22:47:53Z
 parent: isaac-bv1l
 ---
 
-Micah, 2026-09-19 (first yopp rollout): listing every space in comms.gchat.gchat/spaces is the Discord channel-map chore again; the entries exist for two reasons — the gate fails closed on unlisted spaces, and the registration timer subscribes per configured key.
+Micah, 2026-09-19 (first skiff rollout): listing every space in comms.gchat.gchat/spaces is the Discord channel-map chore again; the entries exist for two reasons — the gate fails closed on unlisted spaces, and the registration timer subscribes per configured key.
 
 Add `gchat/spaces :all` (or `gchat/discover true`): on each registration tick, `spaces.list` (Chat API, user auth, filter SPACE and DIRECT_MESSAGE as configured) yields the spaces the account is a member of; the timer subscribes to each; the gate routes unlisted-but-discovered spaces with defaults (session gchat-<space>, :respond :mentions in spaces / :all in DMs, crew = gchat/crew default). Explicit entries remain overrides. A space the account leaves is unsubscribed on the next tick (existing delete path). Inviting the account to a space is now granting ingest — document that.
 
@@ -20,15 +20,15 @@ Scenarios (worker writes; registrations.feature + inbound.feature): discovered s
 
 ## Moved here from isaac-dymn (planner 2026-09-20)
 
-Bumped 2026-09-19 (Micah): DMs are a space too and are not subscribed unless listed, so today a DM to yopp@ is never heard. Discovery (spaces.list, DMs included) is what makes DMs just work.
+Bumped 2026-09-19 (Micah): DMs are a space too and are not subscribed unless listed, so today a DM to skiff@ is never heard. Discovery (spaces.list, DMs included) is what makes DMs just work.
 
 
 
-Micah 2026-09-19: the default is 'a space is a conversation and a conversation is a session' — every space Yopp is a member of (DMs included) routes to a canonical session without any config; entries only override. Canonical session NAME should be readable: the space displayName for named spaces (gchat/yopp-test), the other member's displayName for a DM (gchat/dm/hieronymus-finch), with the space id carried as a session tag (space:AAQA7rg5Uyc) so a rename never orphans the session. spaces.get / spaces.members give the names.
+Micah 2026-09-19: the default is 'a space is a conversation and a conversation is a session' — every space Skiff is a member of (DMs included) routes to a canonical session without any config; entries only override. Canonical session NAME should be readable: the space displayName for named spaces (gchat/skiff-test), the other member's displayName for a DM (gchat/dm/hieronymus-finch), with the space id carried as a session tag (space:AAQA7rg5Uyc) so a rename never orphans the session. spaces.get / spaces.members give the names.
 
 
 
-Tenants (isaac-1zkz): discovery runs per tenant with that tenant's token; canonical session names carry the tenant when more than one exists (gchat/marigold/yopp-test).
+Tenants (isaac-1zkz): discovery runs per tenant with that tenant's token; canonical session names carry the tenant when more than one exists (gchat/marigold/skiff-test).
 
 ## Session ids are slugified (planner, 2026-09-21)
 
@@ -39,7 +39,7 @@ run of non-[a-z0-9] with a hyphen, so today's canonical name arrives as
 
 Consequences for the naming above:
 
-- `gchat/yopp-test` becomes `gchat-yopp-test`, `gchat/dm/hieronymus-finch` becomes
+- `gchat/skiff-test` becomes `gchat-skiff-test`, `gchat/dm/hieronymus-finch` becomes
   `gchat-dm-hieronymus-finch`. Both read fine; write them in the form they will
   take rather than assuming the slash survives.
 - The space id cannot live in the name: `AAQA7rg5Uyc` slugs to
@@ -50,8 +50,8 @@ Consequences for the naming above:
   `hieronymus-finch`), and two spaces with the same display name must not collide
   into one session — fall back to the id, or suffix it.
 
-Acceptance to add: a discovered space named "Yopp Test" routes to
-`gchat-yopp-test` tagged `space:AAQA7rg5Uyc`; renaming the space keeps the
+Acceptance to add: a discovered space named "Skiff Test" routes to
+`gchat-skiff-test` tagged `space:AAQA7rg5Uyc`; renaming the space keeps the
 session (the tag matches, the name may lag); a DM with Micah routes to
 `gchat-dm-hieronymus-finch`; two spaces sharing a display name get distinct
 sessions.
@@ -87,8 +87,8 @@ would have been the channel-map chore again.
   more than one organization, falling back to the space resource
   (`gchat-spaces-eng`) when Chat has not named it. The space id rides verbatim
   on a `space:<id>` tag. The tag is what matches, so a rename keeps the session
-  and two spaces with one display name get `gchat-yopp-test` and
-  `gchat-yopp-test-<id slug>`. An entry that pins `:session` keeps it and does
+  and two spaces with one display name get `gchat-skiff-test` and
+  `gchat-skiff-test-<id slug>`. An entry that pins `:session` keeps it and does
   **not** claim the tag.
 
 ### Files changed (isaac-gchat)
@@ -129,7 +129,7 @@ cannot see speclj's macros here. Pre-existing; `bb ci` does not run it.
 
 **inbound.feature**
 - a mention in a discovered space starts a turn on its canonical session
-  (`gchat-yopp-test`, tagged `space:AAQA7rg5Uyc`)
+  (`gchat-skiff-test`, tagged `space:AAQA7rg5Uyc`)
 - renaming a discovered space keeps its session — one session, both turns
 - a DM routes to a session named for the other member (`gchat-dm-hieronymus-finch`)
 - two spaces sharing a display name get two sessions
@@ -195,7 +195,7 @@ changed.
 `canon/canonical-name` never knew how many organizations a host had — the
 "only when more than one" rule lived in `handler/decide-opts`, and it is gone:
 `:tenant` is now whatever `tenants/of-comm` answers, always. Names are
-`gchat-marigold-yopp-test` and `gchat-marigold-dm-hieronymus-finch`. The five xy2i
+`gchat-marigold-skiff-test` and `gchat-marigold-dm-hieronymus-finch`. The five xy2i
 inbound scenarios now configure `google.marigold.topic` and expect the prefix;
 a new handler spec proves a **one**-organization host gets it too. A comm on a
 host with no `:google` block at all has no organization to name and keeps the

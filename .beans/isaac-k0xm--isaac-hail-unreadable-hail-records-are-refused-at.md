@@ -52,7 +52,7 @@ Quarantined by hand (moved to `hail/undeliverable/`) to stop the flood.
 - [ ] `isaac hail send --band x --session-tag :project/foo --dry-run` prints
   `:session-tags #{:project/foo}`; `--session-tag project/foo` prints the
   same; a tag like `:::x` is refused with a message naming `--session-tag`.
-- [ ] `--crew :yopp` and `--session :abc` coerce the same way.
+- [ ] `--crew :skiff` and `--session :abc` coerce the same way.
 - [ ] `queue/send!` with a record whose serialized form does not read back
   throws `:hail/unreadable-record`; pending has no file, no `hail/sent` log.
 - [ ] Router tick over a pending file containing `#{::a/b}`: the file is in
@@ -67,7 +67,7 @@ features). No agent/foundation changes.
 
 isaac-hail branch `bean/isaac-k0xm` @ 8c70cca (on top of origin/main 48faa9f). Worktree: `~/agents/isaac/work-1/isaac-hail-k0xm`.
 
-- `cli.clj`: `flag-name`/`flag-keyword` strip exactly one leading colon for `--session-tag`, `--session`, `--crew` (stays a string, as before), `--reach`. `keyword-flag-errors` refuses any value whose keyword does not read back (`:::x`, `::yopp`) with `Invalid --<flag> value …`.
+- `cli.clj`: `flag-name`/`flag-keyword` strip exactly one leading colon for `--session-tag`, `--session`, `--crew` (stays a string, as before), `--reach`. `keyword-flag-errors` refuses any value whose keyword does not read back (`:::x`, `::skiff`) with `Invalid --<flag> value …`.
 - `queue.clj`: `serialize-readable` round-trips `write-edn` through `edn/read-string` (and requires equality); throws `ex-info` `{:type :hail/unreadable-record :reader-message …}` before any pending write / `:hail/sent`. Public `check-readable!` backs `--dry-run`.
 - `tool/hail.clj` returns `{:isError true :error <msg>}`; `http.clj` returns 400 with the message.
 - `router.clj`: `list-pending` only reads `*.edn`; an unreadable file is moved to `hail/undeliverable/<id>.edn`, logged once `:hail/bad-record :id :path :error :quarantined true`, and `attention/maybe-notify-dead-letter!` gets `{:id <from filename>}` plus `:data/:params/:thread-id` salvaged from a best-effort re-read with `::` collapsed to `:`.

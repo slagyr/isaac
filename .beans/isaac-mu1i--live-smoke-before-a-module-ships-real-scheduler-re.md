@@ -12,7 +12,7 @@ updated_at: 2026-09-22T22:39:32Z
 parent: isaac-bv1l
 ---
 
-2026-09-19: the first live day for the Google modules on yopp surfaced SIX defects that every green suite missed — tick! NPE (door-up? shadowed; scheduler calls (tick! {})), create returns an Operation, list needs Google's filter, the inbox worker was never scheduled, Chat senders have no email, and an earlier one where the OIDC verifier's reflective key construction did not exist under bb. Common cause: harnesses drive timers by step and stub Google's API from docs, so neither the server's own scheduling nor Google's actual contract was exercised.
+2026-09-19: the first live day for the Google modules on skiff surfaced SIX defects that every green suite missed — tick! NPE (door-up? shadowed; scheduler calls (tick! {})), create returns an Operation, list needs Google's filter, the inbox worker was never scheduled, Chat senders have no email, and an earlier one where the OIDC verifier's reflective key construction did not exist under bb. Common cause: harnesses drive timers by step and stub Google's API from docs, so neither the server's own scheduling nor Google's actual contract was exercised.
 
 Do: a repeatable smoke on a live host before a Google-module release — start the real server (systemd unit or `isaac server`), let the scheduler run the registration tick and the inbox worker unassisted, and drive one real event through Google against a test project/space: login → registration → outbound send → inbound push → turn → reply. Record it as a checklist in isaac-google/doc/rollout.md (host-agnostic) and gate module version bumps on it. Also: unit specs that call components the way production does (e.g. (tick! {}) with no opts) — cheap and would have caught two of the six.
 
@@ -58,7 +58,7 @@ Implemented `isaac google smoke` as a CLI subcommand (not a `bb` task): it ships
 
 ## Planner check (2026-09-22)
 
-Reran on bean/isaac-mu1i f3e28d8 (amended from 5b20dd9 to scrub two host-specific mentions to placeholders — `yopp` in doc/rollout.md and a `marigold` example tenant in the doc and spec): `bb spec` 171/0, features 28/0. PR opened to isaac-google main; tagged `unverified`. Pre-existing on main and NOT this bean: src/isaac/google/config.clj (yopp@marigold.example example), tenants.clj (:marigold/marigold-yopp example), people.clj (micah@marigold.example) — the 09-19 scrub missed them; separate cleanup. Gap for a later bean: no in-process feature scenario for `isaac google smoke` because door/live-push make real network calls; an HTTP stub seam would close it.
+Reran on bean/isaac-mu1i f3e28d8 (amended from 5b20dd9 to scrub two host-specific mentions to placeholders — `skiff` in doc/rollout.md and a `marigold` example tenant in the doc and spec): `bb spec` 171/0, features 28/0. PR opened to isaac-google main; tagged `unverified`. Pre-existing on main and NOT this bean: src/isaac/google/config.clj (skiff@marigold.example example), tenants.clj (:marigold/marigold-skiff example), people.clj (micah@marigold.example) — the 09-19 scrub missed them; separate cleanup. Gap for a later bean: no in-process feature scenario for `isaac google smoke` because door/live-push make real network calls; an HTTP stub seam would close it.
 
 ## Landed on main
 

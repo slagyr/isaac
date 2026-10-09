@@ -30,7 +30,7 @@ The gate reads the raw config. Absent key → nil → no watcher. The default th
 says "true" lives in a function the gate never calls.
 
 zanebot's `isaac.edn` has no `:hot-reload`, so its watcher has never run: crew
-files, model files and edits to `isaac.edn` itself allrequire a restart. yopp sets
+files, model files and edits to `isaac.edn` itself allrequire a restart. skiff sets
 `:hot-reload true` explicitly, which is why it does reload.
 
 Found 2026-09-20: a new crew file (`config/crew/qwen.edn`) was invisible to the
@@ -41,7 +41,7 @@ the CLI — which loads config fresh per invocation — saw the crew fine.
 `(get-in config [:server :hot-reload])`, and `[:server :hot-reload]` is marked
 RETIRED in `schema_base` in favour of the top-level `:hot-reload`. So on main
 the only spelling that turns the watcher on is the one the schema tells you not
-to use, and yopp's top-level `:hot-reload true` would be ignored after its next
+to use, and skiff's top-level `:hot-reload true` would be ignored after its next
 http upgrade.
 
 ## Work

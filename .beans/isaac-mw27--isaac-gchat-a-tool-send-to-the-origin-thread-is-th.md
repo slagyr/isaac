@@ -10,14 +10,14 @@ updated_at: 2026-09-25T02:41:21Z
 
 ## Symptom
 
-Every answer Yopp gave in the marketing space and in Micah's DM on
+Every answer Skiff gave in the marketing space and in Micah's DM on
 2026-09-25 arrived twice. Log for one turn (00:37Z): `tool/result :tool
 "gchat__send"` at 00:37:24, `turn/ended :reply` at 00:37:27, then two
 `gchat/message-dropped :reason :self` pushes at 00:37:28 — two posts.
 
 ## Cause
 
-The yopp crew allows `:gchat/*`, so the model composes its answer with
+The skiff crew allows `:gchat/*`, so the model composes its answer with
 `gchat__send` into the addressed thread — and then `GchatComm`'s `:on-reply`
 (`on-reply*`) posts the turn's final assistant text into the same thread.
 The guidance text ("Reply in the addressed thread") reads as an instruction

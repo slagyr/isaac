@@ -33,7 +33,7 @@ So the explicit-service path is the broken one, and Isaac was the only thing
 choosing it. Every send from both hosts failed this way, reported as the
 ambiguous `-32001 "Delivery outcome unknown"`, and was then retried (see
 isaac-fkjq). zanebot's own iMessage alerts had been dead since 2026-09-21 for
-this reason on top of a signed-out account; yopp's brand-new comm never sent
+this reason on top of a signed-out account; skiff's brand-new comm never sent
 at all until `auto` was set.
 
 Fixed in place on both hosts by setting `:imessage/service "auto"` — a live

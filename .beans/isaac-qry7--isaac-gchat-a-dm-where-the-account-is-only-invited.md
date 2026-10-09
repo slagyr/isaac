@@ -1,6 +1,6 @@
 ---
 # isaac-qry7
-title: 'isaac-gchat: a DM where the account is only invited (message request pending) gets a 403 on reply — join it, and request chat.spaces.create for Yopp-initiated DMs'
+title: 'isaac-gchat: a DM where the account is only invited (message request pending) gets a 403 on reply — join it, and request chat.spaces.create for Skiff-initiated DMs'
 status: completed
 type: bug
 priority: high
@@ -11,37 +11,37 @@ created_at: 2026-09-23T03:02:50Z
 updated_at: 2026-09-23T16:36:26Z
 ---
 
-## Observed (yopp, 2026-09-23 02:59Z, gchat 0.2.3)
+## Observed (skiff, 2026-09-23 02:59Z, gchat 0.2.3)
 
-Micah's DM arrived via spaces/-, the lookup fell back to spaces.list (isaac-f4ab), the turn ran on gchat-marigold-dm-hieronymus-finch and the model answered — then the reply's messages.create returned 403 and the turn ended :error. Probes with the same token: spaces.get, members.list and messages.create on the DM all 403 'Permission denied … or the resource doesn't exist'; messages.list and spaces.list work; findDirectMessage returns the DM with membershipCount.joinedDirectHumanUserCount = 1. Yopp's side of the DM is a pending message request (the account has never opened Chat), and an invited member receives events but cannot read or post. spaces:setup as Yopp answered 'insufficient authentication scopes': the login never requested chat.spaces.create, so gchat.clj's outbound find-direct-message → setup-direct-message path has never been able to run either.
+Micah's DM arrived via spaces/-, the lookup fell back to spaces.list (isaac-f4ab), the turn ran on gchat-marigold-dm-hieronymus-finch and the model answered — then the reply's messages.create returned 403 and the turn ended :error. Probes with the same token: spaces.get, members.list and messages.create on the DM all 403 'Permission denied … or the resource doesn't exist'; messages.list and spaces.list work; findDirectMessage returns the DM with membershipCount.joinedDirectHumanUserCount = 1. Skiff's side of the DM is a pending message request (the account has never opened Chat), and an invited member receives events but cannot read or post. spaces:setup as Skiff answered 'insufficient authentication scopes': the login never requested chat.spaces.create, so gchat.clj's outbound find-direct-message → setup-direct-message path has never been able to run either.
 
 ## Change
 
-1. Login scope: add https://www.googleapis.com/auth/chat.spaces.create to gchat's :isaac.google/scopes contribution (needed for spaces:setup, i.e. Yopp-initiated DMs via comm__send to a person).
+1. Login scope: add https://www.googleapis.com/auth/chat.spaces.create to gchat's :isaac.google/scopes contribution (needed for spaces:setup, i.e. Skiff-initiated DMs via comm__send to a person).
 2. Inbound DM the account is not joined to: detect it (findDirectMessage's joinedDirectHumanUserCount < 2, or the first 403 on the space) and try spaces:setup with the other member; if Google joins the account that way, proceed; if it does not, log :gchat.dm/invited once with the space uri and the operator action (open Chat as the account and accept), and deliver the reply through the fallback comm (attention) instead of ending the turn :error.
 3. A reply that fails 403 is reported as a delivery failure with the space and the reason, not a bare 'Chat API create failed: 403'.
 
 ## Verify live
 
-Whether spaces:setup joins an already-invited DM is unknown — probe on yopp once the scope is granted; the outcome decides whether step 2 is 'join' or 'log and hand to the operator'.
+Whether spaces:setup joins an already-invited DM is unknown — probe on skiff once the scope is granted; the outcome decides whether step 2 is 'join' or 'log and hand to the operator'.
 
 ## Related
 
-isaac-f4ab, isaac-ihuc, the yopp rollout record (engineering/yopp/google-rollout.md, 2026-09-23).
+isaac-f4ab, isaac-ihuc, the skiff rollout record (engineering/skiff/google-rollout.md, 2026-09-23).
 
 ## Probe results (2026-09-23 03:2xZ, gchat 0.2.4, nine scopes incl. chat.spaces.create)
 
-- spaces:setup as Yopp with Micah as member → 200, returns the existing DM; membershipCount.joinedDirectHumanUserCount stays 1; spaces.get still 403. Setup does NOT join an invited DM.
+- spaces:setup as Skiff with Micah as member → 200, returns the existing DM; membershipCount.joinedDirectHumanUserCount stays 1; spaces.get still 403. Setup does NOT join an invited DM.
 - members.create for the calling user → 403 insufficient scopes (would need https://www.googleapis.com/auth/chat.memberships, the write scope). Unproven whether it joins a DM; members.get / patch on the own membership → 404 (member name form or not visible while invited).
-- Likely cause of the invited state: yopp@ has never opened Google Chat, so its DM memberships are pending until the first Chat sign-in (same organization, so not a message-request policy).
+- Likely cause of the invited state: skiff@ has never opened Google Chat, so its DM memberships are pending until the first Chat sign-in (same organization, so not a message-request policy).
 
-Next: (1) one-time — sign in to Chat as yopp@ once and open the DM; (2) for the future, add chat.memberships (write) to the scope union and try members.create (self) on an invited DM; if that joins, wire it into the inbound path; if not, log :gchat.dm/invited once and deliver via the attention comm. Reply 403s must surface as delivery failures either way.
+Next: (1) one-time — sign in to Chat as skiff@ once and open the DM; (2) for the future, add chat.memberships (write) to the scope union and try members.create (self) on an invited DM; if that joins, wire it into the inbound path; if not, log :gchat.dm/invited once and deliver via the attention comm. Reply 403s must surface as delivery failures either way.
 
 ## Definitive (2026-09-23 15:06Z, ten scopes incl. chat.memberships write)
 
 members.create for the account's own membership in the invited DM → 400 INVALID_ARGUMENT: "Can't create memberships in direct messages between human users or with an app." spaces:setup returns the existing DM without joining it. There is no Chat API path for the account to accept a chat request.
 
-Systemic answer (Micah, 2026-09-23): the Workspace admin setting Google Chat → Chat invitations → **On** ("automatically accept chat invitations from people in your organization") was turned on for marigold.example. New internal DMs to Yopp are joined without anyone acting. Requests that predate the setting stay pending until accepted once in the account's Chat UI.
+Systemic answer (Micah, 2026-09-23): the Workspace admin setting Google Chat → Chat invitations → **On** ("automatically accept chat invitations from people in your organization") was turned on for marigold.example. New internal DMs to Skiff are joined without anyone acting. Requests that predate the setting stay pending until accepted once in the account's Chat UI.
 
 Remaining scope for this bean: (1) detect the invited state (spaces.get 403 with joinedDirectHumanUserCount 1 from findDirectMessage) and log `:gchat.dm/invited` ONCE per space with the space uri and the operator action; (2) do not run the model against a DM the account cannot answer — or run it and deliver the reply via the attention comm, naming the DM; (3) a reply 403 surfaces as a delivery failure with space + reason, never a bare create-failed. The chat.memberships write scope added in gchat 0.2.5 is not needed for this and can be dropped in the next scope round.
 
@@ -69,4 +69,4 @@ Left `in-progress`, no tags — next is `/verify`.
 
 main-sha: isaac-gchat 64e18d4 (0.2.7)
 
-Planner check 2026-09-23: bb spec 136/0, bb features 39/0. Fast-forwarded. Not yet deployed — rides with isaac-acou and isaac-h5v8 in one yopp upgrade. Reconcile the self-contained :gchat/turn-notice atom with h5v8 when it lands.
+Planner check 2026-09-23: bb spec 136/0, bb features 39/0. Fast-forwarded. Not yet deployed — rides with isaac-acou and isaac-h5v8 in one skiff upgrade. Reconcile the self-contained :gchat/turn-notice atom with h5v8 when it lands.

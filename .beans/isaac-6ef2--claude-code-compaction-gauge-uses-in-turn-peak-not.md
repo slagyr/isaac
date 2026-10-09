@@ -14,9 +14,9 @@ Ruling direction: Micah, 2026-09-29. The compaction gauge on the claude-code pro
 
 On a stateless provider, `:last-input-tokens` is supposed to predict the next prompt. For claude-code, each Isaac turn runs Claude's own tool loop inside the CLI (7 to 136 provider cycles). The stored figure is the turn's **largest cycle** (`turn/request-measured :provider-cycle-max`), built by `parse-cli-usage` in `isaac-claude-code` as input + cache-read + cache-write. That peak includes tool results piled up inside the CLI's loop. Those results never reach Isaac's transcript, and the next turn starts again from ~80k (Isaac's ~30k plus the CLI's ~55k base).
 
-The figure can't be a context size anyway. Yopp 2026-09-28 17:21Z: 136 cycles, cycle max **4,757,749** on a 1,000,000 window. So the CLI's per-cycle usage is itself something else (cumulative across the turn, subagent roll-up, or similar). Nobody has captured the raw usage objects that would tell us which.
+The figure can't be a context size anyway. Skiff 2026-09-28 17:21Z: 136 cycles, cycle max **4,757,749** on a 1,000,000 window. So the CLI's per-cycle usage is itself something else (cumulative across the turn, subagent roll-up, or similar). Nobody has captured the raw usage objects that would tell us which.
 
-Yopp session `acp-2026-09-28-1645-a6c4`, every compaction was pointless:
+Skiff session `acp-2026-09-28-1645-a6c4`, every compaction was pointless:
 - 09-28 17:25Z: gauge 4,793,047, transcript 63,819 tokens → compacted (3m48s).
 - 09-29 13:51Z: gauge 930,470, transcript 20,533 → compacted (5m48s).
 - 09-29 14:04Z: turn cycle max 809,751 on a ~35k-token request, so the **next** turn compacts again.

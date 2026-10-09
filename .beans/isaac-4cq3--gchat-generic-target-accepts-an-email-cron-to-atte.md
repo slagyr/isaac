@@ -8,7 +8,7 @@ created_at: 2026-10-06T17:59:11Z
 updated_at: 2026-10-06T18:03:46Z
 ---
 
-Micah, 2026-10-06, from Yopp's handbook PRs (isaac-gchat #3, isaac-cron #1, merged). A cron job's `to` (and an attention notice's `target`) reaches gchat as the delivery's generic `:target`. `send!*` sends only `gchat/to` through the email → DM lookup (`resolve-dm-space!`); a generic `:target` goes through `target/resolve-space`, which knows space ids, names and `spaces/…` only. So `to "chris@example.com"` matches nothing, logs `:gchat.send/missing-target`, returns `transient? false` and dead-letters silently. The handbook currently documents a workaround (find the DM's `spaces/…` id with `gchat__spaces` + `gchat__history`).
+Micah, 2026-10-06, from Skiff's handbook PRs (isaac-gchat #3, isaac-cron #1, merged). A cron job's `to` (and an attention notice's `target`) reaches gchat as the delivery's generic `:target`. `send!*` sends only `gchat/to` through the email → DM lookup (`resolve-dm-space!`); a generic `:target` goes through `target/resolve-space`, which knows space ids, names and `spaces/…` only. So `to "chris@example.com"` matches nothing, logs `:gchat.send/missing-target`, returns `transient? false` and dead-letters silently. The handbook currently documents a workaround (find the DM's `spaces/…` id with `gchat__spaces` + `gchat__history`).
 
 ## Fix
 In `send!*`, a generic `:target` that is an email (contains `@`, not `spaces/…`) resolves through the same DM lookup as `gchat/to`, creating the DM when absent. Precedence stays `gchat/to`, `gchat/space`, then `:target`.

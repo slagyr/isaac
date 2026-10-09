@@ -22,7 +22,7 @@ isaac-3t0z's dedupe stays as a guard.
   request (charge overlay from the isaac-agent bean).
 - Turn guidance for gmail conversations: "Your answer is sent as the reply
   on this thread automatically — there is no send step."
-- Task-route hails and CLI turns keep `gmail__send` (the yopp-tasks band
+- Task-route hails and CLI turns keep `gmail__send` (the skiff-tasks band
   relies on it).
 
 ## Acceptance (isaac-gmail spec + feature)

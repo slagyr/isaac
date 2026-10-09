@@ -38,7 +38,7 @@ decisions.
 
 ## What it is
 
-`handbook__configure`, the isaac-handbook module's second tool, granted separately from `handbook__read`. It lets a crew change Isaac's config without shell or root-file access (goal: take Yopp off `exec/run` and root writes).
+`handbook__configure`, the isaac-handbook module's second tool, granted separately from `handbook__read`. It lets a crew change Isaac's config without shell or root-file access (goal: take Skiff off `exec/run` and root writes).
 
 ## Decided
 

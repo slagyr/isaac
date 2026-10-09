@@ -8,7 +8,7 @@ created_at: 2026-10-02T23:35:45Z
 updated_at: 2026-10-03T00:42:44Z
 ---
 
-Likely repo: **isaac-foundation**. Bug in isaac-dnib's `(default)` annotation. Field report 2026-10-02 (yopp).
+Likely repo: **isaac-foundation**. Bug in isaac-dnib's `(default)` annotation. Field report 2026-10-02 (skiff).
 
 ## Why
 

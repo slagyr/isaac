@@ -15,7 +15,7 @@ Micah (2026-09-17, watching zanebot logs): "these compaction checks all take abo
 
 ## Why (found by reading the sidecar store)
 
-The production store is `SidecarSessionStore`. Its `get-session` was `c/get-session read-session-store …` → `read-sidecar-store`, which **scans every session directory under the root and, for every one of them, takes the persist lock, slurps, parses and schema-conforms `session.edn`** — then picks one id out of the map. `get-transcript` calls `get-session` again; `update-session!` (every token/updated-at write) did the same full read. zanebot has **456 session.edn files** (1.8MB); yopp far fewer — that is the host-dependent constant h8o9 saw (715ms vs 241ms), and why it never scaled with transcript size.
+The production store is `SidecarSessionStore`. Its `get-session` was `c/get-session read-session-store …` → `read-sidecar-store`, which **scans every session directory under the root and, for every one of them, takes the persist lock, slurps, parses and schema-conforms `session.edn`** — then picks one id out of the map. `get-transcript` calls `get-session` again; `update-session!` (every token/updated-at write) did the same full read. zanebot has **456 session.edn files** (1.8MB); skiff far fewer — that is the host-dependent constant h8o9 saw (715ms vs 241ms), and why it never scaled with transcript size.
 
 Second, smaller defect: `locate-session` ran `scan-session-dirs` unconditionally (strict `let`), even on a verified index hit — ~80ms per call on zanebot, called from persist, turn markers, sidecar writes. And a stale index row (session moved under another crew) was never repaired, so such a session scanned forever.
 

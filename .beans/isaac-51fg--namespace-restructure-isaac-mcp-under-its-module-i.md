@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -44,7 +44,7 @@ Namespace rename done and pushed to `bean/isaac-51fg`, **not merged to main**: `
 
 **Test results on `bean/isaac-51fg` (pushed, not merged).** `bb spec` (native): 45/45, 0 failures. `bb jvm-spec` (JVM): 45/45, 0 failures (one pre-existing unrelated WARNING about `resolve` being replaced in isaac.agent.resource-pool, not from this repo). `bb lint`: 0 errors, 0 warnings. `bb ci` / `bb jvm-features`: **red**, `FileNotFoundException` loading `isaac.comm.acp.cli` per above — not run to completion; scenario count not available.
 
-**Live-config greps (read-only, no edits made).** Both zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config` have zero matches for `isaac.mcp` in any form. No config edits required on either host.
+**Live-config greps (read-only, no edits made).** Both zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config` have zero matches for `isaac.mcp` in any form. No config edits required on either host.
 
 **Left undone:** the squash-merge to main. Work is on `bean/isaac-51fg` (pushed to origin, commit `94eccfa`), local worktree `../isaac-mcp-isaac-51fg` still present. Re-run `bb ci` once isaac-wqs8 (isaac-acp's own namespace restructure) lands, then land this bean the normal way (squash to main, confirm CI, `--tag=unverified`).
 

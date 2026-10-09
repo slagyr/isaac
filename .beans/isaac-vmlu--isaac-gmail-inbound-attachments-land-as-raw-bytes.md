@@ -19,7 +19,7 @@ Gmail `users.messages.attachments.get` returns JSON with base64url
 `(String. (.decode …) "UTF-8")`, and `inbound-attachment/save-all!`
 does `(.getBytes (str content) "UTF-8")` + `fs/spit`. A PNG or JPEG
 attachment would land as UTF-8 replacement characters the same way
-Yopp's Chat PNG did.
+Skiff's Chat PNG did.
 
 The HTTP body here is JSON (text is correct). The landmine is decoding
 the attachment bytes as a UTF-8 String.

@@ -21,11 +21,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -37,7 +37,7 @@ Work done on branch `bean/isaac-t95z` (pushed, not merged): `git -C isaac-cli-pr
 
 Updated every foundation/agent require (`isaac.cli.*` → `isaac.foundation.cli.*`, `isaac.config.*` → `isaac.foundation.config.*`, `isaac.fs`/`isaac.logger`/`isaac.nexus` → `isaac.foundation.*`, `isaac.module.*` → `isaac.foundation.module.*`, `isaac.spec-helper` → `isaac.foundation.spec-helper` (matches isaac-http's own precedent — foundation and pre-rename agent both shipped a byte-identical `isaac.spec-helper.clj`; ambiguous which one it, so followed the peer convention), `isaac.step-tables`/`isaac.util.jsonrpc` → `isaac.agent.*`, `isaac.session.session-steps` → `isaac.agent.session.session-steps`), the manifest `:factory`, and prose namespace mentions in PROTOCOL.md, the handbook chapter, and a bb.edn task doc-string. Bumped pins: foundation → `06d58b75bc52b3e118dc8e81569096de2532a0d4` (exact, per the brief), agent → `123d71850b480dc0859886e1a4fa53e082c258f1`, http → `56998543b3e5c40593d2a3ea97b16550e3731463`. isaac-cli-server and isaac-acp left pinned at their current (unmigrated) shas per the brief. Added a `gherclj` bb task (mirroring isaac-foundation's own) since the bumped isaac-foundation-test-support's `run-features-slow!` now shells out to `bb -Sforce gherclj -t slow -t ~wip <location>` per @slow scenario for classpath isolation, and this repo had no such task.
 
-**Live-config greps (read-only, no edits).** Checked both zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config` for `isaac.cli-proxy`, `isaac.config.pointer`, `isaac.cli.{host,registry,api}`, `isaac.config.{env,root,cli.common}` — zero hits on either host. `:isaac.cli-proxy` isn't installed/referenced on either deployment yet, so no config edits are needed.
+**Live-config greps (read-only, no edits).** Checked both zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config` for `isaac.cli-proxy`, `isaac.config.pointer`, `isaac.cli.{host,registry,api}`, `isaac.config.{env,root,cli.common}` — zero hits on either host. `:isaac.cli-proxy` isn't installed/referenced on either deployment yet, so no config edits are needed.
 
 **Test results.** `bb spec`: 27/27. `bb features` (excludes @slow): 29/29. `config-bypass-lint` / `lint-cli-host`: ok. All green, including on a fresh GitHub Actions runner (see below).
 

@@ -14,11 +14,11 @@ Found during the cleanup survey (2026-09-30). Foundation keeps entity tables `:g
 
 ## Wanted
 
-Confirm they are dead (grep every sibling repo and zanebot/yopp config), then delete them. If one is alive, document its owner instead.
+Confirm they are dead (grep every sibling repo and zanebot/skiff config), then delete them. If one is alive, document its owner instead.
 
 ## Decision (Micah, 2026-09-30)
 
-Approved: delete them (likely test leftovers). Still grep every sibling repo and zanebot/yopp config first; if one turns out alive, stop and report.
+Approved: delete them (likely test leftovers). Still grep every sibling repo and zanebot/skiff config first; if one turns out alive, stop and report.
 
 ## STOP — alive, not deleted (worker, 2026-09-30)
 
@@ -34,7 +34,7 @@ isaac-imessage, isaac-mcp, isaac-server, isaac-worksite — skipping worktree
 dirs) for `:gauges|:foundries|:berths|gauges/|foundries/|berths/` across
 manifests, src and features. No hit declares `:gauges`/`:foundries`, or `:berths`
 as an `:isaac.config/schema` entity table outside isaac-foundation's own
-test tree. `ssh zane@zanebot.tail66e5f8.ts.net` and `ssh yopp@yopp` greps of
+test tree. `ssh zane@zanebot.<tailnet>.ts.net` and `ssh skiff@skiff` greps of
 `~/.isaac/config` for the same patterns: zero hits on both hosts.
 
 **But they are foundation's own, deliberate self-test fixture, not leftovers:**

@@ -8,7 +8,7 @@ created_at: 2026-10-07T00:19:58Z
 updated_at: 2026-10-07T00:24:26Z
 ---
 
-Micah, 2026-10-07, from the second continuity test on yopp. With delivery notes now marked by thread (isaac-fm94), Yopp placed the delivery correctly, but claimed it "never answered" an earlier question in another thread. It had; its replies carry no thread marker. A gchat reply always posts into the thread of the message it answers (the marked line just before it), so the fix is to say so in the standing gchat guidance (`isaac.comm.gchat.guidance/TEXT`), not to prefix the crew's own replies with markers. Models copy patterns from their own past turns, and a marked reply would start leaking `[thread:…]` into what Yopp posts.
+Micah, 2026-10-07, from the second continuity test on skiff. With delivery notes now marked by thread (isaac-fm94), Skiff placed the delivery correctly, but claimed it "never answered" an earlier question in another thread. It had; its replies carry no thread marker. A gchat reply always posts into the thread of the message it answers (the marked line just before it), so the fix is to say so in the standing gchat guidance (`isaac.comm.gchat.guidance/TEXT`), not to prefix the crew's own replies with markers. Models copy patterns from their own past turns, and a marked reply would start leaking `[thread:…]` into what Skiff posts.
 
 ## Shape
 Add to `guidance/TEXT` (exact wording; the scenario matches these phrases):

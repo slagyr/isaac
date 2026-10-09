@@ -1,6 +1,6 @@
 ---
 # isaac-ddls
-title: 'isaac-claude-code: every turn logs :chat/provider-contract-violated {:reasoning {:summary "is required"}} — noise at :error; fails the episodes seal on yopp'
+title: 'isaac-claude-code: every turn logs :chat/provider-contract-violated {:reasoning {:summary "is required"}} — noise at :error; fails the episodes seal on skiff'
 status: completed
 type: bug
 priority: high
@@ -11,7 +11,7 @@ created_at: 2026-09-19T23:48:52Z
 updated_at: 2026-09-20T06:53:43Z
 ---
 
-Seen on yopp all day 2026-09-19 (agent fd89226, claude-code f058b2c): each turn emits :chat/provider-contract-violated :errors {:reasoning {:summary "is required"}} + :chat/stream-error :error :provider-contract, yet the turn completes and replies. The episodes seal for crew yopp fails with :provider-error, consecutive 8+, so no scene is ever sealed on yopp. Some event the claude CLI streams (a reasoning/thinking block) is missing :summary under the agent's provider contract. Find which event, make the contract accept a summary-less reasoning block (or synthesize one), and stop logging a completed turn at :error. Scenario: a claude-cli stream with a reasoning block without summary produces a clean turn and no contract error; the episodes seal succeeds on such a session.
+Seen on skiff all day 2026-09-19 (agent fd89226, claude-code f058b2c): each turn emits :chat/provider-contract-violated :errors {:reasoning {:summary "is required"}} + :chat/stream-error :error :provider-contract, yet the turn completes and replies. The episodes seal for crew skiff fails with :provider-error, consecutive 8+, so no scene is ever sealed on skiff. Some event the claude CLI streams (a reasoning/thinking block) is missing :summary under the agent's provider contract. Find which event, make the contract accept a summary-less reasoning block (or synthesize one), and stop logging a completed turn at :error. Scenario: a claude-cli stream with a reasoning block without summary produces a clean turn and no contract error; the episodes seal succeeds on such a session.
 
 
 
@@ -33,7 +33,7 @@ Both assembly paths then attached a reasoning block anyway:
 with `{:error :provider-contract}`, logged `:chat/provider-contract-violated`
 at `:error` plus `:chat/stream-error`, wrote an `error` entry to the
 transcript, and the episodes segment recorded `:provider-error` — which is why
-no scene ever sealed on yopp.
+no scene ever sealed on skiff.
 
 **Fix (two repos, each independently green — no pin ordering).**
 

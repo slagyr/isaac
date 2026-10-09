@@ -12,7 +12,7 @@ updated_at: 2026-09-25T02:54:14Z
 
 Micah, 2026-09-25: "On the GChat and Gmail comms the model should not need
 to use the comms tool. It should just respond to the prompt and that
-response will go back to the user." Today the yopp crew allows `:gchat/*`
+response will go back to the user." Today the skiff crew allows `:gchat/*`
 and `:gmail/*` (needed for proactive sends from hail/task turns), so a
 comm-originated turn also sees `gchat__send` / `gmail__send` aimed at the
 very thread it is answering — and uses them, producing double replies

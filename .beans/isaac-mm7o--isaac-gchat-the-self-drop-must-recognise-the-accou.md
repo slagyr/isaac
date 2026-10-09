@@ -12,7 +12,7 @@ updated_at: 2026-09-22T22:39:32Z
 parent: isaac-bv1l
 ---
 
-2026-09-19 23:47Z on yopp: after Isaac replied in the thread, Google pushed the reply back as an event; the gate dropped it — but as :sender (yopp's Chat user id users/101936183306307394083 is not in allow-from), not as :self, because gchat/account is an email and the sender carries none. Right outcome by luck: an operator who allows domain:<id> would let Isaac's own replies through and create an echo loop.
+2026-09-19 23:47Z on skiff: after Isaac replied in the thread, Google pushed the reply back as an event; the gate dropped it — but as :sender (skiff's Chat user id users/101936183306307394083 is not in allow-from), not as :self, because gchat/account is an email and the sender carries none. Right outcome by luck: an operator who allows domain:<id> would let Isaac's own replies through and create an echo loop.
 
 Do: learn the account's users/<id> (spaces.members or people/me on first use; cache in state) and check :self against it; scenario: Isaac's own reply, with a domain allow-list, drops :self.
 
@@ -114,7 +114,7 @@ with `--force-with-lease`. PR #1 not touched.
 
 ## Planner check 2 (2026-09-22)
 
-Reran on bean/isaac-mm7o 4306062 (per-tenant id cache + two-tenant scenario): `bb spec` 94/0, `bb features` 29/0. PR #1 updated; tagged `unverified`. Note for a repo-wide cleanup, not this bean: isaac-gchat feature fixtures already use marigold.example / users/yopp on main (inbound, outbound, registrations, tenants features; chat_api_spec) — the new scenario follows that convention. The 09-19 placeholder scrub did not reach these fixtures or isaac-google config.clj/tenants.clj/people.clj docstrings.
+Reran on bean/isaac-mm7o 4306062 (per-tenant id cache + two-tenant scenario): `bb spec` 94/0, `bb features` 29/0. PR #1 updated; tagged `unverified`. Note for a repo-wide cleanup, not this bean: isaac-gchat feature fixtures already use marigold.example / users/skiff on main (inbound, outbound, registrations, tenants features; chat_api_spec) — the new scenario follows that convention. The 09-19 placeholder scrub did not reach these fixtures or isaac-google config.clj/tenants.clj/people.clj docstrings.
 
 ## Landed on main
 

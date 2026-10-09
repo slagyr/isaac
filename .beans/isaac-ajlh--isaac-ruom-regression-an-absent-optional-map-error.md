@@ -58,7 +58,7 @@ rather than assumed:
 
 - **zanebot** (running foundation `97da637`) configures `episodes.embedding` and
   has no `:principals` block. Validates OK.
-- **yopp** configures `episodes.embedding` and has `:auth {:principals {}}` —
+- **skiff** configures `episodes.embedding` and has `:auth {:principals {}}` —
   empty, so no entry triggers `:previous`.
 
 Any install that omits `episodes.embedding`, or adds a principal without a

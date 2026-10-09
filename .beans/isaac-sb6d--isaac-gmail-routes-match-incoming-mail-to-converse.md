@@ -8,7 +8,7 @@ created_at: 2026-09-23T19:29:04Z
 updated_at: 2026-09-23T22:24:44Z
 ---
 
-Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
+Micah 2026-09-23: Skiff will get every kind of mail — conversations to answer on the thread, mail that should become tasks, mail to ignore. Triage must stay deterministic wherever a rule can do it. Design discussed in the planner session; this is bean 1 of 4 (routes/labels), followed by isaac-gmail pull mode, task routes via hail, and model triage fallback.
 
 ## Today
 
@@ -22,15 +22,15 @@ Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer o
 
 **Routes config.** `gmail/routes` — an ordered vector, first match wins:
 ```edn
-[{:name "ops" :match {:to "yopp+ops@*"} :action :converse :crew "ops"}
+[{:name "ops" :match {:to "skiff+ops@*"} :action :converse :crew "ops"}
  {:name "newsletters" :match {:from "*@substack.com"} :action :ignore}
  {:name "team" :match {:from "*@marigold.example"} :action :converse}]
 ```
-`:match` keys: `:to`, `:from` (glob, `*` only, case-insensitive, plus-address aware so `yopp+ops@*` matches the To/Cc/Delivered-To addresses), `:subject` (`#"regex"` string), `:label` (Gmail label name), `:list-id`. Every given key must match (AND). Missing `:match` = match all (use last). `:crew` optional per route, default `gmail/crew`. A message allowed by the gate that matches no route is `:unrouted`: labelled, no turn, logged once at info with from/subject. **Nothing unexpected burns tokens.**
+`:match` keys: `:to`, `:from` (glob, `*` only, case-insensitive, plus-address aware so `skiff+ops@*` matches the To/Cc/Delivered-To addresses), `:subject` (`#"regex"` string), `:label` (Gmail label name), `:list-id`. Every given key must match (AND). Missing `:match` = match all (use last). `:crew` optional per route, default `gmail/crew`. A message allowed by the gate that matches no route is `:unrouted`: labelled, no turn, logged once at info with from/subject. **Nothing unexpected burns tokens.**
 
 **Verdict labels = audit trail + idempotency.** Every gated message (including ignores and unrouted) gets Gmail label `isaac/<route-name>` (or `isaac/ignored`, `isaac/unrouted`) via a new `api/messages-modify!` (POST users.messages.modify addLabelIds) and `api/labels-create!` on first use (cache the id map per tenant; label names are config `gmail/label-prefix`, default `isaac`). The label is applied **before** the turn starts. A message that already carries any `isaac/` label is skipped by the handler — that is how two hosts (push + pull) on one inbox never double-route. Ignored mail is also marked read (removeLabelIds UNREAD) only when `gmail/ignore-marks-read` is true (default true).
 
-**Scope.** Labels need `https://www.googleapis.com/auth/gmail.modify`; add to the manifest scope contribution (it supersedes readonly). Deploy note: scopes ride the login union — Yopp must re-login BEFORE this ships or every modify 403s. Say so loudly in the handoff.
+**Scope.** Labels need `https://www.googleapis.com/auth/gmail.modify`; add to the manifest scope contribution (it supersedes readonly). Deploy note: scopes ride the login union — Skiff must re-login BEFORE this ships or every modify 403s. Say so loudly in the handoff.
 
 **Log**, not comm: no in-channel notices for mail. `:unrouted` counts are visible as the label.
 

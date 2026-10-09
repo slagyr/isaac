@@ -20,7 +20,7 @@ invisible until it bites:
 A Workspace can apply **Google Cloud console and SDK session control** to "apps
 requiring Cloud Platform scope", explicitly including non-Google apps. One Cloud
 scope therefore drags the *entire* Google grant — Gmail, Chat, directory — under
-a reauthentication clock whose default is 16 hours. On yopp this killed the
+a reauthentication clock whose default is 16 hours. On skiff this killed the
 refresh token every ~15 hours: `gchat/fetch-failed`, `gchat.send/failed`,
 dead-lettered replies, and a DM to the operator never seen, while
 `systemctl is-active` said `active` and `isaac config validate` said `OK`. See
@@ -40,7 +40,7 @@ human to consent to a machine's scope.
   default, and their absence is a clear startup error rather than a runtime
   surprise on first push.
 - Existing deployments keep working across the change, or the upgrade step is
-  written down — yopp and zanebot both have live grants.
+  written down — skiff and zanebot both have live grants.
 - A scenario proves the authorization URL carries no Cloud Platform scope.
 
 ## Exceptions

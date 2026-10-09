@@ -57,7 +57,7 @@ loudly, once, and the operator adds the lines.
 
 Every live `.md` config file needs one line. On zanebot that is roughly 13 crew
 souls, ~10 hail band files, plus cron and hooks — order 25-30 files. A second
-host (Yopp) carries its own set.
+host (Skiff) carries its own set.
 
 `features/cli/init.feature` is **frozen** and scaffolds both files without
 sentinels (`crew/skipper.md` with `model: "llama"`, `cron/heartbeat.md` with

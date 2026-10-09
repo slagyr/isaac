@@ -16,7 +16,7 @@ updated_at: 2026-09-16T21:00:35Z
 
 ## Problem
 
-`isaac init` scaffolds `crew/main.md` and `:defaults :crew :main` — that name is fine. What is not: a second defaults system in code. Unlabeled sessions, session directories, quarters, charge, slash, prompt-cli, and `isaac crew list` (which **injects an empty `main`** if it is missing) all fall back to `"main"`. Charge also **skips the unknown-crew check** when the id is `"main"`, so a missing `main` crew is quieter than a missing `yopp`.
+`isaac init` scaffolds `crew/main.md` and `:defaults :crew :main` — that name is fine. What is not: a second defaults system in code. Unlabeled sessions, session directories, quarters, charge, slash, prompt-cli, and `isaac crew list` (which **injects an empty `main`** if it is missing) all fall back to `"main"`. Charge also **skips the unknown-crew check** when the id is `"main"`, so a missing `main` crew is quieter than a missing `skiff`.
 
 The schema already has `:validations [:crew-exists?]` on `:defaults :crew` and `:default "main"` — that schema default is the other implicit identity. Remove the default; require the field.
 

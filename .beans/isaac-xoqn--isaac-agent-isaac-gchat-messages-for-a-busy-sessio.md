@@ -11,7 +11,7 @@ updated_at: 2026-09-28T00:08:46Z
 ## Why (Micah, 2026-09-25)
 
 "Are chat messages queued? So that if I type lots of messages in the DM,
-Yopp will reply to them all? Each thread can be consolidated such that if
+Skiff will reply to them all? Each thread can be consolidated such that if
 multiple prompts appear in a single thread, they can all be addressed in one
 response."
 

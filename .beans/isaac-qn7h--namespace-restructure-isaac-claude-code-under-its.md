@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -50,7 +50,7 @@ Every foundation/agent require in this repo's own code got the new prefix (found
 
 **Found by testing, not the grep sweep:** `features/llm/api/claude_driver.feature`'s scenario "isaac-nni3" had a `#"stream-json requires --verbose"` regex cell (no `.*` wrapper) in a "the log has entries matching:" table. That step is answered by **foundation's own** `isaac.foundation.log-steps`, which has *always* required `isaac.foundation.step-tables` directly (even at the old pin) — not the bare, agent-collision-won `isaac.step-tables`. Foundation's step-tables' `:regex` is `re-matches` (whole-string), so this cell only ever "passed" because the old pin's `isaac.foundation.log-steps` itself required the bare `[isaac.step-tables :as match]` (pre-davq), which resolved to agent's lenient copy by the same classpath accident. davq's rename correctly decoupled `isaac.foundation.log-steps` to require its own `isaac.foundation.step-tables` — exposing that this cell was never a real whole-string match. Fixed by wrapping it `#"(?s).*stream-json requires --verbose.*"` to match the sibling cells' existing style (line 217 already does this for a similar case) — behavior-preserving, not a scope change.
 
-**Live-config greps (read-only).** zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) `~/.isaac/config`: no hits for `isaac.llm.` — no code-namespace references in live data (only the untouched `:isaac.provider.claude-code` module-id keyword would appear, which is correct as-is). No config edits needed on zanebot. **yopp was unreachable this session** (`ssh zane@yopp.tail66e5f8.ts.net`: `Permission denied (publickey)`) — could not complete the yopp-side grep; flagging for a follow-up check once yopp access is available, though per the "Deploy freeze" section neither host takes the new foundation/agent yet regardless.
+**Live-config greps (read-only).** zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) `~/.isaac/config`: no hits for `isaac.llm.` — no code-namespace references in live data (only the untouched `:isaac.provider.claude-code` module-id keyword would appear, which is correct as-is). No config edits needed on zanebot. **skiff was unreachable this session** (`ssh zane@skiff.<tailnet>.ts.net`: `Permission denied (publickey)`) — could not complete the skiff-side grep; flagging for a follow-up check once skiff access is available, though per the "Deploy freeze" section neither host takes the new foundation/agent yet regardless.
 
 **Test results.** `bb ci` (config-bypass-lint + lint-cli-host + bb spec + bb features): green, 98 spec examples / 303 assertions (3 pending, opt-in `@real` smoke) + 67 feature examples / 223 assertions — identical counts to pre-change main. `bb jvm-spec`: 87/89 (2 failures), confirmed byte-for-byte identical on pristine pre-change main under the same `HOME=<scratch>` isolation — pre-existing `:model-exists?` lex-validator classpath leak (the same trap isaac-davq's bean documented), not a rename regression. `bb jvm-features`: 67/67 green; the "timed out after 60s" JVM-shutdown message after is also reproduced identically on pre-change main (exit 0, harmless teardown quirk). No `bb pins` task exists in this repo. Full grep of the tracked tree: 0 remaining `isaac.llm.` references; all src/spec namespaces are `isaac.provider.claude-code.*` (plus the untouched berth/module-id keywords, justified above).
 

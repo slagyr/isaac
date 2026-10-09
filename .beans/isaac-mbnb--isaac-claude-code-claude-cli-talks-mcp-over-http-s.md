@@ -20,7 +20,7 @@ Per driven turn the driver starts an httpkit listener on 127.0.0.1 (random port,
 - Cancellation/termination semantics unchanged.
 
 ## Verify against the REAL CLI (planner, not the worker)
-The driver's history (isaac-5xn7) says fake-CLI-green can fail on the real binary. Before the registry pin moves: on a host with `claude` (yopp has 2.1.274), run the module's smoke / `isaac prompt --model claude-cli` with a prompt that needs the exec tool, confirm `tools/call` reaches the listener and the reply carries the output, and check the CLI's `mcp_status` event shows the server connected. Record the CLI version in the handoff.
+The driver's history (isaac-5xn7) says fake-CLI-green can fail on the real binary. Before the registry pin moves: on a host with `claude` (skiff has 2.1.274), run the module's smoke / `isaac prompt --model claude-cli` with a prompt that needs the exec tool, confirm `tools/call` reaches the listener and the reply carries the output, and check the CLI's `mcp_status` event shows the server connected. Record the CLI version in the handoff.
 
 ## Acceptance
 - [ ] Feature (rename mcp_bridge.feature → mcp_transport.feature): the config the driver writes is the HTTP shape with no `command`; a fake CLI POSTing `initialize`, `notifications/initialized`, `tools/list`, `tools/call` with the bearer gets correct MCP responses; wrong nonce → 401; listener stops at turn end.

@@ -49,9 +49,9 @@ part that needs care:
   `_isaac-template.edn`) live **only on the host**, tracked nowhere. Confirmed
   2026-09-21: `orchestration/isaac-beans/install.sh` deploys only the
   `orchestration-*` set.
-- **Yopp** — a second Isaac host with its own band set (Micah, 2026-09-23:
+- **Skiff** — a second Isaac host with its own band set (Micah, 2026-09-23:
   "once we deploy, we will need to migrate all of the hail bands on Zanebot and
-  Yopp"). Its address and inventory still need recording here.
+  Skiff"). Its address and inventory still need recording here.
 
 Order of operations, per the rule those repos already carry: edit and commit the
 orchestration trees **first**, then install to each host. Never hand-edit a band
@@ -79,4 +79,4 @@ not twice.
   `base` handling; hail's suites stay green.
 - `_`-prefixed bands remain non-addressable — not hailable, not listed.
 - Both orchestration trees are committed before any host is touched.
-- zanebot and Yopp both dispatch and deliver a hail on a migrated band.
+- zanebot and Skiff both dispatch and deliver a hail on a migrated band.

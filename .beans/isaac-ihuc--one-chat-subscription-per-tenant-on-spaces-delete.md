@@ -15,7 +15,7 @@ updated_at: 2026-09-22T23:49:58Z
 ## Decision (Micah, 2026-09-22)
 
 The Workspace Events API accepts the target `//chat.googleapis.com/spaces/-`
-("all spaces for a user"; user auth only — which is how Yopp subscribes). One
+("all spaces for a user"; user auth only — which is how Skiff subscribes). One
 subscription per tenant delivers message created/updated/deleted, reactions,
 membership created/updated/deleted and read-state events for every space the
 account is a member of, DMs and unnamed group chats included. Membership-created
@@ -65,9 +65,9 @@ https://developers.google.com/workspace/events/guides/events-chat on
 
 - Suites green in isaac-gchat and isaac-google; the deleted namespaces have no
   survivors (`grep -rn discover src features spec` empty).
-- Yopp config needs no `gchat/spaces` entries for routing; the yopp train
+- Skiff config needs no `gchat/spaces` entries for routing; the skiff train
   drops them except where an override is wanted.
-- One-time on yopp after deploy: `isaac google status` shows one Chat
+- One-time on skiff after deploy: `isaac google status` shows one Chat
   registration per tenant; a DM to the account from a person starts a turn
   without any config change.
 
@@ -205,7 +205,7 @@ clean and the new spec files follow the same existing pattern.)
   say; the renew window assumes the same 7 days) and that renewal on it works.
 - A DM from a person to the account starting a turn with no config at all, and
   a message in a space nobody listed doing the same.
-- The yopp/zanebot train should drop `gchat/spaces` entries except where an
+- The skiff/zanebot train should drop `gchat/spaces` entries except where an
   override is actually wanted.
 
 ### Note for isaac-an14 (heartbeat)

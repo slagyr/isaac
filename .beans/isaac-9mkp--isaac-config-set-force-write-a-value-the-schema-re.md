@@ -11,7 +11,7 @@ created_at: 2026-09-19T20:52:22Z
 updated_at: 2026-09-20T01:48:59Z
 ---
 
-Found 2026-09-19 on yopp, configuring google.oauth:
+Found 2026-09-19 on skiff, configuring google.oauth:
 
     isaac config set google.oauth.client-id 6094…apps.googleusercontent.com
     error: google.oauth.client-secret - is required [file: config/isaac.edn]

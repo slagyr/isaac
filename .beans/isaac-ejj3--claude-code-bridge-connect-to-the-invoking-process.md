@@ -13,7 +13,7 @@ updated_at: 2026-09-15T16:54:21Z
 
 ## Problem
 
-Two defects in the Claude Code provider (`isaac-claude-code`, module `:isaac.provider.claude-code`), found configuring yopp on 2026-09-14.
+Two defects in the Claude Code provider (`isaac-claude-code`, module `:isaac.provider.claude-code`), found configuring skiff on 2026-09-14.
 
 ### 1. The MCP bridge talks to the daemon, not to the process that started the turn
 
@@ -22,7 +22,7 @@ Two defects in the Claude Code provider (`isaac-claude-code`, module `:isaac.pro
 - Turn inside the server (Discord, hail, cron, remote CLI): the daemon is the invoker, so it works by coincidence.
 - Turn inside a CLI process (`isaac prompt` on a root with a running daemon): the bridge POSTs to the daemon, which never registered the turn → `:mcp/turn-not-active` (server.log) → `claude/mcp-status :tools 0` → `claude/driver-fallback :reason :mcp-failed` → fence fallback → `empty-terminal-response`. The crew's tools silently vanish.
 
-Evidence (yopp, 2026-09-14T23:44, session `claude-smoke-4`): `turn/request-built :selected-tools-count 8`, then `mcp/turn-not-active` for turn `60703da5…` in server.log, `mcp-status :tools 0`, turn ended `:error :empty-terminal-response`.
+Evidence (skiff, 2026-09-14T23:44, session `claude-smoke-4`): `turn/request-built :selected-tools-count 8`, then `mcp/turn-not-active` for turn `60703da5…` in server.log, `mcp-status :tools 0`, turn ended `:error :empty-terminal-response`.
 
 ### 2. The bridge runs through the full isaac CLI
 
@@ -52,7 +52,7 @@ The module contributes `:isaac.agent/provider-template {:claude …}` (`src/isaa
   - **Blocker:** isaac-http cannot run its suites. `deps.edn:23` and `bb.edn:21` pin isaac-agent `b6284e42ab37ccf971637d4dc791856c7fa231aa`, which is missing from upstream (verified after fetch, 2026-09-15; predates both commits). Repin before `8d696f1` can be shown green.
   - The `@wip` scenario "mcp-bridge auth failure on tools/list is a JSON-RPC error" in `features/llm/mcp_bridge.feature` (from 7fe99a3) runs in-process via `isaac is run with "mcp-bridge …"` and gets empty stdout. Under decision 2 it is rewritten to launch the bridge the way Claude Code does (a `bb` subprocess with real stdin), which should also retire the stdin problem. Unverified until drafted.
 - isaac-agent: delete the built-in `:claude` provider template.
-- Train: module release + agent release pinned together in `isaac/modules.edn`; zanebot `~/.isaac/config/providers/claude.edn` → `{:type :claude-code}` in the same script as the restart (old runtime rejects the new key, new runtime rejects the old). yopp `providers/claude-code.edn` likewise.
+- Train: module release + agent release pinned together in `isaac/modules.edn`; zanebot `~/.isaac/config/providers/claude.edn` → `{:type :claude-code}` in the same script as the restart (old runtime rejects the new key, new runtime rejects the old). skiff `providers/claude-code.edn` likewise.
 
 ## Scenarios
 
@@ -218,7 +218,7 @@ One-time checks (not scenarios, per the no-absence-tests rule):
 - isaac-claude-code `src/isaac-manifest.edn` has no `:isaac/cli` and no `:isaac.http/route`; template key is `:claude-code`.
 - isaac-agent `resources/isaac-manifest.edn` has no `:claude` provider template; `isaac config validate` rejects `{:type :claude}` on a root with both released.
 - `grep -rn "mcp-server-url\|mcp-server-token\|running-server\|ISAAC_SERVER_TOKEN" src/` in isaac-claude-code is empty.
-- Real-binary smoke after the train, on yopp: `isaac prompt --crew claude -m "Use a tool to list /home/yopp/.isaac/config/models …"` performs a real tool call; cli.log shows `:claude/mcp-status` with `:tools` = the crew's allowed tool count; no `:mcp/turn-not-active` in either log. Repeat a hail-driven tool call on zanebot.
+- Real-binary smoke after the train, on skiff: `isaac prompt --crew claude -m "Use a tool to list /home/skiff/.isaac/config/models …"` performs a real tool call; cli.log shows `:claude/mcp-status` with `:tools` = the crew's allowed tool count; no `:mcp/turn-not-active` in either log. Repeat a hail-driven tool call on zanebot.
 
 ## Worker checkpoint (2026-09-15)
 
@@ -255,4 +255,4 @@ Claude Code branch: `bean/isaac-ejj3 @ adeccd6` (base `origin/main@dbde9bb`). Ve
 main-sha: isaac-claude-code 2a9023f3fb94a4e34de6cc98d66f4d8708e2a000
 main-sha: isaac-agent 7ba21ce45433b6756f72b075928b62aab5ffb6a4
 
-Verify gate (perceptor@isaac-verify): thinking scenario no longer @wip; ISAAC_GIT=1 claude_driver.feature 21/0/75; mcp_turn_registry 5/0/8; mcp_bridge 2/0/5; claude-code bb ci 66/0/219 specs (3 pending real smokes) + 42/0/136 features; agent bb ci 1610/0/3315 specs + 754/0/1793 features (1 pending). Manifest :claude-code, no :isaac/cli or :isaac.http/route; agent has no :claude template; grep of mcp-server-url/mcp-server-token/running-server/ISAAC_SERVER_TOKEN in src/ empty. Real-binary yopp/zanebot smoke deferred to human deploy train.
+Verify gate (perceptor@isaac-verify): thinking scenario no longer @wip; ISAAC_GIT=1 claude_driver.feature 21/0/75; mcp_turn_registry 5/0/8; mcp_bridge 2/0/5; claude-code bb ci 66/0/219 specs (3 pending real smokes) + 42/0/136 features; agent bb ci 1610/0/3315 specs + 754/0/1793 features (1 pending). Manifest :claude-code, no :isaac/cli or :isaac.http/route; agent has no :claude template; grep of mcp-server-url/mcp-server-token/running-server/ISAAC_SERVER_TOKEN in src/ empty. Real-binary skiff/zanebot smoke deferred to human deploy train.

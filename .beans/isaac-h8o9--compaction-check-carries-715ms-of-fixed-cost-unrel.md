@@ -102,7 +102,7 @@ Remove `@wip` when the instrumentation lands.
 
 ## Extra datapoint (2026-09-17)
 
-The same check ran in **241ms** on yopp against **715ms** on zanebot, on identical code
+The same check ran in **241ms** on skiff against **715ms** on zanebot, on identical code
 (`bcd6d5e`). The fixed cost is therefore host- or config-dependent, not inherent to the
 code path — worth comparing the two hosts' config resolution before assuming the cost
 lives in the check itself.

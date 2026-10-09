@@ -12,7 +12,7 @@ blocked_by:
 
 ## Why
 
-Yopp's answer text in a gchat turn is delivered to the thread by the comm
+Skiff's answer text in a gchat turn is delivered to the thread by the comm
 (`on-reply*`). The model must not need — or see — `gchat__send` for that.
 Removing the tool from comm-originated turns is the fix Micah asked for;
 isaac-mw27's dedupe stays as a belt-and-braces guard.

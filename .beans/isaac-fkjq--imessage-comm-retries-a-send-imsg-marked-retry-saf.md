@@ -18,7 +18,7 @@ regex over the error *message* only:
 ```
 
 imsg, however, answers with a structured `:data` map that states the answer
-outright. A real reply observed on yopp 2026-09-24:
+outright. A real reply observed on skiff 2026-09-24:
 
 ```json
 {"error":{"message":"Delivery outcome unknown","code":-32001,

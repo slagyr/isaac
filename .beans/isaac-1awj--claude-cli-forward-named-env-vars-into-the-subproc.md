@@ -56,6 +56,6 @@ Invocation-table matcher extensions (existing step `the claude binary was invoke
 - [x] `@wip` removed from the four scenarios
 - [x] Provider schema includes `:forward-env` (seq of strings); default `["CLAUDE_CODE_OAUTH_TOKEN"]`
 
-Landed 2026-09-29 in isaac-claude-code `a751b38` (the code moved out of isaac-agent). The invocation rows use the existing matcher dialect `(env NAME=VALUE)` and `(no NAME in env)`. Yopp's isaac.provider.claude-code pin is that sha. The hand-added systemd `EnvironmentFile` was removed; the server process does not carry the token, and the claude child reads it from `<isaac-home>/.env` at spawn.
+Landed 2026-09-29 in isaac-claude-code `a751b38` (the code moved out of isaac-agent). The invocation rows use the existing matcher dialect `(env NAME=VALUE)` and `(no NAME in env)`. Skiff's isaac.provider.claude-code pin is that sha. The hand-added systemd `EnvironmentFile` was removed; the server process does not carry the token, and the claude child reads it from `<isaac-home>/.env` at spawn.
 
 DoD: `@wip` gone and the four commands pass.

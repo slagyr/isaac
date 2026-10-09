@@ -25,7 +25,7 @@ character, and trying to read that character as a map entry.
 **Confirmed pre-existing.** Reproduced on clean `main` with all isaac-286x work
 stashed, so it is not that bean's doing.
 
-It does **not** reproduce on yopp — isaac-ey6q records `isaac config validate`
+It does **not** reproduce on skiff — isaac-ey6q records `isaac config validate`
 answering `OK` there with the Google tenant configured — so it looks like a
 harness or module-index artifact rather than a production fault. That
 difference is itself the interesting part and should be explained, not assumed

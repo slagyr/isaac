@@ -24,11 +24,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -163,7 +163,7 @@ own drain-on-release fires, not after), then rebase and re-run this branch's
 `bb ci` before merging.
 
 **Live-config greps (read-only, no edits needed).** zanebot
-(`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`)
+(`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`)
 `~/.isaac/config`: no hits on either host for any of the renamed namespace
 tokens above.
 
@@ -207,7 +207,7 @@ Full grep of the tracked tree for any remaining pre-rename namespace token
 hits.
 
 No live-config edits were needed (checked before the initial push — no hits
-on zanebot or yopp for any renamed namespace token).
+on zanebot or skiff for any renamed namespace token).
 
 ## Planner verification (2026-09-30)
 

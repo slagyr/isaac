@@ -50,7 +50,7 @@ for cleanup-bean-4's generalization of what's left.
 
 1. **Verify no live config needs the legacy branches before deleting.**
    Checked this planning session:
-   - **yopp** (`ssh yopp@yopp`, reachable): `~/.isaac/config/isaac.edn` +
+   - **skiff** (`ssh skiff@skiff`, reachable): `~/.isaac/config/isaac.edn` +
      `crew/*.edn` + `models/*.edn` + `providers/*.edn` — modern shape
      throughout (`:crew`/`:models`/`:providers` all top-level maps of id,
      no `:list`, no `:server` key anywhere; `grep -n ':list\|:server\b'`
@@ -62,7 +62,7 @@ for cleanup-bean-4's generalization of what's left.
      ~/.isaac/config/isaac.edn ~/.isaac/config/crew/*.edn
      ~/.isaac/config/models/*.edn ~/.isaac/config/providers/*.edn"` or
      equivalent) before deleting — this bean's acceptance is gated on
-     that check finding nothing, same as yopp.
+     that check finding nothing, same as skiff.
    - Any other deployed Isaac instance Micah knows about (personal
      laptop config, other hosts) should get the same check.
 2. Delete `old-crew-list`, `old-models`, `old-providers`, and
@@ -122,7 +122,7 @@ scenario). `isaac-http` only if the `:server` retired-hint moves there
 
 ## Planner note (2026-09-30)
 
-Checked zanebot live config (zane@zanebot ~/.isaac/config): no `:list`, no `:server`, models/providers in their own dirs — fully modern, like yopp. Safe to delete.
+Checked zanebot live config (zane@zanebot ~/.isaac/config): no `:list`, no `:server`, models/providers in their own dirs — fully modern, like skiff. Safe to delete.
 
 ## Ungated
 

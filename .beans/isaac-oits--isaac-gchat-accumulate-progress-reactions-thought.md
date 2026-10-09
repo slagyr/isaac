@@ -25,9 +25,9 @@ gchat 0.2.10 shows 👀 while a turn runs and swaps it for ✅/⚠️/⏳ at the
 - Config: extend `gchat/reactions` with `:thinking "🧠" :tool "🔧" :aside "💬"` defaults. A kind set to `false` skips that kind; `gchat/reactions false` still turns everything off. Update the manifest value-spec (string or boolean per key) and its description.
 - Guidance: unchanged (details on demand already covered).
 
-## Verify against Yopp's real lane
+## Verify against Skiff's real lane
 
-Yopp runs the claude-code **driven** lane. Read `isaac-agent/src/isaac/drive/turn.clj` and the claude-code driver to confirm which of `on-reckoning`, `on-tool-call`, `on-aside` actually fire in driven mode, and whether the gchat comm map registers those hooks at all today. If a hook never fires in driven mode, say so in the handoff (do not fake it) — the feature is still correct for direct lanes.
+Skiff runs the claude-code **driven** lane. Read `isaac-agent/src/isaac/drive/turn.clj` and the claude-code driver to confirm which of `on-reckoning`, `on-tool-call`, `on-aside` actually fire in driven mode, and whether the gchat comm map registers those hooks at all today. If a hook never fires in driven mode, say so in the handoff (do not fake it) — the feature is still correct for direct lanes.
 
 ## Acceptance (features/comm/gchat/outbound.feature, RX6+)
 

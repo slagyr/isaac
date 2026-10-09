@@ -81,7 +81,7 @@ of which one wins.
 
 The alternative is retiring companions and moving every soul to an explicit
 reference. It's cleaner in principle, but it touches every crew on zanebot and
-yopp.
+skiff.
 
 ## Done when
 

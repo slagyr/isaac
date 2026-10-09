@@ -11,9 +11,9 @@ created_at: 2026-09-19T02:11:47Z
 updated_at: 2026-09-19T02:47:27Z
 ---
 
-## Problem (yopp + zanebot, 2026-09-18)
+## Problem (skiff + zanebot, 2026-09-18)
 
-`isaac config validate` reports `crew.<x>.session-policy - references undefined session policy (got "episodes"); known: chronicle` on every host where a crew uses `:episodes`, even though the episodes module is installed and the server runs that policy fine (yopp's `yopp` crew, zanebot's two episode crews).
+`isaac config validate` reports `crew.<x>.session-policy - references undefined session policy (got "episodes"); known: chronicle` on every host where a crew uses `:episodes`, even though the episodes module is installed and the server runs that policy fine (skiff's `skiff` crew, zanebot's two episode crews).
 
 `isaac-agent` `config/checks.clj:229 check-session-policy` asks the RUNTIME registry (`session-policy/known-policy-names` → `registered-names`) — which only holds policies whose `:isaac.agent/session-policy` berth factory has run. In the server that is boot; in the `config validate` CLI process the berth factory never runs, so only the built-in `chronicle` is known. The module's manifest contribution (`:isaac.agent/session-policy {:episodes {:factory isaac.session.policy.episodes/create}}`) is right there in the module index and is ignored.
 
@@ -31,7 +31,7 @@ Derive known policy names the way comm kinds are validated (manifest-side, `[:re
 ```
 cd isaac-agent && bb features features/config && bb spec spec/isaac/config && bb ci
 ```
-Field: `isaac config validate` on yopp and zanebot → 0 errors (the `tools.directories` warning is separate).
+Field: `isaac config validate` on skiff and zanebot → 0 errors (the `tools.directories` warning is separate).
 
 ## Handoff
 

@@ -10,9 +10,9 @@ created_at: 2026-09-23T02:15:07Z
 updated_at: 2026-09-23T16:07:03Z
 ---
 
-## Observed (yopp, 2026-09-23 02:15Z, isaac-google 0.1.10)
+## Observed (skiff, 2026-09-23 02:15Z, isaac-google 0.1.10)
 
-`isaac google smoke` reported `FAIL door — door unreachable: java.net.ConnectException` while `curl -X POST http://127.0.0.1:6674/google/pubsub` answered 401 and the Funnel URL answered 401 too. yopp's isaac.edn sets no `:http :port`; `cli/default-door-url` builds the probe URL from that key, so the port was missing or wrong. `--url http://127.0.0.1:6674/google/pubsub` passes.
+`isaac google smoke` reported `FAIL door — door unreachable: java.net.ConnectException` while `curl -X POST http://127.0.0.1:6674/google/pubsub` answered 401 and the Funnel URL answered 401 too. skiff's isaac.edn sets no `:http :port`; `cli/default-door-url` builds the probe URL from that key, so the port was missing or wrong. `--url http://127.0.0.1:6674/google/pubsub` passes.
 
 ## Change
 

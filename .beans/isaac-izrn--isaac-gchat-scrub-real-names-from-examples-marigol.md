@@ -22,7 +22,7 @@ Every tracked file in `isaac-gchat`: features, specs, feature-steps, src docstri
 | `tonotop` anywhere else (organization id, project ids, session names, config paths such as `google.tonotop.…`) | `marigold` |
 | `Micah Martin` | `Hieronymus Finch` |
 | `micah@…`, `micah-martin`, bare `micah` used as a sample sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
-| `yopp` anywhere (the account `yopp@…`, `users/yopp`, project and session names such as `…-yopp`, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
+| `skiff` anywhere (the account `skiff@…`, `users/skiff`, project and session names such as `…-skiff`, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
 | any long numeric `users/<digits>` id | `users/100000000000000000001` (keep distinct ids distinct: …002, …003) |
 | any `domainId` / customer id that is not obviously fake | `0marigold` |
 

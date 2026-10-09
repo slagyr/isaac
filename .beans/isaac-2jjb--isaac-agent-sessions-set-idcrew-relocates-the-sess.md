@@ -8,16 +8,16 @@ created_at: 2026-09-25T14:54:13Z
 updated_at: 2026-09-25T15:30:58Z
 ---
 
-## Symptom (yopp, 2026-09-25 14:32Z–14:47Z)
+## Symptom (skiff, 2026-09-25 14:32Z–14:47Z)
 
-The planner ran `isaac sessions set <id>.crew yopp` on four sessions that
+The planner ran `isaac sessions set <id>.crew skiff` on four sessions that
 still carried crew `main`. The record changed, but the session's directory
 stayed at `sessions/main/<id>/` while the store began reading and writing
-`sessions/yopp/<id>/` — a fresh, empty folder. Every following turn on those
+`sessions/skiff/<id>/` — a fresh, empty folder. Every following turn on those
 sessions handed the claude CLI an empty conversation: "Input must be
 provided either through stdin or as a prompt argument when using --print",
 reported to Micah as "Something went wrong (provider error)" — twice in the
-DM, once in yopp-test-2. Worked around by merging the folders by hand.
+DM, once in skiff-test-2. Worked around by merging the folders by hand.
 
 ## Design
 

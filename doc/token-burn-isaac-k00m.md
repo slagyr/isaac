@@ -163,7 +163,7 @@ remove the Cloud Platform scope from the user's grant.
 **And no service account is in use.** Key creation was blocked by
 `constraints/iam.disableServiceAccountKeyCreation`, so the `isaac-pubsub`
 service account that was created — and its `roles/pubsub.publisher` binding on
-the topic — is **inert**. Nothing authenticates as it. yopp has no
+the topic — is **inert**. Nothing authenticates as it. skiff has no
 `google.marigold.pubsub` config at all and `health.heartbeat.enabled false`.
 What actually fixed the 16-hour expiry was dropping `auth/pubsub` from
 `:isaac.google/scopes` and re-consenting; the service-account machinery exists

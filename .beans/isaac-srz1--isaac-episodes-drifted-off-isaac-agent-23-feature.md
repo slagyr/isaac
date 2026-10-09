@@ -27,10 +27,10 @@ What fails, against agent main:
 - migrate-session, layout (stdout matches)
 
 Why it matters now: the shape of the first failure — a seal that yields no
-scenes — is the shape of what Micah sees on yopp, where no scene is ever
+scenes — is the shape of what Micah sees on skiff, where no scene is ever
 sealed. isaac-ddls removed one cause (the provider contract error that failed
 the seal with :provider-error); this is a second, independent candidate, and
-yopp runs episodes main against agent main, which is exactly the combination no
+skiff runs episodes main against agent main, which is exactly the combination no
 suite covers.
 
 Work: run the repinned suite, read the first sealing failure to the bottom

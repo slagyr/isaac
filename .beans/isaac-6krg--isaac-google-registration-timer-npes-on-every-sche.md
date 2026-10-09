@@ -11,7 +11,7 @@ updated_at: 2026-09-19T23:05:00Z
 parent: isaac-bv1l
 ---
 
-Found 2026-09-19 on yopp, first live tick after configuring comms: `:scheduler/handler-error :id :google/registration NullPointerException` every 30 s; `isaac google status` stays `unknown never`.
+Found 2026-09-19 on skiff, first live tick after configuring comms: `:scheduler/handler-error :id :google/registration NullPointerException` every 30 s; `isaac google status` stays `unknown never`.
 
 1. `tick!` destructures `{:keys [now root door-up?]}` and then calls `(door-up?)` — the nil local shadows the fn. The scheduler calls `(tick! {})`. Every spec and feature step passed `:door-up?` explicitly, so production was the first caller without it. No Chat subscription or Gmail watch was ever created on a live host.
 2. Run by hand with `:door-up? true` the tick reached Google — and stored `operations/…` with `:expires-at nil` for the Chat space: Workspace Events `subscriptions.create` answers with a long-running Operation whose `:response` holds the subscription. Next tick's live listing corrected it, but the log line, `status`, and the state file were wrong.
@@ -22,17 +22,17 @@ Fix: read `(:door-up? opts)` explicitly; `create-subscription!` merges `:respons
     cd isaac-google && bb spec && bb ci     # 48 spec, 19 feature, 0 failures
 
 ## Handoff / resume
-Planner fixed locally. branch: bean/google-tick-fix @ 5daea33 (base origin/main@828673d) in isaac-google — fast-forward from main. Deployed to yopp ahead of landing (pinned to the branch sha) so the rollout can continue; the pin is moved to main once verify lands it.
+Planner fixed locally. branch: bean/google-tick-fix @ 5daea33 (base origin/main@828673d) in isaac-google — fast-forward from main. Deployed to skiff ahead of landing (pinned to the branch sha) so the rollout can continue; the pin is moved to main once verify lands it.
 
 
 
 Two more found on the same live tick, same branch (@ 1f54e30):
 3. `subscriptions.list` returns 400 without Google's required event-type filter, so the timer's remote view was always empty → create every tick → 'Subscription associated with the resource already exists'. Now filters on message.created (every Chat subscription we make carries it). Spec added.
-4. `isaac google status` read only the Workspace Events listing, so the Gmail watch showed `unknown`; it now merges entries' own :remote views. yopp shows both registrations with real expiries.
-bb ci 49 spec / 19 feature green. Yopp pinned to 1f54e30 (restart 21:24Z); repin to main after landing.
+4. `isaac google status` read only the Workspace Events listing, so the Gmail watch showed `unknown`; it now merges entries' own :remote views. skiff shows both registrations with real expiries.
+bb ci 49 spec / 19 feature green. Skiff pinned to 1f54e30 (restart 21:24Z); repin to main after landing.
 
 
 
 ## Landed on main (2026-09-19)
 main-sha: isaac-google d5dc7b55a17a7c64414580056fc31dd4368a6da5
-Verified by the planner at Micah's instruction (zanebot's verify sessions were out of provider tokens): independent bb ci on the squash commit 49 spec / 19 feature examples green; live yopp tick clean on the same tree.
+Verified by the planner at Micah's instruction (zanebot's verify sessions were out of provider tokens): independent bb ci on the squash commit 49 spec / 19 feature examples green; live skiff tick clean on the same tree.

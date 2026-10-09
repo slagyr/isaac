@@ -8,7 +8,7 @@ created_at: 2026-10-07T13:58:04Z
 updated_at: 2026-10-07T14:04:47Z
 ---
 
-Yopp, 2026-10-07 11:00Z: `:session/observer-error :observer "episodes" :error "session already exists: roving-sextant"`, delivered to Micah as an attention notice. Regression from the isaac-ka10 port.
+Skiff, 2026-10-07 11:00Z: `:session/observer-error :observer "episodes" :error "session already exists: roving-sextant"`, delivered to Micah as an attention notice. Regression from the isaac-ka10 port.
 
 ## Cause (diagnosis by Micah's other agent, confirmed)
 `isaac.session.episodes.lifecycle/open-episode!` always calls `session-ctx/create-with-resolved-behavior!`. The observer runs it on `:session-opened` / `:turn-started`, after the turn has already created the session, so the store throws. The old policy path skipped the create when `get-session` found one; the observer's lifecycle path does not.

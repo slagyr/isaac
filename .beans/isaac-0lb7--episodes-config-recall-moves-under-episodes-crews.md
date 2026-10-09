@@ -47,7 +47,7 @@ to override the global one:
   reads through it; the `get-in` paths become `[:episodes :recall …]`.
   `embed` has no crew and stays global.
 - Clean cutover: top-level `:recall` is gone. zanebot has none today;
-  check yopp before deploying.
+  check skiff before deploying.
 - Deleted the landed scenario "leftover :recall :floor-cos does not raise
   the floor" (query.feature): it guarded a key that no longer exists.
 

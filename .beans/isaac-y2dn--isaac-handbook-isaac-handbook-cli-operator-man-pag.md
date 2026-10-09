@@ -29,7 +29,7 @@ Dedicated `isaac handbook` command, wrapping the same topic index as
 - Several topic ids, printed in the order asked.
 - Same topic ids as the tool (`<module-id>`, `<module-id>#<slug>`). No
   short aliases in v1.
-- `:hosted true` so `yopp-isaac handbook …` works.
+- `:hosted true` so `skiff-isaac handbook …` works.
 - Markdown to stdout. No pager.
 - No size cap on the CLI. `handbook.max-chars` stays a tool/context
   limit.

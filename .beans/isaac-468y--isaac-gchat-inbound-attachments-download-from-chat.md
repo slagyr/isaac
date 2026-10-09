@@ -8,9 +8,9 @@ created_at: 2026-09-25T15:56:18Z
 updated_at: 2026-09-25T16:00:35Z
 ---
 
-## Symptom (yopp, 2026-09-25 15:52Z)
+## Symptom (skiff, 2026-09-25 15:52Z)
 
-Micah sent Yopp an image in a Chat DM after isaac-e2zb shipped. The turn
+Micah sent Skiff an image in a Chat DM after isaac-e2zb shipped. The turn
 input read `[attachment: optimus-prime….png (download failed)]`; the log:
 `:gchat.attachment/download-failed "Chat API attachment download failed: 404"`
 with the `attachmentDataRef.resourceName` (an opaque base64 string).

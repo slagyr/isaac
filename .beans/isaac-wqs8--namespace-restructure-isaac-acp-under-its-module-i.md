@@ -23,11 +23,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -41,7 +41,7 @@ main-sha: isaac-acp 07f9fb8
 
 **Temporary blocker, resolved mid-bean.** isaac-episodes had not migrated when this bean started (bean isaac-tt1q, status `todo`); its own source still required the old foundation/agent namespace names, which broke `bb spec` (1 failure via foundation's builtin-index discovering episodes' manifest) and `bb features` (couldn't load `acp-steps.clj`'s `isaac.session.policy.episodes` require at all) once this repo's foundation/agent pins moved. Per the shared brief's rule ("stop before landing and report; don't land red"), work was paused and reported rather than landed red. isaac-tt1q landed shortly after (main 907b42c, `isaac.session.policy.episodes` → `isaac.session.episodes.policy`); resumed from the same worktree, bumped the episodes pin and the one require, and proceeded.
 
-**Live-config greps (read-only, no edits made).** zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config` both only match the unchanged `:isaac.comm.acp` module id (in `modules.edn`/`isaac.edn` and various dated backups). No config edits required on either host.
+**Live-config greps (read-only, no edits made).** zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config` both only match the unchanged `:isaac.comm.acp` module id (in `modules.edn`/`isaac.edn` and various dated backups). No config edits required on either host.
 
 **Test results.** `bb ci` (config-bypass-lint + lint-cli-host + `bb spec` + `bb features`): green, both against the real classpath and with `HOME` pointed at a scratch dir (no config leakage observed either way). `bb spec`: 81/81. `bb features`: 70/70. `bb jvm-spec` (real JVM via `clojure -M:spec`, `HOME` isolated, `ISAAC_GIT=1` to force the pinned shas): 81/81. `bb jvm-features`: 70/70. No pre-existing-failure carryover to report — everything is clean.
 

@@ -29,7 +29,7 @@ Work: normalize tags to a set of keywords wherever they are read (`tags-of`)
 and wherever they are written (`open-session!`, `sessions set`, the feature
 steps' session table). Scenario: a session created with vector tags is
 selected by `--tags`, by hail, and by a gchat space entry. Then check what is
-on disk on zanebot and yopp.
+on disk on zanebot and skiff.
 
 ## Design (planner, 2026-10-07)
 
@@ -64,7 +64,7 @@ stay). Then:
 stays (it can share `tags->set`); the JSON output of `sessions show`
 already renders a set as a list.
 
-**After landing:** `sessions list` on zanebot and yopp with `--tag` for
+**After landing:** `sessions list` on zanebot and skiff with `--tag` for
 the bands in use will say whether any session on disk was invisible; no
 code is needed for them.
 

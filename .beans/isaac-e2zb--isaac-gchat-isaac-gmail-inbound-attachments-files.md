@@ -10,7 +10,7 @@ updated_at: 2026-09-25T15:07:45Z
 
 ## Why (Micah, 2026-09-25)
 
-Micah sent Yopp an image in a Chat DM and asked what it was; Yopp saw only
+Micah sent Skiff an image in a Chat DM and asked what it was; Skiff saw only
 the text. Neither comm reads inbound attachments: gchat only sends them
 (isaac-vlxz), gmail's message parser keeps text parts only. Attachments a
 person sends must reach the model.

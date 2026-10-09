@@ -1,6 +1,6 @@
 ---
 # isaac-1bq1
-title: "isaac-gchat: reactions on the triggering message show Yopp's progress — \U0001F440 working, ✅ answered, ⚠️ failed, ⏳ parked — one reply per message, no status posts"
+title: "isaac-gchat: reactions on the triggering message show Skiff's progress — \U0001F440 working, ✅ answered, ⚠️ failed, ⏳ parked — one reply per message, no status posts"
 status: completed
 type: feature
 priority: high
@@ -14,9 +14,9 @@ updated_at: 2026-09-23T18:47:08Z
 ## Decision (Micah, 2026-09-23)
 
 One response per message, and it must be a new message so it notifies. No
-status message, no trace in the answer — Yopp reads like a person. Progress
+status message, no trace in the answer — Skiff reads like a person. Progress
 is shown with reactions on the triggering message, which the Chat API lets a
-user add and remove and which do not notify. Verified live on yopp
+user add and remove and which do not notify. Verified live on skiff
 2026-09-23: 👀 added to Micah's DM message, held 20 s, removed, ✅ added — the
 glyphs changed on his screen, no notification anywhere. The current token
 (chat.messages scope) already allows reactions.create/delete; no new scope.
@@ -29,7 +29,7 @@ glyphs changed on his screen, no notification anywhere. The current token
   (:provider-unavailable) → ⏳ (kept until the resumed reply lands, then ✅).
   Remove-then-add for every change (there is no reaction update). Reaction
   names are remembered per turn so removal is exact.
-- A message Yopp heard but was not addressed by (mention-only room, no
+- A message Skiff heard but was not addressed by (mention-only room, no
   mention) gets no reaction.
 - Reaction failures are logged once at debug and never fail the turn.
 - Glyphs configurable per comm (`gchat/reactions {:working "👀" :done "✅"

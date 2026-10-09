@@ -14,10 +14,10 @@ updated_at: 2026-09-24T19:20:59Z
 (`src/isaac/comm/imessage.clj`). Any host that configures an iMessage comm
 watches the chat.db it points at — there is no way to declare a send-only comm.
 
-yopp's comm reaches zanebot's `imsg` over SSH and therefore watches **the same
+skiff's comm reaches zanebot's `imsg` over SSH and therefore watches **the same
 chat.db zanebot already watches**. Confirmed live 2026-09-24:
 
-    yopp    :imsg.watch/subscribed  :subscription 1
+    skiff    :imsg.watch/subscribed  :subscription 1
     zanebot :imsg.watch/subscribed  (its own comm, same db)
 
 So one inbound message from the operator dispatches a turn on **both** hosts and
@@ -35,7 +35,7 @@ The berth offers no `:imessage/inbound?` or equivalent. The only lever is
   :else false)                                 ; [] → nobody
 ```
 
-**Worked around in place** on yopp by setting `:imessage/allow-from []`. That
+**Worked around in place** on skiff by setting `:imessage/allow-from []`. That
 works — `notification->work-item` returns nil and the handler does nothing, with
 no side effects — but it reads as a mistake rather than as intent, and it still
 opens the subscription and pays for every notification.

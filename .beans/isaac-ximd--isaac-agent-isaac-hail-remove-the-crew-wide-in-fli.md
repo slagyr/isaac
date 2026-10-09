@@ -15,7 +15,7 @@ session — two prompts in one session never run at once — but two sessions
 must run in parallel. Today `:max-in-flight` is a crew-wide cap that
 defaults to **1** when unset (`isaac.session.store.spi/crew-max-in-flight`,
 `isaac.hail.delivery-worker/crew-max-in-flight`), so a crew with no setting
-serializes every session it owns: on yopp every space, DM and email thread
+serializes every session it owns: on skiff every space, DM and email thread
 queued behind one another until the planner set 4 by hand.
 
 ## Design
@@ -39,7 +39,7 @@ queued behind one another until the planner set 4 by hand.
   "a busy session on the crew does not gate another session's delivery".
 
 **Deploy note (planner):** remove `:max-in-flight` from zanebot crews
-perceptor, prowl, qwen, ratchet, scrapper and from yopp crew yopp before
+perceptor, prowl, qwen, ratchet, scrapper and from skiff crew skiff before
 upgrading, or validation fails.
 
 ## Acceptance (baselined: agent concurrency.feature + hail bound_unclaimed.feature)

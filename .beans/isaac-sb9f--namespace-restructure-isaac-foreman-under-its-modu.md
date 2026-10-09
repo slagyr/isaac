@@ -25,11 +25,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -50,7 +50,7 @@ main-sha: isaac-foreman 861f6ab (github.com/slagyr/isaac-foreman)
 
 **Two isaac-agent bugs found and fixed upstream, not worked around here.** While driving this queue path synchronously from a CLI for the first time in a feature suite, found: (1) `isaac.agent.turn.submit/submit!` coerced a bare-string `:session` to a vector only for its own submit-time `resolve-session-targets` check, but persisted the raw string into the durable record; `isaac.agent.turn.worker`'s wake-time re-resolution reused that raw value without the coercion, so `(first "lamp-room")` returned `\l` and crashed the turn. (2) a related wake-config timing issue. Both are fixed in isaac-agent as of `f9530426` (isaac-n8rb, isaac-8evx) — no foreman-side workaround needed or left in place.
 
-**Live-config greps (read-only, no edits made).** zanebot (`ssh zane@zanebot.tail66e5f8.ts.net`) and yopp (`ssh yopp@yopp`) `~/.isaac/config`: grepped for every renamed namespace (`isaac.foreman.*`, `isaac.session.session-steps`, `isaac.configurator-steps`, `isaac.drive.observer`, `isaac.tool.fs-bounds`/`.memory`, `isaac.turn.submit`/`.worker`, `isaac.session.store.spi`). Zero hits on either host. No config edits required.
+**Live-config greps (read-only, no edits made).** zanebot (`ssh zane@zanebot.<tailnet>.ts.net`) and skiff (`ssh skiff@skiff`) `~/.isaac/config`: grepped for every renamed namespace (`isaac.foreman.*`, `isaac.session.session-steps`, `isaac.configurator-steps`, `isaac.drive.observer`, `isaac.tool.fs-bounds`/`.memory`, `isaac.turn.submit`/`.worker`, `isaac.session.store.spi`). Zero hits on either host. No config edits required.
 
 **Test results (HOME isolated at /tmp/isaac_scratch_home_sb9f).** `bb ci` (config-bypass-lint + lint-cli-host + `bb spec` + `bb jvm-features`): green. `bb spec` / `bb jvm-spec`: 76/76. `bb jvm-features`: 23/23 (all 4 turn_action.feature scenarios pass). No `bb pins` task exists in this repo (foundation-only pin sites, matching isaac-on0o's note).
 

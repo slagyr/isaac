@@ -8,18 +8,18 @@ created_at: 2026-09-25T14:34:20Z
 updated_at: 2026-09-25T14:45:45Z
 ---
 
-## Symptom (yopp, 2026-09-25 14:28Z)
+## Symptom (skiff, 2026-09-25 14:28Z)
 
-Micah asked Yopp in a Chat DM for a jackalope image. Every fs tool call failed
-`path outside allowed directories: /home/yopp` — `/home/yopp`, `/tmp`, the
-cwd, all of it — although crew yopp allows `["/home/yopp" "/tmp"]`. The turn
-ran as crew yopp (`drive/turn-accepted :crew "yopp"`, the gchat comm passes
+Micah asked Skiff in a Chat DM for a jackalope image. Every fs tool call failed
+`path outside allowed directories: /home/skiff` — `/home/skiff`, `/tmp`, the
+cwd, all of it — although crew skiff allows `["/home/skiff" "/tmp"]`. The turn
+ran as crew skiff (`drive/turn-accepted :crew "skiff"`, the gchat comm passes
 the space's crew on dispatch) but the session record
 `gchat-marigold-dm-hieronymus-finch` still said `crew main` from its creation
-weeks ago, and no crew "main" exists on yopp. `isaac.tool.fs-bounds/
+weeks ago, and no crew "main" exists on skiff. `isaac.tool.fs-bounds/
 ensure-path-allowed` reads `(:crew session)` → `[:crew "main" :tools]` →
 empty directory policy → everything refused. Workaround applied: the four
-yopp sessions stored as `main` were set to `yopp`. The bug remains for any
+skiff sessions stored as `main` were set to `skiff`. The bug remains for any
 session whose stored crew differs from the crew the comm dispatches with.
 
 ## Design (drive stays generic)

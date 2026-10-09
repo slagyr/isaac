@@ -21,11 +21,11 @@ Each repo is touched once.
 
 ## Deploy freeze
 
-An installed Isaac runs one foundation and one agent, so zanebot/yopp don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
+An installed Isaac runs one foundation and one agent, so zanebot/skiff don't take the new foundation until every installed module has migrated. Each repo's main stays green on its own pins meanwhile.
 
 ## Every child bean also
 
-- greps zanebot and yopp live config (read-only, `ssh zane@zanebot…` / `ssh yopp@yopp`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
+- greps zanebot and skiff live config (read-only, `ssh zane@zanebot…` / `ssh skiff@skiff`) for namespace names in data (hook `:factory`, embedding `:namespace`, etc.) and lists required config edits in the bean;
 - updates its handbook chapter and README where namespaces are named;
 - is ungated (mechanical refactor): acceptance = full CI green on main, a grep showing no namespaces outside the module's id prefix in src/spec (list justified exceptions), planner verification.
 
@@ -49,7 +49,7 @@ One genuine collision: `spec/isaac/module_spec.clj` (ns `isaac.module-spec`, tes
 
 **Scenario-text edits:** `features/cli/config_keys_list.feature` names the real namespace twice in prose ("isaac.config.cli owns these commands generically...", "...both assert isaac.config.cli.set's own hard-coded help copy") — updated to `isaac.foundation.config.cli[.set]` since it's a factual pointer at the implementing namespace, not a behavioral contract. `features/cli/config_schema.feature`'s narrative mentions a historical `isaac.config.comm-kinds` convention that was never a real isaac-foundation namespace (predates this repo's history / belongs to agent's side) — left untouched, flagging here rather than guessing.
 
-**Live-config greps (read-only, no edits made):** zanebot and yopp `~/.isaac/config` both only match `:isaac.cli-server` — a separate module id (isaac-cli-server), not a foundation code namespace. No config edits required on either host.
+**Live-config greps (read-only, no edits made):** zanebot and skiff `~/.isaac/config` both only match `:isaac.cli-server` — a separate module id (isaac-cli-server), not a foundation code namespace. No config edits required on either host.
 
 **Left alone (deliberately out of scope):** `spec/isaac/config/fixtures/modules/**` and `spec/isaac/module/fixtures/**` (marigold manifest fixture *directories*, not Clojure namespaces — moving them would mean rewriting ~20 feature files' hardcoded `:local/root` strings for zero namespace benefit); `forbidden-prefixes`/`"isaac.util"` in `foundation_boundary_spec.clj` (a pre-existing, unrelated server-side boundary list, not this repo's own `isaac.util.edn`).
 

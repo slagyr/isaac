@@ -15,7 +15,7 @@ Isaac receives Google Chat messages and Gmail as soon as Google has them, and ca
 
 ## Decisions (2026-09-18, Micah)
 
-- **Identity = the Google user** (e.g. yopp@marigold.example), not a Chat app. A user-authorized Workspace Events subscription sees every message in every space the account belongs to; people mention that account to get Isaac's attention; DMs to it get a reply. (A Chat app would be a smaller build but only sees mentions/DMs — rejected for now.)
+- **Identity = the Google user** (e.g. skiff@marigold.example), not a Chat app. A user-authorized Workspace Events subscription sees every message in every space the account belongs to; people mention that account to get Isaac's attention; DMs to it get a reply. (A Chat app would be a smaller build but only sees mentions/DMs — rejected for now.)
 - **Push, with the host exposed publicly** (Funnel, same posture as zanebot). The door is one authenticated path, not the server. Pull stays a later host option.
 - **Not hooks.** Hooks go straight to a turn. Everything above the agent here is deterministic (token check, dedupe, echo drop, allow-lists, mention detection, history walking) and lives in a plain route + durable inbox.
 - **Three modules.** `isaac-google` (shared plumbing, knows nothing of Chat or Gmail), `isaac-gchat` (comm), `isaac-gmail` (comm). Two comms, not one.
@@ -56,7 +56,7 @@ Routing vocabulary is the one Discord channels and hooks already use: crew, sess
 - The push door is **not a bearer-secret principal**: Google signs a per-request OIDC token; Isaac holds no secret to hash. Under gym1 the door must be an **identity source** (the `:isaac.http/identity` berth gym1 names for pluggable sources) that verifies the token and yields principal `{:name :google-pubsub :scopes #{:google/push}}`, and the route declares `:scope :google/push`. Child 2 is blocked by isaac-bzgw for that berth and the route `:scope`; an unscoped door would require `:*` after bzgw and break push.
 - gym1 audit (isaac-2a2x) will log `:principal :google-pubsub` on every push and alert on first use — desired.
 - OAuth client secret and user tokens never sit in config: `${GOOGLE_CLIENT_SECRET}` from `.env`, tokens in the auth store. Same principle as gym1's hashed secrets.
-- Exposure: the door is the reason yopp gets a public Funnel; gym1 parks Funnel scope as a separate question. With per-principal scopes every other route stays admin/scoped behind that exposure.
+- Exposure: the door is the reason skiff gets a public Funnel; gym1 parks Funnel scope as a separate question. With per-principal scopes every other route stays admin/scoped behind that exposure.
 
 ## Repos (created 2026-09-18)
 
@@ -66,4 +66,4 @@ Source strategy doc dated 2026-09-12, amended 2026-09-16; Micah's architecture s
 
 
 
-Rollout runbook (2026-09-19): isaac-google/doc/rollout.md — gcloud script for the GCP half, console-only pieces, login, outbound, door. yopp: steps 1–2 done, non-secret config set; owner login pending.
+Rollout runbook (2026-09-19): isaac-google/doc/rollout.md — gcloud script for the GCP half, console-only pieces, login, outbound, door. skiff: steps 1–2 done, non-secret config set; owner login pending.

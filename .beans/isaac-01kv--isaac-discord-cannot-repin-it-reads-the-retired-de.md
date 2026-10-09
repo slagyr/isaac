@@ -90,10 +90,10 @@ that commit deliberately removed. Resolved keeping isaac-zule's intent: no
 literal, only the read relocated to `isaac.config.defaults`.
 
 Rebasing then failed a spec **isaac-zule itself had added**, asserting
-`{:defaults {:crew "yopp"}}` resolves to `"yopp"` — the retired flat shape. It
+`{:defaults {:crew "skiff"}}` resolves to `"skiff"` — the retired flat shape. It
 passed only because the code under test still read the retired key; the moment
 the read moved, it returned nil. Migrated to
-`{:defaults {:frequencies {:crew "yopp"}}}`.
+`{:defaults {:frequencies {:crew "skiff"}}}`.
 
 That is isaac-57rl's thesis in miniature: a retired key stays invisible while
 one stale reader keeps it alive, and the test that should catch it is written

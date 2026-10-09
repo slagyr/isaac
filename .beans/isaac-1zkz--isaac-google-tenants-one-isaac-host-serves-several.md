@@ -15,16 +15,16 @@ blocked_by:
     - isaac-8s6s
 ---
 
-Decided 2026-09-19 (Micah). Today `google` config is one org; a second org's pushes are refused (:claims — the trust rule pins one push SA), which is safe but not supported. Everything Google is per org: the project, topic, push service account, OAuth client AND the Google user Isaac is (yopp@marigold.example cannot read another org's spaces). So a tenant is a complete set, not a namespace over one login.
+Decided 2026-09-19 (Micah). Today `google` config is one org; a second org's pushes are refused (:claims — the trust rule pins one push SA), which is safe but not supported. Everything Google is per org: the project, topic, push service account, OAuth client AND the Google user Isaac is (skiff@marigold.example cannot read another org's spaces). So a tenant is a complete set, not a namespace over one login.
 
 ## Shape
 ```
-:google {:marigold {:project … :topic … :oauth {…:account "yopp@marigold.example"} :push {:service-account …}}
+:google {:marigold {:project … :topic … :oauth {…:account "skiff@marigold.example"} :push {:service-account …}}
          :acme    {…}}
 :comms  {:gchat      {:type :gchat :google :marigold …}
          :gchat-acme {:type :gchat :google :acme …}}
 ```
-- **Single-tenant convenience:** a flat `:google {:project …}` (yopp today) reads as tenant :default; a comm with no :google key uses :default. Nothing on yopp changes until a second org exists. Schema: :google is a map of tenant → tenant-schema, with the flat form coerced.
+- **Single-tenant convenience:** a flat `:google {:project …}` (skiff today) reads as tenant :default; a comm with no :google key uses :default. Nothing on skiff changes until a second org exists. Schema: :google is a map of tenant → tenant-schema, with the flat form coerced.
 - **One door.** /google/pubsub stays. The identity berth contributes ONE trust rule PER TENANT (audience = the shared endpoint config ref, claims email = that tenant's push SA, principal :google-pubsub/<tenant> with scope :google/push). The door persists the event with :tenant (from the subscription's project in the Pub/Sub envelope, cross-checked against the principal) and handlers receive it.
 - Tokens per tenant in the auth store (google/<tenant>); `isaac google login [--tenant t]` (default when one); registration timer and Gmail watch run per tenant; `isaac google status` groups by tenant.
 - People index (isaac-8s6s) keyed globally by users/<id> (Google ids are global), tenant recorded per sighting; People API lookups use the tenant's token.
@@ -41,7 +41,7 @@ Constrains isaac-8s6s and isaac-dymn (they must carry :tenant); does not block t
 ## Not started 2026-09-20 (planner)
 
 Everything else in this train (8s6s, bklu, dymn, iv5c, tund, jqk2, 7rce, ddls)
-is landed and deployed to yopp; this one is not. Two reasons, both worth
+is landed and deployed to skiff; this one is not. Two reasons, both worth
 stating plainly rather than half-doing it:
 
 1. It is the only structural change in the set — config shape
@@ -50,7 +50,7 @@ stating plainly rather than half-doing it:
    every isaac-jqk2 tool taking the tenant's token. That deserves a worker and
    a verify pass, not a planner landing a refactor by hand at the end of an
    outage.
-2. Yopp has exactly one Google organization today, so nothing observable
+2. Skiff has exactly one Google organization today, so nothing observable
    changes for it. The cost of waiting is low; the cost of a half-migrated
    config on a live host is not.
 
@@ -71,7 +71,7 @@ Last green commit: `7597e2e` (pushed).
    `tenant-for-subscription`, `subscription-of`, and `*tenant*` (the dynamic
    binding a door or a comm sets for the thread). A flat `:google {:project …}`
    reads as `{:default <that map>}`; `auth-provider :default` stays the plain
-   `"google"` key so yopp's existing login stands. Spec
+   `"google"` key so skiff's existing login stands. Spec
    `spec/isaac/google/tenants_spec.clj` — 18 examples.
 2. `src/isaac/google/config.clj` — `tenant-fields` / `tenant-schema` extracted,
    and `google-schema` now carries **both** `:schema` (one organization's

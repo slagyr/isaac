@@ -34,11 +34,11 @@ Add to the fix: 4. a fence whose payload fails to parse is handled by the same c
 
 
 
-## Exhibit 3 (2026-09-17, yopp) — a third drift shape
+## Exhibit 3 (2026-09-17, skiff) — a third drift shape
 
-Yopp's crew replied with the call as plain text in a markdown code fence, no `<tool_call>` wrapper at all:
+Skiff's crew replied with the call as plain text in a markdown code fence, no `<tool_call>` wrapper at all:
 
-    ```{"name":"exec__run","arguments":{"command":"cat > /tmp/open_staging.clj << 'EOF' … EOF\ncat /tmp/open_staging.clj","workdir":"/home/yopp/marigold/cochlea"}}```
+    ```{"name":"exec__run","arguments":{"command":"cat > /tmp/open_staging.clj << 'EOF' … EOF\ncat /tmp/open_staging.clj","workdir":"/home/skiff/marigold/cochlea"}}```
 
 Well-formed JSON, right tool, wrong envelope. `parse-tool-calls` saw no opening tag, the drive ended the turn as a verdict, nothing ran. Same failure class; confirms the fix must be shape-agnostic: anything call-shaped that did not parse is a violation, not prose.
 
@@ -75,7 +75,7 @@ Seven new step families.
 ```
 cd isaac-claude-code && bb features features/llm/api/claude_cli.feature && bb ci
 ```
-If the hail scenario moves to isaac-hail: `cd isaac-hail && bb features` too. Version bump; pin is a train step. Field check after the train: the yopp crew re-runs the open_staging prompt and the tool executes (cli.log shows the toolCall/toolResult pair).
+If the hail scenario moves to isaac-hail: `cd isaac-hail && bb features` too. Version bump; pin is a train step. Field check after the train: the skiff crew re-runs the open_staging prompt and the tool executes (cli.log shows the toolCall/toolResult pair).
 
 ## Handoff (scrapper@isaac-work-3)
 

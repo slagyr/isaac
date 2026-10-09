@@ -10,7 +10,7 @@ updated_at: 2026-09-25T02:19:48Z
 
 ## Symptom
 
-On yopp every turn waited 30 s before `drive/turn-accepted` — the 👀 reaction
+On skiff every turn waited 30 s before `drive/turn-accepted` — the 👀 reaction
 and the reply both came ~50 s after the message. Four turns on 2026-09-24/25,
 four `mcp/connect-failed :server :linear "MCP initialize failed: timeout"`
 lines, each stamped the same second the turn was accepted. The Linear MCP
@@ -22,11 +22,11 @@ runtime turned one broken server into a per-turn tax on every reply.
 `isaac.mcp.runtime/ensure-server!` is the `:isaac.agent/tool-providers`
 entry. The agent's tool registry calls it while resolving a turn's tool
 context (`isaac.tool.registry/tool-providers`, called for any crew whose
-`:allow` names the server prefix — yopp allows `:linear/*`). When no live
+`:allow` names the server prefix — skiff allows `:linear/*`). When no live
 client exists it calls `connect-server!` **synchronously**: spawn +
 `initialize` + `tools/list`, bounded only by `client/DEFAULT-TIMEOUT-MS`
 (30 s). `RETRY-HOLD-MS` (60 s, isaac-vadd) only helps when turns arrive
-within a minute of the last failure; yopp's turns were minutes apart, so
+within a minute of the last failure; skiff's turns were minutes apart, so
 every one re-paid the full timeout. `start!` (boot and every `:mcp` config
 reload) has the same synchronous shape.
 
@@ -210,5 +210,5 @@ turn. Follow-up 53e7544 (0.1.3): `ensure-server!` checks
 `isaac.runner/running?` — inside the runner a turn never waits; outside it
 the first turn awaits the background connect, bounded by the server's
 timeout. hosts.feature un-@wip, 13/13 features, 42/0 specs, CI green.
-Registry pinned aa5cac5; yopp upgraded a28c098 → 53e7544 and restarted
+Registry pinned aa5cac5; skiff upgraded a28c098 → 53e7544 and restarted
 02:25Z. Zanebot does not run isaac.tool.mcp.

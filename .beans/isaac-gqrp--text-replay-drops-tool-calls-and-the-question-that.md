@@ -10,7 +10,7 @@ updated_at: 2026-09-15T19:41:48Z
 
 ## Problem
 
-The default prompt filter `isaac.llm.prompt.builder/filter-messages` (the text path used by ollama, grover, the claude-code module, and compaction's token estimate) was the April Ollama-era filter: it dropped every assistant tool-call message **and the user message immediately before a tool call**, and replayed tool results as bare user text. Found on yopp 2026-09-15: a second claude-code turn in session `test-cc-batch` answered "I haven't run any tools in this conversation" although the transcript held both calls and results.
+The default prompt filter `isaac.llm.prompt.builder/filter-messages` (the text path used by ollama, grover, the claude-code module, and compaction's token estimate) was the April Ollama-era filter: it dropped every assistant tool-call message **and the user message immediately before a tool call**, and replayed tool results as bare user text. Found on skiff 2026-09-15: a second claude-code turn in session `test-cc-batch` answered "I haven't run any tools in this conversation" although the transcript held both calls and results.
 
 ## Fix (decision 2026-09-15, Micah: fix now, deploy ASAP)
 
@@ -26,7 +26,7 @@ Clean cutover; no switch for the old behavior. OpenAI and Anthropic filters unch
 - `clojure -M:features features/llm/text_replay.feature` (proven red on 3e3ef7e)
 - `bb spec spec/isaac/llm/prompt/builder_spec.clj`
 - `bb ci` green
-- zanebot: agent release deployed; yopp claude-code follow-up turn recalls prior tool output (yopp only if Micah asks)
+- zanebot: agent release deployed; skiff claude-code follow-up turn recalls prior tool output (skiff only if Micah asks)
 
 ## Delivered (2026-09-15)
 
@@ -34,4 +34,4 @@ Clean cutover; no switch for the old behavior. OpenAI and Anthropic filters unch
 - Proven red on 3e3ef7e (old filter replayed "main up" where "hoist the sails" belonged); `bb ci` green: 1626 specs, 763 features, 0 failures. One existing scenario (context_management "Large tool results are truncated in prompts") moved its assertion from messages[1] to messages[3]; the question now precedes the result.
 - zanebot deploy 19:38:40Z. `modules upgrade` refused again in the live root (isaac-784x); upgraded via a rehearsal root instead, and the isaac.edn diff was the agent sha only. Boot: 401, runner 8 components, resume requeued 1 + hail/bound, discord ready, no validation errors, no stale-delivery removals.
 - Smoke on zanebot `claude-cli`: turn 1 ran `echo kite-292862244`; turn 2, with no tools, answered "I ran `echo kite-292862244`, which printed `kite-292862244`."
-- yopp not upgraded (deploys skip yopp unless asked).
+- skiff not upgraded (deploys skip skiff unless asked).

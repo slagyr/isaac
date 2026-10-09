@@ -20,7 +20,7 @@ because the `marigold` organization forbids service-account keys outright:
     constraints/iam.disableServiceAccountKeyCreation
 
 That is a policy worth keeping: long-lived service-account keys are a standard
-breach vector. So yopp now runs with `google.marigold.health.heartbeat.enabled
+breach vector. So skiff now runs with `google.marigold.health.heartbeat.enabled
 false` and publishes nothing, and the push pipeline has no silence detector.
 
 **Google can publish it instead, with no key in existence.** A Cloud Scheduler
@@ -75,7 +75,7 @@ not a health check.
 
 ## Notes
 
-yopp is the live case: `google.marigold.health.heartbeat.enabled false` today,
+skiff is the live case: `google.marigold.health.heartbeat.enabled false` today,
 which should become the externally-driven mode once this lands.
 
 ## No service account is needed for this (verified 2026-09-24)
@@ -128,8 +128,8 @@ say what late means, so the switch and the deadline are the same key and
 ## DEPLOY IS BLOCKED ON OPERATOR ACTION — and the order matters
 
 `health.heartbeat.enabled` is now a **retired key and a hard config error**.
-yopp currently has `google.marigold.health.heartbeat.enabled false`, so
-upgrading the module without unsetting it first makes yopp **refuse to start**.
+skiff currently has `google.marigold.health.heartbeat.enabled false`, so
+upgrading the module without unsetting it first makes skiff **refuse to start**.
 
 The config edit can go neither first nor last:
 
@@ -158,7 +158,7 @@ enabled), not verified against a live project. An explicit
 `roles/pubsub.publisher` grant to
 `service-<project-number>@gcp-sa-cloudscheduler.iam.gserviceaccount.com` is
 given as the fallback, so the runbook is safe either way — but the first real
-run on yopp is the confirmation.
+run on skiff is the confirmation.
 
 ## The deploy trap is gone — isaac-google `5cdf807`
 
@@ -168,7 +168,7 @@ error, and was right. `[[:retired? …]]` is the established idiom in
 moves**: the setting still exists elsewhere, so ignoring one would silently
 change behaviour and refusing is correct. This key is not that. The interval is
 the switch now, so a leftover `enabled` changes nothing, and refusing over it
-would have taken yopp down for config that no longer means anything.
+would have taken skiff down for config that no longer means anything.
 
 Unknown and leftover fields are warnings in this codebase. The config-check
 berth already carries `:warnings` beside `:errors`, so the helpful message and
@@ -189,7 +189,7 @@ silently cannot fire. What is gone is stopping a host that merely receives.
 **Revised deploy order — the config edit no longer has to be threaded:**
 
 1. **operator:** create and prove the Cloud Scheduler job
-2. upgrade `isaac.google`, restart (yopp starts fine with its leftover
+2. upgrade `isaac.google`, restart (skiff starts fine with its leftover
    `heartbeat.enabled false`, warning only)
 3. `isaac config set google.marigold.health.heartbeat.expected-interval-ms <ms>`
    and `isaac config unset google.marigold.health.heartbeat.enabled`
@@ -200,10 +200,10 @@ Steps 2 and 3 can be done in either order and neither can break the host.
 ## DEPLOYED AND PROVEN 2026-09-24 22:50Z — supersedes the "deploy is blocked" section above
 
 The operator created the Cloud Scheduler job (`us-west4`, `*/5 * * * *`,
-topic `projects/marigold-yopp/topics/isaac`, `ce-type=isaac.google/heartbeat`,
+topic `projects/marigold-skiff/topics/isaac`, `ce-type=isaac.google/heartbeat`,
 body `{"isaac-heartbeat":true,"tenant":"marigold"}`).
 
-It fired at 22:45:00Z and yopp logged `:google/heartbeat-received` at
+It fired at 22:45:00Z and skiff logged `:google/heartbeat-received` at
 **22:45:02Z — on the OLD build**, which knew nothing about Cloud Scheduler.
 That proved Scheduler → Pub/Sub → push door → OIDC verification before
 anything was upgraded, and it settles the one open question this bean left:
@@ -211,7 +211,7 @@ anything was upgraded, and it settles the one open question this bean left:
 Scheduler service agent published successfully with nothing configured beyond
 enabling the API. Documented-from-Google's-word is now measured.
 
-yopp then went to isaac-google `5cdf807`:
+skiff then went to isaac-google `5cdf807`:
 
 - `google.marigold.health.heartbeat.expected-interval-ms` = 300000 (matching
   the `*/5` schedule; + 60000 default grace = a 6-minute budget)
