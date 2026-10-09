@@ -1,13 +1,11 @@
 ---
 # isaac-i0eh
 title: 'isaac-google: scrub real names from examples — Marigold fixtures only'
-status: in-progress
+status: completed
 type: task
 priority: critical
-tags:
-    - unverified
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T17:08:29Z
+updated_at: 2026-10-09T17:11:03Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -65,3 +63,11 @@ The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-b
 isaac-google branch: bean/isaac-i0eh @ 40442b391c84133c36176df92b631a087f30c42f (base origin/main@342da242baf29256d5ef8636ad1ae85a90a9b44d). Single implementation commit. Replaced sample organization, sender, email, tenant, config and prose identifiers across features, specs, source examples, manifest, dependency comment and rollout docs; left LICENSE and decision attribution intact. No scenario added, removed, or reworded except identifier substitution; no dependency pin or behavior change.
 
 Checks: bb jvm-spec (268 examples, 0 failures); bb features (44 examples, 0 failures); bb ci (exit 0); git diff --check (clean); git grep -i tonotop/yopp (none); git grep -i micah (LICENSE:3 copyright and src/isaac/google/door.clj:81 decision attribution only); git grep -E "users/[0-9]{12,}" (none); bb bean-gate verify isaac-i0eh (exit 2, not gated). bb verify is not a task in isaac-google bb.edn; attempting it reports File does not exist: verify.
+
+
+
+## Landed on main (2026-10-09)
+
+main-sha: isaac-google 06e4f0fccfdfa0801d2a6ad1c9af0fd8a881076e
+
+Verification: bb ci (268 specs, 44 features), bb jvm-spec (268), bb features (44): all green; identifier greps clean except approved LICENSE and decision attribution. One mechanical scrub commit; no pin change. Historical test smells: spec/isaac/google/token_spec.clj:88 Thread/sleep, spec/isaac/google/module_spec.clj:12 slurp resources/isaac-manifest.edn. Test logs include existing structured warnings and expected CLI startup banners.
