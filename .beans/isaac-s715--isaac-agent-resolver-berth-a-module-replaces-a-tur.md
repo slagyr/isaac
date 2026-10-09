@@ -62,3 +62,7 @@ feature-blob: isaac-agent features/module/identifier_extension.feature ee153e38c
 
 Done: implemented identifiers berth, fixture modules, unit specs, feature activation and handbook; `bb verify`, `bb jvm-spec`, focused features and post-rebase `bb ci` green. Bean branch `bean/isaac-s715` pushed at 24b936d; gate PASS on local squash 1e09978 (`bb bean-gate verify isaac-s715 --dir isaac-agent=../isaac-agent-isaac-s715-land`).
 Next: origin/main moved during squash; ensure landing is based on latest main, gate again, push main, record main-sha and complete. Resume at `git -C ../isaac-agent-isaac-s715-land fetch origin` from this isaac clone; if rebase/merge conflicts, stop and hail planner.
+
+## Landed on main (2026-10-09)
+
+main-sha: isaac-agent 90cd162220ba40510047375b3b0591af8e8a3b39
