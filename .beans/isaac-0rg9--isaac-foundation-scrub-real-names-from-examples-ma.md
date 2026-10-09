@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: critical
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T17:02:10Z
+updated_at: 2026-10-09T17:03:07Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -42,3 +42,7 @@ Leave alone: decision attributions in comments and feature headers of the form "
 ## Likely repo scope
 
 `isaac-foundation`.
+
+## Worker conflict (2026-10-09)
+
+Scope requires changing tracked `.feature` prose: `features/cli/config_default_labels.feature:5` contains “yopp”. The hail-bean-work-gate worker rule allows only removing `@wip` in any `.feature` file. This bean has no feature-baseline and no `@wip` to remove. Planner must reconcile the feature-file ownership rule with this required scrub (for example, edit that feature on module main or explicitly authorize the mechanical change). No implementation files have been edited. Gate has not been run yet.
