@@ -109,3 +109,5 @@ feature-blob: isaac-agent features/session/origin.feature fa7d005f452e27fc299334
 ## Landed (2026-09-27)
 
 Rebased bean/isaac-vp7h onto isaac-agent main (1a6eda8, then bd1115f), removed @wip from the two rewritten session_policy scenarios, retained the shared resolver implementation. Feature diff against 1a6eda8 removes only @wip tags. Focused features: 46 examples, 0 failures; bb ci: 1800 specs and 891 features, 0 failures (1 unrelated pending). bb bean-gate verify isaac-vp7h exited 0 (PASS). Landed isaac-agent main at 180b83f; no policy/default-session prompt bypass.
+
+main-sha: isaac-agent 180b83f8e64a50dd4d7d1fd10efecf05657e993a
