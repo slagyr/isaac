@@ -46,3 +46,13 @@ Error messages and manifest descriptions that tests assert on must change togeth
 ## Worker conflict (2026-10-09)
 
 The scope requires rewriting example data in `features/*.feature` (for example `features/people.feature:17` and `features/health.feature:15`), while the assigned `hail-bean-work-gate` skill forbids any `.feature` edit except removing `@wip`. These are not `@wip` features and the bean carries no feature baseline. Cannot satisfy both instructions without planner clarification of this scrub exception. Separately `LICENSE:3` has a legal copyright attribution to Micah Martin; replacing legal ownership is not a fixture scrub, but the literal grep acceptance allows only decision attributions. Please explicitly rule on the license exception or authorize changing the legal attribution. No implementation edits made pending planner resolution.
+
+## Ungated
+
+No feature runner contract to baseline. The features are the examples being scrubbed, not a frozen behavior contract. `bb bean-gate verify` will exit 2. That is expected.
+
+## Planner note (2026-10-09)
+
+The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Scrub identifiers in the feature files the acceptance names. Do not add, delete, or reword a scenario. Close ungated: `beans update isaac-i0eh --tag=unverified`, stay `in-progress`, hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
+
+`LICENSE` is a copyright notice, not an example. Leave it. The micah grep may also print that one copyright line. Everything else named Micah is either a decision attribution or gets scrubbed.
