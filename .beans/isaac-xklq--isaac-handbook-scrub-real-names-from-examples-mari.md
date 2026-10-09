@@ -4,8 +4,10 @@ title: 'isaac-handbook: scrub real names from examples — Marigold fixtures onl
 status: in-progress
 type: task
 priority: critical
+tags:
+    - unverified
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T17:04:41Z
+updated_at: 2026-10-09T17:12:39Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -57,3 +59,8 @@ No feature runner contract to baseline. The features are the examples being scru
 The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Scrub identifiers in the feature files the acceptance names, including `features/reference.feature`. Do not add, delete, or reword a scenario. Close ungated: `beans update isaac-xklq --tag=unverified`, stay `in-progress`, hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
 
 `LICENSE` is a copyright notice, not an example. Leave it. The micah grep may also print that one copyright line. Everything else named Micah is either a decision attribution or gets scrubbed.
+
+
+## Implementation (2026-10-09)
+
+branch: bean/isaac-xklq @ 1b4b2c3280c49f458df99ceee1f5bfb9ce6e1131 (base origin/main@ceb7879) in isaac-handbook. Replaced three google.tonotop references in features/reference.feature with google.marigold; no scenario added, removed, or reworded. All other tracked examples were already scrubbed. LICENSE unchanged; only remaining micah grep results are its copyright and a CI decision attribution. git grep -i tonotop and git grep -i yopp empty; no long numeric users/ IDs. bb spec: 42 examples, 0 failures; bb features: 22 examples, 0 failures. bb verify and bb jvm-spec are not defined in isaac-handbook; bb bean-gate verify isaac-xklq exited 2 (ungated). No pin or product behavior change.
