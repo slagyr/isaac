@@ -11,7 +11,7 @@ updated_at: 2026-06-21T01:54:05Z
 Today isaac-imessage only exposes :imessage/bin as a string path and always spawns [bin "rpc" ...]. That is too narrow for wrapper-based deployments.
 
 We validated on zanebot that OpenClaw-style stdio transport is viable from another host:
-- ssh zane@zanebot.tail66e5f8.ts.net /usr/local/bin/imsg send ... succeeded
+- ssh zane@zanebot.<tailnet>.ts.net /usr/local/bin/imsg send ... succeeded
 - JSON-RPC over stdio through ssh to imsg rpc also succeeded
 
 Need a new iMessage config that can express the full imsg launch command, not just the executable path, so operators can use wrappers like ssh -T <host> /usr/local/bin/imsg while keeping the existing direct local default.
