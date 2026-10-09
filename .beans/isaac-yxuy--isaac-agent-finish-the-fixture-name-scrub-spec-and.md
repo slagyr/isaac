@@ -1,11 +1,11 @@
 ---
 # isaac-yxuy
 title: 'isaac-agent: finish the fixture name scrub — spec and handbook'
-status: in-progress
+status: completed
 type: task
 priority: critical
 created_at: 2026-10-09T17:55:53Z
-updated_at: 2026-10-09T17:57:30Z
+updated_at: 2026-10-09T18:05:40Z
 ---
 
 URGENT (Micah, 2026-10-09). Finish replacing a real deployment's crew name in `isaac-agent` examples with the Marigold cast. Mechanical; no behavior change. The planner has already changed the feature files on main.
