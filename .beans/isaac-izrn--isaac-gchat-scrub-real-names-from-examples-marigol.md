@@ -46,3 +46,13 @@ The README session-name examples and the DM session names in features change tog
 ## Conflict (2026-10-09)
 
 The acceptance requires scrubbing `features/comm/gchat/*.feature` (numerous real company/person identifiers), but the worker's `hail-bean-work-gate` contract states: "Removing `@wip` is the only edit you make to any `.feature` file." This bean has no `feature-baseline:` and is a fixture-scrub task, not a behavior change; nevertheless its required feature edits violate the explicit worker restriction. No implementation files edited. Planner must clarify/adjust the work contract for this bean before implementation can proceed.
+
+## Ungated
+
+No feature runner contract to baseline. The module's features are the examples being scrubbed, not a frozen behavior contract. `bb bean-gate verify` will exit 2. That is expected.
+
+## Planner note (2026-10-09)
+
+The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Take the ungated close: do the scrub, including every `.feature` file the acceptance names, then `beans update isaac-izrn --tag=unverified` while it stays `in-progress`, and hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
+
+Identifier swaps inside an existing step are in scope. Do not add, delete, or reword a scenario. A step that matched `tonotop` must match `marigold` after the swap, and nothing else about the scenario changes.
