@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: critical
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T17:03:04Z
+updated_at: 2026-10-09T17:04:41Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -42,3 +42,8 @@ Leave alone: decision attributions in comments and feature headers of the form "
 ## Likely repo scope
 
 `isaac-handbook`.
+
+
+## Implementation conflict (2026-10-09)
+
+Scrub requires editing `isaac-handbook/features/reference.feature:124,127,133` (`google.tonotop.oauth.client-secret`), but the gated work protocol permits only removing `@wip` from any `.feature` file, regardless of whether a bean has a feature baseline. No product edits made. Also `isaac-handbook/LICENSE:3` contains `Copyright (c) 2026 Micah Martin`: acceptance says `git grep -i micah` prints only decision attributions; changing a copyright attribution to a fictional person is not a mechanical fixture scrub and needs an authorized legal decision. Please clarify the feature-edit exception and whether LICENSE should be excluded from acceptance or updated by its owner.
