@@ -20,7 +20,7 @@ claude-code recognizes that text (`limit-failure-re`, claude_cli.clj:369-372) an
 
 ## Re-scope (Micah, 2026-10-02): remove the fallback and fence mode
 
-The automatic driven→fence fallback should not exist: it swaps the reliable protocol (native tool calls over MCP) for a fragile one (hand-written tool-call text parsed back) exactly when something has gone wrong, hides the failure, and leaves a second mode nobody exercises to rot (weather, streaming and usage accounting already break in it). Nothing configures `:drives-tool-loop? false` (template default true; zanebot/yopp do not override; only one claude-code scenario uses it).
+The automatic driven→fence fallback should not exist: it swaps the reliable protocol (native tool calls over MCP) for a fragile one (hand-written tool-call text parsed back) exactly when something has gone wrong, hides the failure, and leaves a second mode nobody exercises to rot (weather, streaming and usage accounting already break in it). Nothing configures `:drives-tool-loop? false` (template default true; zanebot/skiff do not override; only one claude-code scenario uses it).
 
 New intent:
 - A driven-mode failure is provider weather: MCP not coming up, or the CLI erroring before a result, suspends the turn with reason `:mcp-unavailable` and retries in driven mode on the normal weather backoff. No process-wide switch.

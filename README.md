@@ -96,4 +96,4 @@ Each module README documents its own `bb ci` workflow and acceptance features.
 
 ## License
 
-MIT — Copyright (c) 2026 Micah Martin. See [`LICENSE`](LICENSE).
+MIT — Copyright (c) 2026 Hieronymus Finch. See [`LICENSE`](LICENSE).

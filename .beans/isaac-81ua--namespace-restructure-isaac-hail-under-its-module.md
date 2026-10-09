@@ -55,16 +55,16 @@ repo. Squashed to one commit (923c1d8) and pushed directly to `main`
 923c1d8 (run 36749691103, 50s).
 
 **Not done:** fast-forwarding the shared checkout at
-`/Users/micahmartin/agents/isaac/plan/isaac-hail` — `git pull --ff-only` there
+`~/agents/isaac/plan/isaac-hail` — `git pull --ff-only` there
 was denied by the Claude Code auto-mode classifier ("Out-of-Place
 Publication") after a successful `git fetch origin`. The remote/origin/main
 ref is already at 923c1d8; only the shared checkout's local working copy
 (still on 1279c97) needs a fast-forward. Deliberately not retried through
 another command per the denial's own instructions — flagging for Micah/the
 next actor with write access to run `git -C
-/Users/micahmartin/agents/isaac/plan/isaac-hail pull --ff-only` (or equivalent)
+~/agents/isaac/plan/isaac-hail pull --ff-only` (or equivalent)
 by hand. Branch `bean/isaac-81ua` and its worktree
-(`/Users/micahmartin/agents/isaac/plan/isaac-hail-isaac-81ua`) were left in
+(`~/agents/isaac/plan/isaac-hail-isaac-81ua`) were left in
 place rather than deleted, since the shared-checkout ff-only is still
 outstanding.
 

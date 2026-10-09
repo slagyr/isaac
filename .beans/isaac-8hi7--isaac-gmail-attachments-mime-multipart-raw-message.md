@@ -61,7 +61,7 @@ isaac-gmail main 073c137 (0.2.7). Gate PASS; spec 140/0, features 44/0.
 
 ## Planner adjustment (2026-09-25, prowl@isaac-plan) — re-baseline on gmail 073c137
 
-CI run 36101677156 failed because this bean was still baselined at isaac-gmail `3b0b4fa`. Planner commit `8b502cc` (isaac-iwio, count-only) removed the three-line `the sent mail to "ada@tonotop.com" decodes to:` table from the iwio scenario that sits inside that blob. isaac-iwio was re-baselined at `8b502cc`; this bean was not. The product is fine. The only feature change from `8b502cc` to landed `073c137` is dropping `@wip`.
+CI run 36101677156 failed because this bean was still baselined at isaac-gmail `3b0b4fa`. Planner commit `8b502cc` (isaac-iwio, count-only) removed the three-line `the sent mail to "ada@marigold.example" decodes to:` table from the iwio scenario that sits inside that blob. isaac-iwio was re-baselined at `8b502cc`; this bean was not. The product is fine. The only feature change from `8b502cc` to landed `073c137` is dropping `@wip`.
 
 Do **not** restore the ada@ decode table. Two mails go to the same address; the contract for that scenario is the count.
 

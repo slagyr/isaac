@@ -201,7 +201,7 @@ Every agent scenario's disposition. The worker deletes the MOVED and DELETED-as-
 # isaac-601n mapping — final disposition
 
 Drafts written (not committed) to a foundation worktree:
-`/Users/micahmartin/agents/isaac/plan/isaac-foundation-mxgn-draft/features/cli/`
+`~/agents/isaac/plan/isaac-foundation-mxgn-draft/features/cli/`
 (same worktree as isaac-mxgn; reused rather than making a second one, since
 both beans share a foundation checkout and neither commits).
 

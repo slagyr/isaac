@@ -77,9 +77,9 @@ work is not present on that head.
 
 Concrete current-head evidence:
 
-- [src/isaac/cron/service.clj](/Users/micahmartin/agents/verify/isaac-cron/src/isaac/cron/service.clj:78) still calls `session-ctx/create-with-resolved-behavior!` directly with `nil` session key and ad-hoc `:crew`; there is no `job->frequencies`, no shared frequencies resolution, and no `resolve-session-targets`.
-- [resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-cron/resources/isaac-manifest.edn:1) still has the old cron-job schema with only `:crew`, `:expr`, and `:prompt`; no frequencies keys are declared.
-- The current repo has no [features/frequencies.feature](/Users/micahmartin/agents/verify/isaac-cron/features/frequencies.feature) at all; only `hot_reload.feature`, `origin.feature`, `prompt.feature`, and `scheduling.feature` exist.
+- [src/isaac/cron/service.clj](~/agents/verify/isaac-cron/src/isaac/cron/service.clj:78) still calls `session-ctx/create-with-resolved-behavior!` directly with `nil` session key and ad-hoc `:crew`; there is no `job->frequencies`, no shared frequencies resolution, and no `resolve-session-targets`.
+- [resources/isaac-manifest.edn](~/agents/verify/isaac-cron/resources/isaac-manifest.edn:1) still has the old cron-job schema with only `:crew`, `:expr`, and `:prompt`; no frequencies keys are declared.
+- The current repo has no [features/frequencies.feature](~/agents/verify/isaac-cron/features/frequencies.feature) at all; only `hot_reload.feature`, `origin.feature`, `prompt.feature`, and `scheduling.feature` exist.
 
 So the behavior described in the handoff is not on current `main`, and there is
 no valid verifier proof to run yet.
@@ -111,7 +111,7 @@ Current-head proof is green:
 
 The frequencies wiring is present on that head:
 
-- [src/isaac/cron/service.clj](/Users/micahmartin/agents/verify/isaac-cron/src/isaac/cron/service.clj:108) has `job->frequencies`
-- [src/isaac/cron/service.clj](/Users/micahmartin/agents/verify/isaac-cron/src/isaac/cron/service.clj:120) calls `frequencies/resolve-session-targets`
-- [resources/isaac-manifest.edn](/Users/micahmartin/agents/verify/isaac-cron/resources/isaac-manifest.edn:1) declares the frequencies keys in the cron-job schema
+- [src/isaac/cron/service.clj](~/agents/verify/isaac-cron/src/isaac/cron/service.clj:108) has `job->frequencies`
+- [src/isaac/cron/service.clj](~/agents/verify/isaac-cron/src/isaac/cron/service.clj:120) calls `frequencies/resolve-session-targets`
+- [resources/isaac-manifest.edn](~/agents/verify/isaac-cron/resources/isaac-manifest.edn:1) declares the frequencies keys in the cron-job schema
 - [features/frequencies.feature](/private/tmp/isaac-la09-cron-7a543d4/features/frequencies.feature:1) exists and is covered by the green feature run

@@ -13,7 +13,7 @@ updated_at: 2026-09-23T02:22:14Z
 
 ## Observed (skiff, 2026-09-23 02:16Z, gchat 0.2.2, one spaces/- subscription)
 
-Micah's first DM arrived through spaces/- (google/push-received). The handler asked spaces.get for spaces/26gscqAAAAE and Chat answered 403 PERMISSION_DENIED ('or the resource does not exist'), logged as :gchat.space/unknown. The same token gets 200 from spaces.get on the room, from messages.list on that DM, and from spaces.list, whose entry for the DM says spaceType DIRECT_MESSAGE. The fetched message's :space carries only the name. With space-info nil, dm? is false, the respond policy becomes :mentions, and the DM is only logged (gchat/message-logged) — no turn.
+Micah's first DM arrived through spaces/- (google/push-received). The handler asked spaces.get for spaces/AAAAdm00001 and Chat answered 403 PERMISSION_DENIED ('or the resource does not exist'), logged as :gchat.space/unknown. The same token gets 200 from spaces.get on the room, from messages.list on that DM, and from spaces.list, whose entry for the DM says spaceType DIRECT_MESSAGE. The fetched message's :space carries only the name. With space-info nil, dm? is false, the respond policy becomes :mentions, and the DM is only logged (gchat/message-logged) — no turn.
 
 ## Change
 

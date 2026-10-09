@@ -12,7 +12,7 @@ updated_at: 2026-09-22T22:39:32Z
 parent: isaac-bv1l
 ---
 
-2026-09-19 23:47Z on skiff: after Isaac replied in the thread, Google pushed the reply back as an event; the gate dropped it — but as :sender (skiff's Chat user id users/101936183306307394083 is not in allow-from), not as :self, because gchat/account is an email and the sender carries none. Right outcome by luck: an operator who allows domain:<id> would let Isaac's own replies through and create an echo loop.
+2026-09-19 23:47Z on skiff: after Isaac replied in the thread, Google pushed the reply back as an event; the gate dropped it — but as :sender (skiff's Chat user id users/100000000000000000002 is not in allow-from), not as :self, because gchat/account is an email and the sender carries none. Right outcome by luck: an operator who allows domain:<id> would let Isaac's own replies through and create an echo loop.
 
 Do: learn the account's users/<id> (spaces.members or people/me on first use; cache in state) and check :self against it; scenario: Isaac's own reply, with a domain allow-list, drops :self.
 

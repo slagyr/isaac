@@ -57,9 +57,9 @@ step so we don't end up with two overlapping EDN-file inspectors.
 
 ## Verification notes
 
-- Verified on 2026-06-18 on current heads. Foundation has the split in place: assert-only [fs_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:337) and the unambiguous writer at [fs_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:342).
+- Verified on 2026-06-18 on current heads. Foundation has the split in place: assert-only [fs_steps.clj](~/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:337) and the unambiguous writer at [fs_steps.clj](~/agents/verify/isaac-foundation/spec/isaac/foundation/fs_steps.clj:342).
 - Repo sweep is clean: `rg -n "isaac-file-phase" isaac-foundation isaac-agent isaac-server isaac-cron isaac-hail isaac-imessage` returned no matches.
-- The stale imessage issues are fixed on current `main`: [imessage_steps.clj](/Users/micahmartin/agents/verify/isaac-imessage/spec/isaac/comm/imessage/imessage_steps.clj:52) no longer sets `:isaac-file-phase`, and [deps.edn](/Users/micahmartin/agents/verify/isaac-imessage/deps.edn:40) now pins `marigold.bridge` and `marigold.longwave` to foundation SHA `36e4a6f10a02b86008eb81aaa20b057387bb4c7a`.
+- The stale imessage issues are fixed on current `main`: [imessage_steps.clj](~/agents/verify/isaac-imessage/spec/isaac/comm/imessage/imessage_steps.clj:52) no longer sets `:isaac-file-phase`, and [deps.edn](~/agents/verify/isaac-imessage/deps.edn:40) now pins `marigold.bridge` and `marigold.longwave` to foundation SHA `36e4a6f10a02b86008eb81aaa20b057387bb4c7a`.
 - Verification runs were green: `env ISAAC_GIT=1 bb features-all features/module/modules.feature features/module/modules_list.feature features/cli/init.feature` in `isaac-foundation` → `11 examples, 0 failures, 34 assertions`; `env ISAAC_GIT=1 bb spec spec/isaac/server/imessage_app_spec.clj` in `isaac-imessage` → `34 examples, 0 failures, 56 assertions`; `env ISAAC_GIT=1 bb features` in `isaac-imessage` → `15 examples, 0 failures, 20 assertions, 3 pre-existing pending`.
 
 ## Re-handoff (work-3)

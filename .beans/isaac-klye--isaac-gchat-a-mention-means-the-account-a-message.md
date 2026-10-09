@@ -10,7 +10,7 @@ updated_at: 2026-09-25T02:42:32Z
 
 ## Symptom
 
-Marketing space (spaces/AAQASjyfLk4), 2026-09-25 01:12Z and 01:13Z: Skiff
+Marketing space (spaces/AAAAharbor2), 2026-09-25 01:12Z and 01:13Z: Skiff
 answered two of Chris Sherrick's messages that did not mention him. Both
 were `gchat/message-routed`; the policy for the space is :mentions.
 

@@ -50,7 +50,7 @@ These scenarios lock:
 Run in `isaac-hail`:
 
 ```bash
-cd /Users/micahmartin/agents/plan/isaac-hail
+cd ~/agents/plan/isaac-hail
 bb features features/hail-naming.feature
 bb spec spec/isaac/hail/queue_spec.clj
 ```
@@ -58,7 +58,7 @@ bb spec spec/isaac/hail/queue_spec.clj
 Targeted feature selectors:
 
 ```bash
-cd /Users/micahmartin/agents/plan/isaac-hail
+cd ~/agents/plan/isaac-hail
 bb features \
   features/hail-naming.feature:9 \
   features/hail-naming.feature:27 \

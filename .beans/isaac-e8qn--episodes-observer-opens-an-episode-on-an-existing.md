@@ -29,7 +29,7 @@ Still write the episode record either way. Do not swallow the error in the obser
 - Spec: opening an episode on a session that already exists does not throw; the episode is `:open`; the session id is unchanged.
 - `bb ci` green.
 
-Likely repo scope: isaac-episodes. Deploy: yopp and zanebot (episodes pin).
+Likely repo scope: isaac-episodes. Deploy: skiff and zanebot (episodes pin).
 
 feature-baseline: isaac-episodes beedc19e8c2444080a6a10a3a431a23a2e2f1ac4
 feature-blob: isaac-episodes features/episodes/context_mode_and_observer.feature ef5da117a85d0bb3f3dd7304d500d86c2f8d2037

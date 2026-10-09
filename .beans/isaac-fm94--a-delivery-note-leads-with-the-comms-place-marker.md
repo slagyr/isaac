@@ -21,7 +21,7 @@ Micah, 2026-10-06, from the live continuity test on skiff. The delivery note lan
 - `bb ci` green in both; `bb jvm-spec` green in isaac-agent.
 - Handbook (gchat outbound, agent delivery) mentions the marker.
 
-Likely repo scope: isaac-agent, isaac-gchat. Deploy: zanebot (agent) and yopp (agent + gchat).
+Likely repo scope: isaac-agent, isaac-gchat. Deploy: zanebot (agent) and skiff (agent + gchat).
 
 feature-baseline: isaac-agent a2e4dde57e45d0a35acb03558aa33dedcbe48d2e
 feature-baseline: isaac-gchat c2928c0c12ac8c7cd6b112488cfc2218f5bbc4d6

@@ -19,7 +19,7 @@ Likely repo: **isaac-http**. Design: Micah + planner, 2026-09-28. Motivated by p
 
 ```clojure
 {:http {:auth {:principals {:micah   {:scopes [:cargo/read]
-                                      :emails ["micah@example.com"]}      ; new
+                                      :emails ["hieronymus@example.com"]}      ; new
                             :planner {:hash "sha256:…" :scopes [:hail/send]}}
                :identity   {:github {…}}                                   ; unchanged (machine OIDC)
                :login      {:google {:issuer        "https://accounts.google.com"   ; new

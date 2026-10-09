@@ -47,9 +47,9 @@ through it (`imsg send` for imessage) — no AppleScript, no special tool.
 ## Scenarios (DRAFT — pending review; do not generate feature file yet)
 ```gherkin
 Scenario: a cron addressed to a comm delivers its output through that comm
-  Given a cron entry "health" with crew main, :comm :imessage, :to "micahmartin@mac.com"
+  Given a cron entry "health" with crew main, :comm :imessage, :to "hieronymus@marigold.example"
   When the cron fires and the session produces a response
-  Then the response is delivered to "micahmartin@mac.com" via the imessage comm (imsg send)
+  Then the response is delivered to "hieronymus@marigold.example" via the imessage comm (imsg send)
   And  the cron session does NOT use the null comm
 
 Scenario: an untargeted cron runs and discards output (unchanged default)

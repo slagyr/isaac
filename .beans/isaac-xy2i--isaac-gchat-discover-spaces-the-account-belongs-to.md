@@ -35,7 +35,7 @@ Tenants (isaac-1zkz): discovery runs per tenant with that tenant's token; canoni
 Found while Micah's DM went unheard and he asked where such sessions would
 land. `store/impl-common/slugify` lower-cases the identifier and replaces every
 run of non-[a-z0-9] with a hyphen, so today's canonical name arrives as
-`gchat-spaces-aaqa7rg5uyc` for space `spaces/AAQA7rg5Uyc`.
+`gchat-spaces-aaqa7rg5uyc` for space `spaces/AAAAharbor1`.
 
 Consequences for the naming above:
 
@@ -46,7 +46,7 @@ Consequences for the naming above:
   `aaqa7rg5uyc` and no longer matches the space. It belongs on the tag
   (`space:AAQA7rg5Uyc`), preserved verbatim, which is what makes a rename
   safe.
-- A display name needs deliberate slugging anyway ("Micah Martin" ->
+- A display name needs deliberate slugging anyway ("Hieronymus Finch" ->
   `hieronymus-finch`), and two spaces with the same display name must not collide
   into one session — fall back to the id, or suffix it.
 

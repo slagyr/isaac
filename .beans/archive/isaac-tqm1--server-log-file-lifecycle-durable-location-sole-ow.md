@@ -57,8 +57,8 @@ This is not verifier-ready and not delivered on the true current heads.
 - There is no worker handoff or implementation section in the bean body.
 - There is no `tqm1` commit on fetched `isaac-foundation`, `isaac-server`, or `isaac-agent` history (`git log --all --grep tqm1` returns nothing in those repos).
 - Current foundation code still has the pre-change logging model:
-  - [src/isaac/logger.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logger.clj:15) still defaults `:log-file` to `"/tmp/isaac.log"`
-  - [src/isaac/logs/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:30) still reads only `[:log :output]` and has no `:logging.max-bytes` / `:logging.max-days` support
+  - [src/isaac/logger.clj](~/agents/verify/isaac-foundation/src/isaac/logger.clj:15) still defaults `:log-file` to `"/tmp/isaac.log"`
+  - [src/isaac/logs/cli.clj](~/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:30) still reads only `[:log :output]` and has no `:logging.max-bytes` / `:logging.max-days` support
 - Current server code does have service-side `~/Library/Logs/isaac/server.log` surfaces for launchd plumbing, but that is not the tqm1 lifecycle feature described here: there is no delivered server-log rotation/retention implementation or verifier-visible schema/config support matching this bean's acceptance.
 
 So this should go back to workers as not yet implemented, not to verifier close-out.

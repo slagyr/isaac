@@ -123,6 +123,6 @@ Still OPEN (not yet specced): outbound guardrails / spam policy (per-crew or per
 
 comm_send is outbound, so it should not ship fail-open. Three layers considered (revisit later, likely a separate bean):
 1. Tool grant (exists): crew must have comm_send in :tools.allow.
-2. Per-comm-slot outbound allowlist :allow-to (mirror of inbound :allow-from), crew-agnostic — bounds blast radius of each credentialed channel regardless of caller. e.g. :imessage/allow-to ["micahmartin@mac.com"], :discord/allow-to ["<channel-id>"].
+2. Per-comm-slot outbound allowlist :allow-to (mirror of inbound :allow-from), crew-agnostic — bounds blast radius of each credentialed channel regardless of caller. e.g. :imessage/allow-to ["hieronymus@marigold.example"], :discord/allow-to ["<channel-id>"].
 3. Per-crew capability (which comm slots / target patterns a crew may use) — least-privilege, layered on top.
 Enforcement: comm_send checks before enqueue!; violation = tool error, no enqueue (like the unknown-slot case). Open questions: MVP = layer 2 only vs 2+3; fold the minimum into this bean vs separate; exact-match vs glob/regex targets; default-deny vs default-allow. Recommendation on the table: layer 2 :allow-to, fail-closed, exact-match, folded into MVP; defer layer 3 + pattern richness. DECISION DEFERRED by Micah.

@@ -175,7 +175,7 @@ modules you work on or depend on, and reuse their established names instead of
 inventing fresh ones. Examples: crew like Cordelia (first mate), Joe, Oscar;
 comms `longwave` (CLI), `skybeam` (null), `logbook` (memory); providers/models
 `starcore`, `quantum-anvil`, `anvil-x`. Never real people, accounts, or use
-cases (no `micahmartin@mac.com`, no real health check-in). The *behavior* under
+cases (no `hieronymus@marigold.example`, no real health check-in). The *behavior* under
 test stays real; only the *content* is fictional. Real PII/use-cases in a spec
 are a smell: they leak, they date, and read as config instead of a spec.
 

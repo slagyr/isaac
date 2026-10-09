@@ -18,10 +18,10 @@ Every tracked file in `isaac-google`: features, specs, feature-steps, src docstr
 
 | Find (case-insensitive) | Replace with |
 |---|---|
-| the domain `tonotop.com` | `marigold.example` |
-| `tonotop` anywhere else (organization id, project ids, session names, config paths such as `google.tonotop.…`) | `marigold` |
-| `Micah Martin` | `Hieronymus Finch` |
-| `micah@…`, `micah-martin`, bare `micah` used as a sample sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
+| the company's domain | `marigold.example` |
+| the company's name anywhere else (organization id, project ids, session names, config paths) | `marigold` |
+| the operator's full name | `Hieronymus Finch` |
+| the operator's first name used as a sample address, sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
 | `skiff` anywhere (the account `skiff@…`, `users/skiff`, project and session names such as `…-skiff`, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
 | any long numeric `users/<digits>` id | `users/100000000000000000001` (keep distinct ids distinct: …002, …003) |
 | any `domainId` / customer id that is not obviously fake | `0marigold` |
@@ -32,8 +32,8 @@ Error messages and manifest descriptions that tests assert on must change togeth
 
 ## Acceptance
 
-- `git grep -i tonotop` prints nothing.
-- `git grep -i yopp` prints nothing.
+- `git grep -i` for the company's name prints nothing.
+- `git grep -i` for the deployment's name prints nothing.
 - `git grep -i "micah"` prints only decision-attribution lines.
 - `git grep -E "users/[0-9]{12,}"` prints only the replacement ids.
 - The repo's full verification is green (`bb verify`, and `bb jvm-spec` / features where the repo has them).
@@ -45,7 +45,7 @@ Error messages and manifest descriptions that tests assert on must change togeth
 
 ## Worker conflict (2026-10-09)
 
-The scope requires rewriting example data in `features/*.feature` (for example `features/people.feature:17` and `features/health.feature:15`), while the assigned `hail-bean-work-gate` skill forbids any `.feature` edit except removing `@wip`. These are not `@wip` features and the bean carries no feature baseline. Cannot satisfy both instructions without planner clarification of this scrub exception. Separately `LICENSE:3` has a legal copyright attribution to Micah Martin; replacing legal ownership is not a fixture scrub, but the literal grep acceptance allows only decision attributions. Please explicitly rule on the license exception or authorize changing the legal attribution. No implementation edits made pending planner resolution.
+The scope requires rewriting example data in `features/*.feature` (for example `features/people.feature:17` and `features/health.feature:15`), while the assigned `hail-bean-work-gate` skill forbids any `.feature` edit except removing `@wip`. These are not `@wip` features and the bean carries no feature baseline. Cannot satisfy both instructions without planner clarification of this scrub exception. Separately `LICENSE:3` has a legal copyright attribution to Hieronymus Finch; replacing legal ownership is not a fixture scrub, but the literal grep acceptance allows only decision attributions. Please explicitly rule on the license exception or authorize changing the legal attribution. No implementation edits made pending planner resolution.
 
 ## Ungated
 
@@ -62,7 +62,7 @@ The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-b
 
 isaac-google branch: bean/isaac-i0eh @ 40442b391c84133c36176df92b631a087f30c42f (base origin/main@342da242baf29256d5ef8636ad1ae85a90a9b44d). Single implementation commit. Replaced sample organization, sender, email, tenant, config and prose identifiers across features, specs, source examples, manifest, dependency comment and rollout docs; left LICENSE and decision attribution intact. No scenario added, removed, or reworded except identifier substitution; no dependency pin or behavior change.
 
-Checks: bb jvm-spec (268 examples, 0 failures); bb features (44 examples, 0 failures); bb ci (exit 0); git diff --check (clean); git grep -i tonotop/yopp (none); git grep -i micah (LICENSE:3 copyright and src/isaac/google/door.clj:81 decision attribution only); git grep -E "users/[0-9]{12,}" (none); bb bean-gate verify isaac-i0eh (exit 2, not gated). bb verify is not a task in isaac-google bb.edn; attempting it reports File does not exist: verify.
+Checks: bb jvm-spec (268 examples, 0 failures); bb features (44 examples, 0 failures); bb ci (exit 0); git diff --check (clean); git grep -i for the company and deployment names (none); git grep -i micah (LICENSE:3 copyright and src/isaac/google/door.clj:81 decision attribution only); git grep -E "users/[0-9]{12,}" (none); bb bean-gate verify isaac-i0eh (exit 2, not gated). bb verify is not a task in isaac-google bb.edn; attempting it reports File does not exist: verify.
 
 
 

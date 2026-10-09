@@ -25,9 +25,9 @@ against a handle with an established 560-message iMessage chat:
 
 | call | result |
 |---|---|
-| `imsg send --to micahmartin@mac.com --text … --service imessage` | **fails** — "Messages automation returned success, but no matching outgoing text row was observed within 8 seconds" |
-| `imsg send --to micahmartin@mac.com --text … --service auto` | **sent** |
-| `imsg send --chat-identifier micahmartin@mac.com --text …` | **sent** |
+| `imsg send --to hieronymus@marigold.example --text … --service imessage` | **fails** — "Messages automation returned success, but no matching outgoing text row was observed within 8 seconds" |
+| `imsg send --to hieronymus@marigold.example --text … --service auto` | **sent** |
+| `imsg send --chat-identifier hieronymus@marigold.example --text …` | **sent** |
 
 So the explicit-service path is the broken one, and Isaac was the only thing
 choosing it. Every send from both hosts failed this way, reported as the

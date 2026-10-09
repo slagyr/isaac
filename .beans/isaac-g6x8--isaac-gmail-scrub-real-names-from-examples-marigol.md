@@ -18,10 +18,10 @@ Every tracked file in `isaac-gmail`: features, specs, feature-steps, src docstri
 
 | Find (case-insensitive) | Replace with |
 |---|---|
-| the domain `tonotop.com` | `marigold.example` |
-| `tonotop` anywhere else (organization id, project ids, session names, config paths such as `google.tonotop.…`) | `marigold` |
-| `Micah Martin` | `Hieronymus Finch` |
-| `micah@…`, `micah-martin`, bare `micah` used as a sample sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
+| the company's domain | `marigold.example` |
+| the company's name anywhere else (organization id, project ids, session names, config paths) | `marigold` |
+| the operator's full name | `Hieronymus Finch` |
+| the operator's first name used as a sample address, sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
 | `skiff` anywhere (the account `skiff@…`, `users/skiff`, project and session names such as `…-skiff`, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
 | any long numeric `users/<digits>` id | `users/100000000000000000001` (keep distinct ids distinct: …002, …003) |
 | any `domainId` / customer id that is not obviously fake | `0marigold` |
@@ -32,8 +32,8 @@ Leave alone: decision attributions in comments and feature headers of the form "
 
 ## Acceptance
 
-- `git grep -i tonotop` prints nothing.
-- `git grep -i yopp` prints nothing.
+- `git grep -i` for the company's name prints nothing.
+- `git grep -i` for the deployment's name prints nothing.
 - `git grep -i "micah"` prints only decision-attribution lines.
 - `git grep -E "users/[0-9]{12,}"` prints only the replacement ids.
 - The repo's full verification is green (`bb verify`, and `bb jvm-spec` / features where the repo has them).

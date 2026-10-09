@@ -21,7 +21,7 @@ And replace "It is delivered back over the channel this message came from" with 
 - One-time: the word "channel" no longer appears in `guidance/TEXT`.
 - `bb ci` green.
 
-Likely repo scope: isaac-gchat. Deploy: yopp.
+Likely repo scope: isaac-gchat. Deploy: skiff.
 
 feature-baseline: isaac-gchat 8a75871af48bcf045f4f10a45cf5fd98c745366d
 feature-blob: isaac-gchat features/comm/gchat/inbound.feature 56e2001e60dface1f985dcd5344e7071a0cd5ec2

@@ -215,7 +215,7 @@ Every agent scenario's disposition. The worker deletes the MOVED and DELETED-as-
 # isaac-mxgn mapping — final disposition
 
 Drafts written (not committed) to a foundation worktree:
-`/Users/micahmartin/agents/isaac/plan/isaac-foundation-mxgn-draft/features/cli/`
+`~/agents/isaac/plan/isaac-foundation-mxgn-draft/features/cli/`
 - `config_composition.feature` — 10 scenarios, all @wip, all dry-run GREEN.
 - `config_get_validate.feature` — 15 scenarios, all @wip, all dry-run GREEN.
 

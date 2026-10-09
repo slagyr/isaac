@@ -67,9 +67,9 @@ Fetched GitHub `main` is still:
 
 Current-head evidence says the fix is not delivered:
 
-- `isaac-server` current [spec/isaac/server/server_steps.clj](/Users/micahmartin/agents/verify/isaac-server/spec/isaac/server/server_steps.clj:103) still has `sync-config-reload!` draining the change source synchronously after writes.
-- `isaac-server` current [src/isaac/server/app.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/app.clj:69) still starts the async config reloader unconditionally; there is no harness-only `:start-config-reloader? false` path on current `main`.
-- `isaac-discord` current [features/comm/discord/lifecycle.feature](/Users/micahmartin/agents/verify/isaac-discord/features/comm/discord/lifecycle.feature:25) still marks the add-token and remove-token mid-run scenarios `@wip`, explicitly saying they are pending `isaac-snkl`.
+- `isaac-server` current [spec/isaac/server/server_steps.clj](~/agents/verify/isaac-server/spec/isaac/server/server_steps.clj:103) still has `sync-config-reload!` draining the change source synchronously after writes.
+- `isaac-server` current [src/isaac/server/app.clj](~/agents/verify/isaac-server/src/isaac/server/app.clj:69) still starts the async config reloader unconditionally; there is no harness-only `:start-config-reloader? false` path on current `main`.
+- `isaac-discord` current [features/comm/discord/lifecycle.feature](~/agents/verify/isaac-discord/features/comm/discord/lifecycle.feature:25) still marks the add-token and remove-token mid-run scenarios `@wip`, explicitly saying they are pending `isaac-snkl`.
 
 So the acceptance is still false on current heads: the shared harness fix is not
 on `main`, and the dependent Discord lifecycle scenarios are still intentionally

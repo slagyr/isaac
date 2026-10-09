@@ -45,7 +45,7 @@ scenario needs a running component). Delete both files from isaac-agent's
 `features/config/`.
 
 **Already drafted and dry-run green this session** (in a detached worktree
-at `/Users/micahmartin/agents/isaac/plan/isaac-foundation-cleanup-draft`,
+at `~/agents/isaac/plan/isaac-foundation-cleanup-draft`,
 uncommitted):
 
 - `features/cli/config_env_file.feature` — 3 scenarios, all passing

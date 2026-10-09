@@ -33,8 +33,8 @@ failures.
 
 - Verification passed on 2026-06-19 against fetched GitHub `isaac-agent` `main` at `7bcc183`, not the stale local `../plan` mirror.
 - Focused proof passed: `env ISAAC_GIT=1 bb spec spec/isaac/slash/registry_spec.clj spec/isaac/llm/api_spec.clj` -> `47 examples, 0 failures, 61 assertions`.
-- The fix is in [src/isaac/slash/registry.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/slash/registry.clj:16): `register!` now skips the second swap/log pass when the existing command has the same `:handler`.
-- Coverage in [spec/isaac/slash/registry_spec.clj](/Users/micahmartin/agents/verify/isaac-agent/spec/isaac/slash/registry_spec.clj:52) explicitly proves same-handler double registration stays quiet and that processing built-in slash berths twice emits no `:slash/override` warnings.
+- The fix is in [src/isaac/slash/registry.clj](~/agents/verify/isaac-agent/src/isaac/slash/registry.clj:16): `register!` now skips the second swap/log pass when the existing command has the same `:handler`.
+- Coverage in [spec/isaac/slash/registry_spec.clj](~/agents/verify/isaac-agent/spec/isaac/slash/registry_spec.clj:52) explicitly proves same-handler double registration stays quiet and that processing built-in slash berths twice emits no `:slash/override` warnings.
 
 
 ## REOPENED 2026-06-20 — fix did NOT take
@@ -76,5 +76,5 @@ Repro proof: `bb spec spec/isaac/slash/registry_spec.clj` → `15/0`; full suite
 - Verification passed on fetched GitHub `isaac-agent` `main` at `2aff304`, not the stale local `../plan` mirror.
 - `bb spec spec/isaac/slash/registry_spec.clj` passed: `15 examples, 0 failures, 17 assertions`.
 - `bb spec` passed on the same head: `1046 examples, 0 failures, 2068 assertions`.
-- The fix in [src/isaac/slash/registry.clj](/Users/micahmartin/agents/verify/isaac-agent/src/isaac/slash/registry.clj:18) now treats same-factory re-registration as idempotent while preserving handler-based equality for direct `register!` calls.
-- The reopened boot-path concern is covered by the new integration specs in [spec/isaac/slash/registry_spec.clj](/Users/micahmartin/agents/verify/isaac-agent/spec/isaac/slash/registry_spec.clj:89): CLI-init via `main/register-module-cli-commands!`, server-boot berth processing, `ensure-registered!` interleaving, and lookup activation all rerun without any `:slash/override` warnings.
+- The fix in [src/isaac/slash/registry.clj](~/agents/verify/isaac-agent/src/isaac/slash/registry.clj:18) now treats same-factory re-registration as idempotent while preserving handler-based equality for direct `register!` calls.
+- The reopened boot-path concern is covered by the new integration specs in [spec/isaac/slash/registry_spec.clj](~/agents/verify/isaac-agent/spec/isaac/slash/registry_spec.clj:89): CLI-init via `main/register-module-cli-commands!`, server-boot berth processing, `ensure-registered!` interleaving, and lookup activation all rerun without any `:slash/override` warnings.

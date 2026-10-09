@@ -18,11 +18,11 @@ Every tracked file in `isaac-foundation`: features, specs, feature-steps, src do
 
 | Find (case-insensitive) | Replace with |
 |---|---|
-| the domain `tonotop.com` | `marigold.example` |
-| `tonotop` anywhere else (organization id, project ids, session names, config paths such as `google.tonotop.…`) | `marigold` |
-| `Micah Martin` | `Hieronymus Finch` |
-| `micah@…`, `micah-martin`, bare `micah` used as a sample sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
-| `yopp` anywhere (the account `yopp@…`, `users/yopp`, project and session names such as `…-yopp`, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
+| the company's domain | `marigold.example` |
+| the company's name anywhere else (organization id, project ids, session names, config paths) | `marigold` |
+| the operator's full name | `Hieronymus Finch` |
+| the operator's first name used as a sample address, sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
+| the deployment's name anywhere (its account, its `users/…` id, project and session names, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
 | any long numeric `users/<digits>` id | `users/100000000000000000001` (keep distinct ids distinct: …002, …003) |
 | any `domainId` / customer id that is not obviously fake | `0marigold` |
 
@@ -32,8 +32,8 @@ Leave alone: decision attributions in comments and feature headers of the form "
 
 ## Acceptance
 
-- `git grep -i tonotop` prints nothing.
-- `git grep -i yopp` prints nothing.
+- `git grep -i` for the company's name prints nothing.
+- `git grep -i` for the deployment's name prints nothing.
 - `git grep -i "micah"` prints only decision-attribution lines.
 - `git grep -E "users/[0-9]{12,}"` prints only the replacement ids.
 - The repo's full verification is green (`bb verify`, and `bb jvm-spec` / features where the repo has them).
@@ -45,7 +45,7 @@ Leave alone: decision attributions in comments and feature headers of the form "
 
 ## Worker conflict (2026-10-09)
 
-Scope requires changing tracked `.feature` prose: `features/cli/config_default_labels.feature:5` contains “yopp”. The hail-bean-work-gate worker rule allows only removing `@wip` in any `.feature` file. This bean has no feature-baseline and no `@wip` to remove. Planner must reconcile the feature-file ownership rule with this required scrub (for example, edit that feature on module main or explicitly authorize the mechanical change). No implementation files have been edited. Gate has not been run yet.
+Scope requires changing tracked `.feature` prose: `features/cli/config_default_labels.feature:5` contains the deployment’s name. The hail-bean-work-gate worker rule allows only removing `@wip` in any `.feature` file. This bean has no feature-baseline and no `@wip` to remove. Planner must reconcile the feature-file ownership rule with this required scrub (for example, edit that feature on module main or explicitly authorize the mechanical change). No implementation files have been edited. Gate has not been run yet.
 
 ## Ungated
 
@@ -61,7 +61,7 @@ The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-b
 
 branch: bean/isaac-0rg9 @ 1f66e3222190ffc809cf98be828db411b69d5b9d (base origin/main@edc18481808a050f8c2fd657f2e966e6040fcfc3)
 
-Mechanical fixture-only replacement in three files: yopp → isaac (feature prose and spec label), tonotop.com → marigold.example (spec sample addresses). LICENSE and decision attributions unchanged; no scenarios added/deleted/reworded. No pin, dependency, or behavior change. `git grep -i tonotop` and `git grep -i yopp` empty; `git grep -i micah` only decision attributions and LICENSE; no long numeric users ids.
+Mechanical fixture-only replacement in three files: deployment name → isaac (feature prose and spec label), company domain → marigold.example (spec sample addresses). LICENSE and decision attributions unchanged; no scenarios added/deleted/reworded. No pin, dependency, or behavior change. `git grep -i` for the company and deployment names empty; `git grep -i micah` only decision attributions and LICENSE; no long numeric users ids.
 
 Validation: `ISAAC_TEST_TIMEOUT_MS=240000 bb ci` passed (1348 specs; 361 features, 2 pre-existing pending). Default `bb ci` timed out during features at 60s; rerun with expanded timeout passed. `bb jvm-spec` fails 9 unrelated existing tests (gitlibs directory/environment assumptions and lifecycle exception); `bb jvm-features` fails 1 unrelated gitlibs cache directory expectation in `cli/modules_pins.feature:143`. `bb bean-gate verify isaac-0rg9` exits 2 (ungated, as planned).
 

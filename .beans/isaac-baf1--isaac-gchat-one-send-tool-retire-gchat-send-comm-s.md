@@ -46,7 +46,7 @@ message each, in this channel" — and comes out.
   verbatim; `:gchat/reply-deduped` appears nowhere in src.
 - [ ] Version bump; bb spec / bb features / bb lint green.
 
-Deploy note: yopp crew allow `:gchat/*` needs no change.
+Deploy note: skiff crew allow `:gchat/*` needs no change.
 
 Likely repo scope: isaac-gchat (manifest, tools.clj, gchat.clj, guidance.clj,
 specs, outbound.feature).

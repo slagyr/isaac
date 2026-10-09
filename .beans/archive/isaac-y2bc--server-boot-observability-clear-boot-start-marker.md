@@ -50,12 +50,12 @@ answerable directly from the log.
 - `env ISAAC_GIT=1 bb spec spec/isaac/server/app_spec.clj spec/isaac/server/cli_spec.clj` in `isaac-server` passed: `42 examples, 0 failures, 78 assertions`.
 - `env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` in `isaac-server` passed: `6 examples, 0 failures, 7 assertions` when rerun outside the sandbox so the startup-command scenarios could bind a local test socket.
 - The delivered observability surfaces are present on current head:
-  - [src/isaac/server/cli.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/cli.clj:65) logs `:server/boot-starting`
-  - [src/isaac/server/app.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/app.clj:199) logs boot phases and `:server/boot-summary`
-  - [src/isaac/module/loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:871) logs `:module/loaded`, activates modules topologically, and exposes `boot-stats`
+  - [src/isaac/server/cli.clj](~/agents/verify/isaac-server/src/isaac/server/cli.clj:65) logs `:server/boot-starting`
+  - [src/isaac/server/app.clj](~/agents/verify/isaac-server/src/isaac/server/app.clj:199) logs boot phases and `:server/boot-summary`
+  - [src/isaac/module/loader.clj](~/agents/verify/isaac-foundation/src/isaac/module/loader.clj:871) logs `:module/loaded`, activates modules topologically, and exposes `boot-stats`
 - The acceptance follow-up also landed:
-  - foundation [spec/isaac/foundation/log_steps.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/foundation/log_steps.clj:12) now handles interleaved ordered subsequences correctly
-  - server [features/module/activation.feature](/Users/micahmartin/agents/verify/isaac-server/features/module/activation.feature:1) now asserts the boot-time comm lifecycle on a self-contained git-pinned telly fixture
+  - foundation [spec/isaac/foundation/log_steps.clj](~/agents/verify/isaac-foundation/spec/isaac/foundation/log_steps.clj:12) now handles interleaved ordered subsequences correctly
+  - server [features/module/activation.feature](~/agents/verify/isaac-server/features/module/activation.feature:1) now asserts the boot-time comm lifecycle on a self-contained git-pinned telly fixture
 
 ## Worker handoff (2026-06-20)
 
@@ -107,6 +107,6 @@ order, `:server/boot-phase` boundaries, and `:server/boot-summary`.
 - `env ISAAC_GIT=1 bb spec spec/isaac/server/app_spec.clj spec/isaac/server/cli_spec.clj` in `isaac-server` passed: `42 examples, 0 failures, 78 assertions`.
 - `rm -rf target/gherclj/generated/ && env ISAAC_GIT=1 bb features features/module/activation.feature features/server/command.feature` in `isaac-server` passed: `6 examples, 0 failures, 7 assertions` when rerun outside the sandbox so the startup-command scenarios could bind a local test socket.
 - The released server build is pinned to the released foundation fix as claimed in [deps.edn](/private/tmp/isaac-y2bc-server-4/deps.edn:4), and the acceptance surfaces remain present:
-  - [src/isaac/server/cli.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/cli.clj:65) logs `:server/boot-starting`
-  - [src/isaac/server/app.clj](/Users/micahmartin/agents/verify/isaac-server/src/isaac/server/app.clj:199) logs phase boundaries and `:server/boot-summary`
-  - [src/isaac/module/loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:871) logs `:module/loaded`, topological `:module/activated`, and exposes `boot-stats`
+  - [src/isaac/server/cli.clj](~/agents/verify/isaac-server/src/isaac/server/cli.clj:65) logs `:server/boot-starting`
+  - [src/isaac/server/app.clj](~/agents/verify/isaac-server/src/isaac/server/app.clj:199) logs phase boundaries and `:server/boot-summary`
+  - [src/isaac/module/loader.clj](~/agents/verify/isaac-foundation/src/isaac/module/loader.clj:871) logs `:module/loaded`, topological `:module/activated`, and exposes `boot-stats`

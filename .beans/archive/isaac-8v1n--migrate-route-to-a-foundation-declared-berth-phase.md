@@ -149,7 +149,7 @@ targeted greps close the loop.
 - `bb features features/hail/http.feature` passes (POST /hail/send routes through the new berth).
 - `rg ':route\s*\{' src/`: only `:route {:type :ignore}` in the schema declaration — intentional back-compat parse hook, no functional dispatch.
 - `rg 'register-handler!.*:route' src/`: zero hits.
-- `rg ':route\b' /Users/micahmartin/agents/work-2/isaac-acp/src/`: zero hits.
+- `rg ':route\b' ~/agents/work-2/isaac-acp/src/`: zero hits.
 
 ### Out of scope (caught en route)
 

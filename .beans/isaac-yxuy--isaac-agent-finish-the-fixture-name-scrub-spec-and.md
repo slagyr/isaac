@@ -40,4 +40,4 @@ feature-blob: isaac-agent features/bridge/unknown_crew.feature 570745b0c60c6d622
 
 main-sha: isaac-agent 31c1afc28aa2dcae3ab2bfdc512af6ddb397558f
 
-Acceptance: `bb features features/bridge/unknown_crew.feature` (4 examples), `bb spec spec/isaac/agent/session/default_crew_steps_spec.clj` (3 examples), `bb verify` (1929 specs; 911 features, one pre-existing pending), `bb jvm-spec` (1929 examples), and `git grep -i yopp` (no matches). Gate PASS on squash commit.
+Acceptance: `bb features features/bridge/unknown_crew.feature` (4 examples), `bb spec spec/isaac/agent/session/default_crew_steps_spec.clj` (3 examples), `bb verify` (1929 specs; 911 features, one pre-existing pending), `bb jvm-spec` (1929 examples), and `git grep -i skiff` (no matches). Gate PASS on squash commit.

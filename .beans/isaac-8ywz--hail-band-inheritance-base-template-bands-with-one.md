@@ -38,7 +38,7 @@ reach: :one
 data:
   bean-repo: git@github.com:slagyr/isaac.git
   notification-comm: {:id :discord :channel "isaac"}
-  human-help-comm: {:id :imessage :target "micahmartin@mac.com" :service "iMessage"}
+  human-help-comm: {:id :imessage :target "hieronymus@marigold.example" :service "iMessage"}
 ---
 ```
 

@@ -42,6 +42,6 @@ Published tags are immutable; supersede poisoned releases with a new tag/sha.
 
 ## Verification notes
 
-- Verified on 2026-06-18. [modules.edn](/Users/micahmartin/agents/verify/isaac/modules.edn:1) now contains eight installable module entries with `:git/tag "v0.1.0"` plus matching `:git/sha` values.
+- Verified on 2026-06-18. [modules.edn](~/agents/verify/isaac/modules.edn:1) now contains eight installable module entries with `:git/tag "v0.1.0"` plus matching `:git/sha` values.
 - Direct GitHub tag lookups confirm the registry coordinates line up with the published tags for all eight entries: `isaac-agent`, `isaac-server`, `isaac-acp`, `isaac-cron`, `isaac-hail`, `isaac-hooks`, `isaac-discord`, and `isaac-imessage`.
 - Foundation proof passed on current GitHub `main` (`36e4a6f`): `env ISAAC_GIT=1 bb features-all features/module/modules.feature features/module/modules_list.feature features/cli/init.feature` in `isaac-foundation` → `11 examples, 0 failures, 34 assertions`.

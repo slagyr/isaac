@@ -16,5 +16,5 @@ OpenClaw handles this with truncateSessionAfterCompaction() which physically rew
 
 Isaac should do the same — after a successful compaction, rewrite the transcript to remove entries that have been summarized away. The full history is in git if needed.
 
-Reference: /Users/micahmartin/Projects/openclaw/src/agents/pi-embedded-runner/session-truncation.ts
+Reference: ~/Projects/openclaw/src/agents/pi-embedded-runner/session-truncation.ts
 

@@ -49,8 +49,8 @@ glyphs changed on his screen, no notification anywhere. The current token
 
 ## Acceptance
 
-bb spec / bb features / bb ci green in isaac-gchat; one-time on yopp: a DM
-shows 👀 while Yopp works and ✅ when it answers, with exactly one reply.
+bb spec / bb features / bb ci green in isaac-gchat; one-time on skiff: a DM
+shows 👀 while Skiff works and ✅ when it answers, with exactly one reply.
 
 ## Related
 

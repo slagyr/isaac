@@ -50,7 +50,7 @@ module tool.
   `:gmail/reply-deduped` gone from src. Version bump; bb spec / features /
   lint green.
 
-Deploy note (planner, yopp): `hail/yopp-tasks.edn` prompt says "reply on
+Deploy note (planner, skiff): `hail/skiff-tasks.edn` prompt says "reply on
 the same thread with gmail__send" — change to comm__send with
 `gmail.thread` when this ships.
 
@@ -78,4 +78,4 @@ The two isaac-agent bugs blocking the comm__send scenarios are fixed on isaac-ag
 
 ## Landed (2026-09-25)
 
-isaac-gmail main e894924 (0.2.6). Gate PASS; spec 132/0, features 43/0. Deploy: repin registry, upgrade yopp, and switch hail/yopp-tasks.edn prompt from gmail__send to comm__send (comm gmail, gmail.thread).
+isaac-gmail main e894924 (0.2.6). Gate PASS; spec 132/0, features 43/0. Deploy: repin registry, upgrade skiff, and switch hail/skiff-tasks.edn prompt from gmail__send to comm__send (comm gmail, gmail.thread).

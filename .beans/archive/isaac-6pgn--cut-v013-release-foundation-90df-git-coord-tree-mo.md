@@ -64,7 +64,7 @@ registry sha ONLY if that module's own code changed this cycle (for the
 2026-06-19 verifier:
 
 - Published foundation tag is correct: `v0.1.3 -> a5fe97e`, and [src/isaac-manifest.edn](/private/tmp/isaac-6pgn-foundation/src/isaac-manifest.edn:2) reports `:version "0.1.3"`.
-- homebrew-tap `main` is at `c368d10`, and [Formula/isaac.rb](/Users/micahmartin/agents/work-2/homebrew-tap/Formula/isaac.rb:1) now points at foundation `v0.1.3` with updated sha256.
+- homebrew-tap `main` is at `c368d10`, and [Formula/isaac.rb](~/agents/work-2/homebrew-tap/Formula/isaac.rb:1) now points at foundation `v0.1.3` with updated sha256.
 - Tagged launcher proof is green: `./libexec/isaac --root /private/tmp/isaac-6pgn-root --version` from the tagged `v0.1.3` checkout returned `isaac 0.1.3`.
 - Tagged shipped behavior is green: `env ISAAC_GIT=1 bb features-all features/module/git_coord_tree.feature features/module/modules_show.feature features/module/modules_upgrade.feature` passed with `7 examples, 0 failures, 18 assertions`.
 - Tagged repo lane is also green: `env ISAAC_GIT=1 bb ci` -> `754` spec examples, `0` failures; `109` feature examples, `0` failures.

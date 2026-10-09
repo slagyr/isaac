@@ -23,7 +23,7 @@ Acceptance (gate): file(it)==executed, 0 failures, zero '(it) inside (it)', 1 ex
 HEAD: 49a935b68c68a9fdb50be3e4ff1aeb93a7aa2814
 Working tree: clean
 
-Target file [spec/isaac/scheduler_steps_spec.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/scheduler_steps_spec.clj:1) is missing from `isaac-foundation` `main`, so the migration was not actually delivered. `git rev-parse --verify HEAD^{tree}:spec/isaac/scheduler_steps_spec.clj` fails in `isaac-foundation`, and `git log --all -- spec/isaac/scheduler_steps_spec.clj` returns no commits for that path. The baseline example still exists in [isaac/spec/isaac/scheduler_steps_spec.clj](/Users/micahmartin/agents/verify/isaac/spec/isaac/scheduler_steps_spec.clj:1). I stopped before test execution because the acceptance gate `file(it)==executed` already fails at the file-presence step.
+Target file [spec/isaac/scheduler_steps_spec.clj](~/agents/verify/isaac-foundation/spec/isaac/scheduler_steps_spec.clj:1) is missing from `isaac-foundation` `main`, so the migration was not actually delivered. `git rev-parse --verify HEAD^{tree}:spec/isaac/scheduler_steps_spec.clj` fails in `isaac-foundation`, and `git log --all -- spec/isaac/scheduler_steps_spec.clj` returns no commits for that path. The baseline example still exists in [isaac/spec/isaac/scheduler_steps_spec.clj](~/agents/verify/isaac/spec/isaac/scheduler_steps_spec.clj:1). I stopped before test execution because the acceptance gate `file(it)==executed` already fails at the file-presence step.
 
 
 

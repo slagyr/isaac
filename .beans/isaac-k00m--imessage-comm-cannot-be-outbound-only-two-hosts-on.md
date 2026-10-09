@@ -46,7 +46,7 @@ opens the subscription and pays for every notification.
   `watch.subscribe` at all — the intent is legible in config and costs nothing
   at runtime.
 - An absent flag keeps today's bidirectional behaviour.
-- yopp's `:imessage/allow-from []` workaround is replaced by the real flag, and
+- skiff's `:imessage/allow-from []` workaround is replaced by the real flag, and
   its allow-from restored to the operator's handle (it is the *sender*
   whitelist, not an inbound switch).
 - A scenario covers a send-only slice: a send delivers, and an inbound
@@ -95,8 +95,8 @@ Two test-quality fixes the work uncovered, both in this repo's specs:
 
 ## Operator follow-up (not reachable from this repo)
 
-The third acceptance bullet is host config on **yopp**, not code: replace
+The third acceptance bullet is host config on **skiff**, not code: replace
 `:imessage/allow-from []` with `:imessage/inbound? false` and restore
-allow-from to the operator's handle. yopp's `~/.isaac/config` is not on this
+allow-from to the operator's handle. skiff's `~/.isaac/config` is not on this
 machine (zanebot's copy already carries the real allow-from), so it needs the
 operator's hand. The flag it needs now exists and hot-reloads.

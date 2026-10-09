@@ -117,7 +117,7 @@ as on the tags commit. `admit!` now writes `:state :held` for a busy session,
 the same write the resource-pool hold path already did. `bb ci` is green in
 both repos at these shas.
 
-Skipped the post-landing `sessions list` on zanebot and yopp: no access to
+Skipped the post-landing `sessions list` on zanebot and skiff: no access to
 those hosts. No code change is required for them.
 
 ## Authorship rewrite (planner, 2026-10-07)

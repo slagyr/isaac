@@ -96,8 +96,8 @@ bb ci green (754 spec + 105 feature examples)
 ## Verification notes
 
 - Verification passed on 2026-06-19 against fetched GitHub `isaac-foundation` `main` at `e68a9bb`, not the stale local mirror.
-- The feature file [features/module/conflict_warning.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/module/conflict_warning.feature:1) is in-bounds for the bean: initial `@wip` addition in `424e07b`, then the approved layout-tightening change in `684eb32` that switched scenario 1 from loose `stdout contains` checks to the bean’s requested `the stdout matches:` table assertion.
+- The feature file [features/module/conflict_warning.feature](~/agents/verify/isaac-foundation/features/module/conflict_warning.feature:1) is in-bounds for the bean: initial `@wip` addition in `424e07b`, then the approved layout-tightening change in `684eb32` that switched scenario 1 from loose `stdout contains` checks to the bean’s requested `the stdout matches:` table assertion.
 - Focused acceptance proof passed: `env ISAAC_GIT=1 bb features features/module/conflict_warning.feature` → `3 examples, 0 failures, 8 assertions`.
 - The supporting launcher lanes are also green on this head: `env ISAAC_GIT=1 bb features-slow` → `4 examples, 0 failures, 8 assertions`.
-- `modules list` now renders a separate conflicts table and emits structural `:conflicts` from [src/isaac/modules/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/modules/cli.clj:131) and [src/isaac/module/loader.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/module/loader.clj:1261).
+- `modules list` now renders a separate conflicts table and emits structural `:conflicts` from [src/isaac/modules/cli.clj](~/agents/verify/isaac-foundation/src/isaac/modules/cli.clj:131) and [src/isaac/module/loader.clj](~/agents/verify/isaac-foundation/src/isaac/module/loader.clj:1261).
 - One unrelated current-head issue remains outside this bean’s diff: `ISAAC_GIT=1 bb ci` is red in `features/logs/cli.feature` with `/target/test-logs/app.log (No such file or directory)`. yi82 did not touch that area, and the yi82-specific feature/lane proofs above are green.

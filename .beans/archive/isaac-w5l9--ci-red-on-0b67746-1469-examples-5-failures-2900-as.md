@@ -17,7 +17,7 @@ CI verification failed on push to main.
 - Branch: main
 - Repository: slagyr/isaac
 - GitHub actor: slagyr
-- Commit author: Micah <micahmartin@gmail.com>
+- Commit author: Micah
 - Run: https://github.com/slagyr/isaac/actions/runs/25647548854
 
 Summary:

@@ -236,4 +236,4 @@ Actions CI green on main (run 36651304234). Added `:isaac.handbook` to
 `isaac/modules.edn` (this commit) pointing at the same main sha — every
 other module in that registry is registered at creation time, so
 isaac-handbook follows suit. Registry-only: no `modules install`/`upgrade`
-run on zanebot or yopp, per the brief.
+run on zanebot or skiff, per the brief.

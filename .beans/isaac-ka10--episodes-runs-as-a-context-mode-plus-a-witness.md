@@ -27,7 +27,7 @@ Micah, 2026-10-04. Follows the context-mode + observer berths bean. Moves episod
 - Handbook (episodes chapter) rewritten for the two settings.
 - `bb ci` green; pins coherent with the agent bean's sha.
 
-Likely repo scope: isaac-episodes (+ zanebot/yopp config at deploy).
+Likely repo scope: isaac-episodes (+ zanebot/skiff config at deploy).
 
 ## Baseline plan (2026-10-04)
 Scenarios signed off (draft: features/episodes/context_mode_and_observer.feature, 5 scenarios). Baseline waits for isaac-mwqs to complete: its baselined continuation.feature carries a `session-policy` Background row. At baseline, the planner also rewrites the `session-policy` rows in the 11 other episodes feature files (~75 scenarios; layout.feature asserts the index field itself) to `:context-mode :episodes` + `:observers [:episodes]`, marks the touched scenarios @wip, and includes them in the baseline.
@@ -44,7 +44,7 @@ Decisions 2026-10-05: no automatic migration (no legacy awareness); `episodes mi
 - isaac-episodes pins the isaac-agent sha that carries isaac-c52a (pins coherent).
 - Handbook (episodes chapter) rewritten for `:context-mode :episodes` + `:observers [:episodes]`, including running the observer without the context mode.
 - `bb ci` green in isaac-episodes and isaac-agent.
-- Deploy note (manual, not this bean): hand-edit zanebot/yopp crews from `:session-policy :episodes` to the two settings and strip `:session-policy` from session.edn files.
+- Deploy note (manual, not this bean): hand-edit zanebot/skiff crews from `:session-policy :episodes` to the two settings and strip `:session-policy` from session.edn files.
 
 feature-baseline: isaac-agent 2346f1cd3917937b9c8eb7fe20311178d0ab4fba
 feature-blob: isaac-episodes features/episodes/context_mode_and_observer.feature d5d208018130e80fced901848712869c7c3ef0af

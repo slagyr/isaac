@@ -36,7 +36,7 @@ Micah 2026-09-23: Skiff will get every kind of mail — conversations to answer 
 
 ## Acceptance (features/comm/gmail/routes.feature, reuse gmail.feature steps)
 
-- [ ] Route `:to "yopp+ops@*"` matches a message delivered to `yopp+ops@tonotop.com` → turn on crew `ops`, session `gmail-<threadId>`, label `isaac/ops` applied (modify call seen) before dispatch.
+- [ ] Route `:to "isaac+ops@*"` matches a message delivered to `isaac+ops@marigold.example` → turn on crew `ops`, session `gmail-<threadId>`, label `isaac/ops` applied (modify call seen) before dispatch.
 - [ ] First matching route wins; a later broader route does not override.
 - [ ] `:ignore` route → no turn, label `isaac/newsletters`, UNREAD removed; with `gmail/ignore-marks-read false` UNREAD kept.
 - [ ] Allowed sender, no matching route → no turn, label `isaac/unrouted`, one info log line with from + subject.
@@ -56,11 +56,11 @@ Micah wants to add a route by adding a file. The foundation loader already reads
 ```
 ~/.isaac/config/
   gmail-routes/
-    _.edn            ; optional table defaults, e.g. {:crew "yopp"}
-    ops.edn          ; {:order 10 :match {:to "yopp+ops@*"} :action :converse :crew "ops" :desc "Ops asks and incidents"}
+    _.edn            ; optional table defaults, e.g. {:crew "isaac"}
+    ops.edn          ; {:order 10 :match {:to "isaac+ops@*"} :action :converse :crew "ops" :desc "Ops asks and incidents"}
     invoices.edn     ; {:order 20 :match {:subject "(?i)\\binvoice\\b"} :action :task :band "finance" :ack true :desc "Bills to file"}
     newsletters.edn  ; {:order 30 :match {:from "*@substack.com"} :action :ignore}
-    team.edn         ; {:order 90 :match {:from "*@tonotop.com"} :action :converse :desc "Colleagues"}
+    team.edn         ; {:order 90 :match {:from "*@marigold.example"} :action :converse :desc "Colleagues"}
 ```
 
 Inline in `isaac.edn` as `{:gmail-routes {:ops {...}}}` is equivalent. `isaac config set gmail-routes.ops.crew ops` works through the normal tree, and adding/removing a file hot-reloads like any config key. Optional `:comm` on a route restricts it to one gmail comm when several tenants run. `:desc` is what the triage fallback (isaac-betb) shows the model. The `:task` action lands in isaac-3427; here only `:converse` and `:ignore` are implemented, and an unknown action is a validation error naming the file.
@@ -75,9 +75,9 @@ feature-blob: isaac-gmail features/comm/gmail/routes.feature 9a5902e236f2d99df6c
 
 ## Routes are the whitelist (Micah, 2026-09-23 — supersedes the gate paragraph above)
 
-`gmail/allow-from` goes away. A `:converse` or `:task` route must name `:from` (validation error otherwise); an `:ignore` route may omit it. A message no route claims is `isaac/unrouted` — labelled, no turn — which is the fail-closed drop the global list used to give. The authentication check moves with it: any `:from` with a wildcard domain (`*@tonotop.com`) requires `gate/authenticated?` (DMARC pass, or SPF+DKIM aligned) exactly as the old `*@domain` allow-from entries did; a spoofed sender is dropped with the existing `:unauthenticated` warn log, never routed. The baselined scenarios in `features/comm/gmail/routes.feature` carry no `gmail/allow-from`; build to them. Keep the manifest key declared-but-retired only if the schema has a retired marker; otherwise remove it and say so in the handoff.
+`gmail/allow-from` goes away. A `:converse` or `:task` route must name `:from` (validation error otherwise); an `:ignore` route may omit it. A message no route claims is `isaac/unrouted` — labelled, no turn — which is the fail-closed drop the global list used to give. The authentication check moves with it: any `:from` with a wildcard domain (`*@marigold.example`) requires `gate/authenticated?` (DMARC pass, or SPF+DKIM aligned) exactly as the old `*@domain` allow-from entries did; a spoofed sender is dropped with the existing `:unauthenticated` warn log, never routed. The baselined scenarios in `features/comm/gmail/routes.feature` carry no `gmail/allow-from`; build to them. Keep the manifest key declared-but-retired only if the schema has a retired marker; otherwise remove it and say so in the handoff.
 
-Deploy note for the planner (not the worker): `gmail.modify` joins the scope union — Yopp must re-login BEFORE this ships.
+Deploy note for the planner (not the worker): `gmail.modify` joins the scope union — Skiff must re-login BEFORE this ships.
 
 
 ## Worker findings — gate FAIL, held for planner review (2026-09-23)
@@ -129,7 +129,7 @@ resolve without editing the baseline, which is the planner's call:
    second scenario's explicit title), which is why the first now fails.
 
 3. **"adding a route file while running..." (line ~252).** Its first push
-   has only `gmail-routes/team.edn` configured (`match.from *@tonotop.com`),
+   has only `gmail-routes/team.edn` configured (`match.from *@marigold.example`),
    and the pushed message is from `digest@substack.com` — which the team
    route does **not** match. Under "Routes are the whitelist" (a *non-empty*
    table with no match → `:unrouted`, no turn) this can't converse, yet the
@@ -162,7 +162,7 @@ remote (913811d), bean stays `in-progress`. No `main-sha:` line; nothing was
 squashed into isaac-gmail `main`.
 
 **Deploy note (unchanged from Routes-are-the-whitelist section above):**
-`gmail.modify` scope joins the union — Yopp must re-login before this ships,
+`gmail.modify` scope joins the union — Skiff must re-login before this ships,
 whenever it lands.
 
 feature-baseline: isaac-gmail 3f55d061fc485b9059de1612a9b990dcbdf0d508
@@ -175,7 +175,7 @@ Planner, 2026-09-23, after the worker's gate FAIL(3):
 - Scenario "no routes configured behaves as before, but still labels the default route" **removed** — it predates the routes-are-the-whitelist ruling; with zero routes nothing converses and every message is `isaac/unrouted` (the "matching no route" scenario covers it).
 - Hot-reload scenario: the first substack message (only team.edn configured) is now `isaac/unrouted` with no turn; after newsletters.edn appears it is `isaac/newsletters`; session count 0 throughout.
 - Ops-crew scenario gained `crew.ops.model grover` / `crew.ops.soul` fixture rows.
-- `gmail.feature` migrated to routes (Background `gmail-routes.team` names ada; the mallory scenario expects `isaac/unrouted` + `:gmail/unrouted` info log instead of a `:sender` drop; the isaac-dymn scenario configures a `*@tonotop.com` route and expects `isaac/domain` on the authenticated message). All six tagged `@wip` and added to this bean's baseline; the worker un-tags them as they pass.
+- `gmail.feature` migrated to routes (Background `gmail-routes.team` names ada; the mallory scenario expects `isaac/unrouted` + `:gmail/unrouted` info log instead of a `:sender` drop; the isaac-dymn scenario configures a `*@marigold.example` route and expects `isaac/domain` on the authenticated message). All six tagged `@wip` and added to this bean's baseline; the worker un-tags them as they pass.
 - Baseline re-cut on isaac-gmail 3f55d06.
 
 
@@ -269,7 +269,7 @@ config keys added; Gmail scope changed from `gmail.readonly` to
 Version 0.1.9 → 0.2.0.
 
 `gmail.feature` migrated off `gmail/allow-from` onto `gmail-routes` (its
-Background now admits `ada@tonotop.com` via a route, matching the new
+Background now admits `ada@marigold.example` via a route, matching the new
 whitelist model).
 
 New files: `src/isaac/comm/gmail/routes.clj`, `src/isaac/comm/gmail/labels.clj`,
@@ -289,7 +289,7 @@ untouched and passing), 88 spec examples green, `bb lint src/` clean.
 `triage.feature`/`pull.feature`/`tasks.feature` `@wip` scenarios (bean
 u80t/3427/betb) untouched.
 
-**Deploy note:** `gmail.modify` joins the scope union — Yopp must re-login
+**Deploy note:** `gmail.modify` joins the scope union — Skiff must re-login
 before this ships.
 
 ## Landed on main (2026-09-23)

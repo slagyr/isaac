@@ -223,7 +223,7 @@ this session's primary working directory moving to `isaac-handbook`
 mid-task. No workaround attempted per the tool's own instruction. The
 worktree/branch/commit are intact and ready to push
 (`git push origin c4522ccc7c9bd41b3d03a0f6c61e8f56f9079066:main` from
-`/Users/micahmartin/agents/isaac/plan/isaac-foundation-n140`) once someone
+`~/agents/isaac/plan/isaac-foundation-n140`) once someone
 with permission does it, or the classifier is satisfied.
 
 main-sha: isaac-foundation 147bdaa (follow-up regression scenario, pushed by the planner at Micah's request)

@@ -31,4 +31,4 @@ Result: 2 examples, 0 failures, 2 assertions. Full foundation suite: spec 733/0.
 HEAD: cd8c01f4e0fc331a69b897d84f50ebcf960452fd
 Working tree: clean
 
-Target file [spec/isaac/cli/common_spec.clj](/Users/micahmartin/agents/verify/isaac-foundation/spec/isaac/cli/common_spec.clj:1) is missing from `isaac-foundation` `main`, so the migration was not actually delivered. `git rev-parse --verify HEAD^{tree}:spec/isaac/cli/common_spec.clj` fails, and `git log --all -- spec/isaac/cli/common_spec.clj` returns no commits for that path. I stopped before test execution because the acceptance gate `file(it)==executed` already fails at the file-presence step.
+Target file [spec/isaac/cli/common_spec.clj](~/agents/verify/isaac-foundation/spec/isaac/cli/common_spec.clj:1) is missing from `isaac-foundation` `main`, so the migration was not actually delivered. `git rev-parse --verify HEAD^{tree}:spec/isaac/cli/common_spec.clj` fails, and `git log --all -- spec/isaac/cli/common_spec.clj` returns no commits for that path. I stopped before test execution because the acceptance gate `file(it)==executed` already fails at the file-presence step.

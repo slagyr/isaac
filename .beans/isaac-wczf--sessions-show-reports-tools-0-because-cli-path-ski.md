@@ -106,7 +106,7 @@ Verified against isaac-agent commit `5bca5a8` in the clean verifier clone. Code 
 
 Fresh verification:
 
-• `bb verify` passed (rerun unsandboxed because the sandbox blocked writes to `/Users/micahmartin/.isaac/logs/isaac.log` in unrelated logger paths):
+• `bb verify` passed (rerun unsandboxed because the sandbox blocked writes to `~/.isaac/logs/isaac.log` in unrelated logger paths):
   • `config-bypass-lint: ok`
   • specs: `1132 examples, 0 failures, 2215 assertions`
   • features: `564 examples, 0 failures, 1263 assertions`

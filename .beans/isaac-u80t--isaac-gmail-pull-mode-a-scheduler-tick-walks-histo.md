@@ -90,7 +90,7 @@ lines are append-only and re-baselining is the planner's job).
 `gmail.feature`'s:
 
     | gmail-routes.team.order      | 90              |
-    | gmail-routes.team.match.from | ada@tonotop.com |
+    | gmail-routes.team.match.from | ada@marigold.example |
     | gmail-routes.team.action     | converse        |
 
 then re-baseline (`bb bean-gate baseline isaac-u80t isaac-gmail:features/comm/gmail/pull.feature`)
@@ -106,7 +106,7 @@ feature-blob: isaac-gmail features/comm/gmail/pull.feature 03a3da0ab5a1737ea7b34
 
 ## Exceptions
 
-Planner, 2026-09-23: pull.feature's Background gained the `gmail-routes.team` rows (`*@tonotop.com` → converse) so the two message-routing scenarios admit ada under routes-as-whitelist, matching gmail.feature. Baseline re-cut.
+Planner, 2026-09-23: pull.feature's Background gained the `gmail-routes.team` rows (`*@marigold.example` → converse) so the two message-routing scenarios admit ada under routes-as-whitelist, matching gmail.feature. Baseline re-cut.
 
 
 ## Summary of Changes

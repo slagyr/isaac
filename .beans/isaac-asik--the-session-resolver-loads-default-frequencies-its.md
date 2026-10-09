@@ -278,7 +278,7 @@ repo scope), not isaac-acp.
 
 Not landed. acp branch `bean/isaac-asik-land` (rebased, sha `a9ba318`, repin
 only) pushed nowhere yet — left as a local worktree at
-`/Users/micahmartin/agents/isaac/plan/isaac-acp-asik-land` pending planner
+`~/agents/isaac/plan/isaac-acp-asik-land` pending planner
 direction. No acp `main-sha:` recorded. Agent main-sha unchanged:
 `main-sha: isaac-agent b21349432a464a5cb03fc70525df8593901eed39`.
 

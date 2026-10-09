@@ -18,10 +18,10 @@ Every tracked file in `isaac-gchat`: features, specs, feature-steps, src docstri
 
 | Find (case-insensitive) | Replace with |
 |---|---|
-| the domain `tonotop.com` | `marigold.example` |
-| `tonotop` anywhere else (organization id, project ids, session names, config paths such as `google.tonotop.…`) | `marigold` |
-| `Micah Martin` | `Hieronymus Finch` |
-| `micah@…`, `micah-martin`, bare `micah` used as a sample sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
+| the company's domain | `marigold.example` |
+| the company's name anywhere else (organization id, project ids, session names, config paths) | `marigold` |
+| the operator's full name | `Hieronymus Finch` |
+| the operator's first name used as a sample address, sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
 | `skiff` anywhere (the account `skiff@…`, `users/skiff`, project and session names such as `…-skiff`, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
 | any long numeric `users/<digits>` id | `users/100000000000000000001` (keep distinct ids distinct: …002, …003) |
 | any `domainId` / customer id that is not obviously fake | `0marigold` |
@@ -32,8 +32,8 @@ The README session-name examples and the DM session names in features change tog
 
 ## Acceptance
 
-- `git grep -i tonotop` prints nothing.
-- `git grep -i yopp` prints nothing.
+- `git grep -i` for the company's name prints nothing.
+- `git grep -i` for the deployment's name prints nothing.
 - `git grep -i "micah"` prints only decision-attribution lines.
 - `git grep -E "users/[0-9]{12,}"` prints only the replacement ids.
 - The repo's full verification is green (`bb verify`, and `bb jvm-spec` / features where the repo has them).
@@ -55,12 +55,12 @@ No feature runner contract to baseline. The module's features are the examples b
 
 The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Take the ungated close: do the scrub, including every `.feature` file the acceptance names, then `beans update isaac-izrn --tag=unverified` while it stays `in-progress`, and hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
 
-Identifier swaps inside an existing step are in scope. Do not add, delete, or reword a scenario. A step that matched `tonotop` must match `marigold` after the swap, and nothing else about the scenario changes.
+Identifier swaps inside an existing step are in scope. Do not add, delete, or reword a scenario. A step that matched the company name must match `marigold` after the swap, and nothing else about the scenario changes.
 
 
 ## Implementation (2026-10-09)
 
-branch: bean/isaac-izrn @ 4f46520 (base origin/main@75e4e95) in isaac-gchat. Mechanical identifier replacements across 28 tracked files, including four feature files; no scenario names/counts changed. Long user IDs map independently to users/100000000000000000001 and users/100000000000000000002; domainId 0ivzlyj to 0marigold. No dependencies or pins edited. `git grep -i` for tonotop/yopp/micah is empty; long users IDs only replacements. `bb ci` green (208 spec examples, 71 feature examples); `bb jvm-spec` green (208 examples). `bb bean-gate verify isaac-izrn` exits 2 (no baseline). This repo has no `bb verify` task; `bb ci` is its full verification task.
+branch: bean/isaac-izrn @ 4f46520 (base origin/main@75e4e95) in isaac-gchat. Mechanical identifier replacements across 28 tracked files, including four feature files; no scenario names/counts changed. Long user IDs map independently to users/100000000000000000001 and users/100000000000000000002; domainId 0ivzlyj to 0marigold. No dependencies or pins edited. `git grep -i` for the company, deployment and operator names is empty; long users IDs only replacements. `bb ci` green (208 spec examples, 71 feature examples); `bb jvm-spec` green (208 examples). `bb bean-gate verify isaac-izrn` exits 2 (no baseline). This repo has no `bb verify` task; `bb ci` is its full verification task.
 
 
 

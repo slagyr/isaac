@@ -18,10 +18,10 @@ Every tracked file in `isaac-handbook`: features, specs, feature-steps, src docs
 
 | Find (case-insensitive) | Replace with |
 |---|---|
-| the domain `tonotop.com` | `marigold.example` |
-| `tonotop` anywhere else (organization id, project ids, session names, config paths such as `google.tonotop.…`) | `marigold` |
-| `Micah Martin` | `Hieronymus Finch` |
-| `micah@…`, `micah-martin`, bare `micah` used as a sample sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
+| the company's domain | `marigold.example` |
+| the company's name anywhere else (organization id, project ids, session names, config paths) | `marigold` |
+| the operator's full name | `Hieronymus Finch` |
+| the operator's first name used as a sample address, sender, user or query | `hieronymus@…`, `hieronymus-finch`, `hieronymus` |
 | `skiff` anywhere (the account `skiff@…`, `users/skiff`, project and session names such as `…-skiff`, prose) | `isaac` (`isaac@marigold.example`, `users/isaac`, `marigold-isaac`) |
 | any long numeric `users/<digits>` id | `users/100000000000000000001` (keep distinct ids distinct: …002, …003) |
 | any `domainId` / customer id that is not obviously fake | `0marigold` |
@@ -32,8 +32,8 @@ Leave alone: decision attributions in comments and feature headers of the form "
 
 ## Acceptance
 
-- `git grep -i tonotop` prints nothing.
-- `git grep -i yopp` prints nothing.
+- `git grep -i` for the company's name prints nothing.
+- `git grep -i` for the deployment's name prints nothing.
 - `git grep -i "micah"` prints only decision-attribution lines.
 - `git grep -E "users/[0-9]{12,}"` prints only the replacement ids.
 - The repo's full verification is green (`bb verify`, and `bb jvm-spec` / features where the repo has them).
@@ -46,7 +46,7 @@ Leave alone: decision attributions in comments and feature headers of the form "
 
 ## Implementation conflict (2026-10-09)
 
-Scrub requires editing `isaac-handbook/features/reference.feature:124,127,133` (`google.tonotop.oauth.client-secret`), but the gated work protocol permits only removing `@wip` from any `.feature` file, regardless of whether a bean has a feature baseline. No product edits made. Also `isaac-handbook/LICENSE:3` contains `Copyright (c) 2026 Micah Martin`: acceptance says `git grep -i micah` prints only decision attributions; changing a copyright attribution to a fictional person is not a mechanical fixture scrub and needs an authorized legal decision. Please clarify the feature-edit exception and whether LICENSE should be excluded from acceptance or updated by its owner.
+Scrub requires editing `isaac-handbook/features/reference.feature:124,127,133` (`google.marigold.oauth.client-secret`), but the gated work protocol permits only removing `@wip` from any `.feature` file, regardless of whether a bean has a feature baseline. No product edits made. Also `isaac-handbook/LICENSE:3` contains `Copyright (c) 2026 Hieronymus Finch`: acceptance says `git grep -i micah` prints only decision attributions; changing a copyright attribution to a fictional person is not a mechanical fixture scrub and needs an authorized legal decision. Please clarify the feature-edit exception and whether LICENSE should be excluded from acceptance or updated by its owner.
 
 ## Ungated
 
@@ -61,7 +61,7 @@ The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-b
 
 ## Implementation (2026-10-09)
 
-branch: bean/isaac-xklq @ 1b4b2c3280c49f458df99ceee1f5bfb9ce6e1131 (base origin/main@ceb7879) in isaac-handbook. Replaced three google.tonotop references in features/reference.feature with google.marigold; no scenario added, removed, or reworded. All other tracked examples were already scrubbed. LICENSE unchanged; only remaining micah grep results are its copyright and a CI decision attribution. git grep -i tonotop and git grep -i yopp empty; no long numeric users/ IDs. bb spec: 42 examples, 0 failures; bb features: 22 examples, 0 failures. bb verify and bb jvm-spec are not defined in isaac-handbook; bb bean-gate verify isaac-xklq exited 2 (ungated). No pin or product behavior change.
+branch: bean/isaac-xklq @ 1b4b2c3280c49f458df99ceee1f5bfb9ce6e1131 (base origin/main@ceb7879) in isaac-handbook. Replaced three company-named config path references in features/reference.feature with google.marigold; no scenario added, removed, or reworded. All other tracked examples were already scrubbed. LICENSE unchanged; only remaining micah grep results are its copyright and a CI decision attribution. git grep -i for the company and deployment names empty; no long numeric users/ IDs. bb spec: 42 examples, 0 failures; bb features: 22 examples, 0 failures. bb verify and bb jvm-spec are not defined in isaac-handbook; bb bean-gate verify isaac-xklq exited 2 (ungated). No pin or product behavior change.
 
 
 

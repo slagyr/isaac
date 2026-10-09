@@ -12,7 +12,7 @@ updated_at: 2026-09-19T23:42:33Z
 parent: isaac-bv1l
 ---
 
-Found 2026-09-19 23:37Z on skiff, first inbound Chat message through the door: dropped `:sender`. spaces.messages.get under user auth returns `{:sender {:name "users/118…" :displayName "Micah Martin" :type "HUMAN" :domainId "0ivzlyj"}}` — no email — so an email allow-list can never admit a person; every fixture assumed sender.email.
+Found 2026-09-19 23:37Z on skiff, first inbound Chat message through the door: dropped `:sender`. spaces.messages.get under user auth returns `{:sender {:name "users/118…" :displayName "Hieronymus Finch" :type "HUMAN" :domainId "0ivzlyj"}}` — no email — so an email allow-list can never admit a person; every fixture assumed sender.email.
 
 Fix: allow-from entries match by email (when present), by `users/<id>`, or by `domain:<domainId>` (the Workspace customer id, C00ivzlyj on marigold.example, as Chat reports it); a :sender drop logs the identity at :info so the operator can copy it in; schema description says so. Specs + inbound.feature scenarios (users/<id> admitted; domain admitted/refused; drop names the sender). Version 0.1.3. isaac-xy2i (patterns) still stands for *@domain sugar; this makes the list usable at all.
 

@@ -17,7 +17,7 @@ but the client still rendered them as empty/status-only.
 Evidence:
 
 - Local Toad log:
-  `/Users/micahmartin/.local/state/toad/logs/isaac_2026-06-27T11_02_58_427061.txt`
+  `~/.local/state/toad/logs/isaac_2026-06-27T11_02_58_427061.txt`
 - That log contains a live `tool_call_update` for `glimmering-cardinal` with:
   - `toolCallId`
   - `status: "completed"`
@@ -88,7 +88,7 @@ It fails before scenarios load with:
 
 `Could not locate isaac/foundation/harness_config_steps__init.class ...`
 
-This is a real current-head classpath/pin issue in ACP, not a verifier-layout miss. Current [deps.edn](/Users/micahmartin/agents/verify/isaac-acp/deps.edn:1) still pins `io.github.slagyr/isaac-foundation` and its `spec` / `spec-support` deps to `a8344457b8b187738092072e92e0776a0128c721`, while the feature alias explicitly requires `isaac.foundation.harness-config-steps` in [deps.edn](/Users/micahmartin/agents/verify/isaac-acp/deps.edn:83).
+This is a real current-head classpath/pin issue in ACP, not a verifier-layout miss. Current [deps.edn](~/agents/verify/isaac-acp/deps.edn:1) still pins `io.github.slagyr/isaac-foundation` and its `spec` / `spec-support` deps to `a8344457b8b187738092072e92e0776a0128c721`, while the feature alias explicitly requires `isaac.foundation.harness-config-steps` in [deps.edn](~/agents/verify/isaac-acp/deps.edn:83).
 
 So `ey73` is not verifier-green on current `main` yet.
 

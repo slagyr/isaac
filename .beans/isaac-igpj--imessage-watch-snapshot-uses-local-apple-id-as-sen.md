@@ -12,9 +12,9 @@ Likely repo: `isaac-imessage`.
 
 ## Problem
 
-zanebot 2026-08-27T16:03:50Z: Micah texted main (`micahmartin@mac.com`, chat `any;-;micahmartin@mac.com`, chat.db row 521). Isaac logged `:imessage.intake/drop-sender` with `handle=assistantmicahmartin@gmail.com` and `chat-guid=""`. No turn ran.
+zanebot 2026-08-27T16:03:50Z: Micah texted main (`hieronymus@marigold.example`, chat `any;-;hieronymus@marigold.example`, chat.db row 521). Isaac logged `:imessage.intake/drop-sender` with `handle=isaac@marigold.example` and `chat-guid=""`. No turn ran.
 
-`imsg history --json` on the same rowid is correct (`sender=micahmartin@mac.com`, `chat_guid=any;-;micahmartin@mac.com`). `destination_caller_id` is zanebot's Apple ID (`assistantmicahmartin@gmail.com`).
+`imsg history --json` on the same rowid is correct (`sender=hieronymus@marigold.example`, `chat_guid=any;-;hieronymus@marigold.example`). `destination_caller_id` is zanebot's Apple ID (`isaac@marigold.example`).
 
 imsg watch.subscribe can emit a row before `chat_message_join` and `handle.id` exist. `decodeMessageRow` then fills empty `sender` from `destination_caller_id` (the local account). Isaac compared that to `:imessage/allow-from` and dropped it. Empty-string `chat_guid` is currently truthy, so it never hits the no-chat-guid path.
 

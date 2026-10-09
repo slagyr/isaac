@@ -84,10 +84,10 @@ claimed logs fix.
 
 Concrete mismatches on current head:
 
-- [src/isaac/logger.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logger.clj:15) still hard-codes `:log-file "/tmp/isaac.log"`.
-- [src/isaac/logs/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:30) still reads only `[:log :output]`; there is no `:log :file` support.
-- [src/isaac/logs/cli.clj](/Users/micahmartin/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:40) still falls straight through to `viewer/tail!` with no missing-file handling in the CLI path.
-- The current feature file [features/logs/cli.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/logs/cli.feature:1) has no missing-file scenarios.
+- [src/isaac/logger.clj](~/agents/verify/isaac-foundation/src/isaac/logger.clj:15) still hard-codes `:log-file "/tmp/isaac.log"`.
+- [src/isaac/logs/cli.clj](~/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:30) still reads only `[:log :output]`; there is no `:log :file` support.
+- [src/isaac/logs/cli.clj](~/agents/verify/isaac-foundation/src/isaac/logs/cli.clj:40) still falls straight through to `viewer/tail!` with no missing-file handling in the CLI path.
+- The current feature file [features/logs/cli.feature](~/agents/verify/isaac-foundation/features/logs/cli.feature:1) has no missing-file scenarios.
 
 So the delivered behavior described in the handoff is not on current `main`:
 the default log path is still `/tmp/isaac.log`, config still uses `:log :output`

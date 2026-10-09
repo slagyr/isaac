@@ -57,7 +57,7 @@ HEAD: isaac-foundation (see push SHA)
 ## Verification notes
 
 - Verification passed on 2026-06-19 against fetched GitHub `isaac-foundation` `main` at `0f5256f`, not the stale local mirror.
-- CI wiring is present in [ci-tests.yml](/Users/micahmartin/agents/verify/isaac-foundation/.github/workflows/ci-tests.yml:1): separate `slow-features` job, triggered on `push`, `pull_request`, `workflow_dispatch`, and nightly `schedule`.
-- The lane is tag-driven, not enumerated: [bb.edn](/Users/micahmartin/agents/verify/isaac-foundation/bb.edn:43) adds `bb features-slow`, and [bb/test_tasks.clj](/Users/micahmartin/agents/verify/isaac-foundation/bb/test_tasks.clj:33) runs all feature files with `-t "slow" -t "~wip"`.
-- The current slow inventory is exactly the two green launcher scenarios the bean names: [features/module/module_deps.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/module/module_deps.feature:14) and [features/module/modules_list.feature](/Users/micahmartin/agents/verify/isaac-foundation/features/module/modules_list.feature:67). There is no 92p3 slow scenario on this head yet.
+- CI wiring is present in [ci-tests.yml](~/agents/verify/isaac-foundation/.github/workflows/ci-tests.yml:1): separate `slow-features` job, triggered on `push`, `pull_request`, `workflow_dispatch`, and nightly `schedule`.
+- The lane is tag-driven, not enumerated: [bb.edn](~/agents/verify/isaac-foundation/bb.edn:43) adds `bb features-slow`, and [bb/test_tasks.clj](~/agents/verify/isaac-foundation/bb/test_tasks.clj:33) runs all feature files with `-t "slow" -t "~wip"`.
+- The current slow inventory is exactly the two green launcher scenarios the bean names: [features/module/module_deps.feature](~/agents/verify/isaac-foundation/features/module/module_deps.feature:14) and [features/module/modules_list.feature](~/agents/verify/isaac-foundation/features/module/modules_list.feature:67). There is no 92p3 slow scenario on this head yet.
 - Focused proof passed: `env ISAAC_GIT=1 bb features-slow` in `isaac-foundation` → `2 examples, 0 failures, 4 assertions`.

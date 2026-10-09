@@ -54,14 +54,14 @@ Committed `@wip` scenarios live in `isaac-agent`:
 Run in `isaac-agent`:
 
 ```bash
-cd /Users/micahmartin/agents/plan/isaac-agent
+cd ~/agents/plan/isaac-agent
 bb features features/crew/cli.feature features/tagging/crew_tags.feature
 ```
 
 Targeted selectors if needed:
 
 ```bash
-cd /Users/micahmartin/agents/plan/isaac-agent
+cd ~/agents/plan/isaac-agent
 bb features \
   features/crew/cli.feature:14 \
   features/crew/cli.feature:22 \

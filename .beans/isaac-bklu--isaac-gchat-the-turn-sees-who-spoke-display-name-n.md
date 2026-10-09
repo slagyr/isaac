@@ -14,7 +14,7 @@ blocked_by:
     - isaac-8s6s
 ---
 
-2026-09-19: gchat dispatch! builds the turn input as "<sender> <text>" where sender is the email if Google supplied one, else the users/<id> — so Skiff's first real turn read `users/118285940969606191299 Hi Skiff. How are you?`. The message carries sender.displayName ("Micah Martin"); use it: input "Micah Martin: <text>", origin metadata carries {:user users/<id> :display-name :email}. Same rendering in isaac-tund's context block. Scenario in inbound.feature: the provider request's user message starts with the display name; origin carries the id.
+2026-09-19: gchat dispatch! builds the turn input as "<sender> <text>" where sender is the email if Google supplied one, else the users/<id> — so Skiff's first real turn read `users/100000000000000000001 Hi Skiff. How are you?`. The message carries sender.displayName ("Hieronymus Finch"); use it: input "Hieronymus Finch: <text>", origin metadata carries {:user users/<id> :display-name :email}. Same rendering in isaac-tund's context block. Scenario in inbound.feature: the provider request's user message starts with the display name; origin carries the id.
 
 
 
@@ -25,7 +25,7 @@ Depends on isaac-8s6s (people index): render through people/render — display n
 Landed by the planner during the fleet's auth outage.
 
 The turn-input half of this bean came with isaac-8s6s (the input now reads
-`Micah Martin <micah@marigold.example>: …`). What was left was the record: a routed
+`Hieronymus Finch <hieronymus@marigold.example>: …`). What was left was the record: a routed
 decision now carries `:identity` beside the rendered `:sender`, and the
 session's `:origin` keeps `{:user :display-name :email}` — the id is what a
 rename cannot orphan.

@@ -37,4 +37,4 @@ resolution, `activate!`, and `/acp` route registration via
 
 - Verified against fetched GitHub `isaac-acp` `main` at `f1819a5`, not the stale local checkout.
 - `env ISAAC_GIT=1 bb spec spec/isaac/manifest_spec.clj spec/isaac/comm/acp_spec.clj` passed: `12 examples, 0 failures, 38 assertions`.
-- Full repo spec lane also passed on that head: `env ISAAC_GIT=1 bb spec` -> `189 examples, 0 failures, 480 assertions, 1 pre-existing pending` in [server_spec.clj](/Users/micahmartin/agents/verify/isaac-acp/spec/isaac/comm/acp/server_spec.clj:326).
+- Full repo spec lane also passed on that head: `env ISAAC_GIT=1 bb spec` -> `189 examples, 0 failures, 480 assertions, 1 pre-existing pending` in [server_spec.clj](~/agents/verify/isaac-acp/spec/isaac/comm/acp/server_spec.clj:326).

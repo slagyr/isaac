@@ -18,7 +18,7 @@ In `send!*`, a generic `:target` that is an email (contains `@`, not `spaces/…
 - Handbook (gchat chapter): the generic-target paragraph says an email reaches that person's DM (created when absent); the `spaces/…` workaround paragraph and the "cron job addressed to an email never arrives" troubleshooting entry are removed.
 - `bb ci` green.
 
-Likely repo scope: isaac-gchat. Host: yopp (deploy when Micah asks).
+Likely repo scope: isaac-gchat. Host: skiff (deploy when Micah asks).
 
 feature-baseline: isaac-gchat dff11603900bd0875e1fa1e3363cd2663abe129e
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature a4e3d4970dfe744ae379705eb28f953b51634a09

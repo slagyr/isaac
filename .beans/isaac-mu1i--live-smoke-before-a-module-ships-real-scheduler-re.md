@@ -58,7 +58,7 @@ Implemented `isaac google smoke` as a CLI subcommand (not a `bb` task): it ships
 
 ## Planner check (2026-09-22)
 
-Reran on bean/isaac-mu1i f3e28d8 (amended from 5b20dd9 to scrub two host-specific mentions to placeholders — `skiff` in doc/rollout.md and a `marigold` example tenant in the doc and spec): `bb spec` 171/0, features 28/0. PR opened to isaac-google main; tagged `unverified`. Pre-existing on main and NOT this bean: src/isaac/google/config.clj (skiff@marigold.example example), tenants.clj (:marigold/marigold-skiff example), people.clj (micah@marigold.example) — the 09-19 scrub missed them; separate cleanup. Gap for a later bean: no in-process feature scenario for `isaac google smoke` because door/live-push make real network calls; an HTTP stub seam would close it.
+Reran on bean/isaac-mu1i f3e28d8 (amended from 5b20dd9 to scrub two host-specific mentions to placeholders — `skiff` in doc/rollout.md and a `marigold` example tenant in the doc and spec): `bb spec` 171/0, features 28/0. PR opened to isaac-google main; tagged `unverified`. Pre-existing on main and NOT this bean: src/isaac/google/config.clj (skiff@marigold.example example), tenants.clj (:marigold/marigold-skiff example), people.clj (hieronymus@marigold.example) — the 09-19 scrub missed them; separate cleanup. Gap for a later bean: no in-process feature scenario for `isaac google smoke` because door/live-push make real network calls; an HTTP stub seam would close it.
 
 ## Landed on main
 

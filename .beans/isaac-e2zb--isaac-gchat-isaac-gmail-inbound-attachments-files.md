@@ -71,7 +71,7 @@ feature-blob: isaac-gmail features/comm/gmail/gmail.feature 8093c058869101587cfd
 
 ## Held (awaiting human, 2026-09-25)
 
-Escalated to human by **scrapper**@isaac-work-2. Blocking: the gchat baselined scenario asserts session `gchat-tonotop-inbound-attach`, while actual configured routing produces a different session name; acceptance transcript cannot pass without changing the frozen scenario.
+Escalated to human by **scrapper**@isaac-work-2. Blocking: the gchat baselined scenario asserts session `gchat-marigold-inbound-attach`, while actual configured routing produces a different session name; acceptance transcript cannot pass without changing the frozen scenario.
 
 
 

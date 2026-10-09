@@ -37,7 +37,7 @@ Both fail before scenarios/examples run with:
 
 `Could not locate isaac/session/frequencies__init.class ...`
 
-That failure originates from [src/isaac/comm/discord.clj](/Users/micahmartin/agents/verify/isaac-discord/src/isaac/comm/discord.clj:16), which now requires `isaac.session.frequencies`. So `86qy` may be functionally correct, but current `isaac-discord` `main` is not in a verifier-acceptable state until this classpath/pin issue is resolved.
+That failure originates from [src/isaac/comm/discord.clj](~/agents/verify/isaac-discord/src/isaac/comm/discord.clj:16), which now requires `isaac.session.frequencies`. So `86qy` may be functionally correct, but current `isaac-discord` `main` is not in a verifier-acceptable state until this classpath/pin issue is resolved.
 
 ## Verification (2026-06-29)
 Verified on fetched GitHub `isaac-discord` `main` `e624834f31fa0719985ba85de9e97f30d8ad1051`, where the reconnect fix and verifier-lane follow-up are both present.

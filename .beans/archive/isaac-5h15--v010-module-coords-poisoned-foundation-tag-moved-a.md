@@ -54,6 +54,6 @@ pin at their release commit.)
 ## Verification notes
 
 - Verification passed on 2026-06-18.
-- [modules.edn](/Users/micahmartin/agents/verify/isaac/modules.edn:1) now uses sha-only coordinates for all eight installable modules; there are no remaining `:git/tag` entries to trigger tag/sha disagreement.
+- [modules.edn](~/agents/verify/isaac/modules.edn:1) now uses sha-only coordinates for all eight installable modules; there are no remaining `:git/tag` entries to trigger tag/sha disagreement.
 - The registry SHAs resolve to published immutable release tags, not arbitrary heads: `isaac-agent` `v0.1.2`, `isaac-server` `v0.1.3`, `isaac-acp` `v0.1.2`, and `isaac-cron`, `isaac-hail`, `isaac-hooks`, `isaac-discord`, `isaac-imessage` `v0.1.1`.
 - End-to-end compose proof passed on fetched GitHub `isaac-foundation` `main` at `dfb3627`: `env ISAAC_GIT=1 bb features features/module/modules_registry_install.feature` → `1 examples, 0 failures, 4 assertions`. That scenario installs `isaac.server` from a sha-only registry entry and then runs `isaac --version`, covering the original classpath-compose failure mode directly.

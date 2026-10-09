@@ -25,7 +25,7 @@ Audit (every isaac-* repo, origin/main): `:last-channel` / `:last-to` are writte
 - Handbook (agent sessions/delivery, gchat, discord, imessage) says `:comms` / `:target`.
 - gchat, discord, imessage pin the agent sha carrying this; pins coherent.
 - `bb ci` green in all four; `bb jvm-spec` green in isaac-agent.
-- Deploy note (manual): strip `:channels`, `:channel`, `:last-channel`, `:last-to` from session.edn on zanebot and yopp.
+- Deploy note (manual): strip `:channels`, `:channel`, `:last-channel`, `:last-to` from session.edn on zanebot and skiff.
 
 Likely repo scope: isaac-agent, isaac-gchat, isaac-discord, isaac-imessage.
 
@@ -41,7 +41,7 @@ feature-blob: isaac-imessage features/comm/imessage/comm_continuity.feature d820
 
 ## Worker checkpoint (2026-10-06)
 Done: session :comms/:target cutover, removed dead metadata, @wip lifted; bb ci green in four repos, agent bb jvm-spec green, gate PASS on worktrees. Work committed/pushed to bean/isaac-j0x5 in all four.
-Next: land agent first, then repin downstream to agent main SHA and land in order. Resume at isaac-agent-isaac-j0x5/src/isaac/agent/comm/delivery/worker.clj:84; run git fetch/rebase and bb ci before squash. Deployment: manually strip :channels, :channel, :last-channel, :last-to from session.edn on zanebot and yopp.
+Next: land agent first, then repin downstream to agent main SHA and land in order. Resume at isaac-agent-isaac-j0x5/src/isaac/agent/comm/delivery/worker.clj:84; run git fetch/rebase and bb ci before squash. Deployment: manually strip :channels, :channel, :last-channel, :last-to from session.edn on zanebot and skiff.
 
 
 ## Landed on main (2026-10-06)
@@ -51,4 +51,4 @@ main-sha: isaac-gchat d536c44b2abd55d087f4b9f54d426ea793d4bfd3
 main-sha: isaac-discord e820a974d476e83662bf575061deac5f681320db
 main-sha: isaac-imessage 4391aaa8f6552855187334eeffa722299e0abcad
 
-Deploy (manual, zanebot and yopp): strip :channels, :channel, :last-channel and :last-to from existing session.edn records before cutover.
+Deploy (manual, zanebot and skiff): strip :channels, :channel, :last-channel and :last-to from existing session.edn records before cutover.

@@ -70,14 +70,14 @@ These cover:
 Run in `isaac-agent`:
 
 ```bash
-cd /Users/micahmartin/agents/plan/isaac-agent
+cd ~/agents/plan/isaac-agent
 bb features features/session/cli.feature
 ```
 
 Targeted selectors if needed:
 
 ```bash
-cd /Users/micahmartin/agents/plan/isaac-agent
+cd ~/agents/plan/isaac-agent
 bb features \
   features/session/cli.feature:17 \
   features/session/cli.feature:24 \

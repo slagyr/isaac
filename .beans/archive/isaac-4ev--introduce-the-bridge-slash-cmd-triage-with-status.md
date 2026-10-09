@@ -37,7 +37,7 @@ The bridge returns a data map for commands. The channel decides how to render it
  :context-pct 15
  :soul-source "~/.isaac/workspace-main/SOUL.md"
  :tool-count 3
- :cwd "/Users/micahmartin/Projects/isaac"}
+ :cwd "~/Projects/isaac"}
 ```
 
 ### Integration points:

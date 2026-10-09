@@ -60,7 +60,7 @@ Queryable log of what crossed a comm, with the column Apple does not have: **whi
  :dir     :out
  :crew    :red-alert
  :session "heartbeat"
- :target  "micahmartin@mac.com"
+ :target  "hieronymus@marigold.example"
  :text    "Leo's birthday is in 3 days — might want to grab something!"}
 ```
 
@@ -176,7 +176,7 @@ Ledger logging is **on when the module is installed**. Failure to persist is a w
 
 ;; iMessage slot — routing only; omit = today's one-session-per-chat
 :comms {:imessage {:type :imessage
-                   :imessage/allow-from ["micahmartin@mac.com"]
+                   :imessage/allow-from ["hieronymus@marigold.example"]
                    :imessage/inbound-route {:policy :both        ; :session | :last-outbound | :prefix | :both
                                             :ttl-seconds 600}}}
 ```

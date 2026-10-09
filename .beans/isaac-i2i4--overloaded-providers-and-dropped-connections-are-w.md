@@ -24,7 +24,7 @@ Micah, 2026-10-07. On zanebot, chatgpt answered two worker turns (isaac-kj14 twi
 - Existing provider-wall, model-fallback, and stream_ended_early features stay green; a 400 contract error still does not fall back.
 - `bb ci` and `bb jvm-spec` green.
 
-Likely repo scope: isaac-agent. Deploy: zanebot and yopp (agent pin).
+Likely repo scope: isaac-agent. Deploy: zanebot and skiff (agent pin).
 
 feature-baseline: isaac-agent ae72874307b611a50e0c1bb7e0d5dc5111f9ec1b
 feature-blob: isaac-agent features/llm/provider_overload.feature da079b4a7ad286d803a96691b33994e4ff32f7a2

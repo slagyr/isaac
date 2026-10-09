@@ -40,7 +40,7 @@ Work done on `bean/isaac-gvvc` in a worktree of `isaac-hooks`
 were denied by the Claude Code auto-mode classifier ("Out-of-Place
 Publication"). Per the milestone brief's landing instructions I stopped
 rather than work around it. The worktree and branch are left in place
-(`/Users/micahmartin/agents/isaac/plan/isaac-hooks-isaac-gvvc`,
+(`~/agents/isaac/plan/isaac-hooks-isaac-gvvc`,
 branch `bean/isaac-gvvc`) for Micah to push or for a resumed session with
 push permission.
 
@@ -125,7 +125,7 @@ namespace token: 0 unjustified hits.
 check.
 
 **Next step for Micah or a resumed session:** `cd
-/Users/micahmartin/agents/isaac/plan/isaac-hooks-isaac-gvvc && git push
+~/agents/isaac/plan/isaac-hooks-isaac-gvvc && git push
 origin c584193d9007362865baa9b11ee5c2cb4a74b649:main`, confirm GitHub CI
 green, fast-forward the shared `isaac-hooks` checkout
 (`git -C ../isaac-hooks pull --ff-only`), record the main-sha here, tag
