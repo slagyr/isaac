@@ -38,6 +38,10 @@ domain, prefer a metaphor-coherent name.
 | Session       | One ongoing conversation with history                         |
 | Transcript    | Append-only JSONL record of session events                    |
 | Compaction    | Compressing transcript history when token budget tightens     |
+| Party         | Whoever is on the other end of a message: person or machine   |
+| Handle        | How one comm names a party (a Chat user id, an email address) |
+| Contact       | A party known by name, the same across every comm             |
+| Identifier    | A module that names the party behind a handle                 |
 
 ## Working with Micah
 

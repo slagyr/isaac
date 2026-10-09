@@ -1,40 +1,59 @@
 ---
 # isaac-s715
-title: 'isaac-agent: resolver berth — a module replaces a turn''s handle with a named reference'
-status: draft
+title: 'isaac-agent: identifiers berth — a module names the party behind a handle'
+status: todo
 type: feature
+priority: normal
 created_at: 2026-10-08T22:03:41Z
-updated_at: 2026-10-08T22:03:41Z
+updated_at: 2026-10-09T16:54:11Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
 ---
 
-DRAFT. Needs scenarios before it is todo. Part of the contacts epic (isaac-zt1x). Blocked by the attribution fields bean (isaac-v403).
+Part of the contacts epic (isaac-zt1x). Planned with Micah 2026-10-08/09. Blocked by the attribution fields bean (isaac-v403), which supplies `:from`, `:for` and the `a turn is submitted with:` step.
 
-## Idea
+## What this is
 
-A plug point where a module replaces a raw handle with a named reference before the turn record is stored. `isaac-contacts` is the first user: `{:kind :handle :comm :gchat :id "users/123" …}` becomes `{:kind :contact :id "chris" :authenticated true}`.
+When a message arrives, the turn records the sender as a handle: how one comm names the party on the other end, e.g. Google Chat's `users/123`. The agent does not know that `users/123` is a particular person.
 
-## Proposal
+This bean adds one berth to `isaac-agent`. Just before a turn record is stored, the agent hands each handle to any installed identifier and asks who it is. An identifier that knows returns a replacement map, e.g. `{:kind :contact :id "chris"}`, and that is stored instead. `isaac-contacts` (isaac-o7tm) will be the first real identifier.
 
-A new berth, working name `:isaac.agent/from-resolvers`. A resolver is handed a `:kind :handle` map and returns a replacement map or nil.
+## Vocabulary (ruled with Micah)
 
-- Applied once, at submit, to `:from` and to `:for` when they are handles. Other kinds are never passed to a resolver.
-- No resolver installed: the raw handle is stored. Everything works without one.
-- Nil from the resolver: the raw handle is stored.
-- A resolver that throws or is slow is skipped and logged; the raw handle is stored. A turn never fails or waits on a resolver.
-- The handle's `:authenticated` claim survives resolution. A resolver cannot upgrade it.
+- **Party** — whoever is on the other end of a message: a person or a machine. Never a comm, space, channel or session.
+- **Handle** — how one comm names a party. One party has many handles.
+- **Contact** — a party known by name, the same across comms (the contacts module's word).
+- **Identifier** — a module that names the party behind a handle. The berth is `:isaac.agent/identifiers`.
 
-## Scenarios to draft
+"Handle" needs disambiguating in the docs: iMessage's own data also calls a phone number or email a handle, which is the same idea but a narrower thing.
 
-- A fixture resolver renames a known handle; the turn record shows the replacement.
-- An unknown handle passes through unchanged.
-- A throwing resolver is skipped, logged, and the turn is stored with the raw handle.
-- An unauthenticated handle stays unauthenticated after resolution.
+## Rules
 
-Needs a small fixture module, in the style of the existing berth fixtures (`isaac.slash.echo`).
+- A module declares `:isaac.agent/identifiers {<id> {:factory …}}` in its manifest.
+- Applied once, at submit, to `:from` and to `:for` when they are `:kind :handle`. Other kinds are never passed to an identifier.
+- No identifier installed, or none that knows the handle: the handle is stored as it arrived.
+- An identifier that throws is skipped and logged as `:identifier/failed` at warn, naming the module. The turn is stored with the raw handle. A turn never fails on an identifier.
+- The handle's `:authenticated` value is carried onto the replacement by the agent, whatever the identifier returned. An identifier can name a party, never vouch for one.
+- An identifier must be a plain in-memory lookup that does not block. No timeout machinery; say so in the handbook.
+
+## Notes for the implementer
+
+- Two fixture modules under `modules/`, in the style of `isaac.section.beacon` and `isaac.section.squall`: `isaac.roster.almanac` knows `cordelia-7` on `logbook` as `{:kind :contact :id "cordelia"}` and returns `:authenticated true` for everyone (the third scenario depends on that); `isaac.roster.fog` always throws.
+- Model the berth on `:isaac.agent/system-sections` (`features/module/system_section_extension.feature`).
 
 ## Likely repo scope
 
 `isaac-agent`.
+
+## Acceptance
+
+Run from `isaac-agent`, with `@wip` removed from the feature file:
+
+- `bb features features/module/identifier_extension.feature`
+- `bb features features/turn/attribution.feature` still green.
+- `bb verify` and `bb jvm-spec` green.
+- The agent handbook chapter documents the identifiers berth and defines party, handle, contact and identifier in one place, including that a handle names a party and never a comm, and how it differs from iMessage's own "handle".
+
+feature-baseline: isaac-agent a155989081a0d3f8c24550bcf6e810a9e4ac7319
+feature-blob: isaac-agent features/module/identifier_extension.feature ee153e38c8da110ed9c5d14b64bc24621616b7f3
