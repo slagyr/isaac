@@ -1,13 +1,11 @@
 ---
 # isaac-0rg9
 title: 'isaac-foundation: scrub real names from examples — Marigold fixtures only'
-status: in-progress
+status: completed
 type: task
 priority: critical
-tags:
-    - unverified
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T17:17:04Z
+updated_at: 2026-10-09T17:22:08Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -66,3 +64,11 @@ branch: bean/isaac-0rg9 @ 1f66e3222190ffc809cf98be828db411b69d5b9d (base origin/
 Mechanical fixture-only replacement in three files: yopp → isaac (feature prose and spec label), tonotop.com → marigold.example (spec sample addresses). LICENSE and decision attributions unchanged; no scenarios added/deleted/reworded. No pin, dependency, or behavior change. `git grep -i tonotop` and `git grep -i yopp` empty; `git grep -i micah` only decision attributions and LICENSE; no long numeric users ids.
 
 Validation: `ISAAC_TEST_TIMEOUT_MS=240000 bb ci` passed (1348 specs; 361 features, 2 pre-existing pending). Default `bb ci` timed out during features at 60s; rerun with expanded timeout passed. `bb jvm-spec` fails 9 unrelated existing tests (gitlibs directory/environment assumptions and lifecycle exception); `bb jvm-features` fails 1 unrelated gitlibs cache directory expectation in `cli/modules_pins.feature:143`. `bb bean-gate verify isaac-0rg9` exits 2 (ungated, as planned).
+
+
+
+## Landed on main (2026-10-09)
+
+main-sha: isaac-foundation 7b47eabceeda37a9151fff131f3a3d1e1b2ec2b3
+
+Verification: ISAAC_TEST_TIMEOUT_MS=240000 bb ci green (1348 specs, 361 features; 2 pending). bb jvm-spec (9 failures) and bb jvm-features (1 failure) reproduced identically on origin/main@edc1848; no new JVM regressions.
