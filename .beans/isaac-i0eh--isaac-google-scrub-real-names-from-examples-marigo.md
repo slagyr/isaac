@@ -4,8 +4,10 @@ title: 'isaac-google: scrub real names from examples — Marigold fixtures only'
 status: in-progress
 type: task
 priority: critical
+tags:
+    - unverified
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T16:59:53Z
+updated_at: 2026-10-09T17:08:29Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -56,3 +58,10 @@ No feature runner contract to baseline. The features are the examples being scru
 The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Scrub identifiers in the feature files the acceptance names. Do not add, delete, or reword a scenario. Close ungated: `beans update isaac-i0eh --tag=unverified`, stay `in-progress`, hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
 
 `LICENSE` is a copyright notice, not an example. Leave it. The micah grep may also print that one copyright line. Everything else named Micah is either a decision attribution or gets scrubbed.
+
+
+## Worker handoff (2026-10-09)
+
+isaac-google branch: bean/isaac-i0eh @ 40442b391c84133c36176df92b631a087f30c42f (base origin/main@342da242baf29256d5ef8636ad1ae85a90a9b44d). Single implementation commit. Replaced sample organization, sender, email, tenant, config and prose identifiers across features, specs, source examples, manifest, dependency comment and rollout docs; left LICENSE and decision attribution intact. No scenario added, removed, or reworded except identifier substitution; no dependency pin or behavior change.
+
+Checks: bb jvm-spec (268 examples, 0 failures); bb features (44 examples, 0 failures); bb ci (exit 0); git diff --check (clean); git grep -i tonotop/yopp (none); git grep -i micah (LICENSE:3 copyright and src/isaac/google/door.clj:81 decision attribution only); git grep -E "users/[0-9]{12,}" (none); bb bean-gate verify isaac-i0eh (exit 2, not gated). bb verify is not a task in isaac-google bb.edn; attempting it reports File does not exist: verify.
