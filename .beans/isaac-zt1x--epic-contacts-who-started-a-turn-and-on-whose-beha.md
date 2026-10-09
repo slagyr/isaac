@@ -11,7 +11,7 @@ DESIGN, from a planning conversation with Micah on 2026-10-08. Nothing here is d
 
 ## Motivation
 
-Yopp is the first Isaac instance that several people talk to. The agent core has no idea who is speaking. Each comm handles it alone: Google Chat writes "Name <email>" into the message text, Discord injects a sender id, iMessage a phone handle, Gmail a from address. A session's origin records where it came from, not who spoke, and one Chat space is a single session with many speakers.
+Isaac now has a deployment that several people talk to. The agent core has no idea who is speaking. Each comm handles it alone: Google Chat writes "Name <email>" into the message text, Discord injects a sender id, iMessage a phone handle, Gmail a from address. A session's origin records where it came from, not who spoke, and one Chat space is a single session with many speakers.
 
 Who is interacting is orthogonal to everything built so far. It wants one small seam in the agent and a module on top.
 

@@ -26,7 +26,7 @@ Each is a map with a `:kind`:
 
 ```clojure
 {:kind :handle :comm :gchat :id "users/123" :name "…" :email "…" :authenticated true}
-{:kind :crew :id "yopp"}
+{:kind :crew :id "marvin"}
 {:kind :cron :id "nightly-dream"}
 {:kind :cli}
 {:kind :http :id "<principal>"}

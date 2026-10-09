@@ -17,7 +17,7 @@ Part of the contacts epic (isaac-zt1x). Planned with Micah 2026-10-08/09. Blocke
 
 When a message arrives, the turn records the sender as a handle: how one comm names the party on the other end, e.g. Google Chat's `users/123`. The agent does not know that `users/123` is a particular person.
 
-This bean adds one berth to `isaac-agent`. Just before a turn record is stored, the agent hands each handle to any installed identifier and asks who it is. An identifier that knows returns a replacement map, e.g. `{:kind :contact :id "chris"}`, and that is stored instead. `isaac-contacts` (isaac-o7tm) will be the first real identifier.
+This bean adds one berth to `isaac-agent`. Just before a turn record is stored, the agent hands each handle to any installed identifier and asks who it is. An identifier that knows returns a replacement map, e.g. `{:kind :contact :id "cordelia"}`, and that is stored instead. `isaac-contacts` (isaac-o7tm) will be the first real identifier.
 
 ## Vocabulary (ruled with Micah)
 
