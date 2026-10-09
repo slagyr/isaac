@@ -42,3 +42,13 @@ Leave alone: decision attributions in comments and feature headers of the form "
 ## Likely repo scope
 
 `isaac-gmail`.
+
+## Ungated
+
+No feature runner contract to baseline. The features are the examples being scrubbed, not a frozen behavior contract. `bb bean-gate verify` will exit 2. That is expected.
+
+## Planner note (2026-10-09)
+
+The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Scrub identifiers in the feature files the acceptance names. Do not add, delete, or reword a scenario. Close ungated: `beans update isaac-g6x8 --tag=unverified`, stay `in-progress`, hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
+
+`LICENSE` is a copyright notice, not an example. Leave it. The micah grep may also print that one copyright line. Everything else named Micah is either a decision attribution or gets scrubbed.
