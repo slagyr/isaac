@@ -1,11 +1,11 @@
 ---
 # isaac-g6x8
 title: 'isaac-gmail: scrub real names from examples — Marigold fixtures only'
-status: todo
+status: completed
 type: task
 priority: critical
 created_at: 2026-10-09T16:58:58Z
-updated_at: 2026-10-09T16:58:58Z
+updated_at: 2026-10-09T17:12:58Z
 ---
 
 URGENT (Micah, 2026-10-09). Amended the same hour: the deployment's crew name is scrubbed too (standing ruling of 2026-09-19). This repo is public and its examples carry a real company name, a real person's name and what look like real Google ids. Replace them with Marigold fixtures. Mechanical; no behavior change.
@@ -52,3 +52,11 @@ No feature runner contract to baseline. The features are the examples being scru
 The `@wip`-only rule applies to a **baselined** bean. This one has no `feature-baseline:`. Scrub identifiers in the feature files the acceptance names. Do not add, delete, or reword a scenario. Close ungated: `beans update isaac-g6x8 --tag=unverified`, stay `in-progress`, hail `isaac-verify`. Do not land it yourself and do not mark it `completed`.
 
 `LICENSE` is a copyright notice, not an example. Leave it. The micah grep may also print that one copyright line. Everything else named Micah is either a decision attribution or gets scrubbed.
+
+
+
+## Landed on main (2026-10-09)
+
+main-sha: isaac-gmail 5ff85793d56aedbda0cf457acc60575d98ea17c2
+
+Verification: bb ci (150 specs, 46 features, 0 failures), bb jvm-spec (150 examples, 0 failures); grep scan clear except permitted LICENSE:3; 21 files identifier-only, no pins changed.
