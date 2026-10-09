@@ -8,7 +8,7 @@ created_at: 2026-10-06T20:02:26Z
 updated_at: 2026-10-06T20:28:10Z
 ---
 
-Micah, 2026-10-06. A delivery queue only posts. A cron job, attention notice, or another session's `comm__send` that posts into a channel where a crew talks with someone never reaches that channel's session, so the crew answers out of context. Seen on yopp: a queued delivery DM'd micah@tonotop.com as yopp, Micah replied "I got it.", and Yopp read it as a reply to something else. Chat did push the post back, but gchat drops its own echoes (`:gchat/message-dropped :reason :self`), by design. The same gap hits red-alert's iMessage pings on zanebot.
+Micah, 2026-10-06. A delivery queue only posts. A cron job, attention notice, or another session's `comm__send` that posts into a channel where a crew talks with someone never reaches that channel's session, so the crew answers out of context. Seen on yopp: a queued delivery DM'd micah@marigold.example as yopp, Micah replied "I got it.", and Yopp read it as a reply to something else. Chat did push the post back, but gchat drops its own echoes (`:gchat/message-dropped :reason :self`), by design. The same gap hits red-alert's iMessage pings on zanebot.
 
 ## Decision (Micah 2026-10-06)
 Record at delivery time, in agent (the delivery side is the only place that knows who wrote it). gchat keeps dropping self echoes.

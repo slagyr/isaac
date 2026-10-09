@@ -92,9 +92,9 @@ doesn't leak a learned id across scenarios.
 
 New scenario in `features/comm/gchat/inbound.feature`: "two tenants each learn
 their own id; one's echo is never mistaken for the other's (isaac-mm7o)". Two
-comms (`gchat`/tonotop, `gchat-acme`/acme) each send and learn their own id;
+comms (`gchat`/marigold, `gchat-acme`/acme) each send and learn their own id;
 an inbound event carrying acme's id is delivered first while `gchat` speaks
-for tonotop (routes, not dropped as self — session count 1, `:gchat/message-routed`),
+for marigold (routes, not dropped as self — session count 1, `:gchat/message-routed`),
 then again after reconfiguring `gchat` to speak for acme (drops as self —
 session count stays 1, `:gchat/message-dropped :self`). I verified this
 scenario actually catches the regression: temporarily made the cache
@@ -114,7 +114,7 @@ with `--force-with-lease`. PR #1 not touched.
 
 ## Planner check 2 (2026-09-22)
 
-Reran on bean/isaac-mm7o 4306062 (per-tenant id cache + two-tenant scenario): `bb spec` 94/0, `bb features` 29/0. PR #1 updated; tagged `unverified`. Note for a repo-wide cleanup, not this bean: isaac-gchat feature fixtures already use tonotop.com / users/yopp on main (inbound, outbound, registrations, tenants features; chat_api_spec) — the new scenario follows that convention. The 09-19 placeholder scrub did not reach these fixtures or isaac-google config.clj/tenants.clj/people.clj docstrings.
+Reran on bean/isaac-mm7o 4306062 (per-tenant id cache + two-tenant scenario): `bb spec` 94/0, `bb features` 29/0. PR #1 updated; tagged `unverified`. Note for a repo-wide cleanup, not this bean: isaac-gchat feature fixtures already use marigold.example / users/yopp on main (inbound, outbound, registrations, tenants features; chat_api_spec) — the new scenario follows that convention. The 09-19 placeholder scrub did not reach these fixtures or isaac-google config.clj/tenants.clj/people.clj docstrings.
 
 ## Landed on main
 

@@ -12,7 +12,7 @@ updated_at: 2026-07-14T22:36:56Z
 
 Let a human (or agent) inject a message that folds into a RUNNING turn's tool loop — mid-turn steering — so a worker can be unblocked or redirected WITHOUT cancelling its progress or waiting for the turn to end.
 
-## Motivating case (2026-07-14, tonotop)
+## Motivating case (2026-07-14, marigold)
 
 A tono worker was mid-turn, blocked on an external prerequisite (needed a human to `aws login`). The human completed the login on zanebot, but the worker — still in its tool loop — doesn't know. A normal hail to a busy session is REFUSED (`:session-in-flight`, bridge/core.clj:52) and only lands as the NEXT turn. So the human's only levers today are: wait for the turn to end (then hail), or cancel (loses the turn's progress). Neither folds "the prerequisite is ready — continue" into the work in flight.
 

@@ -12,7 +12,7 @@ Micah 2026-09-23: "Yopp is the default crew. How could main ever get used by thi
 
 ## What happens
 
-Yopp's `isaac.edn` has `:defaults {:crew :yopp}` and `gchat/spaces` names a crew for only one space. A message in any other space resolved to crew **main** — `crew/main.md`, a soul with a model and no tools — so the turn ran with `:allowed-tools ["skill__load"]` and Yopp counted letters by hand instead of running code (log 19:44Z, session `gchat-tonotop-yopp-test-2`).
+Yopp's `isaac.edn` has `:defaults {:crew :yopp}` and `gchat/spaces` names a crew for only one space. A message in any other space resolved to crew **main** — `crew/main.md`, a soul with a model and no tools — so the turn ran with `:allowed-tools ["skill__load"]` and Yopp counted letters by hand instead of running code (log 19:44Z, session `gchat-marigold-yopp-test-2`).
 
 Cause: `isaac.comm.gchat.gate/decide` picks `(or space-crew (:crew slice) "main")` from the comm slice only; `isaac.comm.gmail.handler/crew` does the same with `(:gmail/crew slice)`. Neither consults the process default. Discord already does it right: `(get-in cfg [:defaults :crew])` before "main" (`channel-crew-id`).
 

@@ -35,7 +35,7 @@ re-latches it. There is no margin and no way for an operator to restore any.
 
 ## What it cost (2026-09-21)
 
-A provider outage — the Tonotop OAuth token was being overridden by a
+A provider outage — the Marigold OAuth token was being overridden by a
 process-wide `CLAUDE_CODE_OAUTH_TOKEN` in the launchd plist, so every call
 authenticated as an exhausted account — made compaction fail three times on
 three worker sessions. All three latched at 18:45.

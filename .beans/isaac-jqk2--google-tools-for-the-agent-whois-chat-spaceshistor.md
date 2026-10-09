@@ -28,7 +28,7 @@ Open for Micah: which tools are on by default for the yopp crew (whois/history/s
 
 
 
-**Decided 2026-09-19 (Micah): all tools on for the yopp crew** — whois, gchat spaces/history/send, gmail search/read/send/labels. Sends included. Keep the per-crew allow-list as the mechanism (a cautious crew can drop the sends); default set for yopp = all. gws on yopp: revisit once these ship (tonotop root doc records that gws also covers Drive/Calendar, which these tools do not).
+**Decided 2026-09-19 (Micah): all tools on for the yopp crew** — whois, gchat spaces/history/send, gmail search/read/send/labels. Sends included. Keep the per-crew allow-list as the mechanism (a cautious crew can drop the sends); default set for yopp = all. gws on yopp: revisit once these ship (marigold root doc records that gws also covers Drive/Calendar, which these tools do not).
 
 ## Landed on main (planner, 2026-09-20)
 

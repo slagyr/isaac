@@ -14,14 +14,14 @@ updated_at: 2026-07-15T16:38:27Z
 
 ## Why (2026-07-14)
 
-Setting up the tonotop orchestration produced auto-named sessions (calm-tapir, homey-toad, …). They function perfectly (bands route by crew+tag, not name), but they are unreadable to operate. There is currently NO way to give a session a structured key:
+Setting up the marigold orchestration produced auto-named sessions (calm-tapir, homey-toad, …). They function perfectly (bands route by crew+tag, not name), but they are unreadable to operate. There is currently NO way to give a session a structured key:
 - `:key` is **immutable** via `sessions set` ("immutable field: key") — no in-place rename.
 - Creating a chosen-key session (`isaac prompt --session <key>`, no `--create`) works and captures cwd, but `--session` is mutually exclusive with `--crew`/`--tag`, so it lands in the `main` crew with NO tags — and it cannot be fixed up because (see sibling bug) `sessions set .tags` rejects every set value. So recreate-with-a-name is a dead end too.
 
 ## The real motivation — operability, not vanity (Micah, 2026-07-15)
 
 The auto-names make the orchestration UNOPERABLE from Discord. A notification like
-`scrapper@calm-tapir handed off to verify` in #tonotop conveys nothing: not the
+`scrapper@calm-tapir handed off to verify` in #marigold conveys nothing: not the
 role (work/verify/plan), not which of two workers, not the cwd. The operator
 cannot tell what a session is or where it's rooted. Structured keys
 (`scrapper@tono-work-1`) make every notification self-explanatory. This is the
@@ -133,4 +133,4 @@ Scenario: sessions rename --help shows the rename usage
 The existing `session/cli.feature` scenario "sessions --help shows management help and lists subcommands" asserts `list` and `show` appear — add an assertion that `rename` also appears, so the new subcommand is discoverable in management help.
 
 ## Spec complete (2026-07-15)
-Four approved scenarios (S1 idle-rename-preserves-state, S2 in-flight-refused, S3 collision-refused, S4 help) + the subcommand-list amendment. ZERO new steps across all — `sessions rename` is a new COMMAND run through the existing `isaac is run with` step; every assertion reuses existing steps. Home: `isaac-agent/features/session/cli.feature`. Below the CLI, a `store_spec.clj` unit spec should cover the store-level rename (file + index atomicity, idle-only). Shake-down after ship: rename the live tono sessions (calm-tapir->tono-work-1, spry-firefly->tono-work-2, sincere-marsh->tono-verify-1, homey-toad->tono-plan-1) and repoint the #tonotop channel :session mapping.
+Four approved scenarios (S1 idle-rename-preserves-state, S2 in-flight-refused, S3 collision-refused, S4 help) + the subcommand-list amendment. ZERO new steps across all — `sessions rename` is a new COMMAND run through the existing `isaac is run with` step; every assertion reuses existing steps. Home: `isaac-agent/features/session/cli.feature`. Below the CLI, a `store_spec.clj` unit spec should cover the store-level rename (file + index atomicity, idle-only). Shake-down after ship: rename the live tono sessions (calm-tapir->tono-work-1, spry-firefly->tono-work-2, sincere-marsh->tono-verify-1, homey-toad->tono-plan-1) and repoint the #marigold channel :session mapping.

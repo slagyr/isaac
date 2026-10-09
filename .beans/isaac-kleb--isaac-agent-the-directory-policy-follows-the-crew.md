@@ -15,7 +15,7 @@ Micah asked Yopp in a Chat DM for a jackalope image. Every fs tool call failed
 cwd, all of it — although crew yopp allows `["/home/yopp" "/tmp"]`. The turn
 ran as crew yopp (`drive/turn-accepted :crew "yopp"`, the gchat comm passes
 the space's crew on dispatch) but the session record
-`gchat-tonotop-dm-micah-martin` still said `crew main` from its creation
+`gchat-marigold-dm-hieronymus-finch` still said `crew main` from its creation
 weeks ago, and no crew "main" exists on yopp. `isaac.tool.fs-bounds/
 ensure-path-allowed` reads `(:crew session)` → `[:crew "main" :tools]` →
 empty directory policy → everything refused. Workaround applied: the four

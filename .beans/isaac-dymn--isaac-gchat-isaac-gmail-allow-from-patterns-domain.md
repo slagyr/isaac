@@ -13,7 +13,7 @@ updated_at: 2026-09-20T07:07:49Z
 parent: isaac-bv1l
 ---
 
-Micah, 2026-09-19: allow-from is exact-match in both modules; wants `*@tonotop.com`.
+Micah, 2026-09-19: allow-from is exact-match in both modules; wants `*@marigold.example`.
 
 Chat: the sender email is Google's own, authenticated — plain pattern match (`*@domain`, exact emails) is safe.
 
@@ -35,7 +35,7 @@ and every worker turn was coming back empty, so the train ran by hand.
 **isaac-gchat** — an entry may be `*@domain`, matched case-insensitively
 against the sender's email, including an email the People API resolved from a
 users/<id>. Nothing that merely ends with the domain matches
-(`eve@nottonotop.com`, `eve@tonotop.com.evil.net` both drop). Exact
+(`eve@notmarigold.example`, `eve@marigold.example.evil.net` both drop). Exact
 addresses, `users/<id>` and `domain:<domainId>` entries are untouched, and an
 empty list still fails closed.
 
@@ -47,8 +47,8 @@ fallback). A pattern-matching sender Gmail will not vouch for drops as
 Exact addresses stay header-only, as the bean says.
 
 While there: the Gmail gate compared the allow-list against the whole `From:`
-header, so `Ada Lovelace <ada@tonotop.com>` would never have matched
-`ada@tonotop.com` in production. It now reads the address out of the header.
+header, so `Ada Lovelace <ada@marigold.example>` would never have matched
+`ada@marigold.example` in production. It now reads the address out of the header.
 
 | repo | suite | result |
 | --- | --- | --- |

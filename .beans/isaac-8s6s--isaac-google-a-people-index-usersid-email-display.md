@@ -17,15 +17,15 @@ Micah 2026-09-19: we need to know who spoke, by a key that does not change. Chat
 ## Design
 - <root>/google/people.edn: {users/<id> {:email :display-name :domain :first-seen :last-seen}} plus an email→id map. Written through isaac-google (fs seam), read by any consumer.
 - Fill: every Chat event upserts id + displayName + domainId (free); every Gmail message upserts email + name from From: (free); the People API joins them — people.get("people/<id>", personFields=emailAddresses) returns the Workspace email for an id under the directory.readonly scope (isaac-google contributes it to :isaac.google/scopes; one more consent line at login; one lookup per new person, cached). Fail soft: no scope / lookup fails ⇒ entry without email, retried on next sighting after a backoff.
-- API: (people/identify! {:user "users/…" :display-name …}) → entry; (people/by-email email); (people/by-id id); (people/render entry) → "Micah Martin <micah@tonotop.com>".
+- API: (people/identify! {:user "users/…" :display-name …}) → entry; (people/by-email email); (people/by-id id); (people/render entry) → "Micah Martin <micah@marigold.example>".
 - Consumers: gchat gate resolves the sender through the index so allow-from written as emails matches Chat senders (users/<id> and domain:<id> entries still work); turn input and isaac-tund's context block render (people/render); gmail renders the same; `isaac google people` lists who Isaac knows.
 
 ## Scenarios (google: people.feature; gchat/gmail inbound)
 1. a Chat event from an unknown id is looked up once and the email cached; the next event does no lookup
-2. allow-from ["micah@tonotop.com"] admits a Chat sender whose id resolves to that email
+2. allow-from ["micah@marigold.example"] admits a Chat sender whose id resolves to that email
 3. no directory scope ⇒ the entry has no email, the allow-list falls back to users/<id>/domain:, and a warn names the missing scope once
 4. a Gmail From: fills name+email; a later Chat lookup joins it to the id
-5. the turn input reads "Micah Martin <micah@tonotop.com>: …"
+5. the turn input reads "Micah Martin <micah@marigold.example>: …"
 
 
 
@@ -33,7 +33,7 @@ Tenants (isaac-1zkz): entries record the tenant per sighting; People API lookups
 
 
 
-**Re-scoped 2026-09-19 (Micah): no index.** Google is the source of truth; resolve on demand. `people/resolve` → People API `people.get("people/<id>", personFields=names,emailAddresses)` with the tenant's token under directory.readonly; an in-memory memo with a short TTL (say 1h) so a busy thread does not re-ask per message; nothing persisted. Gmail needs no lookup (From: carries email + name). The gate resolves the sender at decision time (fail soft: no scope/lookup failure ⇒ id/domain matching only, warn once). Rendering unchanged: "Micah Martin <micah@tonotop.com>: …". Scenarios 1 and 4 (caching/joins across modules) drop; 2, 3, 5 stay; add: a lookup failure does not block a message the id/domain list already admits.
+**Re-scoped 2026-09-19 (Micah): no index.** Google is the source of truth; resolve on demand. `people/resolve` → People API `people.get("people/<id>", personFields=names,emailAddresses)` with the tenant's token under directory.readonly; an in-memory memo with a short TTL (say 1h) so a busy thread does not re-ask per message; nothing persisted. Gmail needs no lookup (From: carries email + name). The gate resolves the sender at decision time (fail soft: no scope/lookup failure ⇒ id/domain matching only, warn once). Rendering unchanged: "Micah Martin <micah@marigold.example>: …". Scenarios 1 and 4 (caching/joins across modules) drop; 2, 3, 5 stay; add: a lookup failure does not block a message the id/domain list already admits.
 
 ## Handoff (scrapper@isaac-work-3, 2026-09-19)
 
@@ -46,7 +46,7 @@ index, per that re-scope: `people.edn`, `identify!`, `by-email`, `by-id`, the
 - `src/isaac/google/people.clj`: `resolve` (users/<id> → {:user :display-name :email})
   through People API `people.get(personFields=names,emailAddresses)` on the
   existing `isaac.google.events/request!` seam; in-memory memo, TTL 1h, nothing
-  persisted; `render` → "Micah Martin <micah@tonotop.com>"; fail soft on every
+  persisted; `render` → "Micah Martin <micah@marigold.example>"; fail soft on every
   error (entry keeps the caller's display name, no email) and warn once per
   reason — `:google.people/scope-missing` names directory.readonly,
   `:google.people/lookup-failed` otherwise.
@@ -67,7 +67,7 @@ index, per that re-scope: `people.edn`, `identify!`, `by-email`, `by-id`, the
 - `handler`: passes `people/resolve` and builds the turn input as
   "<who spoke>: <text>".
 - `features/comm/gchat/inbound.feature`: +4 scenarios — email allow-list admits a
-  resolved id (2); turn input reads "Micah Martin <micah@tonotop.com>: …" (5);
+  resolved id (2); turn input reads "Micah Martin <micah@marigold.example>: …" (5);
   no directory scope ⇒ id fallback + exactly one `:google.people/scope-missing`
   warn across two messages (3); a failed lookup does not block a sender the
   domain list already admits (new).

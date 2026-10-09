@@ -31,8 +31,8 @@ spends five lines claiming it is broken.
 One shape. `:google` is a map of organization id to that organization's
 config. There is no default tenant and no flat form.
 
-    :google {:tonotop {:project "tonotop-yopp"
-                       :topic   "projects/tonotop-yopp/topics/isaac"
+    :google {:marigold {:project "marigold-yopp"
+                       :topic   "projects/marigold-yopp/topics/isaac"
                        :oauth   {...}
                        :push    {...}}}
 
@@ -124,9 +124,9 @@ Checks:
 
 Acceptance:
 - One shape — `config.clj`'s `google-schema` is now `:key-spec`/`:value-spec` only, with no `:schema` of its own (`config_spec`: "declares no fields of its own under :google"), which closes isaac-pvfq: there is no declared field to mis-apply, so a nested config reports no unknown keys.
-- A flat `:google` names the shape it wants. Confirmed by evaluation, not just by reading: conforming `{:project "marigold" :oauth {…} :push {…}}` against `google-schema` yields `{:project #CoerceError{:message "must be a map of one Google organization's config — :google is a map of organization id to config, e.g. google.tonotop.oauth.client-id"} …}`.
+- A flat `:google` names the shape it wants. Confirmed by evaluation, not just by reading: conforming `{:project "marigold" :oauth {…} :push {…}}` against `google-schema` yields `{:project #CoerceError{:message "must be a map of one Google organization's config — :google is a map of organization id to config, e.g. google.marigold.oauth.client-id"} …}`.
 - No default organization — `DEFAULT` and `flat?` are gone; `organizations?` is the single predicate and `tenants` returns `{}` for anything else (`tenants_spec` covers flat, `{}`, non-map, and `{:google {:oauth …}}`).
-- `auth-provider` is `"google/<id>"` for every organization and `nil` for none; `token_spec` stores and resolves under `google/tonotop`, and a config naming no organization answers `:auth-failed` with a message containing `google.<organization>`.
+- `auth-provider` is `"google/<id>"` for every organization and `nil` for none; `token_spec` stores and resolves under `google/marigold`, and a config naming no organization answers `:auth-failed` with a message containing `google.<organization>`.
 - The door registers one rule per organization, named `:google-pubsub/<id>`, and none for a flat config (`component_spec`).
 - The push door refuses when no organization is configured: 401 + `:google/no-organization`, nothing persisted (`http_spec`, and `tenants.feature` end-to-end with `isaac google status` printing "No Google organization configured").
 - A comm on a one-organization host still needs no `:gchat/google` / `:gmail/google` — `of-comm` falls back to the only configured organization (gchat `tenant_spec`, gmail `watch_spec`).

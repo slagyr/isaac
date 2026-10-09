@@ -24,7 +24,7 @@ Micah 2026-09-23: Yopp will get every kind of mail — conversations to answer o
 ```edn
 [{:name "ops" :match {:to "yopp+ops@*"} :action :converse :crew "ops"}
  {:name "newsletters" :match {:from "*@substack.com"} :action :ignore}
- {:name "team" :match {:from "*@tonotop.com"} :action :converse}]
+ {:name "team" :match {:from "*@marigold.example"} :action :converse}]
 ```
 `:match` keys: `:to`, `:from` (glob, `*` only, case-insensitive, plus-address aware so `yopp+ops@*` matches the To/Cc/Delivered-To addresses), `:subject` (`#"regex"` string), `:label` (Gmail label name), `:list-id`. Every given key must match (AND). Missing `:match` = match all (use last). `:crew` optional per route, default `gmail/crew`. A message allowed by the gate that matches no route is `:unrouted`: labelled, no turn, logged once at info with from/subject. **Nothing unexpected burns tokens.**
 

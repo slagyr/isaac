@@ -25,7 +25,7 @@ Depends on isaac-8s6s (people index): render through people/render — display n
 Landed by the planner during the fleet's auth outage.
 
 The turn-input half of this bean came with isaac-8s6s (the input now reads
-`Micah Martin <micah@tonotop.com>: …`). What was left was the record: a routed
+`Micah Martin <micah@marigold.example>: …`). What was left was the record: a routed
 decision now carries `:identity` beside the rendered `:sender`, and the
 session's `:origin` keeps `{:user :display-name :email}` — the id is what a
 rename cannot orphan.

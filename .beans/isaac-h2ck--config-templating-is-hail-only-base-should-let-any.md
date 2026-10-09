@@ -76,7 +76,7 @@ but not self-evident, so it belongs in the docs rather than being inferred.
 ## Migration
 
 - hail's `base:` becomes `:_base`. Small but real: zanebot's band files plus the
-  `_*-template` files tracked in `tonotop/planning/orchestration/` and
+  `_*-template` files tracked in `marigold/planning/orchestration/` and
   `slagyr/orchestration/isaac-beans/`.
 - `band_resolve.clj`'s template handling is deleted in favour of the foundation
   mechanism; hail keeps only what is genuinely band-specific.

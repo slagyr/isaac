@@ -38,7 +38,7 @@ Add to the fix: 4. a fence whose payload fails to parse is handled by the same c
 
 Yopp's crew replied with the call as plain text in a markdown code fence, no `<tool_call>` wrapper at all:
 
-    ```{"name":"exec__run","arguments":{"command":"cat > /tmp/open_staging.clj << 'EOF' … EOF\ncat /tmp/open_staging.clj","workdir":"/home/yopp/tonotop/cochlea"}}```
+    ```{"name":"exec__run","arguments":{"command":"cat > /tmp/open_staging.clj << 'EOF' … EOF\ncat /tmp/open_staging.clj","workdir":"/home/yopp/marigold/cochlea"}}```
 
 Well-formed JSON, right tool, wrong envelope. `parse-tool-calls` saw no opening tag, the drive ended the turn as a verdict, nothing ran. Same failure class; confirms the fix must be shape-agnostic: anything call-shaped that did not parse is a violation, not prose.
 

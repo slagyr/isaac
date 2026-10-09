@@ -16,7 +16,7 @@ Repo: **isaac-google** (`src/isaac/google/oauth.clj`, `src/isaac/google/token.cl
 
 yopp's Google login history and the first failure that followed it:
 
-    2026-09-23T15:05Z  google/login-completed  (tenant :tonotop)
+    2026-09-23T15:05Z  google/login-completed  (tenant :marigold)
     2026-09-24T05:55Z  invalid_grant           — 14h50m later
     2026-09-24T15:41Z  google/login-completed  (re-login)
 
@@ -58,7 +58,7 @@ by another consent against the same client.
 Unconditional. Every `invalid_grant` is reported as a Testing-mode expiry
 regardless of the project's actual publishing status.
 
-**For this project that is impossible.** The `tonotop-yopp` consent screen is
+**For this project that is impossible.** The `marigold-yopp` consent screen is
 **User type: Internal**. Internal apps have no Testing publishing state and no
 7-day refresh-token cap. The message named a cause that cannot occur in this
 deployment, sent the operator to a console page with nothing to change, and
@@ -121,7 +121,7 @@ remains unidentified.**
 
 ## Next hypothesis to test first: a Workspace session-control policy
 
-The consent screen is **Internal**, i.e. the app is owned by the `tonotop.com`
+The consent screen is **Internal**, i.e. the app is owned by the `marigold.example`
 Workspace. Google Workspace admins can set a session/reauthentication policy
 (Admin console → Security → Access and data control → Google session control)
 that expires OAuth grants on a fixed clock. A ~15h interval that survives a
@@ -157,7 +157,7 @@ isaac-google's own manifest contributes a **Google Cloud Platform** scope to the
                           "https://www.googleapis.com/auth/directory.readonly"
                           "https://www.googleapis.com/auth/pubsub"]
 
-The `tonotop` Workspace has **Google Cloud console and SDK session control**
+The `marigold` Workspace has **Google Cloud console and SDK session control**
 configured. That page states, verbatim:
 
 > Select how often users are challenged for credentials on apps requiring
@@ -210,7 +210,7 @@ Immediate unblocks available to the operator, in preference order:
 
 Deployed to yopp: isaac-google `5cdf807`, which carries this bean's
 `invalid-grant-message` fix, isaac-286x's scope removal, and isaac-clly. The
-operator re-ran `isaac google login --tenant tonotop` after the scope was
+operator re-ran `isaac google login --tenant marigold` after the scope was
 removed, so the live grant no longer carries `auth/pubsub`.
 
 **The remaining check is the whole proof.** The Workspace policy expires grants

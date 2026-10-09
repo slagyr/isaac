@@ -116,7 +116,7 @@ worker, not fixable from isaac-gchat.** With `await-idle!` added, the same
 scenario now gets **2** outbound HTTP requests instead of 1: one post is the
 scripted reply text ("All three, answered.", the correct coalesced-turn
 output), the second is the literal joined text of messages 2+3
-("[thread:T1] ada@tonotop.com: @Isaac second\n[thread:T1] ada@tonotop.com:
+("[thread:T1] ada@marigold.example: @Isaac second\n[thread:T1] ada@marigold.example:
 @Isaac third") echoed back — i.e. a *second*, spurious turn ran on the
 trailing two of the three coalesced messages, using up an LLM response the
 scripted queue no longer had.

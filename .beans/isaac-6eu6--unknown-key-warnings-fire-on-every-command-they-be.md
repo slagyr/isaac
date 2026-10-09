@@ -75,7 +75,7 @@ for cleanup"); nq4c is what finally made it visible. Backups alongside as
 install unless fixed at source:
 
 - `_orchestration-template.edn` → `slagyr/orchestration` (`isaac-beans/config/hail/`)
-- `_tono-template.edn` → `tonotop/planning` (`orchestration/config/hail/`)
+- `_tono-template.edn` → `marigold/planning` (`orchestration/config/hail/`)
 
 The remaining two warnings were left in place deliberately; they are forward
 config, not litter.

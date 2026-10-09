@@ -13,7 +13,7 @@ updated_at: 2026-09-23T16:36:26Z
 
 ## Observed (yopp, 2026-09-23 02:59Z, gchat 0.2.3)
 
-Micah's DM arrived via spaces/-, the lookup fell back to spaces.list (isaac-f4ab), the turn ran on gchat-tonotop-dm-micah-martin and the model answered — then the reply's messages.create returned 403 and the turn ended :error. Probes with the same token: spaces.get, members.list and messages.create on the DM all 403 'Permission denied … or the resource doesn't exist'; messages.list and spaces.list work; findDirectMessage returns the DM with membershipCount.joinedDirectHumanUserCount = 1. Yopp's side of the DM is a pending message request (the account has never opened Chat), and an invited member receives events but cannot read or post. spaces:setup as Yopp answered 'insufficient authentication scopes': the login never requested chat.spaces.create, so gchat.clj's outbound find-direct-message → setup-direct-message path has never been able to run either.
+Micah's DM arrived via spaces/-, the lookup fell back to spaces.list (isaac-f4ab), the turn ran on gchat-marigold-dm-hieronymus-finch and the model answered — then the reply's messages.create returned 403 and the turn ended :error. Probes with the same token: spaces.get, members.list and messages.create on the DM all 403 'Permission denied … or the resource doesn't exist'; messages.list and spaces.list work; findDirectMessage returns the DM with membershipCount.joinedDirectHumanUserCount = 1. Yopp's side of the DM is a pending message request (the account has never opened Chat), and an invited member receives events but cannot read or post. spaces:setup as Yopp answered 'insufficient authentication scopes': the login never requested chat.spaces.create, so gchat.clj's outbound find-direct-message → setup-direct-message path has never been able to run either.
 
 ## Change
 
@@ -41,7 +41,7 @@ Next: (1) one-time — sign in to Chat as yopp@ once and open the DM; (2) for th
 
 members.create for the account's own membership in the invited DM → 400 INVALID_ARGUMENT: "Can't create memberships in direct messages between human users or with an app." spaces:setup returns the existing DM without joining it. There is no Chat API path for the account to accept a chat request.
 
-Systemic answer (Micah, 2026-09-23): the Workspace admin setting Google Chat → Chat invitations → **On** ("automatically accept chat invitations from people in your organization") was turned on for tonotop.com. New internal DMs to Yopp are joined without anyone acting. Requests that predate the setting stay pending until accepted once in the account's Chat UI.
+Systemic answer (Micah, 2026-09-23): the Workspace admin setting Google Chat → Chat invitations → **On** ("automatically accept chat invitations from people in your organization") was turned on for marigold.example. New internal DMs to Yopp are joined without anyone acting. Requests that predate the setting stay pending until accepted once in the account's Chat UI.
 
 Remaining scope for this bean: (1) detect the invited state (spaces.get 403 with joinedDirectHumanUserCount 1 from findDirectMessage) and log `:gchat.dm/invited` ONCE per space with the space uri and the operator action; (2) do not run the model against a DM the account cannot answer — or run it and deliver the reply via the attention comm, naming the DM; (3) a reply 403 surfaces as a delivery failure with space + reason, never a bare create-failed. The chat.memberships write scope added in gchat 0.2.5 is not needed for this and can be dropped in the next scope round.
 

@@ -14,13 +14,13 @@ Repo: **isaac-google** (`src/isaac/google/health.clj`, `heartbeat.clj`).
 
 isaac-286x took `auth/pubsub` off the human's grant, and the follow-up made the
 service-account credential a demand of the *heartbeat* rather than the topic —
-because the `tonotop` organization forbids service-account keys outright:
+because the `marigold` organization forbids service-account keys outright:
 
     FAILED_PRECONDITION: Key creation is not allowed on this service account
     constraints/iam.disableServiceAccountKeyCreation
 
 That is a policy worth keeping: long-lived service-account keys are a standard
-breach vector. So yopp now runs with `google.tonotop.health.heartbeat.enabled
+breach vector. So yopp now runs with `google.marigold.health.heartbeat.enabled
 false` and publishes nothing, and the push pipeline has no silence detector.
 
 **Google can publish it instead, with no key in existence.** A Cloud Scheduler
@@ -75,7 +75,7 @@ not a health check.
 
 ## Notes
 
-yopp is the live case: `google.tonotop.health.heartbeat.enabled false` today,
+yopp is the live case: `google.marigold.health.heartbeat.enabled false` today,
 which should become the externally-driven mode once this lands.
 
 ## No service account is needed for this (verified 2026-09-24)
@@ -128,7 +128,7 @@ say what late means, so the switch and the deadline are the same key and
 ## DEPLOY IS BLOCKED ON OPERATOR ACTION — and the order matters
 
 `health.heartbeat.enabled` is now a **retired key and a hard config error**.
-yopp currently has `google.tonotop.health.heartbeat.enabled false`, so
+yopp currently has `google.marigold.health.heartbeat.enabled false`, so
 upgrading the module without unsetting it first makes yopp **refuse to start**.
 
 The config edit can go neither first nor last:
@@ -140,10 +140,10 @@ The config edit can go neither first nor last:
 Order (full detail in `doc/rollout.md`):
 
 1. create and prove the Cloud Scheduler job while the old build still runs
-2. `isaac config set google.tonotop.health.heartbeat.expected-interval-ms <ms>`
+2. `isaac config set google.marigold.health.heartbeat.expected-interval-ms <ms>`
    on the old build — unknown key, warning only
 3. `isaac modules upgrade isaac.google`, then **before restarting**
-   `isaac config unset google.tonotop.health.heartbeat.enabled` and
+   `isaac config unset google.marigold.health.heartbeat.enabled` and
    `…pubsub.credentials-file`, and `isaac config validate` clean
 4. one restart
 5. delete the inert `isaac-pubsub` service account and any
@@ -191,8 +191,8 @@ silently cannot fire. What is gone is stopping a host that merely receives.
 1. **operator:** create and prove the Cloud Scheduler job
 2. upgrade `isaac.google`, restart (yopp starts fine with its leftover
    `heartbeat.enabled false`, warning only)
-3. `isaac config set google.tonotop.health.heartbeat.expected-interval-ms <ms>`
-   and `isaac config unset google.tonotop.health.heartbeat.enabled`
+3. `isaac config set google.marigold.health.heartbeat.expected-interval-ms <ms>`
+   and `isaac config unset google.marigold.health.heartbeat.enabled`
 4. watch for `:google/heartbeat-received` and no `:google/heartbeat-missed`
 
 Steps 2 and 3 can be done in either order and neither can break the host.
@@ -200,8 +200,8 @@ Steps 2 and 3 can be done in either order and neither can break the host.
 ## DEPLOYED AND PROVEN 2026-09-24 22:50Z — supersedes the "deploy is blocked" section above
 
 The operator created the Cloud Scheduler job (`us-west4`, `*/5 * * * *`,
-topic `projects/tonotop-yopp/topics/isaac`, `ce-type=isaac.google/heartbeat`,
-body `{"isaac-heartbeat":true,"tenant":"tonotop"}`).
+topic `projects/marigold-yopp/topics/isaac`, `ce-type=isaac.google/heartbeat`,
+body `{"isaac-heartbeat":true,"tenant":"marigold"}`).
 
 It fired at 22:45:00Z and yopp logged `:google/heartbeat-received` at
 **22:45:02Z — on the OLD build**, which knew nothing about Cloud Scheduler.
@@ -213,7 +213,7 @@ enabling the API. Documented-from-Google's-word is now measured.
 
 yopp then went to isaac-google `5cdf807`:
 
-- `google.tonotop.health.heartbeat.expected-interval-ms` = 300000 (matching
+- `google.marigold.health.heartbeat.expected-interval-ms` = 300000 (matching
   the `*/5` schedule; + 60000 default grace = a 6-minute budget)
 - `health.heartbeat.enabled` unset
 - restarted clean, `runner/started`, 7 components

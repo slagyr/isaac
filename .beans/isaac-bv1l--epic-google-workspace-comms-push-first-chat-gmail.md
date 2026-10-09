@@ -15,7 +15,7 @@ Isaac receives Google Chat messages and Gmail as soon as Google has them, and ca
 
 ## Decisions (2026-09-18, Micah)
 
-- **Identity = the Google user** (e.g. yopp@tonotop.com), not a Chat app. A user-authorized Workspace Events subscription sees every message in every space the account belongs to; people mention that account to get Isaac's attention; DMs to it get a reply. (A Chat app would be a smaller build but only sees mentions/DMs — rejected for now.)
+- **Identity = the Google user** (e.g. yopp@marigold.example), not a Chat app. A user-authorized Workspace Events subscription sees every message in every space the account belongs to; people mention that account to get Isaac's attention; DMs to it get a reply. (A Chat app would be a smaller build but only sees mentions/DMs — rejected for now.)
 - **Push, with the host exposed publicly** (Funnel, same posture as zanebot). The door is one authenticated path, not the server. Pull stays a later host option.
 - **Not hooks.** Hooks go straight to a turn. Everything above the agent here is deterministic (token check, dedupe, echo drop, allow-lists, mention detection, history walking) and lives in a plain route + durable inbox.
 - **Three modules.** `isaac-google` (shared plumbing, knows nothing of Chat or Gmail), `isaac-gchat` (comm), `isaac-gmail` (comm). Two comms, not one.

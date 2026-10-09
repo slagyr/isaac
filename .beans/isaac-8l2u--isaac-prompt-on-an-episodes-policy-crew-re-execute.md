@@ -12,7 +12,7 @@ created_at: 2026-09-19T23:08:46Z
 updated_at: 2026-09-19T23:28:34Z
 ---
 
-Observed 2026-09-19 21:30Z on yopp. `isaac prompt -c yopp --create always -m "Using the comm-send tool, send … to the gchat comm, space yopp-test …"`. The new session (crew yopp, policy episodes) FIRST composed and sent an email to micah@tonotop.com via the gws skill — subject 'Another test, another joke' — narrating it as 'round two on the email pipe', i.e. continuing an earlier session's task that recall had surfaced. Only then did it address the actual message ('Now the mid-turn ask: …'). Nobody asked for an email in this turn.
+Observed 2026-09-19 21:30Z on yopp. `isaac prompt -c yopp --create always -m "Using the comm-send tool, send … to the gchat comm, space yopp-test …"`. The new session (crew yopp, policy episodes) FIRST composed and sent an email to micah@marigold.example via the gws skill — subject 'Another test, another joke' — narrating it as 'round two on the email pipe', i.e. continuing an earlier session's task that recall had surfaced. Only then did it address the actual message ('Now the mid-turn ask: …'). Nobody asked for an email in this turn.
 
 Recalled scenes/gists are being treated as live instructions rather than as memory. On a crew with real tools (gws: gmail.compose) that is an unrequested outbound side effect.
 

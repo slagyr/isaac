@@ -137,7 +137,7 @@ own origin_framing.feature).
 - `features/comm/gchat/inbound.feature`, `features/comm/gchat/outbound.feature` (new scenarios below)
 - `resources/isaac-manifest.edn` (`0.2.7` → `0.2.8`)
 
-**Scenarios added** (Marigold-consistent with the file's existing ada@tonotop.com / spaces/ENG fixtures):
+**Scenarios added** (Marigold-consistent with the file's existing ada@marigold.example / spaces/ENG fixtures):
 - outbound.feature: "two threads in one DM each get their own reply, in their own thread" — two DM threads, each transcript line marked, each reply's `body.thread.name` checked against its own thread (covers bullets 1 and 3).
 - inbound.feature: "a mention in one thread keeps two threads' history straight, each line marked" — a room mention in thread A after 2 A-messages + 2 B-messages heard-only; context block shows all 4 with correct markers; reply lands in thread A (bullet 2).
 - inbound.feature: "the gchat guidance frames the triggered turn exactly once" — new step asserts Grover's last built request's `pr-str` contains `guidance/TEXT` exactly once (bullet 4, presence half).

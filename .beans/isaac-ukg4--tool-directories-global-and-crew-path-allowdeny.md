@@ -54,8 +54,8 @@ and **isaac-da0r** (global/crew `:tools` overlay). Does not block MCP.
 
 ;; crew/scrapper.edn
 :tools {:allow [:exec/run]
-        :directories {:allow ["/Users/zane/agents/tonotop"]
-                      :deny  ["/Users/zane/agents/tonotop/.env"]}}
+        :directories {:allow ["/Users/zane/agents/marigold"]
+                      :deny  ["/Users/zane/agents/marigold/.env"]}}
 ```
 
 ## Acceptance (`@wip` in isaac-agent)

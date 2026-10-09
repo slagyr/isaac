@@ -15,13 +15,13 @@ blocked_by:
     - isaac-8s6s
 ---
 
-Decided 2026-09-19 (Micah). Today `google` config is one org; a second org's pushes are refused (:claims — the trust rule pins one push SA), which is safe but not supported. Everything Google is per org: the project, topic, push service account, OAuth client AND the Google user Isaac is (yopp@tonotop.com cannot read another org's spaces). So a tenant is a complete set, not a namespace over one login.
+Decided 2026-09-19 (Micah). Today `google` config is one org; a second org's pushes are refused (:claims — the trust rule pins one push SA), which is safe but not supported. Everything Google is per org: the project, topic, push service account, OAuth client AND the Google user Isaac is (yopp@marigold.example cannot read another org's spaces). So a tenant is a complete set, not a namespace over one login.
 
 ## Shape
 ```
-:google {:tonotop {:project … :topic … :oauth {…:account "yopp@tonotop.com"} :push {:service-account …}}
+:google {:marigold {:project … :topic … :oauth {…:account "yopp@marigold.example"} :push {:service-account …}}
          :acme    {…}}
-:comms  {:gchat      {:type :gchat :google :tonotop …}
+:comms  {:gchat      {:type :gchat :google :marigold …}
          :gchat-acme {:type :gchat :google :acme …}}
 ```
 - **Single-tenant convenience:** a flat `:google {:project …}` (yopp today) reads as tenant :default; a comm with no :google key uses :default. Nothing on yopp changes until a second org exists. Schema: :google is a map of tenant → tenant-schema, with the flat form coerced.
@@ -428,9 +428,9 @@ scenarios, still green.
   organization's comms' spaces only and `create!` subscribes them to that
   organization's `:topic` in its own project.
 - `features/comm/gchat/tenants.feature` — 2 scenarios: a comm bound to acme
-  posts with `Bearer at-acme` while the tonotop comm posts with `at-tonotop`;
+  posts with `Bearer at-acme` while the marigold comm posts with `at-marigold`;
   one timer tick subscribes `spaces/ACME` to acme's topic with acme's token and
-  `spaces/ENG` to tonotop's with tonotop's.
+  `spaces/ENG` to marigold's with marigold's.
 - The feature steps no longer stub `gchat/access-token` with a constant: they
   stub `isaac.google.token/token` per organization, so *which* organization the
   comm asked for is what the assertion reads.

@@ -8,11 +8,11 @@ created_at: 2026-08-24T22:19:01Z
 updated_at: 2026-09-30T14:05:06Z
 ---
 
-Planned and built 2026-08-24 (Micah + planner) after the tonotop kwm5 thrash report: our summarizer asked for a concise narrative; Claude Code and Grok harnesses both use a nine-section working-ledger template. Landed isaac-agent 4d977dc; deploys with opp6 in 0.1.39.
+Planned and built 2026-08-24 (Micah + planner) after the marigold kwm5 thrash report: our summarizer asked for a concise narrative; Claude Code and Grok harnesses both use a nine-section working-ledger template. Landed isaac-agent 4d977dc; deploys with opp6 in 0.1.39.
 
 ## Why (2026-08-24)
 
-tonotop's kwm5 worker: ~2,100 tool calls, ~80 compactions, 176 skill reloads, same files re-read 15-30x, zero edits — every compaction wiped what it had learned. Root cause (Micah pressed until the real one surfaced): NOT rubberband/telephone first — our summarizer prompt asked for "a concise summary of what happened" and got two sentences of narrative. Claude Code's compaction and Grok's detailed variant both mandate the same nine-section template (request/intent, concepts, files+code with snippets, errors+fixes, problem solving, all user messages, pending, current work, next step), thorough-not-brief, carry prior summaries forward, and exclude the instruction itself from the user messages. Ours was the outlier.
+marigold's kwm5 worker: ~2,100 tool calls, ~80 compactions, 176 skill reloads, same files re-read 15-30x, zero edits — every compaction wiped what it had learned. Root cause (Micah pressed until the real one surfaced): NOT rubberband/telephone first — our summarizer prompt asked for "a concise summary of what happened" and got two sentences of narrative. Claude Code's compaction and Grok's detailed variant both mandate the same nine-section template (request/intent, concepts, files+code with snippets, errors+fixes, problem solving, all user messages, pending, current work, next step), thorough-not-brief, carry prior summaries forward, and exclude the instruction itself from the user messages. Ours was the outlier.
 
 ## What landed (isaac-agent 4d977dc)
 

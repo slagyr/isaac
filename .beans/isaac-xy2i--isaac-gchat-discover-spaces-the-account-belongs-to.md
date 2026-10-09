@@ -24,11 +24,11 @@ Bumped 2026-09-19 (Micah): DMs are a space too and are not subscribed unless lis
 
 
 
-Micah 2026-09-19: the default is 'a space is a conversation and a conversation is a session' — every space Yopp is a member of (DMs included) routes to a canonical session without any config; entries only override. Canonical session NAME should be readable: the space displayName for named spaces (gchat/yopp-test), the other member's displayName for a DM (gchat/dm/micah-martin), with the space id carried as a session tag (space:AAQA7rg5Uyc) so a rename never orphans the session. spaces.get / spaces.members give the names.
+Micah 2026-09-19: the default is 'a space is a conversation and a conversation is a session' — every space Yopp is a member of (DMs included) routes to a canonical session without any config; entries only override. Canonical session NAME should be readable: the space displayName for named spaces (gchat/yopp-test), the other member's displayName for a DM (gchat/dm/hieronymus-finch), with the space id carried as a session tag (space:AAQA7rg5Uyc) so a rename never orphans the session. spaces.get / spaces.members give the names.
 
 
 
-Tenants (isaac-1zkz): discovery runs per tenant with that tenant's token; canonical session names carry the tenant when more than one exists (gchat/tonotop/yopp-test).
+Tenants (isaac-1zkz): discovery runs per tenant with that tenant's token; canonical session names carry the tenant when more than one exists (gchat/marigold/yopp-test).
 
 ## Session ids are slugified (planner, 2026-09-21)
 
@@ -39,21 +39,21 @@ run of non-[a-z0-9] with a hyphen, so today's canonical name arrives as
 
 Consequences for the naming above:
 
-- `gchat/yopp-test` becomes `gchat-yopp-test`, `gchat/dm/micah-martin` becomes
-  `gchat-dm-micah-martin`. Both read fine; write them in the form they will
+- `gchat/yopp-test` becomes `gchat-yopp-test`, `gchat/dm/hieronymus-finch` becomes
+  `gchat-dm-hieronymus-finch`. Both read fine; write them in the form they will
   take rather than assuming the slash survives.
 - The space id cannot live in the name: `AAQA7rg5Uyc` slugs to
   `aaqa7rg5uyc` and no longer matches the space. It belongs on the tag
   (`space:AAQA7rg5Uyc`), preserved verbatim, which is what makes a rename
   safe.
 - A display name needs deliberate slugging anyway ("Micah Martin" ->
-  `micah-martin`), and two spaces with the same display name must not collide
+  `hieronymus-finch`), and two spaces with the same display name must not collide
   into one session — fall back to the id, or suffix it.
 
 Acceptance to add: a discovered space named "Yopp Test" routes to
 `gchat-yopp-test` tagged `space:AAQA7rg5Uyc`; renaming the space keeps the
 session (the tag matches, the name may lag); a DM with Micah routes to
-`gchat-dm-micah-martin`; two spaces sharing a display name get distinct
+`gchat-dm-hieronymus-finch`; two spaces sharing a display name get distinct
 sessions.
 
 ## Handoff (worker, 2026-09-22)
@@ -131,7 +131,7 @@ cannot see speclj's macros here. Pre-existing; `bb ci` does not run it.
 - a mention in a discovered space starts a turn on its canonical session
   (`gchat-yopp-test`, tagged `space:AAQA7rg5Uyc`)
 - renaming a discovered space keeps its session — one session, both turns
-- a DM routes to a session named for the other member (`gchat-dm-micah-martin`)
+- a DM routes to a session named for the other member (`gchat-dm-hieronymus-finch`)
 - two spaces sharing a display name get two sessions
 - an explicit entry overrides the session discovery would have chosen
 
@@ -195,8 +195,8 @@ changed.
 `canon/canonical-name` never knew how many organizations a host had — the
 "only when more than one" rule lived in `handler/decide-opts`, and it is gone:
 `:tenant` is now whatever `tenants/of-comm` answers, always. Names are
-`gchat-tonotop-yopp-test` and `gchat-tonotop-dm-micah-martin`. The five xy2i
-inbound scenarios now configure `google.tonotop.topic` and expect the prefix;
+`gchat-marigold-yopp-test` and `gchat-marigold-dm-hieronymus-finch`. The five xy2i
+inbound scenarios now configure `google.marigold.topic` and expect the prefix;
 a new handler spec proves a **one**-organization host gets it too. A comm on a
 host with no `:google` block at all has no organization to name and keeps the
 bare form — that is the only case without a prefix, and it cannot happen in

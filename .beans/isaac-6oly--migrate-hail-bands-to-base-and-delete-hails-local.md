@@ -42,7 +42,7 @@ part that needs care:
 
 - `slagyr/orchestration` → `isaac-beans/config/hail/` (the `orchestration-*`
   bands and `_orchestration-template.edn`).
-- `tonotop/planning` → `orchestration/config/hail/` (the `tono-*` bands and
+- `marigold/planning` → `orchestration/config/hail/` (the `tono-*` bands and
   `_tono-template.edn`).
 - **zanebot** → `~/.isaac/config/hail/` — the `isaac-*` bands
   (`isaac-work.md`, `isaac-plan.md`, `isaac-verify.md`, `ci-failure.md`,

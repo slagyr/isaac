@@ -57,7 +57,7 @@ and `spec/isaac/google/handbook_chapter_spec.clj`). Left alone (isaac-http's
 own, unmigrated, bean isaac-fkqz still `todo`): `isaac.http.*`,
 `isaac.config.server-config`. Left alone (fixture/data, false-positive
 matches, not namespaces): `isaac.acme.example`, `isaac.example`,
-`isaac.tonotop.example` (fixture URLs), `isaac.edn` (a config filename
+`isaac.marigold.example` (fixture URLs), `isaac.edn` (a config filename
 mentioned in a string), `isaac.cron`/`isaac.episodes` (other modules' ids,
 mentioned in a comment), `:isaac.agent/tools` and other `:isaac.config/*`
 berth keywords (data contracts, per the bean).
