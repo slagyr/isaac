@@ -134,21 +134,12 @@
       (drop start gated)
       gated)))
 
-(defn- scrub-private-project-path [[section line]]
-  ;; A scrub of the account-specific scratchpad directory changes no acceptance
-  ;; requirement. Compare its redacted form without relaxing any other text.
-  [section (str/replace line #"/private/tmp/claude-501/-Users-[^/\s]+-agents-isaac-plan/"
-                        "/private/tmp/claude-501/<project>/")])
-
 (defn- contract-failures
-  "Contract lines are append-only from the newest planner baseline onward.
-   Only the account-specific scratchpad directory may be redacted in place."
+  "Contract lines are append-only from the newest planner baseline onward."
   [versions]
   (let [gated (newest-baseline-window (drop-while #(not (bean/gated? (:text %))) versions))]
     (for [[prev cur] (partition 2 1 gated)
-          :let [before  (bean/contract-lines (:text prev))
-                current (set (map scrub-private-project-path (bean/contract-lines (:text cur))))
-                missing (remove #(contains? current (scrub-private-project-path %)) before)]
+          :let [missing (set/difference (bean/contract-lines (:text prev)) (bean/contract-lines (:text cur)))]
           [_ line] (sort-by second missing)]
       (str "contract line removed or edited in " (short (:commit cur)) ": " line))))
 

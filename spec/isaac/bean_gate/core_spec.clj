@@ -174,32 +174,6 @@
         (should-contain (str "contract line removed or edited in " (subs sha 0 7) ": bb features " f/feature)
                         (failures (verify w))))))
 
-  (it "allows scrubbing a private account path from an otherwise unchanged acceptance line"
-    (let [w (gated-world)]
-      (f/work-branch! w id f/unwip)
-      (f/edit-bean! w id #(str/replace % "## Acceptance\n\n"
-                                      "## Acceptance\n\n- Draft: /private/tmp/claude-501/-Users-bibelot-agents-isaac-plan/scratchpad/draft.md\n"))
-      (f/commit! (:root w) "plan: add draft reference")
-      ;; The planner's acceptance text predates the baseline.
-      (baseline! w)
-      (f/commit! (:root w) "plan: re-baseline draft reference")
-      (f/edit-bean! w id #(str/replace % "-Users-bibelot-agents-isaac-plan" "<project>"))
-      (f/commit! (:root w) "scrub private account path")
-      (should= :pass (:status (verify w)))))
-
-  (it "rejects changing the draft requirement while scrubbing its private account path"
-    (let [w (gated-world)]
-      (f/work-branch! w id f/unwip)
-      (f/edit-bean! w id #(str/replace % "## Acceptance\n\n"
-                                      "## Acceptance\n\n- Draft: /private/tmp/claude-501/-Users-bibelot-agents-isaac-plan/scratchpad/draft.md\n"))
-      (f/commit! (:root w) "plan: draft reference")
-      (baseline! w)
-      (f/commit! (:root w) "plan: baseline reference")
-      (f/edit-bean! w id #(str/replace % "-Users-bibelot-agents-isaac-plan/scratchpad/draft.md"
-                                      "<project>/scratchpad/other.md"))
-      (f/commit! (:root w) "alter draft")
-      (should-contain "contract line removed or edited" (failures (verify w)))))
-
   (it "fails when a baseline line is removed, even uncommitted"
     (let [w (gated-world)]
       (f/work-branch! w id f/unwip)
