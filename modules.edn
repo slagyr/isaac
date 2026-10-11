@@ -1,6 +1,9 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
                                       :git/sha "5b9a667da3593e8de6850af4226991e4e03daa56"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
+ :isaac.contacts             {:coord {:git/url "https://github.com/slagyr/isaac-contacts.git"
+                                      :git/sha "af6194451859845af44bf44873721b4960e1ea83"}
+                              :desc  "Named contacts — resolve handles across comms to one person."}
  :isaac.session.episodes     {:coord {:git/url "https://github.com/slagyr/isaac-episodes.git"
                                       :git/sha "4f91100230a95f2047b50cb2eb2838211fcada51"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
