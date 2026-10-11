@@ -70,3 +70,9 @@ feature-blob: isaac-agent features/turn/inherited_attribution.feature 7e986c9e1b
 ## Work checkpoint (2026-10-11)
 
 Done: claimed bean; implemented queue delegation context and carry-over copies, added targeted specs, handbook, feature step helpers, and pigeon fixture on isolated `isaac-agent-isaac-4615` worktree. RED: `bb features features/turn/inherited_attribution.feature:41` fails because pigeon `submit!` returns "no session selected"; `bb features features/turn/inherited_attribution.feature` has 3 failures, 2 passing. No green run since latest edits, so implementation is not yet committed. Next: debug pigeon request at `modules/isaac.relay.pigeon/src/isaac/relay/pigeon.clj:5`; remove temporary DEBUG-TURNS print at `spec/isaac/agent/turn/queue_steps.clj:95`, rerun focused feature, then full acceptance and gate.
+
+## Landed on main (2026-10-11)
+
+main-sha: isaac-agent 49e2cfe1a2b9be934e92eff8c7e4d7ea33831122
+
+Acceptance: inherited attribution 5/5; related features 12/12; `bb verify` 1945 specs and 922 features (one pre-existing pending), 0 failures; `bb jvm-spec` 1945/1945. Bean gate PASS on branch and squash commit.
