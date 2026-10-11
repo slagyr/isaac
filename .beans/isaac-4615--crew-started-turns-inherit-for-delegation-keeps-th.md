@@ -1,48 +1,67 @@
 ---
 # isaac-4615
-title: Crew-started turns inherit :for — delegation keeps the original owner
-status: draft
+title: 'isaac-agent: delegated and carried-over turns keep their owner (:from and :for)'
+status: todo
 type: feature
 created_at: 2026-10-08T22:03:41Z
-updated_at: 2026-10-08T22:03:41Z
+updated_at: 2026-10-11T23:10:00Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
 ---
 
-DRAFT. Needs scenarios before it is todo. Part of the contacts epic (isaac-zt1x). Blocked by the attribution fields bean (isaac-v403).
+Part of the contacts epic (isaac-zt1x). Scenarios approved by Micah 2026-10-11. Its blocker, turn attribution (isaac-v403), has landed.
 
-## Idea
+## What this is
 
-When a crew member starts a turn from inside a turn, the work still belongs to whoever the first turn was for. Without this, delegation launders ownership: a person asks one crew member, it hails another, and the second turn looks like it belongs to an agent.
+A turn records `:from`, who started it, and `:for`, the outside party it is done for. Today that ownership is lost in two ways. This bean closes both in `isaac-agent`.
 
-## Rule
+**1. Delegation launders ownership.** A person asks one crew member, which starts a turn for another. The second turn looks like it belongs to nobody.
 
-A turn submitted from inside a running turn gets:
+**2. Carry-over drops ownership.** When a turn hits its cycle limit and continues, or is resumed after a restart, the new record is written without `:from` or `:for`. Found while planning: `isaac.agent.drive.turn` (the continuation `enqueue!`) and `isaac.agent.bridge.resume` (the resume `enqueue!`) pass neither field, so the new record becomes `{:kind :submit}` for nobody.
 
-- `:from` = the crew member running the current turn, `{:kind :crew :id …}`;
-- `:for` = the current turn's `:for`, copied unchanged. Absent stays absent.
+## Rules
 
-A submitter may not override this from inside a turn: a crew tool cannot claim to act for someone else.
+**Delegation.** A turn submitted from inside a running turn gets:
 
-## What it needs
+- `:from` = the crew member running the current turn, `{:kind :crew :id <crew>}`;
+- `:for` = the running turn's `:for`, copied unchanged. Absent stays absent.
 
-- The running turn makes its `:for` and its crew available to tools (tool context).
-- `submit!` applies the rule when called from inside a turn.
-- `isaac-hail`: `hail__send` stops writing `origin.from` as `:crew/<id>` and lets the rule fill the top-level `:from`; the hail queue carries `:from` and `:for` through to the turn it creates. Clean cutover, no alias. The HTTP and CLI entry points set `{:kind :http :id <principal>}` and `{:kind :cli}`.
-- Foreman `:turn` actions and any other in-turn submitter follow the same rule.
+The submitter cannot override either field from inside a turn. Whatever `:from` or `:for` it passes is replaced. A tool cannot claim to act for someone else.
 
-## To settle
+**Carry-over.** A continuation and a resumed turn keep the `:from` and `:for` of the record they carry on from, unchanged. They are the same work under a new record, not a delegation: `:from` is not rewritten to the crew.
 
-- Cron: a job's turns are `{:kind :cron :id <job>}` with no `:for`, unless the job config names one. Whether to allow that is a cron bean.
-- How much plumbing the hail queue and delivery path need. Not yet measured.
+## Notes for the implementer
 
-## Scenarios to draft
+- Apply the delegation rule at the one place every in-process submitter passes through (`isaac.agent.turn.queue/enqueue!` or `isaac.agent.turn.submit/submit!`), so no tool has to cooperate. The running turn must make its crew and its `:for` known to that point for the duration of its tool calls. How is your call; a tool-supplied argument is not acceptable, since the rule must hold against a tool that lies.
+- The continuation and resume paths run inside or beside the drive. Make sure the delegation rule does not fire on them: they copy, they do not re-attribute.
+- A copied `:for` or `:from` is already identified (it may be `:kind :contact`). Passing it through the identifiers again is harmless, since identifiers are only asked about `:kind :handle`.
+- Fixture module `modules/isaac.relay.pigeon`, in the style of `isaac.roster.almanac`: one tool, `pigeon__send`, taking `session`, `input`, `id` and optional `for`. It calls `isaac.agent.turn.submit/submit!`. Given `for`, it also passes `:from {:kind :cli}` and `:for {:kind :contact :id <for>}`.
+- Two new steps:
+  - `the user sends "{content}" on session "{key}" via memory comm as handle "{comm}/{id}"` — the existing memory-comm send, with `:from {:kind :handle :comm <comm> :id <id>}` on the charge.
+  - `the latest turn on session "{key}" matches:` — a key/value table of dotted paths checked against the newest turn record for that session (by `:created-at`), any state. Compare values by name, so `handle` matches `:handle` and `1` matches `1`.
+- `the stdout matches:` skips its first table row as a header; the tables lead with `| pattern |`.
+- Update the agent handbook's attribution section with both rules.
 
-- Agent: a fixture tool submits a turn from inside a turn that is for Cordelia; the new record is from the crew member and for Cordelia.
-- Agent: the same from a turn that is for nobody; the new record has no `:for`.
-- Hail: `hail__send` from a turn for Cordelia produces a turn for Cordelia on the receiving crew.
+## Out of scope
+
+- `isaac-hail`: `hail__send` and the hail queue carrying `:from` and `:for`, and the HTTP and CLI entry points setting `{:kind :http}` and `{:kind :cli}`. A follow-up bean once this lands.
+- Foreman `:turn` actions and cron `:for`.
+- Coalesced turns: they already take `:from` and `:for` from the last record.
 
 ## Likely repo scope
 
-`isaac-agent`, then `isaac-hail`. Probably two beans once scenarios exist.
+`isaac-agent`.
+
+## Acceptance
+
+Run from `isaac-agent`, with `@wip` removed from the feature file:
+
+- `bb features features/turn/inherited_attribution.feature` — 5 examples, 0 failures.
+- `bb features features/turn/attribution.feature features/turn/continuations.feature features/turn/resume_records.feature features/module/identifier_extension.feature` still green.
+- `bb verify` and `bb jvm-spec` green.
+- Unit specs cover: the delegation rule replacing a submitter's own `:from` and `:for`; no `:for` staying absent; a continuation and a resume copying both fields.
+- The agent handbook documents delegation and carry-over.
+
+feature-baseline: isaac-agent 4dd2c1d1ea3097361c857bd8620b041a264f81c1
+feature-blob: isaac-agent features/turn/inherited_attribution.feature 7e986c9e1b52f9193be207187ece8aeecf70d5f5
