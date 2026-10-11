@@ -1,11 +1,11 @@
 ---
 # isaac-4615
 title: 'isaac-agent: delegated and carried-over turns keep their owner (:from and :for)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-08T22:03:41Z
-updated_at: 2026-10-11T22:49:07Z
+updated_at: 2026-10-11T23:04:55Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
