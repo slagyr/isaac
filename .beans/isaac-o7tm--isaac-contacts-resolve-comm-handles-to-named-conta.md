@@ -97,3 +97,7 @@ Run from `isaac-contacts`, with `@wip` removed from both feature files:
 feature-baseline: isaac-contacts d82cb4b321f6178735f16d2affa70d9220e3ff84
 feature-blob: isaac-contacts features/contacts/identify.feature c3476a9fec3cd7d45383415c9755249e5f75b7e7
 feature-blob: isaac-contacts features/contacts/config.feature f224d701e6b1462f098c21fe37e95db50e883547
+
+## Checkpoint (2026-10-11)
+
+Done: contacts schema, identifier, duplicate validation, specs, features, docs and module registry landed on main. `bb ci` passed in isaac-contacts and isaac; `bb bean-gate verify isaac-o7tm` passed after squash. Next: confirm CI Tests on isaac-contacts main, record main-sha lines below, delete bean branches, complete bean. Resume at `resources/isaac-manifest.edn:8` in isaac-contacts (identifier declaration), or run `gh run list -R slagyr/isaac-contacts --branch main --workflow ci-tests.yml --limit 3`.
