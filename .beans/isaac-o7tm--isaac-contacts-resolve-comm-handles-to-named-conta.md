@@ -1,11 +1,11 @@
 ---
 # isaac-o7tm
 title: 'isaac-contacts: a handle becomes the contact it belongs to'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-08T20:41:16Z
-updated_at: 2026-10-11T18:00:00Z
+updated_at: 2026-10-11T21:05:59Z
 parent: isaac-zt1x
 blocked_by:
     - isaac-v403
