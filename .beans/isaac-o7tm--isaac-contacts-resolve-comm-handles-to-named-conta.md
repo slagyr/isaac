@@ -101,3 +101,10 @@ feature-blob: isaac-contacts features/contacts/config.feature f224d701e6b1462f09
 ## Checkpoint (2026-10-11)
 
 Done: contacts schema, identifier, duplicate validation, specs, features, docs and module registry landed on main. `bb ci` passed in isaac-contacts and isaac; `bb bean-gate verify isaac-o7tm` passed after squash. Next: confirm CI Tests on isaac-contacts main, record main-sha lines below, delete bean branches, complete bean. Resume at `resources/isaac-manifest.edn:8` in isaac-contacts (identifier declaration), or run `gh run list -R slagyr/isaac-contacts --branch main --workflow ci-tests.yml --limit 3`.
+
+## Landed on main (2026-10-11)
+
+main-sha: isaac-contacts af6194451859845af44bf44873721b4960e1ea83
+main-sha: isaac 8edb935783519951bb26dfb25961601cafc7c241
+
+CI Tests on isaac-contacts main: success (run 38175435201).
