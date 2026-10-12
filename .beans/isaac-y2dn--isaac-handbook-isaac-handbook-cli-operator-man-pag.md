@@ -1,13 +1,13 @@
 ---
 # isaac-y2dn
 title: 'isaac-handbook: isaac handbook CLI — operator man pages for the POH'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - handbook
 created_at: 2026-10-08T21:15:43Z
-updated_at: 2026-10-12T21:25:49Z
+updated_at: 2026-10-12T21:34:30Z
 ---
 
 ## Why
@@ -77,3 +77,8 @@ Generated reference topics (isaac-niqx). Changing `handbook__read`.
 
 feature-baseline: isaac-handbook 410185cd8f2e687eeb7bc98b663ff9c5f106a2e6
 feature-blob: isaac-handbook features/cli.feature aaff00c192f4f8aecc0451f130affd85da878c04 47,56,65,74,84
+
+
+## Landed on main (2026-10-12)
+
+main-sha: isaac-handbook 1fd7a1af550a29832c6ec51aa83efde9f6d5579d
