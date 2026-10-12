@@ -1,11 +1,11 @@
 ---
 # isaac-rrk6
 title: 'isaac-hail: hailed turns say who sent them and for whom (:from and :for)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-12T17:49:25Z
-updated_at: 2026-10-12T17:50:24Z
+updated_at: 2026-10-12T20:27:56Z
 parent: isaac-zt1x
 ---
 
