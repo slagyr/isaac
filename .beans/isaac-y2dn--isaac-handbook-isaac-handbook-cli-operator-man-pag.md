@@ -1,13 +1,13 @@
 ---
 # isaac-y2dn
 title: 'isaac-handbook: isaac handbook CLI — operator man pages for the POH'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
     - handbook
 created_at: 2026-10-08T21:15:43Z
-updated_at: 2026-10-08T21:15:43Z
+updated_at: 2026-10-12T20:46:37Z
 ---
 
 ## Why
@@ -58,10 +58,22 @@ isaac-handbook only:
 `isaac help` topics. Short module-id aliases. A pager. Configure.
 Generated reference topics (isaac-niqx). Changing `handbook__read`.
 
-## Acceptance
+## Acceptance (features/cli.feature)
 
-Draft. Scenarios after the scenario plan is approved.
+- [ ] Scenario "no args prints the TOC of installed chapters; a module with no handbook is absent (isaac-y2dn)":
+  `bb features features/cli.feature:47`
+- [ ] Scenario "a module-id argument prints that chapter (isaac-y2dn)":
+  `bb features features/cli.feature:56`
+- [ ] Scenario "a module#slug argument prints that section (isaac-y2dn)":
+  `bb features features/cli.feature:65`
+- [ ] Scenario "several topic ids print in order; an unknown one is listed unknown, known ones still print, exit 1 (isaac-y2dn)":
+  `bb features features/cli.feature:74`
+- [ ] Scenario "a chapter larger than handbook.max-chars still prints in full (isaac-y2dn)":
+  `bb features features/cli.feature:84`
+- [ ] Manifest `:isaac/cli :handbook` with `:hosted true`.
+- [ ] `isaac help handbook` documents the command.
+- [ ] This module's handbook chapter documents `isaac handbook`.
+- [ ] Version bump; `bb spec` / `bb features` / `bb lint` green.
 
-Likely home: isaac-handbook `features/cli.feature` (new file). Reuse the
-marigold.charts / marigold.bridge fixtures from `features/read.feature`.
-CLI steps already exist (`isaac is run with`, stdout contains, exit code).
+feature-baseline: isaac-handbook 410185cd8f2e687eeb7bc98b663ff9c5f106a2e6
+feature-blob: isaac-handbook features/cli.feature aaff00c192f4f8aecc0451f130affd85da878c04 47,56,65,74,84
