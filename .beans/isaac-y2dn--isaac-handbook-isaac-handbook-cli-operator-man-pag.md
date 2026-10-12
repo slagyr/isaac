@@ -1,13 +1,13 @@
 ---
 # isaac-y2dn
 title: 'isaac-handbook: isaac handbook CLI — operator man pages for the POH'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - handbook
 created_at: 2026-10-08T21:15:43Z
-updated_at: 2026-10-12T20:46:37Z
+updated_at: 2026-10-12T21:25:49Z
 ---
 
 ## Why
