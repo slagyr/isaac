@@ -1,11 +1,11 @@
 ---
 # isaac-5l3j
 title: 'isaac-agent: a provider''s own server error is weather, decided by error code'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-12T21:29:44Z
-updated_at: 2026-10-12T21:31:42Z
+updated_at: 2026-10-12T21:49:06Z
 ---
 
 Scenarios approved by Micah 2026-10-12 ("I think we should try"). Follows isaac-i2i4 (overloaded providers and dropped connections are weather).
