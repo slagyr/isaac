@@ -42,3 +42,7 @@ Every turn records `:from`, who started it, and `:for`, the outside party it is 
 
 feature-baseline: isaac-hail 5ddb82e158c5cc4d4c2fb20ae349b06c105c921c
 feature-blob: isaac-hail features/attribution.feature 671f7f267dbe6ea60a3ee688fc7495eddc8baa1c
+
+## Landed on main (2026-10-12)
+
+main-sha: isaac-hail 6614161018e00d661d69defb1c47e479bd558b7b
