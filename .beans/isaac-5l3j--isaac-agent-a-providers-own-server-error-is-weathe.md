@@ -53,3 +53,9 @@ Anything the provider blames on the request still ends the turn: any other failu
 
 feature-baseline: isaac-agent d75ea473acb9d179d6a99b8b50e6b328eb8e7d1e
 feature-blob: isaac-agent features/llm/provider_server_error.feature ba1c34f39ab23487e29b2d0b79bbd7775e999b83
+
+## Landed on main (2026-10-12)
+
+main-sha: isaac-agent c1875610a06aa0ab15d903591f9f1fdd800a3602
+
+Acceptance: `bb ci` (1954 specs, 928 feature examples; one unrelated pending), `bb jvm-spec` (1954 specs), focused provider features and bean gate PASS. Provider-code propagation, weather fallback/suspension, and response failure logging landed.
