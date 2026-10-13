@@ -1,13 +1,13 @@
 ---
 # isaac-t2o2
 title: 'isaac-agent: exec/run forwards named .env keys (tools.exec.forward-env)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - agent
 created_at: 2026-10-13T17:40:33Z
-updated_at: 2026-10-13T18:10:26Z
+updated_at: 2026-10-13T18:11:46Z
 ---
 
 ## Why
