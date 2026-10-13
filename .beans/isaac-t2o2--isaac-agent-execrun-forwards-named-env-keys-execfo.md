@@ -27,7 +27,7 @@ told not to open `.env`. Named forwarding is the intended path.
 Instance-wide, same shape as Claude's `:forward-env`:
 
 ```
-:exec {:forward-env ["VIMEO_TOKEN"]}
+:tools {:exec {:forward-env ["VIMEO_TOKEN"]}}
 ```
 
 - Default is an empty list. A secret is forwarded only when named.
@@ -45,14 +45,14 @@ Instance-wide, same shape as Claude's `:forward-env`:
 
 isaac-agent:
 
-- `:isaac.config/schema` key `:exec` with `:forward-env` (sequential
-  strings).
+- `:isaac.config/schema`: `:forward-env` (sequential strings) under the
+  existing `:tools` key, as `:tools :exec :forward-env`.
 - `isaac.agent.tool.exec/start-process` overlays the named values.
-- Handbook: `.env` feeds `${VAR}` and named `exec.forward-env`, not
+- Handbook: `.env` feeds `${VAR}` and named `tools.exec.forward-env`, not
   process `getenv`.
 - Version bump.
 
-On the skiff deployment after it lands: set `exec.forward-env` to `["VIMEO_TOKEN"]`.
+On the skiff deployment after it lands: set `tools.exec.forward-env` to `["VIMEO_TOKEN"]`.
 
 ## Out of scope
 
@@ -74,16 +74,20 @@ Scenarios written 2026-10-13 as `@wip` in isaac-agent
 "The process environment wins" has no scenario: a feature cannot set the
 JVM's real environment. Cover it with a unit spec.
 
-## Open questions (planner review, 2026-10-13)
+## Rulings (2026-10-13, Micah)
 
-- **This does not protect the secret.** exec has no filesystem allow list,
-  so any crew with exec can already read `.env`; forwarding is a
-  convenience. A forwarded key is readable by every crew with exec, and so
-  by anyone who can ask such a crew to print it. Per-crew forwarding
-  (`defaults.crew.tools`, overridable per crew) would narrow that.
-- **Key location.** Per-tool config already lives under `:tools`
-  (`tools.web_search`); `tools.exec.forward-env` would match. The design
-  line and the scenarios say top-level `:exec`.
-- **Precedence** differs from the Claude provider's `forward-env`, where an
-  explicit `env` overlay wins over the forwarded value. Say why exec differs,
-  or match it.
+- **Key location:** `tools.exec.forward-env`, beside `tools.web_search`
+  ("tools.exec.forward-env is better"). The title's `exec.forward-env` is
+  the old name.
+
+## Planner notes (2026-10-13)
+
+- **Precedence already matches the Claude provider.** There the forwarded
+  value comes from `isaac.foundation.config.env/env`, which prefers the
+  process environment over `.env`, and is merged over the inherited
+  environment. "The process environment wins" is the same behavior. Claude
+  also has a literal `:env` overlay; exec has none and needs none here.
+- **Instance-wide is recommended.** Per-crew forwarding would look like
+  protection it cannot give: exec has no filesystem allow list, so any crew
+  with exec can read `.env` whatever is forwarded. The real boundary would
+  be a sandbox on exec, which is its own work.
