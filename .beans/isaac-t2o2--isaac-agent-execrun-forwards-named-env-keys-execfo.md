@@ -94,3 +94,9 @@ JVM's real environment. Cover it with a unit spec.
 
 feature-baseline: isaac-agent baed9c439f3142f4429267b39bdd985025a22a33
 feature-blob: isaac-agent features/tool/exec_forward_env.feature b4b8fb4d318fffa3790cd8d24cbb66d99d9965a6
+
+## Landed on main (2026-10-13)
+
+main-sha: isaac-agent 32c56ce2885d65eac4f279df7ab8ac9d9fce9b3c
+
+Acceptance: three scenarios green (6 assertions); bb ci green (1958 specs, 931 feature examples, 1 pre-existing pending); bb jvm-spec green (1958 specs). Gate PASS on the squash commit.
