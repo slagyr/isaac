@@ -1,13 +1,13 @@
 ---
 # isaac-t2o2
-title: 'isaac-agent: exec/run forwards named .env keys (exec.forward-env)'
-status: draft
+title: 'isaac-agent: exec/run forwards named .env keys (tools.exec.forward-env)'
+status: todo
 type: feature
 priority: normal
 tags:
     - agent
 created_at: 2026-10-13T17:40:33Z
-updated_at: 2026-10-13T17:40:33Z
+updated_at: 2026-10-13T18:10:26Z
 ---
 
 ## Why
@@ -62,7 +62,7 @@ crews to source `.env`.
 
 ## Acceptance
 
-Draft until Micah approves the scenarios; not yet baselined.
+Scenarios and design approved by Micah 2026-10-13. Remove the three `@wip` tags and make them pass; `bb ci` and `bb jvm-spec` green; CI green on main.
 
 Scenarios written 2026-10-13 as `@wip` in isaac-agent
 `features/tool/exec_forward_env.feature` (no new steps):
@@ -91,3 +91,6 @@ JVM's real environment. Cover it with a unit spec.
   protection it cannot give: exec has no filesystem allow list, so any crew
   with exec can read `.env` whatever is forwarded. The real boundary would
   be a sandbox on exec, which is its own work.
+
+feature-baseline: isaac-agent baed9c439f3142f4429267b39bdd985025a22a33
+feature-blob: isaac-agent features/tool/exec_forward_env.feature b4b8fb4d318fffa3790cd8d24cbb66d99d9965a6
