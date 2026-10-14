@@ -47,3 +47,8 @@ A write-time check cannot help: the crew wrote the file with a shell command.
 
 feature-baseline: isaac-agent 2d794ad748c62dc763c76e89bd454be45fa58872
 feature-blob: isaac-agent features/prompts/broken_header.feature 897e120ce6108983587f50aa15d8c9a3f6feb192
+
+
+## Landed on main (2026-10-14)
+
+main-sha: isaac-agent cc79a5a07539040076cec3805477a46710d9cb77
