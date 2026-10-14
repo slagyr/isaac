@@ -1,11 +1,11 @@
 ---
 # isaac-0x75
 title: 'isaac-agent: a prompt whose header does not parse is left out, not fatal'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-14T23:21:02Z
-updated_at: 2026-10-14T23:22:31Z
+updated_at: 2026-10-14T23:35:34Z
 ---
 
 Scenarios approved by Micah 2026-10-14 ("good"). Micah: "A bad skill header should not cause the app to crash like that."
