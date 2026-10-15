@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-10-14T23:22:14Z
-updated_at: 2026-10-15T15:37:14Z
+updated_at: 2026-10-15T15:40:05Z
 ---
 
 ## Problem
@@ -104,3 +104,10 @@ feature-blob: isaac-gchat features/comm/gchat/outbound.feature e52811629135056fa
 ## Planner note (2026-10-15)
 
 The first post in that DM is the top-level reply to "are you there?". The threaded delivery is the second post. The HTTP assertion now carries `#index 1`, and the scenario is `@wip` on isaac-gchat main `c6fdc33`, `features/comm/gchat/outbound.feature` line 706. Remove `@wip` once it passes. The earlier eight scenarios are unchanged. Rebase onto `c6fdc33`, rerun `bb ci` and the gate, then land.
+
+
+## Landed on main (2026-10-15)
+
+main-sha: isaac-gchat ce98480c28ecb2d550aef607f134c8ae366d6c58
+
+Rebased onto c6fdc33; removed the planner-corrected scenario’s @wip. Focused scenario: 1 example, 2 assertions; bb ci: 210 specs and 79 features, 0 failures; gate PASS on branch and squash commit.
