@@ -27,5 +27,8 @@ On 2026-10-15 skiff's server was moved to the JVM with a hand-made launcher that
 
 ## Planner notes
 
-- Acceptance scenarios still to write (feature: the launch-deps map carries foundation's libraries alongside module coords).
+- Scenarios: isaac-foundation `features/module/modules_deps_emit.feature` (2a2d90e), two @wip:
+  - "--edn carries foundation's own libraries" — fast; fails today.
+  - "the emitted --edn deps boot isaac from the Isaac root" — @slow (run with `bb features-slow`); new step `a JVM in the Isaac root boots {args} from the emitted launch deps` (same as the existing boot step, but the JVM's working dir is the Isaac root, not the checkout). Fails today: `Could not locate clojure/tools/cli`.
+- Why the existing boot scenario passes: it boots from the checkout, whose `deps.edn` supplies foundation's libraries, and the marigold.app fixture drags them in through `{:local/root "../.."}`. Both new scenarios use `{:modules {}}` for that reason.
 - Related: `:paths` warning "Use of :paths external to the project has been deprecated" from the clojure CLI on every launch — worth a look while here.
