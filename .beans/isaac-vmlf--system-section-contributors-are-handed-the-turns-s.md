@@ -1,11 +1,11 @@
 ---
 # isaac-vmlf
 title: System-section contributors are handed the turn's session key
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-15T13:33:54Z
-updated_at: 2026-10-15T15:13:24Z
+updated_at: 2026-10-15T15:24:02Z
 blocking:
     - isaac-jkxd
 ---
