@@ -1,11 +1,11 @@
 ---
 # isaac-vmlf
 title: System-section contributors are handed the turn's session key
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-15T13:33:54Z
-updated_at: 2026-10-15T14:13:51Z
+updated_at: 2026-10-15T15:13:24Z
 blocking:
     - isaac-jkxd
 ---
@@ -42,3 +42,7 @@ key>."
 
 feature-baseline: isaac-agent 3507d7352bf5824b4325da3c93808a6656c20cdb
 feature-blob: isaac-agent features/module/system_section_extension.feature e9d608782d3cf3d63ccfa15afd2fde546989d8e4 114
+
+## Landed on main (2026-10-15)
+
+main-sha: isaac-agent 588d06cc4dba8a0160253d8979e96fde32bf9c22
