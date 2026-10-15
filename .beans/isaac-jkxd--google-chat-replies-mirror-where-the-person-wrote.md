@@ -1,11 +1,11 @@
 ---
 # isaac-jkxd
 title: Google Chat replies mirror the room; a Chat-only tool lets the crew choose, once or from now on
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-10-14T23:22:14Z
-updated_at: 2026-10-15T14:13:51Z
+updated_at: 2026-10-15T15:25:14Z
 ---
 
 ## Problem
