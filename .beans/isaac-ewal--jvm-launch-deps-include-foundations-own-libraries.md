@@ -1,7 +1,7 @@
 ---
 # isaac-ewal
 title: JVM launch deps name foundation as a local dependency
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -52,3 +52,6 @@ On 2026-10-15 skiff's server moved to the JVM with a hand-made launcher that mer
 - Why the existing boot scenario passes today: it boots from the checkout, whose `deps.edn` supplies foundation's libraries, and the marigold.app fixture drags them in through `{:local/root "../.."}`. The new scenarios use `{:modules {}}` for that reason.
 - Planner already dropped the `:paths`/`/src` assertions from the two existing `--edn` scenarios (c3d29cc) — they describe the old shape.
 - Out of scope: `libexec/bb.edn` still repeats foundation's `:deps` for bb.
+
+feature-baseline: isaac-foundation c3d29cc72119de841fd5839700ea14f0d145f1c6
+feature-blob: isaac-foundation features/module/modules_deps_emit.feature f1b91df0f0c78884fc668a75e9b9fb776a44c922
