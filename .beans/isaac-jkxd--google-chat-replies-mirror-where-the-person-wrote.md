@@ -89,3 +89,7 @@ including the `:features` alias) to a sha that includes it.
 
 feature-baseline: isaac-gchat f36d524bed93c0b4a01c5ee8caacb79af2631247
 feature-blob: isaac-gchat features/comm/gchat/outbound.feature 595aa571f46861084b52deccec493c56fdcfb52a 748,765,783,814,847,863,880
+
+## Done / next (2026-10-15)
+
+Done: Chat mirroring, one-turn and remembered overrides, Chat-only section, guidance, notices, handbook, agent pin; eight acceptance selectors pass. Branch e980a01 pushed. `bb spec` green (210 examples), focused inbound guidance green. Next: `bb ci` still red on existing outbound scenario at `features/comm/gchat/outbound.feature:731`: its generic HTTP assertion takes the first message in the DM, now correctly top-level, instead of the queued delivery's threaded message. Investigate assertion selection in `feature-steps/isaac/comm/gchat/gchat_steps.clj:291` or agent shared provider steps; do not edit feature text beyond @wip. Re-run full suite and gate.
