@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-10-14T23:22:14Z
-updated_at: 2026-10-15T13:33:54Z
+updated_at: 2026-10-15T14:13:51Z
 ---
 
 ## Problem
@@ -40,13 +40,17 @@ or do what I tell you.
    - Precedence: this turn's choice, then the remembered choice, then the
      default.
    - Granted per turn through the system-section berth: the gchat module
-     contributes a section with no text that grants `gchat__reply_in` only
-     when the turn's session has a Chat turn in flight. No crew grant needed;
+     contributes a section that, only when the turn's session has a Chat
+     turn in flight, grants `gchat__reply_in`. No crew grant needed;
      never offered on non-Chat turns. Needs the agent to hand section
      contributors the session key (blocking bean).
-3. **Notices follow the reply.** Error, wall and park notices post where the
+3. **The system prompt names the space.** The same section's text names
+   the Chat space (`spaces/…`) and whether it is a direct message. A session
+   is one per space, so the text never changes within a session and does
+   not disturb the prompt cache.
+4. **Notices follow the reply.** Error, wall and park notices post where the
    reply would.
-4. **The guidance says so.** The per-turn Chat guidance
+5. **The guidance says so.** The per-turn Chat guidance
    (`isaac.comm.gchat.guidance`) says whether the message came in top-level
    or in a thread, where the reply will post, and that `gchat__reply_in`
    changes that. The gchat handbook chapter documents the tool and the
@@ -54,8 +58,26 @@ or do what I tell you.
 
 ## Scenarios
 
-Drafted in chat; to be committed `@wip` to isaac-gchat
-`features/comm/gchat/outbound.feature`, then baselined.
+isaac-gchat `features/comm/gchat/outbound.feature` (committed `@wip` at
+f36d524). Run each from isaac-gchat:
+
+- `bb features features/comm/gchat/outbound.feature:748` — a top-level DM message gets a top-level reply
+- `bb features features/comm/gchat/outbound.feature:765` — a DM message inside a thread gets its reply in that thread
+- `bb features features/comm/gchat/outbound.feature:783` — one reply top-level via the tool, the next mirrors again
+- `bb features features/comm/gchat/outbound.feature:814` — a remembered choice holds, written to google/chat/spaces-DM6.edn
+- `bb features features/comm/gchat/outbound.feature:847` — an error notice on a top-level DM message posts top-level
+- `bb features features/comm/gchat/outbound.feature:863` — the guidance says where the message came in, where the reply goes, and names the tool
+- `bb features features/comm/gchat/outbound.feature:880` — the system prompt names the space and that it is a direct message
+- `bb features features/comm/gchat/outbound.feature:116` — existing two-threads DM scenario (isaac-acou), now with threadReply; passes today and must keep passing
+
+The scenario at 863 fixes the guidance wording ("came in at the top level",
+"your reply will post at the top level"). The current sentence "It is
+posted back into the thread this message came from" is wrong for DMs once
+this lands; rewrite it. Keep the sentence inbound.feature's guidance
+scenario asserts for group spaces.
+
+Blocked by isaac-vmlf: bump isaac-gchat's isaac-agent pins (deps.edn,
+including the `:features` alias) to a sha that includes it.
 
 ## Acceptance
 

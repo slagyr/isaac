@@ -3,8 +3,9 @@
 title: System-section contributors are handed the turn's session key
 status: draft
 type: feature
+priority: normal
 created_at: 2026-10-15T13:33:54Z
-updated_at: 2026-10-15T13:33:54Z
+updated_at: 2026-10-15T14:13:51Z
 blocking:
     - isaac-jkxd
 ---
@@ -23,14 +24,16 @@ placement tool only when the turn came from Google Chat (isaac-jkxd).
 Add `:session-key` to the facts `resolve-sections` hands each contributor.
 Nothing else: the agent stays ignorant of what a module does with it.
 
-Update the feature's header prose (facts list, fixtures) to match.
-
 ## Scenarios
 
-Drafted in chat; to be committed `@wip` to isaac-agent
-`features/module/system_section_extension.feature`, then baselined. Uses a
-new fixture module `isaac.section.lantern` (under `modules/`) whose section
-text is "Lantern lit on <session key>."
+isaac-agent `features/module/system_section_extension.feature` (committed
+`@wip` at 3507d73). Run from isaac-agent:
+
+- `bb features features/module/system_section_extension.feature:114` — a contributor is handed the turn's session
+
+Uses a new fixture module `isaac.section.lantern` (under `modules/`, beside
+`isaac.section.beacon`) whose section text is "Lantern lit on <session
+key>."
 
 ## Acceptance
 
