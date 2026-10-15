@@ -55,3 +55,12 @@ On 2026-10-15 skiff's server moved to the JVM with a hand-made launcher that mer
 
 feature-baseline: isaac-foundation c3d29cc72119de841fd5839700ea14f0d145f1c6
 feature-blob: isaac-foundation features/module/modules_deps_emit.feature f1b91df0f0c78884fc668a75e9b9fb776a44c922
+
+## Landed on main (2026-10-15)
+
+main-sha: isaac-foundation 19372307339b3d80e9cf2efc0c33b78b728e9eda
+main-sha: homebrew-tap ce8eaabca85fbf51300e011314805d89c88b3f38
+
+## Verification
+
+`bb ci` (1348 specs; 362 features, 2 pre-existing pending) and `bb features-slow features/module/modules_deps_emit.feature` (3 scenarios) passed. `bb bean-gate verify isaac-ewal --dir isaac-foundation=../isaac-foundation-isaac-ewal` passed on landed main. Formula syntax and its new keg deps.edn assertion pass static checks. `brew install --HEAD` returned successfully but Homebrew skipped reinstall of an existing HEAD-edc1848; no keg artifact was verified. Reinstallation/deployment is left to the machine owner to avoid disrupting the running service.
