@@ -1,11 +1,11 @@
 ---
 # isaac-jkxd
 title: Google Chat replies mirror the room; a Chat-only tool lets the crew choose, once or from now on
-status: in-progress
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-14T23:22:14Z
-updated_at: 2026-10-15T15:25:14Z
+updated_at: 2026-10-15T15:37:14Z
 ---
 
 ## Problem
@@ -97,3 +97,10 @@ Done: Chat mirroring, one-turn and remembered overrides, Chat-only section, guid
 ## Conflict (2026-10-15)
 
 Gate: `bb bean-gate verify isaac-jkxd --dir isaac-gchat=../isaac-gchat-isaac-jkxd` → `isaac-jkxd bean-gate: PASS (isaac-gchat @ HEAD e980a01 (branch bean/isaac-jkxd))`, exit 0. Acceptance selectors all pass (8 examples, 14 assertions); `bb spec` green (210 examples). Full `bb ci` fails in unchanged `features/comm/gchat/outbound.feature:706` scenario "a delivery into an existing thread leads its note with that thread's marker", assertion at line 731: `body.thread.name: Expected "spaces/DMM/threads/T1", got: nil`. This scenario first delivers a top-level DM message (no `threadReply`) with model answer "Here.", then enqueues a threaded delivery "Still on for 3pm.". The generic HTTP assertion selects the first message to this URL — the model reply — which must now be top-level by this bean's default rule. Previously it was threaded, so the assertion happened to pass. The queued delivery still carries its own thread; the scenario must select the later message by `#index` or matching its text, but worker is barred from editing baselined/other `.feature` text. Planner should update this conflicting scenario and baseline as appropriate. Resume from `features/comm/gchat/outbound.feature:731` after planner correction; rerun `bb ci`, gate, landing. Branch e980a01 pushed; bean stays in-progress.
+
+feature-baseline: isaac-gchat c6fdc33b7026c57b77b20e79baf21b6ae24effae
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature e52811629135056fa4d1d1a2b7fd76b720dd5f85 706
+
+## Planner note (2026-10-15)
+
+The first post in that DM is the top-level reply to "are you there?". The threaded delivery is the second post. The HTTP assertion now carries `#index 1`, and the scenario is `@wip` on isaac-gchat main `c6fdc33`, `features/comm/gchat/outbound.feature` line 706. Remove `@wip` once it passes. The earlier eight scenarios are unchanged. Rebase onto `c6fdc33`, rerun `bb ci` and the gate, then land.
