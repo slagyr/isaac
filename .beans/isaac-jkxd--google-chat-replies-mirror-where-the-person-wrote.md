@@ -1,7 +1,7 @@
 ---
 # isaac-jkxd
 title: Google Chat replies mirror the room; a Chat-only tool lets the crew choose, once or from now on
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-14T23:22:14Z
@@ -86,3 +86,6 @@ including the `:features` alias) to a sha that includes it.
   messages marked as thread replies.
 - `resources/isaac/gchat/handbook.md` documents `gchat__reply_in`, the
   default rule, and the remembered record's path and shape.
+
+feature-baseline: isaac-gchat f36d524bed93c0b4a01c5ee8caacb79af2631247
+feature-blob: isaac-gchat features/comm/gchat/outbound.feature 595aa571f46861084b52deccec493c56fdcfb52a 748,765,783,814,847,863,880

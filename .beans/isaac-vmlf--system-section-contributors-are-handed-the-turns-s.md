@@ -1,7 +1,7 @@
 ---
 # isaac-vmlf
 title: System-section contributors are handed the turn's session key
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-15T13:33:54Z
@@ -39,3 +39,6 @@ key>."
 
 - `@wip` removed and the new scenario passes; the existing system-section
   scenarios still pass.
+
+feature-baseline: isaac-agent 3507d7352bf5824b4325da3c93808a6656c20cdb
+feature-blob: isaac-agent features/module/system_section_extension.feature e9d608782d3cf3d63ccfa15afd2fde546989d8e4 114
