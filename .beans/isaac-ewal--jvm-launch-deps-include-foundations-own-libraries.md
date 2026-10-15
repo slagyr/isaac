@@ -1,13 +1,13 @@
 ---
 # isaac-ewal
 title: JVM launch deps name foundation as a local dependency
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - foundation
 created_at: 2026-10-15T15:48:17Z
-updated_at: 2026-10-15T15:48:17Z
+updated_at: 2026-10-15T16:27:12Z
 ---
 
 ## Problem
