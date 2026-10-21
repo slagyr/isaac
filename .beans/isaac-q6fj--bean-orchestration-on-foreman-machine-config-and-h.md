@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T23:09:07Z
-updated_at: 2026-10-21T18:43:47Z
+updated_at: 2026-10-21T18:45:06Z
 parent: isaac-q3u3
 ---
 
@@ -157,3 +157,9 @@ renders empty there.
 ## Worker checkpoint (2026-10-21)
 
 Done: orchestration bean branch adds machine, isolated bb test-machines (16 PASS), installer and README; isaac bean branch adds Foreman ungated work and verify skills. Both pushed. Deployment on zanebot preserves isaac-8uno and isaac-htix as landed. Next: resolve YAML syntax in orchestration hail headers (config/parse.clj:169); re-run isaac config validate, then live Foreman acceptance runs for gated, ungated and repair. Current test: bb test-machines 16 PASS; config validate reports hail/orchestration-harden.md and hail/orchestration-verify.md YAML syntax errors. Gate: exit 2 (ungated). Resume at isaac-beans/config/hail/orchestration-verify.md:1.
+
+
+
+## Live acceptance blocker (2026-10-21)
+
+On zanebot, deployed the Foreman machine with isaac-beans/install.sh; isaac config validate --edn reports :ok true and no errors (warnings are pre-existing). isaac foreman list isaac-bean-work still shows isaac-8uno and isaac-htix landed. bb test-machines produces 16 PASS; dry-run lists machines/isaac-bean-work.edn. Skills are copied into ~/.isaac/prompts/skills/foreman-bean-{work,verify}. The three live acceptance runs (gated queued -> landed; ungated verifying -> landed; deliberate verify repair -> landed) remain unrun. This bean was dispatched on the hail path, and no dedicated todo gated fixture with a planner-owned feature baseline was supplied; a worker cannot create a feature baseline. Starting this hail-owned bean on Foreman would violate opt-in exclusive dispatch. Need planner to provide/authorize a dedicated gated bean and ungated test beans for live machine runs, or adjust acceptance if live runs are deferred. Keep branch bean/isaac-q6fj in both isaac and orchestration; resume at orchestration/isaac-beans/config/machines/isaac-bean-work.edn:6 and README.md:37 after fixtures are assigned. Gate output: isaac-q6fj: no feature-baseline: use the verify path (exit 2).
