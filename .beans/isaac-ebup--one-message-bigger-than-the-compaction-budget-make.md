@@ -103,3 +103,7 @@ config schema beside `defaults.tools.max-bytes`.
 
 feature-baseline: isaac-agent 21c46b718a744bfd0100f553a958053e02ad5585
 feature-blob: isaac-agent features/session/compaction_overflow.feature 970fb9eaababeb904cf6482b1ee0dce308575356 133,171
+
+## Landed on main (2026-10-21)
+
+main-sha: isaac-agent a9246fa21106f8ed27c53029a643e2f1d5fcdecd
