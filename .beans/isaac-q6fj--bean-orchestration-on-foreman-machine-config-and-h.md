@@ -1,11 +1,11 @@
 ---
 # isaac-q6fj
 title: 'Bean orchestration on Foreman: the bean-work machine (happy path and failure rows)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T23:09:07Z
-updated_at: 2026-10-21T18:32:07Z
+updated_at: 2026-10-21T18:38:12Z
 parent: isaac-q3u3
 ---
 
