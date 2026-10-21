@@ -5,9 +5,7 @@ status: todo
 type: bug
 priority: critical
 created_at: 2026-09-20T19:06:50Z
-updated_at: 2026-09-30T14:05:32Z
-blocking:
-    - isaac-ebup
+updated_at: 2026-10-21T18:28:31Z
 ---
 
 `isaac sessions list` on zanebot, 2026-09-20 19:05Z:
@@ -142,3 +140,35 @@ isaac-work-2 and isaac-work-3.
 ## Triage update (2026-09-30, planner, approved by Micah)
 
 The gauge-reads-0 fix landed (isaac-agent d0eed3d; compaction.clj context-gauge + :tally-after-id). Remaining scope: classify a prompt_too_long session as poisoned (no such classification exists in isaac-agent src yet), and the oversized-single-entry case, still blocked on isaac-ebup.
+
+
+## Re-scope (2026-10-21, Micah + planner)
+
+What is already true on main, so out of scope here:
+
+- The gauge reads true (d0eed3d).
+- An HTTP provider's prompt-length 400 compacts and retries once; an overflow
+  that survives the retry is `:context-exhausted` (provider_walls.feature, the
+  three isaac-bs5b scenarios activated in isaac-agent e4a2441, and
+  compaction_overflow.feature:78).
+- Three failed compactions set `:block`, show in `sessions list`, and post one
+  attention notice (context_window_guard.feature). That is the "take the
+  session out of rotation" half.
+
+Remaining: the Claude Code CLI's own prompt-too-long result
+(`is_error` result text "Prompt is too long", terminal_reason
+prompt_too_long) is not recognised at all, so it reaches the drive as a
+generic error. Map it to the same `:context-overflow` an HTTP 400 gets
+(likely `isaac.provider.claude-code.api.claude-cli` beside `weather-kind` /
+`cli-weather`), so the drive's compact-and-retry and context-exhausted path
+apply unchanged. No isaac-agent change expected.
+
+The oversized-single half is isaac-ebup; this bean no longer blocks it.
+
+## Acceptance
+
+- [ ] `cd isaac-claude-code && bb features features/llm/api/claude_driver.feature:684` (the CLI's prompt-too-long result is a context overflow, not a generic error)
+- [ ] `@wip` removed; `bb features features/llm/api/claude_driver.feature` green
+
+feature-baseline: isaac-claude-code a1147e6ba2b7fc5677c47840b27f18f7478c2319
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature c791af55b1c8b4cae46dc3219a2c5f075d5e0b08 684

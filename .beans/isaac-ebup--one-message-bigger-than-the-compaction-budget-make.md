@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: critical
 created_at: 2026-09-20T19:52:47Z
-updated_at: 2026-09-20T19:52:47Z
+updated_at: 2026-10-21T18:28:31Z
 ---
 
 A session dies permanently the moment one entry is bigger than the compaction
@@ -68,3 +68,38 @@ A transcript whose largest entry exceeds the chunk budget still compacts: the
 oversized entry becomes a stub and the remaining history is summarized. A
 provider response beyond the storage cap is truncated on write, with the full
 payload written beside the transcript and named in the stub.
+
+
+## Re-scope (2026-10-21, Micah + planner)
+
+State on main (isaac-agent 21c46b7): nothing of this bean is done.
+`compaction.clj` `chunk-plan` still returns `:oversized-single` with no
+chunks, and nothing caps an entry on write. Decisions (Micah, 2026-10-21):
+
+- **Stub, not excerpt.** When an entry is larger than the window, the summary
+  request carries a one-line stub in its place:
+  `[entry omitted: <tokens> tokens, larger than the <window>-token window]`.
+  The entry itself stays in the transcript; only the summary request changes.
+  The rest of the history compacts normally.
+- **Cap on write.** Every transcript entry is capped at
+  `defaults.transcript.max-bytes` (default 262144), head and tail kept with
+  the existing `isaac.agent.tool.output-cap/cap-result` marker ("bytes
+  truncated; byte cap hit"), and a `:session/entry-truncated` warn naming the
+  session and role. No side file with the full payload.
+- **No `sessions prune` command.** With the stub, the repair path for a session
+  already blocked is `isaac sessions unset <id>.block`; the next turn compacts.
+
+Where it likely goes: the stub in `isaac.agent.session.compaction`
+(chunk planning / the messages handed to `summarize-messages`); the cap at the
+store append path (`isaac.agent.session.store/*`, `transcript.clj`), so every
+store implementation gets it. Register `defaults.transcript.max-bytes` in the
+config schema beside `defaults.tools.max-bytes`.
+
+## Acceptance
+
+- [ ] `cd isaac-agent && bb features features/session/compaction_overflow.feature:133` (an entry bigger than the window is left out of the summary and the rest compacts)
+- [ ] `cd isaac-agent && bb features features/session/compaction_overflow.feature:171` (a reply bigger than the transcript cap is stored as its head and tail)
+- [ ] `@wip` removed from both; `bb features features/session/compaction_overflow.feature` green
+
+feature-baseline: isaac-agent 21c46b718a744bfd0100f553a958053e02ad5585
+feature-blob: isaac-agent features/session/compaction_overflow.feature 970fb9eaababeb904cf6482b1ee0dce308575356 133,171
