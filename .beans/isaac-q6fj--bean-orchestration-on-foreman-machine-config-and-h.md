@@ -1,16 +1,12 @@
 ---
 # isaac-q6fj
 title: 'Bean orchestration on Foreman: the bean-work machine (happy path and failure rows)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T23:09:07Z
-updated_at: 2026-09-29T13:59:46Z
+updated_at: 2026-10-21T18:32:07Z
 parent: isaac-q3u3
-blocked_by:
-    - isaac-npmp
-    - isaac-lr8h
-    - isaac-1qgv
 ---
 
 Likely repos: **orchestration** (machine config, crew prompts/skills, `bb test-machines`) and **isaac** (bean workflow references). Merged 2026-09-29 (Micah + planner): isaac-1rtr (failure paths) folded in.
@@ -35,3 +31,123 @@ The orchestration repo has no feature runner, so this bean carries no Gherkin ba
 - [ ] No Isaac source changes; config validates (`isaac config validate`) on zanebot.
 
 Blocked by isaac-1qgv (machine tests) and isaac-npmp/isaac-lr8h (landed).
+
+
+## Re-scope (2026-10-21, Micah + planner)
+
+**What already exists.** zanebot runs a pilot `isaac-bean-work` machine at
+`~/.isaac/config/machines/isaac-bean-work.edn`, in no repo. It carried
+isaac-8uno (10-06) and isaac-htix (10-07) to `landed`. It is gated-only:
+`dispatch` → `:work` turn (scrapper, session `bean-<id>`, pool
+`isaac-worksites`, `:output :event`), the reply's last line is `event: landed`
+or `event: conflict <reason>`, and conflict / quiet / failed / dead turns stall
+with a prowl `:alert` turn. Crew side: `isaac/.toolbox/skills/foreman-bean-work`.
+
+**Decisions (Micah, 2026-10-21):**
+
+- Events come from the reply's last line (`:output :event`), as the pilot
+  proved, not from a `foreman__signal` tool call. The Contract bullet above
+  that names `foreman__signal` is superseded.
+- Ungated path: the worker ends `event: unverified`; a perceptor `:verify` turn
+  (session `verify-<id>`, same pool) ends `event: verified` or `event: repair`;
+  repair re-runs `:work`.
+- Stalls remember their side: `stalled` (worker) and `verify-stalled`
+  (verifier); `dispatch` resumes the matching turn. `abandon` from any state.
+- The machine moves into orchestration at
+  `isaac-beans/config/machines/isaac-bean-work.edn`, deployed by
+  `isaac-beans/install.sh` alongside `config/hail/`.
+
+**Contract:** `orchestration/isaac-beans/features/isaac-bean-work.feature`
+(orchestration 026ec07), 16 machine tests. Do not change its scenarios; raise
+a mismatch instead. Machine tests carry no instance data, so `{{data.*}}`
+renders empty there.
+
+**Work:**
+
+1. `isaac-beans/config/machines/isaac-bean-work.edn`. The reference below
+   passes all 16 tests (checked 2026-10-21 through isaac-foreman's own
+   machine-test harness on main e7f20a7).
+2. `install.sh` copies `config/machines/` too.
+3. A `bb.edn` at the orchestration root with `test-machines`, running
+   `isaac foreman test` on `isaac-beans/features/*.feature` against a fixture
+   Isaac root that holds the machine. Watch out: a bare root does not load. The
+   machine names crews scrapper / perceptor / prowl and pool `isaac-worksites`,
+   and `config validate` needs a provider plus the foreman, worksite and http
+   modules installed in that root. Document the one-time setup in the
+   orchestration README.
+4. Crew side, in `isaac/.toolbox/skills/`:
+   - `foreman-bean-work`: gate exit 2 (not gated) means take the ungated close:
+     leave the bean `in-progress` + `unverified`, end `event: unverified`
+     (today it says `event: conflict not gated`).
+   - New `foreman-bean-verify`: the verify craft of `hail-bean-verify` / `/verify`
+     with no hails. Pass: remove the tag, `completed`, end `event: verified`.
+     Fail: the `## Verification failed` note, `--status=in-progress
+     --remove-tag=unverified`, end `event: repair`. A blocker only a person
+     can clear: `event: conflict <reason>`.
+   Quote every SKILL.md `description:` (see the skill frontmatter YAML trap).
+5. Deploy to zanebot (`install.sh`, then `isaac config validate`). Config
+   hot-reloads; no restart.
+
+### Reference machine
+
+```clojure
+;; One instance per bean; the instance id IS the bean id. Dispatch with the
+;; bean's title (the bean stays the source of truth; the title is the
+;; worker's orientation and episodes' recall query):
+;;   isaac foreman start isaac-bean-work <bean-id> --data '{:title "<bean title>"}'
+;;   isaac foreman signal isaac-bean-work <bean-id> dispatch
+;; Foreman writes the mechanics into each turn's preamble (machine, instance,
+;; state, and the events the turn may end with).
+;;
+;; Gated beans land from :working. Ungated beans go to a verifier, which
+;; either completes them or sends them back to work. A stall remembers which
+;; side it came from, so `dispatch` resumes the right turn.
+{:initial :queued
+ :actions
+ {:work   {:type           :turn
+           :frequencies    {:crew "scrapper" :session "bean-{{instance}}" :create :if-missing}
+           :resource-pools ["isaac-worksites"]
+           :output         :event
+           :prompt         "Work bean {{instance}}: {{data.title}}\n\nFollow the foreman-bean-work skill. The bean is the source of truth: read it with `beans show {{instance}}` and keep your notes there."}
+
+  :verify {:type           :turn
+           :frequencies    {:crew "perceptor" :session "verify-{{instance}}" :create :if-missing}
+           :resource-pools ["isaac-worksites"]
+           :output         :event
+           :prompt         "Verify bean {{instance}}: {{data.title}}\n\nFollow the foreman-bean-verify skill. The bean is the source of truth: read it with `beans show {{instance}}` and record your verdict there."}
+
+  :alert  {:type        :turn
+           :frequencies {:crew "prowl" :session "plan-{{instance}}" :create :if-missing}
+           :prompt      "Bean {{instance}} ({{data.title}}) needs attention. Reason, if one was given: {{data.reason}}. Check `isaac foreman status isaac-bean-work {{instance}}` and the bean, then tell Micah what you found."}}
+
+ :transitions
+ [{:start :queued         :event :dispatch            :end :working        :actions [:work]}
+  ;; the worker's reply names the outcome
+  {:start :working        :event :landed              :end :landed}
+  {:start :working        :event :unverified          :end :verifying      :actions [:verify]}
+  {:start :working        :event :conflict            :end :stalled        :actions [:alert]}
+  {:start :working        :event :foreman/turn-ended  :end :stalled        :actions [:alert]}
+  {:start :working        :event :foreman/turn-failed :end :stalled        :actions [:alert]}
+  {:start :working        :event :foreman/turn-died   :end :stalled        :actions [:alert]}
+  ;; the verifier's reply names the verdict
+  {:start :verifying      :event :verified            :end :landed}
+  {:start :verifying      :event :repair              :end :working        :actions [:work]}
+  {:start :verifying      :event :conflict            :end :verify-stalled :actions [:alert]}
+  {:start :verifying      :event :foreman/turn-ended  :end :verify-stalled :actions [:alert]}
+  {:start :verifying      :event :foreman/turn-failed :end :verify-stalled :actions [:alert]}
+  {:start :verifying      :event :foreman/turn-died   :end :verify-stalled :actions [:alert]}
+  ;; a person (or the planner) resumes or gives up
+  {:start :stalled        :event :dispatch            :end :working        :actions [:work]}
+  {:start :verify-stalled :event :dispatch            :end :verifying      :actions [:verify]}
+  {:start :*              :event :abandon             :end :abandoned}]}
+```
+
+## Acceptance (2026-10-21; supersedes the list above)
+
+- [ ] From a clean orchestration clone, following the README: `bb test-machines` prints 16 `PASS` lines and exits 0.
+- [ ] `isaac-beans/install.sh --dry-run` lists `config/machines/isaac-bean-work.edn`.
+- [ ] On zanebot after install: `isaac config validate` is clean and `isaac foreman list isaac-bean-work` still shows isaac-8uno and isaac-htix as `landed`.
+- [ ] Live: one gated bean goes `queued` → `landed` through the machine.
+- [ ] Live: one ungated bean goes through `verifying` to `landed`.
+- [ ] Live: a deliberately failed verification returns the bean to `working` (via `repair`), and it then lands.
+- [ ] No Isaac source changes.
