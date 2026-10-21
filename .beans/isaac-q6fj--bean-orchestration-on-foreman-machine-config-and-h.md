@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T23:09:07Z
-updated_at: 2026-10-21T18:38:12Z
+updated_at: 2026-10-21T18:43:47Z
 parent: isaac-q3u3
 ---
 
@@ -151,3 +151,9 @@ renders empty there.
 - [ ] Live: one ungated bean goes through `verifying` to `landed`.
 - [ ] Live: a deliberately failed verification returns the bean to `working` (via `repair`), and it then lands.
 - [ ] No Isaac source changes.
+
+
+
+## Worker checkpoint (2026-10-21)
+
+Done: orchestration bean branch adds machine, isolated bb test-machines (16 PASS), installer and README; isaac bean branch adds Foreman ungated work and verify skills. Both pushed. Deployment on zanebot preserves isaac-8uno and isaac-htix as landed. Next: resolve YAML syntax in orchestration hail headers (config/parse.clj:169); re-run isaac config validate, then live Foreman acceptance runs for gated, ungated and repair. Current test: bb test-machines 16 PASS; config validate reports hail/orchestration-harden.md and hail/orchestration-verify.md YAML syntax errors. Gate: exit 2 (ungated). Resume at isaac-beans/config/hail/orchestration-verify.md:1.
