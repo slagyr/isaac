@@ -1,11 +1,11 @@
 ---
 # isaac-ebup
 title: One message bigger than the compaction budget makes a session unrecoverable, and there is no repair path
-status: in-progress
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-20T19:52:47Z
-updated_at: 2026-10-21T18:38:22Z
+updated_at: 2026-10-21T18:51:36Z
 ---
 
 A session dies permanently the moment one entry is bigger than the compaction
