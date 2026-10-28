@@ -4,8 +4,10 @@ title: 'Foreman live fixture: ungated round trip with one planned repair (isaac-
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-10-28T07:58:41Z
-updated_at: 2026-10-28T08:02:04Z
+updated_at: 2026-10-28T08:03:40Z
 parent: isaac-q3u3
 ---
 
@@ -52,3 +54,9 @@ Planned first-pass repair per the bean: add one sentence to `isaac-beans/feature
 HEAD: isaac `d7056e85` (origin/main); orchestration review `4e7bbf75acf0d957c76b95ef4f85aa8aac355f73` (origin/bean/isaac-v3qp).
 Working tree: both review worktrees clean.
 Reason: mandatory planned Repair 1 on first verification; README lacks the fixed-step-vocabulary sentence required by Acceptance. Only `isaac-beans/features/README.md` changed; `git diff origin/main...HEAD --check` passed. Acceptance tests and Foreman history intentionally deferred until repair.
+
+
+
+## Repair 1 implemented (2026-10-28)
+
+Added the requested fourth sentence about Foreman’s fixed step vocabulary in orchestration `isaac-beans/features/README.md`; commit `94daba8bbc685cf3e86548e441b03acdfe8dc685` pushed to `origin/bean/isaac-v3qp`. `git diff --check` passed; only that README differs from `origin/main`. `bb bean-gate verify isaac-v3qp` exited 2 (no feature-baseline). Awaiting second verification; no landing by worker.
