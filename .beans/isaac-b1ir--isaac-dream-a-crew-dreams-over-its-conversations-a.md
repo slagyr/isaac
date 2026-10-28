@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
-updated_at: 2026-10-08T20:38:14Z
+updated_at: 2026-10-28T07:45:07Z
 parent: isaac-pcm3
 blocked_by:
     - isaac-3dnw
@@ -97,3 +97,12 @@ The dream module's chapter must say which grants a dreaming crew needs (`session
 ### Borrowed from Hermes (NousResearch/hermes-agent#25309)
 
 Stage then promote; a diary; a run gate with a lock; supersession instead of accumulation. Not borrowed: a capped flat memory file, and pausing the gateway to dream.
+
+
+## Decisions (2026-10-28, Micah)
+
+Bean 1 (this bean): habit records + `dream__propose` + operator approve/reject/retire/wipe/list + always-on system section at order 900. Not this bean: cron, watermark, diary, digest, skill-like load menu, per-person habits, contact `:weight`, `:from` on `session__read`, section character cap.
+
+Storage is module state under the Isaac root (`dream/<crew>/…`), not a config table. Crews propose; only the operator CLI can change state to active/rejected/retired or wipe. Only `active` habits reach the model.
+
+`isaac-3dnw` has landed; dreaming can plug into `:isaac.agent/system-sections`. Scenario plan is next, then `@wip` features in a new `isaac-dream` repo.
