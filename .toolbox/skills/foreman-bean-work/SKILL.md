@@ -43,7 +43,7 @@ Foreman reads that line and moves the machine. You do not need any Foreman tool.
 | Gate exit 0, landed per "Exit 0 — land it", `main-sha:` recorded, bean `completed` | `event: landed` |
 | Gate exit 1 you cannot honestly revert (the scenarios are wrong) | append the gate output to the bean, push, `event: conflict gate: <first FAIL line>` |
 | Rebase or squash conflict during landing | abort/reset as the gate skill says, note the files on the bean, push, `event: conflict merge: <files>` |
-| Gate exit 2 (`bean-gate: not gated` and no `feature-baseline:`) | Leave `in-progress`, add `unverified`, commit/push the bean note and tag; do not hail or land; `event: unverified` |
+| Gate exit 2 (`bean-gate: not gated` and no `feature-baseline:`) | Leave `in-progress`, add `unverified`, and commit the bean note and tag **on the isaac clone's main** and push main: the verifier reads the bean from main, and nothing lands an ungated bean's isaac branch for it. If your claim or notes went to an isaac `bean/<id>` branch, put those `.beans/` changes on main first. The implementation stays on its `bean/<id>` branch. Do not hail or land; `event: unverified` |
 | A blocker only a human or the planner can remove (missing access, a bean that contradicts itself) | write the `## Held` note, push, `event: conflict held: <one-line synopsis>` |
 
 A `conflict` stalls the bean and alerts the planner with your reason, so make
