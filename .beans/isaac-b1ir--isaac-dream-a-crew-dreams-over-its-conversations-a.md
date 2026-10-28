@@ -186,3 +186,15 @@ feature-baseline: isaac-dream c9062a910428e5560666fc4ab90f9c09cea442a1
 feature-blob: isaac-dream features/habits/propose.feature c53b9928d9c1c612f7f3466be6d987d202945c06 19,32,45,54
 feature-blob: isaac-dream features/habits/operator.feature 468e83d92b3d3c3d1db77ee7b138bbc9a57a9933 18,40,53,70,87
 feature-blob: isaac-dream features/habits/section.feature cc306670e7416532d47e52acd8f0b79b6957bb7f 18,29,41
+
+feature-baseline: isaac-dream 0a4530a0cd445ba0f5877185542fb2fc852e6a4b
+feature-blob: isaac-dream features/habits/propose.feature c53b9928d9c1c612f7f3466be6d987d202945c06 19,32,45,54
+feature-blob: isaac-dream features/habits/operator.feature 468e83d92b3d3c3d1db77ee7b138bbc9a57a9933 18,40,53,70,87
+feature-blob: isaac-dream features/habits/section.feature 5082222d88db5bf91ff2038c597dcc3c81587a9f 18,38,50
+
+## Planner (2026-10-28)
+
+Held reasons from the worker are cleared:
+
+- `slagyr-assistant` has write on `slagyr/isaac-dream` (invite accepted). Push the bean branch.
+- `features/habits/section.feature:18` now points Hieronymus at `claude` / `grover:anthropic` so `system[0].text` and `system[0].cache_control.type` are the Messages API shape. Newest baseline is isaac-dream `0a4530a`. Rebase the bean branch onto that main.
