@@ -7,7 +7,7 @@ priority: high
 tags:
     - agent
 created_at: 2026-10-28T08:25:40Z
-updated_at: 2026-10-28T08:26:41Z
+updated_at: 2026-10-28T08:37:52Z
 ---
 
 ## Why
@@ -28,3 +28,8 @@ Existing logins keep their old scope until someone logs in again (a refresh cann
 
 feature-baseline: isaac-agent d8f0150cfc831b57039c49fc29635cd9806da652
 feature-blob: isaac-agent features/llm/auth/oauth_descriptors.feature 8076c128b68eeeb49070b604af433e52ace1801f
+
+
+## Landed on main (2026-10-28)
+
+main-sha: isaac-agent 61329e1ae05433287a746df5167f28f0a0a27683
