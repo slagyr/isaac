@@ -4,10 +4,10 @@ title: 'Bean orchestration on Foreman: the bean-work machine (happy path and fai
 status: in-progress
 type: feature
 priority: normal
-created_at: 2026-09-27T23:09:07Z
-updated_at: 2026-10-21T18:45:06Z
 tags:
     - unverified
+created_at: 2026-09-27T23:09:07Z
+updated_at: 2026-10-28T08:15:35Z
 parent: isaac-q3u3
 ---
 
@@ -180,3 +180,14 @@ Found and fixed along the way:
 - The worker put its ungated handoff on an isaac `bean/<id>` branch, so main never showed it. Planner fixed both Foreman skills on this branch (92e95dae): the handoff goes to isaac main, and the verifier ends with `event: conflict` when it finds none. Deployed to `~/.isaac/prompts/skills/` on zanebot (backups `SKILL.md.bak-20261028`). The v3qp rerun used the fixed skills.
 
 Still for the verifier: `bb test-machines` from a clean orchestration clone, `isaac-beans/install.sh --dry-run`, and that this branch changes no Isaac source (only `.toolbox/skills/foreman-bean-*`). Land orchestration `bean/isaac-q6fj` (3ae4008) and isaac `bean/isaac-q6fj` (92e95dae).
+
+
+
+## Verify fail (attempt 1, 2026-10-28): isaac bean branch conflicts with current main during required pre-landing rebase
+
+HEAD: isaac main 6a7688be8839664f8595c55b63ea6ab224b829b6; bean/isaac-q6fj 461bd94d801c7be1bdf74f387c5414b0b31ae3df.
+Working tree: clean after abort; no implementation was landed.
+
+Reproduction: in a fresh isaac worktree on bean/isaac-q6fj, `git fetch origin && git rebase origin/main` conflicts while replaying f53929a9 (checkpoint done and next) in `.beans/isaac-q6fj--bean-orchestration-on-foreman-machine-config-and-h.md`. Per hail-bean-verify section 7a, conflicts are a FAIL and must be resolved by the worker before landing; I ran `git rebase --abort`. Rebase or otherwise reconcile the bean branch against current isaac origin/main, push the repaired branch, preserve the latest bean body, then return for verification. Orchestration branch rebased locally cleanly, but not landed or pushed.
+
+Other checks already green: clean orchestration clone `bb test-machines` produced exactly 16 PASS lines and exit 0; `isaac-beans/install.sh --dry-run` with .env HOST=localhost USER=zane listed `machines/isaac-bean-work.edn` and exited 0; `isaac config validate --edn` reports :ok true with no errors; foreman list/status show isaac-166j gated landed, isaac-v3qp ungated repair then landed, isaac-8uno and isaac-htix intact landed. No Isaac src/ change in bean diff. The initial dry-run without .env failed as documented; repeated with .env and passed.
