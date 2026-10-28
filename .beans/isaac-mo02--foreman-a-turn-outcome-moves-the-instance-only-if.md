@@ -31,3 +31,15 @@ Then the rest of `bb features` and `bb spec` stay green, and the isaac-foreman v
 
 feature-baseline: isaac-foreman 05a1431d8654e990b3b277b9615491092cc98c55
 feature-blob: isaac-foreman features/foreman/turn_outcomes.feature 3064aef1ab8ece32bec428dc2b49e7669a7c7796 97
+
+## Held (awaiting planner, 2026-10-28)
+
+Escalated by **scrapper**@bean-isaac-mo02. Blocking: existing acceptance scenarios contradict the new rule or omit required turn identity. Resume only after the planner resolves these contracts and the upstream turn-drop context.
+
+Implementation checkpoint: isaac-foreman `bean/isaac-mo02` at `90567a6` fences observer/reply outcomes by the matching pending turn's transition key and current state's entry transition; clears stale turns without moving state. The baselined scenario at `features/foreman/turn_outcomes.feature:97` and focused core specs pass; `bb bean-gate verify isaac-mo02 --dir isaac-foreman=../isaac-foreman-mo02` PASS. Manifest bumped to 0.6.1. Do not land while `bb ci` fails.
+
+`bb ci` reports 107 specs, 0 failures; 56 features, **2 failures**:
+- `features/foreman/events.feature:137` expects `foreman/turn-ended` and `foreman/turn-failed` from standalone `prompt --observer foreman:lighthouse-watch/beacon-*` to transition dark to unlit/storm-bound, despite those turns never being submitted by a transition entering dark. The new rule requires them to be unhandled. Planner must decide whether to change this older contract or explicitly exempt external turns (which conflicts with the stated rule).
+- `features/foreman/turn_outcomes.feature:72` expects `turns drop #turn-id` to move tending to stalled. Upstream isaac-agent `turn/cli.clj` `run-drop` calls `observer/notify! :on-turn-died` with only `{:session-key ...}` and **no `:request-id`**, so Foreman cannot associate the dropped turn with the current state's submitted action. Upstream needs to supply the dropped turn id in that observer context; worker cannot fix this by altering Foreman's feature or treating idless outcomes as valid (that would let stale drops move any state). This is a cross-repo fix to plan/authorize.
+
+No product branch landed; bean remains in-progress. On return, implement the agreed resolution, run `bb ci`, gate, then land. Existing feature files were not edited except removing `@wip` from the baselined scenario.
