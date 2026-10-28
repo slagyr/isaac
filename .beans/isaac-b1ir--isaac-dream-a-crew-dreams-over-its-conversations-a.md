@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
-updated_at: 2026-10-28T07:45:07Z
+updated_at: 2026-10-28T07:51:11Z
 parent: isaac-pcm3
 blocked_by:
     - isaac-3dnw
@@ -106,3 +106,6 @@ Bean 1 (this bean): habit records + `dream__propose` + operator approve/reject/r
 Storage is module state under the Isaac root (`dream/<crew>/…`), not a config table. Crews propose; only the operator CLI can change state to active/rejected/retired or wipe. Only `active` habits reach the model.
 
 `isaac-3dnw` has landed; dreaming can plug into `:isaac.agent/system-sections`. Scenario plan is next, then `@wip` features in a new `isaac-dream` repo.
+
+
+Decision (2026-10-28, Micah): auto-approval is in bean 1. Habit states stay proposed/active/rejected/retired. The promoter is a policy, default `:manual`. Per-crew `dream.approval :auto` promotes a valid propose to active in the same step. Reject/retire/wipe stay on the CLI. Scenario 12 locks that seam.
