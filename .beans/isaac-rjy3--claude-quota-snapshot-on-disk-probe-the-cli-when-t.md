@@ -38,3 +38,7 @@ The point of the tool is to see headroom before a reset — idle subscriptions a
 
 feature-baseline: isaac-claude-code 93c51588486fabf63fdfbe8e24237ed518a24fae
 feature-blob: isaac-claude-code features/llm/quota.feature 5f022e82cbbecb05fbda76d1dcbaf00ba8747be5
+
+## Landed on main (2026-10-28)
+
+main-sha: isaac-claude-code 836ee0da4e2b2ec0436a3ea83dd66306273ebb09
