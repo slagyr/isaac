@@ -50,7 +50,7 @@
                                       :git/sha "4391aaa8f6552855187334eeffa722299e0abcad"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
-                                      :git/sha "2cae55f6279d11405e686b020678d555202ce687"}
+                                      :git/sha "fed1e6ef2faf1981cbe61bfe32f7892ee5e62500"}
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
                                       :git/sha "86210d9c3957d03044c72e823a8516ab33187c1e"}
