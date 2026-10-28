@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-10-28T07:08:34Z
-updated_at: 2026-10-28T07:17:12Z
+updated_at: 2026-10-28T07:19:30Z
 parent: isaac-q3u3
 ---
 
@@ -42,3 +42,16 @@ This bean tests the repair path. **On the first verification**, don't land it: a
 ## Work checkpoint (2026-10-28)
 
 Added the three requested initial documentation sentences on orchestration `bean/isaac-pqxn` (847578d); only `isaac-beans/features/README.md` changed. README scope/content checks and `git diff --check` passed. `bb bean-gate verify isaac-pqxn` exited 2 (no feature-baseline); awaiting first verification and its planned Repair 1 request.
+
+
+## Held (awaiting human, 2026-10-28)
+
+Escalated to human by **prowl**@plan-isaac-pqxn. Blocking: verifier turn died on a provider error before the planned first-pass repair; bean is verify-stalled and only a human dispatch resumes it.
+
+Verify session `verify-isaac-pqxn` (request a81544ac) ended `turn/ended` `:error :api-error` — "Our servers are currently overloaded. Please try again later." — with no reply event. Foreman therefore took `foreman/turn-failed` verifying → verify-stalled and alerted this planner. No `## Repair 1` note was written. This is not a work failure and not a conflict in the bean.
+
+Work itself is intact and matches the first-pass contract:
+- isaac `bean/isaac-pqxn` HEAD `8eb34ca2` (clean, matches origin). Status in-progress + unverified.
+- orchestration `bean/isaac-pqxn` `847578d` — only `isaac-beans/features/README.md` changed vs origin/main. Three sentences cover the feature-folder purpose, `isaac foreman test <file>` against a Foreman root with the named crews and the `isaac-worksites` pool, and empty `{{data.*}}`. The Repair 1 vocabulary sentence is correctly absent; first verification was supposed to request it.
+
+Resume: `isaac foreman signal isaac-bean-work isaac-pqxn dispatch` (valid event from verify-stalled; re-runs verify). Verifier should still treat this as the first verification: append `## Repair 1` asking for one sentence that the tests use a fixed step vocabulary provided by Foreman, then `event: repair fixture: planned first-pass repair (isaac-q6fj)`. Do not land yet.
