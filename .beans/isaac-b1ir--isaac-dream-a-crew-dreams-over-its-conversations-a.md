@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
-updated_at: 2026-10-28T07:51:11Z
+updated_at: 2026-10-28T08:41:36Z
 parent: isaac-pcm3
 ---
 
@@ -198,3 +198,9 @@ Held reasons from the worker are cleared:
 
 - `slagyr-assistant` has write on `slagyr/isaac-dream` (invite accepted). Push the bean branch.
 - `features/habits/section.feature:18` now points Hieronymus at `claude` / `grover:anthropic` so `system[0].text` and `system[0].cache_control.type` are the Messages API shape. Newest baseline is isaac-dream `0a4530a`. Rebase the bean branch onto that main.
+
+## Worker checkpoint (2026-10-28, resumed)
+
+Done: planner re-baselined Anthropic fixture, repository write restored; rebased isaac-dream on 0a4530a, pinned agent at landed 61329e1 (system-sections support), and added seeded-EDN section spec. `bb ci` green: 12 specs, 12 scenarios, 26 feature assertions. Pushed isaac-dream bean/isaac-b1ir at 645fe19.
+
+Next: run gate from isaac; rebase and re-run CI, squash and push isaac-dream main; add landed sha to isaac modules.edn and land isaac main; record main-sha and complete bean. Resume at isaac-dream/deps.edn:6 and isaac/modules.edn:1.
