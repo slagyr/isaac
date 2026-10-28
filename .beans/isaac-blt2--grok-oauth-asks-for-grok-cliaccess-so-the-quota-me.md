@@ -1,7 +1,7 @@
 ---
 # isaac-blt2
 title: Grok OAuth asks for grok-cli:access so the quota meter can read billing
-status: draft
+status: todo
 type: task
 priority: high
 tags:
@@ -25,3 +25,6 @@ Existing logins keep their old scope until someone logs in again (a refresh cann
 - Scenario: isaac-agent `features/llm/auth/oauth_descriptors.feature` "Grok login asks for the grok-cli scope so the quota meter can read billing" (@wip; gate lines below).
 - The device-code request is not recorded today (`body.scope` comes back nil): record the login's outbound requests with a form body parsed into a map so `an outbound HTTP request to "…" matches:` can read `body.scope`.
 - Update `spec/isaac/agent/config/schema_spec.clj` scope fixtures as needed.
+
+feature-baseline: isaac-agent d8f0150cfc831b57039c49fc29635cd9806da652
+feature-blob: isaac-agent features/llm/auth/oauth_descriptors.feature 8076c128b68eeeb49070b604af433e52ace1801f
