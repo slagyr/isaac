@@ -5,7 +5,9 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-27T23:09:07Z
-updated_at: 2026-10-21T18:38:12Z
+updated_at: 2026-10-21T18:45:06Z
+tags:
+    - unverified
 parent: isaac-q3u3
 ---
 
@@ -151,3 +153,30 @@ renders empty there.
 - [ ] Live: one ungated bean goes through `verifying` to `landed`.
 - [ ] Live: a deliberately failed verification returns the bean to `working` (via `repair`), and it then lands.
 - [ ] No Isaac source changes.
+
+
+
+## Worker checkpoint (2026-10-21)
+
+Done: orchestration bean branch adds machine, isolated bb test-machines (16 PASS), installer and README; isaac bean branch adds Foreman ungated work and verify skills. Both pushed. Deployment on zanebot preserves isaac-8uno and isaac-htix as landed. Next: resolve YAML syntax in orchestration hail headers (config/parse.clj:169); re-run isaac config validate, then live Foreman acceptance runs for gated, ungated and repair. Current test: bb test-machines 16 PASS; config validate reports hail/orchestration-harden.md and hail/orchestration-verify.md YAML syntax errors. Gate: exit 2 (ungated). Resume at isaac-beans/config/hail/orchestration-verify.md:1.
+
+
+
+## Live acceptance blocker (2026-10-21)
+
+On zanebot, deployed the Foreman machine with isaac-beans/install.sh; isaac config validate --edn reports :ok true and no errors (warnings are pre-existing). isaac foreman list isaac-bean-work still shows isaac-8uno and isaac-htix landed. bb test-machines produces 16 PASS; dry-run lists machines/isaac-bean-work.edn. Skills are copied into ~/.isaac/prompts/skills/foreman-bean-{work,verify}. The three live acceptance runs (gated queued -> landed; ungated verifying -> landed; deliberate verify repair -> landed) remain unrun. This bean was dispatched on the hail path, and no dedicated todo gated fixture with a planner-owned feature baseline was supplied; a worker cannot create a feature baseline. Starting this hail-owned bean on Foreman would violate opt-in exclusive dispatch. Need planner to provide/authorize a dedicated gated bean and ungated test beans for live machine runs, or adjust acceptance if live runs are deferred. Keep branch bean/isaac-q6fj in both isaac and orchestration; resume at orchestration/isaac-beans/config/machines/isaac-bean-work.edn:6 and README.md:37 after fixtures are assigned. Gate output: isaac-q6fj: no feature-baseline: use the verify path (exit 2).
+
+## Live acceptance (2026-10-28, planner)
+
+All three live runs went through the deployed machine on zanebot:
+
+- **Gated:** isaac-166j queued → working → landed in 10 min (isaac-claude-code dbfd134). isaac-mo02 also went gated, through a `conflict` stall and a planner `dispatch` back to working, then landed (isaac-agent eae0cdf, isaac-foreman fed1e6e).
+- **Ungated with repair:** isaac-v3qp went working → verifying → working (`repair`) → verifying → landed in 9 min (orchestration 18c649c).
+- **Earlier instances intact:** `isaac foreman list isaac-bean-work` still shows isaac-8uno and isaac-htix `landed`.
+
+Found and fixed along the way:
+
+- isaac-pqxn (the first ungated try, scrapped) exposed isaac-mo02: a stale `:alert` turn's quiet end moved verifying → verify-stalled, and the verifier's correct `repair` was dropped. Fixed in Foreman 0.6.1 (fed1e6e), deployed 2026-10-28.
+- The worker put its ungated handoff on an isaac `bean/<id>` branch, so main never showed it. Planner fixed both Foreman skills on this branch (92e95dae): the handoff goes to isaac main, and the verifier ends with `event: conflict` when it finds none. Deployed to `~/.isaac/prompts/skills/` on zanebot (backups `SKILL.md.bak-20261028`). The v3qp rerun used the fixed skills.
+
+Still for the verifier: `bb test-machines` from a clean orchestration clone, `isaac-beans/install.sh --dry-run`, and that this branch changes no Isaac source (only `.toolbox/skills/foreman-bean-*`). Land orchestration `bean/isaac-q6fj` (3ae4008) and isaac `bean/isaac-q6fj` (92e95dae).
