@@ -1,7 +1,7 @@
 ---
 # isaac-v557
 title: 'Foreman over HTTP: start, list and read instances with scoped principals'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -28,3 +28,6 @@ Deploy, then add `:foreman/write` and `:foreman/read` to the dispatching princip
 ## Acceptance
 
 `cd isaac-foreman && bb features features/foreman/http.feature` (six scenarios), and the rest of `bb ci` stays green.
+
+feature-baseline: isaac-foreman 54440fedfdb745e52e192b4686eb11b07d4d694e
+feature-blob: isaac-foreman features/foreman/http.feature 7433a6984dd52bc57a6959dff9bf2680017ba00f 22,37,52,70,89,103
