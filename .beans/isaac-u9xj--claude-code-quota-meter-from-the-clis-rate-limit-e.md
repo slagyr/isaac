@@ -1,13 +1,13 @@
 ---
 # isaac-u9xj
 title: claude-code quota meter from the CLI's rate_limit_event
-status: todo
+status: completed
 type: task
 priority: normal
 tags:
     - claude-code
 created_at: 2026-10-28T07:23:35Z
-updated_at: 2026-10-28T07:23:35Z
+updated_at: 2026-10-28T08:34:39Z
 blocked_by:
     - isaac-7q4c
 ---
