@@ -4,8 +4,10 @@ title: 'Foreman live fixture: ungated round trip with one planned repair (isaac-
 status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-10-28T07:08:34Z
-updated_at: 2026-10-28T07:16:39Z
+updated_at: 2026-10-28T07:17:12Z
 parent: isaac-q3u3
 ---
 
@@ -35,3 +37,8 @@ This bean tests the repair path. **On the first verification**, don't land it: a
 - [ ] `isaac-beans/features/README.md` exists on orchestration main and covers the three points under Work, plus the Repair 1 sentence.
 - [ ] No other orchestration files changed.
 - [ ] `isaac foreman status isaac-bean-work isaac-pqxn` history shows working → verifying → working (repair) → verifying → landed.
+
+
+## Work checkpoint (2026-10-28)
+
+Added the three requested initial documentation sentences on orchestration `bean/isaac-pqxn` (847578d); only `isaac-beans/features/README.md` changed. README scope/content checks and `git diff --check` passed. `bb bean-gate verify isaac-pqxn` exited 2 (no feature-baseline); awaiting first verification and its planned Repair 1 request.
