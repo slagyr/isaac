@@ -4,10 +4,8 @@ title: 'Foreman live fixture: ungated round trip with one planned repair (isaac-
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-10-28T07:08:34Z
-updated_at: 2026-10-28T07:19:30Z
+updated_at: 2026-10-28T07:20:43Z
 parent: isaac-q3u3
 ---
 
@@ -63,3 +61,13 @@ Same blocker, second time. Micah dispatched at 07:19:07Z (verify-stalled to veri
 Not a work failure. README on orchestration bean/isaac-pqxn 847578d is unchanged and still the three first-pass sentences only. No Repair 1 note.
 
 Do not dispatch again until verify-isaac-pqxn's current turn has ended. A dispatch while any session on this instance can still emit foreman/turn-ended will re-stall the same way: the machine treats a quiet end from any session as a verify-side stall while state is verifying. After the verifier turn is dead, `isaac foreman signal isaac-bean-work isaac-pqxn dispatch` is still the resume, and that pass is still the first verification.
+
+## Repair 1 (2026-10-28)
+
+Planned first-pass repair: add one sentence to `isaac-beans/features/README.md` saying that the machine tests use a fixed step vocabulary provided by Foreman. Keep the existing three sentences and change no other orchestration files. Do not land yet; return for another verification.
+
+## Verification failed (planned first pass, 2026-10-28)
+
+HEAD: isaac bean/isaac-pqxn 7d20eec68078b86c254f7f97c153ff76ce0e5b67; orchestration bean/isaac-pqxn 847578da591bbad0b0aae63265b80d6bbb6e13c4.
+Working tree: clean in both checkouts; orchestration diff vs origin/main only `isaac-beans/features/README.md`; `git diff --check origin/main...HEAD` passed.
+Reproduction: `git show 847578d:isaac-beans/features/README.md` contains the three original requested sentences but no sentence stating that the tests use a fixed step vocabulary provided by Foreman. This is the bean-required first verification repair, not a failed test; no landing or acceptance run is appropriate until the worker adds it.
