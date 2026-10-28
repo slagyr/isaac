@@ -1,13 +1,13 @@
 ---
 # isaac-qubu
 title: 'isaac-agent main red after blt2: responses stateful scenarios'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - agent
 created_at: 2026-10-28T08:53:09Z
-updated_at: 2026-10-28T08:53:09Z
+updated_at: 2026-10-28T14:50:12Z
 ---
 
 ## Why
