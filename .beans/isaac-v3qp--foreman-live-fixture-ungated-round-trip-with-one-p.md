@@ -4,10 +4,8 @@ title: 'Foreman live fixture: ungated round trip with one planned repair (isaac-
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-10-28T07:58:41Z
-updated_at: 2026-10-28T08:00:48Z
+updated_at: 2026-10-28T08:02:04Z
 parent: isaac-q3u3
 ---
 
@@ -42,3 +40,15 @@ This bean tests the repair path. **On the first verification**, don't land it: a
 ## Process Observations (2026-10-28)
 
 Added `isaac-beans/features/README.md` on orchestration `bean/isaac-v3qp` at `4e7bbf7` (pushed). It covers the machine fixture, test invocation and required Isaac root, and empty instance-data templates. Only that file changed; `git diff origin/main --check` passed. `bb bean-gate verify isaac-v3qp` exited 2: no feature-baseline; handoff to the first verifier for the planned Repair 1 request.
+
+
+
+## Repair 1 (2026-10-28)
+
+Planned first-pass repair per the bean: add one sentence to `isaac-beans/features/README.md` stating that the tests use a fixed step vocabulary provided by Foreman. Current `origin/bean/isaac-v3qp` commit `4e7bbf75acf0d957c76b95ef4f85aa8aac355f73` has only the three Work points; the sentence is absent. Keep the change limited to this README, push the branch, and hand back for verification. Do not land yet.
+
+## Verification failed (2026-10-28)
+
+HEAD: isaac `d7056e85` (origin/main); orchestration review `4e7bbf75acf0d957c76b95ef4f85aa8aac355f73` (origin/bean/isaac-v3qp).
+Working tree: both review worktrees clean.
+Reason: mandatory planned Repair 1 on first verification; README lacks the fixed-step-vocabulary sentence required by Acceptance. Only `isaac-beans/features/README.md` changed; `git diff origin/main...HEAD --check` passed. Acceptance tests and Foreman history intentionally deferred until repair.
