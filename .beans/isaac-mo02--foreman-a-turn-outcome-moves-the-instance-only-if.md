@@ -1,7 +1,7 @@
 ---
 # isaac-mo02
 title: 'Foreman: a turn outcome moves the instance only if the current state is waiting on that turn'
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-10-28T07:24:58Z
@@ -28,3 +28,6 @@ A turn's outcome moves the instance only if the current state is waiting on that
 `cd isaac-foreman && bb features features/foreman/turn_outcomes.feature:97`. The scenario holds a horn turn from an earlier stall in a closed pool, resumes, lets the horn end quietly (the instance stays tending, with the horn's end recorded unhandled), then lets the new lamp turn reply `event: lit` → lit.
 
 Then the rest of `bb features` and `bb spec` stay green, and the isaac-foreman version is bumped for the deploy train.
+
+feature-baseline: isaac-foreman 05a1431d8654e990b3b277b9615491092cc98c55
+feature-blob: isaac-foreman features/foreman/turn_outcomes.feature 3064aef1ab8ece32bec428dc2b49e7669a7c7796 97
