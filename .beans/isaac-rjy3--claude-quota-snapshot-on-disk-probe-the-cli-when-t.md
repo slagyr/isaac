@@ -1,13 +1,13 @@
 ---
 # isaac-rjy3
 title: 'Claude quota: snapshot on disk, probe the CLI when there is none'
-status: todo
+status: in-progress
 type: task
 priority: high
 tags:
     - claude-code
 created_at: 2026-10-28T08:53:09Z
-updated_at: 2026-10-28T08:53:09Z
+updated_at: 2026-10-28T08:54:14Z
 ---
 
 ## Why
