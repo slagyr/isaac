@@ -1,11 +1,11 @@
 ---
 # isaac-v3qp
 title: 'Foreman live fixture: ungated round trip with one planned repair (isaac-q6fj, rerun)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-10-28T07:58:41Z
-updated_at: 2026-10-28T07:58:41Z
+updated_at: 2026-10-28T08:00:06Z
 parent: isaac-q3u3
 ---
 
