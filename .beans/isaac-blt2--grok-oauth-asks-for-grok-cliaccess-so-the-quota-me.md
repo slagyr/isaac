@@ -33,3 +33,9 @@ feature-blob: isaac-agent features/llm/auth/oauth_descriptors.feature 8076c128b6
 ## Landed on main (2026-10-28)
 
 main-sha: isaac-agent 61329e1ae05433287a746df5167f28f0a0a27683
+
+## CI repair checkpoint (2026-10-28, scrapper@isaac-work-1)
+
+Done: investigated default-branch CI run 40658158435. Specs 1974/0; features 947/2 in the stateful Responses scenarios at `features/llm/api/responses/stateful.feature:127,154` (outbound request 3 missing). A clean full local `bb features` on 61329e1 passed 947/0/2353, indicating a suite-order/race defect; focused stateful and OAuth+stateful passed. Root risk: `spec/isaac/agent/auth_steps.clj:59` clears the **global** outbound HTTP capture inside the Grok CLI wrapper, potentially clobbering concurrent turns. Added a concurrency regression test at `spec/isaac/agent/session/session_steps_spec.clj:183` on branch `bean/isaac-blt2-ci`; focused RED currently fails to compile because `auth-steps/with-stubbed-device-code-login` is not yet extracted. No repair commit/push yet: tests red.
+
+Next: extract the wrapper at `spec/isaac/agent/auth_steps.clj:55` into `with-stubbed-device-code-login` without globally clearing requests, make the focused spec green, prove device-code request capture still works in `oauth_descriptors.feature`, then run `bb ci` and push a main repair commit (bean is already completed). Do not restart the service.
