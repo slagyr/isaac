@@ -50,3 +50,7 @@ Both the driven (`stream-json`) path and the raw shell-out path should capture i
 
 feature-baseline: isaac-claude-code 535b75f9a3cc820622f88c62de14ae4acc271796
 feature-blob: isaac-claude-code features/llm/quota.feature e5ffd902c8bbc2ca3ac8abb57348708de94f336a
+
+## Work checkpoint (2026-10-28)
+
+Done: agent pin bumped to landed `38edce4` (foundation aligned), quota meter and CLI event capture implemented; focused `bb spec` green (5 examples); three acceptance scenarios un-@wip. Next: fix feature isolation: `bb features features/llm/quota.feature` RED (1 failure: before-first-turn provider reported `unsupported`, not `unknown` when no fake module declared). Resume at `spec/isaac/provider/claude_code/claude_cli_steps.clj:398` (scenario setup) and `src/isaac/provider/claude_code/quota.clj:29`; rerun full suites, gate, land. No production checkpoint committed while acceptance red.
