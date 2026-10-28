@@ -1,13 +1,11 @@
 ---
 # isaac-v3qp
 title: 'Foreman live fixture: ungated round trip with one planned repair (isaac-q6fj, rerun)'
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-10-28T07:58:41Z
-updated_at: 2026-10-28T08:03:40Z
+updated_at: 2026-10-28T08:06:48Z
 parent: isaac-q3u3
 ---
 
@@ -60,3 +58,11 @@ Reason: mandatory planned Repair 1 on first verification; README lacks the fixed
 ## Repair 1 implemented (2026-10-28)
 
 Added the requested fourth sentence about Foreman’s fixed step vocabulary in orchestration `isaac-beans/features/README.md`; commit `94daba8bbc685cf3e86548e441b03acdfe8dc685` pushed to `origin/bean/isaac-v3qp`. `git diff --check` passed; only that README differs from `origin/main`. `bb bean-gate verify isaac-v3qp` exited 2 (no feature-baseline). Awaiting second verification; no landing by worker.
+
+
+
+## Landed on main (2026-10-28)
+
+main-sha: orchestration 18c649ca00e7312f9806c54d05286a53f1185cbe
+
+Verified: the four required README sentences are present; only isaac-beans/features/README.md changed; diff --check clean. Foreman machine fixture: 16 PASS, 0 failures. Live history shows working → verifying → working (repair) → verifying; final landed transition follows the verified verdict.
