@@ -1,13 +1,13 @@
 ---
 # isaac-7q4c
 title: 'provider__quota: subscription quota per provider (berth, tool, CLI, chatgpt + grok meters)'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - agent
 created_at: 2026-10-28T07:23:35Z
-updated_at: 2026-10-28T07:23:35Z
+updated_at: 2026-10-28T07:28:30Z
 ---
 
 ## Why
@@ -70,3 +70,14 @@ Both endpoints are undocumented vendor internals — that is why failure is a st
 
 feature-baseline: isaac-agent c7467252ff6c888ec578b6bd21c3f7ee51381ab8
 feature-blob: isaac-agent features/tool/provider_quota.feature 7d7bcbb9aeb08614c68bb809f348e5c3399fae83
+
+## Work checkpoint (2026-10-28)
+
+Done: quota report schema, ChatGPT/Grok meters, cache, berth, provider__quota tool, hosted quota CLI, OAuth/HTTP feature steps. `bb spec` green (1967 examples); focused `bb features features/tool/provider_quota.feature` green (6 scenarios). Committed and pushed isaac-agent bean branch be8bded.
+Next: rerun full `bb features` after the permissions/stateful assertion adjustments; then `bb jvm-features`, gate, rebase, land. Resume at `spec/isaac/agent/llm/providers_steps.clj:91` (request capture ordering) and `spec/isaac/agent/session/session_steps.clj:2074` (tool-set assertion).
+
+## Landed on main (2026-10-28)
+
+main-sha: isaac-agent 38edce4028ffd1edfd8b572a5d6d3796311e0133
+
+Acceptance: bb spec 1967 examples, 0 failures; bb features and bb jvm-features 946 examples, 0 failures (one pre-existing pending scenario); bb ci green. Bean gate PASS both before and after squash.
