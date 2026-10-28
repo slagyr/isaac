@@ -1,13 +1,13 @@
 ---
 # isaac-blt2
 title: Grok OAuth asks for grok-cli:access so the quota meter can read billing
-status: in-progress
+status: completed
 type: task
 priority: high
 tags:
     - agent
 created_at: 2026-10-28T08:25:40Z
-updated_at: 2026-10-28T08:37:52Z
+updated_at: 2026-10-28T08:38:05Z
 ---
 
 ## Why
