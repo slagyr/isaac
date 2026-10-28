@@ -43,3 +43,12 @@ Implementation checkpoint: isaac-foreman `bean/isaac-mo02` at `90567a6` fences o
 - `features/foreman/turn_outcomes.feature:72` expects `turns drop #turn-id` to move tending to stalled. Upstream isaac-agent `turn/cli.clj` `run-drop` calls `observer/notify! :on-turn-died` with only `{:session-key ...}` and **no `:request-id`**, so Foreman cannot associate the dropped turn with the current state's submitted action. Upstream needs to supply the dropped turn id in that observer context; worker cannot fix this by altering Foreman's feature or treating idless outcomes as valid (that would let stale drops move any state). This is a cross-repo fix to plan/authorize.
 
 No product branch landed; bean remains in-progress. On return, implement the agreed resolution, run `bb ci`, gate, then land. Existing feature files were not edited except removing `@wip` from the baselined scenario.
+
+## Planner ruling (2026-10-28)
+
+Both holds resolved; no contract lines change.
+
+1. **The fence covers only turns Foreman submitted for this instance.** Read the Rule as: an outcome whose request id belongs to a turn Foreman submitted for this instance, but not on the transition that entered the current state, is recorded unhandled and moves nothing. A turn Foreman never submitted (attached from outside with `--observer foreman:<machine>/<instance>`) was pointed at the instance on purpose; its outcomes apply as before. So `features/foreman/events.feature:137` stays as written and must pass. The bug this bean fixes was Foreman's own `:alert` turn.
+2. **Turn drops carry their id.** Authorized cross-repo change: isaac-agent `src/isaac/agent/turn/cli.clj` `run-drop` passes the dropped turn's id as `:request-id` in the `:on-turn-died` observer context (it has `id` in hand). Land it on isaac-agent main first, then bump isaac-foreman's isaac-agent pin to that landed sha. `features/foreman/turn_outcomes.feature:72` then passes unchanged. An outcome with no request id is treated like an external turn's (applied); with the drop fix, Foreman-submitted turns always carry one.
+
+Resume from `90567a6`, run `bb ci` in both repos, gate, land.
