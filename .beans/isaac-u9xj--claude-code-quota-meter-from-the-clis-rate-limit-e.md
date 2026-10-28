@@ -50,3 +50,9 @@ Both the driven (`stream-json`) path and the raw shell-out path should capture i
 
 feature-baseline: isaac-claude-code 535b75f9a3cc820622f88c62de14ae4acc271796
 feature-blob: isaac-claude-code features/llm/quota.feature e5ffd902c8bbc2ca3ac8abb57348708de94f336a
+
+## Landed on main (2026-10-28)
+
+main-sha: isaac-claude-code a8c7256d49bb15b6a846adac7c050a1fa2847a97
+
+Acceptance: `bb ci` green (80 specs, 63 features; three opt-in real smoke specs pending). Bean gate PASS on branch and squash commit. Previous red checkpoint resolved by declaring the module when the provider config is seeded, and resetting meter/cache between scenarios.
