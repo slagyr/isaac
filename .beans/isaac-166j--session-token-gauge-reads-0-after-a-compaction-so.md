@@ -1,11 +1,11 @@
 ---
 # isaac-166j
 title: Session token gauge reads 0 after a compaction, so the session never compacts again and every request dies prompt_too_long
-status: todo
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-20T19:06:50Z
-updated_at: 2026-10-21T18:28:31Z
+updated_at: 2026-10-28T07:14:13Z
 ---
 
 `isaac sessions list` on zanebot, 2026-09-20 19:05Z:
@@ -172,3 +172,9 @@ The oversized-single half is isaac-ebup; this bean no longer blocks it.
 
 feature-baseline: isaac-claude-code a1147e6ba2b7fc5677c47840b27f18f7478c2319
 feature-blob: isaac-claude-code features/llm/api/claude_driver.feature c791af55b1c8b4cae46dc3219a2c5f075d5e0b08 684
+
+## Landed on main (2026-10-28)
+
+Claude CLI prompt-length errors now map to `:context-overflow`, activating the existing drive compaction and retry path. Focused feature and `bb ci` green (75 specs, 60 features; 3 opt-in real-CLI specs pending). Gate passed on the squash commit.
+
+main-sha: isaac-claude-code dbfd134b043960a726d795179e5decc72b0ac8ed
