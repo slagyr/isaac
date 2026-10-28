@@ -1,7 +1,7 @@
 ---
 # isaac-rjy3
 title: 'Claude quota: snapshot on disk, probe the CLI when there is none'
-status: draft
+status: todo
 type: task
 priority: high
 tags:
@@ -35,3 +35,6 @@ The point of the tool is to see headroom before a reset — idle subscriptions a
 
 - Probe cost: one Haiku call with a tiny prompt and no tools; at most once per 10 min per provider, and only when someone asks for quota.
 - `/api/oauth/usage` stays off the table: skiff's providers use setup tokens, refused with 403 `oauth_scope_insufficient`.
+
+feature-baseline: isaac-claude-code 93c51588486fabf63fdfbe8e24237ed518a24fae
+feature-blob: isaac-claude-code features/llm/quota.feature 5f022e82cbbecb05fbda76d1dcbaf00ba8747be5
