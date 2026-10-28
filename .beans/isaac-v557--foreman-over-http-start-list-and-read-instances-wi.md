@@ -1,13 +1,13 @@
 ---
 # isaac-v557
 title: 'Foreman over HTTP: start, list and read instances with scoped principals'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - foreman
 created_at: 2026-10-28T08:20:37Z
-updated_at: 2026-10-28T08:20:37Z
+updated_at: 2026-10-28T08:32:57Z
 ---
 
 Micah, 2026-10-28: "We need to be able to interact with Foreman over HTTP." Today a dispatcher off the host can signal an existing instance (POST /foreman/events) and set its data, but cannot start one or read its status, and both existing routes require the `*` scope, so the hail principal gets 403. Starting a bean on Foreman therefore needs ssh to zanebot.
