@@ -1,13 +1,11 @@
 ---
 # isaac-q6fj
 title: 'Bean orchestration on Foreman: the bean-work machine (happy path and failure rows)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-09-27T23:09:07Z
-updated_at: 2026-10-28T08:15:35Z
+updated_at: 2026-10-28T08:20:51Z
 parent: isaac-q3u3
 ---
 
@@ -195,3 +193,10 @@ Other checks already green: clean orchestration clone `bb test-machines` produce
 ## Verify repair (attempt 1, 2026-10-28)
 
 Rebased isaac `bean/isaac-q6fj` onto origin/main abec9601 and pushed 8d846bdc. The already-mirrored checkpoint, blocker and live-acceptance bean commits were skipped during replay to preserve the latest main bean body, including the verify-fail note and unverified status. The branch diff is only `.toolbox/skills/foreman-bean-{work,verify}/SKILL.md`; no Isaac source changes. Rebased orchestration `bean/isaac-q6fj` onto origin/main 18c649c and pushed 1860dfc. `bb bean-gate verify isaac-q6fj` exits 2 (ungated); orchestration `bb test-machines` prints 16 PASS, exit 0; installer `--dry-run` lists `machines/isaac-bean-work.edn`, exit 0. Both branches clean and fast-forwardable at these bases. Ready for re-verification.
+
+
+
+## Landed on main (2026-10-28)
+
+main-sha: orchestration b1359c8e1d99b1614bbe2dc3034c22026778a835
+main-sha: isaac 55e256ffb5e62d03b3f407342f11ab47894748e7
