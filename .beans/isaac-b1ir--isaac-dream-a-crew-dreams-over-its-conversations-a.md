@@ -1,11 +1,11 @@
 ---
 # isaac-b1ir
 title: 'isaac-dream: a crew dreams over its conversations and keeps private habits'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
-updated_at: 2026-10-28T08:44:18Z
+updated_at: 2026-10-28T08:44:35Z
 parent: isaac-pcm3
 ---
 
