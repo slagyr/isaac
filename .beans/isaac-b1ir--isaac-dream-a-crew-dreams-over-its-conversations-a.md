@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-10-08T20:38:14Z
-updated_at: 2026-10-28T08:41:36Z
+updated_at: 2026-10-28T08:44:18Z
 parent: isaac-pcm3
 ---
 
@@ -204,3 +204,10 @@ Held reasons from the worker are cleared:
 Done: planner re-baselined Anthropic fixture, repository write restored; rebased isaac-dream on 0a4530a, pinned agent at landed 61329e1 (system-sections support), and added seeded-EDN section spec. `bb ci` green: 12 specs, 12 scenarios, 26 feature assertions. Pushed isaac-dream bean/isaac-b1ir at 645fe19.
 
 Next: run gate from isaac; rebase and re-run CI, squash and push isaac-dream main; add landed sha to isaac modules.edn and land isaac main; record main-sha and complete bean. Resume at isaac-dream/deps.edn:6 and isaac/modules.edn:1.
+
+## Landed on main (2026-10-28)
+
+main-sha: isaac-dream edfabc697fa64c389c1f20c2c0b5a4352c848177
+main-sha: isaac 76fd5cda68aab301bacf2d4290b2b12792049976
+
+Validation: isaac-dream `bb ci` (12 specs, 12 scenarios); isaac `bb ci` (79 specs); `bb bean-gate verify isaac-b1ir` PASS on dream main. Registry pin is reachable from dream main.
