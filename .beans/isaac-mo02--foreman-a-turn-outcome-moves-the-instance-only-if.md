@@ -1,11 +1,11 @@
 ---
 # isaac-mo02
 title: 'Foreman: a turn outcome moves the instance only if the current state is waiting on that turn'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-28T07:24:58Z
-updated_at: 2026-10-28T07:24:58Z
+updated_at: 2026-10-28T07:29:30Z
 ---
 
 Found 2026-10-28 in isaac-q6fj's live acceptance run (test bean isaac-pqxn, machine isaac-bean-work on zanebot).
