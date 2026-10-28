@@ -3,11 +3,13 @@
 title: 'Subagent tool: run a nested agent in its own context and return only its conclusion'
 status: draft
 type: feature
+priority: high
 tags:
     - agent
     - tools
 created_at: 2026-09-10T03:21:04Z
-updated_at: 2026-09-10T03:21:04Z
+updated_at: 2026-10-28T08:08:19Z
+parent: isaac-4qxr
 ---
 
 Repo: **isaac-agent** (tool registry + drive). Draft — design to be settled
@@ -88,3 +90,20 @@ call + one result row; a child hitting its cycle cap returns partial output
 flagged `:exhausted`; a child cannot call agent__run; cancel on the parent
 ends the child; two subagents in one batch run concurrently (rendezvous
 mocks from j2v0).
+
+## Direction (2026-10-28, Micah)
+
+The goal is **responsiveness and resource efficiency**: a crew should stay free to talk while subagents do the work, then pick up their results. That changes open question 1. Background (async) is the main shape, not a later add-on:
+
+- **Spawn returns at once.** `agent__run` (name TBD) starts the child and returns a handle. The parent keeps working, or ends its turn and answers the person.
+- **Results come back as a turn.** When a child finishes, its final message arrives in the parent session as a new turn, marked as a subagent result (not a person's message), the way Claude Code's background tasks notify. If the parent is mid-turn, the result waits in the queue for the next turn (one turn per session).
+- **Blocking is still an option.** A `wait` flag (or `agent__wait <handle>`) covers "go find X and tell me" inside one turn. Keep the sync scenarios from the sketch for that mode.
+- **Cheaper children.** A child defaults to a cheaper model than the parent. The model router (isaac-d3ta) could pick it.
+- **Visibility.** The parent can list its running children and cancel one; logs carry `:subagent/started` / `:subagent/ended` with parent session, model, cycles and tokens.
+
+New open questions:
+
+1. How a result turn reads to the parent: the child's final message only, or with its stats and a pointer to its transcript?
+2. Does a person's message to a busy parent jump ahead of queued subagent results?
+3. Limits: max children per parent, and do children count against provider/resource pools (isaac-q3u3 admission)?
+4. Is hail the transport for the result (a session-direct hail with `reply_to`) or a new in-session queue entry? Hail already delivers turns to sessions; reusing it may be most of the work.

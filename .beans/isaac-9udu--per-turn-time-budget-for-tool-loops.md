@@ -1,13 +1,14 @@
 ---
 # isaac-9udu
-title: "Per-turn time budget for tool loops"
+title: Per-turn time budget for tool loops
 status: draft
 type: feature
 priority: low
 tags:
-    - "deferred"
+    - deferred
 created_at: 2026-04-30T03:50:13Z
-updated_at: 2026-04-30T03:50:43Z
+updated_at: 2026-10-28T08:08:19Z
+parent: isaac-4qxr
 ---
 
 ## Description
@@ -40,4 +41,3 @@ no-progress-detection siblings.
 - isaac-x4j2: wrap-up turn at cap
 - (deferred sibling) Per-turn cost budget
 - (deferred sibling) No-progress detection
-
