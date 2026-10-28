@@ -1,7 +1,7 @@
 ---
 # isaac-u9xj
 title: claude-code quota meter from the CLI's rate_limit_event
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -47,3 +47,6 @@ Both the driven (`stream-json`) path and the raw shell-out path should capture i
 - **Why not `/api/oauth/usage`** (which reports percent directly): it needs scope `user:profile`. Checked on skiff 2026-10-28 with the provider's `CLAUDE_CODE_OAUTH_TOKEN` (a setup token): `403 permission_error, oauth_scope_insufficient`. All configured claude-code providers authenticate that way.
 - **Unit:** `unifiedWindows.utilization` is a 0–1 fraction (skiff 2026-10-28, CLI 2.1.294: `0.01`; community SDK docs show `0.85` alongside `allowed_warning`). The endpoint above reports percent — don't mix them.
 - Some community reports say older CLIs emit only the flat `rate_limit_info` (`utilization`, `rateLimitType`) without `unifiedWindows`. If `unifiedWindows` is absent, fall back to the flat fields as a single window of `rateLimitType`.
+
+feature-baseline: isaac-claude-code 535b75f9a3cc820622f88c62de14ae4acc271796
+feature-blob: isaac-claude-code features/llm/quota.feature e5ffd902c8bbc2ca3ac8abb57348708de94f336a

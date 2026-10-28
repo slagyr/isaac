@@ -1,7 +1,7 @@
 ---
 # isaac-7q4c
 title: 'provider__quota: subscription quota per provider (berth, tool, CLI, chatgpt + grok meters)'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -67,3 +67,6 @@ Both endpoints are undocumented vendor internals — that is why failure is a st
 
 - Live shapes, checked 2026-10-28 with real logins: Claude `/api/oauth/usage` → `five_hour`/`seven_day` `{utilization (percent), resets_at}`; ChatGPT `wham/usage` → `plan_type`, `rate_limit.primary_window {used_percent, limit_window_seconds, reset_after_seconds, reset_at}`, `secondary_window` (null on some plans), `credits {has_credits, balance "0"}`; Grok billing → `config.currentPeriod {type, start, end}`, `creditUsagePercent`, `productUsage [{product, usagePercent?}]`, `prepaidBalance {val}`, `onDemandCap/Used`.
 - Undefined steps run as no-ops in this harness, so the scenarios fail today at the first tool assertion, not at `oauth logins exist:`.
+
+feature-baseline: isaac-agent c7467252ff6c888ec578b6bd21c3f7ee51381ab8
+feature-blob: isaac-agent features/tool/provider_quota.feature 7d7bcbb9aeb08614c68bb809f348e5c3399fae83
