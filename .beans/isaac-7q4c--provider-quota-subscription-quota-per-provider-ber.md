@@ -1,13 +1,13 @@
 ---
 # isaac-7q4c
 title: 'provider__quota: subscription quota per provider (berth, tool, CLI, chatgpt + grok meters)'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - agent
 created_at: 2026-10-28T07:23:35Z
-updated_at: 2026-10-28T07:28:30Z
+updated_at: 2026-10-28T07:55:19Z
 ---
 
 ## Why
