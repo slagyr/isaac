@@ -7,7 +7,7 @@ priority: high
 tags:
     - agent
 created_at: 2026-10-28T08:08:18Z
-updated_at: 2026-10-28T08:08:18Z
+updated_at: 2026-10-28T08:13:45Z
 ---
 
 Micah, 2026-10-28: "I find myself using Claude Code and Grokbot because it's just so much more convenient. I think one of the reasons is that those harnesses are really good at focusing on goals and using the tools at hand to achieve those goals. I would like Isaac to be just as useful, if not more useful. I don't know if it's really goals that do the trick but I'd like to borrow ideas from Claude Code and Grokbot."
@@ -34,3 +34,7 @@ Run the same small real task (one bean) through Claude Code, Grok Build and an I
 ## Acceptance
 
 The epic closes when its children do. The study's acceptance: the comparison document exists, names the task and models used, and every proposed child bean is filed as a draft under this epic.
+
+## Direction (2026-10-28, Micah, later the same night)
+
+The setting is Micah's everyday use: talking to Isaac over Toad (ACP), Discord, iMessage and the other comms, not bean work. What's missing there is **proactivity and follow-through**: Isaac should carry a request to the end without being re-prompted, keep working through the obstacles it can clear itself, report back when done, and bring things up on its own when it should. The study's task should therefore include a conversational request made over a comm (e.g. a multi-step errand from Discord), not only a bean.
