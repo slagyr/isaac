@@ -1,11 +1,11 @@
 ---
 # isaac-mo02
 title: 'Foreman: a turn outcome moves the instance only if the current state is waiting on that turn'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-10-28T07:24:58Z
-updated_at: 2026-10-28T07:24:58Z
+updated_at: 2026-10-28T07:53:48Z
 ---
 
 Found 2026-10-28 in isaac-q6fj's live acceptance run (test bean isaac-pqxn, machine isaac-bean-work on zanebot).
@@ -31,3 +31,10 @@ Then the rest of `bb features` and `bb spec` stay green, and the isaac-foreman v
 
 feature-baseline: isaac-foreman 05a1431d8654e990b3b277b9615491092cc98c55
 feature-blob: isaac-foreman features/foreman/turn_outcomes.feature 3064aef1ab8ece32bec428dc2b49e7669a7c7796 97
+
+## Landed on main (2026-10-28)
+
+main-sha: isaac-agent eae0cdfa5adbc3eeb4e23a96df7ec030620e2661
+main-sha: isaac-foreman fed1e6ef2faf1981cbe61bfe32f7892ee5e62500
+
+Agent bb ci: 1962 specs and 940 feature examples, zero failures (one pending). Foreman bb ci: 108 specs and 56 feature examples, zero failures; focused acceptance: one example, six assertions. Bean gate PASS on the landed Foreman main commit.
