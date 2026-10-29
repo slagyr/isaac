@@ -4,8 +4,10 @@ title: 'isaac-dream: habit step reads before the turn finishes (CI red)'
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-10-29T16:50:30Z
-updated_at: 2026-10-29T16:51:38Z
+updated_at: 2026-10-29T17:01:00Z
 parent: isaac-pcm3
 ---
 
@@ -33,3 +35,10 @@ The repo was also missing the `ISAAC_HAIL_URL` secret, so the red build hailed n
 - `bb ci` green in isaac-dream.
 - `CI Tests` green on isaac-dream `main` after landing.
 - Feature files unchanged.
+
+## Implementation (2026-10-29)
+
+- `isaac-dream` branch `bean/isaac-qjdp`, commit `dcd134c`: `crew-has-habit` calls `session-steps/await-turn!` before listing habits; added deterministic spec proving that a habit written on turn completion is visible. Feature files unchanged.
+- TDD: new focused spec failed before fix (`Expected truthy ... got: nil`), then passed (13 examples, 20 assertions).
+- `bb features features/habits/propose.feature:18` passed alone three consecutive times (1 example, 1 assertion each); `bb ci` passed (13 specs, 12 features). The original scenario also passed three times before the fix in this checkout; deterministic unit regression verifies the race independent of timing.
+- `bb bean-gate verify isaac-qjdp` exited 2 (`no feature-baseline: use the verify path`). Implementation remains on its pushed bean branch for independent verification and landing; main CI cannot be checked until landing.
