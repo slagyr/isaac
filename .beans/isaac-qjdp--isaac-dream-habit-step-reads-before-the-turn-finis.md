@@ -1,13 +1,11 @@
 ---
 # isaac-qjdp
 title: 'isaac-dream: habit step reads before the turn finishes (CI red)'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-10-29T16:50:30Z
-updated_at: 2026-10-29T17:01:00Z
+updated_at: 2026-10-29T17:08:59Z
 parent: isaac-pcm3
 ---
 
@@ -42,3 +40,11 @@ The repo was also missing the `ISAAC_HAIL_URL` secret, so the red build hailed n
 - TDD: new focused spec failed before fix (`Expected truthy ... got: nil`), then passed (13 examples, 20 assertions).
 - `bb features features/habits/propose.feature:18` passed alone three consecutive times (1 example, 1 assertion each); `bb ci` passed (13 specs, 12 features). The original scenario also passed three times before the fix in this checkout; deterministic unit regression verifies the race independent of timing.
 - `bb bean-gate verify isaac-qjdp` exited 2 (`no feature-baseline: use the verify path`). Implementation remains on its pushed bean branch for independent verification and landing; main CI cannot be checked until landing.
+
+
+
+## Landed on main (2026-10-29)
+
+main-sha: isaac-dream fc769f09918fdf7ad4d1e18b24ca0db30f843dc2
+
+Verification: isolated `bb features features/habits/propose.feature:18` green three times (1 example, 1 assertion each); `bb ci` green (13 specs/20 assertions, 12 features/26 assertions); feature files unchanged; deterministic regression spec reviewed; CI Tests main run 40918224602 succeeded on fc769f0. No .verify-baseline.edn exists; no test-infrastructure changes. Existing dependency namespace warnings and structured config debug output are outside this diff.
