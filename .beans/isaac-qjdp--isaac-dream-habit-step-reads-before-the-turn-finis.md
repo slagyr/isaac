@@ -1,11 +1,11 @@
 ---
 # isaac-qjdp
 title: 'isaac-dream: habit step reads before the turn finishes (CI red)'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-10-29T16:50:30Z
-updated_at: 2026-10-29T16:50:48Z
+updated_at: 2026-10-29T16:51:38Z
 parent: isaac-pcm3
 ---
 
