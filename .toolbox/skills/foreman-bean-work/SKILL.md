@@ -49,12 +49,24 @@ Foreman reads that line and moves the machine. You do not need any Foreman tool.
 A `conflict` stalls the bean and alerts the planner with your reason, so make
 the reason specific enough to act on.
 
+## Checkpoint prompts are not the end of the turn
+
+A long turn gets a **Checkpoint** prompt every so many cycles ("Checkpoint. …
+Then continue where you were — do not stop"). Handle it as hail-bean-work-gate's
+"Checkpoint" says: commit and push if green, refresh the done/next note, and
+**keep working in the same turn**. Do not end your reply, and do not use the
+budget recipe below. Ending here stalls the bean with most of the budget unused
+(isaac-p36b stopped at cycle ~50 of 250 this way, 2026-11-01).
+
 ## Running out of cycle budget
 
-That is not a conflict. Commit and push a `wip: <bean-id> checkpoint` on the
-bean branch, write the done/next note on the bean, and end your reply **without
-an event line**. Foreman treats the quiet turn as stalled and the planner
-resumes it with `dispatch`; you pick up from the branch and the note.
+Only the **wrap-up** prompt ("Your cycle budget for this turn is exhausted …")
+means this. It is not a conflict. Commit and push a `wip: <bean-id> checkpoint`
+on the bean branch, write the done/next note on the bean, and end your reply
+**without an event line**. Foreman treats the quiet turn as stalled and the
+planner resumes it with `dispatch`; you pick up from the branch and the note.
+If acceptance is met when the wrap-up arrives, run the gate and end with the
+event it earns instead.
 
 ## Never
 
