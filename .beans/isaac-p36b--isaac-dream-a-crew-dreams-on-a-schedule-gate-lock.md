@@ -25,14 +25,30 @@ Status: draft. Shape agreed with Micah 2026-10-29 / 11-01. Next: `@wip` scenario
 
 ## Config
 
-On the crew (`crew.<id>.dream`), defaulted from `defaults.crew.dream`:
+On the crew (`crew.<id>.dream`), defaulted from `defaults.crew.dream`. **Dreaming is off by default and turned on per crew** (Micah, 11-01):
 
-- `schedule` — 5-field cron expression, evaluated in the configured time zone (same as cron jobs). No schedule, no dreaming.
+- `enabled` — boolean, default false. A crew dreams only when its resolved `enabled` is true. Allowed in `defaults.crew.dream` too (fleet-wide on), but nothing sets it for you.
+- `schedule` — 5-field cron expression, evaluated in the configured time zone (same as cron jobs). No built-in default: an enabled crew with no resolved schedule is a config validation error naming the crew.
 - `approval` — `:manual` (default) or `:auto`. Moves here from bean 1's root `dream.<crew>.approval`. Dream is not deployed anywhere yet, so no live config needs migrating.
 - `model` — model used for the dream. Default: the crew's model.
 - `digest` — `{:comm … :to …}` override. Default: the existing `:attention :notify` target.
 
 Precedent: isaac-episodes adds `crew.<id>.episodes` the same way.
+
+Example:
+
+```clojure
+;; isaac.edn — shared settings, nobody dreams yet
+:defaults {:crew {:dream {:schedule "0 3 * * *" :approval :manual}}}
+
+;; config/crew/zane.edn — Zane on
+{:model "claude" :soul "…" :dream {:enabled true}}
+
+;; a busy crew: hourly, cheaper model
+:dream {:enabled true :schedule "0 * * * *" :model "grok-fast"}
+```
+
+`dream__propose` and the habits section (bean 1) ignore `enabled`; they follow the tool grant and active habits.
 
 ## The dream
 
@@ -49,7 +65,7 @@ When a task fires, or when the operator runs `isaac dream run --crew <id>`:
 
 A failed model call leaves the watermark where it was, writes a diary entry saying it failed, and sends a digest saying so.
 
-`isaac dream run` runs the same steps now, ignoring the schedule but not the new-messages rule.
+`isaac dream run` runs the same steps now, ignoring the schedule and `enabled` (so a disabled crew can be tried by hand), but not the new-messages rule.
 
 ## Digest
 
@@ -94,6 +110,7 @@ Agent-triggered dreams (a tool can call the same code later); triggered and per-
 - Tool results in the window never reach the model request.
 - Evidence naming another crew's session, or one outside the window, is dropped and recorded in the diary.
 - A reinforcement raises the count and date on an active habit without changing its state.
+- Only crews whose resolved `dream.enabled` is true get a scheduled task; an enabled crew with no resolved schedule fails config validation naming the crew.
 - `:auto` from `defaults.crew.dream.approval` stores a new habit as active; a crew-level `:manual` overrides it.
 - Approving a habit that supersedes another retires the other.
 - A failed model call leaves the watermark unchanged and sends a failure digest.
