@@ -1,11 +1,11 @@
 ---
 # isaac-p36b
 title: 'isaac-dream: code-run dreams on a crew''s schedule — digest, diary, reinforce, supersede'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-10-29T16:52:25Z
-updated_at: 2026-11-01T18:54:28Z
+updated_at: 2026-11-01T19:47:26Z
 parent: isaac-pcm3
 ---
 
@@ -186,3 +186,10 @@ feature-blob: isaac-dream features/habits/propose.feature b86ba0036ccc253856e381
 ## Work checkpoint (2026-11-01, scrapper@bean-isaac-p36b)
 
 Done: isaac-dream `bean/isaac-p36b` pushed at b11b61b, rebased on origin/main. All 26 baselined scenarios have @wip removed; `bb ci` green after rebase (lint-cli-host OK, 22 specs/32 assertions, 35 feature examples/113 assertions), documentation updated, mixed assistant tool-call text filtered. `bb bean-gate verify isaac-p36b --dir isaac-dream=../isaac-dream-p36b` PASS (earlier default-dir invocation saw unrelated shared checkout and failed; never use default dir here). Next: land module via squash at `../isaac-dream-p36b` and update isaac `modules.edn` pin on bean branch, then re-gate using `--dir isaac-dream=../isaac-dream-p36b` or `--ref isaac-dream=origin/main`. Resume from `../isaac-dream-p36b:git merge --squash bean/isaac-p36b` after `git checkout main && git pull --ff-only`. Record main-shas and complete. No landing yet.
+
+## Landed on main (2026-11-01)
+
+main-sha: isaac-dream cba14035c6443c7a69d51c089bd27ee2cf3f8315
+main-sha: isaac d37c061dc3454df19dbf802e5abe886f512e156b
+
+`bb ci` green in isaac-dream (22 specs, 35 feature examples) and isaac (79 examples). `bb bean-gate verify isaac-p36b --dir isaac-dream=../isaac-dream-p36b` PASS on landed squash commits.
