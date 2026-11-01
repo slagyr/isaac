@@ -60,12 +60,41 @@ When a task fires, or when the operator runs `isaac dream run --crew <id>`:
 2. Find the crew's sessions with messages since the watermark (the end of the last dream). None: release the lock, write nothing, send nothing.
 3. Build the window: user and assistant message text only, with tool calls and tool results dropped (the same filtering as `session__read`, isaac-d3qj). If it is too big for one model call, take the oldest part that fits.
 4. One model call: the dream prompt that ships with the module, the crew's soul, its current habits with ids, and the window. The model answers in a fixed structure: new habits (a short slug id, the lesson, evidence sessions, and the habits it supersedes), and reinforcements (an active habit id plus evidence sessions).
-5. Code validates every item. Evidence must name sessions in this window that belong to this crew; anything else is dropped and noted in the diary. New habits are stored `proposed`, or `active` under `:auto`. Reinforcing raises an active habit's count and last-reinforced date with no approval (ruling, 2026-10-08).
+5. Code validates every item. Evidence must name sessions in this window that belong to this crew; anything else is dropped and noted in the diary. New habits are stored `proposed`, or `active` under `:auto`. Reinforcing appends a `:reinforced` history event with its evidence to an active habit, with no approval (ruling, 2026-10-08).
 6. Write the diary entry, move the watermark to the end of what was read, release the lock, send the digest.
 
 A failed model call leaves the watermark where it was, writes a diary entry saying it failed, and sends a digest saying so.
 
 `isaac dream run` runs the same steps now, ignoring the schedule and `enabled` (so a disabled crew can be tried by hand), but not the new-messages rule.
+
+## Traceability and versioning (Micah, 11-01)
+
+**Every habit traces back to the messages that caused it.**
+
+- Evidence is session plus transcript entry ids, not session names: `[{:session "greenhouse" :entries ["e-7f3a" "e-7f3c"]}]`.
+- The dream window labels each line `<session>#<n>` (e.g. `greenhouse#1 2026-04-21T14:00:00Z user: …`). The model cites labels; code maps them to entry ids and drops any label not in the window.
+- Each habit records the dream that made it (`:dream`, the diary entry's timestamp).
+- `isaac dream show <habit-id> --crew <id>` prints the habit, its history, and the quoted evidence lines read back from the transcripts. Evidence stores ids, not copies. A deleted session shows as missing evidence, not an error.
+- Live `dream__propose` (bean 1) cites the calling session and the current message. Bean 1's session-name evidence migrates to the new shape.
+
+**Habits are versioned by supersession plus history, not version numbers.**
+
+- A lesson's text never changes in place. Rewording or merging is a new habit that `:supersedes` the old ones; approving it retires them and sets their `:superseded-by`.
+- Each habit keeps an append-only `:history` of events with time and source: `:proposed`, `:approved`, `:rejected`, `:retired`, `:reinforced` (with its new evidence), `:superseded`. Reinforcement count and last-reinforced date are derived from it.
+- `isaac dream approve <id> --lesson "…"` approves a reworded copy: a new active habit that supersedes the proposal.
+
+Record shape:
+
+```clojure
+{:id         "moonflowers-first"
+ :state      :active
+ :lesson     "Water the moonflowers before anything else."
+ :evidence   [{:session "greenhouse" :entries ["e-7f3a" "e-7f3c"]}]
+ :supersedes ["moonflowers"]
+ :dream      "2026-04-22T03:00:00Z"
+ :history    [{:at "2026-04-22T03:00:00Z" :event :proposed :by {:dream "2026-04-22T03:00:00Z"}}
+              {:at "2026-04-22T08:14:00Z" :event :approved :by :operator}]}
+```
 
 ## Digest
 
@@ -109,7 +138,10 @@ Agent-triggered dreams (a tool can call the same code later); triggered and per-
 - A held lock makes a second dream stop without a model call.
 - Tool results in the window never reach the model request.
 - Evidence naming another crew's session, or one outside the window, is dropped and recorded in the diary.
-- A reinforcement raises the count and date on an active habit without changing its state.
+- A reinforcement appends a `:reinforced` history event with entry-level evidence and leaves the state active.
+- Evidence on a dreamed habit names session and entry ids; a label outside the window is dropped.
+- `isaac dream show` prints a habit's history and quoted evidence lines.
+- `approve --lesson` creates a new active habit superseding the proposal.
 - Only crews whose resolved `dream.enabled` is true get a scheduled task; an enabled crew with no resolved schedule fails config validation naming the crew.
 - `:auto` from `defaults.crew.dream.approval` stores a new habit as active; a crew-level `:manual` overrides it.
 - Approving a habit that supersedes another retires the other.
