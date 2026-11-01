@@ -1,7 +1,7 @@
 ---
 # isaac-p36b
 title: 'isaac-dream: code-run dreams on a crew''s schedule — digest, diary, reinforce, supersede'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-10-29T16:52:25Z
@@ -131,21 +131,54 @@ Agent-triggered dreams (a tool can call the same code later); triggered and per-
 
 `isaac-dream` only: schema move, scheduler task, dream runner, prompt, digest, diary, CLI, handbook. It uses isaac-agent's model dispatch and transcript reading directly, as isaac-episodes does (`segment.clj`, `distill.clj`).
 
-## Acceptance (to be replaced by baselined scenarios)
+## Scenarios (planner, 2026-11-01)
 
-- A scheduled dream with new messages makes one model call, stores a proposed habit with valid evidence, writes a diary entry, moves the watermark, and sends one digest to the notify target.
-- A scheduled fire with no new messages makes no model call and sends nothing.
-- A held lock makes a second dream stop without a model call.
-- Tool results in the window never reach the model request.
-- Evidence naming another crew's session, or one outside the window, is dropped and recorded in the diary.
-- A reinforcement appends a `:reinforced` history event with entry-level evidence and leaves the state active.
-- Evidence on a dreamed habit names session and entry ids; a label outside the window is dropped.
-- `isaac dream show` prints a habit's history and quoted evidence lines.
-- `approve --lesson` creates a new active habit superseding the proposal.
-- Only crews whose resolved `dream.enabled` is true get a scheduled task; an enabled crew with no resolved schedule fails config validation naming the crew.
-- `:auto` from `defaults.crew.dream.approval` stores a new habit as active; a crew-level `:manual` overrides it.
-- Approving a habit that supersedes another retires the other.
-- A failed model call leaves the watermark unchanged and sends a failure digest.
-- `isaac dream run --crew <id>` dreams now; `isaac dream list` without `--crew` shows proposed habits across crews; an unknown `--crew` exits non-zero.
-- Root-level `dream` config is gone; `crew.<id>.dream` and `defaults.crew.dream` validate.
-- The handbook covers what a dream is, the config, the digest, the diary, and the operator CLI.
+26 `@wip` scenarios on isaac-dream main `2b5b1fa`:
+
+- `features/dream/run.feature` (12) — window, labels, evidence, reinforce, supersede, watermark, lock, failure, approval policy.
+- `features/dream/schedule.feature` (4) — enabled-only tasks, local-time firing, validation, hot reload.
+- `features/dream/digest.feature` (4) and `features/dream/diary.feature` (1).
+- `features/habits/operator.feature` (3 new) — cross-crew list, `approve --lesson`, unknown crew.
+- `features/habits/propose.feature` (2 re-`@wip`'d) — live propose attaches its own evidence (calling session + current message); crew-level `dream.approval`. The old "propose without evidence is refused" scenario is gone: evidence is no longer a tool argument.
+
+Bean 1's seeded habits in operator/section now use `{:session … :entries …}` evidence; those scenarios stay live.
+
+## New step (implement in isaac-dream)
+
+`When the dream service is started` — starts the dream module's component on the scenario's scheduler (the one `the scheduler is started with the clock at …` created), against the loaded config, so `the scheduled tasks include:`, `the clock advances "…" and pending handlers complete`, and `the config is reloaded` act on it. The foundation runner step cannot do this: it builds its own real-clock scheduler and loads only the modules it is handed. Precedent: isaac-cron's `the Isaac system is started` / `the scheduler ticks at`. `the config is reloaded` is the real reconcile path, so the dream component must reschedule on config change (no restart).
+
+## Notes for the implementer
+
+- Matcher: a blank value cell matches nil (`evidence[1]`, `lock`); the literal text `nil` does not.
+- The model's reply is JSON text: `{"propose":[{"id","lesson","evidence":["<session>#<n>"],"supersedes":[…]}],"reinforce":[{"id","evidence":[…]}]}`. Window lines: `<session>#<n> <iso time> <role>: <text>`, numbered per session from the first in-window line.
+- Watermark moves to the dream's start time. Stale lock: one hour, fixed.
+- Digest config keys are `:comm` / `:to`; the delivery record carries `:comm` / `:target`.
+- Diary files: `dream/<crew>/diary/<iso with - for :>.edn`.
+- Lesson text never changes in place; `history` is append-only.
+- Update the handbook and README for dreaming, config, digest, diary, `show`, `diary`, `run`, and the new evidence shape.
+- `isaac` `modules.edn`: bump `:isaac.dream` to the landed sha.
+
+## Acceptance
+
+Run from `isaac-dream`, with `@wip` removed from every scenario listed:
+
+- `bb features features/dream/run.feature`
+- `bb features features/dream/schedule.feature`
+- `bb features features/dream/digest.feature`
+- `bb features features/dream/diary.feature`
+- `bb features features/habits/operator.feature:109`
+- `bb features features/habits/operator.feature:137`
+- `bb features features/habits/operator.feature:159`
+- `bb features features/habits/propose.feature:20`
+- `bb features features/habits/propose.feature:47`
+- `bb ci` green locally, and the `CI Tests` workflow green on isaac-dream `main` after landing.
+- Unit specs cover window building (tool output dropped, labels), evidence mapping and drops, history events, supersession on approve, watermark/lock, digest routing, and crew/defaults config resolution.
+- `isaac` `modules.edn` `:isaac.dream` points at the landed sha.
+
+feature-baseline: isaac-dream 2b5b1fa60f91e5661511219ed10ad77e00daba1d
+feature-blob: isaac-dream features/dream/run.feature f83d48db0daf50cddba7c6328191c9bcc41c834d
+feature-blob: isaac-dream features/dream/schedule.feature a7b03fe817fd9637e1e1139e7e1f87f841db637f
+feature-blob: isaac-dream features/dream/digest.feature afaa53d425276b54b5e04085dd25156e93f06511
+feature-blob: isaac-dream features/dream/diary.feature f9e201740bc511afc5eb2efa0fdd1fae3aeb7a4e
+feature-blob: isaac-dream features/habits/operator.feature ad3732181f7c6aafd8620ce46d95510dd491bdec
+feature-blob: isaac-dream features/habits/propose.feature b86ba0036ccc253856e3813c0539846a8ec3fc8a
