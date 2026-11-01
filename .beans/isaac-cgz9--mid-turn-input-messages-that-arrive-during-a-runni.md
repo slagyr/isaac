@@ -48,7 +48,11 @@ Also: update the isaac-agent handbook chapter (`resources/isaac/agent/handbook.m
 
 ## Work checkpoint (2026-11-01)
 
-Done: joined mid-turn requests at tool/final cycle, persisted plain transcript and absorbed state; idle person-first dispatch; schema and handbook updated. `bb features features/session/waiting.feature` currently RED (1 failure of 7): queue-mode coalesced-key log missing at waiting.feature:71 due to fixture timing in `spec/isaac/agent/session/session_steps.clj:2396`. Next: stabilize fixture's second/third sends before releasing first model; rerun file, `bb ci`, gate and land. No implementation commit yet: tests red.
+Done: joining mid-turn input at tool/final cycle, plain transcript/absorbed state, person-first idle dispatch, schema and handbook on `isaac-agent` branch `bean/isaac-cgz9` (694272c). `bb features features/session/waiting.feature` green (7/7), `bb spec -F spec/isaac/agent/llm/tool_loop_spec.clj` green (25/25), `bb bean-gate verify isaac-cgz9 --dir isaac-agent=../isaac-agent-cgz9` PASS.
+
+## Conflict (2026-11-01)
+
+`bb ci` RED: `features/turn/turn_store.feature:130` existing unbaselined scenario "merged waiting requests keep their own ids and share the turn's outcome" assumes *default* waiting requests with coalesce-key `t1` merge after the first turn; this directly contradicts this bean's approved default `:join` which absorbs them immediately and never runs a separate turn. Exact resume: update the old scenario at `features/turn/turn_store.feature:112` to opt into `:queue`, then rebaseline it as planner; worker cannot edit `.feature` except strip `@wip`. The other CI failure (`features/session/tool_loop.feature:24`) was repaired in acceptance helper; focused rerun green. Waiting on planner correction before landing. Gate output: `isaac-cgz9 bean-gate: PASS (isaac-agent @ HEAD 197d213 (branch bean/isaac-cgz9))`.
 
 feature-baseline: isaac-agent 231dca7f35827639e2d5e522afe32af6999cceda
 feature-blob: isaac-agent features/session/waiting.feature a09520983a9e04ace5947a30d70224a2c2f74fcd
