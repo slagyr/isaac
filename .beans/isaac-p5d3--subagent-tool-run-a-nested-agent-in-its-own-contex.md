@@ -1,6 +1,6 @@
 ---
 # isaac-p5d3
-title: 'Subagent tool: run a nested agent in its own context and return only its conclusion'
+title: 'Subagents: agent__spawn runs a child turn in its own session and delivers its result to the parent'
 status: draft
 type: feature
 priority: high
@@ -8,102 +8,38 @@ tags:
     - agent
     - tools
 created_at: 2026-09-10T03:21:04Z
-updated_at: 2026-10-28T08:08:19Z
+updated_at: 2026-11-01T18:45:06Z
 parent: isaac-4qxr
+blocked_by:
+    - isaac-cgz9
 ---
 
-Repo: **isaac-agent** (tool registry + drive). Draft — design to be settled
-in a planning session before scenarios.
+Repo: **isaac-agent** (tool registry + turn queue).
 
 ## Why
 
-A worker's context is its scarcest resource. Every search it runs lands the
-file dumps in its own transcript, which then costs a compaction, which then
-costs re-reads. tono-jlzi (2026-09-09) spent 1525 tool calls over 480 cycles:
-798 file reads of only 85 distinct files (39 read four or more times,
-handlers.clj 106 times), nine compactions in a day, and dead-lettered two
-commands short of its handoff. Half the budget was re-learning what earlier
-context had already learned.
+A crew's context is its scarcest resource. Every search lands file dumps in its transcript, which costs compactions, which cost re-reads (tono-jlzi, 2026-09-09: 798 reads of 85 files, nine compactions, dead-lettered short of handoff). And a crew busy with a long task can't talk to the person. A subagent fixes both: the work happens in another context, the parent keeps only the conclusion, and stays free to talk meanwhile.
 
-Claude Code hands that work to a subagent: a tool call that runs a nested
-agent with its own context and returns only its final message. The caller
-keeps the conclusion, not the file dumps. Isaac has no equivalent; hail is
-the async cousin, but its results arrive as new turns, which is the wrong
-shape for "go find X and tell me".
+## Design (settled 2026-11-01 with Micah)
 
-## Sketch (not decided)
+- **Watch, don't wait.** `agent__spawn` starts a child and returns a handle at once. The parent keeps working or ends its turn and talks to the person. No blocking wait mode for now.
+- **A child is an ordinary queued turn** (`turn/submit`) on a new session tagged with its parent. It gets resource-pool admission and cancellation like any turn.
+- **Configurable per spawn.** The child inherits the parent's crew by default. The spawn call can override: `crew`, `model` (any configured model alias — cheaper for light work, stronger for hard work), and `effort`. The tool description lists the available model aliases; an unknown alias is a tool error naming the choices. Other crew settings come from the chosen crew.
+- **Result delivery.** When the child's turn ends, an observer submits a result to the parent session with `origin {:kind :subagent}`: the child's final message, one stats line (crew, model, cycles, tokens, whether it hit its cap), and the child's session id so the parent can read the transcript if it needs to. If the parent is idle, the result starts a turn; if busy, it joins the running turn (mid-turn input bean).
+- **Depth 1.** A child cannot spawn children (`agent__spawn` is not available to it).
+- **Cancel.** Cancelling the parent's turn does not cancel background children; they're cancelled directly (list/cancel bean).
 
-A tool `agent__run` (name TBD), available to crews that allow it:
+## Follow-ons
 
-- **Input:** `prompt` (the task), optional `crew` / `model` (default: a
-  cheaper model than the caller, e.g. the crew's `:subagent-model` or the
-  caller's model), optional `tools` allowlist (default: read-only — fs/read,
-  fs/grep, fs/glob, web/*; no exec, no comm, no hail), optional `cwd`
-  (default: caller's cwd).
-- **Run:** synchronous inside the caller's turn. The child gets a fresh,
-  ephemeral session (`<parent>/sub-<id>`), the caller's directory bounds,
-  its own cycle limit (small, e.g. 40), no episodes, no recall injection,
-  no hooks. Depth 1 only — a subagent cannot spawn subagents.
-- **Output:** the child's final assistant message plus `{:cycles N
-  :tool-calls N :tokens N}`; on cap or error, whatever it produced so far
-  with `:exhausted true`. The child's transcript is discarded (or kept under
-  the parent's session dir for debugging, decide).
-- **Parallel:** independent `agent__run` calls in one batch run
-  concurrently under the existing tool-batch executor (j2v0); the child
-  turns do not count against the crew's `:max-in-flight`? (decide — they
-  are real provider calls).
-- **Cancel:** bridge cancel on the parent cancels children (cancellation
-  token propagates).
-- **Cost:** child tokens roll up into the parent's turn accounting and the
-  transcript gets one row per call (tool call + result), like any tool.
+- list / cancel / per-parent limit / logs — separate bean.
+- delegation prompting — separate bean.
+- Model router (isaac-d3ta) could later pick the child's model; out of scope.
 
-## Open questions for the planning session
+## Acceptance (to become scenarios)
 
-1. Sync in-turn (simple, blocks the parent) vs async (returns a handle, later
-   `agent__wait`)? Recommend sync first; async is what hail already does.
-2. Does a child count against `:max-in-flight`? It holds a provider
-   connection, so probably yes — or a separate `:max-subagents`.
-3. Default model: caller's model, or a designated cheaper one? A search
-   agent on grunt-class is the whole point of the cost argument.
-4. Prompt shape for the child: crew soul + the task, or a dedicated
-   "researcher" soul that reports conclusions and never edits?
-5. Where the child's transcript lives, and whether logs carry
-   `:subagent/started` / `:subagent/ended` with parent session and cycles.
-6. Prompting the parent: turn_instructions gains "delegate sweeps that span
-   many files to agent__run; keep the conclusion, not the dumps" once the
-   tool exists.
-
-## Related
-
-- j2v0 parallel tool batches (executor the children would run under).
-- openclaw parity epic isaac-0jy lists "Subagents — spawn sub-agents for
-  parallel work" as deferred.
-- Turn-instruction batching/read-discipline rewrite (2026-09-10) reduces the
-  same waste without delegation; measure again after it ships before
-  sizing this.
-
-## Acceptance
-
-TBD with scenarios. Candidates: a subagent that greps and reads three
-files returns one message and the parent transcript has exactly one tool
-call + one result row; a child hitting its cycle cap returns partial output
-flagged `:exhausted`; a child cannot call agent__run; cancel on the parent
-ends the child; two subagents in one batch run concurrently (rendezvous
-mocks from j2v0).
-
-## Direction (2026-10-28, Micah)
-
-The goal is **responsiveness and resource efficiency**: a crew should stay free to talk while subagents do the work, then pick up their results. That changes open question 1. Background (async) is the main shape, not a later add-on:
-
-- **Spawn returns at once.** `agent__run` (name TBD) starts the child and returns a handle. The parent keeps working, or ends its turn and answers the person.
-- **Results come back as a turn.** When a child finishes, its final message arrives in the parent session as a new turn, marked as a subagent result (not a person's message), the way Claude Code's background tasks notify. If the parent is mid-turn, the result waits in the queue for the next turn (one turn per session).
-- **Blocking is still an option.** A `wait` flag (or `agent__wait <handle>`) covers "go find X and tell me" inside one turn. Keep the sync scenarios from the sketch for that mode.
-- **Cheaper children.** A child defaults to a cheaper model than the parent. The model router (isaac-d3ta) could pick it.
-- **Visibility.** The parent can list its running children and cancel one; logs carry `:subagent/started` / `:subagent/ended` with parent session, model, cycles and tokens.
-
-New open questions:
-
-1. How a result turn reads to the parent: the child's final message only, or with its stats and a pointer to its transcript?
-2. Does a person's message to a busy parent jump ahead of queued subagent results?
-3. Limits: max children per parent, and do children count against provider/resource pools (isaac-q3u3 admission)?
-4. Is hail the transport for the result (a session-direct hail with `reply_to`) or a new in-session queue entry? Hail already delivers turns to sessions; reusing it may be most of the work.
+- spawn returns a handle immediately; the parent's turn ends while the child is still running.
+- the child runs on its own session, tagged with the parent; its tool calls are not in the parent's transcript.
+- with no overrides the child uses the parent's crew and model; with `model` given it uses that model; with `crew` given it uses that crew.
+- an unknown model alias fails the spawn with an error listing configured aliases.
+- when the child finishes and the parent is idle, the parent gets one new turn whose input is the labelled result (final message, stats, child session id).
+- a child's tool list has no `agent__spawn`.
