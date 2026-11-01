@@ -46,5 +46,9 @@ Run each with `-t wip` until `@wip` is removed, or the whole file: `bb features 
 
 Also: update the isaac-agent handbook chapter (`resources/isaac/agent/handbook.md`) with `:mid-turn-input` — what the two modes do and how to set it.
 
+## Work checkpoint (2026-11-01)
+
+Done: joined mid-turn requests at tool/final cycle, persisted plain transcript and absorbed state; idle person-first dispatch; schema and handbook updated. `bb features features/session/waiting.feature` currently RED (1 failure of 7): queue-mode coalesced-key log missing at waiting.feature:71 due to fixture timing in `spec/isaac/agent/session/session_steps.clj:2396`. Next: stabilize fixture's second/third sends before releasing first model; rerun file, `bb ci`, gate and land. No implementation commit yet: tests red.
+
 feature-baseline: isaac-agent 231dca7f35827639e2d5e522afe32af6999cceda
 feature-blob: isaac-agent features/session/waiting.feature a09520983a9e04ace5947a30d70224a2c2f74fcd
