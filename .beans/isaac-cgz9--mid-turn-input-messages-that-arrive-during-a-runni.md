@@ -1,13 +1,13 @@
 ---
 # isaac-cgz9
 title: 'Mid-turn input: messages that arrive during a running turn join it at the next cycle'
-status: in-progress
+status: todo
 type: feature
 priority: high
 tags:
     - agent
 created_at: 2026-11-01T18:45:06Z
-updated_at: 2026-11-01T19:12:10Z
+updated_at: 2026-11-01T19:28:24Z
 parent: isaac-4qxr
 ---
 
@@ -56,3 +56,12 @@ Done: joining mid-turn input at tool/final cycle, plain transcript/absorbed stat
 
 feature-baseline: isaac-agent 231dca7f35827639e2d5e522afe32af6999cceda
 feature-blob: isaac-agent features/session/waiting.feature a09520983a9e04ace5947a30d70224a2c2f74fcd
+
+feature-baseline: isaac-agent 0e6e17717f6097fcd3bfc1f92fba62ede4c4ddba
+feature-blob: isaac-agent features/session/waiting.feature a09520983a9e04ace5947a30d70224a2c2f74fcd
+
+## Planner correction (2026-11-01, Micah via plan-isaac-cgz9)
+
+Decision: the legacy turn-store scenario stays, pinned to :queue. Default :join absorbs a same-key waiting request into the running turn, so the old "merged waiting requests keep their own ids" outcome no longer holds without an opt-in. On isaac-agent main (0e6e177) that scenario now sets defaults.crew.mid-turn-input to :queue and is renamed "in queue mode merged waiting requests keep their own ids and share the turn outcome (isaac-cgz9)". It is not @wip: coalescing under :queue already passes on bean/isaac-cgz9, and the gate refuses a baseline line for a scenario that is not @wip, so it is not part of this bean feature-blob. The re-baseline below re-freezes features/session/waiting.feature at the same blob, now against origin/main 0e6e177, which also carries the turn_store pin.
+
+Resume: rebase bean/isaac-cgz9 onto origin/main (the turn_store edit is the only main commit ahead), re-run bb ci, then land. Do not edit the turn_store scenario further.
