@@ -1,7 +1,7 @@
 ---
 # isaac-p5d3
 title: 'Subagents: agent__spawn runs a child turn in its own session and delivers its result to the parent'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -35,11 +35,22 @@ A crew's context is its scarcest resource. Every search lands file dumps in its 
 - delegation prompting — separate bean.
 - Model router (isaac-d3ta) could later pick the child's model; out of scope.
 
-## Acceptance (to become scenarios)
+## Acceptance
 
-- spawn returns a handle immediately; the parent's turn ends while the child is still running.
-- the child runs on its own session, tagged with the parent; its tool calls are not in the parent's transcript.
-- with no overrides the child uses the parent's crew and model; with `model` given it uses that model; with `crew` given it uses that crew.
-- an unknown model alias fails the spawn with an error listing configured aliases.
-- when the child finishes and the parent is idle, the parent gets one new turn whose input is the labelled result (final message, stats, child session id).
-- a child's tool list has no `agent__spawn`.
+Scenarios in `isaac-agent/features/tool/subagents.feature` (feature-level `@wip`; remove it when all pass):
+
+- `bb features features/tool/subagents.feature:22` — spawn returns a handle at once; child session tagged `:parent`, inherits crew; nothing runs yet
+- `bb features features/tool/subagents.feature:35` — child's result reaches the idle parent as an `origin.kind :subagent` turn: final message + stats line (`model: … cycles: … session: …`)
+- `bb features features/tool/subagents.feature:53` — `model` + `effort` overrides reach the provider request
+- `bb features features/tool/subagents.feature:70` — `crew` override: child takes that crew's model and soul
+- `bb features features/tool/subagents.feature:91` — unknown model alias is a tool error naming configured aliases; no child session created
+- `bb features features/tool/subagents.feature:100` — a child's tool list has no `agent__spawn`
+
+Run with `-t wip` until `@wip` is removed, or the whole file: `bb features features/tool/subagents.feature`.
+
+Also: sessions gain a `:parent` field (schema `:description`); `agent__spawn` gets a tool description listing configured model aliases; update the isaac-agent handbook chapter (`resources/isaac/agent/handbook.md`) with subagents: what spawn does, overrides, how results arrive.
+
+Depends on isaac-cgz9 (subagent results joining a busy parent; result ordering). Land after it.
+
+feature-baseline: isaac-agent 71edcfea919d59ec9cf44df91a364ee3e891db10
+feature-blob: isaac-agent features/tool/subagents.feature faf53200c4e1e099719727aa95485fd3c480be0c
