@@ -54,3 +54,8 @@ Depends on isaac-cgz9 (subagent results joining a busy parent; result ordering).
 
 feature-baseline: isaac-agent 71edcfea919d59ec9cf44df91a364ee3e891db10
 feature-blob: isaac-agent features/tool/subagents.feature faf53200c4e1e099719727aa95485fd3c480be0c
+
+## Checkpoint (2026-11-02, prowl@plan-isaac-p5d3)
+
+Done: claimed; worktree `~/agents/isaac/work-2/isaac-agent-p5d3` on `bean/isaac-p5d3` off origin/main (3964150, isaac-cgz9 landed). Dependency isaac-cgz9 is completed.
+Next: implement agent__spawn + result delivery against features/tool/subagents.feature. Resume at isaac-agent-p5d3.
