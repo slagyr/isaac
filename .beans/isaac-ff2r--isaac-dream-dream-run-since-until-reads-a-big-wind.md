@@ -1,10 +1,11 @@
 ---
 # isaac-ff2r
 title: 'isaac-dream: dream run --since/--until, reads a big window in batches'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-11-02T14:30:10Z
-updated_at: 2026-11-02T14:30:10Z
+updated_at: 2026-11-02T14:31:10Z
 parent: isaac-pcm3
 ---
 
