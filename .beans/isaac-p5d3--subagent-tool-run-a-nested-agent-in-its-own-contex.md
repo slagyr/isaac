@@ -8,7 +8,7 @@ tags:
     - agent
     - tools
 created_at: 2026-09-10T03:21:04Z
-updated_at: 2026-11-02T13:56:36Z
+updated_at: 2026-11-02T14:11:03Z
 parent: isaac-4qxr
 blocked_by:
     - isaac-cgz9
@@ -55,7 +55,7 @@ Depends on isaac-cgz9 (subagent results joining a busy parent; result ordering).
 feature-baseline: isaac-agent 71edcfea919d59ec9cf44df91a364ee3e891db10
 feature-blob: isaac-agent features/tool/subagents.feature faf53200c4e1e099719727aa95485fd3c480be0c
 
-## Checkpoint (2026-11-02, prowl@plan-isaac-p5d3)
+## Work checkpoint (2026-11-02, scrapper@bean-isaac-p5d3)
 
-Done: claimed; worktree `~/agents/isaac/work-2/isaac-agent-p5d3` on `bean/isaac-p5d3` off origin/main (3964150, isaac-cgz9 landed). Dependency isaac-cgz9 is completed.
-Next: implement agent__spawn + result delivery against features/tool/subagents.feature. Resume at isaac-agent-p5d3.
+Done: implementation committed/pushed on isaac-agent bean/isaac-p5d3 at 497a676; all six subagent scenarios green (18 assertions), focused subagent specs green, lint no errors. Child sessions, overrides, result observer, depth restriction and handbook implemented.
+Next: full `bb ci` is still running; spec suite green (1986 examples), full feature run shows F markers. Inspect `/tmp/p5d3-ci.log` failure summary; resume at `src/isaac/agent/tool/subagent.clj:24` and `src/isaac/agent/turn/worker.clj:150`. Fix failures, rerun `bb ci`, gate, land.
