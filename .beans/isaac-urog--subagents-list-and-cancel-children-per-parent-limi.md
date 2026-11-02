@@ -1,14 +1,14 @@
 ---
 # isaac-urog
 title: 'Subagents: list and cancel children, per-parent limit, started/ended logs'
-status: todo
+status: completed
 type: feature
 priority: normal
 tags:
     - agent
     - tools
 created_at: 2026-11-01T18:45:06Z
-updated_at: 2026-11-01T18:45:06Z
+updated_at: 2026-11-02T14:35:05Z
 parent: isaac-4qxr
 blocked_by:
     - isaac-p5d3
@@ -49,3 +49,9 @@ Depends on isaac-p5d3 (agent__spawn). Land after it.
 
 feature-baseline: isaac-agent 8a9d4db7f263b59dcc5f5699056f2582f76d3b25
 feature-blob: isaac-agent features/tool/subagent_control.feature 19062bef6f325e72d628595a80f80bc6a47b66da
+
+## Landed on main (2026-11-02)
+
+main-sha: isaac-agent 684dc4fae9502eb2e30efa7884845ad846656b41
+
+Implementation: parent-scoped list and cancel tools, unfinished-child cap, lifecycle logs and durable cycle/outcome tracking; handbook updated. Validation: `bb ci` (1990 specs, 961 features; 0 failures, one pre-existing pending), `bb bean-gate verify isaac-urog --dir isaac-agent=../isaac-agent-kleb` PASS on landed main.
