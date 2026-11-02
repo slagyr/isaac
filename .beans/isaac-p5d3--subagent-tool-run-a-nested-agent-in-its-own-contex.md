@@ -1,14 +1,14 @@
 ---
 # isaac-p5d3
 title: 'Subagents: agent__spawn runs a child turn in its own session and delivers its result to the parent'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - agent
     - tools
 created_at: 2026-09-10T03:21:04Z
-updated_at: 2026-11-01T18:45:06Z
+updated_at: 2026-11-02T13:56:36Z
 parent: isaac-4qxr
 blocked_by:
     - isaac-cgz9
