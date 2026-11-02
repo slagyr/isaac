@@ -1,14 +1,14 @@
 ---
 # isaac-urog
 title: 'Subagents: list and cancel children, per-parent limit, started/ended logs'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - agent
     - tools
 created_at: 2026-11-01T18:45:06Z
-updated_at: 2026-11-01T18:45:06Z
+updated_at: 2026-11-02T14:19:36Z
 parent: isaac-4qxr
 blocked_by:
     - isaac-p5d3
