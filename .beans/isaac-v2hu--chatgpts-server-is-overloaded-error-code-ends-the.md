@@ -1,14 +1,14 @@
 ---
 # isaac-v2hu
 title: chatgpt's server_is_overloaded error code ends the turn instead of falling back
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - agent
     - llm
 created_at: 2026-11-02T14:26:51Z
-updated_at: 2026-11-02T14:26:51Z
+updated_at: 2026-11-02T14:27:58Z
 ---
 
 Repo: **isaac-agent** (`src/isaac/agent/llm/api/protocol.clj`).
