@@ -1,11 +1,11 @@
 ---
 # isaac-ff2r
 title: 'isaac-dream: dream run --since/--until, reads a big window in batches'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-11-02T14:30:10Z
-updated_at: 2026-11-02T14:31:10Z
+updated_at: 2026-11-02T14:38:18Z
 parent: isaac-pcm3
 ---
 
@@ -45,3 +45,8 @@ Run from `isaac-dream`, with `@wip` removed from every scenario listed:
 
 feature-baseline: isaac-dream e22177c197c150fc0e0cfe7f2bab1c0671a77d7a
 feature-blob: isaac-dream features/dream/history.feature 86956478c7f23b7f7aed5c676c85436e2ad16924
+
+## Landed on main (2026-11-02)
+
+main-sha: isaac-dream 9484cbe4602899222076025e7a2f1842f8852897
+main-sha: isaac b73efdda58a7f9a9e9c1faa41fe19df87a102e9f
