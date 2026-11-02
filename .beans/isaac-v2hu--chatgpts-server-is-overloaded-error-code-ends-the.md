@@ -43,3 +43,11 @@ An error whose code or message says overloaded is `:overloaded`, whatever the co
 
 feature-baseline: isaac-agent e87dcd9b97ad5d2bd8e0f7a6d632caaa6533e899
 feature-blob: isaac-agent features/llm/provider_overload.feature df634a6e51db450588ee2095f3811d0b6ad73995 66
+
+## Implementation (2026-11-02)
+
+`normalize-error` treats an overloaded code or message as `:overloaded` after status 429 and overloaded status handling. Protocol specs cover coded overload, code-only overload, message with another code, and existing `server_error`. Removed only the scenario's `@wip`. `bb features features/llm/provider_overload.feature`: 8 examples, 0 failures, 36 assertions. `bb ci`: 1990 specs / 958 features, 0 failures (one pre-existing pending). `bb bean-gate verify isaac-v2hu --dir isaac-agent=../isaac-agent-v2hu-land`: PASS on squash commit.
+
+## Landed on main (2026-11-02)
+
+main-sha: isaac-agent 5e2eff360288984d339aec81dc44e0a4ff288d06
