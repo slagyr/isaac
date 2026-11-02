@@ -7,7 +7,7 @@ priority: high
 tags:
     - agent
 created_at: 2026-11-01T18:45:06Z
-updated_at: 2026-11-02T13:47:27Z
+updated_at: 2026-11-02T13:54:51Z
 parent: isaac-4qxr
 ---
 
@@ -65,3 +65,10 @@ feature-blob: isaac-agent features/session/waiting.feature a09520983a9e04ace5947
 Decision: the legacy turn-store scenario stays, pinned to :queue. Default :join absorbs a same-key waiting request into the running turn, so the old "merged waiting requests keep their own ids" outcome no longer holds without an opt-in. On isaac-agent main (0e6e177) that scenario now sets defaults.crew.mid-turn-input to :queue and is renamed "in queue mode merged waiting requests keep their own ids and share the turn outcome (isaac-cgz9)". It is not @wip: coalescing under :queue already passes on bean/isaac-cgz9, and the gate refuses a baseline line for a scenario that is not @wip, so it is not part of this bean feature-blob. The re-baseline below re-freezes features/session/waiting.feature at the same blob, now against origin/main 0e6e177, which also carries the turn_store pin.
 
 Resume: rebase bean/isaac-cgz9 onto origin/main (the turn_store edit is the only main commit ahead), re-run bb ci, then land. Do not edit the turn_store scenario further.
+
+
+## Landed on main (2026-11-02)
+
+main-sha: isaac-agent 3964150b7e04a1efd07a2de1aa7a4a489d841dbe
+
+Rebased onto the planner correction (legacy turn-store scenario opts into :queue). bb ci: 1983 specs and 951 features green, one unrelated pending; bean gate PASS on the squash commit.
