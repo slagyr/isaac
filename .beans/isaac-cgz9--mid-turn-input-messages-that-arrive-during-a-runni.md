@@ -1,13 +1,13 @@
 ---
 # isaac-cgz9
 title: 'Mid-turn input: messages that arrive during a running turn join it at the next cycle'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - agent
 created_at: 2026-11-01T18:45:06Z
-updated_at: 2026-11-02T13:54:51Z
+updated_at: 2026-11-02T13:55:00Z
 parent: isaac-4qxr
 ---
 
