@@ -1,11 +1,11 @@
 ---
 # isaac-y3wm
 title: 'claude-code: spawn failures are reported as mcp-unavailable'
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-11-11T15:08:00Z
-updated_at: 2026-11-11T15:34:43Z
+updated_at: 2026-11-11T15:35:11Z
 ---
 
 ## Problem
