@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-11T15:08:00Z
-updated_at: 2026-11-11T15:27:19Z
+updated_at: 2026-11-11T15:34:43Z
 ---
 
 ## Problem
@@ -92,3 +92,10 @@ feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 5117b072e
 Done: agent weather/attention + marker regex assertion on branch ae0aedc; agent `bb ci` green (exit 0). Claude launch classification, warning log, fake launch step and @wip removal on branch 2c097bb; `clojure -M:dev-local:features` green (67 examples), `clojure -M:dev-local:spec` green (64 examples), isaac-izc1 focused green. Tests used local agent and foundation worktrees via temporary :dev-local overrides (not committed).
 
 Next: run Claude `bb ci` on standard paths; run bean gate from isaac; rebase and land agent first, then pin landed agent SHA in Claude deps.edn/bb.edn as applicable and land Claude. Resume at isaac-claude-code/src/isaac/provider/claude_code/api/claude_cli.clj:725 or command `bb ci` in isaac-claude-code.
+
+## Landed on main (2026-11-11)
+
+main-sha: isaac-agent 3398c6fbfb758c68812654a7f1ed7268c51f9519
+main-sha: isaac-claude-code 444b6219be8abe695d2a96123404dc11700d3466
+
+Acceptance: agent `bb ci` 1994 specs, 962 features (0 failures, 1 pre-existing pending); Claude `bb ci` 85 specs, 67 features (0 failures); `bb bean-gate verify isaac-y3wm` PASS on squash commits.
