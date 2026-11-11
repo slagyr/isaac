@@ -1,7 +1,7 @@
 ---
 # isaac-y3wm
 title: 'claude-code: spawn failures are reported as mcp-unavailable'
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-11-11T15:08:00Z
@@ -24,36 +24,65 @@ every half hour. The real error appeared only in unrelated
 
 ## Goal
 
-A turn's weather names what actually failed, and the log says why.
+A turn's weather names what actually failed, and the cause is recorded where
+an operator looks: the turn marker, the server log, and the attention notice.
 
-- If the CLI process cannot be started (an `IOException` from
-  `process/process`, e.g. "Cannot run program"), report weather with its own
-  reason, e.g. `:reason :cli-unavailable`, and put the exception message in
-  `:message`. Keep it weather, so the turn still parks and resumes; just stop
-  calling it MCP.
-- `:mcp-unavailable` is used only when the MCP setup itself fails
-  (`register-mcp-turn!` / listener start) or the CLI's init event shows the
-  `isaac` server failed (`mcp-failed?`).
-- Every weather result logs one line with the reason and message (e.g.
-  `:claude/turn-weather`), so a parked turn always leaves its cause in the
-  server log.
-- The attention text for a parked turn includes that message, not just the
-  reason keyword.
+## Design (planner, 2026-11-11, Micah delegated the scenarios)
 
-## Acceptance (to be written as @wip scenarios before baseline)
+- New weather reason **`:launch-failed`**: the provider's process could not be
+  started (an exception from the launch itself, e.g. `IOException` "Cannot run
+  program"). It's still weather: the turn parks and the sweep retries, so a
+  restart heals it without losing the turn. The name is generic on purpose, so
+  any process-backed provider can use it.
+- `:mcp-unavailable` stays for real MCP trouble: `register-mcp-turn!` /
+  listener start failing, the CLI's init event reporting the `isaac` server
+  failed, and the existing fake "fails MCP initialization" path. The existing
+  isaac-izc1 scenarios guard that.
+- The weather `:message` is stored on the turn marker (today the marker has
+  no message, which is why the 11-11 park was so hard to diagnose).
+- Every weather result from the driven path logs `:claude/turn-weather` at
+  `:warn` with `:reason` and `:message`.
+- The parked-turn attention text includes the marker's message. `:launch-failed`
+  escalates on the same rule as `:mcp-unavailable` (2nd park once
+  `:turn :suspended-attention-ms` has passed).
 
-- A driven turn whose CLI launch throws "Cannot run program" parks with reason
-  `:cli-unavailable` (not `:mcp-unavailable`), and the log carries the
-  exception message.
-- A driven turn whose MCP listener fails to start still parks as
-  `:mcp-unavailable`.
-- The parked-turn attention message includes the failure message.
+## Acceptance
+
+Scenarios (isaac-claude-code, `@wip` on main at c5cf121):
+
+- `features/llm/api/claude_driver.feature:699` — a claude command that cannot be started parks as launch-failed, with the cause on the marker and in the log
+- `features/llm/api/claude_driver.feature:722` — a repeated launch failure escalates to an attention notice that names the cause
+
+Run from isaac-claude-code (after removing `@wip`):
+
+```sh
+clojure -M:features features/llm/api/claude_driver.feature:699
+clojure -M:features features/llm/api/claude_driver.feature:722
+bb ci
+```
+
+New step to implement (isaac-claude-code steps):
+`the fake Claude Code fails to start with {text:string}`. The fake must throw a
+`java.io.IOException` with that message from the process-launch site (where
+`process/process` would throw), not return an exit result. The rest of the
+fake's script is unused.
+
+The existing isaac-izc1 `:mcp-unavailable` scenarios in the same file must
+stay green.
 
 ## Likely repo scope
 
-isaac-claude-code (`api/claude_cli.clj`). The attention wording may live in
-isaac-agent (`drive/weather.clj`).
+- isaac-claude-code: `api/claude_cli.clj` `invoke!` (classify launch exceptions,
+  log `:claude/turn-weather`), the new fake step.
+- isaac-agent: `drive/weather.clj` (`weather-reason` learns `:launch-failed`,
+  the marker keeps `:message`, the escalation rule covers `:launch-failed`),
+  `attention.clj` `parked-content` (append the message). Turn-marker schema, if
+  one conforms the marker. Bump the isaac-agent pin in isaac-claude-code once
+  the agent change lands.
 
 ## Related
 
 isaac-u1oe — the server survives a JDK upgrade on disk (prevents the underlying spawn failure).
+
+feature-baseline: isaac-claude-code c5cf1213efc0f60f01b67e71bbfa0569dd285d09
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 5117b072e42bad6dc2dd460037e8a6bfe88d1ac3 699,722
