@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-11T15:08:00Z
-updated_at: 2026-11-11T15:15:24Z
+updated_at: 2026-11-11T15:27:19Z
 ---
 
 ## Problem
@@ -86,3 +86,9 @@ isaac-u1oe — the server survives a JDK upgrade on disk (prevents the underlyin
 
 feature-baseline: isaac-claude-code c5cf1213efc0f60f01b67e71bbfa0569dd285d09
 feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 5117b072e42bad6dc2dd460037e8a6bfe88d1ac3 699,722
+
+## Work checkpoint (2026-11-11)
+
+Done: agent weather/attention + marker regex assertion on branch ae0aedc; agent `bb ci` green (exit 0). Claude launch classification, warning log, fake launch step and @wip removal on branch 2c097bb; `clojure -M:dev-local:features` green (67 examples), `clojure -M:dev-local:spec` green (64 examples), isaac-izc1 focused green. Tests used local agent and foundation worktrees via temporary :dev-local overrides (not committed).
+
+Next: run Claude `bb ci` on standard paths; run bean gate from isaac; rebase and land agent first, then pin landed agent SHA in Claude deps.edn/bb.edn as applicable and land Claude. Resume at isaac-claude-code/src/isaac/provider/claude_code/api/claude_cli.clj:725 or command `bb ci` in isaac-claude-code.
