@@ -1,13 +1,13 @@
 ---
 # isaac-18wa
 title: 'Foreman: real push — in-process bus feeds the stream, no polling; foreman and dream commands are server-only'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - foreman
 created_at: 2026-11-16T18:29:27Z
-updated_at: 2026-11-16T19:13:00Z
+updated_at: 2026-11-16T19:13:14Z
 blocked_by:
     - isaac-dcxk
 ---
