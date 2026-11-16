@@ -1,13 +1,13 @@
 ---
 # isaac-4wsu
 title: 'isaac-dream: short rule in the prompt, background (why, evidence, history, strength) via dream show and a dream__habit tool'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T16:22:45Z
-updated_at: 2026-11-16T16:23:31Z
+updated_at: 2026-11-16T16:30:34Z
 parent: isaac-pcm3
 ---
 
@@ -30,3 +30,9 @@ Repo: **isaac-dream**. Micah, 2026-11-16: habits should be short in the prompt; 
 
 feature-baseline: isaac-dream bf99133ee399aca30234cada7487bb0f86b6790d
 feature-blob: isaac-dream features/habits/background.feature 2c8dc0eb50bc24273ae1493925b335d05d739311
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-dream d69ac7bfd71bacc9f52174fbe81d4041fc4bd431
+
+Implementation: 7 background scenarios, 48 specs, 72 full features and bb ci green. Rule-only prompt, persisted why, overlength diary drop, shared CLI/tool background rendering scoped to session crew.
