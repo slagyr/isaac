@@ -10,30 +10,24 @@ created_at: 2026-11-16T15:25:41Z
 updated_at: 2026-11-16T15:25:41Z
 ---
 
-Repos: **isaac-foreman** (routes, alert routing), **isaac-http** (streaming response support). Micah, 2026-11-16, after the dream batch where isaac-o4di and isaac-wh9y stalled and nobody saw it until the planner's minute-poll did.
+Repos: **isaac-foreman** (stream route, empty-target skip), **isaac-http** if the route layer needs a streaming response shape. Micah, 2026-11-16, after isaac-o4di and isaac-wh9y stalled unseen until the planner's minute-poll caught them. Specs: `features/foreman/stream.feature`, `features/foreman/dispatcher_alert.feature`.
 
 ## Problem
 
-- A stall alert today is a turn for crew `prowl` in session `plan-<instance>` ("tell Micah what you found"). That session has no comm, so the report reaches nobody. Micah: the planner-crew juggle did not pan out; alerts should go to **the agent that dispatched the bean**.
-- Dispatchers outside Isaac (the planner in Claude Code) can only poll `GET /foreman/instances/...`, so a stall is seen a minute or more late, and states visited between polls are missed.
+- A stall alert today is a turn for crew `prowl` in session `plan-<instance>` with no comm, so it reaches nobody. Micah: the planner-crew juggle did not pan out; alerts go to **the agent that dispatched the bean**.
+- Dispatchers outside Isaac (the planner in Claude Code) can only poll, so stalls are seen late and states between polls are missed.
 
-## Direction
+## What
 
-1. **Event stream.** `GET /foreman/stream?machine=<id>` (optionally `&instance=<id>`) answers `text/event-stream` and pushes one event per transition as it happens: `{machine, instance, event, from, to, reason, at}`. Same bearer auth and scope as `foreman/read`. A heartbeat comment keeps idle connections open. A dispatcher runs `curl -N` on it (the planner's Monitor) right after `POST /foreman/instances`.
-   - isaac-http has no streaming routes today; it needs a handler shape that can hold a response open and write to it (server-sent events), honoring the server's shutdown.
-2. **Alerts go to the dispatcher.** `POST /foreman/instances` takes an optional `alert` target, recorded on the instance:
-   - `{"session": "<id>"}` (an Isaac crew session that dispatched) → the stall alert is a turn in that session.
-   - absent → no alert turn; the transition still goes out on the stream, and one plain line (no model) goes to the `attention.notify` target: `<instance> stalled: <reason> — resume with dispatch`.
-   - The machine's static `:alert` (prowl / `plan-{{instance}}`) is removed from `isaac-bean-work`.
+1. **Stream.** `GET /foreman/stream?machine=<id>[&instance=<id>]`, scope `:foreman/read`, answers `text/event-stream`. On connect: one `{type "state", machine, instance, state}` event per live instance. Then one `{type "transition", machine, instance, id, event, from, to, reason, at}` per transition as it is applied, whichever door the event came through. The CLI signals from another process in the scenarios, so the stream must follow the instance store (events/transition records), not an in-process callback. Heartbeat comments keep idle connections open; the server's shutdown closes them.
+2. **Alerts to the dispatcher.** Already config: a machine's alert action targets `{:session "{{data.alert.session}}"}` and the dispatcher starts the instance with `data.alert.session` (the first dispatcher_alert scenario passes today as a guard). **Code:** a `:turn` action whose rendered session is empty starts no turn and records `alert skipped: no target session` (generally `<action> skipped: no target session`) in the instance history.
+3. **New steps** (gherclj, in this repo's feature steps): `a client opens a stream to "<path>":` (same key/value table as `a POST request is made to`, header rows; a refused stream sets the last response so `the response status is <n>` works), `the stream delivers an event matching:` (waits with a timeout for a JSON event whose keys match), `the stream has delivered no event matching:`.
 
-## Open questions
+## Deploy (planner, after landing; not part of the gate)
 
-- Replay: should the stream send current states on connect (so a watcher that starts late sees a stall that already happened)? Probably yes, one snapshot event per live instance.
-- Does `tono-bean-work` (alerts `tono-plan-1`) move to dispatcher routing too, or keep its static alert?
+- zanebot `config/machines/isaac-bean-work.edn` `:alert`: `:frequencies {:session "{{data.alert.session}}"}` and drop the prowl crew/session. `tono-bean-work` unchanged for now.
+- Dispatchers that are Isaac sessions pass `"data": {"alert": {"session": "<their session>"}}`; the planner in Claude Code instead runs a Monitor on `curl -N .../foreman/stream?machine=isaac-bean-work`.
 
-## Acceptance (draft)
+## Acceptance
 
-- Scenario: a client streaming a machine receives a transition event, with reason, when an instance stalls.
-- Scenario: an instance dispatched with `alert.session` gets its stall alert as a turn in that session.
-- Scenario: an instance dispatched without an alert target sends one notify line on stall and starts no turn.
-- Scenario: the stream refuses a token without `foreman/read`.
+`bb features features/foreman/stream.feature features/foreman/dispatcher_alert.feature` green with `@wip` removed (7 scenarios), plus `bb spec` and full `bb features` green. Do not bump the module version (the deploy train does).
