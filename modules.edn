@@ -17,7 +17,7 @@
                                       :git/sha "76b97f122a9a26fa8ad7a434520c013bfe0fe021"}
                               :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
  :isaac.cli-server           {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
-                                      :git/sha "d51b75106a6c53994c8bad5ec1715fe278844245"}
+                                      :git/sha "129e4dc0b813314a14f4bdb09f43c09889a85657"}
                               :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.http                 {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
                                         :git/sha "4fdd535bb7231fa18d7812c6f0d5b2d35fab740c"}
@@ -26,7 +26,7 @@
                                       :git/sha "e9082bea9da5aea14dedd05f21d826e780b39209"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
-                                      :git/sha "78e139f6a95ba7f7fbd07f84f2f5f17ae3c9f157"}
+                                      :git/sha "d13d04e2554c471430f3ef095013e7c09bd2bc9e"}
                               :desc  "Scheduled cron jobs and heartbeat prompts."}
  :isaac.hail                 {:coord {:git/url "https://github.com/slagyr/isaac-hail.git"
                                       :git/sha "0c60c2bc30a2222fcb7ba18af03154e558dc9c87"}
