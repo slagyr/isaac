@@ -1,11 +1,11 @@
 ---
 # isaac-59om
 title: isaac remote --help in the real CLI still prints foundation's generic usage
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-11-16T22:54:17Z
-updated_at: 2026-11-16T22:55:05Z
+updated_at: 2026-11-16T23:02:37Z
 ---
 
 isaac-hlak landed in the wrong place. Its help text lives in the remote command's run-fn. The packaged CLI answers `--help` in foundation's registry before the run-fn runs (`isaac.foundation.cli.registry`, the `#{"--help" "-h"}` checks), so the user sees only the usage line and options. hlak's scenario (remote.feature:453) calls the run-fn directly, so it passed.
