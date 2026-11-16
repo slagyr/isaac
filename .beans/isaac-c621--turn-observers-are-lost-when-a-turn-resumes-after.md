@@ -32,3 +32,7 @@ Relates to isaac-cpiz (the same suspension-vs-end confusion in the subagent obse
 ## Acceptance
 
 Draft — scenarios to come: a Foreman work turn interrupted by a restart and resumed still moves its instance on its reply; a turn suspended at shutdown leaves the instance `working`.
+
+## More evidence (2026-11-16, 19:45, isaac-ovas)
+
+Not only full restarts: an **agent-module reload** (another session's deploy; `:berth/registration` + `:component/started "turn-queue"` with no `:server/started`) interrupted the Foreman work turn `9051c8f1` (`:outcome :interrupted`), `:resume/transcript-repair` requeued the work as a new turn `76396f11` with no observer, the worker finished at 19:50 with a landed reply, and the instance stayed `working` until the planner signalled `landed` at ~20:20. Any path that resumes a turn must carry its observers.
