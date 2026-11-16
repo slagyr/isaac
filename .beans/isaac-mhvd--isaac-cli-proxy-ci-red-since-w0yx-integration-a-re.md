@@ -4,8 +4,10 @@ title: 'isaac-cli-proxy CI red since w0yx: integration ''a remote command runs o
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-16T23:27:48Z
-updated_at: 2026-11-16T23:28:31Z
+updated_at: 2026-11-16T23:47:18Z
 ---
 
 isaac-cli-proxy CI has been red since the w0yx commits (253ff0e, 76b97f1, 36898ac, fa9848e). Release 0.2.0 shipped on a red build. Micah, 2026-11-16: "please get it fixed".
@@ -20,3 +22,14 @@ Acceptance:
 - `bb ci` green on GitHub for isaac-cli-proxy main.
 - If the cause is product behavior, not the test setup, stop and note it on the bean. That needs a scenario before landing.
 - When this scenario fails, the remote's stderr shows in the failure output.
+
+## Implementation notes (2026-11-16)
+
+Cause: the integration fixture registered `remote` in the process-local CLI registry, but the real `isaac is run with` CLI refreshes its registry from configured modules. On GitHub's clean runner the proxy module was not discovered; `remote` returned 1 with `Unknown command: remote` on stdout (stderr empty). On the Mac, sibling/local module discovery masked the missing fixture configuration. The failing GitHub run 43980773837 captured this output.
+
+Fixed the test setup by explicitly configuring `:isaac.cli-proxy` at the fixture's own checkout path before invoking the CLI. Added an integration exit assertion that reports both remote stderr and stdout on mismatch (and waits for interactive client completion), with a focused diagnostic spec. No product behavior changed; no feature contract edited. `ISAAC_GIT=1 bb ci` green locally (13 slow examples, 38 assertions); GitHub CI green on branch commit `06bed71`, run 43981860860. `bb bean-gate verify isaac-mhvd` exit 2: no feature-baseline; awaiting independent verification.
+
+## Checkpoint (2026-11-16)
+
+Done: commits `ccc7e9a`, `43cc122`, `a3eecae`, `06bed71` pushed to `bean/isaac-mhvd`; `ISAAC_GIT=1 bb ci` green locally and GitHub branch CI run 43981860860 green. The fixture fix is at `spec/isaac/cli_proxy/integration_steps.clj:159`; failure diagnostics are at `spec/isaac/cli_proxy/integration_steps.clj:236`.
+Next: ungated verification/landing of the implementation branch, then confirm GitHub CI on `main` and record the landed SHA. Resume from `spec/isaac/cli_proxy/integration_steps.clj:159` if the verifier finds a test or fixture issue.
