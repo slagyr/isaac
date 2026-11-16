@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:28:12Z
-updated_at: 2026-11-16T18:51:10Z
+updated_at: 2026-11-16T18:55:45Z
 blocked_by:
     - isaac-dcxk
 ---
@@ -36,3 +36,10 @@ feature-blob: isaac-cli-proxy features/server_only.feature 475223627959c323ac343
 ## Planner note (2026-11-16): foundation pin
 
 isaac-dcxk landed: pin isaac-foundation (deps.edn and bb.edn, including the spec/test-support roots) to `ab9f1c5711c7f85aefc67100bdaef1b80fe7a736`.
+
+
+## Checkpoint (2026-11-16)
+
+Done: claimed; isolated worktrees `../isaac-cli-server-w0yx` and `../isaac-cli-proxy-w0yx`, branches pushed at a6b2729 and 0191b48. Foundation pins changed to ab9f1c5 in both repos. Added local credential component + verifier (server), forwarder + initial specs (proxy); focused `bb spec spec/isaac/cli_server/local_spec.clj` and `bb spec spec/isaac/cli_proxy/forwarder_spec.clj` green. These are intermediate only, not acceptance.
+
+Next: fix server component ordering/route auth and proxy global --remote parsing; implement new integration steps/fixtures, remove only @wip from `features/server_only.feature`, run focused slow scenarios and full suites. Resume at `../isaac-cli-proxy-w0yx/spec/isaac/cli_proxy/integration_steps.clj:49` and `../isaac-cli-server-w0yx/src/isaac/cli_server/local.clj:53`. Run `bb bean-gate verify isaac-w0yx` from this clone only after acceptance is green.
