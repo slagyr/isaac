@@ -1,11 +1,11 @@
 ---
 # isaac-y3go
 title: 'isaac cron list: prints nothing over the remote (hosted commands get no :config), and its columns run together'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-11-16T23:32:57Z
-updated_at: 2026-11-16T23:32:57Z
+updated_at: 2026-11-16T23:33:53Z
 ---
 
 Two problems with `isaac cron list`, both seen on zanebot 2026-11-16 after the cron 0.1.8 cutover. Micah: "yes please" (bean both together).
