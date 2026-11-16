@@ -45,3 +45,11 @@ Scenario in `isaac-cli-proxy/features/remote.feature` (scenario-level `@wip`; re
 
 feature-baseline: isaac-cli-proxy ea4c3c1d4bdb2f200e79efc9c89bc0e90ef7931f
 feature-blob: isaac-cli-proxy features/remote.feature 609a198617db6e36f2031b093503c23c2919ded8 453
+
+## Implementation
+
+Help now documents both invocation forms, management subcommands, token-command usage, config location, and prints configured remote list lines. Updated manifest usage and handbook. Removed only the scenario's @wip. `bb features features/remote.feature:453`, `bb ci`, and `bb bean-gate verify isaac-hlak --dir isaac-cli-proxy=../isaac-cli-proxy-isaac-hlak` pass.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-cli-proxy 1024ee6ebd07129137e8d331dfda63e86d112f89
