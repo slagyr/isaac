@@ -1,13 +1,13 @@
 ---
 # isaac-cpiz
 title: 'Subagents: a suspended (weather) child is reported to the parent as failed'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:40Z
-updated_at: 2026-11-16T15:38:09Z
+updated_at: 2026-11-16T15:58:41Z
 parent: isaac-4qxr
 ---
 
@@ -31,3 +31,9 @@ Scenario in `isaac-agent/features/tool/subagent_control.feature` (scenario-level
 
 feature-baseline: isaac-agent af7101ebd7321fe96dd4d9c0c90039ffb5c0ff68
 feature-blob: isaac-agent features/tool/subagent_control.feature a2b02bda946ac4b187d3729ae71da63f39e50012 130
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-agent 4bc736bf7fa6dc3309ff4e4047738abd4e1776c2
+
+Weather-parked children remain suspended without delivering a premature result; the resume sweep retains the observer and delivers once on final completion. `bb ci` passed (2007 specs, 968 features; one pre-existing pending); `bb bean-gate verify isaac-cpiz` passed on the landed commit.
