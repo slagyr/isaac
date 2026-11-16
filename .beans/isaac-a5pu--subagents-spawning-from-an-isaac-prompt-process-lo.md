@@ -35,3 +35,9 @@ Scope: the standalone path only. With a server configured (`isaac remote use …
 
 feature-baseline: isaac-agent af7101ebd7321fe96dd4d9c0c90039ffb5c0ff68
 feature-blob: isaac-agent features/tool/subagents.feature d336096d92c2a799fb1eda351fbe4e15b35fb4fe 110
+
+## Landed on main (2026-11-16)
+
+Standalone prompt drains its new child turns and parent result replies before returning; prior children do not delay subsequent prompts. `bb ci`: 2001 specs, 966 feature examples, 0 failures (1 pre-existing pending). `bb bean-gate verify isaac-a5pu --dir isaac-agent=../isaac-agent-isaac-a5pu`: PASS.
+
+main-sha: isaac-agent 94e6f2a4fef0e8af3b3ac7c15dfc7fd078594a2b
