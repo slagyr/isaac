@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - dream
+    - unverified
 created_at: 2026-11-16T00:31:44Z
-updated_at: 2026-11-16T00:32:25Z
+updated_at: 2026-11-16T00:37:54Z
 parent: isaac-pcm3
 ---
 
@@ -52,3 +53,8 @@ answer in a markdown code fence and `json/parse-string` choked on it.
   and the labelled window lines.
 - `bb spec` / `bb features` green; bump the module version.
 - Coordinate with isaac-qv5r (same function); rebase onto it if it lands first.
+
+
+## Implementation (2026-11-16)
+
+Shipped `resources/isaac/dream/prompt.md` with the exact propose/reinforce answer shape, evidence-label guidance, and empty response; `run.clj` extracts JSON objects from fenced or prose-wrapped replies and records a clear diary error with the reply prefix if none parses. Bumped manifest to 0.2.1. Unit specs cover fenced cited proposal, prompt, prose-only error, and unfenced JSON; `bb ci` green (32 specs, 41 features). Module commit: isaac-dream 452d4ce (origin/bean/isaac-g551). `bb bean-gate verify isaac-g551` exited 2: no feature-baseline. Module branch remains for verification; bean stays in-progress, unverified.
