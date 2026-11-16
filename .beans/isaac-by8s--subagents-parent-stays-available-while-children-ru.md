@@ -1,13 +1,13 @@
 ---
 # isaac-by8s
 title: 'Subagents: parent stays available while children run (no sleep-polling; timer tool to check back)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:40Z
-updated_at: 2026-11-16T14:44:40Z
+updated_at: 2026-11-16T16:35:31Z
 parent: isaac-4qxr
 ---
 
