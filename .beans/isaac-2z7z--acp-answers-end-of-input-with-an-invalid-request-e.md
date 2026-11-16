@@ -1,13 +1,13 @@
 ---
 # isaac-2z7z
 title: ACP answers end of input with an Invalid Request error (id null) over remote /cli
-status: todo
+status: in-progress
 type: bug
 priority: low
 tags:
     - acp
 created_at: 2026-11-16T18:30:01Z
-updated_at: 2026-11-16T18:30:01Z
+updated_at: 2026-11-16T18:36:08Z
 ---
 
 Repos: **isaac-acp** (stdio JSON-RPC loop) and/or **isaac-cli-server** (stdin-close handling) — find which side emits it.
