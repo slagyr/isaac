@@ -1,13 +1,13 @@
 ---
 # isaac-m4m3
 title: 'isaac-dream: approve --lesson rewords a habit in place instead of creating a superseding habit'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T17:17:38Z
-updated_at: 2026-11-16T17:17:38Z
+updated_at: 2026-11-16T17:18:16Z
 parent: isaac-pcm3
 ---
 
