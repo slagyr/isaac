@@ -1,7 +1,7 @@
 ---
 # isaac-tpa5
 title: 'isaac-dream: retire habits complained about on two days; propose retiring faded ones'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -30,3 +30,6 @@ Config: `dream.strength.floor` on the crew dream schema (defaults from `defaults
 ## Acceptance
 
 `bb features features/dream/retire.feature` green with `@wip` removed (all 5 scenarios), plus `bb spec` and full `bb features` green. Bump the module version.
+
+feature-baseline: isaac-dream 83923e51b7f5114d36b7db84a1c6cf384d06d1c8
+feature-blob: isaac-dream features/dream/retire.feature d1e124704cebce42dad05f2a3b1c590880d03f38

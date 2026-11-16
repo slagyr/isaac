@@ -1,7 +1,7 @@
 ---
 # isaac-o4di
 title: 'isaac-dream: habit strength — weighted, once a day, decays over active days; strongest first within a budget; pin'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -43,3 +43,6 @@ Later, if good habits fade during solo stretches: opportunity-based decay (the d
 ## Acceptance
 
 `bb features features/habits/strength.feature` green with `@wip` removed (all 9 scenarios), plus `bb spec` and full `bb features` green. Bump the module version.
+
+feature-baseline: isaac-dream 83923e51b7f5114d36b7db84a1c6cf384d06d1c8
+feature-blob: isaac-dream features/habits/strength.feature 15fa4dea5940afaa1e078d7aecffe01592bb1f37

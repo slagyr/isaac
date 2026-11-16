@@ -1,7 +1,7 @@
 ---
 # isaac-gomk
 title: 'isaac-dream: reinforce or supersede existing habits instead of re-proposing duplicates'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -29,3 +29,6 @@ Reinforcing a proposed habit already works (`habits/reinforce!` accepts active a
 `bb features features/dream/dedupe.feature` green with `@wip` removed (both scenarios), plus `bb spec` and full `bb features` green. Bump the module version.
 
 Measure after deploy (not a gate): re-dream Zane's history into a scratch root on zanebot and compare proposal count and duplicate clusters against the 2026-11-15 run.
+
+feature-baseline: isaac-dream 83923e51b7f5114d36b7db84a1c6cf384d06d1c8
+feature-blob: isaac-dream features/dream/dedupe.feature 272e2a8372aaf3753119f2ef11d5968a15839eb2

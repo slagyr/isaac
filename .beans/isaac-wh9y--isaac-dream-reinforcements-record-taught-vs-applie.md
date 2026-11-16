@@ -1,7 +1,7 @@
 ---
 # isaac-wh9y
 title: 'isaac-dream: reinforcements record taught vs applied, and dreams record contradictions'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -29,3 +29,6 @@ Strength weights for these events (taught +1, applied +1, contradicted −4) liv
 ## Acceptance
 
 `bb features features/dream/kinds.feature` green with `@wip` removed (all 5 scenarios), plus `bb spec` and full `bb features` green. Bump the module version.
+
+feature-baseline: isaac-dream 83923e51b7f5114d36b7db84a1c6cf384d06d1c8
+feature-blob: isaac-dream features/dream/kinds.feature aae873207a82b96002165e5e792fd2c672563689

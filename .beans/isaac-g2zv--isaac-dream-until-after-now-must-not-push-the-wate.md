@@ -1,7 +1,7 @@
 ---
 # isaac-g2zv
 title: 'isaac-dream: --until after now must not push the watermark into the future'
-status: draft
+status: todo
 type: bug
 priority: normal
 tags:
@@ -20,3 +20,6 @@ The window end is never later than the dream's start time: `until = min(--until,
 ## Acceptance
 
 `bb features features/dream/history.feature` green with the `@wip` tag removed from the scenario "an --until after now ends the watermark at now" (the last scenario in the file), plus `bb spec` and full `bb features` green. Bump the module version.
+
+feature-baseline: isaac-dream 83923e51b7f5114d36b7db84a1c6cf384d06d1c8
+feature-blob: isaac-dream features/dream/history.feature eb6852536aa9a96ba1367b6d0a9bd4236fac03b6 166
