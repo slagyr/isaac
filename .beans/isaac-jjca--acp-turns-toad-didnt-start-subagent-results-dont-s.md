@@ -35,3 +35,7 @@ isaac-acp pins agent `f05a1fe` and foundation `98de59a`, too old for the scenari
 
 feature-baseline: isaac-acp d8f1e1ba9f6b7b84f10021ce46adb4615ac46e69
 feature-blob: isaac-acp features/comm/acp/background_turns.feature b3beb3b9b0385c94dc5f9cca09223003ad095c52
+
+## Work checkpoint (2026-11-16)
+
+Done: agent `bean/isaac-jjca` ab77625 adds process-local session attachment routing for queued turns; ACP `bean/isaac-jjca` dfefcb3 attaches clients, streams background inputs/replies, bumps prerequisites, and enables the feature. Focused `bb features features/comm/acp/background_turns.feature` passes using a temporary local agent pin; agent worker/registry focused specs pass. Next: validate full suites and production lifecycle (especially CLI detach, original ACP specs) against local agent, address failures, re-run gate then land upstream agent before ACP. Resume at isaac-acp/spec/isaac/comm/acp/acp_steps.clj:206 (shared writer), then `bb ci` in both module worktrees. The ACP pin is restored to required 00ad7845 until upstream lands. Earlier full server_spec run against local agent was red (5 unrelated pin/version fixture failures); investigate and fix or isolate.
