@@ -1,13 +1,13 @@
 ---
 # isaac-wsm6
 title: 'Foreman: stream state changes to dispatchers, and send stall alerts to whoever dispatched'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - foreman
 created_at: 2026-11-16T15:25:41Z
-updated_at: 2026-11-16T15:25:41Z
+updated_at: 2026-11-16T15:38:06Z
 ---
 
 Repos: **isaac-foreman** (stream route, empty-target skip), **isaac-http** if the route layer needs a streaming response shape. Micah, 2026-11-16, after isaac-o4di and isaac-wh9y stalled unseen until the planner's minute-poll caught them. Specs: `features/foreman/stream.feature`, `features/foreman/dispatcher_alert.feature`.
