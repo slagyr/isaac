@@ -1,13 +1,13 @@
 ---
 # isaac-o4di
 title: 'isaac-dream: habit strength — weighted, once a day, decays over active days; strongest first within a budget; pin'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T03:10:41Z
-updated_at: 2026-11-16T03:10:41Z
+updated_at: 2026-11-16T14:50:58Z
 parent: isaac-pcm3
 ---
 
