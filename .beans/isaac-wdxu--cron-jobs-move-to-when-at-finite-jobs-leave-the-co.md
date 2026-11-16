@@ -1,7 +1,7 @@
 ---
 # isaac-wdxu
 title: Cron jobs move to :when / :at; finite jobs leave the config; isaac cron list
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -50,3 +50,13 @@ Plus the 21 rewritten scenarios (scenario-level `@wip`):
 - `features/config_validate.feature` :10 · `features/hot_reload.feature` :10 · `features/origin.feature` :9
 
 Run: `bb features` (whole suite) with every `@wip` removed.
+
+feature-baseline: isaac-cron fe97fc1e43120d5b23c2c3a546cfbbba66aa4ab6
+feature-blob: isaac-cron features/config_validate.feature da65173f37f007001a913ca5fb87f207c770b8e4 10
+feature-blob: isaac-cron features/delivery.feature 2f0e789bf44a7f30b11b9266e75384712e560f6d 10,30
+feature-blob: isaac-cron features/frequencies.feature 56eeaadb3be13b953722b539043d94f4d6af3d89 13,43
+feature-blob: isaac-cron features/hot_reload.feature b0bb7a392b06593f0abdc04e679107d32bdba10f 10
+feature-blob: isaac-cron features/origin.feature 50ecbf17a0d7a67a1e06fe294ce9a07f9cd4fc96 9
+feature-blob: isaac-cron features/prompt.feature daf8c7cfe770e66fb7fd34467ad44de278ffa1b0 15,31,50,72,81
+feature-blob: isaac-cron features/rules.feature 1c405b1a63834320177331aa00d8d7691b9d20f9 16,28,52,69,86,104,118,147
+feature-blob: isaac-cron features/scheduling.feature 710e22b96c34adba95c512461a1200d734894a49 21,38,52,69,84,104,125,142,160
