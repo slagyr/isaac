@@ -6,9 +6,8 @@ type: bug
 priority: high
 tags:
     - dream
-    - unverified
 created_at: 2026-11-16T00:30:23Z
-updated_at: 2026-11-16T00:38:35Z
+updated_at: 2026-11-16T00:44:30Z
 parent: isaac-pcm3
 ---
 
@@ -49,3 +48,12 @@ Give the dream's provider the Isaac root the same way a turn does (reuse
 ## Work checkpoint (2026-11-15)
 
 Done: implemented OAuth-root provider reconstruction in `src/isaac/dream/run.clj:157`, bumped manifest to 0.2.1. New Grok and ChatGPT real-provider scenarios use stored unexpired OAuth tokens and assert success, proposed habit, diary and outbound Bearer token (`features/dream/oauth.feature:22`, `spec/isaac/dream/oauth_steps.clj:21`). Confirmed both fail without the fix (exit 1) and pass with it. `bb spec`: 27 examples / 43 assertions; `bb features`: 43 examples / 159 assertions; no `bb jvm-spec` task. Implementation commit `isaac-dream` 25fb9ed pushed to `bean/isaac-qv5r`. `bb bean-gate verify isaac-qv5r` exit 2: no feature-baseline; verifier path. Next: verifier reviews `features/dream/oauth.feature:22` and lands implementation from `bean/isaac-qv5r` (ungated).
+
+
+
+## Verification failed (2026-11-15)
+
+HEAD: isaac-dream bean/isaac-qv5r 25fb9ed09d6b4ae1c509f15c470355ad9896b4d5; rebased review 0e05579e72d95d8c65be886061bd2f70eb84610f on origin/main e9692c7dac49d5159d1a4595c356673a9ce6e981.
+Working tree: clean (review and landing worktrees; attempted squash reset to origin/main after main advanced).
+
+Reproduction: git fetch origin; git rebase origin/main on bean/isaac-qv5r; bb spec. Result: 32 examples, 5 failures, 49 assertions. All five new upstream main tests in spec/isaac/dream/run_spec.clj:35-58 fail because their stub resolves :provider :grover, while new src/isaac/dream/run.clj provider reconstruction calls api/display-name on the keyword: "No implementation of method: :display-name ... for class: clojure.lang.Keyword". bb features on rebased review: 43 examples, 0 failures, 159 assertions. bb spec on origin/main alone: 27 examples, 0 failures, 43 assertions. Fix compatibility with existing provider test doubles (or update tests appropriately) and rerun both suites after rebasing. The initial squash commit 6515c24 was NOT pushed; concurrent main update rejected it and the landing worktree was reset to origin/main. No implementation landed on main.
