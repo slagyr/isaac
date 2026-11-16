@@ -35,3 +35,8 @@ Repos: **isaac-foreman** (stream route, empty-target skip), **isaac-http** if th
 feature-baseline: isaac-foreman 9abcf3e1ebd1116ca2694e1da8b36a3e44bedc2d
 feature-blob: isaac-foreman features/foreman/stream.feature a9500bc5265c03f364b46889a8fd41ad34f2d489
 feature-blob: isaac-foreman features/foreman/dispatcher_alert.feature ae36ac2dda0badf04d53cd9b6e178db1f7a45646
+
+## Checkpoint (2026-11-16)
+
+Done: stream route follows persisted transition history across processes; dispatcher alert skips empty session; new stream feature steps. Focused 7 scenarios, 108 specs, 69 full features and `bb ci` green; gate PASS on squash 9ddbd24e6e7c190607138db0056feed9e0cfd8fc. Branch bean/isaac-wsm6 pushed at 43ad223.
+Next: push the verified squash commit from `../isaac-foreman-wsm6-land` to `isaac-foreman` main, record main-sha and complete the bean. Resume at `../isaac-foreman-wsm6-land/src/isaac/foreman/stream.clj:35` if rework is required.
