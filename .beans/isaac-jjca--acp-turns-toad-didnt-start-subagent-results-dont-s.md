@@ -1,13 +1,13 @@
 ---
 # isaac-jjca
 title: 'ACP: turns Toad didn''t start (subagent results) don''t stream to an attached session'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:41Z
-updated_at: 2026-11-16T14:44:41Z
+updated_at: 2026-11-16T16:35:30Z
 parent: isaac-4qxr
 ---
 
