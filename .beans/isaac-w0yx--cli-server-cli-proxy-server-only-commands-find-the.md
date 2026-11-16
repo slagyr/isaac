@@ -1,13 +1,13 @@
 ---
 # isaac-w0yx
 title: 'cli-server + cli-proxy: server-only commands find their server via state/cli-server.edn and a local token'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:28:12Z
-updated_at: 2026-11-16T19:23:46Z
+updated_at: 2026-11-16T19:24:10Z
 blocked_by:
     - isaac-dcxk
 ---
