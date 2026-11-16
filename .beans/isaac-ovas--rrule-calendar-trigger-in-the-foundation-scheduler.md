@@ -1,13 +1,13 @@
 ---
 # isaac-ovas
 title: RRULE calendar trigger in the foundation scheduler (pure Clojure, bb + JVM)
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - scheduler
 created_at: 2026-11-16T19:01:51Z
-updated_at: 2026-11-16T19:01:51Z
+updated_at: 2026-11-16T19:37:55Z
 parent: isaac-e0qe
 ---
 
