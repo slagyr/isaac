@@ -7,7 +7,7 @@ priority: high
 tags:
     - foreman
 created_at: 2026-11-16T18:29:27Z
-updated_at: 2026-11-16T19:01:38Z
+updated_at: 2026-11-16T19:13:00Z
 blocked_by:
     - isaac-dcxk
 ---
@@ -43,3 +43,11 @@ isaac-dcxk landed: pin isaac-foundation (deps.edn and bb.edn, including the spec
 ## Checkpoint (2026-11-16)
 
 Done: Foreman bus publishes persisted records, stream subscribes with fan-out/heartbeat and no polling; added second-stream steps and foundation pin; dream worktree created. Next: fix stream HTTP route registration (currently GET /foreman/stream returns 404); inspect feature-steps/isaac/foreman_stream_steps.clj:24 and module discovery/route registration in server test harness, then run bb features features/foreman/stream.feature. Last test red: 7 examples, 6 failures, 8 assertions (HTTP 404), bb spec --focus spec/isaac/foreman/store_spec.clj green but logged expected broken watcher. No implementation checkpoint commit because acceptance red.
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-foreman 2f154c687504547415e6e0761da218b0431aff04
+main-sha: isaac-dream 4af47a2a19b7a14510b3b84c70fe56e3e2439fcd
+
+Acceptance: Foreman bb ci (109 specs, 71 features), stream feature (7 scenarios), Dream bb ci (57 specs, 78 features), bean-gate PASS after squash.
