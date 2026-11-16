@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - dream
+    - unverified
 created_at: 2026-11-16T00:30:23Z
-updated_at: 2026-11-16T00:53:17Z
+updated_at: 2026-11-16T00:56:36Z
 parent: isaac-pcm3
 ---
 
