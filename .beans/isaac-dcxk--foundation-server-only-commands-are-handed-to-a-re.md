@@ -1,13 +1,13 @@
 ---
 # isaac-dcxk
 title: 'foundation: server-only commands are handed to a registered forwarder (berth :isaac/cli-forwarder)'
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:26:17Z
-updated_at: 2026-11-16T18:26:17Z
+updated_at: 2026-11-16T18:26:57Z
 ---
 
 Repo: **isaac-foundation**. Bean A of three (B: cli-server + cli-proxy routing with a local token; C: Foreman push bus). Micah, 2026-11-16: "Some commands are server-only." Commands like `foreman signal` and `dream run` run in a separate process today when typed on the host, so their writes never pass through the server (no stream push) and they miss server-held state (the dream OAuth bug). Spec: `features/cli/server_only.feature`.
