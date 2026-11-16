@@ -32,3 +32,7 @@ Strength weights for these events (taught +1, applied +1, contradicted −4) liv
 
 feature-baseline: isaac-dream 83923e51b7f5114d36b7db84a1c6cf384d06d1c8
 feature-blob: isaac-dream features/dream/kinds.feature aae873207a82b96002165e5e792fd2c672563689
+
+## Planner note (2026-11-16): version bumps
+
+Sibling dream beans land concurrently. When rebasing onto main conflicts only on `resources/isaac-manifest.edn` `:version`, take the higher of main's and yours, bump its patch by one if they are equal, keep every schema key from both sides, and carry on without stopping for the planner.

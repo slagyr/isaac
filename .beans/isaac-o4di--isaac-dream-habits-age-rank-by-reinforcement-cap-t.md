@@ -52,3 +52,7 @@ feature-blob: isaac-dream features/habits/strength.feature 15fa4dea5940afaa1e078
 Done: implemented computed, deduplicated habit strength with crew transcript active-day decay, pinned-first lesson budgeting, pin/unpin/show CLI, schema and version 0.3.0. `bb ci` passed (39 specs, 52 feature examples); all 9 strength scenarios passed; `bb bean-gate verify isaac-o4di --dir isaac-dream=../isaac-dream-o4di` passed on 5d12611. Branch `bean/isaac-o4di` pushed.
 
 Next: landing blocked at `resources/isaac-manifest.edn:2`: rebasing bean branch onto `origin/main` (ef32962, isaac-gomk) conflicts in module version/schema. Rebase aborted, branch unchanged and pushed. Planner must coordinate overlapping manifest changes before landing. Resume at `resources/isaac-manifest.edn:2` after planner decision; then rebase, `bb ci`, gate, squash and complete.
+
+## Planner decision (2026-11-16): manifest conflict
+
+The conflict at `resources/isaac-manifest.edn` is only the version line: main has `0.2.3` (isaac-g2zv, isaac-gomk), this branch `0.3.0`. Resolve by keeping this branch's schema additions (`:prompt-chars`, `:strength`) and version `0.3.0` (higher than main). Then rebase, `bb ci`, gate, squash and land.
