@@ -1,14 +1,14 @@
 ---
 # isaac-sfdp
 title: 'Subagents: tools move from the agent namespace to subagent (subagent__spawn/list/cancel, :subagent/*)'
-status: draft
+status: in-progress
 type: task
 priority: high
 tags:
     - agent
     - tools
 created_at: 2026-11-16T02:58:12Z
-updated_at: 2026-11-16T02:58:12Z
+updated_at: 2026-11-16T02:58:19Z
 parent: isaac-4qxr
 ---
 
@@ -31,3 +31,8 @@ All three subagent feature files are re-cut with the new names (feature-level `@
 - `bb features features/tool/subagent_guidance.feature`
 
 One-time check (not a scenario): `grep -rnE '\bagent(__|/)(spawn|list|cancel)' src resources spec features` prints nothing.
+
+feature-baseline: isaac-agent cfacd4e3392090d945c5c324d8b66cabd718c269
+feature-blob: isaac-agent features/tool/subagents.feature e2a0a87c514ce032f7893581c7c25c4bbc346bd5
+feature-blob: isaac-agent features/tool/subagent_control.feature 78afa7ca18bf3b686051a16d8fd60b43ec80291e
+feature-blob: isaac-agent features/tool/subagent_guidance.feature 7e10935abd8e4b591ae6a1485af6f57422e92224
