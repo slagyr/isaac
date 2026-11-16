@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - dream
+    - unverified
 created_at: 2026-11-16T00:30:23Z
-updated_at: 2026-11-16T00:44:30Z
+updated_at: 2026-11-16T00:49:42Z
 parent: isaac-pcm3
 ---
 
@@ -57,3 +58,9 @@ HEAD: isaac-dream bean/isaac-qv5r 25fb9ed09d6b4ae1c509f15c470355ad9896b4d5; reba
 Working tree: clean (review and landing worktrees; attempted squash reset to origin/main after main advanced).
 
 Reproduction: git fetch origin; git rebase origin/main on bean/isaac-qv5r; bb spec. Result: 32 examples, 5 failures, 49 assertions. All five new upstream main tests in spec/isaac/dream/run_spec.clj:35-58 fail because their stub resolves :provider :grover, while new src/isaac/dream/run.clj provider reconstruction calls api/display-name on the keyword: "No implementation of method: :display-name ... for class: clojure.lang.Keyword". bb features on rebased review: 43 examples, 0 failures, 159 assertions. bb spec on origin/main alone: 27 examples, 0 failures, 43 assertions. Fix compatibility with existing provider test doubles (or update tests appropriately) and rerun both suites after rebasing. The initial squash commit 6515c24 was NOT pushed; concurrent main update rejected it and the landing worktree was reset to origin/main. No implementation landed on main.
+
+
+
+## Work checkpoint (2026-11-15, resumed)
+
+Rebased isaac-dream bean/isaac-qv5r onto e9692c7 and kept the upstream dream reply specs. Preserved non-API provider test doubles while reconstructing real providers with the Isaac auth root (`src/isaac/dream/run.clj:168`). `bb spec`: 32 examples, 0 failures, 58 assertions. `bb features`: 43 examples, 0 failures, 159 assertions. `bb bean-gate verify isaac-qv5r --dir isaac-dream=../isaac-dream-qv5r`: exit 2, no feature-baseline. Version 0.2.1 remains bumped. Implementation branch pushed at 522dd5e (includes rebased commits efb83b1 and 49bed31); verifier should review and land it. No jvm-spec task.
