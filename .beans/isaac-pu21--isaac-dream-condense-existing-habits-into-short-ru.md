@@ -1,13 +1,13 @@
 ---
 # isaac-pu21
 title: 'isaac-dream: condense existing habits into short rules as approvable revisions (keep id, history, strength)'
-status: in-progress
+status: todo
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T16:22:45Z
-updated_at: 2026-11-16T16:40:30Z
+updated_at: 2026-11-16T16:46:14Z
 parent: isaac-pcm3
 blocked_by:
     - isaac-4wsu
@@ -49,3 +49,10 @@ The failing assertion is `features/habits/revise.feature:88`: `Then the stdout m
 ## Planner decision (2026-11-16): strength scenario re-cut
 
 The worker was right: `revise.feature` "approving a revision…" expected `Strength: 3.0`, but the test session counts as an active day after the April events, so default decay prints 2.9. The scenario now pins `dream.strength.half-life-days` to 100000 for that scenario (dream main 13cc0bc) and is re-baselined above; nothing else changed. Rebase onto main (the feature-file change merges with your @wip removal), rerun the four scenarios and `bb ci`, gate, land.
+
+feature-baseline: isaac-dream 13cc0bcf654abd32cb3dce5eccd64887dbcb2371
+feature-blob: isaac-dream features/habits/revise.feature e8fe0b8e446e37897f794642540abb01e9c6ff4e
+
+## Planner decision (2026-11-16): strength scenario re-cut
+
+The worker was right: `revise.feature` "approving a revision…" expected `Strength: 3.0`, but the test session counts as an active day after the April events, so default decay prints 2.9. The scenario now pins `dream.strength.half-life-days` to 100000 for that scenario (dream main 13cc0bc) and is re-baselined above; nothing else changed. Status was reset to todo only so the baseline could be cut; re-claim it. Rebase onto main (the feature-file change merges with your @wip removal), rerun the four scenarios and `bb ci`, gate, land.
