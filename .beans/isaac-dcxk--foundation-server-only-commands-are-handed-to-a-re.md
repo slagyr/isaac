@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:26:17Z
-updated_at: 2026-11-16T18:41:16Z
+updated_at: 2026-11-16T18:49:55Z
 ---
 
 Repo: **isaac-foundation**. Bean A of three (B: cli-server + cli-proxy routing with a local token; C: Foreman push bus). Micah, 2026-11-16: "Some commands are server-only." Commands like `foreman signal` and `dream run` run in a separate process today when typed on the host, so their writes never pass through the server (no stream push) and they miss server-held state (the dream OAuth bug). Spec: `features/cli/server_only.feature`.
@@ -41,3 +41,8 @@ Implemented server-only CLI dispatch, optional single forwarder berth, and Marig
 ## Checkpoint (2026-11-16)
 
 Done: 0f69809 landed on isaac-foundation main, gate PASS, native suites green; bean note synced on isaac main. Next: diagnose JVM features runner hang after 367 passing examples (bb jvm-features), resume at spec-support/src/bb/test_tasks.clj:105 and inspect lingering JVM threads; then complete bean when JVM runner exits green.
+
+
+## JVM feature verification (2026-11-16)
+
+The JVM feature runner now exits 0 with JAVA_TOOL_OPTIONS=-Dclojure.gitlibs.dir=<checkout>/target/gitlibs (367 examples, 0 failures, 1054 assertions, 2 pre-existing pending). Background CLI and runner feature fixtures now clean up their threads. Follow-up main-sha: isaac-foundation ab9f1c5711c7f85aefc67100bdaef1b80fe7a736. bb ci and bean gate PASS.
