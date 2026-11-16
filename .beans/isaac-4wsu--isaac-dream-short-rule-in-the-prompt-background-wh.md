@@ -1,7 +1,7 @@
 ---
 # isaac-4wsu
 title: 'isaac-dream: short rule in the prompt, background (why, evidence, history, strength) via dream show and a dream__habit tool'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -27,3 +27,6 @@ Repo: **isaac-dream**. Micah, 2026-11-16: habits should be short in the prompt; 
 ## Acceptance
 
 `bb features features/habits/background.feature` green with `@wip` removed (7 scenarios), plus `bb spec` and full `bb features` green. Do not bump the module version (the deploy train does).
+
+feature-baseline: isaac-dream bf99133ee399aca30234cada7487bb0f86b6790d
+feature-blob: isaac-dream features/habits/background.feature 2c8dc0eb50bc24273ae1493925b335d05d739311
