@@ -46,3 +46,9 @@ Later, if good habits fade during solo stretches: opportunity-based decay (the d
 
 feature-baseline: isaac-dream 83923e51b7f5114d36b7db84a1c6cf384d06d1c8
 feature-blob: isaac-dream features/habits/strength.feature 15fa4dea5940afaa1e078d7aecffe01592bb1f37
+
+## Work checkpoint (2026-11-16)
+
+Done: implemented computed, deduplicated habit strength with crew transcript active-day decay, pinned-first lesson budgeting, pin/unpin/show CLI, schema and version 0.3.0. `bb ci` passed (39 specs, 52 feature examples); all 9 strength scenarios passed; `bb bean-gate verify isaac-o4di --dir isaac-dream=../isaac-dream-o4di` passed on 5d12611. Branch `bean/isaac-o4di` pushed.
+
+Next: landing blocked at `resources/isaac-manifest.edn:2`: rebasing bean branch onto `origin/main` (ef32962, isaac-gomk) conflicts in module version/schema. Rebase aborted, branch unchanged and pushed. Planner must coordinate overlapping manifest changes before landing. Resume at `resources/isaac-manifest.edn:2` after planner decision; then rebase, `bb ci`, gate, squash and complete.
