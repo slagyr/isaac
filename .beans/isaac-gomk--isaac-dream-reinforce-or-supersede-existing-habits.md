@@ -1,13 +1,13 @@
 ---
 # isaac-gomk
 title: 'isaac-dream: reinforce or supersede existing habits instead of re-proposing duplicates'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T03:07:30Z
-updated_at: 2026-11-16T14:51:19Z
+updated_at: 2026-11-16T15:01:10Z
 parent: isaac-pcm3
 ---
 
