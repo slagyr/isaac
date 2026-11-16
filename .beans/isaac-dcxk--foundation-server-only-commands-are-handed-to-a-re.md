@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:26:17Z
-updated_at: 2026-11-16T18:26:57Z
+updated_at: 2026-11-16T18:40:57Z
 ---
 
 Repo: **isaac-foundation**. Bean A of three (B: cli-server + cli-proxy routing with a local token; C: Foreman push bus). Micah, 2026-11-16: "Some commands are server-only." Commands like `foreman signal` and `dream run` run in a separate process today when typed on the host, so their writes never pass through the server (no stream push) and they miss server-held state (the dream OAuth bug). Spec: `features/cli/server_only.feature`.
@@ -29,3 +29,10 @@ The real forwarder (finding the running server, the local token) is bean B.
 
 feature-baseline: isaac-foundation 6303e29d012a7cb1a8df2a16bcfd98d04acd2ce7
 feature-blob: isaac-foundation features/cli/server_only.feature dbdf3b96910b4f0ef4413a5117979d730c6e1857
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-foundation 0f69809ad40e874a44609ecd8e027f49570105b7
+
+Implemented server-only CLI dispatch, optional single forwarder berth, and Marigold fixtures. bb spec, bb features, bb ci, focused server_only feature green. JVM features: 367 examples, 0 failures with JAVA_TOOL_OPTIONS=-Dclojure.gitlibs.dir=<checkout>/target/gitlibs; JVM process remains alive past the runner timeout after Speclj finishes (also reproduced at 180s).
