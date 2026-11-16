@@ -1,13 +1,13 @@
 ---
 # isaac-g551
 title: 'isaac-dream: real dream prompt with the answer shape, and parse fenced JSON replies'
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - dream
 created_at: 2026-11-16T00:31:44Z
-updated_at: 2026-11-16T00:31:44Z
+updated_at: 2026-11-16T00:32:25Z
 parent: isaac-pcm3
 ---
 
