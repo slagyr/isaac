@@ -7,7 +7,7 @@ priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:40Z
-updated_at: 2026-11-16T15:38:07Z
+updated_at: 2026-11-16T15:47:31Z
 parent: isaac-4qxr
 ---
 
@@ -31,3 +31,10 @@ Lead: `deliver!` and the observer both take `(count (:cycle-usages result))` —
 
 feature-baseline: isaac-agent af7101ebd7321fe96dd4d9c0c90039ffb5c0ff68
 feature-blob: isaac-agent features/tool/subagent_control.feature a2b02bda946ac4b187d3729ae71da63f39e50012 104
+
+
+## Landed on main (2026-11-16)
+
+Child cycle counts now use the turn result usage request tally (the same number logged by :turn/ended), shared by list, end log, and parent stats. Focused scenario and unit spec passed; bb ci: 2000 specs, 966 feature examples, 0 failures (1 pre-existing pending). Gate passed on squash commit.
+
+main-sha: isaac-agent 5019a204deeb901d4f29a99f33c946ddc319d8cf
