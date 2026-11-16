@@ -1,13 +1,13 @@
 ---
 # isaac-hu1n
 title: 'Named CLI remotes: isaac remote <name> -- runs a command on a host from ~/.config/isaac.edn (token from env, file or command)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - cli
 created_at: 2026-11-16T15:36:48Z
-updated_at: 2026-11-16T15:36:48Z
+updated_at: 2026-11-16T17:22:37Z
 ---
 
 Repo: **isaac-cli-proxy** only. No foundation change: per Micah's 2026-09-30 ruling (isaac-ewua) foundation never reads a cli-proxy setting and there is no implicit/default routing. A plain `isaac …` always runs locally.
