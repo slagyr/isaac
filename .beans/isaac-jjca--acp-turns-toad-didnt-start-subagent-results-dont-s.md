@@ -1,13 +1,13 @@
 ---
 # isaac-jjca
 title: 'ACP: turns Toad didn''t start (subagent results) don''t stream to an attached session'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:41Z
-updated_at: 2026-11-16T16:35:30Z
+updated_at: 2026-11-16T17:11:05Z
 parent: isaac-4qxr
 ---
 
@@ -39,3 +39,11 @@ feature-blob: isaac-acp features/comm/acp/background_turns.feature b3beb3b9b0385
 ## Work checkpoint (2026-11-16)
 
 Done: agent `bean/isaac-jjca` 12eb0d9 implements attached-session routing and fixes indexed path matching; prior agent `bb ci` green (2011 specs, 968 features), focused new path spec green. ACP `bean/isaac-jjca` 6b1d127 streams background turns and detaches stdio attachments; `bb ci` green (84 specs, 71 features) with temporary agent 12eb0d9 pins. Gate passed against bean branch before later commits. Next: rerun agent `bb ci`, then land agent on main; update ACP pins from temporary 12eb0d9 to landed agent SHA, rerun ACP `bb ci` and `bb bean-gate verify isaac-jjca --dir isaac-acp=/Users/zane/agents/isaac/work-1/isaac-acp-jjca --ref isaac-acp=bean/isaac-jjca`, land ACP, complete bean. Resume at `isaac-agent-jjca/spec/isaac/agent/step_tables.clj:29` (new path matching) and `isaac-acp-jjca/src/isaac/comm/acp/cli.clj:176` (stdio attachment cleanup).
+
+
+## Landed and verified (2026-11-16)
+
+main-sha: isaac-agent 12eb0d9dff5330060a0d04d63a1649ee3fdd805d
+main-sha: isaac-acp 97f6b0a32d9f84092fdae785ca3b2d526b07f162
+
+Agent `bb ci`: 2012 specs, 968 features (1 pre-existing pending), zero failures. ACP `bb ci`: 84 specs, 71 features, zero failures. `bb features features/comm/acp/background_turns.feature`: 1 scenario, zero failures. Bean gate passed after all commits: `bb bean-gate verify isaac-jjca --dir isaac-acp=/Users/zane/agents/isaac/work-1/isaac-acp-jjca --ref isaac-acp=bean/isaac-jjca` (exit 0). Both module branches fast-forwarded to main.
