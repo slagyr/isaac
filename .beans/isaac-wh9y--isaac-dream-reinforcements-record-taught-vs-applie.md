@@ -36,3 +36,7 @@ feature-blob: isaac-dream features/dream/kinds.feature aae873207a82b96002165e5e7
 ## Planner note (2026-11-16): version bumps
 
 Sibling dream beans land concurrently. When rebasing onto main conflicts only on `resources/isaac-manifest.edn` `:version`, take the higher of main's and yours, bump its patch by one if they are equal, keep every schema key from both sides, and carry on without stopping for the planner.
+
+## Planner decision (2026-11-16): manifest conflict
+
+Checked by rebasing `bean/isaac-wh9y` onto main 3600e65: the only conflict is `resources/isaac-manifest.edn` `:version` (main `0.3.0` from isaac-o4di, this branch `0.2.4`). Every source file merges cleanly. Resolve with version `0.3.1` and keep main's schema keys (`:prompt-chars`, `:strength`). Then run `bb ci` on the rebased tree (o4di's strength code and this bean's kinds now meet), gate, squash and land.
