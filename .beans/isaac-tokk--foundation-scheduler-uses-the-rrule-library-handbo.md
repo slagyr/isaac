@@ -15,6 +15,7 @@ Foundation's scheduler uses the rrule library instead of its own `scheduler/cale
 
 - Pin the library by git sha in foundation `deps.edn` and `bb.edn`; delete `scheduler/calendar.clj` and move its specs' coverage to the library.
 - `features/scheduler/calendar.feature` keeps passing unchanged.
+- Cron jobs can add and skip dates (EXDATE/RDATE from isaac-3s4i). Key names to settle with Micah when the scenarios are written.
 - Handbook: the cron chapter (isaac-cron) and foundation's scheduler section list the accepted RRULE parts, with examples (weekdays at 9, last Friday of the month, every 2 weeks with `:dtstart`).
 - An error for an unsupported or invalid part names the part and points to the handbook section.
 
