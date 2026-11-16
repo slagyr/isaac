@@ -1,13 +1,13 @@
 ---
 # isaac-qv5r
 title: 'isaac-dream: dreams on OAuth providers (grok, chatgpt) fail with ''Missing OAuth login'''
-status: todo
+status: in-progress
 type: bug
 priority: high
 tags:
     - dream
 created_at: 2026-11-16T00:30:23Z
-updated_at: 2026-11-16T00:30:23Z
+updated_at: 2026-11-16T00:31:22Z
 parent: isaac-pcm3
 ---
 
