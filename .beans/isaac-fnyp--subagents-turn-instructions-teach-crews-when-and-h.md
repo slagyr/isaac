@@ -1,7 +1,7 @@
 ---
 # isaac-fnyp
 title: 'Subagents: turn instructions teach crews when and how to delegate'
-status: draft
+status: todo
 type: task
 priority: normal
 tags:
@@ -54,3 +54,6 @@ Run the whole file: `bb features features/tool/subagent_guidance.feature` (remov
 ## After deploy (not a gate)
 
 Rerun a sweep-heavy task (the tono-jlzi pattern) on zanebot and compare parent context growth and compactions before and after.
+
+feature-baseline: isaac-agent 9831daa1905f30e4d8e77cc0401ebc6fe269e51c
+feature-blob: isaac-agent features/tool/subagent_guidance.feature 864771c92cb7f86143d095e0a2066b6b92fac503
