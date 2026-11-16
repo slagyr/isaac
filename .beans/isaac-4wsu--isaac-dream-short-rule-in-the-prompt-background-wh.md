@@ -1,13 +1,13 @@
 ---
 # isaac-4wsu
 title: 'isaac-dream: short rule in the prompt, background (why, evidence, history, strength) via dream show and a dream__habit tool'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T16:22:45Z
-updated_at: 2026-11-16T16:22:45Z
+updated_at: 2026-11-16T16:23:31Z
 parent: isaac-pcm3
 ---
 
