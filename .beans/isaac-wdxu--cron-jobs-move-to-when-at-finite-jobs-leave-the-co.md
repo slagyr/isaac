@@ -1,13 +1,13 @@
 ---
 # isaac-wdxu
 title: Cron jobs move to :when / :at; finite jobs leave the config; isaac cron list
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - cron
 created_at: 2026-11-16T19:01:51Z
-updated_at: 2026-11-16T19:01:51Z
+updated_at: 2026-11-16T20:18:54Z
 parent: isaac-e0qe
 blocked_by:
     - isaac-ovas
