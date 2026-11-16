@@ -35,3 +35,13 @@ Run `isaac dream condense --crew zane` on zanebot, review the 38 revisions with 
 
 feature-baseline: isaac-dream 2f3a4693c65dfe1fa14de7f98b3b9122e9370a97
 feature-blob: isaac-dream features/habits/revise.feature 14a70510f7bd2696219c86bb4751804d75376559
+
+## Acceptance conflict (2026-11-16)
+
+Implementation is committed at `isaac-dream` `bean/isaac-pu21` (`254d5dc`). `bb spec` passes (53 examples); `bb features features/habits/revise.feature` has 4 examples, 1 failure; full `bb features` has 76 examples, 1 failure. `bb bean-gate verify isaac-pu21` returned:
+
+```
+isaac-pu21 bean-gate: PASS (isaac-dream @ HEAD 254d5dc (branch bean/isaac-pu21))
+```
+
+The failing assertion is `features/habits/revise.feature:88`: `Then the stdout matches: Strength: 3\\.0`. The scenario creates a `greenhouse` session via Background; that session has a current-day chronicle entry. Existing `habits/active-days` includes this day and `habits/strength` applies its configured 30-day half-life to the 2026-04 approved and reinforced events. Actual strength is 2.9314799053027376, rendered `Strength: 2.9`. `:revised` has zero weight and the revision leaves decay untouched as explicitly required in the bean. Making 3.0 pass would require changing decay semantics or the baselined scenario's fixture/assertion. Neither is a worker-authorized contract edit. Planner should correct and re-baseline the scenario (e.g. expect 2.9 under its current-day session fixture), then redispatch. No `.feature` edits were made except removing `@wip`.
