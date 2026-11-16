@@ -1,7 +1,7 @@
 ---
 # isaac-by8s
 title: 'Subagents: parent stays available while children run (no sleep-polling; timer tool to check back)'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -46,3 +46,6 @@ Scenarios in `isaac-agent/features/tool/timers.feature` (feature-level `@wip`; r
 - `bb features features/tool/timers.feature:82` — `exec__run "sleep 45"` is refused, pointing at `timer__set`
 
 Run the whole file: `bb features features/tool/timers.feature`.
+
+feature-baseline: isaac-agent d4038f1d242b33e489a800f46879eaf4602e8b17
+feature-blob: isaac-agent features/tool/timers.feature 8003ba8f44c133e0c09de011ce5952ecae1ac29c
