@@ -1,7 +1,7 @@
 ---
 # isaac-dcxk
 title: 'foundation: server-only commands are handed to a registered forwarder (berth :isaac/cli-forwarder)'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -26,3 +26,6 @@ The real forwarder (finding the running server, the local token) is bean B.
 ## Acceptance
 
 `bb features features/cli/server_only.feature` green with `@wip` removed (5 scenarios), plus `bb spec`, `bb features` and `bb jvm-features` green. Do not bump the version (the deploy train does).
+
+feature-baseline: isaac-foundation 6303e29d012a7cb1a8df2a16bcfd98d04acd2ce7
+feature-blob: isaac-foundation features/cli/server_only.feature dbdf3b96910b4f0ef4413a5117979d730c6e1857
