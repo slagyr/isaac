@@ -1,7 +1,7 @@
 ---
 # isaac-hlak
 title: 'isaac remote --help shows only the url form: add named remotes and the use/list/remove/status subcommands'
-status: draft
+status: todo
 type: bug
 priority: low
 tags:
@@ -42,3 +42,6 @@ When remotes are configured, help ends with the `isaac remote list` lines so the
 Scenario in `isaac-cli-proxy/features/remote.feature` (scenario-level `@wip`; remove it when it passes):
 
 - `bb features features/remote.feature:453` — `isaac remote --help` shows both command forms, `use/list/remove/status`, where remotes live, and the configured remotes' list lines
+
+feature-baseline: isaac-cli-proxy ea4c3c1d4bdb2f200e79efc9c89bc0e90ef7931f
+feature-blob: isaac-cli-proxy features/remote.feature 609a198617db6e36f2031b093503c23c2919ded8 453

@@ -1,7 +1,7 @@
 ---
 # isaac-2z7z
 title: ACP answers end of input with an Invalid Request error (id null) over remote /cli
-status: draft
+status: todo
 type: bug
 priority: low
 tags:
@@ -39,3 +39,6 @@ Not EOF: **blank lines.** The proxy (`isaac-cli-proxy` `pump-stdin!`) sends each
 Scenario in `isaac-acp/features/comm/acp/cli.feature` (scenario-level `@wip`; remove it when it passes):
 
 - `bb features features/comm/acp/cli.feature:257` — a blank line in the ACP input gets no response: both real requests answer, no `Invalid Request`, exit 0
+
+feature-baseline: isaac-acp dd216128ed44c2567abbbceaf399024f4ae202fd
+feature-blob: isaac-acp features/comm/acp/cli.feature a69a8ffca6a7e8c4704429c6359f2da034d9c048 257
