@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:28:12Z
-updated_at: 2026-11-16T18:55:45Z
+updated_at: 2026-11-16T19:04:46Z
 blocked_by:
     - isaac-dcxk
 ---
@@ -42,4 +42,4 @@ isaac-dcxk landed: pin isaac-foundation (deps.edn and bb.edn, including the spec
 
 Done: claimed; isolated worktrees `../isaac-cli-server-w0yx` and `../isaac-cli-proxy-w0yx`, branches pushed at a6b2729 and 0191b48. Foundation pins changed to ab9f1c5 in both repos. Added local credential component + verifier (server), forwarder + initial specs (proxy); focused `bb spec spec/isaac/cli_server/local_spec.clj` and `bb spec spec/isaac/cli_proxy/forwarder_spec.clj` green. These are intermediate only, not acceptance.
 
-Next: fix server component ordering/route auth and proxy global --remote parsing; implement new integration steps/fixtures, remove only @wip from `features/server_only.feature`, run focused slow scenarios and full suites. Resume at `../isaac-cli-proxy-w0yx/spec/isaac/cli_proxy/integration_steps.clj:49` and `../isaac-cli-server-w0yx/src/isaac/cli_server/local.clj:53`. Run `bb bean-gate verify isaac-w0yx` from this clone only after acceptance is green.
+Done since checkpoint: server manifest now orders after HTTP and registers token verifier at bootstrap; proxy integration steps added, real-root fixture setup added, @wip removed. Focused direct gherclj now 3/6 scenarios green, 3 red (server-only embedded command, bad token, --remote); no green acceptance run, so uncommitted edits remain. Next: debug proxy forwarding and fixture registry retention, finish --remote option; resume `../isaac-cli-proxy-w0yx/spec/isaac/cli_proxy/integration_steps.clj:191` and `../isaac-cli-proxy-w0yx/src/isaac/cli_proxy/forwarder.clj:24`. Last command `ISAAC_CLI_SERVER_ROOT=../isaac-cli-server-w0yx bb gherclj features/server_only.feature` exited 1 (3 failures). Then run full acceptance and gate.
