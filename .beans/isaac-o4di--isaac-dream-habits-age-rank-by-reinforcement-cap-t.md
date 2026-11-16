@@ -1,13 +1,13 @@
 ---
 # isaac-o4di
 title: 'isaac-dream: habit strength — weighted, once a day, decays over active days; strongest first within a budget; pin'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T03:10:41Z
-updated_at: 2026-11-16T14:50:58Z
+updated_at: 2026-11-16T15:04:16Z
 parent: isaac-pcm3
 ---
 
@@ -56,3 +56,10 @@ Next: landing blocked at `resources/isaac-manifest.edn:2`: rebasing bean branch 
 ## Planner decision (2026-11-16): manifest conflict
 
 The conflict at `resources/isaac-manifest.edn` is only the version line: main has `0.2.3` (isaac-g2zv, isaac-gomk), this branch `0.3.0`. Resolve by keeping this branch's schema additions (`:prompt-chars`, `:strength`) and version `0.3.0` (higher than main). Then rebase, `bb ci`, gate, squash and land.
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-dream 3600e65ab1778414e805308923c049dac9dbb431
+
+Rebase conflict in resources/isaac-manifest.edn was version-only (ours 0.3.0, landed gomk 0.2.3). Kept 0.3.0 and the strength schema keys; no handbook/prompt overlap. bb ci green, bean-gate PASS on the squash.
