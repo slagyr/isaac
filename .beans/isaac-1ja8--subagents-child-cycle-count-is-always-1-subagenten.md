@@ -1,13 +1,13 @@
 ---
 # isaac-1ja8
 title: 'Subagents: child cycle count is always 1 (subagent/ended, list, result stats)'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:40Z
-updated_at: 2026-11-16T14:44:40Z
+updated_at: 2026-11-16T15:38:07Z
 parent: isaac-4qxr
 ---
 
