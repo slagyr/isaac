@@ -1,13 +1,13 @@
 ---
 # isaac-wsm6
 title: 'Foreman: stream state changes to dispatchers, and send stall alerts to whoever dispatched'
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - foreman
 created_at: 2026-11-16T15:25:41Z
-updated_at: 2026-11-16T15:38:06Z
+updated_at: 2026-11-16T15:49:12Z
 ---
 
 Repos: **isaac-foreman** (stream route, empty-target skip), **isaac-http** if the route layer needs a streaming response shape. Micah, 2026-11-16, after isaac-o4di and isaac-wh9y stalled unseen until the planner's minute-poll caught them. Specs: `features/foreman/stream.feature`, `features/foreman/dispatcher_alert.feature`.
@@ -40,3 +40,7 @@ feature-blob: isaac-foreman features/foreman/dispatcher_alert.feature ae36ac2dda
 
 Done: stream route follows persisted transition history across processes; dispatcher alert skips empty session; new stream feature steps. Focused 7 scenarios, 108 specs, 69 full features and `bb ci` green; gate PASS on squash 9ddbd24e6e7c190607138db0056feed9e0cfd8fc. Branch bean/isaac-wsm6 pushed at 43ad223.
 Next: push the verified squash commit from `../isaac-foreman-wsm6-land` to `isaac-foreman` main, record main-sha and complete the bean. Resume at `../isaac-foreman-wsm6-land/src/isaac/foreman/stream.clj:35` if rework is required.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-foreman 9ddbd24e6e7c190607138db0056feed9e0cfd8fc
