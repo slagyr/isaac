@@ -1,14 +1,13 @@
 ---
 # isaac-g551
 title: 'isaac-dream: real dream prompt with the answer shape, and parse fenced JSON replies'
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - dream
-    - unverified
 created_at: 2026-11-16T00:31:44Z
-updated_at: 2026-11-16T00:37:54Z
+updated_at: 2026-11-16T00:42:25Z
 parent: isaac-pcm3
 ---
 
@@ -58,3 +57,11 @@ answer in a markdown code fence and `json/parse-string` choked on it.
 ## Implementation (2026-11-16)
 
 Shipped `resources/isaac/dream/prompt.md` with the exact propose/reinforce answer shape, evidence-label guidance, and empty response; `run.clj` extracts JSON objects from fenced or prose-wrapped replies and records a clear diary error with the reply prefix if none parses. Bumped manifest to 0.2.1. Unit specs cover fenced cited proposal, prompt, prose-only error, and unfenced JSON; `bb ci` green (32 specs, 41 features). Module commit: isaac-dream 452d4ce (origin/bean/isaac-g551). `bb bean-gate verify isaac-g551` exited 2: no feature-baseline. Module branch remains for verification; bean stays in-progress, unverified.
+
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-dream e9692c7dac49d5159d1a4595c356673a9ce6e981
+
+Verification: clean worktree; bb spec 32 examples/0 failures, bb features 41 examples/0 failures, bb ci green; no feature files changed or @wip remaining; foundation/agent dependency pins reachable from origin/main. Prompt shape and evidence labels, fenced/prose JSON, and no-JSON diary error checked. Baseline absent (ignored .verify-baseline.edn); warning/debug output originates in preexisting dependencies.
