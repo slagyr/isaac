@@ -22,3 +22,11 @@ feature-baseline: isaac-cron 490ca7dd36b9ce420d0729c7938180c8ee125fca
 feature-baseline: isaac-cli-server a15a760bc06dfe2166577cd606c175a609ade194
 feature-blob: isaac-cron features/rules.feature a4d852bf03969dbc6322407fa6a4dcafb3dba517 147,164
 feature-blob: isaac-cli-server features/cli/endpoint.feature a58a2e26afe5a753d4b94672f478524adf6a5aae 55
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-foundation 14851dfa38527682db1ebb9adfbf0d50bc3e3a02
+main-sha: isaac-cli-server e51ffe041b95332189e7c917b117f9fb701a6458
+main-sha: isaac-cron 529688da861c5f987c79cf912759af43c32c4c7f
+
+Verified with `bb ci` in foundation and cli-server, `ISAAC_TEST_TIMEOUT_MS=240000 bb ci` in cron, and `bb bean-gate verify isaac-y3go --dir isaac-cron=../isaac-cron --dir isaac-cli-server=../isaac-cli-server` (PASS).
