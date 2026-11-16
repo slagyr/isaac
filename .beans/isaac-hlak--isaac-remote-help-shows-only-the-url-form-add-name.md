@@ -1,13 +1,13 @@
 ---
 # isaac-hlak
 title: 'isaac remote --help shows only the url form: add named remotes and the use/list/remove/status subcommands'
-status: todo
+status: in-progress
 type: bug
 priority: low
 tags:
     - cli
 created_at: 2026-11-16T18:30:01Z
-updated_at: 2026-11-16T18:30:01Z
+updated_at: 2026-11-16T18:36:04Z
 ---
 
 Repo: **isaac-cli-proxy**. Follows isaac-hu1n (named remotes, landed edaa7b9, released 0.1.8).
