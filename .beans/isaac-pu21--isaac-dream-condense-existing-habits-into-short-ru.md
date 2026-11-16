@@ -56,3 +56,9 @@ feature-blob: isaac-dream features/habits/revise.feature e8fe0b8e446e37897f79464
 ## Planner decision (2026-11-16): strength scenario re-cut
 
 The worker was right: `revise.feature` "approving a revision…" expected `Strength: 3.0`, but the test session counts as an active day after the April events, so default decay prints 2.9. The scenario now pins `dream.strength.half-life-days` to 100000 for that scenario (dream main 13cc0bc) and is re-baselined above; nothing else changed. Status was reset to todo only so the baseline could be cut; re-claim it. Rebase onto main (the feature-file change merges with your @wip removal), rerun the four scenarios and `bb ci`, gate, land.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-dream 7c1b4dfdfd2b2a2da495f2de27d9ebbbee8d7483
+
+`bb features features/habits/revise.feature`: 4 examples, 0 failures; `bb ci`: 53 specs and 76 features green; `bb bean-gate verify isaac-pu21`: PASS on squash commit.
