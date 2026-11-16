@@ -7,7 +7,7 @@ priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:40Z
-updated_at: 2026-11-16T16:35:31Z
+updated_at: 2026-11-16T16:49:10Z
 parent: isaac-4qxr
 ---
 
@@ -49,3 +49,7 @@ Run the whole file: `bb features features/tool/timers.feature`.
 
 feature-baseline: isaac-agent d4038f1d242b33e489a800f46879eaf4602e8b17
 feature-blob: isaac-agent features/tool/timers.feature 8003ba8f44c133e0c09de011ce5952ecae1ac29c
+
+## Held (awaiting planner, 2026-11-16)
+
+Implementation on isaac-agent bean/isaac-by8s (428e684) passes all five timers scenarios (bb features features/tool/timers.feature: 5/5) and bean-gate verify PASS. Full bb ci is RED (2012 specs green; 973 features, 8 failures) because existing baselined features conflict with the new contract: features/tool/built_in.feature:243 expects exec__run sleep 10 to time out, while this bean explicitly requires refusing sleep >=5; features/bridge/suspend.feature:59 expects exec__run sleep 30 to keep running and yield an unclean shutdown marker, while the new contract requires refusing it. Five features/tool/permissions.feature scenarios assert an exact old built-in tool set omitting timer__set/list/cancel; adding the required built-ins breaks those assertions. One bridge/cancel.feature failure was intermittent (absent on the second full run). Tried adjusting non-contract code to avoid failures but cannot satisfy both approved contracts honestly. Planner must revise/re-baseline the conflicting legacy feature scenarios before bb ci can pass; no feature contract edited. Resume at isaac-agent-isaac-by8s on bean/isaac-by8s, run bb ci then gate and land.
