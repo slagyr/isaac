@@ -6,8 +6,9 @@ type: bug
 priority: high
 tags:
     - dream
+    - unverified
 created_at: 2026-11-16T00:30:23Z
-updated_at: 2026-11-16T00:31:22Z
+updated_at: 2026-11-16T00:38:35Z
 parent: isaac-pcm3
 ---
 
@@ -47,4 +48,4 @@ Give the dream's provider the Isaac root the same way a turn does (reuse
 
 ## Work checkpoint (2026-11-15)
 
-Done: claimed bean; added OAuth dream scenarios for Grok and ChatGPT, stored OAuth login fixture, token assertion, root-augmented provider in `src/isaac/dream/run.clj`, bumped manifest to 0.2.1. First Grover simulation test passed after fix and failed without fix but simulated OAuth bypasses missing-login check; replaced with real-provider scenarios and stubbed transport. Last test `bb features features/dream/oauth.feature` RED due to temporary diagnostic assertion (`error diagnostic`) despite diary error nil (success). Next: remove diagnostic rows in `features/dream/oauth.feature:32` and `:54`, verify real-provider test fails without root and succeeds with root; run `bb spec`, `bb features`, gate, hand off ungated bean.
+Done: implemented OAuth-root provider reconstruction in `src/isaac/dream/run.clj:157`, bumped manifest to 0.2.1. New Grok and ChatGPT real-provider scenarios use stored unexpired OAuth tokens and assert success, proposed habit, diary and outbound Bearer token (`features/dream/oauth.feature:22`, `spec/isaac/dream/oauth_steps.clj:21`). Confirmed both fail without the fix (exit 1) and pass with it. `bb spec`: 27 examples / 43 assertions; `bb features`: 43 examples / 159 assertions; no `bb jvm-spec` task. Implementation commit `isaac-dream` 25fb9ed pushed to `bean/isaac-qv5r`. `bb bean-gate verify isaac-qv5r` exit 2: no feature-baseline; verifier path. Next: verifier reviews `features/dream/oauth.feature:22` and lands implementation from `bean/isaac-qv5r` (ungated).
