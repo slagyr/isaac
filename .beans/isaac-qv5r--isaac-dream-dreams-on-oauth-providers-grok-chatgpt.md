@@ -1,14 +1,13 @@
 ---
 # isaac-qv5r
 title: 'isaac-dream: dreams on OAuth providers (grok, chatgpt) fail with ''Missing OAuth login'''
-status: in-progress
+status: completed
 type: bug
 priority: high
 tags:
     - dream
-    - unverified
 created_at: 2026-11-16T00:30:23Z
-updated_at: 2026-11-16T00:56:36Z
+updated_at: 2026-11-16T01:01:10Z
 parent: isaac-pcm3
 ---
 
@@ -78,3 +77,10 @@ Landing blocker: git rebase origin/main on bean/isaac-qv5r fails at 25fb9ed with
 ## Work checkpoint (2026-11-15, linear branch)
 
 The original `origin/bean/isaac-qv5r` has a redundant merge commit and cannot rebase cleanly; do not land that ref. Published the *identical tree* (verified `git diff --exit-code efb83b1 522dd5e`) as the linear `isaac-dream` ref `origin/bean/isaac-qv5r-linear` at `efb83b1c6474a90ec4ad9ba8a46bdec151e656c4`, based on `origin/main` at `e9692c7`. This avoids force-pushing over the checkpoint branch. For verification/landing check out `origin/bean/isaac-qv5r-linear` into a local `bean/isaac-qv5r` branch in a fresh worktree (or use the linear ref directly). `bb spec`: 32 examples, 0 failures, 58 assertions; `bb features`: 43 examples, 0 failures, 159 assertions; `bb jvm-spec` absent; `bb bean-gate verify isaac-qv5r --dir isaac-dream=../isaac-dream-qv5r`: exit 2 (not gated). Manifest version 0.2.1 is on module main. No implementation landed. Next: verifier reviews and lands the linear branch, not the redundant merge branch.
+
+
+## Landed on main (2026-11-15)
+
+main-sha: isaac-dream 30cb30700000086421411da2545ff4721dc2e295
+
+Verification: linear branch efb83b1 rebased cleanly onto e9692c7; squash tree identical. Fresh bb spec: 32 examples, 0 failures, 58 assertions. Fresh bb features: 43 examples, 0 failures, 159 assertions (repeated on squash). Grok and ChatGPT OAuth scenarios assert Bearer token, habit proposal and succeeded diary; no @wip. bb jvm-spec task absent. Agent and foundation pinned SHAs reachable from their origin/main. Manifest 0.2.1 already on module main from prior ancestry.
