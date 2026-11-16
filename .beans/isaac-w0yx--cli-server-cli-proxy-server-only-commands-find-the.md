@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:28:12Z
-updated_at: 2026-11-16T19:23:08Z
+updated_at: 2026-11-16T19:23:46Z
 blocked_by:
     - isaac-dcxk
 ---
@@ -43,3 +43,11 @@ isaac-dcxk landed: pin isaac-foundation (deps.edn and bb.edn, including the spec
 Done: claimed; isolated worktrees `../isaac-cli-server-w0yx` and `../isaac-cli-proxy-w0yx`, branches pushed at a6b2729 and 0191b48. Foundation pins changed to ab9f1c5 in both repos. Added local credential component + verifier (server), forwarder + initial specs (proxy); focused `bb spec spec/isaac/cli_server/local_spec.clj` and `bb spec spec/isaac/cli_proxy/forwarder_spec.clj` green. These are intermediate only, not acceptance.
 
 Done: all 6 server_only scenarios pass; both repos bb ci green (proxy includes all slow scenarios); bb bean-gate verify isaac-w0yx --dir isaac-cli-server=../isaac-cli-server-w0yx --dir isaac-cli-proxy=../isaac-cli-proxy-w0yx PASS. Both branches rebase/CI green. Server squash commit b0356e1 created on local main, NOT pushed yet. Proxy branch 36c590e pushed; sibling proxy main has unrelated dirty changes, do not touch. Next: squash proxy branch in isolated worktree against origin/main, re-run gate on squash refs, push both mains, record main-sha and complete. Resume at ../isaac-cli-proxy-w0yx/src/isaac/cli_proxy/explicit.clj:10; command git worktree add ../isaac-cli-proxy-w0yx-land --detach origin/main from proxy branch checkout. No tests red.
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-cli-server b0356e1406992f1b9813f384f539797c0689ddb9
+main-sha: isaac-cli-proxy e71020addd5a08aff213c4564ee2b67902428766
+
+Verification: bb ci both repos; bb features-slow features/server_only.feature (6 examples, 0 failures); bean-gate PASS against squash commits.
