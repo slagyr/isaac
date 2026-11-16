@@ -1,13 +1,13 @@
 ---
 # isaac-by8s
 title: 'Subagents: parent stays available while children run (no sleep-polling; timer tool to check back)'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:40Z
-updated_at: 2026-11-16T16:49:10Z
+updated_at: 2026-11-16T17:30:16Z
 parent: isaac-4qxr
 ---
 
@@ -59,3 +59,9 @@ Implementation on isaac-agent bean/isaac-by8s (428e684) passes all five timers s
 - **Sleep fixtures fixed on main** (isaac-agent, "long-running exec fixtures loop short sleeps"): `cancel.feature` ×2, `suspend.feature`, `built_in.feature` (timeout) used `sleep 30` / `sleep 10` as a long-running command; they now run `while :; do sleep 1; done`, which the new rule allows. Green on main. `timeout.feature:62` (`sleep 1; echo finished`) is under the 5 s threshold and stays.
 - **Tool lists don't change:** timer tools are opt-in like the subagent tools — NOT part of `:all`; a crew gets them only by naming `:timer/*` (or a member). Exclude them where `tools_config.clj` already excludes `subagent__*` from `:all`. So `permissions.feature`'s exact `:all` lists stay as they are.
 - No change to `timers.feature`; the baseline stands.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-agent 70a30c9f7bf835b8861136283f8880fc86d84163
+
+Validation: `bb ci` (2018 specs, 973 features; 0 failures, 1 pre-existing pending), `bb bean-gate verify isaac-by8s --dir isaac-agent=../isaac-agent-by8s-land` PASS on squash commit.
