@@ -1,13 +1,13 @@
 ---
 # isaac-pu21
 title: 'isaac-dream: condense existing habits into short rules as approvable revisions (keep id, history, strength)'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T16:22:45Z
-updated_at: 2026-11-16T16:22:45Z
+updated_at: 2026-11-16T16:40:30Z
 parent: isaac-pcm3
 blocked_by:
     - isaac-4wsu
