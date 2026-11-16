@@ -1,13 +1,13 @@
 ---
 # isaac-fnyp
 title: 'Subagents: turn instructions teach crews when and how to delegate'
-status: todo
+status: in-progress
 type: task
 priority: normal
 tags:
     - agent
 created_at: 2026-11-01T18:45:06Z
-updated_at: 2026-11-01T18:45:06Z
+updated_at: 2026-11-16T00:36:08Z
 parent: isaac-4qxr
 blocked_by:
     - isaac-p5d3
