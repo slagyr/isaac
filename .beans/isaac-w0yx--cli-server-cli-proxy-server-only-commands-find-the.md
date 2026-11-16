@@ -1,7 +1,7 @@
 ---
 # isaac-w0yx
 title: 'cli-server + cli-proxy: server-only commands find their server via state/cli-server.edn and a local token'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -29,3 +29,6 @@ Repos: **isaac-cli-server** (server file + token) and **isaac-cli-proxy** (the f
 ## Acceptance
 
 `bb features-slow features/server_only.feature` green in isaac-cli-proxy with `@wip` removed (6 scenarios), plus each repo's `bb spec`, `bb features` and `bb features-slow` green. Pin both repos to isaac-dcxk's foundation sha. Do not bump versions (the deploy train does).
+
+feature-baseline: isaac-cli-proxy 5f94704ceebe9f9701677f2c48cca58b310af0bb
+feature-blob: isaac-cli-proxy features/server_only.feature 475223627959c323ac343a856cb3be692298c7b9
