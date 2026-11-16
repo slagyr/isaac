@@ -1,6 +1,6 @@
 ---
 # isaac-hu1n
-title: 'Named CLI remotes: isaac --remote <name> picks a host from ~/.config/isaac.edn (token from env, file or command)'
+title: 'Named CLI remotes: isaac remote <name> -- runs a command on a host from ~/.config/isaac.edn (token from env, file or command)'
 status: draft
 type: feature
 priority: normal
@@ -10,15 +10,13 @@ created_at: 2026-11-16T15:36:48Z
 updated_at: 2026-11-16T15:36:48Z
 ---
 
-Repos: **isaac-foundation** (launcher routing, `--remote` flag), **isaac-cli-proxy** (named remotes, token command, `isaac remote` subcommands). No command module changes — routing stays generic over argv, so isaac-agent's `prompt` never learns about the server.
-
-Follows isaac-gar0 (one `:cli :remote` in `~/.config/isaac.edn`, launcher routes every non-local-only command through cli-proxy to the server's `/cli`).
+Repo: **isaac-cli-proxy** only. No foundation change: per Micah's 2026-09-30 ruling (isaac-ewua) foundation never reads a cli-proxy setting and there is no implicit/default routing. A plain `isaac …` always runs locally.
 
 ## Why (Micah, 2026-11-16)
 
-Micah keeps hand-written wrappers per host in `~/.local/bin`: `zane-isaac` / `yopp-isaac` export `ISAAC_REMOTE_TOKEN` from the macOS keychain (`security find-generic-password … -w`) and exec `isaac remote wss://<host>/cli -- "$@"`; `zane` / `yopp` wrap those for Toad (`toad acp "zane-isaac acp --crew zane"`). Isaac should know the hosts by name instead.
+Micah keeps hand-written per-host wrappers in `~/.local/bin`: `zane-isaac` / `yopp-isaac` export `ISAAC_REMOTE_TOKEN` from the macOS keychain and exec `isaac remote wss://<host>/cli -- "$@"`; `zane` / `yopp` wrap those for Toad. The hard part is the url + secure token lookup; that moves into Isaac. The wrappers stay as one-liners Micah names himself (`exec isaac remote zane -- "$@"`, `exec toad acp "isaac remote zane -- acp --crew zane" "$@"`).
 
-## Design (proposed 2026-11-16, shape to confirm before scenarios)
+## Design (approved 2026-11-16)
 
 ```clojure
 ;; ~/.config/isaac.edn
@@ -26,19 +24,30 @@ Micah keeps hand-written wrappers per host in `~/.local/bin`: `zane-isaac` / `yo
  :cli  {:remotes {:zane {:url   "wss://zanebot.example/cli"
                          :token {:command "security find-generic-password -a $USER -s zanebot-cli-token -w"}}
                   :yopp {:url   "wss://yopp.example/cli"
-                         :token "${YOPP_TOKEN}"}}
-        :remote  :zane}}   ; optional default; absent ⇒ commands run locally
+                         :token "${YOPP_TOKEN}"}}}}
 ```
 
-- **Select a host:** `isaac --remote <name> <command> …`. `--local` (and `ISAAC_CLI_LOCAL=1`) still forces local. Unknown name ⇒ error listing the configured names, nothing runs.
-- **Token sources:** `${VAR}`, token file, literal (0600 file only, as today), and new `{:command "…"}` — run at use, stdout trimmed is the token, nonzero exit or empty output ⇒ the command fails naming the remote. The token is never written to disk or argv.
-- **Compatibility:** the existing single `:cli {:remote {:url … :token …}}` keeps working (it is an unnamed default); `remote use` writes the new shape.
-- **Managing:** `isaac remote use <name> <url> [--token-env VAR | --token-command CMD | --token TOKEN]`, `isaac remote list`, `isaac remote default <name>|off`, `isaac remote status [<name>]` (target + reachability/auth probe, as today).
-- **No bare `isaac <host> …`** — a host name could shadow a command.
-- Failure reporting, `:local-only` commands, reconnect behavior: unchanged from isaac-gar0.
-
-Afterwards Micah's Toad launchers become `toad acp "isaac --remote zane acp --crew zane"`.
+- `isaac remote <name> -- <command…>` — an argument with `://` is a url (today's form, unchanged); otherwise it is a remote name. Unknown name ⇒ `unknown remote: <name> (configured: …)`, exit 1, no connection.
+- Token sources per remote: `${VAR}`, literal (0600 file only, as today), and `{:command "…"}` — run at use, trimmed stdout is the token; nonzero exit or empty output ⇒ `<name>: token command failed`, exit 1, no connection. The token never reaches argv, stdout or stderr. `--token-file` / `--token-env` still override.
+- `isaac remote use <name> <url> [--token-env VAR | --token-command CMD | --token-file PATH]` adds/replaces one remote, preserving `:root`, other keys and other remotes (private file when a literal token is written).
+- `isaac remote list` — one line per remote: `<name>  <url>  isaac remote <name> -- <command>`; no probe, no token shown.
+- `isaac remote remove <name>`; `isaac remote status [<name>]` — target + reachability/auth probe for that remote; `no remotes configured` when empty.
+- The single legacy `:cli {:remote {:url :token}}` is still honored for the url-matched token lookup (existing scenario); `remote use`/`off` for it are replaced by the named forms.
+- Handbook: update `resources/isaac/cli_proxy/handbook.md` with named remotes and the one-line wrapper examples. No shim generator.
 
 ## Acceptance
 
-Draft — scenarios after the config shape is confirmed: `--remote zane` routes to zane's url with its token; no default ⇒ local; default set ⇒ routed; `--local` beats the default; unknown name lists names; a token command supplies the bearer and a failing one errors; the old single-remote shape still routes; `remote use/list/default/status` round-trip the pointer file and preserve `:root`.
+Scenarios in `isaac-cli-proxy/features/remote.feature` (scenario-level `@wip`; remove each when it passes):
+
+- `bb features features/remote.feature:306` — a named remote runs the command on its host with its token
+- `bb features features/remote.feature:325` — a token command supplies the bearer credential
+- `bb features features/remote.feature:339` — a failing token command names the remote and connects to nothing
+- `bb features features/remote.feature:353` — an unknown remote name lists the configured names
+- `bb features features/remote.feature:364` — remote use adds a named remote, keeps :root and other remotes
+- `bb features features/remote.feature:380` — remote use with a token file writes a private config
+- `bb features features/remote.feature:390` — remote list shows each remote with a ready-to-use command line
+- `bb features features/remote.feature:403` — remote remove drops one remote and keeps everything else
+- `bb features features/remote.feature:419` — remote status probes a named remote
+- `bb features features/remote.feature:436` — remote status with no remotes says so
+
+Run the whole file: `bb features features/remote.feature`.
