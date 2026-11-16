@@ -1,13 +1,13 @@
 ---
 # isaac-wdxu
 title: Cron jobs move to :when / :at; finite jobs leave the config; isaac cron list
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - cron
 created_at: 2026-11-16T19:01:51Z
-updated_at: 2026-11-16T20:18:54Z
+updated_at: 2026-11-16T20:35:27Z
 parent: isaac-e0qe
 blocked_by:
     - isaac-ovas
@@ -65,3 +65,9 @@ feature-blob: isaac-cron features/scheduling.feature 710e22b96c34adba95c512461a1
 
 Done: pinned foundation 367c9aa locally; implemented RRULE/:at scheduling, finite-job mutate removal/history, late window, job validation and cron-list CLI, removed scenario @wip. Focused `bb spec -F spec/isaac/cron/service_spec.clj` and schema spec green before later edits.
 Next: tests RED: `bb features features/rules.feature` currently 2 failures (config validate and cron list). CLI config validation fails early because pinned agent c81bf092 exports manifest check-session-berths but lacks its function; update agent pin to main 3233755 (reachable), then rerun. Resume at `isaac-cron/bb.edn:31` for agent pins, `src/isaac/cron/cli.clj:28` for list output, `src/isaac/cron/checks.clj:10` for validation. Remove temporary debug after-scenario output at `feature-steps/isaac/cron/cron_steps.clj:122`. Then run full bb ci, gate. No green run since debug changes; do not commit as green yet.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-cron 3051a15d118b75068ecb69e073df4a8bcae8d97f
+
+Validation: `ISAAC_TEST_TIMEOUT_MS=180000 bb ci` (28 specs, 29 features, zero failures); `bb bean-gate verify isaac-wdxu` PASS on branch and squash main. Default 60s test timeout may expire *after* green feature output during JVM shutdown; 180s completes. Note: `bb lint src spec` reports existing speclj macro-resolution errors, not part of CI.
