@@ -1,7 +1,7 @@
 ---
 # isaac-wsm6
 title: 'Foreman: stream state changes to dispatchers, and send stall alerts to whoever dispatched'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -31,3 +31,7 @@ Repos: **isaac-foreman** (stream route, empty-target skip), **isaac-http** if th
 ## Acceptance
 
 `bb features features/foreman/stream.feature features/foreman/dispatcher_alert.feature` green with `@wip` removed (7 scenarios), plus `bb spec` and full `bb features` green. Do not bump the module version (the deploy train does).
+
+feature-baseline: isaac-foreman 9abcf3e1ebd1116ca2694e1da8b36a3e44bedc2d
+feature-blob: isaac-foreman features/foreman/stream.feature a9500bc5265c03f364b46889a8fd41ad34f2d489
+feature-blob: isaac-foreman features/foreman/dispatcher_alert.feature ae36ac2dda0badf04d53cd9b6e178db1f7a45646
