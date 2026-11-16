@@ -17,10 +17,18 @@ Repo: **isaac-agent** (spawn / turn submit) and possibly **isaac-foundation** (C
 
 A turn run with local `isaac prompt -c zane …` (in the short-lived CLI process, logging to cli.log) called `subagent__spawn`. The child session "astute-holly" was created, but its queued turn never ran and left no turn record: the queue it went to lived in the CLI process, which exited when the parent's turn ended. The same spawn through the server (hail) worked.
 
-## Fix
+## Correction (2026-11-16)
 
-Either the child's turn is durable and the server picks it up, or spawn refuses in a process with no running turn queue, with a clear tool error. Never a created session with a lost turn.
+The child turn was not lost: the record (`turns/5aad39ae.edn`) exists. The prompt process **started** the child after the parent's turn ended, then exited mid-run, leaving the record `:running` forever.
+
+## Decision (2026-11-16, Micah)
+
+With a server configured, `isaac prompt` runs on the server (already true via `isaac remote use`, isaac-gar0). With no server, the prompt runs in its own process and **blocks until everything it started is done**: every child it spawned has finished and the parent has processed each result. Then it exits.
 
 ## Acceptance
 
-Draft — scenario to come: spawning from a process without a running queue gives either a child that runs under the server or a tool error, and no orphaned child session.
+Scenario in `isaac-agent/features/tool/subagents.feature` (scenario-level `@wip`; remove it when it passes):
+
+- `bb features features/tool/subagents.feature:110` — `isaac prompt` with no server returns only after the child ran and the parent replied to its result: stdout has the reply to the result, the transcript has the result and the reply, the child is `done`
+
+Scope: the standalone path only. With a server configured (`isaac remote use …`, isaac-gar0) the prompt already runs on the server and its children are the server's.

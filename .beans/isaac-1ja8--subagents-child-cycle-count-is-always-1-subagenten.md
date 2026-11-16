@@ -23,4 +23,8 @@ The child's cycle count comes from the child turn's real count (the `turn/ended`
 
 ## Acceptance
 
-Draft — scenario to come: a child that makes two tool cycles before replying reports `cycles: 2` (or more) in `:subagent/ended`, in `subagent__list`, and in the parent's result message.
+Scenario in `isaac-agent/features/tool/subagent_control.feature` (scenario-level `@wip`; remove it when it passes):
+
+- `bb features features/tool/subagent_control.feature:104` — a child that reads a file before replying reports `cycles: 2` in `subagent__list`, `:subagent/ended`, and the parent's result stats line
+
+Lead: `deliver!` and the observer both take `(count (:cycle-usages result))` — check what the child turn's result actually carries.

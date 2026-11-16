@@ -23,4 +23,8 @@ A suspended (weather) child is not finished. The parent is told the child is wai
 
 ## Acceptance
 
-Draft — scenario to come: a child whose provider walls is listed as suspended, the parent gets no failed result, and when the retry succeeds the parent gets one ok result.
+Scenario in `isaac-agent/features/tool/subagent_control.feature` (scenario-level `@wip`; remove it when it passes):
+
+- `bb features features/tool/subagent_control.feature:130` — a child walled by a 429 is listed `suspended`; after the resume sweep it completes, is listed `done`, logs exactly one `:subagent/ended` (outcome ok), and the parent gets one result
+
+`subagent__list` gains the state `suspended`. In the test the walled child is listed `done` today (zanebot showed `failed`): the observer treats the suspension's turn end as final.
