@@ -34,3 +34,7 @@ The scenarios check fan-out and cleanup; removing the polling loop is checked in
 
 feature-baseline: isaac-foreman 8e50eaa6229e2e4d146827635690b51488e04eab
 feature-blob: isaac-foreman features/foreman/stream.feature 20648c283d2eba2c4b178ab63347c9da80e39ce5 116,141
+
+## Planner note (2026-11-16): foundation pin
+
+isaac-dcxk landed: pin isaac-foundation (deps.edn and bb.edn, including the spec/test-support roots) to `ab9f1c5711c7f85aefc67100bdaef1b80fe7a736`.

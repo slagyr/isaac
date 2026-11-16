@@ -32,3 +32,7 @@ Repos: **isaac-cli-server** (server file + token) and **isaac-cli-proxy** (the f
 
 feature-baseline: isaac-cli-proxy 5f94704ceebe9f9701677f2c48cca58b310af0bb
 feature-blob: isaac-cli-proxy features/server_only.feature 475223627959c323ac343a856cb3be692298c7b9
+
+## Planner note (2026-11-16): foundation pin
+
+isaac-dcxk landed: pin isaac-foundation (deps.edn and bb.edn, including the spec/test-support roots) to `ab9f1c5711c7f85aefc67100bdaef1b80fe7a736`.
