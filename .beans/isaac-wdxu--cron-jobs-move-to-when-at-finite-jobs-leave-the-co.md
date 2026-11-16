@@ -60,3 +60,8 @@ feature-blob: isaac-cron features/origin.feature 50ecbf17a0d7a67a1e06fe294ce9a07
 feature-blob: isaac-cron features/prompt.feature daf8c7cfe770e66fb7fd34467ad44de278ffa1b0 15,31,50,72,81
 feature-blob: isaac-cron features/rules.feature 1c405b1a63834320177331aa00d8d7691b9d20f9 16,28,52,69,86,104,118,147
 feature-blob: isaac-cron features/scheduling.feature 710e22b96c34adba95c512461a1200d734894a49 21,38,52,69,84,104,125,142,160
+
+## Work checkpoint (2026-11-16)
+
+Done: pinned foundation 367c9aa locally; implemented RRULE/:at scheduling, finite-job mutate removal/history, late window, job validation and cron-list CLI, removed scenario @wip. Focused `bb spec -F spec/isaac/cron/service_spec.clj` and schema spec green before later edits.
+Next: tests RED: `bb features features/rules.feature` currently 2 failures (config validate and cron list). CLI config validation fails early because pinned agent c81bf092 exports manifest check-session-berths but lacks its function; update agent pin to main 3233755 (reachable), then rerun. Resume at `isaac-cron/bb.edn:31` for agent pins, `src/isaac/cron/cli.clj:28` for list output, `src/isaac/cron/checks.clj:10` for validation. Remove temporary debug after-scenario output at `feature-steps/isaac/cron/cron_steps.clj:122`. Then run full bb ci, gate. No green run since debug changes; do not commit as green yet.
