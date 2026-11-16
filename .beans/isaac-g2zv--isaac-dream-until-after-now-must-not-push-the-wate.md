@@ -1,13 +1,13 @@
 ---
 # isaac-g2zv
 title: 'isaac-dream: --until after now must not push the watermark into the future'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T14:49:07Z
-updated_at: 2026-11-16T14:51:07Z
+updated_at: 2026-11-16T14:56:30Z
 parent: isaac-pcm3
 ---
 
