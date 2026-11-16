@@ -39,4 +39,6 @@ When remotes are configured, help ends with the `isaac remote list` lines so the
 
 ## Acceptance
 
-Draft — scenario to come: `isaac remote --help` stdout contains the name form, each subcommand, and the configured remote names.
+Scenario in `isaac-cli-proxy/features/remote.feature` (scenario-level `@wip`; remove it when it passes):
+
+- `bb features features/remote.feature:453` — `isaac remote --help` shows both command forms, `use/list/remove/status`, where remotes live, and the configured remotes' list lines

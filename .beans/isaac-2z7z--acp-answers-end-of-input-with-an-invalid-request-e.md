@@ -30,6 +30,12 @@ Same with no trailing newline, and the same through the old pre-hu1n wrapper (`i
 
 End of input closes the ACP session quietly: no response for a non-request, no error with `id: null`. Blank lines are skipped too (JSON-RPC: a notification or non-request gets no response).
 
+## Cause (planner, 2026-11-16)
+
+Not EOF: **blank lines.** The proxy (`isaac-cli-proxy` `pump-stdin!`) sends each line as `line + "\n"`, and `isaac-cli-server` `-send-stdin!` appends another `"\n"`, so every line reaches the hosted command followed by a blank line. The ACP stdio loop answers a blank line with `-32600 Invalid Request`, `id: null`. Reproduced over plain stdio. This bean fixes the ACP side (skip blank lines; JSON-RPC sends no response to a non-request). The doubled newline in cli-server is its own bean.
+
 ## Acceptance
 
-Draft — scenario to come: ACP over stdio given one `initialize` line then EOF writes exactly one response (id 1) and exits 0; same through the remote /cli path.
+Scenario in `isaac-acp/features/comm/acp/cli.feature` (scenario-level `@wip`; remove it when it passes):
+
+- `bb features features/comm/acp/cli.feature:257` — a blank line in the ACP input gets no response: both real requests answer, no `Invalid Request`, exit 0
