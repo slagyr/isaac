@@ -6,9 +6,8 @@ type: bug
 priority: high
 tags:
     - dream
-    - unverified
 created_at: 2026-11-16T00:30:23Z
-updated_at: 2026-11-16T00:49:42Z
+updated_at: 2026-11-16T00:53:17Z
 parent: isaac-pcm3
 ---
 
@@ -64,3 +63,13 @@ Reproduction: git fetch origin; git rebase origin/main on bean/isaac-qv5r; bb sp
 ## Work checkpoint (2026-11-15, resumed)
 
 Rebased isaac-dream bean/isaac-qv5r onto e9692c7 and kept the upstream dream reply specs. Preserved non-API provider test doubles while reconstructing real providers with the Isaac auth root (`src/isaac/dream/run.clj:168`). `bb spec`: 32 examples, 0 failures, 58 assertions. `bb features`: 43 examples, 0 failures, 159 assertions. `bb bean-gate verify isaac-qv5r --dir isaac-dream=../isaac-dream-qv5r`: exit 2, no feature-baseline. Version 0.2.1 remains bumped. Implementation branch pushed at 522dd5e (includes rebased commits efb83b1 and 49bed31); verifier should review and land it. No jvm-spec task.
+
+
+
+## Verification failed (2026-11-15, landing rebase conflict)
+
+HEAD: isaac-dream origin/bean/isaac-qv5r 522dd5e855626cf17bc64e8face2585dd6c842f4; origin/main e9692c7dac49d5159d1a4595c356673a9ce6e981. Working tree: clean after git rebase --abort; no implementation landed.
+
+Fresh review: bb spec 32 examples/0 failures/58 assertions; bb features 43 examples/0 failures/159 assertions. New Grok/ChatGPT OAuth scenarios cover stored access token, proposed habit and succeeded diary. Version 0.2.1 is already on main from original commit ancestry. Pins reachable from sibling origin/main.
+
+Landing blocker: git rebase origin/main on bean/isaac-qv5r fails at 25fb9ed with content conflict in src/isaac/dream/run.clj: the branch merges duplicate pre-rebase implementation 25fb9ed into its rebased implementation efb83b1 via 522dd5e, replaying the old when-provider code against the fixed satisfies?-guard code. Reproduction: git fetch origin; git worktree add -b <review-branch> <dir> origin/bean/isaac-qv5r; cd <dir>; git rebase origin/main. Git reports CONFLICT (content): Merge conflict in src/isaac/dream/run.clj; Could not apply 25fb9ed. Aborted, did not resolve blindly. Please deliver a linear, rebased bean/isaac-qv5r branch whose tip has the same green tree (drop the duplicate pre-rebase history/merge), then rerun acceptance so verifier can land it. No bean-specific stray test output; existing namespace warnings/debug emitted by upstream dependencies.
