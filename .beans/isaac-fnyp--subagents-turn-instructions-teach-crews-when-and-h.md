@@ -1,13 +1,13 @@
 ---
 # isaac-fnyp
 title: 'Subagents: turn instructions teach crews when and how to delegate'
-status: in-progress
+status: completed
 type: task
 priority: normal
 tags:
     - agent
 created_at: 2026-11-01T18:45:06Z
-updated_at: 2026-11-16T00:36:08Z
+updated_at: 2026-11-16T00:42:02Z
 parent: isaac-4qxr
 blocked_by:
     - isaac-p5d3
@@ -57,3 +57,9 @@ Rerun a sweep-heavy task (the tono-jlzi pattern) on zanebot and compare parent c
 
 feature-baseline: isaac-agent 9831daa1905f30e4d8e77cc0401ebc6fe269e51c
 feature-blob: isaac-agent features/tool/subagent_guidance.feature 864771c92cb7f86143d095e0a2066b6b92fac503
+
+## Landed on main (2026-11-15)
+
+main-sha: isaac-agent 0b6ba6e
+
+Implementation: `subagent-delegation-hint` + `spawn-tool?` in turn_instructions; `build-system-text` takes the turn's tools and adds the hint after the batching hint when agent__spawn is present (both builder and Anthropic paths; compaction excluded). Handbook updated. Validation: `bb spec` + `bb jvm-spec` 2000/0, `bb features` 965/0 (one pre-existing pending), `bb bean-gate verify isaac-fnyp` PASS.
