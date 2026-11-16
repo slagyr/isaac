@@ -1,11 +1,11 @@
 ---
 # isaac-mhvd
 title: 'isaac-cli-proxy CI red since w0yx: integration ''a remote command runs on the server and streams back'' exits 1'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-16T23:27:48Z
-updated_at: 2026-11-16T23:28:04Z
+updated_at: 2026-11-16T23:28:31Z
 ---
 
 isaac-cli-proxy CI has been red since the w0yx commits (253ff0e, 76b97f1, 36898ac, fa9848e). Release 0.2.0 shipped on a red build. Micah, 2026-11-16: "please get it fixed".
