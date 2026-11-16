@@ -1,13 +1,13 @@
 ---
 # isaac-ovas
 title: RRULE calendar trigger in the foundation scheduler (pure Clojure, bb + JVM)
-status: in-progress
+status: completed
 type: feature
 priority: normal
 tags:
     - scheduler
 created_at: 2026-11-16T19:01:51Z
-updated_at: 2026-11-16T19:37:55Z
+updated_at: 2026-11-16T19:49:44Z
 parent: isaac-e0qe
 ---
 
@@ -39,3 +39,10 @@ Run: `bb features features/scheduler/calendar.feature`. Also `bb spec`, `bb jvm-
 
 feature-baseline: isaac-foundation e04b7b18f0fbbebfb378ca19ed3b120f04f74715
 feature-blob: isaac-foundation features/scheduler/calendar.feature d9217ede531baded1388a1c0d51a2a7ade24779f 16,28,40,56,65,78,88,98,108,115,122
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-foundation 367c9aa85914dfa80bf2aa19f14fbc336663384f
+
+Validation: bb ci (1357 specs; 378 features, 2 pending), bb features features/scheduler/calendar.feature (11/0), bean-gate PASS at branch and landed main. JVM spec has 9 pre-existing failures outside the scheduler (module lifecycle/coords); focused JVM calendar spec and feature passed.
