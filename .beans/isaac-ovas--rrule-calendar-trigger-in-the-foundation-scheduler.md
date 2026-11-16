@@ -1,7 +1,7 @@
 ---
 # isaac-ovas
 title: RRULE calendar trigger in the foundation scheduler (pure Clojure, bb + JVM)
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -36,3 +36,6 @@ Scenarios in `isaac-foundation/features/scheduler/calendar.feature` (feature-lev
 | 122 | a part outside the subset is refused by name (BYSETPOS) |
 
 Run: `bb features features/scheduler/calendar.feature`. Also `bb spec`, `bb jvm-spec` (bb/JVM parity is a requirement), full `bb features` green. Do not bump the module version.
+
+feature-baseline: isaac-foundation e04b7b18f0fbbebfb378ca19ed3b120f04f74715
+feature-blob: isaac-foundation features/scheduler/calendar.feature d9217ede531baded1388a1c0d51a2a7ade24779f 16,28,40,56,65,78,88,98,108,115,122
