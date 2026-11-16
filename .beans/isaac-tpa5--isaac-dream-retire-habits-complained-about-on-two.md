@@ -1,13 +1,13 @@
 ---
 # isaac-tpa5
 title: 'isaac-dream: retire habits complained about on two days; propose retiring faded ones'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T14:49:07Z
-updated_at: 2026-11-16T14:49:07Z
+updated_at: 2026-11-16T15:13:24Z
 parent: isaac-pcm3
 blocked_by:
     - isaac-o4di
