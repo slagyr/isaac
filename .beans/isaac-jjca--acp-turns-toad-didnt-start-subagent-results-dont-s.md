@@ -1,7 +1,7 @@
 ---
 # isaac-jjca
 title: 'ACP: turns Toad didn''t start (subagent results) don''t stream to an attached session'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -32,3 +32,6 @@ Run the whole file: `bb features features/comm/acp/background_turns.feature`.
 ## Prerequisites (do first, same bean)
 
 isaac-acp pins agent `f05a1fe` and foundation `98de59a`, too old for the scenario's steps. Move every pin in `bb.edn` and `deps.edn` to agent `00ad7845e9fc7b590b2b317029ff1072638228e2` (0.1.96, deployed) and foundation `edc18481808a050f8c2fd657f2e966e6040fcfc3` (zanebot's keg), and add `"isaac.agent.turn.queue-steps"` to the `bb features` step globs. The planner verified the scenario fails for the right reason with exactly those changes (no notifications from the second turn).
+
+feature-baseline: isaac-acp d8f1e1ba9f6b7b84f10021ce46adb4615ac46e69
+feature-blob: isaac-acp features/comm/acp/background_turns.feature b3beb3b9b0385c94dc5f9cca09223003ad095c52
