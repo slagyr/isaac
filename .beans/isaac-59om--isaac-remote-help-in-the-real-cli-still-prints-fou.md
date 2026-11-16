@@ -18,3 +18,11 @@ Acceptance: features/integration.feature scenario 'isaac remote --help through t
 
 feature-baseline: isaac-cli-proxy 36898acf7e46767349cbe878748cc97e339d7b31
 feature-blob: isaac-cli-proxy features/integration.feature 49451ad7b0aa83a526849e299c40fb3c4744e9e7 86
+
+## Implementation
+
+Added `cli-api/help :remote` with shared remote-help rendering for the registry and the run-fn. The real CLI scenario revealed the test home-config setup did not bind the CLI user's home; the fixture now binds it so configured remotes are read from the actual pointer file. Removed only `@wip` from the baselined feature. `bb features-slow features/integration.feature:85`, `bb ci` (including after rebase), and `bb bean-gate verify isaac-59om --dir isaac-cli-proxy=../isaac-cli-proxy-59om-land` pass.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-cli-proxy fa9848ed6b47f74bb2f1a42fda4429bf55fac0f6
