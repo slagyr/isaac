@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "00ad7845e9fc7b590b2b317029ff1072638228e2"}
+                                      :git/sha "3233755f0039bd1232ec5053d81f53a17e0b1764"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.dream                {:coord {:git/url "https://github.com/slagyr/isaac-dream.git"
                                       :git/sha "f8f25b5a3f3dfcd625fc578beaad7c077f834b06"}
@@ -14,7 +14,7 @@
                                       :git/sha "836ee0da4e2b2ec0436a3ea83dd66306273ebb09"}
                               :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
-                                      :git/sha "6676a8070092bfb75a09a8ae7fc99cd3e6bfd5b2"}
+                                      :git/sha "67abb0d907cb1c7e861d23b929fc99f4cdb194e7"}
                               :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
  :isaac.cli-server           {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
                                       :git/sha "a57a97ad253b0d3f9d09a7c71e48606445148c63"}
@@ -23,7 +23,7 @@
                                         :git/sha "4fdd535bb7231fa18d7812c6f0d5b2d35fab740c"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                                      :git/sha "3fdae54b60c8ca3e2bb5dcf79acb78ad722b262d"}
+                                      :git/sha "f1f99f648bbbd1ec75740adf0ac70837c5b73789"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
                                       :git/sha "83cbe2f262f494c0cf82510f6bef9dc52d9dc30e"}
