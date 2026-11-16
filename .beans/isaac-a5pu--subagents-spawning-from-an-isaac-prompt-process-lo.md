@@ -1,7 +1,7 @@
 ---
 # isaac-a5pu
 title: 'Subagents: spawning from an isaac prompt process loses the child''s turn'
-status: draft
+status: todo
 type: bug
 priority: normal
 tags:
@@ -32,3 +32,6 @@ Scenario in `isaac-agent/features/tool/subagents.feature` (scenario-level `@wip`
 - `bb features features/tool/subagents.feature:110` — `isaac prompt` with no server returns only after the child ran and the parent replied to its result: stdout has the reply to the result, the transcript has the result and the reply, the child is `done`
 
 Scope: the standalone path only. With a server configured (`isaac remote use …`, isaac-gar0) the prompt already runs on the server and its children are the server's.
+
+feature-baseline: isaac-agent af7101ebd7321fe96dd4d9c0c90039ffb5c0ff68
+feature-blob: isaac-agent features/tool/subagents.feature d336096d92c2a799fb1eda351fbe4e15b35fb4fe 110

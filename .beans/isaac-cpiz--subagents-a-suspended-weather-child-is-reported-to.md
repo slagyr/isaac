@@ -1,7 +1,7 @@
 ---
 # isaac-cpiz
 title: 'Subagents: a suspended (weather) child is reported to the parent as failed'
-status: draft
+status: todo
 type: bug
 priority: normal
 tags:
@@ -28,3 +28,6 @@ Scenario in `isaac-agent/features/tool/subagent_control.feature` (scenario-level
 - `bb features features/tool/subagent_control.feature:130` — a child walled by a 429 is listed `suspended`; after the resume sweep it completes, is listed `done`, logs exactly one `:subagent/ended` (outcome ok), and the parent gets one result
 
 `subagent__list` gains the state `suspended`. In the test the walled child is listed `done` today (zanebot showed `failed`): the observer treats the suspension's turn end as final.
+
+feature-baseline: isaac-agent af7101ebd7321fe96dd4d9c0c90039ffb5c0ff68
+feature-blob: isaac-agent features/tool/subagent_control.feature a2b02bda946ac4b187d3729ae71da63f39e50012 130

@@ -1,7 +1,7 @@
 ---
 # isaac-1ja8
 title: 'Subagents: child cycle count is always 1 (subagent/ended, list, result stats)'
-status: draft
+status: todo
 type: bug
 priority: normal
 tags:
@@ -28,3 +28,6 @@ Scenario in `isaac-agent/features/tool/subagent_control.feature` (scenario-level
 - `bb features features/tool/subagent_control.feature:104` — a child that reads a file before replying reports `cycles: 2` in `subagent__list`, `:subagent/ended`, and the parent's result stats line
 
 Lead: `deliver!` and the observer both take `(count (:cycle-usages result))` — check what the child turn's result actually carries.
+
+feature-baseline: isaac-agent af7101ebd7321fe96dd4d9c0c90039ffb5c0ff68
+feature-blob: isaac-agent features/tool/subagent_control.feature a2b02bda946ac4b187d3729ae71da63f39e50012 104
