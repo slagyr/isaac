@@ -1,13 +1,13 @@
 ---
 # isaac-wh9y
 title: 'isaac-dream: reinforcements record taught vs applied, and dreams record contradictions'
-status: todo
+status: completed
 type: feature
 priority: normal
 tags:
     - dream
 created_at: 2026-11-16T14:49:07Z
-updated_at: 2026-11-16T14:49:07Z
+updated_at: 2026-11-16T15:10:31Z
 parent: isaac-pcm3
 blocked_by:
     - isaac-gomk
@@ -40,3 +40,9 @@ Sibling dream beans land concurrently. When rebasing onto main conflicts only on
 ## Planner decision (2026-11-16): manifest conflict
 
 Checked by rebasing `bean/isaac-wh9y` onto main 3600e65: the only conflict is `resources/isaac-manifest.edn` `:version` (main `0.3.0` from isaac-o4di, this branch `0.2.4`). Every source file merges cleanly. Resolve with version `0.3.1` and keep main's schema keys (`:prompt-chars`, `:strength`). Then run `bb ci` on the rebased tree (o4di's strength code and this bean's kinds now meet), gate, squash and land.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-dream c629b873fc02f09c9faaf591f483e7062ef61363
+
+Manifest conflict resolved per planner decision: version 0.3.1, main schema keys kept (:prompt-chars, :strength). Rebased tree bb ci green (46 spec, 60 features). Gate PASS on the squash before push.
