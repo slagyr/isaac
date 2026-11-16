@@ -1,13 +1,13 @@
 ---
 # isaac-a5pu
 title: 'Subagents: spawning from an isaac prompt process loses the child''s turn'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:41Z
-updated_at: 2026-11-16T15:38:18Z
+updated_at: 2026-11-16T15:49:32Z
 parent: isaac-4qxr
 ---
 
