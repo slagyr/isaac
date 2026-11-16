@@ -1,7 +1,7 @@
 ---
 # isaac-pu21
 title: 'isaac-dream: condense existing habits into short rules as approvable revisions (keep id, history, strength)'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -32,3 +32,6 @@ Run `isaac dream condense --crew zane` on zanebot, review the 38 revisions with 
 ## Acceptance
 
 `bb features features/habits/revise.feature` green with `@wip` removed (4 scenarios), plus `bb spec` and full `bb features` green. Do not bump the module version (the deploy train does).
+
+feature-baseline: isaac-dream 2f3a4693c65dfe1fa14de7f98b3b9122e9370a97
+feature-blob: isaac-dream features/habits/revise.feature 14a70510f7bd2696219c86bb4751804d75376559
