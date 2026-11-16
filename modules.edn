@@ -2,7 +2,7 @@
                                       :git/sha "3233755f0039bd1232ec5053d81f53a17e0b1764"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.dream                {:coord {:git/url "https://github.com/slagyr/isaac-dream.git"
-                                      :git/sha "f8f25b5a3f3dfcd625fc578beaad7c077f834b06"}
+                                      :git/sha "bcc8c41319b443eb1f635856275db6d5057180d8"}
                               :desc  "Crew-private habits, proposals, operator approval, and active system lessons."}
  :isaac.contacts             {:coord {:git/url "https://github.com/slagyr/isaac-contacts.git"
                                       :git/sha "af6194451859845af44bf44873721b4960e1ea83"}
@@ -14,10 +14,10 @@
                                       :git/sha "836ee0da4e2b2ec0436a3ea83dd66306273ebb09"}
                               :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
-                                      :git/sha "67abb0d907cb1c7e861d23b929fc99f4cdb194e7"}
+                                      :git/sha "76b97f122a9a26fa8ad7a434520c013bfe0fe021"}
                               :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
  :isaac.cli-server           {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
-                                      :git/sha "a57a97ad253b0d3f9d09a7c71e48606445148c63"}
+                                      :git/sha "d51b75106a6c53994c8bad5ec1715fe278844245"}
                               :desc  "Remote CLI server — /cli WebSocket endpoint that runs commands server-side with streamed I/O."}
  :isaac.http                 {:coord {:git/url "https://github.com/slagyr/isaac-http.git"
                                         :git/sha "4fdd535bb7231fa18d7812c6f0d5b2d35fab740c"}
@@ -53,7 +53,7 @@
                                       :git/sha "4391aaa8f6552855187334eeffa722299e0abcad"}
                               :desc  "iMessage comm channel (BlueBubbles / imsg integration)."}
  :isaac.foreman              {:coord {:git/url "https://github.com/slagyr/isaac-foreman.git"
-                                      :git/sha "4b91b5b319848c4fe7e9b714eac0aa18f4f7f88e"}
+                                      :git/sha "3733c224af327f051237b1f41534b806c85e31d9"}
                               :desc  "State-machine orchestration — transition tables, durable instances, signals in, actions out as hails."}
  :isaac.worksite             {:coord {:git/url "https://github.com/slagyr/isaac-worksite.git"
                                       :git/sha "86210d9c3957d03044c72e823a8516ab33187c1e"}
