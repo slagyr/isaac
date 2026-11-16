@@ -1,7 +1,7 @@
 ---
 # isaac-hu1n
 title: 'Named CLI remotes: isaac remote <name> -- runs a command on a host from ~/.config/isaac.edn (token from env, file or command)'
-status: draft
+status: todo
 type: feature
 priority: normal
 tags:
@@ -51,3 +51,6 @@ Scenarios in `isaac-cli-proxy/features/remote.feature` (scenario-level `@wip`; r
 - `bb features features/remote.feature:436` — remote status with no remotes says so
 
 Run the whole file: `bb features features/remote.feature`.
+
+feature-baseline: isaac-cli-proxy 9a782e621aecf29159cd8d2ed1a16d2536d3b94a
+feature-blob: isaac-cli-proxy features/remote.feature c53ef543858b4a41a4ce6f51c115aab3505c78a6 306,325,339,353,364,380,390,403,419,436
