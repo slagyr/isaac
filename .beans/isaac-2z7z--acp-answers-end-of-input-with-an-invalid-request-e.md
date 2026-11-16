@@ -1,13 +1,13 @@
 ---
 # isaac-2z7z
 title: ACP answers end of input with an Invalid Request error (id null) over remote /cli
-status: in-progress
+status: completed
 type: bug
 priority: low
 tags:
     - acp
 created_at: 2026-11-16T18:30:01Z
-updated_at: 2026-11-16T18:36:08Z
+updated_at: 2026-11-16T18:39:08Z
 ---
 
 Repos: **isaac-acp** (stdio JSON-RPC loop) and/or **isaac-cli-server** (stdin-close handling) — find which side emits it.
@@ -42,3 +42,11 @@ Scenario in `isaac-acp/features/comm/acp/cli.feature` (scenario-level `@wip`; re
 
 feature-baseline: isaac-acp dd216128ed44c2567abbbceaf399024f4ae202fd
 feature-blob: isaac-acp features/comm/acp/cli.feature a69a8ffca6a7e8c4704429c6359f2da034d9c048 257
+
+## Implementation notes (2026-11-16)
+
+The ACP stdio loop now skips blank and whitespace-only input lines without dispatching them; EOF already ended quietly. Regression spec verifies only two JSON-RPC responses for two requests separated by empty/whitespace lines. Removed the acceptance scenario's `@wip`. `bb ci`: 84 specs/224 assertions and 72 features/184 assertions, all green; `bb bean-gate verify isaac-2z7z`: PASS on the squash commit. JVM `bb jvm-spec` was also attempted but the local `:dev-local` agent checkout lacked `isaac.agent.bridge.cancellation`; native `bb ci` is green.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-acp c088d6d25cab9158da86f37a1cc43b68eee1869d
