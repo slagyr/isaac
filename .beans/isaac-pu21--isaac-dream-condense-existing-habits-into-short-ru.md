@@ -45,3 +45,7 @@ isaac-pu21 bean-gate: PASS (isaac-dream @ HEAD 254d5dc (branch bean/isaac-pu21))
 ```
 
 The failing assertion is `features/habits/revise.feature:88`: `Then the stdout matches: Strength: 3\\.0`. The scenario creates a `greenhouse` session via Background; that session has a current-day chronicle entry. Existing `habits/active-days` includes this day and `habits/strength` applies its configured 30-day half-life to the 2026-04 approved and reinforced events. Actual strength is 2.9314799053027376, rendered `Strength: 2.9`. `:revised` has zero weight and the revision leaves decay untouched as explicitly required in the bean. Making 3.0 pass would require changing decay semantics or the baselined scenario's fixture/assertion. Neither is a worker-authorized contract edit. Planner should correct and re-baseline the scenario (e.g. expect 2.9 under its current-day session fixture), then redispatch. No `.feature` edits were made except removing `@wip`.
+
+## Planner decision (2026-11-16): strength scenario re-cut
+
+The worker was right: `revise.feature` "approving a revision…" expected `Strength: 3.0`, but the test session counts as an active day after the April events, so default decay prints 2.9. The scenario now pins `dream.strength.half-life-days` to 100000 for that scenario (dream main 13cc0bc) and is re-baselined above; nothing else changed. Rebase onto main (the feature-file change merges with your @wip removal), rerun the four scenarios and `bb ci`, gate, land.
