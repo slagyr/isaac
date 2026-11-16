@@ -30,3 +30,9 @@ No new habit id is created, and nothing is retired or superseded.
 
 feature-baseline: isaac-dream a76b76c3bc7ca88ad67ed8f811f212cb6f915e8e
 feature-blob: isaac-dream features/habits/operator.feature 7ccef0d84de852bd11cac3ad149e0c6893150c37 136,158,178
+
+## Landed on main (2026-11-16)
+
+Rewording is in-place for proposed, active and pending-revision habits; oversized lessons are rejected without writes. Focused operator feature and full `bb ci` passed (57 specs, 78 features). Gate passed on the squash commit.
+
+main-sha: isaac-dream b7d8e437e7ffd6f42b23831a7ba76a1e8c68d04f
