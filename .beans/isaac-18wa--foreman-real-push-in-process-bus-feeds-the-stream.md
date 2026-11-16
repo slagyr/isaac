@@ -1,7 +1,7 @@
 ---
 # isaac-18wa
 title: 'Foreman: real push — in-process bus feeds the stream, no polling; foreman and dream commands are server-only'
-status: draft
+status: todo
 type: feature
 priority: high
 tags:
@@ -31,3 +31,6 @@ The scenarios check fan-out and cleanup; removing the polling loop is checked in
 ## Acceptance
 
 `bb features features/foreman/stream.feature` green with the two `@wip` tags removed (7 stream scenarios), plus `bb spec` and full `bb features` green in isaac-foreman, and isaac-dream's suites still green with the flag. Pin both to isaac-dcxk's foundation sha. Do not bump versions (the deploy train does).
+
+feature-baseline: isaac-foreman 8e50eaa6229e2e4d146827635690b51488e04eab
+feature-blob: isaac-foreman features/foreman/stream.feature 20648c283d2eba2c4b178ab63347c9da80e39ce5 116,141
