@@ -2,7 +2,7 @@
                                       :git/sha "00ad7845e9fc7b590b2b317029ff1072638228e2"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.dream                {:coord {:git/url "https://github.com/slagyr/isaac-dream.git"
-                                      :git/sha "63e4559acfd2dac8092ac7d6ca40852211339346"}
+                                      :git/sha "f8f25b5a3f3dfcd625fc578beaad7c077f834b06"}
                               :desc  "Crew-private habits, proposals, operator approval, and active system lessons."}
  :isaac.contacts             {:coord {:git/url "https://github.com/slagyr/isaac-contacts.git"
                                       :git/sha "af6194451859845af44bf44873721b4960e1ea83"}
