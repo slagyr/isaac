@@ -7,7 +7,7 @@ priority: normal
 tags:
     - dream
 created_at: 2026-11-16T14:49:07Z
-updated_at: 2026-11-16T15:13:24Z
+updated_at: 2026-11-16T15:20:01Z
 parent: isaac-pcm3
 blocked_by:
     - isaac-o4di
@@ -37,3 +37,10 @@ feature-blob: isaac-dream features/dream/retire.feature d1e124704cebce42dad05f2a
 ## Planner note (2026-11-16): version bumps
 
 Sibling dream beans land concurrently. When rebasing onto main conflicts only on `resources/isaac-manifest.edn` `:version`, take the higher of main's and yours, bump its patch by one if they are equal, keep every schema key from both sides, and carry on without stopping for the planner.
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-dream cbd49da1e1a4046b380c3f7703758a6ad8ce5474
+
+Validated: bb ci (48 specs, 65 features), bb bean-gate verify PASS.
