@@ -1,7 +1,7 @@
 ---
 # isaac-m4m3
 title: 'isaac-dream: approve --lesson rewords a habit in place instead of creating a superseding habit'
-status: draft
+status: todo
 type: bug
 priority: normal
 tags:
@@ -27,3 +27,6 @@ No new habit id is created, and nothing is retired or superseded.
 ## Acceptance
 
 `bb features features/habits/operator.feature` green with the three `@wip` tags removed, plus `bb spec` and full `bb features` green. Do not bump the module version (the deploy train does).
+
+feature-baseline: isaac-dream a76b76c3bc7ca88ad67ed8f811f212cb6f915e8e
+feature-blob: isaac-dream features/habits/operator.feature 7ccef0d84de852bd11cac3ad149e0c6893150c37 136,158,178
