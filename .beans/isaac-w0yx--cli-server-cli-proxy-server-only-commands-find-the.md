@@ -7,7 +7,7 @@ priority: high
 tags:
     - cli
 created_at: 2026-11-16T18:28:12Z
-updated_at: 2026-11-16T19:12:12Z
+updated_at: 2026-11-16T19:23:08Z
 blocked_by:
     - isaac-dcxk
 ---
@@ -42,4 +42,4 @@ isaac-dcxk landed: pin isaac-foundation (deps.edn and bb.edn, including the spec
 
 Done: claimed; isolated worktrees `../isaac-cli-server-w0yx` and `../isaac-cli-proxy-w0yx`, branches pushed at a6b2729 and 0191b48. Foundation pins changed to ab9f1c5 in both repos. Added local credential component + verifier (server), forwarder + initial specs (proxy); focused `bb spec spec/isaac/cli_server/local_spec.clj` and `bb spec spec/isaac/cli_proxy/forwarder_spec.clj` green. These are intermediate only, not acceptance.
 
-Done since checkpoint: server boot orders after HTTP and registers local verifier; proxy integration fixture uses real root; @wip removed. Both repos bb spec and bb features green, first five server_only scenarios pass individually under bb features-slow. Proxy branch 0a4590e pushed with explicit --remote forwarder test (focused spec green); server branch 2b1f59c pushed. Last focused slow scenario at features/server_only.feature:82 RED: foundation main treats --remote as unknown top-level command before invoking proxy (foundation ab9f1c5 has no global --remote parser). Next: identify acceptable integration seam for global --remote without editing foundation (bean scope); resume at ../isaac-cli-proxy-w0yx/src/isaac/cli_proxy/forwarder.clj:24 and ../isaac-cli-proxy-w0yx/spec/isaac/cli_proxy/integration_steps.clj:191. Run full slow suites, gate only after green.
+Done: all 6 server_only scenarios pass; both repos bb ci green (proxy includes all slow scenarios); bb bean-gate verify isaac-w0yx --dir isaac-cli-server=../isaac-cli-server-w0yx --dir isaac-cli-proxy=../isaac-cli-proxy-w0yx PASS. Both branches rebase/CI green. Server squash commit b0356e1 created on local main, NOT pushed yet. Proxy branch 36c590e pushed; sibling proxy main has unrelated dirty changes, do not touch. Next: squash proxy branch in isolated worktree against origin/main, re-run gate on squash refs, push both mains, record main-sha and complete. Resume at ../isaac-cli-proxy-w0yx/src/isaac/cli_proxy/explicit.clj:10; command git worktree add ../isaac-cli-proxy-w0yx-land --detach origin/main from proxy branch checkout. No tests red.
