@@ -1,13 +1,13 @@
 ---
 # isaac-cpiz
 title: 'Subagents: a suspended (weather) child is reported to the parent as failed'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 tags:
     - agent
 created_at: 2026-11-16T14:44:40Z
-updated_at: 2026-11-16T14:44:40Z
+updated_at: 2026-11-16T15:38:09Z
 parent: isaac-4qxr
 ---
 
