@@ -2,7 +2,7 @@
 # isaac-e0qe
 title: Cron jobs use iCalendar RRULE; finite jobs leave the schedule
 status: draft
-type: feature
+type: epic
 priority: normal
 tags:
     - cron
@@ -13,7 +13,7 @@ updated_at: 2026-11-16T17:49:58Z
 
 Likely repos: **isaac-foundation** (RRULE parse + next-fire-at + scheduler trigger) then **isaac-cron** (job schema, register, auto-unset, handbook, feature rewrite). Dream keeps 5-field cron until a follow-up.
 
-Draft until a scenario plan is approved. Do not promote to todo without `@wip` scenarios.
+Parent design bean. The work is split into two children (2026-11-16): foundation (RRULE subset, next fire, `:calendar` trigger) and cron (schema cutover, finite-job removal, migration, `isaac cron list`). Each child carries its own `@wip` scenarios.
 
 ## Why
 
@@ -88,3 +88,21 @@ Handbook: isaac-cron chapter (`:when` / `:at` / `:dtstart`, subset, unset-on-exh
 
 1. Foundation: parse subset, next/previous fire, `:calendar` trigger, handbook scheduler blurb
 2. isaac-cron: schema cutover, register, auto-unset, features, handbook, pin foundation
+
+## Review decisions (2026-11-16, Micah approved the planner's review)
+
+1. **Pure Clojure, bb + JVM.** The RRULE parser and next-fire iterator run under babashka (CLI, `isaac config validate`) and the JVM server alike. No Java calendar library (ical4j won't load in bb). This is a requirement, not an implementation choice.
+2. **Anchoring.** Seconds are always 0; a rule without `BYMINUTE` fires at minute 0 (and without `BYHOUR`, per its `FREQ`). `INTERVAL > 1` and `COUNT` **require** `:dtstart` (config rejects them without it) — that is what pins the phase and the count.
+3. **COUNT counts occurrences from `:dtstart`**, including any missed while the server was down. Stateless; survives restarts.
+4. **Time zone and DST.** `UNTIL` and `:at` / `:dtstart` are local times in the install `:tz` (a trailing `Z` means UTC). On spring-forward, a nonexistent local time is skipped (RFC 5545); on fall-back, an ambiguous time fires once.
+5. **A bad rule fails its own entity, not the config.** An invalid `:when` is a validation error naming `cron.<name>` and the bad part, like any other entity error; other jobs and the server keep running.
+6. **Finite-job removal keeps a record.** When a one-shot or COUNT/UNTIL job is removed (mutate path), its last definition and last outcome stay in `<root>/cron.edn` history. Note: if a host's config dir is under git, the removal is an uncommitted change.
+7. **Late one-shots have a window.** A missed `:at` fires late on return only within `:late-window` (default 12 h); past it, it is skipped, removed, and logged (`:cron/one-shot-expired`).
+8. **`isaac cron list`** shows each job's rule (or `:at`) and its next fire time — the way to check a rule says what you meant.
+9. **Cutover runs with the restart.** `:expr` hard-rejects, so each host's cron files are rewritten in the same breath as the restart that loads the new code (as with config-key renames). zanebot at deploy; yopp whenever it next upgrades (list its jobs in the cron bean). Corrected migrations:
+   - `0 9 * * *` → `FREQ=DAILY;BYHOUR=9;BYMINUTE=0`
+   - weekdays at 9 → `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=9;BYMINUTE=0`
+   - `0 7-21 * * *` → `FREQ=DAILY;BYHOUR=7,8,9,10,11,12,13,14,15,16,17,18,19,20,21;BYMINUTE=0`
+   - `*/30 * * * *` → `FREQ=HOURLY;BYMINUTE=0,30` (not `MINUTELY;INTERVAL=30`, whose phase depends on `:dtstart`)
+
+These supersede the "Recommended (not signed off)" section above where they differ.
