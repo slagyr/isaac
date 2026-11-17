@@ -4,10 +4,8 @@ title: Every cancel kills its own claude, and only its own
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T16:03:18Z
+updated_at: 2026-11-17T16:06:55Z
 blocked_by:
     - isaac-ftrd
 ---
@@ -81,3 +79,14 @@ isaac-claude-code bean/isaac-xhb9 at 169fa3c. Each invocation owns a run atom co
 Acceptance: both behaviours are exercised with a real 8-second shell subprocess in features/claude_cancel.feature (two scenarios) and spec/isaac/provider/claude_code/claude_cli_cancel_spec.clj (two examples). The feature tests poll a marker proving each process started, cancel ~0.4 seconds later, assert per-cancel latency, exact termination log count and concurrent session isolation. Existing fake-CLI scenario remains unchanged. Red before fix: 2 examples, 2 failures; green after: bb ci (98 feature examples, 0 failures; specs green) and bb jvm-spec (76 JVM spec examples, 0 failures, 3 opt-in real pending; feature suite 67 examples, 0 failures).
 
 Gate: bb bean-gate verify isaac-xhb9 exited 2, no feature-baseline. Implementation stays on bean branch pending independent verify.
+
+
+
+## Verification failed (2026-11-17)
+
+HEAD: isaac-claude-code 169fa3c192430a6228eaf0460b3b47999a86d777 (bean/isaac-xhb9); isaac beans 04ac44c5ac3a6194741226859f0c5040844e9e2e.
+Working tree: clean (implementation detached review worktree and beans main before this note).
+
+Reproduce: git worktree add --detach ../isaac-claude-code-xhb9-review origin/bean/isaac-xhb9; rg -n "Thread/sleep|\(def .*atom" spec/isaac/provider/claude_code/{cancel_steps,claude_cli_cancel_spec,cancel_support}.clj. New tests have unqualified Thread/sleep at cancel_steps.clj:18 and claude_cli_cancel_spec.clj:15, and top-level cross-test mutable fixture* atom at claude_cli_cancel_spec.clj:6. The project /verify test-quality gate requires an inline justification near each flagged pattern or a bean-documented file:line exception; neither exists. The 400ms delay is part of acceptance, but the test must document why sleeping rather than synchronizing is necessary. The fixture atom persists between examples and must likewise be justified or replaced with scoped state. cancel_support.clj:14 uses a bounded 1ms poll, justified by await-file! implementation; cancel_support.clj:28 writes to a created temporary directory. No existing feature scenarios modified; two new scenarios authorized by ## Exceptions, no @wip.
+
+Fresh bb ci: 98 native specs, 0 failures, 3 opt-in pending; 76 JVM specs, 0 failures; bb jvm-spec: 67 features, 0 failures, 3 opt-in pending. Tests green, but test-quality gate blocks landing. Worker: add inline justifications for intentional sleeps and cross-test atom or refactor them, then rerun bb ci and bb jvm-spec. No implementation repo was landed.
