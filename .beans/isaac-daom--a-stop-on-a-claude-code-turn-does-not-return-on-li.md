@@ -1,13 +1,11 @@
 ---
 # isaac-daom
 title: 'A Stop on a Claude Code turn does not return on Linux: three specs red in CI'
-status: in-progress
+status: completed
 type: bug
 priority: critical
-tags:
-    - unverified
 created_at: 2026-11-17T16:39:09Z
-updated_at: 2026-11-17T16:47:18Z
+updated_at: 2026-11-17T16:53:37Z
 ---
 
 Follow-up to isaac-55br, which landed on isaac-claude-code main as `84a444f`
@@ -67,3 +65,11 @@ Fix: Terminate captured descendants by individual pid before terminating the par
 `isaac-claude-code` bean branch commit `d731900`; no specs or feature scenarios changed.
 Baseline CI on bean branch: run 44128436462 failed (same three timeouts); fixed CI run 44128936567 passed on Linux.
 Local `bb ci` (including rebase run) and `bb jvm-spec` passed on macOS. `bb bean-gate verify isaac-daom` exited 2: no feature-baseline; handoff to verification for landing and main CI.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-claude-code b357256a6ac75656bfffd6ccf7e8dd1bacf5c76d
+
+Verification: unchanged three stop-accounting assertions pass; macOS `bb ci` (114 specs, 76 features) and `bb jvm-spec` (67 specs) green. Linux CI Tests: bean branch 44128936567 and main 44130385863 green (114 specs, 76 features). Child termination remains individual ProcessHandle.destroy calls. Existing opt-in real-binary smoke remains pending.
