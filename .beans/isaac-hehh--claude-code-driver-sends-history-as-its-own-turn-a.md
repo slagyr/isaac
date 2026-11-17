@@ -1,11 +1,11 @@
 ---
 # isaac-hehh
 title: Claude Code driver sends history as its own turn and counts each request's usage twice
-status: in-progress
+status: todo
 type: bug
 priority: high
 created_at: 2026-11-17T00:21:18Z
-updated_at: 2026-11-17T00:24:03Z
+updated_at: 2026-11-17T00:34:42Z
 ---
 
 Found by Zane Lab on 2026-11-16 (experiment `claude-provider-fix`), with a
@@ -118,3 +118,30 @@ stream only has zero usage on the auth failure. Cannot confirm cumulative
 `message_delta` usage field by field until real CLI login is restored; do not
 land without this acceptance evidence. Reference sandbox reports cumulative
 usage but did not capture raw stream field by field.
+
+feature-baseline: isaac-claude-code 09ce4914a4808f17d4daf6934db06f144760692d
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature bc5d84804f600f0333eb6ba02e2f969847618a77 80,131,355,750,769,780
+
+## Planner decision (2026-11-16, for isaac-hehh)
+
+1. **The three older scenarios.** You were right: they were frozen. I put your
+   exact edits to them on module main (`isaac-claude-code` plan commit after
+   `4de0cd8`), tagged `@wip`, and re-baselined. The gate now covers six
+   scenarios: lines 80, 131, 355, 750, 769, 780. Rebase `bean/isaac-hehh` on
+   main; your feature diff should then be the six `@wip` removals and nothing
+   else.
+2. **The real-CLI capture is done; do not wait for a login.** I captured a raw
+   stream myself (Claude Code, Haiku, `--output-format stream-json
+   --include-partial-messages --verbose`, one request):
+
+   | event | message id | input | cache write | cache read | output |
+   |---|---|---|---|---|---|
+   | `stream_event` `message_start` | …9WFa | 2 | 40811 | 0 | 8 |
+   | `assistant` (text) | …9WFa | 2 | 40811 | 0 | 8 |
+   | `stream_event` `message_delta` | (none) | 2 | 40811 | 0 | 61 |
+   | `result` | | 2 | 40811 | 0 | 61 |
+
+   Usage is cumulative within a request: every event repeats the input
+   figures, and `message_delta` carries the final output total, which equals
+   the result. Taking the largest value of each field per request is correct.
+   That acceptance item is satisfied by this note. Land when the gate passes.
