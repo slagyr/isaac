@@ -4,10 +4,8 @@ title: 'Discord gateway resumes are refused: wrong close code and URL, collapsed
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:12:40Z
+updated_at: 2026-11-17T15:14:27Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -247,3 +245,12 @@ expiry next. The URL fix stays doc-mandated either way.
 - isaac-discord bean/isaac-9tj3 commit c382c64. READY resume URL and seq persist; resumable closes use 4000; invalid sessions wait before fresh IDENTIFY; retry jitter is scheduled from failure; stale readers exit without duplicate close; routine lifecycle logs are quieter. After two failed resume dials, fall back to default URL and IDENTIFY; stop during a dial does not adopt its socket.
 - The lab draft asserted a type hint would fail at load if RealWs.websocket were renamed. The reviewer demonstrated this was false. The implementation resolves the field on JVM namespace load with Class.getField (missing field throws), while skipping JVM reflection in Babashka SCI, where RealWs is an SCI type; the review spec remains a JVM canary. The draft wording is superseded by this implementation.
 - Acceptance: ISAAC_GIT=1 bb ci passes (native 56/0, JVM 136/0 including all 12 reviewer examples, features 70/0). No version bump. No external gateway contacted. Gate exit 2: no feature-baseline; verification required.
+
+
+
+## Verification failed (2026-11-17)
+
+HEAD: isaac-discord c382c64502857de55c05c72b8d907d0ad1b83f12 (origin/bean/isaac-9tj3)
+Working tree: clean (detached verification worktree); isaac beans main clean before verdict.
+
+Feature integrity gate failed before tests. `git diff origin/main...origin/bean/isaac-9tj3 -- features/comm/discord/reconnect.feature` changes line 58 from `| :warn | :discord.gateway/reconnect-requested |` to `| :info | :discord.gateway/reconnect-requested |`. This is not an @wip removal. The bean has no `## Exceptions` section authorizing this exact edit; the acceptance prose does request the new info level, but the verifier protocol explicitly requires a `## Exceptions` entry for any non-@wip feature edit. Document this intended exception in the bean and return for verification. Tests were not run because the /verify command stops at the first integrity failure. No implementation was landed on main.
