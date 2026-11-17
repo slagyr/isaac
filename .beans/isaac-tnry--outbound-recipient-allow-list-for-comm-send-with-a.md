@@ -79,3 +79,12 @@ feature-blob: isaac-agent features/comm/allow_cli.feature 57760c887dbcce53ac4d51
 ## Contract conflict (2026-11-17)
 
 The baselined `features/tool/comm_send.feature:202` step `And the log has 0 entries matching "Lantern is lit"` has no matching gherclj step definition. After removing only `@wip` and applying the lab patch, the focused run (`bb features features/comm/allow_cli.feature features/tool/comm_send.feature:168 features/tool/comm_send.feature:187 features/tool/comm_send.feature:207`) reports **5 examples, 0 failures, 13 assertions, 1 pending**; the entire refused-and-logged scenario is pending, so the gate's PASS is not evidence that its log/no-body assertions were executed. The existing foundation log steps accept a table (`the log has exactly {n:int} entries matching:`), not this quoted-string step. Per the acceptance instruction, stopped rather than bending product behavior or editing a baselined feature. The config table vector and the two-run CLI scenario do execute and pass. Planner must provide a real assertion step for this exact phrase or change/rebaseline the scenario. Implementation checkpoint is pushed on `isaac-agent` `bean/isaac-tnry` at `b08c32b`; the delivery-worker defense-in-depth and full suites remain to be done after contract repair.
+
+## Planner decision (2026-11-16, for isaac-tnry, undefined log-count step)
+
+My slip: I took `the log has 0 entries matching "…"` for an existing step, and
+it is not one. It is a **new step this bean introduces**; implement it. Its
+meaning: no captured log entry, printed in full (every key and value),
+contains the given text. Put it with the other log steps. The scenario text
+stays exactly as baselined, so no re-baseline is needed. Carry on and land
+when the gate passes.
