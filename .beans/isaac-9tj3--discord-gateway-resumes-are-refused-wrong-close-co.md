@@ -4,10 +4,8 @@ title: 'Discord gateway resumes are refused: wrong close code and URL, collapsed
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:20:56Z
+updated_at: 2026-11-17T15:24:54Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -276,3 +274,11 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 ## Re-handoff for verification (2026-11-17)
 
 Planner authorized the reconnect.feature:58 :warn → :info edit in ## Exceptions after the earlier integrity hold. No further feature or source edits needed; prior hold is superseded. Implementation remains isaac-discord origin/bean/isaac-9tj3 at c382c64502857de55c05c72b8d907d0ad1b83f12. Re-ran ISAAC_GIT=1 bb ci on that branch: 136 JVM specs, 70 features, zero failures; native suite green. Re-ran bb bean-gate verify isaac-9tj3: exit 2 (no feature-baseline). Ready for ungated verification; status stays in-progress.
+
+
+
+## Verification failed (2026-11-17)
+
+HEAD: isaac-discord c382c64502857de55c05c72b8d907d0ad1b83f12 (origin/bean/isaac-9tj3). Working tree: clean detached verification worktree; isaac beans main clean before verdict. No implementation landed on main.
+
+Feature integrity passes: reconnect.feature:58 changes only :warn to :info, expressly allowed by ## Exceptions. ISAAC_GIT=1 bb ci passes: native 56/0, JVM 136/0, features 70/0. But /verify clean-output gate fails: stdout from the new spec/isaac/comm/discord/gateway_review_spec.clj:217 contains `R10: first to last attempt 119990 ms; then parked until the service watchdog (5 min stale)` (from a println). Remove this diagnostic print; reproduce with `ISAAC_GIT=1 bb ci > /tmp/isaac-9tj3-ci.log 2>&1; grep R10: /tmp/isaac-9tj3-ci.log`. Also test-quality gate would flag unannotated Thread/sleep at spec/isaac/comm/discord/gateway_resume_spec.clj:247,257,266,269: replace with synchronization or add nearby justification per /verify allowed overrides. Stop here; remaining acceptance checks and landing not performed.
