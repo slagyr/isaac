@@ -1,5 +1,5 @@
 {:isaac.agent                {:coord {:git/url "https://github.com/slagyr/isaac-agent.git"
-                                      :git/sha "3233755f0039bd1232ec5053d81f53a17e0b1764"}
+                                      :git/sha "0e568358efdb8b2cc2b684cade70e77f91aa5af2"}
                               :desc  "Agent runtime — LLM dispatch, sessions, tools, bridge, and extension berths."}
  :isaac.dream                {:coord {:git/url "https://github.com/slagyr/isaac-dream.git"
                                       :git/sha "98b671f672b28cc58ba705d92643855c59566f74"}
@@ -11,7 +11,7 @@
                                       :git/sha "4f91100230a95f2047b50cb2eb2838211fcada51"}
                               :desc  "Episodic memory — episode lifecycle, recall, embedding, and idle sealing."}
  :isaac.provider.claude-code {:coord {:git/url "https://github.com/slagyr/isaac-claude-code.git"
-                                      :git/sha "836ee0da4e2b2ec0436a3ea83dd66306273ebb09"}
+                                      :git/sha "cc2e5c4f4b9813880890d50eb94bb79461e75455"}
                               :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
                                       :git/sha "76b97f122a9a26fa8ad7a434520c013bfe0fe021"}
@@ -23,7 +23,7 @@
                                         :git/sha "4fdd535bb7231fa18d7812c6f0d5b2d35fab740c"}
                                 :desc  "HTTP server host — routes, services, sessions CLI, and server berths."}
  :isaac.comm.acp             {:coord {:git/url "https://github.com/slagyr/isaac-acp.git"
-                                      :git/sha "e9082bea9da5aea14dedd05f21d826e780b39209"}
+                                      :git/sha "066553b0ad60ed0fe91efcc39b48a52e91d9e753"}
                               :desc  "ACP agent surface — stdio protocol, WebSocket transport, and chat TUI."}
  :isaac.cron                 {:coord {:git/url "https://github.com/slagyr/isaac-cron.git"
                                       :git/sha "d13d04e2554c471430f3ef095013e7c09bd2bc9e"}
@@ -47,7 +47,7 @@
                                       :git/sha "201b8d9b4e2e6fe4a9482bcf18aeaf225c9b1322"}
                               :desc  "Gmail comm — watch on INBOX, history walk, thread-as-session routing; replies on thread. Built on isaac-google."}
  :isaac.comm.discord         {:coord {:git/url "https://github.com/slagyr/isaac-discord.git"
-                                      :git/sha "e820a974d476e83662bf575061deac5f681320db"}
+                                      :git/sha "27ef4c7969995862a01351b4283e6f1e0d40adf2"}
                               :desc  "Discord bot comm channel and background service."}
  :isaac.comm.imessage        {:coord {:git/url "https://github.com/slagyr/isaac-imessage.git"
                                       :git/sha "4391aaa8f6552855187334eeffa722299e0abcad"}
