@@ -1,13 +1,11 @@
 ---
 # isaac-21it
 title: A stopped turn keeps its tokens, never falls back, and logs at info
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:42:05Z
+updated_at: 2026-11-17T15:51:12Z
 blocked_by:
     - isaac-fe5e
 ---
@@ -88,3 +86,11 @@ isaac-agent commit 0501c0b on bean/isaac-21it. Stop retains usage exactly once i
 Feature coverage: features/bridge/cancel.feature, “cancel interrupts a running LLM request”, now asserts info :chat/cancelled and zero :chat/stream-error. No existing scenario was weakened or removed. Session 1000+1500/10+40, :turn/ended request count, no-double-count, bare cancellation and fallback race are covered by spec/isaac/agent/drive/{turn,dispatch}_spec.clj (the fake provider seam allows exact billing and race control unavailable in existing feature steps).
 
 Verification: bb ci (2071 specs, 983 features, 0 failures; 1 pre-existing pending feature), bb jvm-spec (2071/0), bb bean-gate verify isaac-21it (exit 2, no feature-baseline). No module version or dependency pin changed. Reviewer note: prior lab patch called provider-wall/normalize on the cancelled racing 429 after skipping fallback; an added spec exposed the spurious :chat/provider-walled log and the implementation now skips that normalization when stopped.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-agent 545d67fb99b5a3bfa2c0d9ca1082a51a4a18a026
+
+Verifier: `bb ci` on rebased tree: 2075 specs and 984 features, 0 failures (1 pre-existing pending); `bb jvm-spec` on handoff: 2071 examples, 0 failures. Reviewed authorized feature additions, usage/fallback/logging specs, and foundation pin reachability. The CI output includes existing test diagnostics and CLI banners; no new production println in the diff.
