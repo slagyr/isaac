@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:30:26Z
+updated_at: 2026-11-17T15:48:18Z
 ---
 
 Part 1 of the chat and Stop work. Repo: **isaac-claude-code**.
@@ -91,3 +91,9 @@ Acceptance mismatch: features/llm/api/claude_driver.feature:792-808 scripts four
 Evidence: fresh `bb ci` 96 specs/0 failures/3 opt-in pending and 73 features/0 failures; `bb jvm-spec` 67 examples/0 failures/3 opt-in pending. Those green runs do not establish the required spaced final text on the actual comm turn. No existing feature was modified apart from new scenarios (per Exceptions). Manifest flag is true, implementation exists, upstream pin shas reachable from origin/main; no landing performed. Test output has existing structured log and namespace warnings, no newly introduced println. The subprocess test uses an intentionally bounded marker-file poll; its temporary files are in a directory created in setup.
 
 Fix the acceptance fixture/assertions and add non-streaming comm coverage before another handoff.
+
+
+## Checkpoint (2026-11-17, bean-isaac-ftrd)
+
+Done: isaac-claude-code bean/isaac-ftrd commit 142bf4c pushed. The four-delta feature now proves exactly four spaced chunks, exact reply and stored assistant text; nonstreaming fallback feature proves one full chatter/reply event; aside feature proves Checking. is not duplicated in transcript and one aside event reaches comm. Focused claude_driver feature: 41 examples, 0 failures, 174 assertions. No existing feature scenario changed except this bean's additions.
+Next: run bb ci and bb jvm-spec in isaac-claude-code-isaac-ftrd; verify gate from isaac (expected exit 2, no feature-baseline), then mark unverified and commit note/tag on isaac main. Resume at features/llm/api/claude_driver.feature:794 and spec/isaac/provider/claude_code/claude_cli_steps.clj:538.
