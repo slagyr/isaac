@@ -4,8 +4,10 @@ title: Claude Code replies stream as they are written, on turns that offer tools
 status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:25:18Z
+updated_at: 2026-11-17T15:25:38Z
 ---
 
 Part 1 of the chat and Stop work. Repo: **isaac-claude-code**.
