@@ -1,11 +1,11 @@
 ---
 # isaac-hqb6
 title: Agent commands run in their own process group, apart from the server's
-status: in-progress
+status: todo
 type: bug
 priority: critical
 created_at: 2026-11-17T14:38:08Z
-updated_at: 2026-11-17T14:39:49Z
+updated_at: 2026-11-17T14:42:50Z
 ---
 
 Found 2026-11-17. Zane Lab killed the live Isaac server on zanebot twice in
@@ -70,9 +70,16 @@ background keeps running after the tool returns "timeout exceeded".
 - If a baselined step cannot do what a scenario asks of it, stop and say
   which step; do not bend the production code to fit.
 
-feature-baseline: isaac-agent 8d8cc11e69971fa97684e7f967a98a71cebe6132
-feature-blob: isaac-agent features/tool/built_in.feature c70864bc2f4752f8597bb5978ebf9b7bcc65ec63 198,205
 
 ## Contract conflict (2026-11-17)
 
 The second baselined scenario cannot satisfy its mandated step `the process recorded in file "bg.pid" is not running` without changing the scenario or weakening the step. The scenario runs `sleep 300 & echo $! > bg.pid; wait` through `exec__run` with **no workdir and no session**. `tool-called` supplies only `state_dir`, and `exec-tool`'s `resolve-exec-args` leaves workdir nil when there is no session cwd; `ProcessBuilder` therefore writes `bg.pid` to the runner's `user.dir` (the repository root). But the acceptance requires the step to read the pid from the clean test directory, `target/test-state-tools/` (the same path `file-has-content` resolves from `:root`). Reproduced on native bb: `bg.pid` appeared in repo root, while `target/test-state-tools/bg.pid` did not exist. The unimplemented step cannot legitimately read that file. Temporarily removing @wip and adding the two exact steps yielded first scenario RED (same PGID) and second scenario failing before its assertion. Restored all temporary edits and removed the stray pid file; no implementation was shipped. Planner needs to amend/rebaseline the scenario to set `workdir` to the clean test directory (or create a session there), then dispatch again. No production cwd change solely to make this scenario pass.
+
+## Planner decision (2026-11-17, for isaac-hqb6, timeout scenario workdir)
+
+My slip: with no workdir and no session the command runs in the repository
+root, not the clean test directory. The second scenario is re-cut on
+isaac-agent main (`dcf513c`) and re-baselined below: it creates `bgdir` under
+the test root, runs with `workdir bgdir`, and the step reads
+`bgdir/bg.pid` from the clean test directory. The step's meaning is
+unchanged. No production cwd change. The first scenario is untouched.
