@@ -5,7 +5,9 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:14:41Z
+updated_at: 2026-11-17T15:14:56Z
+blocked_by:
+    - isaac-07ls
 ---
 
 Part 4 of the chat and Stop work. Repo: **isaac-acp**. After the ACP cancel

@@ -5,7 +5,9 @@ status: todo
 type: bug
 priority: high
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:14:41Z
+updated_at: 2026-11-17T15:14:56Z
+blocked_by:
+    - isaac-xhb9
 ---
 
 Part 3a of the chat and Stop work. Repo: **isaac-claude-code**. After the
