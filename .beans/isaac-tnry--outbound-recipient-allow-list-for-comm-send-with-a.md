@@ -1,11 +1,11 @@
 ---
 # isaac-tnry
 title: Outbound recipient allow-list for comm_send, with a one-command add
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-11-17T02:23:19Z
-updated_at: 2026-11-17T02:23:19Z
+updated_at: 2026-11-17T02:30:58Z
 ---
 
 Found by Zane Lab, 2026-11-16 (security finding
