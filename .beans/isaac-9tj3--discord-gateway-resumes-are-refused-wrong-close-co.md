@@ -4,8 +4,10 @@ title: 'Discord gateway resumes are refused: wrong close code and URL, collapsed
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:16:01Z
+updated_at: 2026-11-17T15:20:56Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -268,3 +270,9 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - `features/comm/discord/reconnect.feature`: log-level cells for routine gateway lifecycle events change from `:warn` (or `:error`) to `:info` or `:debug`, including line 58, `:discord.gateway/reconnect-requested` from `:warn` to `:info`. Routine means an opcode 7 reconnect that resumes, and a client stop. A failed reconnect attempt stays at warn.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+
+
+## Re-handoff for verification (2026-11-17)
+
+Planner authorized the reconnect.feature:58 :warn → :info edit in ## Exceptions after the earlier integrity hold. No further feature or source edits needed; prior hold is superseded. Implementation remains isaac-discord origin/bean/isaac-9tj3 at c382c64502857de55c05c72b8d907d0ad1b83f12. Re-ran ISAAC_GIT=1 bb ci on that branch: 136 JVM specs, 70 features, zero failures; native suite green. Re-ran bb bean-gate verify isaac-9tj3: exit 2 (no feature-baseline). Ready for ungated verification; status stays in-progress.
