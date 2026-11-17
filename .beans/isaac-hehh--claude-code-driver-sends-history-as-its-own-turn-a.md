@@ -158,3 +158,9 @@ without the tags. Resolve `features/llm/api/claude_driver.feature` by taking
 **your branch's version of the whole file**. Then confirm
 `git diff origin/main -- features/llm/api/claude_driver.feature` shows exactly
 six removed `@wip` lines and nothing else, run the gate, and land.
+
+## Landed on main (2026-11-16)
+
+Planner's real-CLI raw capture above confirms message_delta usage is cumulative field by field. Resolved the planner-authorized feature overlap by taking the worker version; diff against the new baseline contains exactly six removed @wip tags. `bb ci` passed (88 specs, 70 features); `bb jvm-spec` passed (67 examples, 3 opt-in real-CLI pending). `bb bean-gate verify isaac-hehh` passed on the squash commit.
+
+main-sha: isaac-claude-code e231ab01874cc34f5ec952c50ba7e16b91bba1f6
