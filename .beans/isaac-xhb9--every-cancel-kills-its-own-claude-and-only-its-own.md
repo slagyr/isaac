@@ -4,8 +4,10 @@ title: Every cancel kills its own claude, and only its own
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T16:06:55Z
+updated_at: 2026-11-17T16:10:13Z
 blocked_by:
     - isaac-ftrd
 ---
@@ -90,3 +92,7 @@ Working tree: clean (implementation detached review worktree and beans main befo
 Reproduce: git worktree add --detach ../isaac-claude-code-xhb9-review origin/bean/isaac-xhb9; rg -n "Thread/sleep|\(def .*atom" spec/isaac/provider/claude_code/{cancel_steps,claude_cli_cancel_spec,cancel_support}.clj. New tests have unqualified Thread/sleep at cancel_steps.clj:18 and claude_cli_cancel_spec.clj:15, and top-level cross-test mutable fixture* atom at claude_cli_cancel_spec.clj:6. The project /verify test-quality gate requires an inline justification near each flagged pattern or a bean-documented file:line exception; neither exists. The 400ms delay is part of acceptance, but the test must document why sleeping rather than synchronizing is necessary. The fixture atom persists between examples and must likewise be justified or replaced with scoped state. cancel_support.clj:14 uses a bounded 1ms poll, justified by await-file! implementation; cancel_support.clj:28 writes to a created temporary directory. No existing feature scenarios modified; two new scenarios authorized by ## Exceptions, no @wip.
 
 Fresh bb ci: 98 native specs, 0 failures, 3 opt-in pending; 76 JVM specs, 0 failures; bb jvm-spec: 67 features, 0 failures, 3 opt-in pending. Tests green, but test-quality gate blocks landing. Worker: add inline justifications for intentional sleeps and cross-test atom or refactor them, then rerun bb ci and bb jvm-spec. No implementation repo was landed.
+
+## Verification repair (2026-11-17)
+
+On isaac-claude-code bean/isaac-xhb9 at d19b4f9584cf453e673984b2e7b5b95f08d39cfb, replaced the cross-example fixture atom in claude_cli_cancel_spec.clj with Speclj `with` (per-example lazy fixture). Added inline explanations at claude_cli_cancel_spec.clj:13 and cancel_steps.clj:18: the bounded 400ms wait is the explicit acceptance interval after a subprocess-start marker, not an async synchronization wait. Real subprocess acceptance remains in both features and specs. bb ci: 98 native specs / 76 JVM specs, 0 failures; bb jvm-spec: 67 features, 0 failures (3 opt-in real pending). Gate exit 2: no feature-baseline; awaiting independent verify. No module version bump.
