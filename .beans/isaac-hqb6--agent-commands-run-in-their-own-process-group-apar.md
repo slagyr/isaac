@@ -1,11 +1,11 @@
 ---
 # isaac-hqb6
 title: Agent commands run in their own process group, apart from the server's
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-11-17T14:38:08Z
-updated_at: 2026-11-17T14:42:50Z
+updated_at: 2026-11-17T14:43:26Z
 ---
 
 Found 2026-11-17. Zane Lab killed the live Isaac server on zanebot twice in
