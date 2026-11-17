@@ -1,11 +1,11 @@
 ---
 # isaac-02s2
 title: isaac-acp reports tool calls with the right kind and status
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:14:56Z
+updated_at: 2026-11-17T15:42:00Z
 blocked_by:
     - isaac-07ls
 ---
