@@ -4,8 +4,10 @@ title: A stopped turn keeps its tokens, never falls back, and logs at info
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:34:57Z
+updated_at: 2026-11-17T15:42:05Z
 blocked_by:
     - isaac-fe5e
 ---
@@ -77,3 +79,12 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - Existing isaac-agent scenarios that expect a cancelled turn to log `:chat/stream-error` at error, or to drop its usage, change to the acceptance above. List each one in the bean.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+
+## Implementation (2026-11-17)
+
+isaac-agent commit 0501c0b on bean/isaac-21it. Stop retains usage exactly once in the session and carries it into :turn/ended (including request count from cycle usages); cancellation precedes fallback and provider classification, so a racing 429/connection error does not wall or fall back. Bare {:error :cancelled} is normalized before provider-contract validation and logs :chat/cancelled at info, not :chat/stream-error.
+
+Feature coverage: features/bridge/cancel.feature, “cancel interrupts a running LLM request”, now asserts info :chat/cancelled and zero :chat/stream-error. No existing scenario was weakened or removed. Session 1000+1500/10+40, :turn/ended request count, no-double-count, bare cancellation and fallback race are covered by spec/isaac/agent/drive/{turn,dispatch}_spec.clj (the fake provider seam allows exact billing and race control unavailable in existing feature steps).
+
+Verification: bb ci (2071 specs, 983 features, 0 failures; 1 pre-existing pending feature), bb jvm-spec (2071/0), bb bean-gate verify isaac-21it (exit 2, no feature-baseline). No module version or dependency pin changed. Reviewer note: prior lab patch called provider-wall/normalize on the cancelled racing 429 after skipping fallback; an added spec exposed the spurious :chat/provider-walled log and the implementation now skips that normalization when stopped.
