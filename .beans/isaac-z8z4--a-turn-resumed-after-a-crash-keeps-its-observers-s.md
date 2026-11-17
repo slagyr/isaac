@@ -1,11 +1,11 @@
 ---
 # isaac-z8z4
 title: A turn resumed after a crash keeps its observers, so Foreman hears the verdict
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:14:41Z
+updated_at: 2026-11-17T15:18:01Z
 ---
 
 Repo: **isaac-agent** (`bridge/resume.clj`). The crash path only.
