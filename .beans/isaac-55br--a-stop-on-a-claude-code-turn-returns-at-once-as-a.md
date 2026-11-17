@@ -4,8 +4,10 @@ title: A Stop on a Claude Code turn returns at once, as a cancelled result that 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T16:28:09Z
+updated_at: 2026-11-17T16:32:33Z
 blocked_by:
     - isaac-xhb9
 ---
@@ -97,3 +99,8 @@ HEAD: isaac-claude-code bean/isaac-55br 9ad1bfc720e303598d1ddb9c7fdbff8da956487d
 Working tree: clean (detached review worktree); git diff --check shows a trailing blank line in stop_accounting_spec.clj:155.
 
 Reproduction: bb ci (114 specs, 76 features; 0 failures) and bb jvm-spec (67 examples; 0 failures, 3 opt-in pending) pass. However /verify test-quality pass A flags unconditional Thread/sleep in new tests without inline justification or bean exception: spec/isaac/provider/claude_code/stop_accounting_spec.clj:53 (300/500 ms delay before cancelling), cancel_review_spec.clj:66 and :83 (4500 ms fixed wait before checking process death). Replace with process/stream readiness signals and bounded condition polling, or document why these particular sleeps are required. Moreover acceptance says children are gone within 3 seconds, but cancel_review_spec.clj:66/:83 only check after 4.5 seconds, so a cleanup at 4 seconds would pass. Check the 3-second bound with a deadline from cancellation. Existing feature files unchanged; no @wip; no sibling pins changed. Tree-scope historical sleeps also appear in live_stream_spec.clj and prior cancellation tests. No implementation landed on main.
+
+## Verification remediation (2026-11-17)
+
+- `isaac-claude-code` bean branch HEAD `a9a2547`: removed the fixed 300/500 ms pre-Stop delays and 4.5 s post-Stop waits. The non-streaming and pre-assistant scripts now signal readiness by creating a file after stdin is consumed; the post-result script signals after emitting the result. Stop waits on those signals with a bounded poll. The repeated child cleanup specs record a monotonic deadline at each Stop and poll each captured child/parent pid until dead, failing if death occurs after 3 seconds. Removed the trailing blank line.
+- `bb ci`: 114 specs / 76 features, 0 failures (3 real-binary specs pending); `bb jvm-spec`: 67 examples, 0 failures (3 pending). `git diff --check` clean; `bb bean-gate verify isaac-55br`: exit 2, no feature-baseline. Implementation pushed at `a9a2547`; awaiting independent verification.
