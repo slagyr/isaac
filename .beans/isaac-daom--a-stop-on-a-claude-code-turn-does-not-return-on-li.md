@@ -1,11 +1,11 @@
 ---
 # isaac-daom
 title: 'A Stop on a Claude Code turn does not return on Linux: three specs red in CI'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-11-17T16:39:09Z
-updated_at: 2026-11-17T16:39:09Z
+updated_at: 2026-11-17T16:39:45Z
 ---
 
 Follow-up to isaac-55br, which landed on isaac-claude-code main as `84a444f`
