@@ -4,8 +4,10 @@ title: 'A Stop on a Claude Code turn does not return on Linux: three specs red i
 status: in-progress
 type: bug
 priority: critical
+tags:
+    - unverified
 created_at: 2026-11-17T16:39:09Z
-updated_at: 2026-11-17T16:39:45Z
+updated_at: 2026-11-17T16:47:18Z
 ---
 
 Follow-up to isaac-55br, which landed on isaac-claude-code main as `84a444f`
@@ -56,3 +58,12 @@ container on zanebot is fine, and CI on the bean branch is the final word.
 
 Authorized by the planner, 2026-11-17: no existing feature scenario changes.
 New scenarios or steps that prove the acceptance may be added.
+
+## Implementation (2026-11-17)
+
+Cause: On Linux, the shell's background `sleep` inherits stdout; terminating only the shell leaves the reader blocked until the child exits.
+Fix: Terminate captured descendants by individual pid before terminating the parent, preserving the existing asynchronous reap.
+
+`isaac-claude-code` bean branch commit `d731900`; no specs or feature scenarios changed.
+Baseline CI on bean branch: run 44128436462 failed (same three timeouts); fixed CI run 44128936567 passed on Linux.
+Local `bb ci` (including rebase run) and `bb jvm-spec` passed on macOS. `bb bean-gate verify isaac-daom` exited 2: no feature-baseline; handoff to verification for landing and main CI.
