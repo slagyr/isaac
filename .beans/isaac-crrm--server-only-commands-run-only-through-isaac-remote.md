@@ -25,3 +25,11 @@ feature-baseline: isaac-foundation d7914d8fb7dfe4906046d5be2fc77340fdaed238
 feature-baseline: isaac-cli-proxy fd7a64691226314a35f8911164ad39d2fee60c95
 feature-blob: isaac-foundation features/cli/server_only.feature 1572ea904594cbdfa06f05e440ebd2212b221486 22,30
 feature-blob: isaac-cli-proxy features/server_only.feature 7ceb74f12f17e01744f610c43770668beaa5e64d 34,48
+
+## Work checkpoint (2026-11-16)
+
+Done: foundation bean branch 5073f47 implements local refusal/help grouping and removes forwarder berth/fixture; focused feature (3 examples) and full specs (1357 examples) green. Proxy bean branch cffd221 removes forwarder/global --remote and resolves loopback token; full specs (33), features (35), slow features (11) green against the foundation worktree. Gate passed with explicit --dir for both worktrees. Both branches pushed.
+
+Next: finish foundation `bb ci` with `ISAAC_TEST_TIMEOUT_MS=300000` (default 60s times out after ~120 feature examples; focused feature is green). Resume at `isaac-foundation-isaac-crrm/features/cli/server_only.feature:22`. Then rebase/green check both branches, land foundation on main, repin proxy deps.edn and bb.edn to landed foundation main SHA, retest proxy, land proxy, rerun gate and complete. The proxy's bb.edn :dev-local currently points at the shared foundation checkout; use a temporary override to the worktree for tests, and restore before committing.
+
+Last test: `bb features` (foundation) timed out at 60s, exit 124, not an assertion failure. `bb features features/cli/server_only.feature` and `bb spec` are green.
