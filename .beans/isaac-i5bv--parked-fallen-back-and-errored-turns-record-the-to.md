@@ -4,8 +4,10 @@ title: Parked, fallen-back and errored turns record the tokens they spent
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:52:03Z
-updated_at: 2026-11-17T15:52:36Z
+updated_at: 2026-11-17T16:01:23Z
 ---
 
 Usage accounting, after isaac-21it (a stopped turn keeps its tokens). Repo:
@@ -107,3 +109,11 @@ bean and are not tampering:
 - Do not run the lab's `check.sh` scripts as they are. Never signal a
   process group, and never use `pkill` or `killall`.
 - `bb ci` and `bb jvm-spec` pass. No module version bump.
+
+## Implementation handoff (2026-11-17)
+
+Implementation: isaac-agent `bean/isaac-i5bv`, commit `c55c5c5` (pushed). No version bump. One session charge per link when abandoned/errored, with carried-but-not-recharged prior-link usage for the turn-end report. The default tool loop includes paid cycles on errors and stops; nudges, summaries and wrap-ups include their requests even when empty; cancelled and no-error weather outcomes keep usage without double-counting. Compaction retry attempts are billed separately.
+
+Acceptance: `features/llm/turn_exhaustion.feature` adds the three-request silence-park scenario (3500/50, marker and `:turn/ended`). The nudge-error, fallback, mid-loop error, resume-once, no-error wall, failed summary/wrap-up, and double-count guards are in `spec/isaac/agent/drive/turn_spec.clj`; raw loop accumulation is in `spec/isaac/agent/llm/tool_loop_spec.clj`. No existing feature scenario token total or turn-end row was changed (old/new list: none). The pre-existing single pending mid-turn compaction feature remains pending.
+
+Verification: `bb ci` (2119 specs / 0 failures; 985 features / 0 failures, 1 pre-existing pending); `bb jvm-spec` (2119 / 0); `bb bean-gate verify isaac-i5bv` exit 2, no feature-baseline. Ready for independent ungated verification.
