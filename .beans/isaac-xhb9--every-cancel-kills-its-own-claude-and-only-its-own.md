@@ -1,11 +1,11 @@
 ---
 # isaac-xhb9
 title: Every cancel kills its own claude, and only its own
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:14:56Z
+updated_at: 2026-11-17T15:54:41Z
 blocked_by:
     - isaac-ftrd
 ---
