@@ -4,8 +4,10 @@ title: isaac acp handles session/cancel while a prompt is running
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:34:40Z
+updated_at: 2026-11-17T15:38:27Z
 blocked_by:
     - isaac-fe5e
 ---
@@ -98,3 +100,10 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 - `features/comm/acp/*.feature`: cancel fixtures that run `sleep 30` (refused by isaac-agent exec) change to an equivalent loop; nothing else in those scenarios changes.
 - A scenario that today expects an idle `session/cancel` to cancel the next prompt, or a mid-prompt cancel to end as `end_turn`, changes to the acceptance above.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+## Implementation notes (2026-11-17)
+
+- `features/comm/acp/cli.feature`: both acceptance scenarios exercise the real stdio CLI, including an LLM-delay watchdog released after 5 seconds. The CLI no longer blocks the reader on prompts; it registers an expected agent turn before dispatch and settles in `finally`. Same-session prompt futures chain; stdout is line-atomic; EOF waits for prompts.
+- `spec/isaac/comm/acp/cli_concurrency_spec.clj`: proves concurrent cancel dispatch, per-session response order, atomic lines with overlapping sessions, and EOF drain. `spec/isaac/comm/acp/server_spec.clj`: idle cancellation no longer poisons a later turn; agent pin updated to `d75c43216e2eea821bdb590c0d276ecd2777a47d` (on upstream main). Five `sleep 30` fixtures changed to an infinite one-second loop in feature/spec files. Fixed misplaced close paren in `cli_spec.clj`: 29 CLI specs now execute (previously 17).
+- Red before implementation: CLI concurrency 4 examples / 1 failure; CLI feature 20 examples / 1 failure (running cancel yielded `end_turn`). Green: `ISAAC_GIT=1 bb ci` 100 specs / 0 failures, 74 features / 0 failures; `ISAAC_GIT=1 bb jvm-spec` 100 specs / 0 failures. Bare `bb jvm-spec` selects shared `../isaac-agent` checkout's detached old HEAD via `:dev-local`, so it fails to resolve its logger; pinned-git invocation is green. Native `bb ci` uses pinned agent.
+- Implementation commit: `isaac-acp` `16fce6425056d0385cded3920124af5755d0c96e` on `bean/isaac-07ls` (pushed). `bb bean-gate verify isaac-07ls`: exit 2, no feature-baseline; verification required. Leave in-progress.
