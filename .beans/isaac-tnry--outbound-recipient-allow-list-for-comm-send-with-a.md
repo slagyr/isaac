@@ -99,3 +99,11 @@ content from generic tool telemetry so the refused body never reaches the log.
 passed on the squash commit.
 
 main-sha: isaac-agent 7ccfb485d45767bfaa556466ed36c9d06156a99d
+
+## Checkpoint (2026-11-17)
+
+Done: green `bb ci`, `bb jvm-spec`, and gate on the squash commit; implementation
+committed and pushed to `isaac-agent/main` at the sha above; main-sha recorded.
+Next: close the bean as completed and clean up the landed local branch. If
+resuming, start at `src/isaac/agent/comm/delivery/worker.clj:52` to inspect
+the delivery guard; no implementation changes remain.
