@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:14:27Z
+updated_at: 2026-11-17T15:16:01Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -254,3 +254,9 @@ HEAD: isaac-discord c382c64502857de55c05c72b8d907d0ad1b83f12 (origin/bean/isaac-
 Working tree: clean (detached verification worktree); isaac beans main clean before verdict.
 
 Feature integrity gate failed before tests. `git diff origin/main...origin/bean/isaac-9tj3 -- features/comm/discord/reconnect.feature` changes line 58 from `| :warn | :discord.gateway/reconnect-requested |` to `| :info | :discord.gateway/reconnect-requested |`. This is not an @wip removal. The bean has no `## Exceptions` section authorizing this exact edit; the acceptance prose does request the new info level, but the verifier protocol explicitly requires a `## Exceptions` entry for any non-@wip feature edit. Document this intended exception in the bean and return for verification. Tests were not run because the /verify command stops at the first integrity failure. No implementation was landed on main.
+
+
+
+## Held (awaiting planner, 2026-11-17)
+
+Verification stopped at feature integrity: `features/comm/discord/reconnect.feature:58` changes `:warn` to `:info` for `:discord.gateway/reconnect-requested`. This is required by this bean's acceptance and the implementation; it is not an `@wip` removal. The verifier requests an explicit `## Exceptions` entry naming this exact change. Worker protocol forbids workers from authoring `## Exceptions` or altering feature contracts, including on ungated beans. Planner must authorize this exception in the bean, then redispatch for verification; no source or feature edits are justified. Existing implementation remains on `isaac-discord` `origin/bean/isaac-9tj3` at c382c64502857de55c05c72b8d907d0ad1b83f12. Gate exit 2 (no `feature-baseline:`); bean remains in-progress. Escalated by **scrapper**@bean-isaac-9tj3. Resumes only on explicit planner action.
