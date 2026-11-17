@@ -14,7 +14,7 @@
                                       :git/sha "cc2e5c4f4b9813880890d50eb94bb79461e75455"}
                               :desc  "Claude Code provider — :claude-cli llm-api factory driving the `claude` CLI (subscription auth)."}
  :isaac.cli-proxy            {:coord {:git/url "https://github.com/slagyr/isaac-cli-proxy.git"
-                                      :git/sha "76b97f122a9a26fa8ad7a434520c013bfe0fe021"}
+                                      :git/sha "c3c27ac76e69d1eafa659976621e574468fa3f1b"}
                               :desc  "Remote CLI proxy — `isaac remote <url>/cli <cmd...>` ships argv and pipes stdio over WebSocket."}
  :isaac.cli-server           {:coord {:git/url "https://github.com/slagyr/isaac-cli-server.git"
                                       :git/sha "129e4dc0b813314a14f4bdb09f43c09889a85657"}
