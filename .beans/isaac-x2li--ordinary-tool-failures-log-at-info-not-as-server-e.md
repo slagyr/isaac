@@ -1,11 +1,11 @@
 ---
 # isaac-x2li
 title: Ordinary tool failures log at info, not as server errors
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:07:02Z
+updated_at: 2026-11-17T15:08:01Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
