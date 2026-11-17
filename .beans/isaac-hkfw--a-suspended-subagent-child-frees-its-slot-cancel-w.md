@@ -1,11 +1,11 @@
 ---
 # isaac-hkfw
 title: 'A suspended subagent child frees its slot: cancel works, and boot fails orphans'
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-11-17T14:38:08Z
-updated_at: 2026-11-17T14:39:03Z
+updated_at: 2026-11-17T14:39:44Z
 ---
 
 Found 2026-11-17 by Zane Lab (PROPOSALS.md, "cancelling a suspended subagent
