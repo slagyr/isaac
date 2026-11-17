@@ -1,11 +1,11 @@
 ---
 # isaac-hehh
 title: Claude Code driver sends history as its own turn and counts each request's usage twice
-status: draft
+status: todo
 type: bug
 priority: high
 created_at: 2026-11-17T00:21:18Z
-updated_at: 2026-11-17T00:21:18Z
+updated_at: 2026-11-17T00:22:59Z
 ---
 
 Found by Zane Lab on 2026-11-16 (experiment `claude-provider-fix`), with a
@@ -71,3 +71,6 @@ Use it as a starting point; you own the result. `main` has moved since
   If it is not, stop and say so.
 - `bb ci` and `bb jvm-spec` (if the repo has it) pass. Do not bump the module
   version; that happens at deploy.
+
+feature-baseline: isaac-claude-code 4de0cd84fe7d53717ed209a652d0872a6bdcd1e7
+feature-blob: isaac-claude-code features/llm/api/claude_driver.feature 71230245efb580b8e7df36162ca232614933fca9 750,769,780
