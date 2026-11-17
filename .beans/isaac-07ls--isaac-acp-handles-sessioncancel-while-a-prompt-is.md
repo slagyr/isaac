@@ -1,13 +1,11 @@
 ---
 # isaac-07ls
 title: isaac acp handles session/cancel while a prompt is running
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:38:27Z
+updated_at: 2026-11-17T15:40:59Z
 blocked_by:
     - isaac-fe5e
 ---
@@ -107,3 +105,10 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 - `spec/isaac/comm/acp/cli_concurrency_spec.clj`: proves concurrent cancel dispatch, per-session response order, atomic lines with overlapping sessions, and EOF drain. `spec/isaac/comm/acp/server_spec.clj`: idle cancellation no longer poisons a later turn; agent pin updated to `d75c43216e2eea821bdb590c0d276ecd2777a47d` (on upstream main). Five `sleep 30` fixtures changed to an infinite one-second loop in feature/spec files. Fixed misplaced close paren in `cli_spec.clj`: 29 CLI specs now execute (previously 17).
 - Red before implementation: CLI concurrency 4 examples / 1 failure; CLI feature 20 examples / 1 failure (running cancel yielded `end_turn`). Green: `ISAAC_GIT=1 bb ci` 100 specs / 0 failures, 74 features / 0 failures; `ISAAC_GIT=1 bb jvm-spec` 100 specs / 0 failures. Bare `bb jvm-spec` selects shared `../isaac-agent` checkout's detached old HEAD via `:dev-local`, so it fails to resolve its logger; pinned-git invocation is green. Native `bb ci` uses pinned agent.
 - Implementation commit: `isaac-acp` `16fce6425056d0385cded3920124af5755d0c96e` on `bean/isaac-07ls` (pushed). `bb bean-gate verify isaac-07ls`: exit 2, no feature-baseline; verification required. Leave in-progress.
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-acp 4cc14ff923a93267de9e115396a7465b4ed41f38
+
+Verification: clean isaac-acp review worktree at 16fce6425056d0385cded3920124af5755d0c96e; `ISAAC_GIT=1 bb ci` 100 specs/0 failures, 74 features/0 failures; `ISAAC_GIT=1 bb jvm-spec` 100 specs/0 failures. Acceptance scenarios in cli.feature green and not @wip; 29 CLI specs now reachable; authorized feature fixture changes only. Agent pin d75c43216e2eea821bdb590c0d276ecd2777a47d reachable from agent origin/main. Squash tree equals tested branch tree; origin/main had not moved. Existing @wip in cli-resume.feature is unrelated and unchanged.
