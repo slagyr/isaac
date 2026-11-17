@@ -80,3 +80,11 @@ Scenario: a weather-parked marker still wins (isaac-cpiz)
 - `bb ci` and `bb jvm-spec` pass. No module version bump; that happens at
   deploy. A dependency sha pin may move when this bean needs an upstream
   change that has landed.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- No existing scenario changes. A new `features/turn/resume_observers.feature` is expected.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.

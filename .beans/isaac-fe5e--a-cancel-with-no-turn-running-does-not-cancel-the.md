@@ -70,3 +70,11 @@ Scenario: a cancel for a turn that was admitted but has not begun still cancels 
 - `bb ci` and `bb jvm-spec` pass. No module version bump; that happens at
   deploy. A dependency sha pin may move when this bean needs an upstream
   change that has landed.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- `features/bridge/cancel.feature` and other isaac-agent scenarios that encoded the leak (a cancel with no running turn cancelling the next turn) change to the new behaviour. List each one in the bean with a line on why.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.

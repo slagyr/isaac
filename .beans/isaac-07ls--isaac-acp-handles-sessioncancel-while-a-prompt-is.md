@@ -89,3 +89,12 @@ Scenario: a session/cancel with no prompt running does not cancel the next promp
 - `bb ci` and `bb jvm-spec` pass. No module version bump; that happens at
   deploy. A dependency sha pin may move when this bean needs an upstream
   change that has landed.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- `features/comm/acp/*.feature`: cancel fixtures that run `sleep 30` (refused by isaac-agent exec) change to an equivalent loop; nothing else in those scenarios changes.
+- A scenario that today expects an idle `session/cancel` to cancel the next prompt, or a mid-prompt cancel to end as `end_turn`, changes to the acceptance above.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.

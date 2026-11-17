@@ -143,3 +143,12 @@ no `:error`, and the result reaches the caller unchanged. nil still gives
 isaac-agent branch `bean/isaac-x2li` at `34b9c2c`. Applied and reviewed lab v2 against current main. Ordinary `:isError` results now log `:info :tool/error-result`; caught exec bugs marked `:fault` stay `:error :tool/execute-failed`, with the internal marker removed before returning to the caller. `IOException` on spawn remains an ordinary tool outcome. The feature distinguishes missing file from nil result. Tests: focused registry 70/0, fault-level 5/0, execution.feature 3/0; `bb ci` (2044 specs/0, 982 features/0, 1 pending) and `bb jvm-spec` (2044/0) pass. Gate exits 2: no feature-baseline.
 
 The draft risk calls bad-workdir spawn refusal a hidden server fault and suggests keeping it at warn; review/code show this is an `IOException` tool outcome, not a server crash. Command timeout is also a tool outcome; registry-level timeouts already log warn separately. Other handlers that catch their own exceptions remain a follow-up; this change distinguishes caught exec faults only. No version bump.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- `features/tool/execution.feature`: the scenario "Tool failure is logged at error with tool context" is rewritten so an ordinary failure (missing file, path refusal, non-zero exit, timeout) expects `:info` `:tool/error-result`; a scenario is kept or added in which a tool that throws expects `:error` `:tool/execute-failed`. The nil-result scenario stays at error.
+- Any other feature in isaac-agent whose table expects `:error` `:tool/execute-failed` for an ordinary tool failure: that row changes to `:info` `:tool/error-result`, and nothing else in the scenario changes. List each one in the bean.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.

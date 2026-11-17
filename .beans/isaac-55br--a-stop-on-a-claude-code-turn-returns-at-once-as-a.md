@@ -73,3 +73,11 @@ Scenario: a Stop wins over weather text on stderr
 - `bb ci` and `bb jvm-spec` pass. No module version bump; that happens at
   deploy. A dependency sha pin may move when this bean needs an upstream
   change that has landed.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- Existing isaac-claude-code scenarios that expect a cancelled turn to end as `:mcp-unavailable` change to `:cancelled`. List each one in the bean.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.

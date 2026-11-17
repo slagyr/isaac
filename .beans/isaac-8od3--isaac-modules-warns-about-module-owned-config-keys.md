@@ -140,3 +140,11 @@ had nothing to do with the patch.
 - The draft acceptance scenario says `modules list` with no modules must emit *no* unknown-key event. This conflicts with the reviewed v2 fix and the planner requirement to retain warnings for genuinely unknown keys when no git module exists. The implementation follows the latter; feature coverage asserts the event *is* logged for no modules. The draft statement that every `*resolve-classpath?* false` load should skip unknown-key logging is likewise too broad: local/root schemas remain visible.
 - TDD: signal_slots red 23 examples/2 failures before implementation, green 23/0 afterward; focused CLI feature 4/0. `bb ci`: 1365 specs/0 failures; 377 features/0 failures, 2 pending. JVM focused signal_slots 23/0. `bb jvm-spec` full: 1365 examples, 9 failures in module/protocol, module/lifecycle and module/coords (JVM-specific failures outside modified config code; focused JVM config spec passes). No process-group signals or lab check.sh used.
 - `bb bean-gate verify isaac-8od3`: exit 2, no feature-baseline. Hand off for independent verification; bean remains in-progress.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- No existing scenario changes.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.

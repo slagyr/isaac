@@ -69,3 +69,11 @@ Scenario: a Stop logs at info
 - `bb ci` and `bb jvm-spec` pass. No module version bump; that happens at
   deploy. A dependency sha pin may move when this bean needs an upstream
   change that has landed.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- Existing isaac-agent scenarios that expect a cancelled turn to log `:chat/stream-error` at error, or to drop its usage, change to the acceptance above. List each one in the bean.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.

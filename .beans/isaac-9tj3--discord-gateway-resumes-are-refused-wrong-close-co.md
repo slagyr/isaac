@@ -260,3 +260,11 @@ Feature integrity gate failed before tests. `git diff origin/main...origin/bean/
 ## Held (awaiting planner, 2026-11-17)
 
 Verification stopped at feature integrity: `features/comm/discord/reconnect.feature:58` changes `:warn` to `:info` for `:discord.gateway/reconnect-requested`. This is required by this bean's acceptance and the implementation; it is not an `@wip` removal. The verifier requests an explicit `## Exceptions` entry naming this exact change. Worker protocol forbids workers from authoring `## Exceptions` or altering feature contracts, including on ungated beans. Planner must authorize this exception in the bean, then redispatch for verification; no source or feature edits are justified. Existing implementation remains on `isaac-discord` `origin/bean/isaac-9tj3` at c382c64502857de55c05c72b8d907d0ad1b83f12. Gate exit 2 (no `feature-baseline:`); bean remains in-progress. Escalated by **scrapper**@bean-isaac-9tj3. Resumes only on explicit planner action.
+
+
+## Exceptions
+
+Authorized by the planner, 2026-11-17. These feature edits are part of this bean and are not tampering:
+
+- `features/comm/discord/reconnect.feature`: log-level cells for routine gateway lifecycle events change from `:warn` (or `:error`) to `:info` or `:debug`, including line 58, `:discord.gateway/reconnect-requested` from `:warn` to `:info`. Routine means an opcode 7 reconnect that resumes, and a client stop. A failed reconnect attempt stays at warn.
+- Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
