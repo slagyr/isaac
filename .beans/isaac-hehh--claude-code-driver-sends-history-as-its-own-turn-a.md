@@ -1,11 +1,11 @@
 ---
 # isaac-hehh
 title: Claude Code driver sends history as its own turn and counts each request's usage twice
-status: in-progress
+status: completed
 type: bug
 priority: high
 created_at: 2026-11-17T00:21:18Z
-updated_at: 2026-11-17T00:36:46Z
+updated_at: 2026-11-17T00:40:41Z
 ---
 
 Found by Zane Lab on 2026-11-16 (experiment `claude-provider-fix`), with a
