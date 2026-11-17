@@ -80,3 +80,11 @@ The parent sat blocked for seven hours until the records were edited by hand
 
 feature-baseline: isaac-agent 8d8cc11e69971fa97684e7f967a98a71cebe6132
 feature-blob: isaac-agent features/tool/subagent_control.feature 9304a6e5e5af772791ef1c7151774e5ec52e7486 165,195
+
+## Implementation (2026-11-17)
+
+Suspended-child cancel now finishes the durable record, clears its marker, and delivers cancellation. Boot scan finishes markerless suspended/running subagents as failed, warns with identifiers, and notifies their observer; non-subagent running recovery is unchanged. Added the single shutdown-suspended step and unit coverage for marker-backed, markerless suspended, and markerless running children. `bb ci` (2037 specs, 980 feature examples; 1 pre-existing pending) and `bb jvm-spec` (2037 specs) pass. Bean gate PASS on the squash commit.
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-agent 613868da83c3ba37d2a0cafdcc16926ad6870afd
