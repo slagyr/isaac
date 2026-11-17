@@ -1,11 +1,11 @@
 ---
 # isaac-crrm
 title: Server-only commands run only through isaac remote; the local CLI lists them and refuses with the hint; remove the forwarder
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-11-17T00:10:51Z
-updated_at: 2026-11-17T00:10:51Z
+updated_at: 2026-11-17T00:11:45Z
 ---
 
 Server-only commands stop being forwarded. They run only inside the server, through `isaac remote`, and the local CLI points the way. Micah, 2026-11-16: the forwarder "seems complicated… I'm not sure we really want that"; an alias that picks a server is too much; "there should be some local CLI indication that the module is installed and that the command is available remote only."
