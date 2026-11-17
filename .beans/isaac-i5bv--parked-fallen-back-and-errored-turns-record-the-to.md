@@ -1,11 +1,11 @@
 ---
 # isaac-i5bv
 title: Parked, fallen-back and errored turns record the tokens they spent
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:52:03Z
-updated_at: 2026-11-17T15:52:03Z
+updated_at: 2026-11-17T15:52:36Z
 ---
 
 Usage accounting, after isaac-21it (a stopped turn keeps its tokens). Repo:
