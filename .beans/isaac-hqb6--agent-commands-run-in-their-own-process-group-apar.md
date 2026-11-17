@@ -83,3 +83,6 @@ isaac-agent main (`dcf513c`) and re-baselined below: it creates `bgdir` under
 the test root, runs with `workdir bgdir`, and the step reads
 `bgdir/bg.pid` from the clean test directory. The step's meaning is
 unchanged. No production cwd change. The first scenario is untouched.
+
+feature-baseline: isaac-agent dcf513c6f24ce2471551daf9b00f33e11f93b58a
+feature-blob: isaac-agent features/tool/built_in.feature 19ddfff4aa07d47ba5215648fcd9a5a9c39e579c 198,205
