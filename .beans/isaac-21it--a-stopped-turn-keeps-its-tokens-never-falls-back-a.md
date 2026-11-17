@@ -1,11 +1,11 @@
 ---
 # isaac-21it
 title: A stopped turn keeps its tokens, never falls back, and logs at info
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:14:56Z
+updated_at: 2026-11-17T15:34:57Z
 blocked_by:
     - isaac-fe5e
 ---
