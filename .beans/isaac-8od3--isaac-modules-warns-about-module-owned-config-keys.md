@@ -1,11 +1,11 @@
 ---
 # isaac-8od3
 title: isaac modules warns about module-owned config keys as unknown
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-11-17T15:07:03Z
-updated_at: 2026-11-17T15:07:03Z
+updated_at: 2026-11-17T15:07:58Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
