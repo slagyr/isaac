@@ -1,13 +1,11 @@
 ---
 # isaac-x2li
 title: Ordinary tool failures log at info, not as server errors
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:12:50Z
+updated_at: 2026-11-17T15:18:34Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -152,3 +150,11 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 - `features/tool/execution.feature`: the scenario "Tool failure is logged at error with tool context" is rewritten so an ordinary failure (missing file, path refusal, non-zero exit, timeout) expects `:info` `:tool/error-result`; a scenario is kept or added in which a tool that throws expects `:error` `:tool/execute-failed`. The nil-result scenario stays at error.
 - Any other feature in isaac-agent whose table expects `:error` `:tool/execute-failed` for an ordinary tool failure: that row changes to `:info` `:tool/error-result`, and nothing else in the scenario changes. List each one in the bean.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-agent 9c39e0c262cddbfc09970a1e76ea165bfbed9e2e
+
+Verification: reviewed 34b9c2c against planner-approved scenario rewrite and lab v2; bb ci (2044 specs, 982 features, 0 failures, 1 unrelated pending), bb jvm-spec (2044/0), targeted execution.feature (3/0). Foundation pin edc1848 is reachable from origin/main. No @wip in execution.feature; no new test smells. Existing suite emits structured logs and CLI banners, not introduced by this diff. Historical Thread/sleep in registry_spec.clj:231 and tools_steps.clj:244,678; follow-up recommended. No .verify-baseline.edn exists; speed baseline not seeded in implementation repo (verifier read-only).
