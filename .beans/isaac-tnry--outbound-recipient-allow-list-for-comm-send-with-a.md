@@ -88,3 +88,14 @@ meaning: no captured log entry, printed in full (every key and value),
 contains the given text. Put it with the other log steps. The scenario text
 stays exactly as baselined, so no re-baseline is needed. Carry on and land
 when the gate passes.
+
+## Landed on main (2026-11-17)
+
+Implemented the outbound recipient filter at enqueue and delivery, the non-hosted
+`comms allow` CLI, and the full-entry log assertion. Redacted `comm__send`
+content from generic tool telemetry so the refused body never reaches the log.
+`bb ci`: 2033 specs and 978 features, zero failures (one unrelated pending).
+`bb jvm-spec`: 2033 specs, zero failures. `bb bean-gate verify isaac-tnry`
+passed on the squash commit.
+
+main-sha: isaac-agent 7ccfb485d45767bfaa556466ed36c9d06156a99d
