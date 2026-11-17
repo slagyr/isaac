@@ -4,8 +4,10 @@ title: The per-turn MCP config file is private and is deleted when the turn ends
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-11-17T17:57:14Z
-updated_at: 2026-11-17T17:58:17Z
+updated_at: 2026-11-17T18:09:01Z
 ---
 
 Found by Zane Lab, 2026-11-16 (security finding
@@ -89,3 +91,9 @@ New scenarios or steps that prove the acceptance may be added.
   branch (Linux) before handoff. No module version bump.
 - Not in this bean: deleting the leftovers already on zanebot. The planner
   does that after deploy.
+
+## Implementation notes (2026-11-17)
+
+- `isaac-claude-code` branch `bean/isaac-92e3`, commit `221e2a6` (preceded by `537ca13`, `58cffd3`). Owner-only 0600 per-turn file in 0700 per-process directory; listener and partial file cleaned if writing fails; turn `finally` removes the file on reply, error, exception or cancel. One shutdown callback on `host/process-host` cleans in-flight files and directory even if the initiating turn is bound to an embedded host. No module on-unload dependency, `deleteOnExit`, shared-directory sweep or version bump.
+- Acceptance proven in `claude_driver_spec.clj`: mode and location, four turn outcomes, failed write and listener, process-host binding; real JVM subprocess `test-resources/mcp_shutdown.clj` creates two live configs, receives SIGTERM by its own process handle, then checks both files and directory are gone. These OS permissions and process-signal assertions are specs, not feature steps. No feature scenarios changed.
+- `bb ci`: 119 examples/0 failures (3 opt-in pending), features 76/0; `bb jvm-spec`: 72/0 (3 pending). CI Tests Linux workflow_dispatch on `bean/isaac-92e3` run 44144218012: success. `bb bean-gate verify isaac-92e3`: exit 2, no feature-baseline; verifier path.
