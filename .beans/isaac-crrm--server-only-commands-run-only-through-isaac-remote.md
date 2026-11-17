@@ -1,11 +1,11 @@
 ---
 # isaac-crrm
 title: Server-only commands run only through isaac remote; the local CLI lists them and refuses with the hint; remove the forwarder
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-11-17T00:10:51Z
-updated_at: 2026-11-17T00:11:45Z
+updated_at: 2026-11-17T00:36:14Z
 ---
 
 Server-only commands stop being forwarded. They run only inside the server, through `isaac remote`, and the local CLI points the way. Micah, 2026-11-16: the forwarder "seems complicated… I'm not sure we really want that"; an alias that picks a server is too much; "there should be some local CLI indication that the module is installed and that the command is available remote only."
@@ -33,3 +33,10 @@ Done: foundation bean branch 5073f47 implements local refusal/help grouping and 
 Next: finish foundation `bb ci` with `ISAAC_TEST_TIMEOUT_MS=300000` (default 60s times out after ~120 feature examples; focused feature is green). Resume at `isaac-foundation-isaac-crrm/features/cli/server_only.feature:22`. Then rebase/green check both branches, land foundation on main, repin proxy deps.edn and bb.edn to landed foundation main SHA, retest proxy, land proxy, rerun gate and complete. The proxy's bb.edn :dev-local currently points at the shared foundation checkout; use a temporary override to the worktree for tests, and restore before committing.
 
 Last test: `bb features` (foundation) timed out at 60s, exit 124, not an assertion failure. `bb features features/cli/server_only.feature` and `bb spec` are green.
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-foundation d641b61a83ca3fa78ad81de9239d4898c54ca3c5
+main-sha: isaac-cli-proxy 3c14a26daa20f99b42662fec2efdd7fc3241eaa0
+
+Verification: foundation `ISAAC_TEST_TIMEOUT_MS=300000 bb ci` green (1357 specs; 376 features, two pre-existing pending); proxy `bb ci` green (33 specs, 35 features, 11 slow features); bean gate PASS on both squash commits before push. The default 60s foundation feature timeout required `ISAAC_TEST_TIMEOUT_MS=300000`. A scheduler backoff spec failed once in an earlier full run, passed on rerun. All published foundation pins in proxy point to the landed main SHA.
