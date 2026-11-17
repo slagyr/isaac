@@ -4,8 +4,10 @@ title: A Stop on a Claude Code turn returns at once, as a cancelled result that 
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T16:16:39Z
+updated_at: 2026-11-17T16:24:36Z
 blocked_by:
     - isaac-xhb9
 ---
@@ -81,3 +83,10 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - Existing isaac-claude-code scenarios that expect a cancelled turn to end as `:mcp-unavailable` change to `:cancelled`. List each one in the bean.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+
+## Implementation notes (2026-11-17)
+
+- `isaac-claude-code` branch `bean/isaac-55br`, HEAD `9ad1bfc`. Stop returns `:cancelled` with `:message "cancelled"`, `:cancelled? true`, partial content, and per-request usage; cancellation takes precedence over stderr weather. Cancellation captures child handles before SIGTERM and reaps by individual handle after 2.5 s grace, without blocking the turn.
+- Acceptance 1 (partial text, prompt return <100 ms, child cleanup within 3 s) is covered by `live_stream_spec.clj` (latency) and `cancel_review_spec.clj` (20 cancels, fast-exit orphans, late-output isolation); acceptance 2, 3 and 4 by `stop_accounting_spec.clj` (real local process, message_start 1200 + cache-read 300 = 1500, one request, weather precedence and provider error contract). Existing feature steps exercise fake CLI cancellation but cannot simulate the slow real child or pre-assistant stream interruption, so these are specs, not new feature scenarios. No existing feature scenario expected a cancelled turn to end as `:mcp-unavailable`; the existing MCP-weather scenarios exercise actual MCP init failures and remain unchanged.
+- `bb ci`: 114 specs / 76 features, 0 failures (3 opt-in real-binary specs pending); `bb jvm-spec`: 67 examples, 0 failures (3 opt-in pending). `bb bean-gate verify isaac-55br`: exit 2, no feature-baseline.
