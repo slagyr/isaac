@@ -4,8 +4,10 @@ title: A turn resumed after a crash keeps its observers, so Foreman hears the ve
 status: in-progress
 type: bug
 priority: critical
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:18:01Z
+updated_at: 2026-11-17T15:23:44Z
 ---
 
 Repo: **isaac-agent** (`bridge/resume.clj`). The crash path only.
@@ -88,3 +90,12 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - No existing scenario changes. A new `features/turn/resume_observers.feature` is expected.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+
+## Implementation and verification (2026-11-17)
+
+isaac-agent bean/isaac-z8z4 commit ded7e0b54983f11ce57318ff00290ff0da0a7bdd. Crash resume now falls back to the interrupted :running queue record for observers and the first request id; weather marker observers remain authoritative. No Foreman or clean-shutdown changes.
+
+Acceptance mapping: the resumed turn drop delivers the lookout verdict in features/turn/resume_observers.feature (real CLI and resume scan); the resumed charge carries the Foreman observers and original turn id, the second restart retains the first id, and the weather marker takes precedence in spec/isaac/agent/bridge/resume_spec.clj. A no-observers guard is also covered there. The existing marker-backed subagent/orphan examples remain passing.
+
+TDD: focused resume specs failed 3/23 and feature failed 1/1 before production change; afterwards focused specs 23/0 and feature 1/0. bb ci: 2041 specs/0 failures, 983 features/0 failures (1 pre-existing pending); bb jvm-spec: 2041/0. bb bean-gate verify isaac-z8z4 --dir isaac-agent=../isaac-agent-isaac-z8z4 exited 2: no feature-baseline. Implementation remains on bean branch pending independent verification.
