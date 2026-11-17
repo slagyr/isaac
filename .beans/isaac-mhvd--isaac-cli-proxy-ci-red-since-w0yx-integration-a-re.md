@@ -1,13 +1,11 @@
 ---
 # isaac-mhvd
 title: 'isaac-cli-proxy CI red since w0yx: integration ''a remote command runs on the server and streams back'' exits 1'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-16T23:27:48Z
-updated_at: 2026-11-16T23:47:18Z
+updated_at: 2026-11-17T00:00:10Z
 ---
 
 isaac-cli-proxy CI has been red since the w0yx commits (253ff0e, 76b97f1, 36898ac, fa9848e). Release 0.2.0 shipped on a red build. Micah, 2026-11-16: "please get it fixed".
@@ -33,3 +31,10 @@ Fixed the test setup by explicitly configuring `:isaac.cli-proxy` at the fixture
 
 Done: commits `ccc7e9a`, `43cc122`, `a3eecae`, `06bed71` pushed to `bean/isaac-mhvd`; `ISAAC_GIT=1 bb ci` green locally and GitHub branch CI run 43981860860 green. The fixture fix is at `spec/isaac/cli_proxy/integration_steps.clj:159`; failure diagnostics are at `spec/isaac/cli_proxy/integration_steps.clj:236`.
 Next: ungated verification/landing of the implementation branch, then confirm GitHub CI on `main` and record the landed SHA. Resume from `spec/isaac/cli_proxy/integration_steps.clj:159` if the verifier finds a test or fixture issue.
+
+
+## Landed on main (2026-11-16)
+
+main-sha: isaac-cli-proxy d679f830e352af0e689052237345888250835171
+
+Independent verification: `ISAAC_GIT=1 bb ci` green on landed tree (35 specs/0 failures; 13 slow examples/0 failures, 38 assertions, repeated across slow gate). GitHub main CI run 43983593941 green at the landed SHA. No feature files or production code changed; the fixture explicitly configures the proxy, and remote exit assertion includes stderr/stdout on failure.
