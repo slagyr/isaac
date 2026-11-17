@@ -1,13 +1,11 @@
 ---
 # isaac-ftrd
 title: Claude Code replies stream as they are written, on turns that offer tools
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:50:11Z
+updated_at: 2026-11-17T15:53:43Z
 ---
 
 Part 1 of the chat and Stop work. Repo: **isaac-claude-code**.
@@ -106,3 +104,11 @@ Next: run bb ci and bb jvm-spec in isaac-claude-code-isaac-ftrd; verify gate fro
 isaac-claude-code commit 142bf4c on bean/isaac-ftrd. Feature features/llm/api/claude_driver.feature:794 now scripts four literal deltas with spaces, asserts the exact four comm chunks, full reply event, exact assembled response, and transcript assistant content "Three moorings, all sound.". Feature :816 turns off the provider's tool-stream support and asserts one complete chatter event and one reply event with that text (the nonstreaming delivery path used by comms like iMessage/Discord); the provider module has no dependency on either comm implementation. Feature :831 verifies the pre-tool aside reaches the comm once and does not enter the stored transcript at all (tool call and final "Done." are stored). None of the existing scenarios were weakened. Specs in live_stream_spec.clj prove live delivery before CLI exit, identical invocation/stdin and usage; see earlier implementation note.
 
 Latency finding remains as recorded under Implementation and evidence: callback fires before child exit with one CLI invocation and identical stdin/usage; interleaved 22-case replay measured median 6.0s streamed vs 6.1s nonstreamed, ruling out a fixed 2-3s overhead; first samples were model variance and last-delta-to-exit is the normal result/exit wait. No lab check.sh scripts invoked. Tests: bb ci 96 specs/0 failures/3 opt-in pending, 74 features/0 failures; bb jvm-spec 67 examples/0 failures/3 opt-in pending. Gate: bb bean-gate verify isaac-ftrd --dir isaac-claude-code=/Users/zane/agents/isaac/work-4/isaac-claude-code-isaac-ftrd exits 2 (no feature-baseline); handoff for independent verification, no landing yet.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-claude-code 9fad0faf72e056615971722ffe1a01bb7d4ed38f
+
+Verification (verify-isaac-ftrd): independent clean worktree at 142bf4c; only new feature scenarios authorized by Exceptions; four spaced chunks, exact comm reply and transcript, one pre-tool aside, one full final event on nonstreaming fallback. Fresh `bb ci`: 96 specs, 0 failures, 3 opt-in real pending; 74 features, 0 failures. Fresh `bb jvm-spec`: 67 examples, 0 failures, 3 opt-in real pending. `git diff --check` clean; isaac sibling pins reachable from origin/main. Live child marker spec demonstrates callback before subprocess exit; identical stdin/usage spec covers request cost. No new stdout diagnostics; existing structured logs and namespace warnings observed. Squash commit tree matches tested branch tree; origin/main did not move during landing.
