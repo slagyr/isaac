@@ -1,13 +1,11 @@
 ---
 # isaac-55br
 title: A Stop on a Claude Code turn returns at once, as a cancelled result that keeps its usage
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T16:32:33Z
+updated_at: 2026-11-17T16:38:00Z
 blocked_by:
     - isaac-xhb9
 ---
@@ -104,3 +102,11 @@ Reproduction: bb ci (114 specs, 76 features; 0 failures) and bb jvm-spec (67 exa
 
 - `isaac-claude-code` bean branch HEAD `a9a2547`: removed the fixed 300/500 ms pre-Stop delays and 4.5 s post-Stop waits. The non-streaming and pre-assistant scripts now signal readiness by creating a file after stdin is consumed; the post-result script signals after emitting the result. Stop waits on those signals with a bounded poll. The repeated child cleanup specs record a monotonic deadline at each Stop and poll each captured child/parent pid until dead, failing if death occurs after 3 seconds. Removed the trailing blank line.
 - `bb ci`: 114 specs / 76 features, 0 failures (3 real-binary specs pending); `bb jvm-spec`: 67 examples, 0 failures (3 pending). `git diff --check` clean; `bb bean-gate verify isaac-55br`: exit 2, no feature-baseline. Implementation pushed at `a9a2547`; awaiting independent verification.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-claude-code 84a444f612cb93cae8462ca3f7d7970db0ea84ae
+
+Independent verification: a9a2547 clean; bb ci 114 specs/76 features, zero failures; bb jvm-spec 67 examples, zero failures (three opt-in real-binary examples pending). Stop latency, 3-second child deadline, usage and cancelled/error contract covered by specs. No feature edits or pin changes; diff --check clean. Squash tree identical to tested branch.
