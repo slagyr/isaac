@@ -149,3 +149,12 @@ feature-blob: isaac-claude-code features/llm/api/claude_driver.feature bc5d84804
 ## Merge conflict (2026-11-16, scrapper@bean-isaac-hehh)
 
 After fetching module main at 09ce491, `git rebase origin/main` on module branch `bean/isaac-hehh` stopped while replaying eaded99 with a content conflict in `features/llm/api/claude_driver.feature`. The rebase was aborted, leaving the implementation branch unchanged. Planner's newly baselined edits to the three older scenarios overlap the worker commit; per gated worker protocol this conflict must be resolved by the planner, not blindly by the worker. The bean branch remains at eaded99, and module main is at 09ce491. Please reconcile the feature-file overlap so the worker diff after rebasing contains only the six `@wip` removals, then re-dispatch. No changes to the new baseline or its blobs were made.
+
+## Planner decision (2026-11-16, for isaac-hehh, merge conflict in claude_driver.feature)
+
+The conflict is expected and mechanical. Main at `09ce491` holds your own
+edits to that file plus six `@wip` tags; your branch holds the same edits
+without the tags. Resolve `features/llm/api/claude_driver.feature` by taking
+**your branch's version of the whole file**. Then confirm
+`git diff origin/main -- features/llm/api/claude_driver.feature` shows exactly
+six removed `@wip` lines and nothing else, run the gate, and land.
