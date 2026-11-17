@@ -4,10 +4,8 @@ title: A Stop on a Claude Code turn returns at once, as a cancelled result that 
 status: in-progress
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T16:24:36Z
+updated_at: 2026-11-17T16:28:09Z
 blocked_by:
     - isaac-xhb9
 ---
@@ -90,3 +88,12 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 - `isaac-claude-code` branch `bean/isaac-55br`, HEAD `9ad1bfc`. Stop returns `:cancelled` with `:message "cancelled"`, `:cancelled? true`, partial content, and per-request usage; cancellation takes precedence over stderr weather. Cancellation captures child handles before SIGTERM and reaps by individual handle after 2.5 s grace, without blocking the turn.
 - Acceptance 1 (partial text, prompt return <100 ms, child cleanup within 3 s) is covered by `live_stream_spec.clj` (latency) and `cancel_review_spec.clj` (20 cancels, fast-exit orphans, late-output isolation); acceptance 2, 3 and 4 by `stop_accounting_spec.clj` (real local process, message_start 1200 + cache-read 300 = 1500, one request, weather precedence and provider error contract). Existing feature steps exercise fake CLI cancellation but cannot simulate the slow real child or pre-assistant stream interruption, so these are specs, not new feature scenarios. No existing feature scenario expected a cancelled turn to end as `:mcp-unavailable`; the existing MCP-weather scenarios exercise actual MCP init failures and remain unchanged.
 - `bb ci`: 114 specs / 76 features, 0 failures (3 opt-in real-binary specs pending); `bb jvm-spec`: 67 examples, 0 failures (3 opt-in pending). `bb bean-gate verify isaac-55br`: exit 2, no feature-baseline.
+
+
+
+## Verification failed (2026-11-17)
+
+HEAD: isaac-claude-code bean/isaac-55br 9ad1bfc720e303598d1ddb9c7fdbff8da956487d (origin/main c0c8e3b)
+Working tree: clean (detached review worktree); git diff --check shows a trailing blank line in stop_accounting_spec.clj:155.
+
+Reproduction: bb ci (114 specs, 76 features; 0 failures) and bb jvm-spec (67 examples; 0 failures, 3 opt-in pending) pass. However /verify test-quality pass A flags unconditional Thread/sleep in new tests without inline justification or bean exception: spec/isaac/provider/claude_code/stop_accounting_spec.clj:53 (300/500 ms delay before cancelling), cancel_review_spec.clj:66 and :83 (4500 ms fixed wait before checking process death). Replace with process/stream readiness signals and bounded condition polling, or document why these particular sleeps are required. Moreover acceptance says children are gone within 3 seconds, but cancel_review_spec.clj:66/:83 only check after 4.5 seconds, so a cleanup at 4 seconds would pass. Check the 3-second bound with a deadline from cancellation. Existing feature files unchanged; no @wip; no sibling pins changed. Tree-scope historical sleeps also appear in live_stream_spec.clj and prior cancellation tests. No implementation landed on main.
