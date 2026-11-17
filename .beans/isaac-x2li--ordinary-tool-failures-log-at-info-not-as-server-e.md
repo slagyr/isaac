@@ -4,8 +4,10 @@ title: Ordinary tool failures log at info, not as server errors
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:08:01Z
+updated_at: 2026-11-17T15:12:50Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -134,3 +136,10 @@ no `:error`, and the result reaches the caller unchanged. nil still gives
 - Privacy, not changed here: `:arguments` and tool output are still logged
   (now at info, where `:tool/start` already logs arguments at debug).
   Redaction is a separate bean.
+
+
+## Implementation handoff (2026-11-17)
+
+isaac-agent branch `bean/isaac-x2li` at `34b9c2c`. Applied and reviewed lab v2 against current main. Ordinary `:isError` results now log `:info :tool/error-result`; caught exec bugs marked `:fault` stay `:error :tool/execute-failed`, with the internal marker removed before returning to the caller. `IOException` on spawn remains an ordinary tool outcome. The feature distinguishes missing file from nil result. Tests: focused registry 70/0, fault-level 5/0, execution.feature 3/0; `bb ci` (2044 specs/0, 982 features/0, 1 pending) and `bb jvm-spec` (2044/0) pass. Gate exits 2: no feature-baseline.
+
+The draft risk calls bad-workdir spawn refusal a hidden server fault and suggests keeping it at warn; review/code show this is an `IOException` tool outcome, not a server crash. Command timeout is also a tool outcome; registry-level timeouts already log warn separately. Other handlers that catch their own exceptions remain a follow-up; this change distinguishes caught exec faults only. No version bump.
