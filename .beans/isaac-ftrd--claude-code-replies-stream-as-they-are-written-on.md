@@ -1,11 +1,11 @@
 ---
 # isaac-ftrd
 title: Claude Code replies stream as they are written, on turns that offer tools
-status: todo
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:14:41Z
+updated_at: 2026-11-17T15:15:40Z
 ---
 
 Part 1 of the chat and Stop work. Repo: **isaac-claude-code**.
