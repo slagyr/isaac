@@ -1,11 +1,11 @@
 ---
 # isaac-55br
 title: A Stop on a Claude Code turn returns at once, as a cancelled result that keeps its usage
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:14:56Z
+updated_at: 2026-11-17T16:16:39Z
 blocked_by:
     - isaac-xhb9
 ---
