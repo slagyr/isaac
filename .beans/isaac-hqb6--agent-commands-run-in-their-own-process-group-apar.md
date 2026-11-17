@@ -86,3 +86,9 @@ unchanged. No production cwd change. The first scenario is untouched.
 
 feature-baseline: isaac-agent dcf513c6f24ce2471551daf9b00f33e11f93b58a
 feature-blob: isaac-agent features/tool/built_in.feature 19ddfff4aa07d47ba5215648fcd9a5a9c39e579c 198,205
+
+## Landed on main (2026-11-17)
+
+Exec commands now launch through Perl `setpgrp(0,0); exec` and timeout/cancel sends TERM then KILL to their isolated group. Both baselined scenarios pass; `bb ci` (including after squash), `bb jvm-spec`, and `bb bean-gate verify isaac-hqb6 --dir isaac-agent=../isaac-agent-kleb` pass. One pre-existing pending compaction scenario remains.
+
+main-sha: isaac-agent 4abdd4b548e41d16ffb7aadbef0ec093554a8906
