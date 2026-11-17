@@ -1,13 +1,11 @@
 ---
 # isaac-fe5e
 title: A cancel with no turn running does not cancel the session's next turn
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:22:12Z
+updated_at: 2026-11-17T15:32:14Z
 ---
 
 Part 2a of the chat and Stop work. Repo: **isaac-agent**.
@@ -96,3 +94,11 @@ Existing tests changed (five from the lab, three in this repo; the two ACP cases
 5. ACP `server_spec` in-flight LLM: lab fixed the test to wait for the delay gate, rather than cancel an idle session; no edit here, deferred to ACP bean.
 
 Reviewer: please check cancellation concurrency and the queue-worker cleanup; the source pattern follows the read-only lab v2 patch against current main.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-agent d75c43216e2eea821bdb590c0d276ecd2777a47d
+
+Verification: rebased implementation onto origin/main 9c39e0c without conflict. Clean tree and identical squash tree; `bb ci` passed (2055 specs, 983 features, 0 failures, 1 unrelated pre-existing pending); `bb jvm-spec` passed (2055 examples, 0 failures); diff --check clean. Confirmed idle scenario in cancel.feature, deterministic end-before-release and admitted-before-begin specs, queue-worker cleanup test, no dependency/version changes or @wip introduced.
