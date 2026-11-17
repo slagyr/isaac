@@ -4,8 +4,10 @@ title: isaac modules warns about module-owned config keys as unknown
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-11-17T15:07:03Z
-updated_at: 2026-11-17T15:07:58Z
+updated_at: 2026-11-17T15:11:22Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -130,3 +132,11 @@ had nothing to do with the patch.
   goes quiet too. That is correct (it cannot know), but worth knowing.
 - The `cli.log` noise was hiding real CLI warnings. Expect the scoreboard's
   top key to change after this ships.
+
+
+## Implementation / verification (2026-11-17)
+
+- Implemented in isaac-foundation `bean/isaac-8od3` at `dd0fe30` (pushed). On loads with classpath resolution off, suppress unknown-key log events only when declared modules are absent from the discovery index; retain warning rows and unresolved-reference logging. When no module is hidden (including no modules or only local/root), genuinely unknown keys still log.
+- The draft acceptance scenario says `modules list` with no modules must emit *no* unknown-key event. This conflicts with the reviewed v2 fix and the planner requirement to retain warnings for genuinely unknown keys when no git module exists. The implementation follows the latter; feature coverage asserts the event *is* logged for no modules. The draft statement that every `*resolve-classpath?* false` load should skip unknown-key logging is likewise too broad: local/root schemas remain visible.
+- TDD: signal_slots red 23 examples/2 failures before implementation, green 23/0 afterward; focused CLI feature 4/0. `bb ci`: 1365 specs/0 failures; 377 features/0 failures, 2 pending. JVM focused signal_slots 23/0. `bb jvm-spec` full: 1365 examples, 9 failures in module/protocol, module/lifecycle and module/coords (JVM-specific failures outside modified config code; focused JVM config spec passes). No process-group signals or lab check.sh used.
+- `bb bean-gate verify isaac-8od3`: exit 2, no feature-baseline. Hand off for independent verification; bean remains in-progress.
