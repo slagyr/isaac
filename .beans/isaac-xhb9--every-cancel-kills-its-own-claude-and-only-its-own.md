@@ -4,8 +4,10 @@ title: Every cancel kills its own claude, and only its own
 status: in-progress
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:54:41Z
+updated_at: 2026-11-17T16:03:18Z
 blocked_by:
     - isaac-ftrd
 ---
@@ -70,3 +72,12 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - No existing scenario changes.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+
+## Implementation (2026-11-17)
+
+isaac-claude-code bean/isaac-xhb9 at 169fa3c. Each invocation owns a run atom containing its process and termination state. The cancellation hook closes only that run; spawn-after-cancel immediately destroys the spawned process. Driver paths do not terminate a process after invocation finishes. No module version bump.
+
+Acceptance: both behaviours are exercised with a real 8-second shell subprocess in features/claude_cancel.feature (two scenarios) and spec/isaac/provider/claude_code/claude_cli_cancel_spec.clj (two examples). The feature tests poll a marker proving each process started, cancel ~0.4 seconds later, assert per-cancel latency, exact termination log count and concurrent session isolation. Existing fake-CLI scenario remains unchanged. Red before fix: 2 examples, 2 failures; green after: bb ci (98 feature examples, 0 failures; specs green) and bb jvm-spec (76 JVM spec examples, 0 failures, 3 opt-in real pending; feature suite 67 examples, 0 failures).
+
+Gate: bb bean-gate verify isaac-xhb9 exited 2, no feature-baseline. Implementation stays on bean branch pending independent verify.
