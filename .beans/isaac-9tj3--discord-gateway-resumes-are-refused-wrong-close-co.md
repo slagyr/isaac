@@ -1,11 +1,11 @@
 ---
 # isaac-9tj3
 title: 'Discord gateway resumes are refused: wrong close code and URL, collapsed backoff, noisy closes'
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:07:02Z
+updated_at: 2026-11-17T15:07:55Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
