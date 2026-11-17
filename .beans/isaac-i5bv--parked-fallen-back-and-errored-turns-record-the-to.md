@@ -1,13 +1,11 @@
 ---
 # isaac-i5bv
 title: Parked, fallen-back and errored turns record the tokens they spent
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:52:03Z
-updated_at: 2026-11-17T16:01:23Z
+updated_at: 2026-11-17T16:11:05Z
 ---
 
 Usage accounting, after isaac-21it (a stopped turn keeps its tokens). Repo:
@@ -117,3 +115,11 @@ Implementation: isaac-agent `bean/isaac-i5bv`, commit `c55c5c5` (pushed). No ver
 Acceptance: `features/llm/turn_exhaustion.feature` adds the three-request silence-park scenario (3500/50, marker and `:turn/ended`). The nudge-error, fallback, mid-loop error, resume-once, no-error wall, failed summary/wrap-up, and double-count guards are in `spec/isaac/agent/drive/turn_spec.clj`; raw loop accumulation is in `spec/isaac/agent/llm/tool_loop_spec.clj`. No existing feature scenario token total or turn-end row was changed (old/new list: none). The pre-existing single pending mid-turn compaction feature remains pending.
 
 Verification: `bb ci` (2119 specs / 0 failures; 985 features / 0 failures, 1 pre-existing pending); `bb jvm-spec` (2119 / 0); `bb bean-gate verify isaac-i5bv` exit 2, no feature-baseline. Ready for independent ungated verification.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-agent 48dcc5f49cc0487bec4c8281bd6c189fd6072f31
+
+Independent verification: reviewed the six-file implementation diff, feature exception (one added scenario; existing scenarios unchanged), usage specs and downstream pin. `bb ci` on the rebased branch: 2122 specs / 0 failures; 985 features / 0 failures, 1 pre-existing pending. `bb jvm-spec` on the handoff: 2119 / 0. The silence, nudge error, fallback, mid-loop error, resumed park, no-error wall and failed summary/wrap-up cases are asserted in the feature/specs. Foundation pin edc1848 is reachable from origin/main. Squash landed on isaac-agent main.
