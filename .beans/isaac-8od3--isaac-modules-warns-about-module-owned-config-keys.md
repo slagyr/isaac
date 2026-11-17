@@ -4,10 +4,8 @@ title: isaac modules warns about module-owned config keys as unknown
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-11-17T15:07:03Z
-updated_at: 2026-11-17T15:11:22Z
+updated_at: 2026-11-17T15:17:16Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -148,3 +146,14 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - No existing scenario changes.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+
+
+## Verification failed (2026-11-17)
+
+HEAD: isaac-foundation dd0fe3002e58eff7af74c3d17c875e3297ca2e1a (origin/bean/isaac-8od3); origin/main d641b61a83ca3fa78ad81de9239d4898c54ca3c5 at review.
+Working tree: clean (detached verification worktree).
+
+`bb jvm-spec` reproduced 1365 examples, 9 failures (module/protocol, module/lifecycle, module/coords). Planner notes require `bb jvm-spec` pass. `ISAAC_TEST_TIMEOUT_MS=240000 bb ci` passed: 1365 specs/0 failures; 377 features/0 failures, 2 pending. Initial parallel suites collided in gitlibs population; initial standalone CI timed out while cloning dependencies, repeat green. Diagnose/fix JVM failures or obtain planner clarification of the acceptance baseline. Nothing landed.
+
+Feature edits exceed the newly-added `## Exceptions`: it explicitly permits adding scenarios but says **No existing scenario changes**. `git diff origin/main...dd0fe30 -- features/cli/quiet_default_logging.feature` shows two existing commands changed from `modules list` to `help` (including explicit --log-level scenario), besides the added modules scenario. Obtain an exception explicitly permitting these existing edits or restore them and keep new scenario coverage. The draft no-module/no-event acceptance also contradicts planner v2 requirement to retain genuine warnings; clarify the intended revised scenario with planner. Git-coord blind-case spec covers retained warning rows and suppression.
