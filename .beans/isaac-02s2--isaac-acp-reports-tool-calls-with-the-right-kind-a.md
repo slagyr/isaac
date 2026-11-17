@@ -76,3 +76,9 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - `features/comm/acp/*.feature`: the scenario that never allowed exec and so only tested "unknown tool" is corrected to allow exec and assert the real kind and status. Scenarios that expect `completed` for a failed tool change to `failed`. List each one in the bean.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+## Worker checkpoint (2026-11-17, bean-isaac-02s2)
+
+Done: isaac-acp `bean/isaac-02s2` 0be33f6 maps ACP kinds, v1 cancel status, error flag and replay; isaac-agent worktree `../isaac-agent-isaac-02s2` `bean/isaac-02s2` 7840496 propagates raw-result error flag to comms and transcript. Both branches pushed. Agent `bb ci`: 984 examples, 0 failures, 1 pre-existing pending; ACP `bb ci`: 108 specs and 75 features green; `ISAAC_GIT=1 ISAAC_TEST_TIMEOUT_MS=180000 bb jvm-spec` green (108). `bb bean-gate verify isaac-02s2` exits 2 (ungated).
+
+Next: the newly added ACP scenario for successful `echo 'Error: x'` is RED with the pinned agent. Land agent upstream, then repin ACP deps.edn and bb.edn to agent main SHA and rerun ACP `bb ci`, `bb jvm-spec`. Resume at `isaac-acp/features/comm/acp/tools.feature:105` and `isaac-agent-isaac-02s2/src/isaac/agent/drive/turn.clj:174`; confirm replay's `isError` flag is derived from the raw result on all paths. Then gate exit 2 → mark unverified, leave implementation on bean branch, commit bean note/tag on isaac main for Foreman verification.
