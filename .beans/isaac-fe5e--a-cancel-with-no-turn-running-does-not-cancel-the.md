@@ -1,11 +1,11 @@
 ---
 # isaac-fe5e
 title: A cancel with no turn running does not cancel the session's next turn
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:14:41Z
+updated_at: 2026-11-17T15:16:44Z
 ---
 
 Part 2a of the chat and Stop work. Repo: **isaac-agent**.
