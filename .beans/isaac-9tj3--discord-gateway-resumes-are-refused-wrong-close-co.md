@@ -1,13 +1,11 @@
 ---
 # isaac-9tj3
 title: 'Discord gateway resumes are refused: wrong close code and URL, collapsed backoff, noisy closes'
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:07:02Z
-updated_at: 2026-11-17T15:30:03Z
+updated_at: 2026-11-17T15:33:50Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -291,3 +289,11 @@ Feature integrity passes: reconnect.feature:58 changes only :warn to :info, expr
 
 - isaac-discord `bean/isaac-9tj3` commit `8546506` removes R10 diagnostic stdout and replaces the unannotated fixed sleeps with condition-based waits for READY/close/reader exit; reader exit now emits the existing debug reader-superseded event on stop as well as replacement. No acceptance or feature contract changes.
 - `ISAAC_GIT=1 bb ci > /tmp/isaac-9tj3-ci.log 2>&1` passes: native 56/0, JVM 136/0 (including 12 reviewer examples), features 70/0. `grep R10: /tmp/isaac-9tj3-ci.log` returns no matches. `bb bean-gate verify isaac-9tj3` exits 2 (no feature-baseline). Remains in-progress for independent verification; no main landing by worker.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-discord 3ae37ba4bfe94d8951830d0d9bb5cd7429e4da32
+
+Verification: feature diff only reconnect.feature:58 :warn → :info (planner-authorized ## Exceptions); ISAAC_GIT=1 bb ci green (native 56/0, JVM 136/0, features 70/0), including all 12 reviewer examples. No R10 diagnostic or unannotated Thread/sleep in new specs. Sibling pins reachable from origin/main. Squashed branch tree identical to tested branch; main did not advance during landing. Test-quality tree-scope historical smell: gateway_spec.clj:653 has Thread/sleep 1; follow-up recommended. .verify-baseline.edn seeded locally (ignored): JVM ~156.87 ms/example, features ~448.87 ms/example; no per-example timings available.
