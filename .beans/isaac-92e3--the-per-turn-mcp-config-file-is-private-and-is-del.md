@@ -1,11 +1,11 @@
 ---
 # isaac-92e3
 title: The per-turn MCP config file is private and is deleted when the turn ends
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-11-17T17:57:14Z
-updated_at: 2026-11-17T17:57:14Z
+updated_at: 2026-11-17T17:58:17Z
 ---
 
 Found by Zane Lab, 2026-11-16 (security finding
