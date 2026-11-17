@@ -1,11 +1,11 @@
 ---
 # isaac-07ls
 title: isaac acp handles session/cancel while a prompt is running
-status: todo
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T15:14:56Z
+updated_at: 2026-11-17T15:34:40Z
 blocked_by:
     - isaac-fe5e
 ---
