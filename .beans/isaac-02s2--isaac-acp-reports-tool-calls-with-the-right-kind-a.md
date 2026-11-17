@@ -1,13 +1,11 @@
 ---
 # isaac-02s2
 title: isaac-acp reports tool calls with the right kind and status
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T16:07:29Z
+updated_at: 2026-11-17T16:09:51Z
 blocked_by:
     - isaac-07ls
 ---
@@ -88,3 +86,12 @@ isaac-acp implementation on `bean/isaac-02s2` at `fbf8537` (not landed): wire-na
 Acceptance proof: `features/comm/acp/tools.feature` scenarios “Tool call notifications include title, kind, and rawInput per ACP spec” and “tool result updates repeat title, kind, and rawInput for thin ACP clients” correct the formerly unknown-tool kind from `other` to `execute`; its Background now allows `exec/run`. New feature scenarios “an error tool result reports failed” and “successful exec output beginning Error: reports completed” exercise actual exec success/error through ACP. `features/comm/acp/cancel_tool_status.feature` changes the formerly `cancelled` status to v1 `failed`, asserts content `cancelled` and stopReason `cancelled`. No other existing feature scenarios changed. `spec/isaac/comm/acp_spec.clj` asserts every pinned isaac-agent built-in maps explicitly to a v1 ToolKind, legacy names, raw-result flag precedence and replay. `spec/isaac/comm/acp/server_spec.clj` asserts stored isError replay and in-flight cancel.
 
 Next: verifier lands isaac-acp branch (already pinned to landed upstream main) and records its main SHA, then completes this ungated bean.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-agent 5e46c797c385a1d72952332fa5e0453f43168677
+main-sha: isaac-acp 0d5e88eb09baf7c3bc256bd017a394a4099541d9
+
+Verification: clean isaac-acp branch fbf8537; bb ci 109 specs and 76 features, 0 failures; ISAAC_GIT=1 ISAAC_TEST_TIMEOUT_MS=180000 bb jvm-spec 109 examples, 0 failures. Authorized feature edits checked; agent pin reachable from origin/main. Historical test smells in acp_steps.clj/server_spec.clj (poll sleeps, timing, fixtures) predate this diff.
