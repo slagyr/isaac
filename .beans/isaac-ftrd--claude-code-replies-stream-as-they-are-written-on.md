@@ -4,10 +4,8 @@ title: Claude Code replies stream as they are written, on turns that offer tools
 status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:25:38Z
+updated_at: 2026-11-17T15:30:26Z
 ---
 
 Part 1 of the chat and Stop work. Repo: **isaac-claude-code**.
@@ -80,3 +78,16 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 - Acceptance feature scenarios: `features/llm/api/claude_driver.feature` (four chunks with tools, aside + final reply on memory comm, one stdin line/invocation + usage). The feature fixture registers the manifest-equivalent flag. Specs: `spec/isaac/provider/claude_code/live_stream_spec.clj` uses a child waiting for the callback marker to prove pre-exit delivery, four literal chunks, thinking order, cancel, usage, one request and equal stdin/usage with `api/chat`, and provider-driver aside dedup. Exact wall-time behavior cannot be tested by a fake synchronous result alone; marker handshake proves no wait-to-exit before the first chunk.
 - Latency finding: no extra request (one CLI invocation and identical stdin on streaming and nonstreaming tool turns), no added exit wait (callback fires before the child releases its marker; normal code waits for EOF/exit on *both* paths). Lab's first three ~200-word after turns took 8.4–9.4s vs 4.5–6.5s before, but the interleaved 22-case replay gate found **median total 6.0s with streaming vs 6.1s without**, p90 10.6s vs 11.3s, median first chunk 4.5s vs 6.0s; c02 repeated four times with both arms passing. The 2–3s lab gap was model/run variance (different output tokens and pre-text thinking time), not a measured fixed streaming overhead. The ~0.4–0.6s from last delta to turn end is the normal remaining Claude `message_stop`/`result` and process exit; it was previously hidden inside the single final chunk. Replay has one sample for most cases, so this is evidence of noise rather than a claim of zero overhead in every workload.
 - `bb ci`: 96 specs/0 failures/3 opt-in real pending, 73 features/0 failures; `bb jvm-spec`: 67 examples/0 failures/3 opt-in pending. No lab check.sh invoked (unsafe process-killing scripts). Lab streaming README exists, but no REVIEW.md in that experiment; read `claude-provider-fix/REVIEW.md` and `zane-chat-v2/REVIEW.md` for review caveats.
+
+
+
+## Verification failed (2026-11-17)
+
+HEAD: isaac-claude-code bean/isaac-ftrd 306480a6c15756b27af6c8ecc4f81069ae0e35f7 (base origin/main e231ab0); isaac beans main 716a92c1134563517f044c34d4982c5e0624970b.
+Working tree: clean in both isaac and the dedicated isaac-claude-code verification worktree.
+
+Acceptance mismatch: features/llm/api/claude_driver.feature:792-808 scripts four chunks as `Three`, `moorings,`, `all`, `sound.` and explicitly asserts the stored response is `Threemoorings,allsound.`. The bean requires four chunks whose assembled AND stored text is `Three moorings, all sound.`. The separate live_stream_spec.clj:61-70 checks the correctly spaced string only at the direct provider callback; it does not check the memory-comm/session storage path with that string. Change the feature fixture chunks to include the spaces (or equivalent four deltas), assert the exact accepted reply and transcript content and rerun gates. Also explicitly prove the non-streaming comm final text once (iMessage/Discord), which is an acceptance criterion with no new scenario asserting it.
+
+Evidence: fresh `bb ci` 96 specs/0 failures/3 opt-in pending and 73 features/0 failures; `bb jvm-spec` 67 examples/0 failures/3 opt-in pending. Those green runs do not establish the required spaced final text on the actual comm turn. No existing feature was modified apart from new scenarios (per Exceptions). Manifest flag is true, implementation exists, upstream pin shas reachable from origin/main; no landing performed. Test output has existing structured log and namespace warnings, no newly introduced println. The subprocess test uses an intentionally bounded marker-file poll; its temporary files are in a directory created in setup.
+
+Fix the acceptance fixture/assertions and add non-streaming comm coverage before another handoff.
