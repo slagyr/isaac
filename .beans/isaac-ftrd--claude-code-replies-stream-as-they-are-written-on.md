@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-11-17T15:14:41Z
-updated_at: 2026-11-17T15:15:40Z
+updated_at: 2026-11-17T15:25:18Z
 ---
 
 Part 1 of the chat and Stop work. Repo: **isaac-claude-code**.
@@ -71,3 +71,10 @@ Authorized by the planner, 2026-11-17. These feature edits are part of this bean
 
 - Existing isaac-claude-code scenarios that assert a reply arrives as one chunk on a turn with tools may change to expect streamed chunks whose concatenation is the same text. List each one in the bean.
 - Any feature file in this bean's repo: adding new scenarios, and new step definitions for them, that prove the acceptance above. No existing scenario may be removed or weakened beyond what is listed here.
+
+## Implementation and evidence (2026-11-17)
+
+- `isaac-claude-code` branch `bean/isaac-ftrd`, commit `306480a`. CLI stdout is consumed line-by-line with callback before process exit, retaining output for final parsing, usage and quota. The manifest and feature fixture now permit streaming when tools are offered; the provider restores the final-cycle reply after Isaac joins streamed asides into `:content`. Non-delta older assistant streams still send one final chunk. No version change.
+- Acceptance feature scenarios: `features/llm/api/claude_driver.feature` (four chunks with tools, aside + final reply on memory comm, one stdin line/invocation + usage). The feature fixture registers the manifest-equivalent flag. Specs: `spec/isaac/provider/claude_code/live_stream_spec.clj` uses a child waiting for the callback marker to prove pre-exit delivery, four literal chunks, thinking order, cancel, usage, one request and equal stdin/usage with `api/chat`, and provider-driver aside dedup. Exact wall-time behavior cannot be tested by a fake synchronous result alone; marker handshake proves no wait-to-exit before the first chunk.
+- Latency finding: no extra request (one CLI invocation and identical stdin on streaming and nonstreaming tool turns), no added exit wait (callback fires before the child releases its marker; normal code waits for EOF/exit on *both* paths). Lab's first three ~200-word after turns took 8.4–9.4s vs 4.5–6.5s before, but the interleaved 22-case replay gate found **median total 6.0s with streaming vs 6.1s without**, p90 10.6s vs 11.3s, median first chunk 4.5s vs 6.0s; c02 repeated four times with both arms passing. The 2–3s lab gap was model/run variance (different output tokens and pre-text thinking time), not a measured fixed streaming overhead. The ~0.4–0.6s from last delta to turn end is the normal remaining Claude `message_stop`/`result` and process exit; it was previously hidden inside the single final chunk. Replay has one sample for most cases, so this is evidence of noise rather than a claim of zero overhead in every workload.
+- `bb ci`: 96 specs/0 failures/3 opt-in real pending, 73 features/0 failures; `bb jvm-spec`: 67 examples/0 failures/3 opt-in pending. No lab check.sh invoked (unsafe process-killing scripts). Lab streaming README exists, but no REVIEW.md in that experiment; read `claude-provider-fix/REVIEW.md` and `zane-chat-v2/REVIEW.md` for review caveats.
