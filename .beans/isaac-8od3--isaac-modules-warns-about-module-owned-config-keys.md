@@ -1,13 +1,11 @@
 ---
 # isaac-8od3
 title: isaac modules warns about module-owned config keys as unknown
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-11-17T15:07:03Z
-updated_at: 2026-11-17T15:26:35Z
+updated_at: 2026-11-17T15:34:06Z
 ---
 
 Approved by Micah 2026-11-17 from Zane Lab's findings. Ungated: worker, then
@@ -166,3 +164,11 @@ Feature edits exceed the newly-added `## Exceptions`: it explicitly permits addi
 - Restored both existing quiet_default_logging scenarios to `modules list`, satisfying the authorized exception (add scenarios only). No existing scenario was changed in the final diff. The additional modules scenario pins real unknown-key logging with no hidden modules. Draft no-module/no-event scenario is inconsistent with the v2 review: a genuinely unknown key must still warn when all schemas are visible. The git-coord hidden-schema case is covered by signal_slots_spec.
 - Reproduced nine JVM failures. Seven were test-environment issues: `*calls` declared before definition in lifecycle_spec on JVM, and a property-dependent coords_spec with no property set in the JVM runner. Two were protocol hooks: Java 27 produces AbstractMethodError on missing defrecord hooks, and JVM protocol dispatch has `found for class:` in place of Babashka `found for:`. Protocol handling now accepts only these missing-hook signatures; other errors still propagate.
 - `ISAAC_TEST_TIMEOUT_MS=240000 bb jvm-spec`: 1365 examples, 0 failures, 2427 assertions. `ISAAC_TEST_TIMEOUT_MS=240000 bb ci`: 1365 specs, 0 failures; 377 features, 0 failures, 2 pending. `bb bean-gate verify isaac-8od3 --dir isaac-foundation=../isaac-foundation-isaac-8od3`: exit 2 (no feature-baseline). Implementation branch `bean/isaac-8od3` commit 77941a2 pushed; ungated independent verification requested.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-foundation 0491f9021d07a0958ffd12f48c06b935799f8876
+
+Verified by perceptor@verify-isaac-8od3: implementation handoff was on origin/bean/isaac-8od3 at 77941a29f6b475972a313cf7b1256bdc3b0e64aa; clean detached review worktree. ISAAC_TEST_TIMEOUT_MS=240000 bb ci: 1365 examples/0 failures, 377 features/0 failures (2 pre-existing pending); bb jvm-spec: 1365 examples/0 failures. Diff check and allowed feature additions passed; no changed sibling pins. The no-modules/no-warning lab draft contradicts the reviewed v2 and planner requirement to warn on genuine unknown keys, so verified against the reviewed v2 behavior (R4/R5/R6 specs). Squash tree identical to tested branch.
