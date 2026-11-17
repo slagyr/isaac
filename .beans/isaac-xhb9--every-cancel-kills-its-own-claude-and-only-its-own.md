@@ -1,13 +1,11 @@
 ---
 # isaac-xhb9
 title: Every cancel kills its own claude, and only its own
-status: in-progress
+status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-11-17T15:14:56Z
-updated_at: 2026-11-17T16:10:13Z
+updated_at: 2026-11-17T16:15:45Z
 blocked_by:
     - isaac-ftrd
 ---
@@ -96,3 +94,11 @@ Fresh bb ci: 98 native specs, 0 failures, 3 opt-in pending; 76 JVM specs, 0 fail
 ## Verification repair (2026-11-17)
 
 On isaac-claude-code bean/isaac-xhb9 at d19b4f9584cf453e673984b2e7b5b95f08d39cfb, replaced the cross-example fixture atom in claude_cli_cancel_spec.clj with Speclj `with` (per-example lazy fixture). Added inline explanations at claude_cli_cancel_spec.clj:13 and cancel_steps.clj:18: the bounded 400ms wait is the explicit acceptance interval after a subprocess-start marker, not an async synchronization wait. Real subprocess acceptance remains in both features and specs. bb ci: 98 native specs / 76 JVM specs, 0 failures; bb jvm-spec: 67 features, 0 failures (3 opt-in real pending). Gate exit 2: no feature-baseline; awaiting independent verify. No module version bump.
+
+
+
+## Landed on main (2026-11-17)
+
+main-sha: isaac-claude-code c0c8e3b014683fe46fa6332a42f78f986c0a4f27
+
+Verified independently: bb ci (98 native specs, 76 JVM specs; zero failures), bb jvm-spec (67 features, zero failures, three opt-in real pending), both repeated on squash commit. Two new real-subprocess feature scenarios and two specs cover serial cancel and concurrent isolation; no existing feature scenarios changed. Test-quality repair documented intentional waits and scopes fixture per example. Dependency pins are reachable from upstream origin/main. Clean review and landed trees.
