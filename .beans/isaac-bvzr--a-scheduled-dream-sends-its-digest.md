@@ -1,10 +1,11 @@
 ---
 # isaac-bvzr
 title: A scheduled dream sends its digest
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-11-18T17:49:18Z
-updated_at: 2026-11-18T17:49:18Z
+updated_at: 2026-11-18T17:50:20Z
 ---
 
 Repo: **isaac-dream** (`src/isaac/dream/run.clj` `schedule!`, `src/isaac/dream/cli.clj` `digest!`).
