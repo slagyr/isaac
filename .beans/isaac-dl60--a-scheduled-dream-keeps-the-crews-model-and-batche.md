@@ -49,3 +49,7 @@ under `:dream`, which nothing reads; replace it then.
 feature-baseline: isaac-dream ee26ab56224c87833771ef500b9097fbcd482189
 feature-blob: isaac-dream features/dream/schedule.feature a8eebf4eb2fbc5b1d43e7ebf54b96e14df4ce450 105
 feature-blob: isaac-dream features/dream/history.feature ff5e5993e0bcd76f4619f6ea21cbfc865f972265 126
+
+## Merge conflict (2026-11-18)
+
+Gate PASS at isaac-dream bean/isaac-dl60 fadf0a8; `bb ci` green (63 specs, 80 features). After `git fetch origin`, `git rebase origin/main` conflicted in `src/isaac/dream/run.clj` against upstream `8ec4d5671248bdce23ebeb32a63730c6568fadb4`. Rebase aborted; the pushed bean branch remains intact. Planner must reconcile the overlapping implementation and return the bean for rebase, test, gate, and landing.
