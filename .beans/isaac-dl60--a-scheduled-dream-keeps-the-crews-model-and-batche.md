@@ -1,10 +1,11 @@
 ---
 # isaac-dl60
 title: A scheduled dream keeps the crew's model, and batches have a character cap
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-11-18T17:49:26Z
-updated_at: 2026-11-18T17:49:26Z
+updated_at: 2026-11-18T17:50:29Z
 ---
 
 Repo: **isaac-dream** (`src/isaac/dream/run.clj` `DreamService`/`schedule!`, `batches`).
