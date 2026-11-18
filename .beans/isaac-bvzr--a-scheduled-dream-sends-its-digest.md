@@ -33,3 +33,9 @@ out of the CLI so both paths share it.
 
 feature-baseline: isaac-dream ee26ab56224c87833771ef500b9097fbcd482189
 feature-blob: isaac-dream features/dream/schedule.feature a8eebf4eb2fbc5b1d43e7ebf54b96e14df4ce450 80
+
+## Landed on main (2026-11-18)
+
+Shared digest sender now serves CLI and scheduled runs. `bb ci`: 60 specs, 79 features, all passing; bean gate PASS on squash commit.
+
+main-sha: isaac-dream 8ec4d5671248bdce23ebeb32a63730c6568fadb4
