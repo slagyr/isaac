@@ -53,3 +53,5 @@ feature-blob: isaac-dream features/dream/history.feature ff5e5993e0bcd76f4619f6e
 ## Merge conflict (2026-11-18)
 
 Gate PASS at isaac-dream bean/isaac-dl60 fadf0a8; `bb ci` green (63 specs, 80 features). After `git fetch origin`, `git rebase origin/main` conflicted in `src/isaac/dream/run.clj` against upstream `8ec4d5671248bdce23ebeb32a63730c6568fadb4`. Rebase aborted; the pushed bean branch remains intact. Planner must reconcile the overlapping implementation and return the bean for rebase, test, gate, and landing.
+
+Retry in bean-isaac-dl60: fetched origin/bean/isaac-dl60 fadf0a8 into an isolated worktree and retried `git rebase origin/main`; the same conflict remains in `src/isaac/dream/run.clj`. Upstream moved `settings` to `digest/settings` and added scheduled `digest/send!`, while this bean adds the batch-chars default to `settings` and changes scheduled `run!` to load live config. Rebase aborted without resolving the overlap; planner reconciliation is still required before landing.
