@@ -1,11 +1,11 @@
 ---
 # isaac-p9e3
 title: MCP servers connect when Isaac starts, so a crew's first turn has their tools
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-11-19T14:59:06Z
-updated_at: 2026-11-19T15:10:29Z
+updated_at: 2026-11-19T15:10:42Z
 ---
 
 Repo: **isaac-mcp** (`src/isaac/tool/mcp/runtime.clj`, `resources/isaac-manifest.edn`, `feature-steps/isaac/tool/mcp/mcp_steps.clj`).
