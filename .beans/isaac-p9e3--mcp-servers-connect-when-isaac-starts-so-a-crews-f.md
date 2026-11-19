@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-11-19T14:59:06Z
-updated_at: 2026-11-19T14:59:52Z
+updated_at: 2026-11-19T15:08:19Z
 ---
 
 Repo: **isaac-mcp** (`src/isaac/tool/mcp/runtime.clj`, `resources/isaac-manifest.edn`, `feature-steps/isaac/tool/mcp/mcp_steps.clj`).
@@ -56,3 +56,9 @@ same boot hook, never calling `start!` by hand.
 
 feature-baseline: isaac-mcp 95a62a55ebfaf9c683ed81a07a42c904d257ece7
 feature-blob: isaac-mcp features/lifecycle.feature 49e235e674d63e9417f6c5d098f295c064c306a9 37
+
+
+## Work checkpoint (2026-11-19)
+Done: boot MCP via :isaac.config/component factory, feature boot uses production reconciler, config reload unit coverage; focused acceptance green; gate PASS. Branch bean/isaac-p9e3 pushed at 5e29de3.
+Next: bb ci intermittent failure: lifecycle.feature two-server log order can be skybeam then lens. Fix stable boot order without blocking turn; resume src/isaac/tool/mcp/runtime.clj:186 (connect-async!) / :261 (start!), verify full bb ci then re-run gate and land.
+Last run: bb spec spec/isaac/tool/mcp/runtime_spec.clj green (32 examples); prior bb ci red from nondeterministic log ordering.
